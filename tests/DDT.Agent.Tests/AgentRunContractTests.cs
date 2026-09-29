@@ -11,7 +11,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The server and the agent are built against these; agents staged into Windows keep them for a whole run.
+// The server and the agent are built against these. Agents staged into Windows keep them for a whole run.
 public sealed class AgentRunContractTests
 {
     private const string MachineId = "0197a3c0-0000-7000-8000-00000000000a";

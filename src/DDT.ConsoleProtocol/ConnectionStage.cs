@@ -4,14 +4,15 @@
 
 namespace DDT.ConsoleProtocol;
 
-// How far a request to the server got before it failed. Each stage fails for its own reasons: DNS; a wrong address, a
-// firewall or a missing route; a server that stalls or a certificate the boot image does not trust; the server itself.
+// How far a request to the server got before it failed. Each stage has its own causes. NameLookup fails on DNS.
+// Connection fails on a wrong address, a firewall or a missing route. SecureConnection fails on a server that stalls or
+// a certificate the boot image doesn't trust. Answer fails on the server itself.
 public enum ConnectionStage
 {
     NameLookup,
     Connection,
     SecureConnection,
 
-    // Connected, but no answer in time, a refusal, or an answer the agent cannot read.
+    // Connected, but no answer in time, a refusal, or an answer the agent can't read.
     Answer,
 }

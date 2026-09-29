@@ -16,7 +16,7 @@ public sealed class Deployment
 
     public Guid MachineId { get; set; }
 
-    // Cleared when the sequence is deleted; the run keeps its snapshot.
+    // Cleared when the sequence is deleted. The run keeps its snapshot.
     public Guid? TaskSequenceId { get; set; }
 
     public long? SequenceRevision { get; set; }
@@ -37,12 +37,12 @@ public sealed class Deployment
 
     public string? RequestedByName { get; set; }
 
-    // The steps of the run's path as far as it is decided, as RunPaths counts them for a list's rail: a group, an IF or a
-    // repeat is not a step of its own, nor is a step of a branch the run did not take.
+    // The steps on the run's path as far as it's decided, counted by RunPaths for a list's rail. A group, an IF or a
+    // repeat isn't a step, and neither is a step of a branch the run didn't take.
     public int StepCount { get; set; }
 
-    // The step the agent reported last, and its percent. The index is the step's place on the path from 0, so for a tree
-    // it is not the row's Index, which counts every node.
+    // The step the agent reported last, and its percent. The index is the step's position on the path from 0. So for a
+    // tree it isn't the row's Index, which counts every node.
     public int? CurrentStepIndex { get; set; }
 
     public string? CurrentStepName { get; set; }
@@ -53,7 +53,8 @@ public sealed class Deployment
 
     public RunActivity? Activity { get; set; }
 
-    // RunInputs as JSON, taken when the run started: the settings its answer file and domain join use. Never a secret.
+    // RunInputs as JSON, taken when the run started. It holds the settings its answer file and domain join use, never a
+    // secret.
     public string? Inputs { get; set; }
 
     public DateTimeOffset CreatedUtc { get; set; }
@@ -66,33 +67,33 @@ public sealed class Deployment
 
     public string? Error { get; set; }
 
-    // Whoever started the run let a raw disk image that is not signed for Secure Boot be written on a machine that
-    // has Secure Boot on. A rule's run never has it.
+    // Whoever started the run allowed a raw disk image that isn't signed for Secure Boot to be written on a machine
+    // with Secure Boot on. A rule's run never sets it.
     public bool AllowSecureBootMismatch { get; set; }
 
-    // The answers to the sequence's inputs, see RunAnswer, with who gave each and when. An Account input's answer is a
-    // RunCredential and never here. Null before the first answer.
+    // The answers to the sequence's inputs (see RunAnswer), with who gave each and when. An Account input's answer is a
+    // RunCredential and never stored here. Null before the first answer.
     public string? Answers { get; set; }
 
-    // The run's values as they were worked out when it started, as DdtJsonContext writes a list of ResolvedValue. Never a
-    // secret: accounts are RunCredential rows or Account rows.
+    // The run's values as worked out when it started, as a list of ResolvedValue written by DdtJsonContext. Never a
+    // secret, because accounts are RunCredential or Account rows.
     public string? Values { get; set; }
 
-    // The sequence's variables as the agent last reported them, as DdtJsonContext writes a map of name to value.
+    // The sequence's variables as the agent last reported them, as a name-to-value map written by DdtJsonContext.
     public string? Variables { get; set; }
 
     // The run waits at its start for answers to required inputs.
     public bool InputsPending { get; set; }
 
-    // The Pause step the run waits at, its pass, and the message the agent worked out for it; null while it waits at
-    // none.
+    // The Pause step the run waits at, its pass, and the message the agent worked out for it. Null while the run isn't
+    // paused.
     public Guid? PauseStepId { get; set; }
 
     public int? PausePass { get; set; }
 
     public string? PauseMessage { get; set; }
 
-    // The pause someone continued on the web, which the answer to the agent's next report names, and who continued it.
+    // The pause someone continued on the web, and who continued it. The answer to the agent's next report names it.
     public Guid? ContinueStepId { get; set; }
 
     public int? ContinuePass { get; set; }

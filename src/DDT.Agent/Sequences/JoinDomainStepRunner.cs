@@ -9,18 +9,18 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Joins the installed Windows to the domain the server is set up for, with the account it hands out only while it knows
-// the step runs, which reportRunning tells it first. The password stays in this call and never reaches a log or an
-// error. While the network comes up after Windows started, no domain controller may answer yet, so those answers are
-// tried again for a while. The join takes effect after a restart, which the step asks for.
+// Joins the installed Windows to the server's domain. The server hands out the account once reportRunning has told it
+// the step is running. The password never reaches a log or an error. The join takes effect at the restart the step
+// asks for.
 public sealed class JoinDomainStepRunner(
     IDomainJoiner joiner,
     IAgentServer server,
     RunSession session,
     Func<CancellationToken, Task> reportRunning,
     AgentLog log,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider) : IStepKindRunner<JoinDomainStep>
 {
+    // While the network comes up after Windows started, no domain controller may answer yet.
     public static readonly TimeSpan RetryFor = TimeSpan.FromMinutes(5);
 
     public async Task<StepResult> RunAsync(JoinDomainStep step, StepContext context, CancellationToken cancellationToken)

@@ -4,8 +4,8 @@
 
 namespace DDT.Agent.Deployment;
 
-// Logs each tool instead of running it and answers as a tool that printed nothing and succeeded, so a dry run changes
-// nothing on the computer it runs on, scripts included.
+// Logs each tool instead of running it, and answers like a tool that printed nothing and succeeded. So a dry run
+// changes nothing on the computer it runs on, scripts included.
 public sealed class DryRunToolRunner(AgentLog log) : IToolRunner
 {
     public Task<IReadOnlyList<string>> RunAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)

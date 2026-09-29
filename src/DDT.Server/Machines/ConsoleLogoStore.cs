@@ -9,8 +9,8 @@ using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Machines;
 
-// The logo the console at the machine shows, a PNG at console/logo.png in the store. Every registration names its hash,
-// so it is hashed once and kept until the file's length or write time changes, as AgentReleaseStore does.
+// The PNG logo the console at the machine shows. Every registration names its hash, so the hash is kept until the
+// file's length or write time changes.
 public sealed class ConsoleLogoStore(IOptions<DdtOptions> ddt)
 {
     // A logo is a small picture: the console shows it at most 32 pixels high and 200 wide.
@@ -58,8 +58,7 @@ public sealed class ConsoleLogoStore(IOptions<DdtOptions> ddt)
         ArgumentNullException.ThrowIfNull(png);
 
         string path = Path;
-        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
-        string temporary = $"{path}.{Guid.NewGuid():N}.upload";
+        string temporary = FileReplacement.TemporaryFor(path);
 
         try
         {
@@ -74,8 +73,8 @@ public sealed class ConsoleLogoStore(IOptions<DdtOptions> ddt)
 
     public void Delete() => File.Delete(Path);
 
-    // What a PNG is, or null when the bytes are not one: the signature, an IHDR chunk first with a size of at least one
-    // pixel, whole chunks, and IEND last. The console's decoder reads the pixels; this keeps anything else out.
+    // Null unless the bytes are a PNG: the signature, IHDR first with at least one pixel, whole chunks, and IEND last.
+    // Only the structure is checked. The console's decoder reads the pixels.
     public static ConsoleLogoFile? Describe(ReadOnlySpan<byte> png)
     {
         if (!png.StartsWith(Signature))
@@ -125,5 +124,3 @@ public sealed class ConsoleLogoStore(IOptions<DdtOptions> ddt)
         return null;
     }
 }
-
-public sealed record ConsoleLogoFile(string Sha256, long Size, int Width, int Height);

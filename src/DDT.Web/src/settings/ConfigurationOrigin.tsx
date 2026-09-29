@@ -4,11 +4,11 @@
 
 import { Trans } from "@lingui/react/macro";
 
-import type { SettingsOverview } from "./settings";
+import type { ServerSetting } from "./settings";
 
-// Where a configuration value comes from, as the overview names its source: the environment, the command line or a
-// file such as appsettings.json. A value that is not set but shown is the default the server applies.
-export function ConfigurationOrigin({ setting }: { setting: SettingsOverview["server"][number] }) {
+// Where a configuration value comes from, based on the overview's source name: the environment, the command line
+// or a file such as appsettings.json. A value that isn't set but still shown is the server's default.
+export function ConfigurationOrigin({ setting }: { setting: ServerSetting }) {
   const source = setting.source;
 
   if (!setting.isSet) {

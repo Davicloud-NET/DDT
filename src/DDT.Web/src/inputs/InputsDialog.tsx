@@ -16,9 +16,8 @@ import { answerErrors, hasAnswerErrors, type AskedInput, type InputAnswer } from
 import { InputsForm } from "./InputsForm";
 import { useAnswers } from "./useAnswers";
 
-// Asks a sequence's inputs before something runs, as approving a machine with a rule's sequence, or answers a run that
-// waits for them. What the action does comes first, then a field per input. The server's refusal of an answer shows
-// under its field, anything else under the form; the passwords typed are forgotten once the dialog closes.
+// Asks for a sequence's inputs before something runs, or for a run that waits for them. A refused answer shows under
+// its field and any other refusal under the form. Typed passwords are forgotten when the dialog closes.
 export function InputsDialog({
   title,
   inputs,
@@ -39,7 +38,7 @@ export function InputsDialog({
   error: Error | null;
   onSubmit: (answers: InputAnswer[]) => void;
   onClose: () => void;
-  // Keeps the confirm key off for a reason the dialog's content explains.
+  // Disables the confirm button, for a reason the dialog's content explains.
   isConfirmDisabled?: boolean;
   // What the action does, and any choice that goes with it, above the fields.
   children?: ReactNode;

@@ -4,5 +4,6 @@
 
 namespace DDT.Contracts.Settings;
 
-// The section logging: a level such as Information or Debug per category, and Default for every other category.
+// The logging section. It sets a level such as Information or Debug per category, and Default covers every other
+// category.
 public sealed record LoggingSettings(IReadOnlyDictionary<string, string> LogLevel);

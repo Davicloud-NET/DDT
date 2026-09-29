@@ -7,11 +7,11 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// A run that an earlier start of the agent left on the Windows volume at WindowsRoot: its state, and the run token kept
-// with it, which resumes the run when the server still runs it.
+// A run that an earlier start of the agent left on the Windows volume at WindowsRoot. It holds the state and the run
+// token kept with it. The token resumes the run if the server still has it running.
 public sealed record LocalRun(string WindowsRoot, RunFiles Files, SequenceState State, string? RunToken)
 {
-    // Null when the volume holds no state this agent can go on with.
+    // Null when the volume holds no state this agent can continue.
     public static async Task<LocalRun?> LoadAsync(string windowsRoot, AgentLog log, CancellationToken cancellationToken)
     {
         RunFiles files = RunFiles.In(windowsRoot, log);
@@ -20,9 +20,8 @@ public sealed record LocalRun(string WindowsRoot, RunFiles Files, SequenceState 
         return state is null ? null : new LocalRun(windowsRoot, files, state, await files.LoadTokenAsync(cancellationToken).ConfigureAwait(false));
     }
 
-    // The answer file holds passwords. It may be there once its step started, even if the step never finished: a step
-    // the engine found interrupted is Failed by then. The state has an entry per node of the tree, so the step may sit
-    // inside a group or an IF.
+    // The answer file holds passwords. It may be there once its step started, even if the engine has since failed that
+    // step as interrupted. The state has an entry per node of the tree, so the step may sit inside a group or an IF.
     public static void DeleteAnswerFile(SequenceState state, string windowsRoot, AgentLog log)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -37,8 +36,8 @@ public sealed record LocalRun(string WindowsRoot, RunFiles Files, SequenceState 
         }
     }
 
-    // For a run that is over: the token first, so nothing left can act as the machine, then the state and the answer
-    // file.
+    // For a run that's over. Deletes the token first, so nothing left can act as the machine, then the state and the
+    // answer file.
     public void Discard(AgentLog log)
     {
         Files.Discard();

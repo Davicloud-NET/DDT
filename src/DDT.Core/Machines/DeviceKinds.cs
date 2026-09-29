@@ -6,12 +6,13 @@ using DDT.Contracts.Machines;
 
 namespace DDT.Core.Machines;
 
-// Tells what kind of computer a machine is from what its firmware reports: the manufacturer and model of the SMBIOS System
-// Information structure and the chassis type of its System Enclosure structure, numbered as in DMTF DSP0134, table 17.
+// Works out what kind of computer a machine is from its SMBIOS manufacturer, model and System Enclosure chassis type.
+// Chassis types are numbered as in DMTF DSP0134, table 17.
 public static class DeviceKinds
 {
-    // Hypervisors mostly report a desktop chassis, or Other, so their names decide first. Hyper-V's model is "Virtual
-    // Machine", VirtualBox's manufacturer "innotek GmbH", and KVM and Xen guests name the hypervisor in one of the two.
+    // Hypervisors mostly report a desktop chassis or Other, so their names are checked first. Hyper-V's model is
+    // "Virtual Machine" and VirtualBox's manufacturer is "innotek GmbH". KVM and Xen guests name the hypervisor in the
+    // manufacturer or the model.
     private static readonly string[] s_virtualMarkers =
         ["Virtual Machine", "VMware", "VirtualBox", "QEMU", "KVM", "Xen", "Parallels", "Bochs", "innotek"];
 

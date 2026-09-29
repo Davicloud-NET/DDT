@@ -10,9 +10,8 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// What a run's conditions and templates read of the machine: the identity and the facts it registered with, and the
-// run's values. A board maker's placeholder in a fact, such as "Default string", says nothing about the machine; the
-// server drops it at registration, and so does the agent, so a condition tests the same values on both.
+// What a run's conditions and templates read of the machine: the identity and facts it registered with, and the run's
+// values.
 public static class RunMachine
 {
     public static MachineVariables Of(MachineIdentity identity, AgentRun run, IReadOnlyDictionary<string, string>? values = null)
@@ -37,6 +36,8 @@ public static class RunMachine
         };
     }
 
+    // A board maker's placeholder, such as "Default string", says nothing about the machine. The server drops it at
+    // registration too, so a condition tests the same values on both.
     private static MachineFacts WithoutPlaceholders(MachineFacts facts) => facts with
     {
         ProcessorName = Known(facts.ProcessorName),

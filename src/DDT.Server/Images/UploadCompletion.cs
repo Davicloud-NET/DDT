@@ -8,9 +8,8 @@ using DDT.Contracts.Packages;
 
 namespace DDT.Server.Images;
 
-// Images holds the new library entries for Added and every entry of the file's hash for Existing; Package is the
-// package of a package upload instead. Offset is where an Incomplete upload continues. Refusal is the sentence that
-// says why the file cannot be used.
+// For Added, Images holds the new entries. For Existing, it holds every entry of the file. For a package, Package is
+// set instead. Offset is where an Incomplete upload continues, and Refusal says why the file can't be used.
 public sealed record UploadCompletion(
     UploadCompletionStatus Status,
     IReadOnlyList<ImageSummary> Images,

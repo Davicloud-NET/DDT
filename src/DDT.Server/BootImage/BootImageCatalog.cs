@@ -15,15 +15,15 @@ using Microsoft.Extensions.Options;
 
 namespace DDT.Server.BootImage;
 
-// Compares the driver packages flagged for the boot image with what the boot image in the boot directory holds. The
-// build describes itself in a file next to boot.wim, which is read on every request: it changes whenever someone copies
-// a new build in, and it is small.
+// Compares the driver packages flagged for the boot image with the build in the boot directory. The build's description
+// next to boot.wim is read on every request. It's small, and it changes whenever a new build is copied in.
 public sealed class BootImageCatalog(IOptions<DdtOptions> options, IConfiguration configuration)
 {
     public const string ManifestName = "ddt-boot-image.json";
 
-    // The pxe role's DDT:Pxe:BootDirectory, see DDT.Pxe.PxeOptions, which this project does not reference. The web role
-    // finds the build in the same store when both run in one container, as they do by default.
+    // This is the pxe role's DDT:Pxe:BootDirectory setting, see DDT.Pxe.PxeOptions. This project doesn't reference
+    // DDT.Pxe. When both roles run in one container, as they do by default, the web role finds the build in the same
+    // store.
     private const string BootDirectoryKey = "DDT:Pxe:BootDirectory";
 
     // A description of one build is a few kilobytes, even with dozens of drivers.
@@ -34,7 +34,8 @@ public sealed class BootImageCatalog(IOptions<DdtOptions> options, IConfiguratio
 
     public string ManifestPath => Path.Combine(BootDirectory, "Boot", ManifestName);
 
-    // One line per package in the order of the ids, so the same set always has the same hash. Null for no package.
+    // Hashes one line per package, sorted by id, so the same set always has the same hash. Returns null when there are
+    // no packages.
     public static string? DriverSetHash(IEnumerable<(Guid PackageId, string Sha256)> drivers)
     {
         ArgumentNullException.ThrowIfNull(drivers);
@@ -68,9 +69,8 @@ public sealed class BootImageCatalog(IOptions<DdtOptions> options, IConfiguratio
         return new BootImageView(drivers, driverSetHash, build, stale);
     }
 
-    // Null for a missing file, and for one that cannot be what the script wrote: a boot image built before the script
-    // described its builds, or a file someone broke, leaves the page without a build rather than without a page. The
-    // hash is computed again from the drivers the file lists, so it means what the server's means.
+    // Returns null for a missing or broken file, so the page shows no build instead of failing. The hash is computed
+    // again from the drivers the file lists, so it's computed the same way as the server's.
     public BootImageBuild? ReadBuild()
     {
         BootImageManifest? manifest;
@@ -117,7 +117,7 @@ public sealed class BootImageCatalog(IOptions<DdtOptions> options, IConfiguratio
             manifest.AgentVersion);
     }
 
-    // What the watcher compares to notice a new build without reading the file each time.
+    // The watcher compares this to notice a new build without reading the file each time.
     public (bool Exists, DateTime LastWriteUtc, long Length) Stamp()
     {
         try

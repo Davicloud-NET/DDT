@@ -10,8 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.Server.Tests;
 
-// Single sign-on through FakeOidcHandler with new accounts on, whose groups claim a map turns into roles: group names
-// as Keycloak and Authentik send them, a group path, and a group object id as Entra ID sends it.
+// Single sign-on through FakeOidcHandler with DDT:Oidc:AutoProvision on. A map turns the groups claim into roles.
+// It has group names like Keycloak and Authentik send them, a group path, and a group object ID like Entra ID sends it.
 public sealed class GroupMappedSignInApplication : DdtApplication
 {
     public const string Administrators = "ddt-admins";

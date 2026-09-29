@@ -1,11 +1,12 @@
 # Code style
 
 The build already nags about formatting: `.editorconfig`, the .NET analyzers, ESLint and Prettier
-all run with warnings as errors. This page is about the rest, the things a tool can't catch (or
-can't catch yet). It applies to everyone who writes code for DDT, humans and AI alike. It applies
-twice over to AI, because models love writing essays.
+all run with warnings as errors. This page covers the rest, how DDT's code should be shaped and
+how it should read. The build checks some of it too, see the end. It applies to everyone who
+writes code for DDT, humans and AI alike. It applies twice over to AI, because models love
+writing essays.
 
-When this page and the code around you disagree, this page wins, and the code around you is due
+When this page and the code around you disagree, this page wins, and the code around you needs
 a tidy-up.
 
 ## The short version
@@ -16,7 +17,7 @@ a tidy-up.
    types.
 4. **Names say what things are.** No abbreviations, no `Manager`, no `Helper`.
 5. **Follow the platform's conventions.** .NET's for C#, React's for the web. When in doubt, do
-   what well-kept code nearby does.
+   what the well-kept code nearby does.
 6. **Tests describe behaviour**, in sentences.
 
 ## Comments
@@ -30,20 +31,20 @@ Write a comment when the code can't speak for itself:
 
 And keep it short:
 
-- **One or two lines.** Three or four for a truly tricky why. Anything longer belongs in the
-  documentation, in the commit message, or is a hint that the code wants restructuring.
+- **One or two lines.** Three or four for a really tricky why. Anything longer belongs in the
+  docs or the commit message. Or it's a sign the code needs restructuring.
 - **Don't narrate the code.** `// Loops over the disks` above a loop over the disks helps no one.
   Neither does a comment that repeats a method's name or lists its parameters.
-- **No history.** "Since then", "used to" and "was changed because" belong in the commit
-  message, where `git blame` finds them.
+- **No history.** "Since then", "used to" and "was changed because" go in the commit message,
+  where `git blame` finds them.
 - **Use the proper term.** "The DHCP offer" beats "what the server answers first". The people
   reading this are developers.
-- **Don't point at places that move**, like a README section or a line number. Link an issue or a
+- **Don't point at things that move**, like a README section or a line number. Link an issue or a
   stable document instead.
 - **A type's comment says what it's for, in one line.** Skip it when the name already says so.
 - **`TODO` only with an issue:** `// TODO(#123): drop once firmware X is gone`.
-- **Plain `//` comments.** Nobody generates API docs from DDT, so skip `///` boilerplate that only
-  repeats the member's name.
+- **Plain `//` comments.** Nobody generates API docs from DDT, so skip the `///` boilerplate that
+  only repeats the member's name.
 
 Good ones, from DDT itself:
 
@@ -55,7 +56,7 @@ public const string DeployableArchitecture = "x64";
 private const long SpareBytes = 2048L * 1024 * 1024;
 ```
 
-And one that needs the treatment. `SequenceRunner` opens with 16 lines of prose:
+And one that needed some work. `SequenceRunner` used to open with 16 lines of prose:
 
 ```csharp
 // Runs a task sequence in Windows PE. A fresh run is checked first, so nothing is erased for a run that cannot
@@ -64,11 +65,11 @@ And one that needs the treatment. `SequenceRunner` opens with 16 lines of prose:
 // (13 more lines)
 ```
 
-Two lines say what matters, and the rest goes to the documentation:
+Two lines cover what matters, and the rest belongs in the docs:
 
 ```csharp
-// Runs a task sequence in Windows PE and resumes a run found on disk after a restart.
-// Never throws: every failure is reported, because a crashed agent is replaced by the boot image's.
+// Runs a task sequence in WinPE, or continues it in the installed Windows, and resumes a run found on disk. It never
+// throws. It reports every failure, because if the agent crashes, the one from the boot image takes over.
 ```
 
 ## Files and types
@@ -78,20 +79,22 @@ Two lines say what matters, and the rest goes to the documentation:
 - **One top-level type per file**, named after the type. That covers classes, records, structs,
   interfaces, enums, delegates and exceptions. `Result<T>` lives in `Result.cs`. When a generic
   and a non-generic type share a name, the generic one gets `Result{T}.cs`.
-- **The folder is the namespace.** File-scoped namespaces and usings outside of them; the build
-  enforces those two.
+- **The folder is the namespace.** Namespaces are file-scoped, with the usings above them. The
+  build checks both.
 - **Nested types** are fine when they're private, small and only make sense inside their parent.
 - **Partial classes are for generators and designers**: `JsonSerializerContext`, `[LoggerMessage]`,
-  Avalonia's code-behind. They are not a way to hide a big class across several files.
+  Avalonia's code-behind. They aren't a way to spread a big class over several files. The one
+  exception is a data catalogue like `ServerMessages`. It can keep one part per area, in
+  `ServerMessages.Area.cs`.
 
 **TypeScript**
 
 - **One component per file**, named after it: `AssignDialog.tsx` holds `AssignDialog`.
 - **A private helper component** can stay in its file while it's a handful of lines and nothing
   else uses it. Once it grows past about 30 lines, or another file wants it, it moves out.
-- **A compound component** may share one file, named after its root. That means parts that only
-  work nested inside the root, like `Table`, `TableHeader` and `TableRow`. Components that merely
-  look alike are not a compound.
+- **A compound component** can share one file, named after its root. That's for parts that only
+  work inside the root, like `Table`, `TableHeader` and `TableRow`. Components that just look
+  alike don't count.
 - **One hook per file**, called `useThing.ts`. Plain modules are `camelCase.ts`. Everything lives
   in its feature's folder (`machines/`, `settings/`, ...).
 - **Named exports only.** No default exports.
@@ -112,6 +115,9 @@ These are smoke alarms, not laws. Past the second number, split it before you ad
 | Component or function | 80 lines | 120 |
 | Test class or test file | 500 lines | 700 |
 
+The dependency limit is for services. Records and other data types can have as many members as
+their data needs.
+
 **Split by responsibility, not by line count.** Some signs a class does two jobs:
 
 - its one-line description needs an "and";
@@ -119,17 +125,17 @@ These are smoke alarms, not laws. Past the second number, split it before you ad
 - it takes dependencies that only one method needs;
 - comments like `// --- Downloads ---` separate its sections.
 
-Pull the job out into a type whose name says what it does. `Helper`, `Utils` and `Manager` are
-not names, they're drawers everything ends up in.
+Pull the job out into a type whose name says what it does. `Helper`, `Utils` and `Manager` aren't
+names, they're drawers everything ends up in.
 
-**Flat data may run long.** A message catalogue, a lookup table or a binary format's constants can
-be longer than 400 lines when they're just data. Split them by area once finding things gets hard.
-The same goes for a cohesive codec, like the FAT reader. Rather than chopping it into pieces, take
-out what it duplicates.
+**Flat data can run long.** A message catalogue, a lookup table or a binary format's constants can
+go past 400 lines when they're just data. Split them by area once finding things gets hard. A
+codec that hangs together, like the FAT reader, can be long too. Instead of chopping it into
+pieces, take out what it duplicates.
 
 ## Naming
 
-- **The .NET conventions, most of them enforced:**
+- **The usual .NET conventions** (the build checks most of them):
   - `PascalCase` for types and members;
   - `camelCase` for locals and parameters;
   - `_camelCase` for private fields, `s_camelCase` for private static ones;
@@ -139,7 +145,7 @@ out what it duplicates.
   `Tftp`, `Pxe`, `Wim`, `Bcd`, `WindowsPE`.
 - **Booleans read as a question**: `IsApproved`, `HasDisk`, `CanPick`.
 - **American spelling in code** (`Authorize`, `Color`, `Initialize`), the way the frameworks spell
-  it. The documentation writes British English.
+  it. The docs use British English.
 - **TypeScript:**
   - `camelCase` for functions and variables;
   - `PascalCase` for components and types;
@@ -148,27 +154,28 @@ out what it duplicates.
 
 ## C#
 
-- **Nullable is on.** Don't use `!` to silence it. There are none today; let's keep it that way.
+- **Nullable is on.** Don't use `!` to silence it. There isn't a single one today, so let's keep
+  it that way.
 - **`sealed` by default**, unless a class is designed to be inherited.
 - **Primary constructors** for dependencies.
 - **Check arguments at public entry points** with `ArgumentNullException.ThrowIfNull` and friends.
 - **Records for data**, like the contracts. Options classes use `set`, because the configuration
-  binding generator skips `init` without a warning.
-- **Async all the way.** Never `.Result` or `.Wait()`. The `CancellationToken` comes last and is
-  passed on. `ConfigureAwait(false)` goes everywhere except code that needs the UI thread (the
-  console's view models).
+  binding generator quietly skips `init`.
+- **Async all the way.** Never `.Result` or `.Wait()`. The `CancellationToken` comes last and gets
+  passed along. Every awaited call gets `ConfigureAwait(false)`, except in code that needs the UI
+  thread (the console's view models) and on `await using`.
 - **Time comes from `TimeProvider`**, never from `DateTime.Now` or `DateTimeOffset.UtcNow`, so the
   tests can move the clock.
 - **Logging** uses source-generated `[LoggerMessage]` methods, each with its own event id.
   Passwords, tokens and secrets never go into a log line.
 - **Catch what you can handle.** `catch (Exception)` only belongs at a boundary that reports the
-  failure, such as the agent's loop, a hosted service or an endpoint filter, and it gets a
-  one-line comment saying so.
-- **NativeAOT-friendly.** No reflection-based JSON in the agent or the console: use
+  failure, like the agent's loop, a hosted service or an endpoint filter. Give it a one-line
+  comment that says so.
+- **NativeAOT-friendly.** The agent and the console can't use reflection-based JSON, so they use
   source-generated `JsonSerializerContext`s. Trimming warnings are errors.
 - **Thin endpoints.** A minimal API handler binds the request, checks access, calls a service and
-  maps the answer. If it needs a dozen dependencies, it takes an `[AsParameters]` record, or its
-  logic moves into a service.
+  maps the result. If it needs a dozen dependencies, give it an `[AsParameters]` record or move
+  its logic into a service.
 - **LINQ where it reads better**, a loop where that's clearer or the code is hot.
 
 ## TypeScript and React
@@ -176,12 +183,12 @@ out what it duplicates.
 - **Strict TypeScript.** No `any`, no `!`.
 - **Function components** with named exports. Props get a `type ThingProps` once there are more
   than a couple.
-- **Server state lives in TanStack Query**, and pages stay live: an action patches the cache with
-  the server's answer, and other people's changes arrive through the hub. See
+- **Server state lives in TanStack Query**, and pages stay live. An action patches the cache with
+  what the server sends back, and other people's changes come in through the hub. See
   [web-ui.md](web-ui.md#live-data).
 - **Controls come from `src/ui`**, which wraps React Aria. Don't hand-roll a button, dialog or
   select.
-- **Every text goes through Lingui** (`t` or `<Trans>`), in English and German.
+- **All text goes through Lingui** (`t` or `<Trans>`), in English and German.
 - **Colours, spacing and motion come from the design tokens**, never hard-coded values.
 - **Components mostly render.** Logic lives in hooks and plain modules, where it's easy to test
   without a DOM.
@@ -204,8 +211,8 @@ out what it duplicates.
 - **Scripts** start with `[CmdletBinding()]`, `Set-StrictMode -Version Latest` and
   `$ErrorActionPreference = 'Stop'`, and have comment-based help.
 - **Functions** use approved verbs (`Get-`, `New-`, `Invoke-`, ...) and do one thing each.
-- **A script that grows past a few hundred lines** moves its functions into a module next to it,
-  and the script only reads its parameters and calls them.
+- **Once a script grows past a few hundred lines**, its functions move into a module next to it.
+  The script then just reads its parameters and calls them.
 
 ## What the tools check for you
 
@@ -213,7 +220,15 @@ You don't have to remember any of this, because the build fails when it's wrong:
 
 - **.NET:** formatting, naming, `var` usage, braces, file-scoped namespaces and the licence header,
   all from `.editorconfig`, with warnings as errors.
-- **Web:** ESLint's strict type-checked rules, and Prettier for formatting.
+- **One type per file and method length:** the Meziantou analyzers MA0048 and MA0051. Every other
+  Meziantou rule is off.
+- **Class size, dependencies, parameters and comment length:** `CodeShapeTests`, because no
+  analyzer checks those.
+- **Web:** ESLint's strict type-checked rules, its size limits (`max-lines`,
+  `max-lines-per-function`, `max-depth`, `max-params`), and Prettier for formatting. A test checks
+  one component per file.
+- **PowerShell:** PSScriptAnalyzer, with the settings in `build/PSScriptAnalyzerSettings.psd1`.
+  That includes checking the syntax runs on Windows PowerShell 5.1.
 - **Tests:** the licence header in every other language, stale generated files, and missing
   translations.
 

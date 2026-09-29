@@ -2,77 +2,32 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { Trans } from "@lingui/react/macro";
 import { IconPlus } from "@tabler/icons-react";
-import type { ReactNode, RefObject } from "react";
+import type { ReactNode } from "react";
 import { Button as AriaButton, MenuTrigger } from "react-aria-components";
 
 import { buttonClass, type ButtonVariant } from "@/ui/buttonClass";
-import { NodeGlyph } from "@/ui/FlowNode";
-import { Menu, MenuItem, MenuSection } from "@/ui/Menu";
 
 import type { StepKind } from "../sequences";
-import { addLabel, flowKinds, workKinds } from "./nodeKinds";
+import { NodeKindsMenu } from "./NodeKindsMenu";
 
-// The menu of kinds to add, for any key that opens it: in a MenuTrigger, or from triggerRef while isOpen.
-export function NodeKindsMenu({
-  onAdd,
-  placement = "bottom start",
-  triggerRef,
-  isOpen,
-  onOpenChange,
-}: {
+interface AddNodeMenuProps {
+  label: ReactNode;
+  fullLabel: string;
   onAdd: (kind: StepKind) => void;
-  placement?: "bottom start" | "bottom end";
-  triggerRef?: RefObject<Element | null>;
-  isOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
-}) {
-  return (
-    <Menu
-      placement={placement}
-      {...(triggerRef === undefined ? {} : { triggerRef })}
-      {...(isOpen === undefined ? {} : { isOpen })}
-      {...(onOpenChange === undefined ? {} : { onOpenChange })}
-      onAction={(key) => {
-        onAdd(String(key) as StepKind);
-      }}
-    >
-      <MenuSection title={<Trans>Flow</Trans>}>
-        {flowKinds.map((kind) => (
-          <MenuItem key={kind} id={kind} textValue={addLabel(kind)}>
-            <NodeGlyph kind={kind} className="text-ink-2" />
-            {addLabel(kind)}
-          </MenuItem>
-        ))}
-      </MenuSection>
-      <MenuSection title={<Trans>Steps</Trans>}>
-        {workKinds.map((kind) => (
-          <MenuItem key={kind} id={kind} textValue={addLabel(kind)}>
-            <NodeGlyph kind={kind} className="text-ink-2" />
-            {addLabel(kind)}
-          </MenuItem>
-        ))}
-      </MenuSection>
-    </Menu>
-  );
+  variant?: ButtonVariant;
+  isDisabled?: boolean;
 }
 
-// A key that opens the kinds to add. fullLabel says the key with its place for screen readers, such as "Add a step
-// after Apply image", and starts with the words the key shows; the menu is named by its key.
+// A button that opens the kinds to add. fullLabel is the button's screen reader label with its place, such as "Add a
+// step after Apply image". It starts with the words the button shows. The menu is named after its button.
 export function AddNodeMenu({
   label,
   fullLabel,
   onAdd,
   variant = "secondary",
   isDisabled = false,
-}: {
-  label: ReactNode;
-  fullLabel: string;
-  onAdd: (kind: StepKind) => void;
-  variant?: ButtonVariant;
-  isDisabled?: boolean;
-}) {
+}: AddNodeMenuProps) {
   return (
     <MenuTrigger>
       <AriaButton

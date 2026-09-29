@@ -4,6 +4,7 @@
 
 using System.Net;
 using System.Net.Sockets;
+using Microsoft.Extensions.Logging;
 
 namespace DDT.Pxe;
 
@@ -15,18 +16,17 @@ internal static class PxeSocket
     // IP_UNICAST_IF is 31 in ws2ipdef.h and 50 in uapi/linux/in.h.
     private static int UnicastInterfaceOption => OperatingSystem.IsWindows() ? 31 : 50;
 
-    // One wildcard socket per port. A socket bound per interface receives no broadcasts on Linux, and
-    // wildcard plus specific on the same port needs SO_REUSEADDR, which lets another process share the
-    // port. ExclusiveAddressUse is not set either: it measurably fails the bind when another process
-    // holds a specific address on the same port, which is the normal state of a Hyper-V host.
+    // One wildcard socket per port. A socket per interface gets no broadcasts on Linux, and mixing both needs
+    // SO_REUSEADDR, which lets another process share the port. There's no ExclusiveAddressUse either. It fails the
+    // bind on a Hyper-V host, where another process holds a specific address on the same port.
     public static Socket CreateListener(IPEndPoint endpoint)
     {
         Socket socket = new(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
         try
         {
-            // Must precede Bind. The runtime otherwise enables IP_PKTINFO inside the first
-            // ReceiveMessageFrom call, and a datagram already queued by then reports interface 0.
+            // This must come before Bind. Otherwise the runtime enables IP_PKTINFO inside the first ReceiveMessageFrom
+            // call, and a datagram already queued by then reports interface 0.
             socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
             DisableConnectionReset(socket);
@@ -41,9 +41,8 @@ internal static class PxeSocket
         }
     }
 
-    // A transfer answers from a fresh port connected to the client. The kernel then drops datagrams
-    // from any other source, and a duplicated request yields a second transfer the client can tell
-    // apart by port instead of two interleaved streams from port 69.
+    // A new port connected to the client. The kernel drops datagrams from other sources. A repeated request gets a
+    // transfer the client can tell apart by port, instead of a second stream from port 69.
     public static Socket CreateTransfer(IPAddress localAddress, IPEndPoint client)
     {
         Socket socket = new(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -63,8 +62,8 @@ internal static class PxeSocket
         }
     }
 
-    // A limited broadcast has no route of its own, so without this the kernel picks one interface from
-    // the routing table and the reply leaves on the wrong segment. Zero restores ordinary routing.
+    // A limited broadcast isn't tied to a route. Without this, the kernel picks one interface from the routing table
+    // and the reply leaves on the wrong segment. Zero restores ordinary routing.
     public static void SetEgressInterface(Socket socket, int interfaceIndex) =>
         socket.SetRawSocketOption(
             IpProtocolLevel,
@@ -81,9 +80,61 @@ internal static class PxeSocket
         }
     }
 
-    // A pause before retrying a receive that failed for no known reason, so a persistent error does not
-    // spin. False means the listener is stopping.
-    public static async Task<bool> PauseAsync(CancellationToken cancellationToken)
+    // Returns the next datagram, or null once the listener stops. A receive that fails for an unknown reason is logged
+    // and retried after a pause, so a persistent error doesn't spin. The loop never gives up, because a dead listener
+    // leaves every machine unable to boot.
+    public static async Task<SocketReceiveMessageFromResult?> ReceiveAsync(
+        Socket socket,
+        byte[] buffer,
+        int port,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        EndPoint anySource = new IPEndPoint(IPAddress.Any, 0);
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                return await socket.ReceiveMessageFromAsync(buffer, SocketFlags.None, anySource, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return null;
+            }
+            catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
+            {
+                return null;
+            }
+            catch (SocketException exception) when (IsTransient(exception))
+            {
+            }
+            catch (SocketException) when (cancellationToken.IsCancellationRequested)
+            {
+                return null;
+            }
+            catch (SocketException exception)
+            {
+                PxeLog.ReceiveFailed(logger, port, exception);
+
+                if (!await PauseAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    return null;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public static bool IsTransient(SocketException exception) =>
+        exception.SocketErrorCode is SocketError.ConnectionReset
+            or SocketError.ConnectionRefused
+            or SocketError.MessageSize
+            or SocketError.HostUnreachable
+            or SocketError.NetworkUnreachable;
+
+    private static async Task<bool> PauseAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -96,11 +147,4 @@ internal static class PxeSocket
             return false;
         }
     }
-
-    public static bool IsTransient(SocketException exception) =>
-        exception.SocketErrorCode is SocketError.ConnectionReset
-            or SocketError.ConnectionRefused
-            or SocketError.MessageSize
-            or SocketError.HostUnreachable
-            or SocketError.NetworkUnreachable;
 }

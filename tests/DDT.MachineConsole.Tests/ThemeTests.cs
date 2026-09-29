@@ -11,10 +11,8 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console's look comes from src/DDT.Design/tokens.json, as the web's does: Theme/Tokens.axaml is written from it by
-// generate.mjs, and fails here as soon as either changes without the other. The web's own test compares the whole file;
-// this one reads both and compares the values, colours, radii, types and motion, from the .NET side, and checks that
-// every face a type names is one the console carries.
+// Checks Theme/Tokens.axaml against the tokens.json that generate.mjs writes it from. Fails as soon as either changes
+// without the other, or a type names a font the console doesn't ship.
 public sealed class ThemeTests
 {
     private static readonly XNamespace s_x = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -96,7 +94,7 @@ public sealed class ThemeTests
         string[] durations = ["press", "fast", "normal", "slow", "flash"];
         string[] easings = ["easing", "enter", "exit"];
 
-        // A motion token the console does not carry yet fails here.
+        // A motion token the console doesn't support yet fails here.
         Assert.Equal(
             [.. durations.Concat(easings).Append("distance").Order(StringComparer.Ordinal)],
             motion.EnumerateObject().Select(property => property.Name).Where(name => !name.StartsWith('$')).Order(StringComparer.Ordinal));

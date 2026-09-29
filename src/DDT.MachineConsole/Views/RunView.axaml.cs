@@ -10,8 +10,8 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Views;
 
-// When the agent moves to the next step or stage, what the step does enters again, as a new screen would; the percent
-// of the same step only changes its number, and the rail moves by itself.
+// When the agent moves to the next step or stage, the step's text animates in again, like a new screen would. A new
+// percent for the same step only changes the number, and the rail moves by itself.
 public sealed partial class RunView : UserControl
 {
     private RunViewModel? _model;

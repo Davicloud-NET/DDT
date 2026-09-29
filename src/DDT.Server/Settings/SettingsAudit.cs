@@ -8,17 +8,12 @@ using DDT.Server.Data;
 
 namespace DDT.Server.Settings;
 
-// A settings row names the section and lists what changed, never a secret's value. A list longer than a row holds goes
-// on in further rows.
+// A settings audit row names the section and lists what changed, but never a secret's value. If the list doesn't fit
+// in one row, it continues in more rows.
 internal static class SettingsAudit
 {
-    public static IEnumerable<AuditEvent> Rows(
-        string action,
-        string section,
-        SettingsActor actor,
-        DateTimeOffset now,
-        string lead,
-        IReadOnlyList<string> changes)
+    // Builds the detail of each row. Each one starts with the lead, followed by as many changes as fit.
+    public static List<string> Details(string lead, IReadOnlyList<string> changes)
     {
         List<string> details = [];
         StringBuilder detail = new(lead);
@@ -40,20 +35,11 @@ internal static class SettingsAudit
 
         details.Add(detail.ToString());
 
-        return details.Select(text => new AuditEvent
-        {
-            OccurredUtc = now,
-            Action = action,
-            ActorUserId = actor.UserId,
-            ActorName = actor.Name,
-            SubjectId = section,
-            SourceAddress = actor.Address,
-            Detail = StoredText.Bound(text, AuditEvent.MaxDetailLength),
-        });
+        return details;
     }
 
-    // What changed between two documents, field by field. A map or a list names only the entries added, removed or
-    // changed, so a large map does not fill the row with what stayed.
+    // Lists what changed between two documents, field by field. A map or a list only names the entries that were added,
+    // removed or changed, so a large map doesn't fill the row with what stayed.
     public static List<string> Changes(SettingsSectionDefinition definition, JsonObject before, JsonObject after)
     {
         List<string> changes = [];

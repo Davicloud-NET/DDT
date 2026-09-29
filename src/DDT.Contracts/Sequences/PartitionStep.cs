@@ -6,8 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Sequences;
 
-// Microsoft's UEFI layout: EFI system, MSR, Windows, and a recovery partition after Windows. The defaults are the
-// sizes DDT used before task sequences.
+// Microsoft's UEFI layout: EFI system, MSR, Windows, and a recovery partition after Windows.
 public sealed record PartitionStep : SequenceStep
 {
     public int SystemPartitionMegabytes { get; init; } = 300;

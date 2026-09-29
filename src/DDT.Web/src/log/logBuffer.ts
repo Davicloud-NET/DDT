@@ -4,13 +4,15 @@
 
 import type { MachineLogEntry, MachineLogPage } from "./log";
 
-// The loaded lines, ascending by id and each id once. hasOlder: the server holds lines before the first.
+// The loaded lines, sorted by id with no duplicates. hasOlder is true when the server holds lines before the
+// first one.
 export interface LogBuffer {
   lines: readonly MachineLogEntry[];
   hasOlder: boolean;
 }
 
-// What a browser tab keeps of one log. Past it the oldest lines are dropped, which a later read can bring back.
+// How many lines of one log a browser tab keeps. Past that the oldest lines are dropped, and a later read
+// can bring them back.
 export const MAX_BUFFERED_LINES = 20_000;
 
 export const emptyLog: LogBuffer = { lines: [], hasOlder: false };
@@ -29,8 +31,8 @@ function ascendingOnce(lines: readonly MachineLogEntry[]): MachineLogEntry[] {
   return sorted.filter((line, index) => index === 0 || sorted[index - 1]?.id !== line.id);
 }
 
-// Lines usually arrive after the newest one held, or all before the oldest, so those are joined as they are;
-// anything else, such as reads that overlap, is merged by id.
+// Lines usually arrive after the newest line held, or all before the oldest, so those are just joined on.
+// Anything else, such as overlapping reads, is merged by id.
 export function mergeLines(
   buffer: LogBuffer,
   incoming: readonly MachineLogEntry[],
@@ -66,7 +68,7 @@ export function mergeLines(
     : { lines, hasOlder: buffer.hasOlder };
 }
 
-// A page read before the oldest line says whether still older lines exist.
+// A page read before the oldest line also says whether even older lines exist.
 export function withOlder(buffer: LogBuffer, page: MachineLogPage): LogBuffer {
   return mergeLines({ ...buffer, hasOlder: page.hasOlder }, page.lines);
 }

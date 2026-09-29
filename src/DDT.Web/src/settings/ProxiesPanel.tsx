@@ -4,10 +4,11 @@
 
 import { Trans } from "@lingui/react/macro";
 
-import { Skeleton } from "@/ui/Layout";
 import { Notice } from "@/ui/Notice";
+import { Skeleton } from "@/ui/Skeleton";
 
-import { SettingLines, SettingsSection } from "./SettingsParts";
+import { SettingLines } from "./parts/SettingLines";
+import { SettingsSection } from "./parts/SettingsSection";
 import { useSettingsForm } from "./useSettingsForm";
 
 export interface ProxySettings {
@@ -15,8 +16,8 @@ export interface ProxySettings {
   knownNetworks: string[];
 }
 
-// The reverse proxies whose word DDT takes for the client they forward for. Everything that goes by a client's address,
-// such as the rate limits, the audit log and zero touch, depends on it, so a change needs the password again.
+// The reverse proxies DDT trusts to name the client they forward for. Everything that uses a client's address depends
+// on this, such as the rate limits, the audit log and zero touch. So a change needs the password again.
 export function ProxiesPanel() {
   const form = useSettingsForm<ProxySettings>("proxies");
 

@@ -13,8 +13,7 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console driven the way a technician drives it, with the keyboard alone, on the real views: the field asked for
-// has the focus, Enter sends, Esc goes back, the arrow keys choose, and the function keys open what is over the screen.
+// Drives the console on the real views with the keyboard only, like a technician does.
 public sealed class KeyboardTests
 {
     [Fact]
@@ -122,7 +121,7 @@ public sealed class KeyboardTests
         window.Close();
     });
 
-    // The first field has the focus; Tab goes from field to field, the arrow keys choose, and Enter sends them all.
+    // The first field has the focus. Tab moves from field to field, the arrow keys choose, and Enter sends them all.
     [Fact]
     public Task AnswersTheInputsWithTheKeyboardAlone() => Headless.RunAsync(() =>
     {
@@ -214,7 +213,7 @@ public sealed class KeyboardTests
         Press(window, Key.F10, RawInputModifiers.Shift);
         Assert.Equal(1, console.Prompt.Opened);
 
-        // F10 alone is nothing, and the field still takes what is typed.
+        // F10 alone does nothing, and the field still takes what is typed.
         Press(window, Key.F10);
         Type(window, "anna");
         Press(window, Key.Enter);
@@ -270,7 +269,7 @@ public sealed class KeyboardTests
         return window;
     }
 
-    // Lets what the views post, such as moving the focus, happen.
+    // Runs what the views posted, like moving the focus.
     private static void Settle()
     {
         Dispatcher.UIThread.RunJobs();
@@ -289,13 +288,4 @@ public sealed class KeyboardTests
         window.KeyRelease(key, modifiers, PhysicalKey.None, null);
         Settle();
     }
-}
-
-internal static class VisualSearch
-{
-    // The control of that name on the screen, wherever it is in the views.
-    public static T Find<T>(this Window window, string name)
-        where T : Control =>
-        Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<T>().FirstOrDefault(control => control.Name == name)
-            ?? throw new InvalidOperationException($"No {name} on the screen.");
 }

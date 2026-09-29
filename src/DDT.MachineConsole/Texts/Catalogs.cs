@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace DDT.MachineConsole.Texts;
 
-// The catalogs the console carries, embedded by DDT.MachineConsole.csproj, and the language it starts in.
+// The catalogs that DDT.MachineConsole.csproj embeds, and the language the console starts in.
 public static partial class Catalogs
 {
     private const ushort PrimaryLanguageMask = 0x3FF;

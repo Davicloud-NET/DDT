@@ -18,20 +18,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Deployments;
 
-// The answers to a run's inputs and the values the run works with. An answer is checked against the input it answers, as
-// the run's own copy of the sequence declares it, and kept as a RunAnswer; an Account input's answer is a RunCredential
-// and never a value. The values are worked out as MachineValues does, from the run's answers, and whatever a required
-// input still lacks keeps the run from starting: the run waits for an input the machine asks, and cannot start for one
-// only the web asks. Nothing here saves.
+// The answers to a run's inputs, checked against the run's own copy of the sequence, and the values the run works with.
+// An Account input's answer is a RunCredential, never a value. Nothing here saves.
 public sealed class RunValues(DdtDbContext database, MachineValues machineValues, RunCredentials credentials)
 {
-    // The field of a validation problem about the answer to an input, such as answers.Owner, for an Account input's user
-    // name and password alike. The console asks an input again by it.
+    // The field of a validation problem about an input's answer, such as answers.Owner. It's the same for an Account
+    // input's user name and password. The console uses it to ask for that input again.
     public const string AnswersField = "answers";
 
-    // Checks answers as they come, before anything is kept: each names an input of the sequence that is asked here, once,
-    // with an answer its kind takes. An answer without a value, or an Account answer without a user name and a password,
-    // is none. Required inputs are the caller's to check, since the values can answer them.
+    // Each answer must name an input asked here, only once, with a value its kind accepts. The caller checks required
+    // inputs, because the values can answer them.
     public static IReadOnlyList<AnswerProblem> Check(
         SequenceDefinition definition,
         IReadOnlyList<InputAnswer?>? answers,
@@ -75,42 +71,26 @@ public sealed class RunValues(DdtDbContext database, MachineValues machineValues
                     field,
                     ServerMessages.DeploymentAnswerAskedElsewhere.With("label", input.Label, "where", input.AskAt == InputAsk.Web ? "web" : "machine")));
             }
-            else if (input.Kind == InputKind.Account)
+            else
             {
-                if (IsAnswered(input, answer))
-                {
-                    if (AccountRules.UserNameProblem(answer.UserName) is { } userName)
-                    {
-                        problems.Add(new AnswerProblem(input.Name, field, userName));
-                    }
-
-                    if (AccountRules.PasswordProblem(answer.Password) is { } password)
-                    {
-                        problems.Add(new AnswerProblem(input.Name, field, password));
-                    }
-                }
-            }
-            else if (IsAnswered(input, answer) && ValueProblem(input, answer.Value!) is { } problem)
-            {
-                problems.Add(new AnswerProblem(input.Name, field, problem));
+                problems.AddRange(AnswerProblems(input, answer, field));
             }
         }
 
         return problems;
     }
 
-    // The run's answers with these given, each input's latest answer once, in the order of the inputs. Values are kept as
-    // the input spells them: a choice as declared, yes or no as true or false. Account answers are left out.
+    // The run's answers with these added: each input's latest answer once, in the order of the inputs. Values are kept
+    // as the input spells them, so a choice as declared and yes or no as true or false. Account answers are left out.
     public static IReadOnlyList<RunAnswer> Merge(
         SequenceDefinition definition,
         IReadOnlyList<RunAnswer> before,
         IReadOnlyList<InputAnswer?>? answers,
-        string? answeredBy,
-        bool atMachine,
-        DateTimeOffset now)
+        RunAnswerGiver giver)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(before);
+        ArgumentNullException.ThrowIfNull(giver);
 
         Dictionary<string, RunAnswer> byName = new(StringComparer.OrdinalIgnoreCase);
 
@@ -123,7 +103,12 @@ public sealed class RunValues(DdtDbContext database, MachineValues machineValues
         {
             if (answer?.Name is { } name && Input(definition, name.Trim()) is { Kind: not InputKind.Account } input && IsAnswered(input, answer))
             {
-                byName[input.Name] = new RunAnswer(input.Name, Spelled(input, answer.Value!), StoredText.Bound(answeredBy, 256), atMachine, now);
+                byName[input.Name] = new RunAnswer(
+                    input.Name,
+                    Spelled(input, answer.Value!),
+                    StoredText.Bound(giver.AnsweredBy, 256),
+                    giver.AtMachine,
+                    giver.AnsweredUtc);
             }
         }
 
@@ -151,7 +136,7 @@ public sealed class RunValues(DdtDbContext database, MachineValues machineValues
     }
 
     // Keeps the Account answers among these for the run, each with the destination the run's own copy of the sequence
-    // declares. Null when all are kept; otherwise the first problem.
+    // declares. Returns null if all are kept, otherwise the first problem.
     public async Task<AnswerProblem?> KeepAccountsAsync(
         Deployment run,
         SequenceDefinition definition,
@@ -182,8 +167,8 @@ public sealed class RunValues(DdtDbContext database, MachineValues machineValues
         return null;
     }
 
-    // The values of a run on the machine from the answers it has, the rules as they are now and the defaults. Accounts
-    // are the Account inputs answered for it, those in the database and those this request keeps.
+    // The values of a run on the machine, from its answers, the current rules and the defaults. The answered Account
+    // inputs are the ones in the database plus the ones this request keeps.
     public async Task<RunValueCheck> CheckAsync(
         Machine machine,
         Deployment run,
@@ -210,8 +195,8 @@ public sealed class RunValues(DdtDbContext database, MachineValues machineValues
         return Check(definition, ValueResolver.Resolve(sources), answers, accounts);
     }
 
-    // What a resolution says of the run's inputs: the required ones without an answer or a default, and those the machine
-    // asks that have no answer yet, with what their questions start with.
+    // What a resolution says about the run's inputs: the required ones without an answer or a default, and the ones the
+    // machine asks that have no answer yet, with the value each question starts with.
     public static RunValueCheck Check(
         SequenceDefinition definition,
         ValueResolution resolution,
@@ -252,7 +237,22 @@ public sealed class RunValues(DdtDbContext database, MachineValues machineValues
             ]);
     }
 
-    // The input as the machine or the web asks it, starting with what the run would use without an answer.
+    // A value from an answer that can't be used, such as a computer name Windows refuses, is reported on that answer.
+    public static IEnumerable<AnswerProblem> AnsweredValueProblems(RunValueCheck check, IReadOnlyList<string> answered)
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        ArgumentNullException.ThrowIfNull(answered);
+
+        foreach (ValueProblem problem in check.Problems)
+        {
+            if (answered.FirstOrDefault(name => string.Equals(name, problem.Name, StringComparison.OrdinalIgnoreCase)) is { } input)
+            {
+                yield return new AnswerProblem(input, $"{AnswersField}.{input}", problem.Message);
+            }
+        }
+    }
+
+    // The input as the machine or the web asks it, prefilled with what the run would use without an answer.
     public static AgentInput Asked(InputDeclaration input, ValueResolution? resolution)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -274,8 +274,8 @@ public sealed class RunValues(DdtDbContext database, MachineValues machineValues
             input.Kind == InputKind.Account ? AccountRules.Trimmed(input.Account?.Domain) : null);
     }
 
-    // The values the run started with, by name, as the agent and templates use them: each value that was used, never one
-    // it overrode. Null before the run started.
+    // The values the run started with, by name, as the agent and templates use them. Only the values that were used,
+    // never one they overrode. Null before the run started.
     public static IReadOnlyDictionary<string, string>? Effective(Deployment run)
     {
         ArgumentNullException.ThrowIfNull(run);
@@ -298,6 +298,16 @@ public sealed class RunValues(DdtDbContext database, MachineValues machineValues
         return effective;
     }
 
+    // Whether the values give the machine a name Windows accepts.
+    public static bool NamesMachine(ValueResolution values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+
+        return values.Effective.TryGetValue(MachineVariableNames.ComputerName, out string? name)
+            && !string.IsNullOrWhiteSpace(name)
+            && !values.Problems.Any(problem => string.Equals(problem.Name, MachineVariableNames.ComputerName, StringComparison.OrdinalIgnoreCase));
+    }
+
     public static IReadOnlyList<ResolvedValue>? Read(string? values) =>
         values is null ? null : JsonSerializer.Deserialize(values, DdtJsonContext.Default.IReadOnlyListResolvedValue);
 
@@ -306,6 +316,35 @@ public sealed class RunValues(DdtDbContext database, MachineValues machineValues
 
     private static InputDeclaration? Input(SequenceDefinition definition, string name) =>
         (definition.Inputs ?? []).FirstOrDefault(input => input is not null && string.Equals(input.Name, name, StringComparison.OrdinalIgnoreCase));
+
+    // An answer without a value, or an Account answer without a user name and password, counts as no answer.
+    private static IEnumerable<AnswerProblem> AnswerProblems(InputDeclaration input, InputAnswer answer, string field)
+    {
+        if (!IsAnswered(input, answer))
+        {
+            yield break;
+        }
+
+        if (input.Kind != InputKind.Account)
+        {
+            if (ValueProblem(input, answer.Value!) is { } problem)
+            {
+                yield return new AnswerProblem(input.Name, field, problem);
+            }
+
+            yield break;
+        }
+
+        if (AccountRules.UserNameProblem(answer.UserName) is { } userName)
+        {
+            yield return new AnswerProblem(input.Name, field, userName);
+        }
+
+        if (AccountRules.PasswordProblem(answer.Password) is { } password)
+        {
+            yield return new AnswerProblem(input.Name, field, password);
+        }
+    }
 
     private static bool IsAnswered(InputDeclaration input, InputAnswer answer) => input.Kind == InputKind.Account
         ? !string.IsNullOrWhiteSpace(answer.UserName) || !string.IsNullOrEmpty(answer.Password)
@@ -353,15 +392,3 @@ public sealed class RunValues(DdtDbContext database, MachineValues machineValues
         _ => null,
     };
 }
-
-// Name is the input the problem is about, Field the request's field, such as answers.Owner.
-public sealed record AnswerProblem(string Name, string Field, ServerMessage Message);
-
-// What a run's values are as they stand. Missing are the required inputs that have neither an answer nor a default, and
-// Problems the rest of what keeps the run from starting. AskedAtMachine are the inputs the machine asks that have no
-// answer yet, required or not, as the machine asks them.
-public sealed record RunValueCheck(
-    ValueResolution Resolution,
-    IReadOnlyList<InputDeclaration> Missing,
-    IReadOnlyList<ValueProblem> Problems,
-    IReadOnlyList<AgentInput> AskedAtMachine);

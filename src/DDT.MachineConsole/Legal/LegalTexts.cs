@@ -7,11 +7,11 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.Legal;
 
-// The legal texts the console carries, embedded by DDT.MachineConsole.csproj under these names. The console reaches
-// machines inside a boot image, alone, so it carries what its licences and DDT's ask to go with it.
+// The licence texts that DDT.MachineConsole.csproj embeds under these names. The console ships to machines by itself,
+// inside a boot image, so it has to carry the texts its licences require.
 public static class LegalTexts
 {
-    // A line this short ends where it does on purpose, as a heading or a copyright line does.
+    // A line this short ends on purpose, like a heading or a copyright line.
     private const int ShortLine = 40;
 
     // Additional term 1 in NOTICE requires this exact text.
@@ -62,9 +62,8 @@ public static class LegalTexts
         return reader.ReadToEnd();
     }
 
-    // The text's paragraphs, with the lines a text file broke only for width joined again, so they wrap to the view. A
-    // blank line ends a paragraph; so do an item of a list, a line of dashes, a line after a short one, such as a
-    // heading, and an indented line, unless it goes on with an item of a list.
+    // Joins lines that the text file only broke for width, so they wrap to the view. A paragraph also ends at a list
+    // item, a rule, a line after a short one like a heading, and an indented line that doesn't continue a list item.
     public static IReadOnlyList<string> Paragraphs(string text)
     {
         ArgumentNullException.ThrowIfNull(text);

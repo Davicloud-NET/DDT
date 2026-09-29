@@ -2,31 +2,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Security.Claims;
 using DDT.Contracts.Agents;
-using DDT.Contracts.Machines;
 using DDT.Server.Authentication;
-using DDT.Server.Data;
-using DDT.Server.Deployments;
-using DDT.Server.Live;
 using DDT.Server.Machines;
 using DDT.Server.Security;
-using DDT.Server.Settings;
-using DDT.Server.Users;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using IdentitySignInResult = Microsoft.AspNetCore.Identity.SignInResult;
 
 namespace DDT.Server.Endpoints;
 
-// Called by DDT.Agent, never by a browser, so these sit outside the /api group and its CSRF filters.
-// No cookie is involved: every request carries a bearer token.
+// Called by DDT.Agent, never by a browser, so these sit outside the /api group and its CSRF filters. No cookie is
+// involved: every request carries a bearer token.
 public static class AgentEndpoints
 {
     public static RouteGroupBuilder MapAgentEndpoints(this RouteGroupBuilder group)
@@ -41,11 +30,12 @@ public static class AgentEndpoints
             .WithMetadata(new RequestSizeLimitAttribute(MachineLogLimits.MaxRegistrationBytes));
 
         group.MapGet("/{id:guid}/next", NextAsync)
+            .AddEndpointFilter<AgentMachineFilter>()
             .RequireAuthorization(DdtPolicies.MachineAgent)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine);
 
-        // A session token, so only an approved machine writes to the log. Anyone can get a poll token by
-        // registering, and would otherwise be able to fill the database.
+        // Needs a session token, so only an approved machine writes to the log. Anyone can get a poll token by
+        // registering, and could otherwise fill the database.
         group.MapPost("/{id:guid}/log", AppendLogAsync)
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine)
@@ -68,7 +58,7 @@ public static class AgentEndpoints
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentDownload);
 
-        // The graphical console those agents show, as anonymous as the agent and for the same reason.
+        // The graphical console those agents show. It's anonymous like the agent, for the same reason.
         group.MapGet("/release/console", GetConsoleReleaseAsync)
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentRelease);
@@ -77,7 +67,7 @@ public static class AgentEndpoints
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentDownload);
 
-        // The logo that console shows, whose hash every registration names.
+        // The logo that console shows. Every registration answer names its hash.
         group.MapGet("/console/logo", GetConsoleLogo)
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentRelease);
@@ -85,7 +75,7 @@ public static class AgentEndpoints
         return group;
     }
 
-    // Boot images built before registration was opened still send their enrollment token; it is ignored.
+    // Boot images built before registration was opened still send their enrollment token. It's ignored.
     private static async Task<Results<Ok<AgentRegistrationResult>, ValidationProblem, ProblemHttpResult>> RegisterAsync(
         AgentRegistration registration,
         HttpContext context,
@@ -169,95 +159,31 @@ public static class AgentEndpoints
     }
 
     private static async Task<Results<Ok<AgentNextResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound>> NextAsync(
-        Guid id,
-        ClaimsPrincipal user,
         HttpContext context,
-        DdtDbContext database,
-        MachineTokenService tokens,
-        MachineRegistrar registrar,
-        DeploymentService deployments,
-        LiveNotifier live,
+        MachinePolls polls,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
-        if (!Principals.IsMachine(user, id))
-        {
-            return TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
-        }
-
-        Machine? machine = await database.Machines
-            .FirstOrDefaultAsync(m => m.Id == id, cancellationToken)
+        AgentNextResult? next = await polls
+            .NextAsync(
+                AgentMachineFilter.MachineOf(context),
+                context.User,
+                timeProvider.GetUtcNow(),
+                context.Connection.RemoteIpAddress?.ToString(),
+                cancellationToken)
             .ConfigureAwait(false);
 
-        if (machine is null)
-        {
-            return TypedResults.NotFound();
-        }
-
-        if (!Principals.HoldsCurrentGeneration(user, machine))
-        {
-            return TypedResults.Unauthorized();
-        }
-
-        if (LastSeen.Record(machine, timeProvider.GetUtcNow(), context.Connection.RemoteIpAddress?.ToString()))
-        {
-            try
-            {
-                await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                live.MachineChanged(machine, await deployments.ShownAsync(machine, cancellationToken).ConfigureAwait(false));
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                // Approved, rejected, assigned a sequence or registered again since this token was checked. Last
-                // seen can wait for the next poll; the answer has to reflect what is stored now.
-                await database.Entry(machine).ReloadAsync(cancellationToken).ConfigureAwait(false);
-
-                if (!Principals.HoldsCurrentGeneration(user, machine))
-                {
-                    return TypedResults.Unauthorized();
-                }
-            }
-        }
-
-        // A waiting machine learns nothing about what it will be given: anyone can register as it. An agent from
-        // before task sequences is never given an image deployment: this server creates none.
-        bool authorized = machine.State is MachineState.Approved or MachineState.Deploying or MachineState.Failed;
-        Deployment? active = authorized ? await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false) : null;
-        AgentRun? run = active is null ? null : await deployments.HandOverAsync(machine, active, cancellationToken).ConfigureAwait(false);
-        bool canPick = await deployments.CanPickAsync(machine, cancellationToken).ConfigureAwait(false);
-
-        return TypedResults.Ok(new AgentNextResult(
-            machine.State,
-            registrar.CurrentToken(machine),
-            tokens.Issue(machine, MachineTokenPurpose.Resume),
-            MachineRegistrar.PollAfterSeconds,
-            machine.SignedInUserName,
-            Deployment: null,
-            CanPickImage: false,
-            DomainConfigured: authorized && deployments.DomainConfigured,
-            AssignedName: authorized ? machine.AssignedName : null,
-            Run: run,
-            CanPickSequence: canPick,
-            SuggestedSequenceId: canPick ? await deployments.SuggestedAsync(machine, cancellationToken).ConfigureAwait(false) : null));
+        return next is null ? TypedResults.Unauthorized() : TypedResults.Ok(next);
     }
 
     private static async Task<Results<Ok<AgentSignInResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ValidationProblem>> SignInAsync(
         Guid id,
         AgentSignInRequest request,
-        ClaimsPrincipal user,
         HttpContext context,
-        DdtDbContext database,
-        CredentialVerifier credentials,
-        UserManager<DdtUser> users,
-        UserActivity activity,
-        DdtSettings settings,
-        DeploymentService deployments,
-        LiveNotifier live,
-        TimeProvider timeProvider,
-        ILoggerFactory loggerFactory,
+        MachineSignIn signIn,
         CancellationToken cancellationToken)
     {
-        if (!Principals.IsMachine(user, id))
+        if (!Principals.IsMachine(context.User, id))
         {
             return TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
         }
@@ -274,151 +200,26 @@ public static class AgentEndpoints
             });
         }
 
-        // Loaded before the credentials are checked, which takes a noticeable moment, so that the concurrency
-        // tokens cover it: a registration that starts the machine over meanwhile must not receive this approval.
-        Machine? machine = await database.Machines
-            .FirstOrDefaultAsync(m => m.Id == id, cancellationToken)
+        MachineSignInOutcome outcome = await signIn
+            .SignInAsync(id, request, context.User, context.Connection.RemoteIpAddress?.ToString() ?? "unknown", cancellationToken)
             .ConfigureAwait(false);
 
-        if (machine is null)
+        return outcome switch
         {
-            return TypedResults.NotFound();
-        }
-
-        if (!Principals.HoldsCurrentGeneration(user, machine))
-        {
-            return TypedResults.Unauthorized();
-        }
-
-        if (machine.State != MachineState.Pending || machine.SignedInByUserId is not null)
-        {
-            return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.AlreadyDecided));
-        }
-
-        ILogger logger = loggerFactory.CreateLogger(typeof(AgentEndpoints));
-        string address = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-
-        (IdentitySignInResult result, DdtUser? account) = await credentials
-            .VerifyAsync(request.UserName, request.Password, request.TwoFactorCode, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (result.RequiresTwoFactor)
-        {
-            return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.RequiresTwoFactor));
-        }
-
-        if (result.IsLockedOut)
-        {
-            AuthLog.MachineSignInLockedOut(logger, id, request.UserName, address);
-            await AuthEndpoints.LockedOutAsync(request.UserName, users, activity, cancellationToken).ConfigureAwait(false);
-
-            return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.LockedOut));
-        }
-
-        if (result is NoRoleSignInResult)
-        {
-            AuthLog.MachineSignInNotPermitted(logger, request.UserName, id, address);
-
-            return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.NotPermitted));
-        }
-
-        if (!result.Succeeded || account is null)
-        {
-            AuthLog.MachineSignInFailed(logger, id, request.UserName, address);
-
-            return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.Failed));
-        }
-
-        string userName = account.UserName ?? request.UserName;
-
-        // A password an administrator was shown authorizes nothing until the account has set its own, here as on the web.
-        if ((!await users.IsInRoleAsync(account, DdtRoleNames.Operator).ConfigureAwait(false)
-                && !await users.IsInRoleAsync(account, DdtRoleNames.Administrator).ConfigureAwait(false))
-            || (await users.GetClaimsAsync(account).ConfigureAwait(false)).Any(claim => claim.Type == DdtClaimTypes.MustChangePassword))
-        {
-            AuthLog.MachineSignInNotPermitted(logger, userName, id, address);
-
-            return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.NotPermitted));
-        }
-
-        DateTimeOffset now = timeProvider.GetUtcNow();
-        Deployment? active = await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
-
-        machine.SignedInByUserId = account.Id;
-        machine.SignedInUserName = userName;
-        machine.SignedInUtc = now;
-        database.AuditEvents.Add(SignInAudit(now, AuditActions.MachineSignedIn, account, userName, machine, address, "Signed in at the machine."));
-
-        bool requireWebApproval = settings.Current.Machines.RequireWebApproval;
-
-        if (!requireWebApproval || DeploymentService.CountsAsWebApproval(active))
-        {
-            machine.State = MachineState.Approved;
-            machine.ApprovedByUserId = account.Id;
-            machine.ApprovedUtc = now;
-            machine.FirstApprovedUtc ??= now;
-            database.AuditEvents.Add(SignInAudit(
-                now,
-                AuditActions.MachineApproved,
-                account,
-                userName,
-                machine,
-                address,
-                requireWebApproval
-                    ? $"Was Pending. Signed in at the machine, which {active!.RequestedByName} had assigned {active.Title} on the web."
-                    : "Was Pending. Signed in at the machine."));
-        }
-
-        try
-        {
-            await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (DbUpdateConcurrencyException exception) when (exception.Entries.Any(entry => entry.Entity is Machine))
-        {
-            await database.Entry(machine).ReloadAsync(cancellationToken).ConfigureAwait(false);
-
-            return Principals.HoldsCurrentGeneration(user, machine)
-                ? TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.AlreadyDecided))
-                : TypedResults.Unauthorized();
-        }
-
-        AuthLog.SignedInAtMachine(logger, userName, id);
-        live.MachineChanged(machine, active ?? await deployments.ShownAsync(machine, cancellationToken).ConfigureAwait(false));
-
-        return TypedResults.Ok(new AgentSignInResult(AgentSignInStatus.Succeeded));
+            { Status: { } status } => TypedResults.Ok(new AgentSignInResult(status)),
+            { Unauthorized: true } => TypedResults.Unauthorized(),
+            _ => TypedResults.NotFound(),
+        };
     }
 
-    private static AuditEvent SignInAudit(
-        DateTimeOffset now,
-        string action,
-        DdtUser account,
-        string userName,
-        Machine machine,
-        string address,
-        string detail) => new()
-        {
-            OccurredUtc = now,
-            Action = action,
-            ActorUserId = account.Id,
-            ActorMachineId = machine.Id,
-            ActorName = userName,
-            SubjectId = machine.Id.ToString("D"),
-            SourceAddress = address,
-            Detail = detail,
-        };
-
-    // Each line is tagged with the run that is active when it arrives. The agent sends what it logged before a report
-    // that ends the run ahead of that report.
     private static async Task<Results<NoContent, ForbidHttpResult, ValidationProblem>> AppendLogAsync(
         Guid id,
         AgentLogBatch batch,
-        ClaimsPrincipal user,
-        DdtDbContext database,
-        LiveNotifier live,
-        TimeProvider timeProvider,
+        HttpContext context,
+        MachineLogs logs,
         CancellationToken cancellationToken)
     {
-        if (!Principals.IsMachine(user, id))
+        if (!Principals.IsMachine(context.User, id))
         {
             return TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
         }
@@ -431,59 +232,7 @@ public static class AgentEndpoints
             });
         }
 
-        DateTimeOffset received = timeProvider.GetUtcNow();
-        TimeSpan skew = MachineLogClock.Skew(batch.SentUtc, received);
-        Guid? runId = await database.Machines
-            .Where(m => m.Id == id)
-            .Select(m => m.ActiveDeploymentId)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-        List<MachineLogLine> added = [];
-
-        foreach (AgentLogLine line in batch.Lines)
-        {
-            // PostgreSQL text cannot hold a NUL, and a batch it refuses would be resent forever.
-            string message = (line.Message ?? string.Empty).Replace("\0", string.Empty, StringComparison.Ordinal);
-
-            added.Add(new MachineLogLine
-            {
-                MachineId = id,
-                TimestampUtc = MachineLogClock.Corrected(line.TimestampUtc, skew, received),
-                AgentTimestampUtc = line.TimestampUtc.ToUniversalTime(),
-                ReceivedUtc = received,
-                Level = Enum.IsDefined(line.Level) ? line.Level : AgentLogLevel.Information,
-                Message = message.Length <= MachineLogLimits.MaxMessageLength
-                    ? message
-                    : message[..MachineLogLimits.MaxMessageLength],
-                DeploymentId = runId,
-                StepId = runId is null ? null : line.StepId,
-            });
-        }
-
-        database.MachineLogLines.AddRange(added);
-        await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-        // Keep the newest lines. The oldest are the least useful once a machine has logged this much.
-        long? cutoff = await database.MachineLogLines
-            .Where(l => l.MachineId == id)
-            .OrderByDescending(l => l.Id)
-            .Skip(MachineLogLimits.MaxStoredLinesPerMachine)
-            .Select(l => (long?)l.Id)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        if (cutoff is { } oldestKept)
-        {
-            await database.MachineLogLines
-                .Where(l => l.MachineId == id && l.Id <= oldestKept)
-                .ExecuteDeleteAsync(cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        if (added.Count > 0)
-        {
-            live.MachineLogAppended(id, added.Max(l => l.Id));
-        }
+        await logs.AppendAsync(id, batch, cancellationToken).ConfigureAwait(false);
 
         return TypedResults.NoContent();
     }

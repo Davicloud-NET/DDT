@@ -26,7 +26,7 @@ internal static class UserRequests
     public static async Task<UserView> UserAsync(this SignedInClient client, Guid id) =>
         Assert.Single(await RegisteredMachine.ReadAsync<List<UserView>>(await client.GetAsync(UsersApi)), user => user.Id == id);
 
-    // A browser of its own, from an address of its own, so that its sign-ins count against a window of their own.
+    // A separate browser from its own address, so its sign-ins count against their own rate limit window.
     public static SignedInClient Browser(this DdtApplication application)
     {
         ArgumentNullException.ThrowIfNull(application);

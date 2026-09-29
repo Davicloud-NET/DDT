@@ -15,7 +15,7 @@ public sealed class DdtConfigurationCheckTests
 
     private static readonly DdtOptions s_store = new() { StorePath = Path.Combine(Path.GetTempPath(), "ddt-check-store") };
 
-    // One per section. Read as written, each would leave its setting at the default without a word.
+    // One misspelled key per section. Read as written, each would silently leave its setting at the default.
     [Theory]
     [InlineData("DDT:RequireHttp", "false")]
     [InlineData("DDT:Https:GenerateSelfSignedCertificates", "false")]
@@ -72,7 +72,8 @@ public sealed class DdtConfigurationCheckTests
         Assert.Contains(problems, problem => problem.StartsWith("DDT:Deployment:LocalAdministrator could not be read.", StringComparison.Ordinal));
     }
 
-    // The binder stops at the first object with an unknown key, and reading a section stopped that way reads no value.
+    // The binder stops at the first object with an unknown key.
+    // Reading a section where it stopped that way gives no value at all.
     [Fact]
     public void ReportsUnknownKeysAtEveryDepthOfASectionAndItsValues()
     {
@@ -136,7 +137,7 @@ public sealed class DdtConfigurationCheckTests
         Assert.All(problems, problem => Assert.StartsWith($"DDT:Pxe:BootDirectory: '{s_store.StorePath}' holds ", problem, StringComparison.Ordinal));
     }
 
-    // A PFX needs no KeyPath, and an endpoint can carry a certificate of its own.
+    // A PFX needs no KeyPath, and an endpoint can have its own certificate.
     [Theory]
     [InlineData("Kestrel:Certificates:Default:Path")]
     [InlineData("Kestrel:Endpoints:Https:Certificate:KeyPath")]

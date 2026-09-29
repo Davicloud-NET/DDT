@@ -7,11 +7,10 @@ using Microsoft.AspNetCore.Http;
 
 namespace DDT.Server.Security;
 
-// First CSRF layer. Sec-Fetch-Site is set by the browser and cannot be forged by page script,
-// so a cross site POST is rejected before any handler runs. A request authenticated by an API token
-// skips both layers: it was authenticated by its Authorization header alone, never by a cookie, and a
-// page on another site cannot make a browser send that header, since DDT allows no cross-origin
-// request that would need a preflight.
+// The first CSRF layer. The browser sets Sec-Fetch-Site and page script can't forge it, so a cross-site POST is refused
+// before any handler runs. A request authenticated by an API token skips both layers. Only its Authorization header
+// authenticated it, and a page on another site can't make a browser send that header, because DDT allows no
+// cross-origin request that needs a preflight.
 public sealed class SameOriginEndpointFilter : IEndpointFilter
 {
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)

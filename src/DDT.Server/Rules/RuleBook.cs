@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Rules;
 
-// The ordered rules and the machine roles, read once for a request: each rule's JSON parsed and its problems found. A
-// rule applies when it is enabled and has no problems, and then matches a machine when its When holds or it has none.
+// The ordered rules and the machine roles, read once per request, with each rule's JSON parsed and its problems found.
+// A rule applies if it's enabled and has no problems. It then matches a machine if its When holds or it has none.
 public sealed class RuleBook
 {
     private RuleBook(IReadOnlyList<RuleEntry> rules, IReadOnlyDictionary<Guid, RoleEntry> roles)
@@ -53,7 +53,7 @@ public sealed class RuleBook
             }),
         ];
 
-        // A condition may test any name a rule or a machine role sets, as the page offers them.
+        // A condition may test any name a rule or a machine role sets. The page offers the same names.
         HashSet<string> names = new(
             read.SelectMany(rule => rule.Values).Concat(byId.Values.SelectMany(role => role.Values)).Select(value => value.Name),
             StringComparer.OrdinalIgnoreCase);
@@ -73,8 +73,8 @@ public sealed class RuleBook
             byId);
     }
 
-    // Walks the rules from the top over what the machine is. Machine is the machine's facts, MachineValues its own values,
-    // which a condition that tests a value sees before those of the rules above it that matched and their machine roles.
+    // Walks the rules from the top against the machine. Machine holds its facts and machineValues its own values. When
+    // a condition tests a value, the machine's own values win over those of matching rules above it and their roles.
     public RuleMatch Match(MachineVariables machine, IReadOnlyList<NamedValue> machineValues)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -95,18 +95,11 @@ public sealed class RuleBook
                 continue;
             }
 
-            // The values so far are worked out only for a condition that tests one, and again only after a match changed them.
-            if (rule.TestsValues && withValues is null)
+            // The values so far are only worked out for a condition that tests a value. They're only worked out again
+            // after a match changed them.
+            if (rule.TestsValues)
             {
-                ValueResolution so = ValueResolver.Resolve(new ValueSources
-                {
-                    Machine = machineValues,
-                    Rules = ruleValues,
-                    Roles = roleValues,
-                    Facts = machine,
-                });
-
-                withValues = machine with { Variables = so.Effective };
+                withValues ??= WithValues(machine, machineValues, ruleValues, roleValues);
             }
 
             if (!ConditionEvaluator.Holds(rule.When, rule.TestsValues ? withValues! : machine))
@@ -124,51 +117,53 @@ public sealed class RuleBook
             matched.Add(rule);
             chooser ??= rule.Rule.TaskSequenceId is null ? null : rule;
 
-            if (rule.Values.Count > 0)
+            if (AddValues(rule, ruleValues, roleValues, given))
             {
-                ruleValues.Add(new ValueSet(rule.Rule.Id, rule.Rule.Name, rule.Values));
                 withValues = null;
-            }
-
-            foreach (Guid roleId in rule.RoleIds)
-            {
-                if (Roles.TryGetValue(roleId, out RoleEntry? role) && given.Add(roleId))
-                {
-                    roleValues.Add(new ValueSet(role.Role.Id, role.Role.Name, role.Values));
-                    withValues = null;
-                }
             }
         }
 
         return new RuleMatch([.. matched], chooser, [.. ruleValues], [.. roleValues], [.. holding]);
     }
-}
 
-// A rule as the book read it. TestsValues says its condition tests a name that is not a fact, or ComputerName, which a
-// value may set.
-public sealed record RuleEntry(
-    Rule Rule,
-    ConditionNode? When,
-    IReadOnlyList<NamedValue> Values,
-    IReadOnlyList<Guid> RoleIds,
-    IReadOnlyList<SequenceProblem> Problems)
-{
-    public bool TestsValues { get; } = RuleChecks.Names(When).Any(name =>
-        MachineVariables.Fact(name) is null or MachineVariableNames.ComputerName);
-}
+    private static MachineVariables WithValues(
+        MachineVariables machine,
+        IReadOnlyList<NamedValue> machineValues,
+        List<ValueSet> ruleValues,
+        List<ValueSet> roleValues)
+    {
+        ValueResolution so = ValueResolver.Resolve(new ValueSources
+        {
+            Machine = machineValues,
+            Rules = ruleValues,
+            Roles = roleValues,
+            Facts = machine,
+        });
 
-public sealed record RoleEntry(MachineRole Role, IReadOnlyList<NamedValue> Values);
+        return machine with { Variables = so.Effective };
+    }
 
-// What the rules say about one machine. Matched are the rules that apply and match it, top first; Chooser is the first of
-// them that chooses a sequence. RuleValues and RoleValues are what they set, in the order ValueSources takes them: the
-// rules from the top, then the machine roles in the order the rules gave them, each once. Holding are the rules whose
-// condition holds, disabled ones too, for counting the machines a rule would match.
-public sealed record RuleMatch(
-    IReadOnlyList<RuleEntry> Matched,
-    RuleEntry? Chooser,
-    IReadOnlyList<ValueSet> RuleValues,
-    IReadOnlyList<ValueSet> RoleValues,
-    IReadOnlyList<Guid> Holding)
-{
-    public IReadOnlyList<Guid> MatchedRuleIds => [.. Matched.Select(rule => rule.Rule.Id)];
+    // Adds the matched rule's values, and those of its machine roles not given yet. Returns whether that changed the
+    // values so far.
+    private bool AddValues(RuleEntry rule, List<ValueSet> ruleValues, List<ValueSet> roleValues, HashSet<Guid> given)
+    {
+        bool added = false;
+
+        if (rule.Values.Count > 0)
+        {
+            ruleValues.Add(new ValueSet(rule.Rule.Id, rule.Rule.Name, rule.Values));
+            added = true;
+        }
+
+        foreach (Guid roleId in rule.RoleIds)
+        {
+            if (Roles.TryGetValue(roleId, out RoleEntry? role) && given.Add(roleId))
+            {
+                roleValues.Add(new ValueSet(role.Role.Id, role.Role.Name, role.Values));
+                added = true;
+            }
+        }
+
+        return added;
+    }
 }

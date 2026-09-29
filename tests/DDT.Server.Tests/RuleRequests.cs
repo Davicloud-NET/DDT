@@ -10,8 +10,8 @@ using DDT.Contracts.Values;
 
 namespace DDT.Server.Tests;
 
-// Rules and the machines they match, each test with a model of its own, so the rules of one never match another's. A
-// test class shares one server, so no test adds a rule without a condition, which would match every machine.
+// Rules and the machines they match. Each test uses its own model, so one test's rules never match another's machines.
+// A test class shares one server, so no test adds a rule without a condition. That would match every machine.
 internal static class RuleRequests
 {
     public const string Rules = "/api/rules";
@@ -22,12 +22,13 @@ internal static class RuleRequests
 
     public static string RandomMac() => "02" + Convert.ToHexString(RandomNumberGenerator.GetBytes(5));
 
-    // What an assignment rule by MAC address became: a test of every address the machine reported.
+    // An assignment rule by MAC address, as the migration turned it into a rule.
+    // It tests every address the machine reported.
     public static SaveRuleRequest MacRule(Guid? sequenceId, string mac) =>
         Rule($"MAC address {mac}", new TestCondition(MachineVariableNames.MacAddress, ConditionOperator.Equals, mac), sequenceId);
 
-    // What an assignment rule by model became: the manufacturer where one is named, and the model whole or, ending in *,
-    // as the start of the model.
+    // An assignment rule by model, as the migration turned it into a rule.
+    // It tests the manufacturer if one is named, and the whole model, or the start of the model if it ends in *.
     public static SaveRuleRequest ModelRule(Guid? sequenceId, string model, string? manufacturer = null)
     {
         TestCondition byModel = new(
@@ -66,8 +67,8 @@ internal static class RuleRequests
     public static Task<HttpResponseMessage> ReorderAsync(this SignedInClient client, IReadOnlyList<Guid> ruleIds) =>
         client.PostAsync($"{Rules}/order", new ReorderRulesRequest(ruleIds));
 
-    // The whole list in a new order, as the page sends it: the rules of other tests stay where they are, and moved goes
-    // right above before.
+    // Sends the whole list in a new order, like the page does.
+    // The rules of other tests stay where they are, and moved goes right above before.
     public static async Task<IReadOnlyList<RuleView>> MoveRuleAboveAsync(this SignedInClient client, Guid moved, Guid before)
     {
         List<Guid> order = [.. (await client.RulesAsync()).Select(r => r.Id)];
@@ -77,7 +78,7 @@ internal static class RuleRequests
         return await RegisteredMachine.ReadAsync<IReadOnlyList<RuleView>>(await client.ReorderAsync(order));
     }
 
-    // A save of the rule as it is, changed by change.
+    // Saves the rule as it is, with change applied if one is given.
     public static SaveRuleRequest Save(RuleView rule, Func<SaveRuleRequest, SaveRuleRequest>? change = null)
     {
         ArgumentNullException.ThrowIfNull(rule);
@@ -99,7 +100,7 @@ internal static class RuleRequests
     public static async Task<MachineSequenceResolution> ResolutionAsync(this SignedInClient client, Guid machineId) =>
         await RegisteredMachine.ReadAsync<MachineSequenceResolution>(await client.GetAsync($"/api/machines/{machineId}/sequence"));
 
-    // A machine that registers as change makes the test agent's registration say.
+    // Registers a machine with the test agent's registration, changed by change.
     public static async Task<RegisteredMachine> RegisterWithAsync(this DdtApplication application, Func<AgentRegistration, AgentRegistration> change)
     {
         ArgumentNullException.ThrowIfNull(application);

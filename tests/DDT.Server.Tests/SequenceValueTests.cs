@@ -9,8 +9,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// A sequence may use a name only rules and machine roles give a value, which the validator leaves to the server: it warns
-// of one that nothing gives a value.
+// A sequence may use a name that only rules and machine roles give a value.
+// The validator leaves that to the server, which warns about a name that nothing gives a value.
 public sealed class SequenceValueTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private static string UniqueName(string prefix) => $"{prefix}{Guid.NewGuid():N}"[..24];

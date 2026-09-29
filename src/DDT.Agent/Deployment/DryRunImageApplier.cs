@@ -6,7 +6,7 @@ using DDT.Core.Wim;
 
 namespace DDT.Agent.Deployment;
 
-// Checks that the downloaded file is a WIM holding the image, without wimlib: a normal Windows session lacks the
+// Checks that the downloaded file is a WIM that holds the image, without wimlib. A normal Windows session lacks the
 // privileges wimlib's strict mode needs.
 public sealed class DryRunImageApplier(AgentLog log) : IImageApplier
 {

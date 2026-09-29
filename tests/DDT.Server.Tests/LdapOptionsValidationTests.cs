@@ -32,7 +32,7 @@ public sealed class LdapOptionsValidationTests
         Assert.Equal("'Owner' is not a DDT role. Use Administrator, Operator, Viewer.", problem.Message);
     }
 
-    // No groups are read without nested groups, so everyone would be refused.
+    // Without ResolveNestedGroups, no groups are read at all. So a group map would refuse everyone.
     [Fact]
     public void AMapNeedsTheGroupsToBeRead()
     {

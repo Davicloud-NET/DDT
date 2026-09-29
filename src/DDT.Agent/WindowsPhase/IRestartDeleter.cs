@@ -6,7 +6,8 @@ namespace DDT.Agent.WindowsPhase;
 
 public interface IRestartDeleter
 {
-    // Has Windows delete path, a file or an empty directory, when it next starts: a file in use, such as the running
-    // agent, cannot go before. Windows deletes in the order of the calls. A failure only leaves the path behind.
+    // Has Windows delete path, a file or an empty directory, when it next starts. A file in use, such as the running
+    // agent, can't be deleted before that. Windows deletes in the order of the calls. A failure only leaves the path
+    // behind.
     void DeleteAtRestart(string path);
 }

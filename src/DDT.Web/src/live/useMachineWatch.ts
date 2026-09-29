@@ -2,24 +2,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { useContext, useEffect, useEffectEvent, useSyncExternalStore } from "react";
+import { useContext, useEffect, useEffectEvent } from "react";
 
 import { LiveContext } from "./LiveContext";
+import type { LiveStatus } from "./liveConnection";
 import type {
-  LiveStatus,
   MachineLogAppended,
   MachineWatchHandlers,
   RunStepChanged,
   RunVariablesChanged,
-} from "./liveConnection";
-
-function subscribeNothing(): () => void {
-  return () => undefined;
-}
-
-function offline(): LiveStatus {
-  return "offline";
-}
+} from "./machineWatches";
+import { useLiveStatus } from "./useLiveStatus";
 
 // Receives the events of one machine while mounted, and says whether they arrive. The handlers may change
 // on every render.
@@ -62,8 +55,5 @@ export function useMachineWatch(machineId: string, handlers: MachineWatchHandler
     });
   }, [live, machineId]);
 
-  return useSyncExternalStore(
-    live ? live.onStatusChange : subscribeNothing,
-    live ? live.status : offline,
-  );
+  return useLiveStatus();
 }

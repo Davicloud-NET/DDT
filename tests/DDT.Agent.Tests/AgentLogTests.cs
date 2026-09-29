@@ -42,8 +42,8 @@ public sealed class AgentLogTests
         Assert.Equal("line 204", server.SentLines[0].Message);
     }
 
-    // The graphical console shows the log, and the text console behind it gets every line too, so it has them all
-    // should it take over.
+    // The graphical console shows the log. The text console behind it gets every line too, so it has them all if it
+    // takes over.
     [Fact]
     public void GivesEveryLineToTheConsoleThatShowsTheLogAsWell()
     {

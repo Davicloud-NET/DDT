@@ -8,7 +8,7 @@ using Avalonia.Threading;
 
 namespace DDT.MachineConsole.Views;
 
-// The details scroll with the keys at once.
+// The scroller gets the focus, so the keys scroll the details right away.
 public sealed partial class MachineView : UserControl
 {
     public MachineView()

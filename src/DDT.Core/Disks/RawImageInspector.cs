@@ -6,10 +6,8 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Core.Disks;
 
-// Reads what DDT needs from a raw disk image before storing it. An image without a readable GUID partition table is
-// refused; one whose EFI system partition cannot be read is not, as it may still start, but says why in BootProblem.
-// The boot files are the fallback files in \EFI\BOOT, which firmware starts from a disk without a boot entry, and the
-// shims beside a distribution's own boot loader, such as \EFI\ubuntu\shimx64.efi.
+// Reads what DDT needs from a raw disk image before storing it. A missing or damaged GUID partition table gets the
+// image refused. An unreadable EFI system partition doesn't, since the image may still start. BootProblem says why.
 public static class RawImageInspector
 {
     public const string BootDirectory = @"\EFI\BOOT";
@@ -19,24 +17,13 @@ public static class RawImageInspector
 
     private const int MaxBootFiles = 16;
 
-    // Throws InvalidGptException, whose message says why the image is refused.
+    // Throws InvalidGptException when the image is refused. Its message says why.
     public static RawImageInfo Inspect(Stream image)
     {
         ArgumentNullException.ThrowIfNull(image);
 
         long length = image.Length;
-
-        // Enough to see a table made for 4 KiB sectors, which starts at 4096.
-        byte[] first = ReadHead(image, Math.Clamp(length, 2 * GptLayout.SectorSize, 8192));
-        byte[] head = ReadHead(image, GptLayout.HeadBytesFor(first));
-        GptLayout table = GptLayout.Read(head);
-        long end = (table.LastUsedLba + 1) * GptLayout.SectorSize;
-
-        if (end > length)
-        {
-            throw new InvalidGptException(ServerMessages.GptIncomplete.With("length", length, "end", end));
-        }
-
+        GptLayout table = ReadTable(image, length);
         GptPartition? system = table.Partitions.FirstOrDefault(partition => partition.Type == GptPartitionTypes.EfiSystem);
 
         if (system is null)
@@ -55,6 +42,22 @@ public static class RawImageInspector
             return new RawImageInfo(length, table, system, [], $"The image's EFI system partition cannot be read: {exception.Message}");
         }
 
+        return ReadBootFiles(volume, length, table, system);
+    }
+
+    private static GptLayout ReadTable(Stream image, long length)
+    {
+        // Enough to see a table made for 4 KiB sectors, which starts at 4096.
+        byte[] first = ReadHead(image, Math.Clamp(length, 2 * GptLayout.SectorSize, 8192));
+        byte[] head = ReadHead(image, GptLayout.HeadBytesFor(first));
+        GptLayout table = GptLayout.Read(head);
+        long end = (table.LastUsedLba + 1) * GptLayout.SectorSize;
+
+        return end > length ? throw new InvalidGptException(ServerMessages.GptIncomplete.With("length", length, "end", end)) : table;
+    }
+
+    private static RawImageInfo ReadBootFiles(FatVolume volume, long length, GptLayout table, GptPartition system)
+    {
         List<RawImageBootFile> files = [];
         List<string> unreadable = [];
         string? problem = null;
@@ -82,7 +85,8 @@ public static class RawImageInspector
         return new RawImageInfo(length, table, system, files, problem, unreadable);
     }
 
-    // BOOT*.EFI in \EFI\BOOT first, then shim*.efi in every directory of \EFI.
+    // First BOOT*.EFI in \EFI\BOOT, which firmware starts from a disk without a boot entry. Then the shim*.efi next to
+    // each distribution's boot loader, such as \EFI\ubuntu\shimx64.efi.
     private static IEnumerable<(string Path, FatEntry Entry)> BootFileEntries(FatVolume volume)
     {
         if (volume.Find("EFI") is not { IsDirectory: true })

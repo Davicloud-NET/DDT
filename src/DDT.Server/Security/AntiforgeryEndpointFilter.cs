@@ -8,9 +8,9 @@ using Microsoft.AspNetCore.Http;
 
 namespace DDT.Server.Security;
 
-// Second CSRF layer. The antiforgery middleware records a verdict and calls the next middleware
-// anyway on a JSON body, so validation has to happen in a filter that can actually refuse. A request
-// authenticated by an API token skips it, see SameOriginEndpointFilter.
+// The second CSRF layer. With a JSON body the antiforgery middleware only records its verdict and calls the next
+// middleware anyway, so this filter does the refusing. A request authenticated by an API token skips it, see
+// SameOriginEndpointFilter.
 public sealed class AntiforgeryEndpointFilter(IAntiforgery antiforgery) : IEndpointFilter
 {
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)

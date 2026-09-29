@@ -4,15 +4,15 @@
 
 import { flowEdits, type FlowEdit, type NodePatch } from "./flow/flowEdits";
 import type { SequenceDraft } from "./sequenceDraft";
-import type { SequenceStep, StepCondition, StepKind } from "./sequences";
+import type { StepCondition } from "./sequenceConditions";
+import type { SequenceStep, StepKind } from "./sequences";
 import { newCondition, newStep } from "./steps";
 
 // The fields of one kind of step, apart from what identifies it and the nodes inside it.
 export type StepPatch = NodePatch;
 
-// Every change the editors make, as data, so they can be kept for undo: the step editor's, which work on the steps at
-// the top, and the flow builder's, which work on the whole tree. New step ids are made by the functions below rather
-// than by the reducer, which stays pure.
+// Every change the editors make, as data, so undo can keep them. These edits work on the top-level steps, and
+// FlowEdit works on the whole tree. New step ids come from addStep and insertStepAfter, so the reducer stays pure.
 export type SequenceEdit =
   | { type: "rename"; name: string }
   | { type: "describe"; description: string }
@@ -21,14 +21,14 @@ export type SequenceEdit =
   | { type: "removeStep"; id: string }
   | { type: "restoreStep"; step: SequenceStep; index: number }
   | { type: "moveStep"; id: string; to: number }
-  // chosen marks a patch made by a switch although it sets a text field, such as turning a seed file on.
+  // chosen marks a patch made by a switch, even though it sets a text field, such as turning a seed file on.
   | { type: "updateStep"; id: string; patch: StepPatch; chosen?: boolean }
   | { type: "addCondition"; stepId: string }
   | { type: "updateCondition"; stepId: string; index: number; patch: Partial<StepCondition> }
   | { type: "removeCondition"; stepId: string; index: number }
   | FlowEdit;
 
-// The edits that add a step name its id, so the page can show the new step.
+// The edits that add a step carry its id, so the page can show the new step.
 export function addStep(kind: StepKind): Extract<SequenceEdit, { type: "addStep" }> {
   return { type: "addStep", kind, id: crypto.randomUUID() };
 }
@@ -40,8 +40,8 @@ export function insertStepAfter(
   return { type: "insertStepAfter", afterId, kind, id: crypto.randomUUID() };
 }
 
-// The fields set by a checkbox or a list rather than by typing: of a node, of a condition's test, of a variable and
-// of an input.
+// The fields set by a checkbox or a list instead of by typing, for a node, a condition's test, a variable and an
+// input.
 const chosenNodeFields: ReadonlySet<string> = new Set([
   "continueOnError",
   "rebootAfter",
@@ -63,7 +63,7 @@ const chosenConditionFields: ReadonlySet<string> = new Set(["variable", "operato
 const chosenVariableFields: ReadonlySet<string> = new Set(["setBySteps"]);
 const chosenInputFields: ReadonlySet<string> = new Set(["kind", "required", "askAt"]);
 
-// The typed fields of a patch, joined, or null when it has none or a switch made it.
+// The typed fields of a patch, joined. Null if it has none or a switch made it.
 function typedFields(
   patch: object,
   chosen: ReadonlySet<string>,
@@ -80,8 +80,8 @@ function key(...parts: (string | null)[]): string | null {
   return parts.includes(null) ? null : parts.join(":");
 }
 
-// What an edit types into, such as a node's script, or null for a change of the structure or a choice. Typing waits
-// for a pause before it is saved, and undo takes back what was typed into one field in a row as one change.
+// The field an edit types into, such as a node's script. Null for a structural change or a choice. Typing waits for
+// a pause before it's saved, and undo takes back a stretch of typing in one field as one change.
 export function typingKey(edit: SequenceEdit): string | null {
   switch (edit.type) {
     case "rename":
@@ -120,8 +120,8 @@ export function isTyping(edit: SequenceEdit): boolean {
   return typingKey(edit) !== null;
 }
 
-// A patch names the fields of one kind. A field the step does not have is left out, so a step keeps the shape
-// of its kind.
+// A patch names the fields of one kind. Fields the step doesn't have are left out, so a step keeps the shape of its
+// kind.
 function patched(step: SequenceStep, patch: StepPatch): SequenceStep {
   const fields = Object.entries(patch).filter(
     ([key]) => key !== "id" && key !== "kind" && Object.hasOwn(step, key),
@@ -142,7 +142,7 @@ function withStep(
   return { ...draft, steps: draft.steps.map((step) => (step.id === id ? change(step) : step)) };
 }
 
-// A step whose id is there already is not added again, so a repeated restore changes nothing.
+// A step whose id is already there isn't added again, so a repeated restore changes nothing.
 function inserted(draft: SequenceDraft, index: number, step: SequenceStep): SequenceDraft {
   const { steps } = draft;
 

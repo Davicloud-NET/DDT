@@ -27,7 +27,7 @@ internal static class PackageRequests
             new CreateImageUploadRequest(fileName ?? $"drivers-{Guid.NewGuid():N}.zip", zip.Length, lastModified, kind)));
     }
 
-    // The whole zip in one chunk, then the completion, whose answer is returned.
+    // Sends the whole zip in one chunk, then completes the upload and returns that answer.
     public static async Task<HttpResponseMessage> UploadPackageAsync(this SignedInClient client, byte[] zip, UploadKind kind, string? fileName = null)
     {
         ImageUploadSession session = await client.StartPackageUploadAsync(zip, kind, fileName);

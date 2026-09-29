@@ -2,8 +2,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- Surfaces and marks. Surfaces get lighter as they come forward: page, panel, overlay; a well is one shade below its
-     panel. Edges are hairlines, and only overlays cast a shadow. Signal colours mark state, nothing else. -->
+<!-- Surfaces and marks. Surfaces get lighter as they come forward: page, panel, overlay. A well is one shade below
+     its panel. Edges are hairlines, and only overlays cast a shadow. Signal colours mark state and nothing else. -->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:c="using:DDT.MachineConsole.Controls">
@@ -26,8 +26,8 @@
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusOverlay}" />
   </Style>
-  <!-- An overlay's shadow is an element of its own behind it, kept as a picture: blurred again in every frame in which
-       the overlay moves, it would be most of the software renderer's work. -->
+  <!-- An overlay's shadow is a separate element behind it, cached as a bitmap. Blurred again in every frame while the
+       overlay moves, it would be most of the software renderer's work. -->
   <Style Selector="Border.overlayShadow">
     <Setter Property="CornerRadius" Value="{DynamicResource SgRadiusOverlay}" />
     <Setter Property="BoxShadow" Value="{DynamicResource SgOverlayShadow}" />
@@ -164,7 +164,7 @@
     <Setter Property="FailText" Value="{DynamicResource SgFailText}" />
     <Setter Property="Attention" Value="{DynamicResource SgAttention}" />
   </Style>
-  <!-- A step's number and name change their tone with its module, over slow. -->
+  <!-- A step's number and name change their tone along with its module, over the Slow duration. -->
   <Style Selector="c|SequenceRail TextBlock">
     <Setter Property="Transitions">
       <Transitions>
@@ -214,7 +214,7 @@
     <Setter Property="Background" Value="{DynamicResource SgFail}" />
   </Style>
 
-  <!-- While the theme changes, every colour changes at once: nothing fades into the new theme. -->
+  <!-- While the theme changes, every colour changes at once, and nothing fades into the new theme. -->
   <Style Selector="Window.switching c|SequenceRail TextBlock">
     <Setter Property="Transitions" Value="{x:Null}" />
   </Style>

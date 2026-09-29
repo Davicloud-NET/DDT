@@ -4,5 +4,6 @@
 
 namespace DDT.Contracts.Deployments;
 
-// Continues the pause the page showed: the Pause step and its visit, so a click that comes late continues no later one.
+// Continues the pause the page showed. It names the Pause step and its pass, so a late click can't continue a later
+// pause.
 public sealed record ContinueRunRequest(Guid StepId, int Pass);

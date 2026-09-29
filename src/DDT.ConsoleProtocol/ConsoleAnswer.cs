@@ -4,9 +4,8 @@
 
 namespace DDT.ConsoleProtocol;
 
-// An answer: Text for what was typed, SequenceId or DiskNumber for a choice, or Back to go back where the question
-// allows it. Values answer the fields of an InputsQuestion, and Continue a PauseQuestion. Each question says which it
-// takes.
+// Text for what was typed, SequenceId or DiskNumber for a choice, Values for an InputsQuestion's fields, Continue for a
+// PauseQuestion, or Back where the question allows it. Each question says which it takes.
 public sealed record ConsoleAnswer(
     string? Text = null,
     Guid? SequenceId = null,

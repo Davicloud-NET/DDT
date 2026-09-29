@@ -10,15 +10,15 @@ public sealed class TaskSequence
 
     public required string Name { get; set; }
 
-    // The trimmed name in upper case, unique, so two sequences cannot differ only in case.
+    // The trimmed name in upper case. It's unique, so two sequence names can't differ only in case.
     public required string NormalizedName { get; set; }
 
     public string? Description { get; set; }
 
-    // The SequenceDefinition as DdtJsonContext writes it. Runs keep a copy of their own, so an edit never changes one.
+    // The SequenceDefinition as DdtJsonContext writes it. Each run keeps its own copy, so an edit never changes a run.
     public required string Definition { get; set; }
 
-    // Raised by every save and checked on it, so an editor saving over a newer save is told instead.
+    // Every save checks it and raises it. An editor who saves over a newer save is told, instead of overwriting it.
     public long Revision { get; set; }
 
     public DateTimeOffset CreatedUtc { get; set; }

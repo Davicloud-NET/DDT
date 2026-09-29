@@ -7,8 +7,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace DDT.Server.Images;
 
-// One lock per upload session, shared by every request and the sweeper, and never waited for: a caller that finds
-// it held answers busy or skips the session. In process only, which holds because DDT runs as one web instance.
+// Keeps one lock per upload session, shared by every request and the sweeper. Nobody waits for a lock. A caller that
+// finds it held answers busy or skips the session. The locks only work within one process. That's fine because DDT
+// runs as a single web instance.
 public sealed class ImageUploadLocks
 {
     private readonly ConcurrentDictionary<Guid, ImageUploadLock> _held = new();

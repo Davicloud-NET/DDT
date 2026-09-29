@@ -4,20 +4,12 @@
 
 namespace DDT.Contracts.Settings;
 
-// Version is the one the page loaded, so a save over someone else's is refused. Values replaces every field that is not
-// locked. A secret left out of Secrets is kept. Confirm lists the warning codes the administrator accepted.
 public sealed record SettingsSectionUpdate<TValues>(
+    // The version the page loaded, so a save over someone else's changes is refused.
     long Version,
+    // Replaces every field that is not locked.
     TValues Values,
+    // A secret left out is kept.
     IReadOnlyDictionary<string, SecretUpdate>? Secrets,
+    // The warning codes the administrator accepted.
     IReadOnlyList<string>? Confirm);
-
-// Value only with Set.
-public sealed record SecretUpdate(SecretAction Action, string? Value);
-
-public enum SecretAction
-{
-    Keep,
-    Set,
-    Clear,
-}

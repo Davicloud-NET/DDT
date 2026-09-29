@@ -2,9 +2,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- The run: the sequence, the percent of the running step as large as the screen allows, what the step does, and the
-     sequence rail with every step. When the run failed or the agent stopped, why and what to do take the percent's
-     place. A new step or stage enters in place of the one before. -->
+<!-- The running step's percent, as large as the screen allows. If the run stopped, it shows why instead. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DDT.MachineConsole.ViewModels"

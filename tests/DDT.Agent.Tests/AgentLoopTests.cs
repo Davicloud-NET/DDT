@@ -26,14 +26,14 @@ public sealed class AgentLoopTests : IDisposable
     private static AgentNextResult Next(MachineState state, string token, string resumeToken = "resume") =>
         new(state, token, resumeToken, 10, null);
 
-    // Without a keyboard, as these tests are about registering and polling.
+    // Without a keyboard, because these tests are about registering and polling.
     private (AgentLoop Loop, ImmediateTimeProvider Time) Create(ScriptedAgentServer server, IMachineIdentityReader? identity = null)
     {
         ImmediateTimeProvider time = new();
         AgentLog log = new(time, TextWriter.Null);
         ScriptedSignInPrompt nobody = new() { IsAvailable = false };
 
-        return (TestAgents.Loop(server, nobody, _tools, log, time, identity), time);
+        return (TestAgents.Loop(server, nobody, new(_tools, log, time) { Identity = identity }), time);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public sealed class AgentLoopTests : IDisposable
         Assert.Equal([TimeSpan.FromSeconds(10), AgentLimits.MinRetryDelay], time.Delays);
     }
 
-    // The deployment setting the registration carries, which the console starts in once it knows it.
+    // The registration carries the deployment setting for the language. The console switches to it once it knows it.
     [Fact]
     public async Task TheConsoleSpeaksTheLanguageTheServerNames()
     {
@@ -87,7 +87,7 @@ public sealed class AgentLoopTests : IDisposable
         AgentLog log = new(time, TextWriter.Null);
         ConsoleStatus status = TestAgents.Status(new ScriptedSignInPrompt() { IsAvailable = false }, log);
 
-        await TestAgents.Loop(server, status, _tools, log, time).RunAsync(server.Stop.Token);
+        await TestAgents.Loop(server, status, new(_tools, log, time)).RunAsync(server.Stop.Token);
 
         Assert.Equal("de", status.State.Language);
     }

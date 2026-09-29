@@ -134,9 +134,9 @@ public sealed class RunScriptStepRunnerTests
         }
     }
 
-    // In its environment, never in its text: what the run started with and what steps set, but not the agent's own
-    // variables, and no name an environment cannot hold. A sequence without variables for steps to set gives the script
-    // no file to set them in.
+    // The values go into the script's environment, never into its text: what the run started with and what steps set.
+    // The agent's own variables and names an environment can't hold are left out. A sequence without variables for
+    // steps to set gives the script no file to set them in.
     [Fact]
     public async Task GivesTheScriptTheRunsValuesAndVariables()
     {
@@ -232,8 +232,8 @@ public sealed class RunScriptStepRunnerTests
         Assert.Contains($"The script wrote more than 64 lines to {RunScriptStepRunner.VariablesOut}, and those after line 64 were not read.", lines);
     }
 
-    // The real interpreters: cmd writes UTF-8 after the chcp line, Windows PowerShell's Out-File UTF-16 with a byte order
-    // mark.
+    // The real interpreters. cmd writes UTF-8 after the chcp line, and Windows PowerShell's Out-File writes UTF-16 with
+    // a byte order mark.
     [Theory]
     [InlineData(ScriptInterpreter.Cmd, ">\"%DDT_VARIABLES_OUT%\" echo Office=Grüße aus Wien\r\n>>\"%DDT_VARIABLES_OUT%\" echo Floor=%DDT_VAR_Floor%")]
     [InlineData(ScriptInterpreter.PowerShell, "\"Office=Grüße aus Wien\", \"Floor=$env:DDT_VAR_Floor\" | Out-File $env:DDT_VARIABLES_OUT")]
@@ -291,7 +291,7 @@ public sealed class RunScriptStepRunnerTests
         Assert.Empty(run.ToolRunner.Calls);
     }
 
-    // The real cmd, to show that the chcp line and the UTF-8 file work together, and a restart code wins.
+    // The real cmd, to show that the chcp line and the UTF-8 file work together, and that a restart code wins.
     [Fact]
     public async Task RunsARealCmdScriptAndLogsWhatItPrints()
     {
@@ -334,7 +334,8 @@ public sealed class RunScriptStepRunnerTests
     {
         RunScriptStep step = s_powerShell with
         {
-            // The raw bytes are "für" in the ANSI code page, as tree writes it into a pipe whatever the console's code page is.
+            // The raw bytes are "für" in the ANSI code page, as tree writes it into a pipe whatever the console's code
+            // page is.
             Script = "Write-Output \"step $env:DDT_STEP_ID\"\nWrite-Output 'Grüße für Ä'\ncmd /d /c echo Größe\n" +
                 "[Console]::Out.Flush(); $raw = [Console]::OpenStandardOutput(); $raw.Write([byte[]](0x66, 0xFC, 0x72, 13, 10), 0, 5); $raw.Flush()\n" +
                 "[Console]::Error.WriteLine('Fehler: öß')\nexit 7",

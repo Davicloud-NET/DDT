@@ -4,9 +4,8 @@
 
 namespace DDT.Server.Live;
 
-// At most one push per key and interval: the first goes out at once, and whatever comes during the interval after it
-// goes out as one push, with the latest payload, when the interval ends. A push that waits when stopping is cancelled
-// is dropped.
+// Sends at most one push per key and interval. The first goes out at once. Pushes during the interval become one push
+// with the latest payload, sent when the interval ends. A push still waiting when the host stops is dropped.
 public sealed class PushThrottle(TimeProvider timeProvider, TimeSpan interval, CancellationToken stopping)
 {
     // Keys that pushed longer ago than the interval are forgotten once this many are remembered.
@@ -48,7 +47,7 @@ public sealed class PushThrottle(TimeProvider timeProvider, TimeSpan interval, C
         _ = wait > TimeSpan.Zero ? PushLaterAsync(key, wait, stopping) : push();
     }
 
-    // Drops the push that waits for the key, when what it would push is gone.
+    // Drops the push waiting for the key. Used when the thing it would push is gone.
     public void Discard(Guid key)
     {
         lock (_lock)

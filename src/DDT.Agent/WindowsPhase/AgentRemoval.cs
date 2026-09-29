@@ -7,12 +7,9 @@ using DDT.Agent.Sequences;
 
 namespace DDT.Agent.WindowsPhase;
 
-// Takes the agent off the Windows at windowsRoot once its run is over: the run's token first, so nothing left can act
-// as the machine, then its state, so nothing can go on with the run, then what the steps left and the logs, whose
-// lines the server has. The service is only marked for deletion while it runs, and goes when its process ends. The
-// agent, its agent.json, the console, the log it still writes, whatever else is still in use and the directories go
-// when Windows next starts, after which nothing of DDT is left. Whatever cannot be deleted only stays behind, so
-// nothing here fails.
+// Removes the agent from the Windows at windowsRoot once its run is over. The run token goes first, so nothing left can
+// act as the machine. Files in use, including the agent and its log, are deleted when Windows next starts, and the
+// service when its process ends. Nothing here fails. What can't be deleted stays behind.
 public sealed class AgentRemoval(string windowsRoot, IToolRunner tools, IRestartDeleter deleter, AgentLog log) : IAgentRemoval
 {
     public static string ScPath => Path.Combine(Environment.SystemDirectory, "sc.exe");
@@ -48,8 +45,8 @@ public sealed class AgentRemoval(string windowsRoot, IToolRunner tools, IRestart
         }
     }
 
-    // What the directory holds before the directory itself, as Windows deletes a directory only once it is empty. A
-    // link is marked itself and never followed, so nothing outside is ever marked.
+    // Marks what the directory holds before the directory itself, because Windows only deletes a directory once it's
+    // empty. A link is marked itself and never followed, so nothing outside is ever marked.
     private void MarkAtRestart(DirectoryInfo directory)
     {
         FileSystemInfo[] entries;

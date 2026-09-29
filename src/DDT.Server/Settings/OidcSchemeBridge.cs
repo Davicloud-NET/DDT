@@ -9,8 +9,8 @@ using Microsoft.Extensions.Primitives;
 
 namespace DDT.Server.Settings;
 
-// The framework owns OpenIdConnectOptions and caches them per scheme. They are configured from the snapshot, and the
-// monitor drops its cached value when the snapshot changes, because the change token below fires on every publish.
+// The framework owns OpenIdConnectOptions and caches them per scheme. They're configured from the snapshot. The change
+// token below fires on every publish, so the monitor drops its cached value when the snapshot changes.
 public sealed class OidcSchemeBridge(DdtSettings settings) : IConfigureNamedOptions<OpenIdConnectOptions>, IOptionsChangeTokenSource<OpenIdConnectOptions>
 {
     public string? Name => OidcOptions.SchemeName;

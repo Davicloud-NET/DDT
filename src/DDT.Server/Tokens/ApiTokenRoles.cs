@@ -6,13 +6,13 @@ using DDT.Server.Authentication;
 
 namespace DDT.Server.Tokens;
 
-// The roles in order, so a token can be held to the lower of its own role and its user's. Each role may do what the ones
-// below it may, which is how the policies list them.
+// Keeps the roles in order, so a token can be held to the lower of its own role and its user's role. Each role may do
+// everything the roles below it may. The policies list them the same way.
 public static class ApiTokenRoles
 {
     private static readonly string[] s_ascending = [DdtRoleNames.Viewer, DdtRoleNames.Operator, DdtRoleNames.Administrator];
 
-    // The role's name as DDT spells it, or null for one DDT does not know.
+    // Returns the role's name as DDT spells it, or null for a role DDT doesn't know.
     public static string? Known(string? role) =>
         s_ascending.FirstOrDefault(known => string.Equals(known, role?.Trim(), StringComparison.OrdinalIgnoreCase));
 

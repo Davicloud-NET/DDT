@@ -4,8 +4,8 @@
 
 import { isSequenceFilter, type SequenceFilter } from "./sequenceList";
 
-// The search parameters of the sequence list: which sequences show, and the search text. They live in the address,
-// so going back from a sequence finds the list as it was.
+// The search parameters of the sequence list: which sequences show, and the search text. They live in the URL, so
+// going back from a sequence shows the list as it was.
 export interface SequencesSearch {
   state?: SequenceFilter;
   q?: string;

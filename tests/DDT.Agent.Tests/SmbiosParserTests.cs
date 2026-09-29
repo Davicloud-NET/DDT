@@ -140,7 +140,8 @@ public sealed class SmbiosParserTests
         Assert.Null(system.ChassisType);
     }
 
-    // A broken structure after the system structure costs only the chassis type, as it did before the parser read one.
+    // A broken structure after the system structure only costs the chassis type. The system structure is kept, as it
+    // was before the parser read chassis types.
     [Fact]
     public void KeepsTheSystemStructureWhenAStructureAfterItIsBroken()
     {
@@ -292,7 +293,7 @@ public sealed class SmbiosParserTests
             (system.Version, system.Sku, system.Family, system.BiosVersion, system.BiosDate, system.BaseboardProduct, system.AssetTag, system.ProcessorVersion));
     }
 
-    // A string number of 0 names no string, one past the last names nothing, and a blank string says nothing.
+    // A string number of 0 means no string, one past the last points at nothing, and a blank string says nothing.
     [Fact]
     public void TreatsMissingAndBlankStringsAsUnknown()
     {
@@ -314,8 +315,8 @@ public sealed class SmbiosParserTests
             (system.Version, system.Sku, system.Family, system.BiosVersion, system.BiosDate, system.BaseboardProduct, system.AssetTag, system.ProcessorVersion));
     }
 
-    // The server knows the placeholders board makers leave in fields they never filled in, and treats them as it does
-    // for the model, so the agent reports what the firmware says.
+    // The server knows the placeholders board makers leave in fields they never filled in, and handles them like it
+    // does for the model. So the agent reports what the firmware says.
     [Fact]
     public void ReportsPlaceholdersAsTheFirmwareWroteThem()
     {
@@ -375,7 +376,7 @@ public sealed class SmbiosParserTests
         Assert.Equal(("First board", "First tag", (byte?)3), (system.BaseboardProduct, system.AssetTag, system.ChassisType));
     }
 
-    // SMBIOS 2.3 and later write mm/dd/yyyy; earlier tables mm/dd/yy for 19yy.
+    // SMBIOS 2.3 and later write mm/dd/yyyy. Earlier tables write mm/dd/yy for 19yy.
     [Theory]
     [InlineData("05/12/2023", "2023-05-12")]
     [InlineData("1/5/2020", "2020-01-05")]

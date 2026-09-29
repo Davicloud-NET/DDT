@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace DDT.Agent.Deployment;
 
-// Native memory aligned to 4 KiB, as unbuffered disk I/O needs whatever the sector size.
+// Native memory aligned to 4 KiB. Unbuffered disk I/O needs that, whatever the sector size.
 public sealed unsafe class AlignedBuffer : IDisposable
 {
     public const int Alignment = 4096;

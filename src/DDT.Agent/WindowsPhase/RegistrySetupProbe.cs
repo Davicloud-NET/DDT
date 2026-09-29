@@ -7,16 +7,9 @@ using Microsoft.Win32;
 
 namespace DDT.Agent.WindowsPhase;
 
-// Reads where Windows setup is from the values setup itself keeps under root, HKEY_LOCAL_MACHINE unless a test says
-// otherwise: it runs while SystemSetupInProgress or OOBEInProgress is set, and has finished once the image state is
-// IMAGE_STATE_COMPLETE, which it only becomes after the machine's part of the out-of-box experience.
-//
-// The first user's part comes after that, as defaultuser0, a temporary account setup signs in as, which looks for
-// updates and may restart Windows; a step that ran then would be cut off. Setup deletes the account when it is done.
-// While the account is signed in, setup still runs. The account without a session is setup between a restart and its
-// next sign-in, for moments, or, after some minutes, an account setup left behind, which no longer holds the run up.
-// Setup signs in as DDT's session's account only once it is done, so that session ends the wait at once.
-// signedIn lists the user names of the sessions there are; setupUserExists says whether defaultuser0 exists.
+// Reads how far Windows setup is from the values it keeps under root. Setup runs while SystemSetupInProgress or
+// OOBEInProgress is set, until the image state is IMAGE_STATE_COMPLETE, and then as defaultuser0, whose updates may
+// restart Windows. signedIn lists the sessions' user names. setupUserExists says whether defaultuser0 exists.
 public sealed class RegistrySetupProbe(
     RegistryKey root,
     Func<IEnumerable<string>>? signedIn = null,
@@ -76,11 +69,13 @@ public sealed class RegistrySetupProbe(
         }
     }
 
+    // Setup deletes defaultuser0 once it's done. If the account has no session, setup is between a restart and its next
+    // sign-in. After LeftoverAfter it's an account setup left behind, and it no longer holds up the run.
     private string? FirstUserPending()
     {
         List<string> names = [.. signedIn?.Invoke() ?? []];
 
-        // Setup signs in as DDT's session's account only at its very end, as the answer file says.
+        // Setup only signs in as the session account at its very end, as the answer file says.
         if (names.Any(name => name.Equals(DeploySession.AccountName, StringComparison.OrdinalIgnoreCase)))
         {
             return null;

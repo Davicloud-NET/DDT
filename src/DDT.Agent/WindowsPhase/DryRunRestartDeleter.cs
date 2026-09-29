@@ -4,7 +4,7 @@
 
 namespace DDT.Agent.WindowsPhase;
 
-// Marks nothing, as a mark would delete the path when this computer next starts.
+// Marks nothing, because a mark would delete the path when this computer next starts.
 public sealed class DryRunRestartDeleter(AgentLog log) : IRestartDeleter
 {
     public void DeleteAtRestart(string path) =>

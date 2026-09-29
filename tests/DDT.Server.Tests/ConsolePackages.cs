@@ -7,10 +7,10 @@ using System.Security.Cryptography;
 
 namespace DDT.Server.Tests;
 
-// Zips as an administrator uploads them for the console.
+// Console zips, the way an administrator uploads them.
 internal static class ConsolePackages
 {
-    // The console's three files, as Publish-Console.ps1 writes them, in folder when there is one.
+    // The console's three files as Publish-Console.ps1 writes them, inside folder if one is given.
     public static (string Path, byte[] Content)[] Files(string folder = "") =>
     [
         (folder + "ddt-console.exe", Executable(5000)),

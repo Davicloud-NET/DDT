@@ -8,9 +8,8 @@ using System.Text;
 
 namespace DDT.Contracts.Messages;
 
-// One message of the catalog: its stable code and its English text as an ICU message, see MessageFormat. With gives the
-// message its values by the names the text uses. A debug build refuses values that do not match those names, so a
-// mistake fails a test rather than showing {name} to a person.
+// A message of the catalog, made of a stable code and its English text as an ICU message. A debug build refuses values
+// that don't match the names the text uses, so a mistake fails a test instead of showing {name} to a person.
 public sealed class MessageTemplate
 {
     private readonly IReadOnlyList<MessageFormat.Node> _nodes;
@@ -30,6 +29,8 @@ public sealed class MessageTemplate
     // The names the English text uses, in ordinal order.
     public IReadOnlyList<string> Arguments { get; }
 
+    // Name and value pairs, so a call reads like the text. From three pairs on, these break the parameter limit on
+    // purpose, because a record for every message's values would read worse.
     public ServerMessage With() => Create([]);
 
     public ServerMessage With(string name, object value) => Create([(name, value)]);
@@ -72,8 +73,8 @@ public sealed class MessageTemplate
         return text.ToString();
     }
 
-    // An enum goes as its name, which a translation can choose by with select; every other value that is not a string,
-    // a whole number or a message goes as its invariant text.
+    // An enum is passed as its name, so a translation can pick a form with select. Any other value that isn't a string,
+    // a whole number or a message is passed as its invariant text.
     private ServerMessage Create(ReadOnlySpan<(string Name, object Value)> values)
     {
         Dictionary<string, object> arguments = new(values.Length, StringComparer.Ordinal);

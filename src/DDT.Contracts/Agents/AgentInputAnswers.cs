@@ -4,6 +4,6 @@
 
 namespace DDT.Contracts.Agents;
 
-// Answers given at the machine while the run waits at its start, posted to AgentRoutes.RunAnswers. The server takes
-// only inputs asked at the machine.
+// Answers given at the machine while the run waits to start. The agent posts them to AgentRoutes.RunAnswers. The
+// server only accepts answers to inputs asked at the machine.
 public sealed record AgentInputAnswers(IReadOnlyList<InputAnswer> Answers);

@@ -4,8 +4,8 @@
 
 namespace DDT.Agent.Deployment;
 
-// What the steps of a run use their accounts with: shares in both phases, and signing in for a script that runs as an
-// account, which only the installed Windows asks for.
+// What a run's steps use their accounts for: shares in both phases, and signing in for a script that runs as an
+// account. Only the installed Windows asks for the sign-in.
 public sealed record AccountTools(IShareConnector Shares, IAccountLogons Logons)
 {
     public static AccountTools Native(AgentLog log) => new(new ShareConnector(new WNetConnections(), log), new WindowsAccountLogons(log));

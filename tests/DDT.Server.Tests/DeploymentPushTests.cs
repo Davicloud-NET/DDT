@@ -67,7 +67,7 @@ public sealed class DeploymentPushTests(DdtApplication application) : IClassFixt
         (await administrator.AssignAsync(machine.Id, sequence.Id)).EnsureSuccessStatusCode();
         Guid deployment = (await PushedAsync(pushes.Reader, machine.Id, m => m.Deployment?.State == DeploymentState.Assigned)).Deployment!.Id;
 
-        // A poll after a while records last seen and pushes: the run stays in the row.
+        // A poll after a while records last seen and pushes the row. The run stays in it.
         await application.ChangeMachineAsync(machine.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(1));
         await machine.NextAsync();
         Assert.Equal(deployment, (await PushedAsync(pushes.Reader, machine.Id, m => m.State == MachineState.Approved)).Deployment?.Id);
@@ -78,7 +78,7 @@ public sealed class DeploymentPushTests(DdtApplication application) : IClassFixt
         Assert.Equal(sequence.Name, cancelled.Deployment?.Title);
         Assert.Equal(1, cancelled.Deployment?.StepCount);
 
-        // Nothing is active any more: every later push carries the one that ended last.
+        // Nothing is active anymore. Every later push carries the run that ended last.
         await application.ChangeMachineAsync(machine.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(1));
         await machine.NextAsync();
         Assert.Equal(deployment, (await PushedAsync(pushes.Reader, machine.Id, m => m.State == MachineState.Approved && m.Deployment?.State == DeploymentState.Cancelled)).Deployment?.Id);
@@ -94,7 +94,7 @@ public sealed class DeploymentPushTests(DdtApplication application) : IClassFixt
         Assert.Equal(deployment, (await PushedAsync(pushes.Reader, machine.Id, m => m.State == MachineState.Rejected)).Deployment?.Id);
     }
 
-    // A running run's row shows its step, and every push carries the latest of it.
+    // The row of a running run shows its step, and every push carries the latest one.
     [Fact]
     public async Task APushCarriesTheStepTheRunIsAt()
     {
@@ -107,10 +107,12 @@ public sealed class DeploymentPushTests(DdtApplication application) : IClassFixt
 
         await administrator.AssignedAsync(machine.Id, sequence.Id);
         AgentRun run = (await machine.NextAsync()).Run!;
-        await machine.ReportOkAsync(run.Id, TestReports.Report(
-            DeploymentState.Running,
-            [TestReports.Step(run.Sequence.Steps[0], StepState.Done), TestReports.Step(run.Sequence.Steps[1], StepState.Running)],
-            percent: 35));
+        await machine.ReportOkAsync(
+            run.Id,
+            TestReports.Report(DeploymentState.Running, [TestReports.Step(run.Sequence.Steps[0], StepState.Done), TestReports.Step(run.Sequence.Steps[1], StepState.Running)]) with
+            {
+                Percent = 35,
+            });
 
         MachineSummary running = await PushedAsync(pushes, machine.Id, m => m.Deployment?.StepName == "Apply");
 
@@ -121,7 +123,7 @@ public sealed class DeploymentPushTests(DdtApplication application) : IClassFixt
         Assert.Equal(SequencePhase.WindowsPE, running.Deployment?.Phase);
         Assert.NotNull(running.Deployment?.StartedUtc);
 
-        await machine.ReportOkAsync(run.Id, TestReports.Report(DeploymentState.Failed, [], error: "Apply failed."));
+        await machine.ReportOkAsync(run.Id, TestReports.Report(DeploymentState.Failed, []) with { Error = "Apply failed." });
 
         Assert.Equal("Apply failed.", (await PushedAsync(pushes, machine.Id, m => m.State == MachineState.Failed)).Deployment?.Error);
     }

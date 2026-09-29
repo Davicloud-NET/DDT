@@ -5,15 +5,13 @@
 import { i18n, type MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 
+import type { ConditionNode, ConditionOperator, StepCondition } from "./sequenceConditions";
 import type {
-  ConditionNode,
-  ConditionOperator,
   ContainerKind,
   ContainerStep,
   ScriptInterpreter,
   SequencePhase,
   SequenceStep,
-  StepCondition,
   StepKind,
 } from "./sequences";
 
@@ -44,7 +42,7 @@ export function isContainer(step: SequenceStep): step is ContainerStep {
   return step.kind === "group" || step.kind === "if" || step.kind === "repeat";
 }
 
-// A run names its steps' kinds as text, so a kind this page does not know yet is shown as it is.
+// A run names its steps' kinds as text, so a kind this page doesn't know yet is shown as is.
 export function stepKindLabel(kind: string): string {
   return isStepKind(kind) ? i18n._(kindLabels[kind]) : kind;
 }
@@ -57,7 +55,7 @@ export function phaseLabel(phase: SequencePhase): string {
   return phase === "WindowsPE" ? i18n._(msg`Windows PE`) : i18n._(msg`Windows`);
 }
 
-// cloud-init's instance id, which runs its first-boot modules once per value, and the machine's name.
+// cloud-init's instance id and the machine's name. cloud-init runs its first-boot modules once per instance id.
 export const defaultMetaData =
   'instance-id: "{{SmbiosUuid}}"\nlocal-hostname: "{{ComputerName}}"\n';
 
@@ -122,7 +120,7 @@ const operatorLabels: Record<ConditionOperator, MessageDescriptor> = {
 // Every operator, in the server's order.
 export const allConditionOperators = Object.keys(operatorLabels) as ConditionOperator[];
 
-// The operators of versions 1 and 2, which the conditions beside when offer, so a flat sequence stays runnable on
+// The version 1 and 2 operators. The conditions next to when only offer these, so a flat sequence still runs on
 // older agents.
 export const conditionOperators: readonly ConditionOperator[] = [
   "Equals",
@@ -151,7 +149,7 @@ export function isInt32(value: number): boolean {
   return Number.isInteger(value) && value >= -2_147_483_648 && value <= 2_147_483_647;
 }
 
-// Exit codes typed as whole numbers separated by commas or spaces; null when the text holds something else.
+// Exit codes typed as whole numbers separated by commas or spaces. Null if the text has anything else.
 export function parseCodes(text: string): number[] | null {
   const parts = text.split(/[\s,;]+/).filter((part) => part !== "");
 
@@ -164,7 +162,7 @@ export function newCondition(): StepCondition {
   return { variable: "Model", operator: "Equals", value: "" };
 }
 
-// The test a new IF starts with, and the condition a new repeat stops at: once the last step went through.
+// The test a new IF starts with, and the condition a new Repeat stops at: once the last step didn't fail.
 export function newTest(): ConditionNode {
   return { kind: "test", variable: "Model", operator: "Contains", value: "" };
 }

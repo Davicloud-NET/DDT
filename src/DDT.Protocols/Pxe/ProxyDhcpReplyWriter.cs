@@ -38,6 +38,44 @@ public static class ProxyDhcpReplyWriter
 
         destination[..MinimumDatagramLength].Clear();
 
+        if (!TryWriteFixedFields(reply, destination))
+        {
+            return false;
+        }
+
+        DhcpOptionWriter options = new(destination[OptionsOffset..]);
+
+        options.WriteByte(DhcpOption.MessageType, (byte)reply.MessageType);
+        options.WriteAddress(DhcpOption.ServerIdentifier, reply.ServerIdentifier);
+        options.WriteAscii(DhcpOption.VendorClassIdentifier, reply.VendorClassIdentifier);
+
+        if (!reply.MachineIdentifier.IsEmpty)
+        {
+            options.Write(DhcpOption.ClientMachineIdentifier, reply.MachineIdentifier.Span);
+        }
+
+        options.WriteAscii(DhcpOption.BootFileName, reply.BootFileName);
+
+        if (!reply.VendorSpecific.IsEmpty)
+        {
+            options.Write(DhcpOption.VendorSpecific, reply.VendorSpecific.Span);
+        }
+
+        options.WriteEnd();
+
+        if (options.Overflowed)
+        {
+            return false;
+        }
+
+        bytesWritten = Math.Max(OptionsOffset + options.BytesWritten, MinimumDatagramLength);
+
+        return true;
+    }
+
+    // The BOOTP fields before the options, and the magic cookie.
+    private static bool TryWriteFixedFields(ProxyDhcpReply reply, Span<byte> destination)
+    {
         destination[0] = DhcpOperation.BootReply;
         destination[1] = reply.HardwareType;
         destination[2] = (byte)reply.ClientHardwareAddress.Length;
@@ -69,11 +107,9 @@ public static class ProxyDhcpReplyWriter
             return false;
         }
 
-        // The boot file goes in the fixed field as well as option 67 whenever it fits, because some
-        // firmware reads only one of the two and they disagree about which.
-        // A name too long for the 128 octet field is left out of it entirely rather than truncated.
-        // Option 67 carries the same value and has no such limit, and firmware reading a truncated
-        // unterminated path here would chain to a file that does not exist.
+        // The boot file goes in the fixed field as well as option 67, because firmware disagrees about which it reads.
+        // A path too long for the field is left out instead of truncated, because a truncated path chains to a missing
+        // file.
         Span<byte> bootFileField = destination.Slice(BootFileOffset, BootFileLength);
 
         if (!TryWriteNullTerminated(reply.BootFileName, bootFileField))
@@ -82,33 +118,6 @@ public static class ProxyDhcpReplyWriter
         }
 
         MagicCookie.CopyTo(destination[FixedHeaderLength..]);
-
-        DhcpOptionWriter options = new(destination[OptionsOffset..]);
-
-        options.WriteByte(DhcpOption.MessageType, (byte)reply.MessageType);
-        options.WriteAddress(DhcpOption.ServerIdentifier, reply.ServerIdentifier);
-        options.WriteAscii(DhcpOption.VendorClassIdentifier, reply.VendorClassIdentifier);
-
-        if (!reply.MachineIdentifier.IsEmpty)
-        {
-            options.Write(DhcpOption.ClientMachineIdentifier, reply.MachineIdentifier.Span);
-        }
-
-        options.WriteAscii(DhcpOption.BootFileName, reply.BootFileName);
-
-        if (!reply.VendorSpecific.IsEmpty)
-        {
-            options.Write(DhcpOption.VendorSpecific, reply.VendorSpecific.Span);
-        }
-
-        options.WriteEnd();
-
-        if (options.Overflowed)
-        {
-            return false;
-        }
-
-        bytesWritten = Math.Max(OptionsOffset + options.BytesWritten, MinimumDatagramLength);
 
         return true;
     }

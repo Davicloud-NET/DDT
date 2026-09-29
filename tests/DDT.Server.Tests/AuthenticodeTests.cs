@@ -20,7 +20,8 @@ public sealed class AuthenticodeTests
             (AuthenticodeStatus.Trusted, PeImage.MachineAmd64, "Microsoft Windows UEFI Driver Publisher", (string?)null),
             (result.Status, result.Machine, result.Signer, result.Reason));
 
-        // The anchor its signatures lead to, which tells which of Microsoft's two CAs a firmware needs to start it.
+        // The anchor its signatures chain up to.
+        // It tells which of Microsoft's two CAs the firmware needs to start the file.
         Assert.Equal(["CN=Microsoft Corporation UEFI CA 2011"], result.Anchors!.Select(anchor => anchor.Subject.Split(", ")[0]));
     }
 

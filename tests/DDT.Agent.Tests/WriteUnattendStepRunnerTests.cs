@@ -4,7 +4,6 @@
 
 using System.Net;
 using DDT.Agent.Deployment;
-using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;

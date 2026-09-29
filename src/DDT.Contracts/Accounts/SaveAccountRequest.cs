@@ -6,16 +6,17 @@ using DDT.Contracts.Settings;
 
 namespace DDT.Contracts.Accounts;
 
-// Creates or saves an account. Revision is the one the page last read; a new account has none to name. Password keeps,
-// sets or clears it as for a setting's secret; a new user name or domain, or another host, needs it set again, so a
-// stored password never reaches a destination it was not given for.
+// Creates or saves an account.
 public sealed record SaveAccountRequest(
+    // The revision the page last read. A new account doesn't have one, so the server ignores it.
     long Revision,
     string Name,
     string UserName,
     string? Domain,
     IReadOnlyList<string> Hosts,
     bool RunAs,
+    // Keeps, sets or clears the password, the same way as a setting's secret. A new user name, domain or host needs
+    // the password set again. That way a stored password never reaches a destination it wasn't given for.
     SecretUpdate Password)
 {
     // A record prints every property by default, and the password must never reach a log.

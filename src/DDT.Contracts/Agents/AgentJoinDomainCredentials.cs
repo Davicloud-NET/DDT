@@ -4,7 +4,8 @@
 
 namespace DDT.Contracts.Agents;
 
-// Fetched only while the JoinDomain step runs, and kept only in memory. UserName stays whole (DOMAIN\user or a UPN).
+// Fetched only while the JoinDomain step runs, and kept only in memory. UserName isn't split up (DOMAIN\user or a
+// UPN).
 public sealed record AgentJoinDomainCredentials(string Domain, string? OrganizationalUnit, string UserName, string Password)
 {
     // A record prints every property by default, and the password must never reach a log.

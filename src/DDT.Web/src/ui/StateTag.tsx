@@ -6,10 +6,8 @@ import type { ReactNode } from "react";
 
 import { cx } from "./cx";
 
-// The one place a state gets its look. Filled tags are the states that ask for attention or show work in progress;
-// the resting states are outlined, so a list of finished machines stays quiet. Tags are printed, not raised: flat,
-// square and in capitals, the only capitals in the interface. A tag whose state changes turns to its new colours in
-// fast.
+// The one place a state gets its look. States that ask for attention or show work are filled and resting ones
+// outlined, so a list of finished machines stays quiet.
 export type StateTone = "run" | "attention" | "fail" | "ok" | "idle" | "retired";
 
 const tones: Record<StateTone, string> = {

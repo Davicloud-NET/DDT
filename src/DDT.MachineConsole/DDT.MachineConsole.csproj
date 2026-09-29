@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- ddt-console.exe, the graphical console the agent starts in Windows PE. It references only the console protocol,
-       never the agent, and draws with Avalonia in software alone: Windows PE has GDI and DirectWrite, but none of
-       Direct3D, DXGI, Direct2D or DirectComposition. -->
+  <!-- ddt-console.exe, which the agent starts. It references only the console protocol, never the agent. It renders in
+       software only, because WinPE has no Direct3D, DXGI, Direct2D or DirectComposition. -->
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
@@ -31,7 +30,7 @@
     <PackageReference Include="Avalonia.Skia" />
     <PackageReference Include="Avalonia.Themes.Simple" />
     <PackageReference Include="Avalonia.Win32" />
-    <!-- Avalonia.BuildServices sends statistics about each build; its targets are left out. ANGLE is only for GPU
+    <!-- Avalonia.BuildServices sends statistics about each build, so its targets are left out. ANGLE is only for GPU
          rendering, which the console never uses. -->
     <PackageReference Include="Avalonia.BuildServices" ExcludeAssets="all" PrivateAssets="all" />
     <PackageReference Include="Avalonia.Angle.Windows.Natives" ExcludeAssets="all" PrivateAssets="all" />
@@ -40,7 +39,7 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\Fonts\*.ttf" />
     <AvaloniaResource Include="Assets\ddt-logo.png" />
-    <!-- What the console says, in the names Catalogs.ResourceName gives the catalogs. -->
+    <!-- The console's texts, under the names Catalogs.ResourceName looks for. -->
     <EmbeddedResource Include="Locales\en\messages.po" LogicalName="locales/en/messages.po" />
     <EmbeddedResource Include="Locales\de\messages.po" LogicalName="locales/de/messages.po" />
     <!-- The legal texts the licences view shows, under the names LegalTexts.Documents lists. -->

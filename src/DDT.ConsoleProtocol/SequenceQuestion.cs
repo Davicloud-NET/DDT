@@ -4,6 +4,6 @@
 
 namespace DDT.ConsoleProtocol;
 
-// Which task sequence to run, from those this machine can run, the ones an assignment rule suggests first. Answer with
-// SequenceId. The agent then asks only what that sequence needs.
+// Which task sequence to run, out of those this machine can run. The ones an assignment rule suggests come first.
+// Answer with SequenceId. The agent then only asks what that sequence needs.
 public sealed record SequenceQuestion(IReadOnlyList<SequenceOption> Sequences) : ConsoleQuestion;

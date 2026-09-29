@@ -4,17 +4,16 @@
 
 namespace DDT.Agent.Consoles;
 
-// Puts the logo a registration names on the console at the machine: downloaded once into directory as
-// console-logo-<hash>.png, checked against the hash, and shown by its path. In Windows PE directory is the agent's own;
-// in the installed Windows it is the console's folder, which the account of DDT's session may read. A logo that cannot
-// be downloaded leaves the console without one; the run goes on regardless.
+// Shows the logo named in a registration. It's downloaded once into directory as console-logo-<hash>.png. In the
+// installed Windows, directory is the console's folder, which DDT's session may read. A failed download just means
+// no logo.
 public sealed class ConsoleLogo(IAgentServer server, ConsoleStatus status, string directory, AgentLog log)
 {
     private string? _shown;
 
     public async Task ShowAsync(string? sha256, CancellationToken cancellationToken)
     {
-        // The hash becomes part of a path, so only a hash is taken.
+        // The hash becomes part of a path, so only a real hash is accepted.
         if (sha256 is null || sha256.Length != 64 || !sha256.All(char.IsAsciiHexDigit) || !Directory.Exists(directory))
         {
             Show(null);
@@ -67,5 +66,5 @@ public sealed class ConsoleLogo(IAgentServer server, ConsoleStatus status, strin
 
     private static async Task<bool> HoldsAsync(string path, string sha256, CancellationToken cancellationToken) =>
         File.Exists(path)
-        && string.Equals(await AgentUpdate.Sha256Async(path, cancellationToken).ConfigureAwait(false), sha256, StringComparison.OrdinalIgnoreCase);
+        && string.Equals(await ReleaseFiles.Sha256Async(path, cancellationToken).ConfigureAwait(false), sha256, StringComparison.OrdinalIgnoreCase);
 }

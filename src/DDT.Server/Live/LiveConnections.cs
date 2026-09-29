@@ -7,10 +7,8 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace DDT.Server.Live;
 
-// The open live connections of every account. A connection is authorized once, when it opens, and would otherwise keep
-// receiving what its account could see then for as long as the tab stays open: an administrator who was disabled or
-// demoted would still be sent every account and audit row. Closing its connections makes the browser connect again,
-// and the hub then decides from the account as it is now.
+// The open live connections of every account. A connection is only authorized when it opens. Closing them makes the
+// browser reconnect, so the hub checks the account as it is now, for example after a demotion.
 public sealed class LiveConnections
 {
     private readonly ConcurrentDictionary<string, (Guid UserId, HubCallerContext Context)> _open = new(StringComparer.Ordinal);

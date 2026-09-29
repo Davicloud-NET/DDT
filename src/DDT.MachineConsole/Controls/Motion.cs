@@ -14,17 +14,15 @@ using Avalonia.VisualTree;
 
 namespace DDT.MachineConsole.Controls;
 
-// The console's motion, as src/DDT.Design/README.md describes it and tokens.json times it. What enters fades in and
-// rises by the distance, decelerating; what leaves fades out faster, accelerating. Only opacity and position change,
-// which the console's software rendering draws cheaply, and only in answer to a key or to what the agent sent. Once
-// still, an element has no transform left, so it is drawn exactly as it would be without motion.
+// The console's motion, timed by the motion tokens. Only opacity and a TranslateTransform change, because software
+// rendering draws those cheaply. A settled element has no transform left, so it renders as if nothing had moved.
 public static class Motion
 {
-    // Set on an element that should enter when it is shown and leave before it is hidden, in place of IsVisible.
+    // Use this instead of IsVisible on an element that should animate in when shown and animate out before it's hidden.
     public static readonly AttachedProperty<bool> ShownProperty =
         AvaloniaProperty.RegisterAttached<Visual, bool>("Shown", typeof(Motion), defaultValue: true);
 
-    // False on what only fades, such as the backdrop under an overlay.
+    // False on elements that only fade, like the backdrop under an overlay.
     public static readonly AttachedProperty<bool> RisesProperty =
         AvaloniaProperty.RegisterAttached<Visual, bool>("Rises", typeof(Motion), defaultValue: true);
 
@@ -35,7 +33,7 @@ public static class Motion
         ShownProperty.Changed.AddClassHandler<Visual>((visual, change) => Show(visual, change.GetNewValue<bool>()));
     }
 
-    // Tests turn motion off, so that what they look at has settled; the rail's stripes have their own switch.
+    // Tests turn motion off, so everything they check has settled. The rail's stripes have their own switch.
     public static bool IsEnabled { get; set; } = true;
 
     public static TimeSpan Press => Resource("SgMotionPress", TimeSpan.FromMilliseconds(70));
@@ -64,25 +62,26 @@ public static class Motion
 
     public static void SetRises(Visual visual, bool value) => visual.SetValue(RisesProperty, value);
 
-    // Fades the element in from that strength and lets it rise by what is left of the distance, over normal.
+    // Fades the element in from the given strength over the Normal duration. It rises by the part of the distance
+    // that's left.
     public static Task EnterAsync(Visual visual, double from, CancellationToken cancellation = default)
     {
         ArgumentNullException.ThrowIfNull(visual);
 
         double rise = GetRises(visual) ? Distance * (1 - from) : 0;
 
-        return RunAsync(visual, Normal, Entering, from, 1, rise, cancellation);
+        return RunAsync(visual, new Movement(Normal, Entering, from, 1, rise), cancellation);
     }
 
-    // Fades the element out over fast. It stays clear, for whoever hides it next.
+    // Fades the element out over the Fast duration. It stays transparent, so the caller can hide it next.
     public static Task LeaveAsync(Visual visual, CancellationToken cancellation = default)
     {
         ArgumentNullException.ThrowIfNull(visual);
 
-        return RunAsync(visual, Fast, Leaving, visual.GetValue(Fading(visual)), 0, 0, cancellation);
+        return RunAsync(visual, new Movement(Fast, Leaving, visual.GetValue(Fading(visual)), 0, 0), cancellation);
     }
 
-    // A change the agent pushed to what is on screen, such as the next step: the element enters again from nothing.
+    // For a change the agent pushed to the screen, like the next step. The element enters again from nothing.
     public static void Renew(Visual visual)
     {
         ArgumentNullException.ThrowIfNull(visual);
@@ -109,8 +108,8 @@ public static class Motion
 
         if (shown)
         {
-            // Clear at once, and entering only once it is laid out: the first frame of what opens, such as the log,
-            // can take longer than the others, and the entrance should not lose that time.
+            // Transparent right away, but the entrance starts only after layout. The first frame of what opens, like
+            // the log, can take longer than the others, and the entrance shouldn't lose that time.
             double from = visual.IsVisible ? visual.GetValue(Fading(visual)) : 0;
             visual.SetValue(Fading(visual), from);
 
@@ -133,7 +132,7 @@ public static class Motion
         }
         else if (visual.IsVisible)
         {
-            // Nothing that is leaving takes a click any more.
+            // An element that's leaving doesn't take clicks any more.
             TakesInput(visual, false);
             _ = HideAfterAsync(visual, cancellation);
         }
@@ -151,7 +150,7 @@ public static class Motion
         }
     }
 
-    // Stops what the element was doing, so that a new change starts from where it is.
+    // Stops the element's running animation, so a new change starts from where it is.
     private static CancellationToken Restart(Visual visual)
     {
         if (s_running.TryGetValue(visual, out CancellationTokenSource? running))
@@ -166,24 +165,17 @@ public static class Motion
         return next.Token;
     }
 
-    private static async Task RunAsync(
-        Visual visual,
-        TimeSpan duration,
-        Easing easing,
-        double from,
-        double to,
-        double rise,
-        CancellationToken cancellation)
+    private static async Task RunAsync(Visual visual, Movement movement, CancellationToken cancellation)
     {
         StyledProperty<double> fading = Fading(visual);
 
-        // Set at once, before the first frame of the animation, so the element never shows where it is going first.
-        visual.SetValue(fading, from);
-        TranslateTransform? shift = rise != 0 ? Shift(visual, rise) : null;
+        // Set right away, before the animation's first frame, so the element never shows up at its end state first.
+        visual.SetValue(fading, movement.From);
+        TranslateTransform? shift = movement.Rise != 0 ? Shift(visual, movement.Rise) : null;
 
         if (!IsEnabled || !visual.IsAttachedToVisualTree())
         {
-            Settle(visual, fading, to, shift);
+            Settle(visual, fading, movement.To, shift);
 
             return;
         }
@@ -191,13 +183,13 @@ public static class Motion
         // Forward keeps the last value when the animation ends or is stopped, so nothing jumps back for a frame.
         Animation animation = new()
         {
-            Duration = duration,
-            Easing = easing,
+            Duration = movement.Duration,
+            Easing = movement.Easing,
             FillMode = FillMode.Forward,
             Children =
             {
-                Frame(0, fading, from, shift is null ? null : rise),
-                Frame(1, fading, to, shift is null ? null : 0),
+                Frame(0, fading, movement.From, shift is null ? null : movement.Rise),
+                Frame(1, fading, movement.To, shift is null ? null : 0),
             },
         };
 
@@ -205,7 +197,7 @@ public static class Motion
 
         if (!cancellation.IsCancellationRequested)
         {
-            Settle(visual, fading, to, shift);
+            Settle(visual, fading, movement.To, shift);
         }
     }
 
@@ -259,4 +251,7 @@ public static class Motion
         Application.Current is { } application && application.TryGetResource(key, null, out object? value) && value is T typed
             ? typed
             : fallback;
+
+    // From and To are fade strengths. Rise is how far below its place the element starts.
+    private readonly record struct Movement(TimeSpan Duration, Easing Easing, double From, double To, double Rise);
 }

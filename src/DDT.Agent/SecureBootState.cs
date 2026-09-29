@@ -7,7 +7,7 @@ using Microsoft.Win32;
 
 namespace DDT.Agent;
 
-// Whether the firmware started Windows with Secure Boot on, as Windows records it at every start, Windows PE included.
+// Whether the firmware started Windows with Secure Boot on. Windows records this at every start, WinPE included.
 public static class SecureBootState
 {
     public const string KeyPath = @"SYSTEM\CurrentControlSet\Control\SecureBoot\State";

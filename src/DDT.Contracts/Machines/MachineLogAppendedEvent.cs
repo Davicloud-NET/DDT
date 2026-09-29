@@ -4,5 +4,6 @@
 
 namespace DDT.Contracts.Machines;
 
-// Sent to the connections that watch the machine: its log has lines up to LastLineId, to read with after.
+// Sent to the connections that watch the machine. Its log now has lines up to LastLineId, which a page reads with the
+// after parameter.
 public sealed record MachineLogAppendedEvent(Guid MachineId, long LastLineId);

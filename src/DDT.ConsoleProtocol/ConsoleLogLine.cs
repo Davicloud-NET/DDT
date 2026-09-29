@@ -4,6 +4,6 @@
 
 namespace DDT.ConsoleProtocol;
 
-// A line of the agent's log, as the server gets it. Time is in UTC by the machine's clock, which in Windows PE can be
-// hours off, as the text console shows it. StepId is the run's step that was running when it was written.
+// A line of the agent's log, as the server gets it. Time is UTC by the machine's clock, the same time the text console
+// shows. In Windows PE that clock can be hours off. StepId is the step that was running when the line was written.
 public sealed record ConsoleLogLine(DateTimeOffset Time, ConsoleLogLevel Level, string Text, Guid? StepId = null);

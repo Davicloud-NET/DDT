@@ -9,6 +9,6 @@ namespace DDT.Agent.Deployment;
 public interface IAccountLogons
 {
     // Signs the account in on this computer. A refusal throws DeploymentStepException, which names the account and says
-    // why, never with the password.
+    // why, but never includes the password.
     Task<IAccountSession> LogOnAsync(AgentAccount account, CancellationToken cancellationToken);
 }

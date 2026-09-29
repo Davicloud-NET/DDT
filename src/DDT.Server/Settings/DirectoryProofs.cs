@@ -10,8 +10,8 @@ using Microsoft.AspNetCore.DataProtection;
 
 namespace DDT.Server.Settings;
 
-// What an LDAP test hands a directory administrator whose own sign-in with the candidate values kept the Administrator
-// role: a token for exactly those values, which a save of them then accepts for 5 minutes.
+// An LDAP test hands this token to a directory administrator whose own sign-in with the candidate values kept the
+// Administrator role. The token is bound to exactly those values, and a save of them accepts it for 5 minutes.
 public sealed class DirectoryProofs(IDataProtectionProvider provider, TimeProvider timeProvider)
 {
     public const string HeaderName = "X-DDT-Directory-Proof";
@@ -55,7 +55,7 @@ public sealed class DirectoryProofs(IDataProtectionProvider provider, TimeProvid
         }
     }
 
-    // Everything that decides whether and as whom a directory account signs in, the bind password included, hashed.
+    // Hashes everything that decides whether and as whom a directory account signs in, including the bind password.
     private static string Fingerprint(LdapOptions options)
     {
         StringBuilder text = new();

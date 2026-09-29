@@ -4,18 +4,18 @@
 
 namespace DDT.ConsoleProtocol;
 
-// A sequence the machine can run. Suggested marks the one an assignment rule chose for it. RequiredBytes is the disk
-// space the run needs, 0 when it needs none. NotSignedForSecureBoot says that the disk image it writes is not signed for
-// Secure Boot, or that DDT cannot tell; NotTrustedHere that it is signed only under CAs this machine's firmware does not
-// trust while Secure Boot is on. Either way the agent asks for the Secure Boot override before it runs where Secure Boot
-// is on.
+// A sequence the machine can run. Either Secure Boot flag makes the agent ask for the override where Secure Boot is on.
 public sealed record SequenceOption(
     Guid Id,
     string Name,
     string? Description,
+    // The one an assignment rule chose for the machine.
     bool Suggested,
     bool ErasesDisk,
     bool NeedsComputerName,
+    // 0 when the run needs no disk space.
     long RequiredBytes,
+    // The disk image it writes is not signed for Secure Boot, or DDT cannot tell.
     bool NotSignedForSecureBoot,
+    // It is signed only under CAs this machine's firmware does not trust.
     bool NotTrustedHere);

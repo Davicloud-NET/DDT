@@ -5,7 +5,6 @@
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
-using DDT.Agent.WindowsPhase;
 
 namespace DDT.Agent.Tests;
 
@@ -16,47 +15,42 @@ internal static class TestAgents
     public static AgentConfiguration Configuration { get; } =
         new("https://ddt.example:8443/", "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n", null);
 
-    // Without a heartbeat interval, beats happen only when the run changes, so a run stays sequential on
-    // ImmediateTimeProvider. Everything on the disk is under tools.Root: the volumes, Windows PE's own directory X, and
-    // System32, where Windows PE's tools are, unless systemDirectory says otherwise. As in a dry run, unless dryRun is
-    // false, the run's directory stays open to the account the tests run as, but the restart marker is a real file.
+    // Everything on the disk is under tools.Root: the volumes, WinPE's own directory X, and System32 with WinPE's
+    // tools. Like in a dry run, unless options say otherwise, the run's directory stays open to the account the tests
+    // run as. The restart marker is a real file, though.
     public static SequenceRunner Runner(
         IAgentServer server,
         FakeDeploymentTools tools,
         AgentLog log,
         TimeProvider timeProvider,
-        TimeSpan? heartbeatInterval = null,
-        IToolRunner? toolRunner = null,
-        IBcdWriter? bcdWriter = null,
-        IRebooter? rebooter = null,
-        string? systemDirectory = null,
-        bool dryRunHandOver = false,
-        bool dryRun = true,
-        IDomainJoiner? joiner = null,
-        IRawDisks? rawDisks = null,
-        ConsoleStatus? status = null,
-        string? consoleDirectory = null)
+        TestRunnerOptions? options = null)
     {
-        toolRunner ??= new RecordingToolRunner();
+        ArgumentNullException.ThrowIfNull(tools);
 
-        return new SequenceRunner(
-            server,
-            tools,
-            rawDisks ?? new MemoryRawDisks(),
-            tools,
-            bcdWriter ?? tools,
-            rebooter ?? tools,
-            RestartMarker(tools, log),
-            toolRunner,
-            joiner ?? tools,
-            HandOver(tools, toolRunner, log, dryRunHandOver, consoleDirectory),
-            log,
-            timeProvider,
-            heartbeatInterval ?? Timeout.InfiniteTimeSpan,
-            Path.Combine(tools.Root, "X"),
-            systemDirectory ?? SystemDirectory(tools),
-            dryRun,
-            status);
+        options ??= new TestRunnerOptions();
+        IToolRunner toolRunner = options.ToolRunner ?? new RecordingToolRunner();
+
+        return new SequenceRunnerBuilder
+        {
+            Server = server,
+            Partitioner = tools,
+            RawDisks = options.RawDisks ?? new MemoryRawDisks(),
+            Applier = tools,
+            BcdWriter = options.BcdWriter ?? tools,
+            Rebooter = options.Rebooter ?? tools,
+            RestartMarker = RestartMarker(tools, log),
+            Tools = toolRunner,
+            Joiner = options.Joiner ?? tools,
+            HandOver = HandOver(tools, toolRunner, log, options.DryRunHandOver, options.ConsoleDirectory),
+            Log = log,
+            TimeProvider = timeProvider,
+            Options = new SequenceRunnerOptions(
+                options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan,
+                Path.Combine(tools.Root, "X"),
+                options.SystemDirectory ?? SystemDirectory(tools),
+                options.DryRun),
+            Status = options.Status,
+        }.Build();
     }
 
     // The text console, asking through prompt.
@@ -65,8 +59,8 @@ internal static class TestAgents
     public static ConsoleStatus Status(IMachineConsole console) =>
         new(console, Version, new Uri(Configuration.ServerUrl!), "German (Germany)", dryRun: true);
 
-    // The runner's. Windows PE keeps it in its own directory; here it has a directory of its own, because the tests'
-    // runs are dry runs, which delete X when they end and would take the marker along.
+    // WinPE keeps it in its own directory. Here it gets a separate one, because the tests' dry runs delete X when they
+    // end and would delete the marker with it.
     public static WindowsPERestartMarker RestartMarker(FakeDeploymentTools tools, AgentLog log)
     {
         ArgumentNullException.ThrowIfNull(tools);
@@ -89,7 +83,7 @@ internal static class TestAgents
             dryRun,
             consoleDirectory is null ? null : () => consoleDirectory);
 
-    // The running agent, as the self-update may have named it.
+    // The running agent, under the name the self-update may have given it.
     public static string AgentSource(FakeDeploymentTools tools)
     {
         ArgumentNullException.ThrowIfNull(tools);
@@ -115,67 +109,27 @@ internal static class TestAgents
         return system;
     }
 
-    // The service in the Windows on tools.Volumes.Windows, with the fake's setup and restart, and its removal unless
-    // removal says otherwise.
-    public static WindowsPhaseLoop WindowsLoop(
-        IAgentServer server,
-        FakeDeploymentTools tools,
-        SequenceRunner runner,
-        AgentLog log,
-        TimeProvider timeProvider,
-        bool dryRun = false,
-        IAgentRemoval? removal = null,
-        IDeploySession? session = null,
-        ConsoleStatus? status = null)
+    // With the text console, asking through prompt.
+    public static AgentLoop Loop(IAgentServer server, ISignInPrompt prompt, TestMachine machine)
     {
-        ArgumentNullException.ThrowIfNull(tools);
+        ArgumentNullException.ThrowIfNull(machine);
 
-        return new WindowsPhaseLoop(
-            server,
-            new DryRunMachineIdentityReader(1),
-            runner,
-            tools,
-            tools,
-            tools,
-            removal ?? tools,
-            log,
-            timeProvider,
-            Timeout.InfiniteTimeSpan,
-            tools.Volumes.Windows,
-            Version,
-            dryRun,
-            session,
-            status);
+        return Loop(server, Status(prompt, machine.Log), machine);
     }
 
-    // With the text console, asking through prompt.
-    public static AgentLoop Loop(
-        IAgentServer server,
-        ISignInPrompt prompt,
-        FakeDeploymentTools tools,
-        AgentLog log,
-        TimeProvider timeProvider,
-        IMachineIdentityReader? identity = null,
-        SequenceRunner? runner = null) =>
-        Loop(server, Status(prompt, log), tools, log, timeProvider, identity, runner);
+    // Unless the machine brings a runner, the default one keeps status up to date too.
+    public static AgentLoop Loop(IAgentServer server, ConsoleStatus status, TestMachine machine)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
 
-    // The runner, unless given, keeps status up to date too.
-    public static AgentLoop Loop(
-        IAgentServer server,
-        ConsoleStatus status,
-        FakeDeploymentTools tools,
-        AgentLog log,
-        TimeProvider timeProvider,
-        IMachineIdentityReader? identity = null,
-        SequenceRunner? runner = null) =>
-        new(
+        (FakeDeploymentTools tools, AgentLog log, TimeProvider time) = machine;
+
+        return new(
             server,
-            identity ?? new DryRunMachineIdentityReader(1),
+            new AgentMachine(machine.Identity ?? new DryRunMachineIdentityReader(1), tools, new LocalRunLocator([tools.Volumes.Windows]), Version),
             status,
-            tools,
-            runner ?? Runner(server, tools, log, timeProvider, status: status),
-            new LocalRunLocator([tools.Volumes.Windows]),
+            machine.Runner ?? Runner(server, tools, log, time, new TestRunnerOptions { Status = status }),
             log,
-            timeProvider,
-            Version);
+            time);
+    }
 }

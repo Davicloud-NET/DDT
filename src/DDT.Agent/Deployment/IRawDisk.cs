@@ -16,7 +16,7 @@ public interface IRawDisk : IDisposable
 
     void Write(long offset, ReadOnlySpan<byte> buffer);
 
-    // Until the disk holds every write.
+    // Blocks until the disk holds every write.
     void Flush();
 
     // Makes Windows read the partition table again, as it does after diskpart changed it.

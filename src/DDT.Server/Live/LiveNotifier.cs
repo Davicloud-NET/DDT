@@ -23,8 +23,8 @@ using DeploymentStep = DDT.Server.Deployments.DeploymentStep;
 
 namespace DDT.Server.Live;
 
-// Pushes are not awaited by the request that caused them: a browser that stops reading would otherwise
-// hold up an agent's poll or an operator's approval.
+// The request that causes a push doesn't await it. Otherwise a browser that stops reading could hold up an agent's
+// poll or an operator's approval.
 public sealed partial class LiveNotifier(
     IHubContext<LiveHub> hub,
     TimeProvider timeProvider,
@@ -45,22 +45,22 @@ public sealed partial class LiveNotifier(
 
     private readonly PushThrottle _logs = new(timeProvider, LogPushInterval, lifetime.ApplicationStopping);
 
-    // Keyed by the run rather than the machine, so a new run never waits behind the push of the machine's last one.
+    // Keyed by run, not by machine, so a new run never waits behind the push for the machine's previous run.
     private readonly PushThrottle _runs = new(timeProvider, MachinePushInterval, lifetime.ApplicationStopping);
 
     private readonly Lock _runLock = new();
 
-    // What went out last for each run. Most machine pushes come from polls that change nothing in the run, and those
-    // send no run push. Forgotten once it holds this many, which at worst sends a run again.
+    // The last push sent for each run. Most machine pushes come from polls that don't change the run, and those send no
+    // run push. It's cleared once it holds RememberedRuns entries. At worst, that sends a run again.
     private readonly Dictionary<Guid, RunHistoryItem> _runsSent = [];
 
-    // Removed machines, whose runs went with them, so a run push that still waits stays unsent. A machine that comes back
-    // registers under a new id, so remembering the last few hundred is enough.
+    // Removed machines. Their runs were deleted with them, so a run push that's still waiting isn't sent. A machine
+    // that comes back registers under a new ID, so remembering the last few hundred is enough.
     private readonly Queue<Guid> _removedOrder = [];
     private readonly HashSet<Guid> _removed = [];
 
-    // The deployment the Machines page shows for this machine, see MachineSummaries.From. Taken now, so a push the
-    // throttle delays still carries the latest state. The run history gets the same deployment as a row of its own.
+    // Deployment is the one the Machines page shows for this machine (see MachineSummaries.From). The summary is built
+    // now, so a push the throttle delays still carries the latest state. The run history gets the deployment as a row.
     public void MachineChanged(Machine machine, Deployment? deployment)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -261,7 +261,7 @@ public sealed partial class LiveNotifier(
         _ = PushToAdministratorsAsync(LiveEvents.CertificateChanged, view);
     }
 
-    // Everyone who may read the Accounts page gets it: the view holds no password, only whether one is set.
+    // Everyone who may read the Accounts page gets it. The view holds no password, only whether one is set.
     public void AccountChanged(AccountView account)
     {
         ArgumentNullException.ThrowIfNull(account);

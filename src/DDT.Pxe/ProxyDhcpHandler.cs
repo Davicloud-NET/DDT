@@ -24,18 +24,13 @@ public sealed class ProxyDhcpHandler
         _interfaces = interfaces;
     }
 
-    public ProxyDhcpOutcome Handle(
-        ReadOnlySpan<byte> datagram,
-        ProxyDhcpListenPort port,
-        int arrivalInterface,
-        IPAddress arrivalAddress,
-        IPEndPoint source,
-        Span<byte> reply)
+    public ProxyDhcpOutcome Handle(ReadOnlySpan<byte> datagram, ProxyDhcpListenPort port, DatagramArrival arrival, Span<byte> reply)
     {
-        ArgumentNullException.ThrowIfNull(arrivalAddress);
-        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(arrival);
+        ArgumentNullException.ThrowIfNull(arrival.Address);
+        ArgumentNullException.ThrowIfNull(arrival.Source);
 
-        if (!_interfaces.TryGetInterface(arrivalInterface, out ServedInterface? served))
+        if (!_interfaces.TryGetInterface(arrival.Interface, out ServedInterface? served))
         {
             return new ProxyDhcpOutcome { Kind = ProxyDhcpOutcomeKind.InterfaceNotServed };
         }
@@ -45,10 +40,10 @@ public sealed class ProxyDhcpHandler
             return new ProxyDhcpOutcome { Kind = ProxyDhcpOutcomeKind.Unparseable, ParseError = error };
         }
 
-        // A broadcast DISCOVER arrives addressed to 255.255.255.255, which says nothing about which of our
-        // addresses the client can reach, so the interface's first address answers it. A request on 4011
-        // or from a relay was sent to one of our addresses, and that is the one expected in option 54.
-        IPAddress localAddress = served.Owns(arrivalAddress) ? arrivalAddress : served.Address;
+        // A broadcast DISCOVER says nothing about which of our addresses the client can reach, so the interface's
+        // first address answers it. A request on 4011 or from a relay was sent to one of our addresses, and option 54
+        // must carry that one.
+        IPAddress localAddress = served.Owns(arrival.Address) ? arrival.Address : served.Address;
 
         ProxyDhcpDecision decision = ProxyDhcpResponder.Respond(
             new ProxyDhcpRequest
@@ -56,8 +51,8 @@ public sealed class ProxyDhcpHandler
                 Message = message,
                 ReceivedOn = port,
                 LocalAddress = localAddress,
-                SourceAddress = source.Address,
-                SourcePort = source.Port,
+                SourceAddress = arrival.Source.Address,
+                SourcePort = arrival.Source.Port,
             },
             _configuration);
 

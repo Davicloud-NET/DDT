@@ -16,8 +16,8 @@ import {
   TEMPLATE_FILTERS,
 } from "./templates";
 
-// The server writes these cases from its own ValueTemplate: what Parse reports with the values' names as the known
-// ones, and what the template renders to, or the problem that stops it.
+// The server writes these cases from its own ValueTemplate. Each has what Parse reports when the values' names are
+// the known ones, and what the template renders to, or the problem that stops it.
 interface Case {
   template: string;
   values: Record<string, string>;
@@ -40,7 +40,7 @@ describe("the template mirror", () => {
     (template, one) => {
       const known = (name: string) =>
         Object.keys(one.values).some((key) => key.toLowerCase() === name.toLowerCase()) ||
-        // The server knows every name of its machine; the fixture lists only those the template uses.
+        // The server knows every name of its machine. The fixture only lists the ones the template uses.
         ["ComputerName", "SerialNumber", "Office", "Padded", "Empty", "Site_2", "Owner"].some(
           (key) => key.toLowerCase() === name.toLowerCase(),
         );
@@ -64,7 +64,7 @@ describe("the template mirror", () => {
       text: "PC-{{SerialNumber}}",
       caret: 19,
     });
-    // A placeholder closed already, with its filters, keeps them.
+    // An already closed placeholder keeps its filters.
     expect(complete("PC-{{Ser|alnum}}", 8, "SerialNumber")).toEqual({
       text: "PC-{{SerialNumber|alnum}}",
       caret: 17,

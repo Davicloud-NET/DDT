@@ -6,7 +6,7 @@ import { vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
 
-// A request the page sent. body is the parsed JSON when the page sent JSON, else null; raw is what it sent.
+// A request the page sent. body is the parsed JSON if the page sent JSON, or else null. raw is what it sent.
 export interface Sent {
   method: string;
   path: string;
@@ -38,9 +38,8 @@ export interface TestServer {
   changes: () => Sent[];
 }
 
-// Stands in for the server through fetch. The CSRF token and the current user are built in; a null user gets 401,
-// as without a session. Every other request without an answer gets 404. As with a browser's fetch, an aborted
-// request fails at once, whether or not its answer came.
+// Stands in for the server through fetch, with the CSRF token and the current user built in (401 for a null user) and
+// 404 for anything else unanswered. An aborted request fails at once, as with a browser's fetch.
 export function serve(user: CurrentUser | null, routes: Routes = {}): TestServer {
   const requests: Sent[] = [];
 

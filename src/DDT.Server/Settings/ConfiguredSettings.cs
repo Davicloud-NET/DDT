@@ -11,10 +11,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace DDT.Server.Settings;
 
-// The settings as configuration alone sets them, checked before the server starts. A value configuration sets that fails
-// its rules stops the start, as it always did. A problem of a field configuration leaves to the settings page, such as
-// a domain whose password is stored there, is not one: the section reports it once the stored values are read, and
-// fails closed until it is fixed.
+// Checks the settings as configuration alone sets them, before the server starts. A configured value that breaks its
+// rules stops the start. A problem in a field left to the page, such as a domain whose password is stored there, is
+// reported by its section once the stored values are read. The section then fails closed until it's fixed.
 public static class ConfiguredSettings
 {
     public static IReadOnlyList<string> FindProblems(IConfiguration configuration, bool pxe)
@@ -52,7 +51,7 @@ public static class ConfiguredSettings
 
         foreach (SettingsSectionDefinition definition in SettingsDefinitions.All)
         {
-            // Its values matter only to a process that serves netboot. Its keys are checked in every process.
+            // Only a process that serves netboot needs the PXE values. The PXE keys are checked in every process.
             if (!options.TryGetValue(definition.Name, out object? section) || (definition.Name == SettingsSectionNames.Pxe && !pxe))
             {
                 continue;
@@ -66,8 +65,8 @@ public static class ConfiguredSettings
         return problems;
     }
 
-    // A problem belongs to configuration when configuration sets its field: a collection as a whole, anything else by its
-    // own key, such as HttpBootPort, which is no field of the page.
+    // A problem belongs to configuration when configuration sets its field. A collection counts as one field. A problem
+    // that isn't about a field of the page, such as HttpBootPort, is checked by its own key.
     private static bool IsConfigured(SettingsSectionDefinition definition, IConfiguration configuration, SettingProblem problem) =>
         definition.FieldOf(problem.Field) is { } field
             ? definition.IsLocked(configuration, field)

@@ -55,7 +55,8 @@ describe("the translation catalogs", () => {
     expect(missing).toEqual([]);
   });
 
-  // A value interpolated as a member or a call becomes {0}, which tells a translator nothing; the code names it.
+  // A member or a call interpolated into a message becomes {0}, which tells a translator nothing. The code
+  // should name it instead.
   it("name every argument instead of numbering it", () => {
     const numbered = [...english.keys()].filter((id) => /\{\d+[,}]/.test(id));
 

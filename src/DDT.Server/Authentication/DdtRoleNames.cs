@@ -13,8 +13,8 @@ public static class DdtRoleNames
     // Highest first.
     public static IReadOnlyList<string> All { get; } = [Administrator, Operator, Viewer];
 
-    // An account shows one role, and a group map gives one: the highest of those it has, in its canonical spelling.
-    // Names that are not DDT roles are passed over.
+    // An account shows one role, and a group map gives one. This returns the highest role in the list, in its canonical
+    // spelling. Names that aren't DDT roles are skipped.
     public static string? Highest(IEnumerable<string?> roles)
     {
         ArgumentNullException.ThrowIfNull(roles);

@@ -2,8 +2,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- Everything the agent knows about the machine and itself, and the key to a command prompt, where a technician who
-     looks into the machine finds it. -->
+<!-- The command prompt's key is shown here too, where a technician looking into the machine finds it. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DDT.MachineConsole.ViewModels"
@@ -52,7 +51,8 @@
               <TextBlock Classes="label" Text="{Binding DisksTitle}" />
               <TextBlock Classes="body muted" Text="{Binding NotRead}" IsVisible="{Binding DisksNotRead}" />
               <TextBlock Classes="body muted" Text="{Binding NoDisks}" IsVisible="{Binding HasNoDisks}" />
-              <!-- The disk's number is as wide as its words need, "Datenträger 0" in German, and the same in every row. -->
+              <!-- The disk number column is as wide as its text needs, like "Datenträger 0" in German. Every row
+                   uses the same width. -->
               <ItemsControl ItemsSource="{Binding Disks}" Grid.IsSharedSizeScope="True">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate DataType="vm:DiskItem">

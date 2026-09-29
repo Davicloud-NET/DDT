@@ -7,8 +7,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The computer name, with its rules. The agent checks the name itself, and asks again with what was wrong. The field
-// starts with the name the machine gets when none is typed, so Continue keeps it.
+// The agent checks the name and asks again with what was wrong. The field starts with the name the machine gets when
+// none is typed, so Continue keeps it.
 public sealed class ComputerNameViewModel : QuestionViewModel
 {
     private ComputerNameQuestion _question;
@@ -49,7 +49,7 @@ public sealed class ComputerNameViewModel : QuestionViewModel
         "At most {max} characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first.",
         ("max", L.Number(_question.MaxLength)));
 
-    // The agent's words about the name before.
+    // The agent's error message about the previous name.
     public string? Error => _question.Error;
 
     public bool HasError => !string.IsNullOrEmpty(_question.Error);

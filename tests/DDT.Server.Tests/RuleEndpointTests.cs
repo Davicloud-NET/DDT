@@ -21,8 +21,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The ordered rules as the Rules page reads and writes them. The tests of a class share one server, and the rules of
-// every test there are in one list, so a test finds its own rules by id.
+// The ordered rules, as the Rules page reads and writes them.
+// The tests of a class share one server and one list of rules, so a test finds its own rules by ID.
 public sealed class RuleEndpointTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -110,15 +110,31 @@ public sealed class RuleEndpointTests(DdtApplication application) : IClassFixtur
         Assert.Equal((AuditActions.RuleCreated, $"Rule {created.Position + 1}, Dell laptops."), (audit.Action, audit.Detail));
     }
 
-    // A rule is saved with what is wrong with it, as an editor saves while the administrator types, and matches nothing
-    // until it is fixed.
-    [Fact]
-    public async Task SavesARuleWithItsProblems()
-    {
-        SignedInClient administrator = await application.AdministratorAsync();
-        Guid gone = Guid.NewGuid();
+    // The code of each of EverythingWrong's problems, in the order of their fields.
+    private static readonly string[] EverythingWrongCodes =
+    [
+        "rule.conditionUnknownName",
+        "rule.conditionOperatorType",
+        "mac.enterFull",
+        "mac.enterPart",
+        "rule.conditionSubnet",
+        "rule.conditionNumber",
+        "rule.conditionYesNo",
+        "rule.conditionAddress",
+        "rule.conditionRunVariable",
+        "rule.conditionChooseName",
+        "sequence.conditionValue",
+        "namedValue.nameInvalid",
+        "values.fact",
+        "namedValue.reserved",
+        "namedValue.repeated",
+        "valueTemplate.unknownFilter",
+        "rule.roleGone",
+    ];
 
-        RuleView rule = await administrator.CreatedRuleAsync(RuleRequests.Rule(
+    // A condition, values and a role with a problem in every place one can be.
+    private static SaveRuleRequest EverythingWrong(Guid gone) =>
+        RuleRequests.Rule(
             "Everything wrong",
             new AllCondition
             {
@@ -146,7 +162,17 @@ public sealed class RuleEndpointTests(DdtApplication application) : IClassFixtur
                 new NamedValue("office", "Graz"),
                 new NamedValue("Tag", "{{SerialNumber|shout}}"),
             ],
-            [gone]));
+            [gone]);
+
+    // A rule is saved with its problems, because the editor saves while the administrator types.
+    // It matches nothing until it's fixed.
+    [Fact]
+    public async Task SavesARuleWithItsProblems()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        Guid gone = Guid.NewGuid();
+
+        RuleView rule = await administrator.CreatedRuleAsync(EverythingWrong(gone));
 
         Assert.Equal(
             [
@@ -169,31 +195,11 @@ public sealed class RuleEndpointTests(DdtApplication application) : IClassFixtur
                 "roleIds[0]",
             ],
             rule.Problems.Select(p => p.Field));
-        Assert.Equal(
-            [
-                "rule.conditionUnknownName",
-                "rule.conditionOperatorType",
-                "mac.enterFull",
-                "mac.enterPart",
-                "rule.conditionSubnet",
-                "rule.conditionNumber",
-                "rule.conditionYesNo",
-                "rule.conditionAddress",
-                "rule.conditionRunVariable",
-                "rule.conditionChooseName",
-                "sequence.conditionValue",
-                "namedValue.nameInvalid",
-                "values.fact",
-                "namedValue.reserved",
-                "namedValue.repeated",
-                "valueTemplate.unknownFilter",
-                "rule.roleGone",
-            ],
-            rule.Problems.Select(p => p.Code));
+        Assert.Equal(EverythingWrongCodes, rule.Problems.Select(p => p.Code));
         Assert.All(rule.Problems, problem => Assert.Null(problem.StepId));
         Assert.Equal("This comparison does not fit Model, which holds any text.", rule.Problems[1].Message);
 
-        // Fixed, the rule may test the value another rule sets.
+        // Once fixed, the rule may test the value another rule sets.
         RuleView fixedRule = await RegisteredMachine.ReadAsync<RuleView>(await administrator.PutAsync(
             $"{RuleRequests.Rules}/{rule.Id}",
             RuleRequests.Save(rule, save => save with
@@ -233,7 +239,8 @@ public sealed class RuleEndpointTests(DdtApplication application) : IClassFixtur
             sequence));
     }
 
-    // A save names the revision it was made on: one over a newer save is refused with the rule as it is now.
+    // A save names the revision it was made on.
+    // A save over a newer one is refused, and the answer has the rule as it is now.
     [Fact]
     public async Task ChangesARuleOnlyAtTheRevisionItWasRead()
     {
@@ -266,7 +273,7 @@ public sealed class RuleEndpointTests(DdtApplication application) : IClassFixtur
         Assert.Equal(HttpStatusCode.NotFound, (await administrator.PutAsync($"{RuleRequests.Rules}/{Guid.NewGuid()}", RuleRequests.Save(changed))).StatusCode);
     }
 
-    // The order is the whole list, saved in one go; the rules keep their revisions, as only their places changed.
+    // The order is the whole list, saved in one go. The rules keep their revisions, because only their places changed.
     [Fact]
     public async Task ReordersTheWholeListInOneGo()
     {
@@ -364,7 +371,7 @@ public sealed class RuleEndpointTests(DdtApplication application) : IClassFixtur
             await TestDatabase.TitleAsync(await administrator.DeleteAsync($"{SequenceRequests.Sequences}/{sequence.Id}")),
             StringComparison.Ordinal);
 
-        // Letting it choose none is enough.
+        // Making the other rule choose no sequence is enough.
         (await administrator.PutAsync($"{RuleRequests.Rules}/{second.Id}", RuleRequests.Save(second, save => save with { SequenceId = null }))).EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"{SequenceRequests.Sequences}/{sequence.Id}")).StatusCode);
     }

@@ -3,15 +3,11 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Globalization;
-using System.Security.Claims;
 using System.Text;
 using DDT.Contracts.Agents;
-using DDT.Contracts.Deployments;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
-using DDT.Server.Images;
-using DDT.Server.Live;
 using DDT.Server.Machines;
 using DDT.Server.Security;
 using Microsoft.AspNetCore.Builder;
@@ -20,33 +16,25 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
-using DeploymentStep = DDT.Server.Deployments.DeploymentStep;
 
 namespace DDT.Server.Endpoints;
 
 // What an authorized machine needs to run a task sequence: the sequences it may choose, its run, the run's files and,
-// just in time, its secrets. All of it takes a session token, and the machine's own current generation.
+// just in time, its secrets. Everything needs the machine's own session token, in its current generation.
 public static class AgentDeploymentEndpoints
 {
-    private const int MaxAttempts = 3;
-
-    // How soon the agent reports again while its run waits for someone to answer or to continue it.
-    private const int WaitingReportSeconds = 5;
-
-    private const string AnsweredAlready =
-        "The run waits for no answers: it started, or its inputs were answered on the machine's page first. Ask the server for the current run.";
-
     public static RouteGroupBuilder MapAgentDeploymentEndpoints(this RouteGroupBuilder group)
     {
         ArgumentNullException.ThrowIfNull(group);
 
         group.MapGet("/{id:guid}/sequences", ListSequencesAsync)
+            .AddEndpointFilter<AgentMachineFilter>()
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine);
 
         group.MapPost("/{id:guid}/runs", PickAsync)
+            .AddEndpointFilter<AgentMachineFilter>()
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine)
             .WithMetadata(new RequestSizeLimitAttribute(DeploymentLimits.MaxRequestBytes));
@@ -57,13 +45,15 @@ public static class AgentDeploymentEndpoints
             .WithMetadata(new RequestSizeLimitAttribute(DeploymentLimits.MaxReportBytes));
 
         group.MapPost("/{id:guid}/runs/{runId:guid}/answers", AnswerAsync)
+            .AddEndpointFilter<AgentMachineFilter>()
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine)
             .WithMetadata(new RequestSizeLimitAttribute(DeploymentLimits.MaxRequestBytes));
 
-        // HEAD explicitly: the agent checks a file's size before it erases the disk, and a HEAD no endpoint matches
+        // HEAD is mapped explicitly. The agent checks a file's size before it erases the disk, and an unmatched HEAD
         // would fall through to the web UI's index page with 200.
         group.MapMethods("/{id:guid}/runs/{runId:guid}/files/{sha256}", [HttpMethods.Get, HttpMethods.Head], ReadFileAsync)
+            .AddEndpointFilter<AgentMachineFilter>()
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentImage);
 
@@ -80,7 +70,7 @@ public static class AgentDeploymentEndpoints
             .RequireRateLimiting(RateLimitPolicies.AgentMachine);
 
         // An agent from before task sequences never gets an image deployment from this server, so it has no reason to
-        // call these. Answered here rather than by the web UI's fallback page, which would answer a GET with 200.
+        // call these. They're answered here, not by the web UI's fallback page, which would answer a GET with 200.
         group.MapMethods("/{id:guid}/images/{**rest}", [HttpMethods.Get, HttpMethods.Head], Gone)
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine);
@@ -98,342 +88,98 @@ public static class AgentDeploymentEndpoints
             statusCode: StatusCodes.Status410Gone);
 
     private static async Task<Results<Ok<IReadOnlyList<AgentSequenceChoice>>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> ListSequencesAsync(
-        Guid id,
-        ClaimsPrincipal user,
-        DdtDbContext database,
-        DeploymentService deployments,
+        HttpContext context,
+        SequenceChoices choices,
         CancellationToken cancellationToken)
     {
-        if (!Principals.IsMachine(user, id))
-        {
-            return TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
-        }
+        Machine machine = AgentMachineFilter.MachineOf(context);
 
-        Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
-
-        if (machine is null)
-        {
-            return TypedResults.NotFound();
-        }
-
-        if (!Principals.HoldsCurrentGeneration(user, machine))
-        {
-            return TypedResults.Unauthorized();
-        }
-
-        if (!await deployments.CanPickAsync(machine, cancellationToken).ConfigureAwait(false))
+        if (!await choices.CanPickAsync(machine, cancellationToken).ConfigureAwait(false))
         {
             return TypedResults.Problem(
                 title: "Only an operator or administrator signed in at this machine can choose a sequence. Sign in at the machine first.",
                 statusCode: StatusCodes.Status403Forbidden);
         }
 
-        return TypedResults.Ok(await deployments.ChoicesAsync(machine, cancellationToken).ConfigureAwait(false));
+        return TypedResults.Ok(await choices.ChoicesAsync(machine, cancellationToken).ConfigureAwait(false));
     }
 
     private static async Task<Results<Ok<AgentRun>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult, ValidationProblem>> PickAsync(
-        Guid id,
         AgentRunRequest request,
-        ClaimsPrincipal user,
         HttpContext context,
-        DdtDbContext database,
-        DeploymentService deployments,
-        ImageStore store,
-        LiveNotifier live,
-        ILoggerFactory loggerFactory,
+        SequencePickSaves picks,
         CancellationToken cancellationToken)
     {
-        if (!Principals.IsMachine(user, id))
-        {
-            return TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
-        }
-
-        Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
-
-        if (machine is null)
-        {
-            return TypedResults.NotFound();
-        }
-
-        if (!Principals.HoldsCurrentGeneration(user, machine))
-        {
-            return TypedResults.Unauthorized();
-        }
-
-        Deployment run;
-
-        await store.LibraryLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            DeploymentDecision decision = await deployments
-                .PickAsync(machine, request, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
-                .ConfigureAwait(false);
-
-            switch (decision.Outcome)
-            {
-                case DeploymentOutcome.NotFound:
-                    return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status404NotFound);
-                case DeploymentOutcome.Conflict:
-                    return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status409Conflict);
-                case DeploymentOutcome.Invalid:
-                    return Invalid(decision);
-            }
-
-            run = decision.Deployment!;
-
-            try
-            {
-                await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return TypedResults.Problem(
-                    title: "The machine changed while the sequence was chosen. Choose the sequence again.",
-                    statusCode: StatusCodes.Status409Conflict);
-            }
-        }
-        finally
-        {
-            store.LibraryLock.Release();
-        }
-
-        DeploymentLog.Changed(loggerFactory.CreateLogger(typeof(AgentDeploymentEndpoints)), run, null);
-        live.MachineChanged(machine, run);
-
-        return TypedResults.Ok(await deployments.AgentRunAsync(machine, run, cancellationToken).ConfigureAwait(false));
-    }
-
-    // A running run does not poll next, so every report refreshes last seen and hands out the tokens a poll would.
-    private static async Task<Results<Ok<AgentRunReportResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult, ValidationProblem>> ReportAsync(
-        Guid id,
-        Guid runId,
-        AgentRunReport report,
-        ClaimsPrincipal user,
-        HttpContext context,
-        DdtDbContext database,
-        RunReports reports,
-        MachineRegistrar registrar,
-        MachineTokenService tokens,
-        LiveNotifier live,
-        TimeProvider timeProvider,
-        ILoggerFactory loggerFactory,
-        CancellationToken cancellationToken)
-    {
-        if (!Principals.IsMachine(user, id))
-        {
-            return TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
-        }
-
-        string? address = context.Connection.RemoteIpAddress?.ToString();
-
-        for (int attempt = 1; ; attempt++)
-        {
-            Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
-
-            if (machine is null)
-            {
-                return TypedResults.NotFound();
-            }
-
-            // Stopped, rejected or registered again since the token was checked: the run is over for this agent.
-            if (!Principals.HoldsCurrentGeneration(user, machine))
-            {
-                return TypedResults.Unauthorized();
-            }
-
-            DeploymentState? before = (await database.Deployments.FindAsync([runId], cancellationToken).ConfigureAwait(false))?.State;
-
-            DeploymentDecision decision = await reports.ApplyAsync(machine, runId, report, address, cancellationToken).ConfigureAwait(false);
-
-            switch (decision.Outcome)
-            {
-                case DeploymentOutcome.NotFound:
-                    return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status404NotFound);
-                case DeploymentOutcome.Conflict:
-                    return TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status409Conflict);
-                case DeploymentOutcome.Invalid:
-                    return TypedResults.ValidationProblem(new Dictionary<string, string[]> { [decision.Field!] = [decision.Reason!] });
-                case DeploymentOutcome.Unchanged:
-                    return TypedResults.Ok(Tokens(machine, decision.Deployment!, registrar, tokens));
-            }
-
-            Deployment run = decision.Deployment!;
-            IReadOnlyList<DeploymentStep> changedSteps = RunReports.ChangedSteps(database);
-            bool variablesChanged = RunReports.VariablesChanged(database, run);
-            LastSeen.Record(machine, timeProvider.GetUtcNow(), address);
-
-            try
-            {
-                await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            }
-            catch (DbUpdateConcurrencyException) when (attempt < MaxAttempts)
-            {
-                // Decide again from what is stored now. A stop or a new registration bumped the generation, and
-                // the next attempt answers 401.
-                database.ChangeTracker.Clear();
-
-                continue;
-            }
-
-            DeploymentLog.Changed(loggerFactory.CreateLogger(typeof(AgentDeploymentEndpoints)), run, before);
-            live.MachineChanged(machine, run);
-            live.RunStepsChanged(machine.Id, changedSteps);
-
-            if (variablesChanged && RunVariables.Read(run.Variables) is { } variables)
-            {
-                live.RunVariablesChanged(machine.Id, run.Id, variables);
-            }
-
-            return decision.Outcome == DeploymentOutcome.Refused
-                ? TypedResults.Problem(title: decision.Reason, statusCode: StatusCodes.Status409Conflict)
-                : TypedResults.Ok(Answer(Tokens(machine, run, registrar, tokens), run, report, decision));
-        }
-    }
-
-    // What the agent learns besides its tokens. The values go with the report that started the run, and with every
-    // report before the agent has begun, since the answer that started it can be lost: the agent waits for them. A pause
-    // someone continued goes with every answer until its visit is over. While the run waits for someone the agent is
-    // asked to report sooner.
-    private static AgentRunReportResult Answer(AgentRunReportResult tokens, Deployment run, AgentRunReport report, DeploymentDecision decision) =>
-        tokens with
-        {
-            Values = run.State == DeploymentState.Running && (decision.Started || report.Activity is RunActivity.Preparing or RunActivity.WaitingForInput)
-                ? RunValues.Effective(run)
-                : null,
-            InputsPending = run.InputsPending ? decision.InputsPending ?? [] : null,
-            ContinueStepId = run.ContinueStepId,
-            ContinuePass = run.ContinueStepId is null ? null : run.ContinuePass,
-            ReportAfterSeconds = DeploymentSummaries.Waiting(run) ? WaitingReportSeconds : null,
-        };
-
-    // Answers given at the machine while its run waits at its start for them, or before its agent reported: only inputs the
-    // machine asks. Answers that complete what the run lacks start it here, and the answer carries its values; problems
-    // are said by input, and the machine asks again. Answers given on the machine's page first win, and these are refused.
-    private static async Task<Results<Ok<AgentAnswersResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> AnswerAsync(
-        Guid id,
-        Guid runId,
-        AgentInputAnswers answers,
-        ClaimsPrincipal user,
-        HttpContext context,
-        DdtDbContext database,
-        DeploymentService deployments,
-        RunReports reports,
-        LiveNotifier live,
-        TimeProvider timeProvider,
-        ILoggerFactory loggerFactory,
-        CancellationToken cancellationToken)
-    {
-        if (!Principals.IsMachine(user, id))
-        {
-            return TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
-        }
-
-        Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
-
-        if (machine is null)
-        {
-            return TypedResults.NotFound();
-        }
-
-        if (!Principals.HoldsCurrentGeneration(user, machine))
-        {
-            return TypedResults.Unauthorized();
-        }
-
-        Deployment? run = machine.ActiveDeploymentId == runId
-            ? await database.Deployments.FindAsync([runId], cancellationToken).ConfigureAwait(false)
-            : null;
-
-        if (run is null)
-        {
-            return TypedResults.Problem(title: "This machine has no such run. Ask the server for the current run.", statusCode: StatusCodes.Status404NotFound);
-        }
-
-        string? address = context.Connection.RemoteIpAddress?.ToString();
-        DeploymentState before = run.State;
-        RunAnswering answering = await deployments
-            .AnswerAsync(machine, run, answers.Answers, atMachine: true, machine.SignedInByUserId, machine.SignedInUserName, address, cancellationToken)
+        (AgentRun? run, DeploymentDecision decision) = await picks
+            .PickAsync(AgentMachineFilter.MachineOf(context), request, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
             .ConfigureAwait(false);
 
-        if (answering.Refused)
+        if (run is not null)
         {
-            return TypedResults.Problem(title: AnsweredAlready, statusCode: StatusCodes.Status409Conflict);
+            return TypedResults.Ok(run);
         }
 
-        if (answering.Problems.Count > 0)
-        {
-            return TypedResults.Ok(new AgentAnswersResult(
-                null,
-                answering.Asked,
-                [.. answering.Problems.Select(problem => new InputProblem(problem.Name, problem.Message.Text))]));
-        }
-
-        RunStart? start = answering.Check!.Missing.Count == 0
-            ? await reports.StartAsync(machine, run, address, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false)
-            : null;
-
-        if (!await RunAnswerSaves.SaveAsync(database, run, answering.Before, cancellationToken).ConfigureAwait(false))
-        {
-            return TypedResults.Problem(title: AnsweredAlready, statusCode: StatusCodes.Status409Conflict);
-        }
-
-        DeploymentLog.Changed(loggerFactory.CreateLogger(typeof(AgentDeploymentEndpoints)), run, before);
-        live.MachineChanged(machine, run);
-
-        if (start?.Error is { } error)
-        {
-            return TypedResults.Problem(title: error, statusCode: StatusCodes.Status409Conflict);
-        }
-
-        return TypedResults.Ok(start is { InputsPending: null }
-            ? new AgentAnswersResult(RunValues.Effective(run), [], [])
-            : new AgentAnswersResult(null, start?.InputsPending ?? answering.Check.AskedAtMachine, []));
+        return decision.Outcome == DeploymentOutcome.Invalid
+            ? DeploymentDecisionResults.AgentInvalid(decision)
+            : DeploymentDecisionResults.AgentProblem(decision, DeploymentDecisionResults.RefusalStatus(decision) ?? StatusCodes.Status409Conflict);
     }
 
-    // Every answer the console asks again, by its field, and all of them in the title, which the console shows.
-    private static ValidationProblem Invalid(DeploymentDecision decision) =>
-        decision.Problems.Count == 0
-            ? TypedResults.ValidationProblem(new Dictionary<string, string[]> { [decision.Field!] = [decision.Reason!] })
-            : TypedResults.ValidationProblem(
-                decision.Problems.GroupBy(problem => problem.Field).ToDictionary(field => field.Key, field => field.Select(problem => problem.Message.Text).ToArray()),
-                title: string.Join(" ", decision.Problems.Select(problem => problem.Message.Text)));
-
-    // Content addressed: the tag is the hash, so a resumed range can never splice two different files. Only the files
-    // frozen with the machine's active run, so a machine never reads the library at large.
-    private static async Task<Results<PhysicalFileHttpResult, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> ReadFileAsync(
-        Guid id,
-        Guid runId,
-        string sha256,
-        ClaimsPrincipal user,
-        DdtDbContext database,
-        ImageStore store,
+    private static async Task<Results<Ok<AgentRunReportResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult, ValidationProblem>> ReportAsync(
+        [AsParameters] AgentRunRoute route,
+        AgentRunReport report,
+        HttpContext context,
+        RunReportSaves reports,
         CancellationToken cancellationToken)
     {
-        if (!Principals.IsMachine(user, id))
+        if (!Principals.IsMachine(context.User, route.Id))
         {
             return TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
         }
 
-        Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
+        IncomingReport incoming = new(route.Id, route.RunId, report, context.User, context.Connection.RemoteIpAddress?.ToString());
+        ReportOutcome outcome = await reports.SaveAsync(incoming, cancellationToken).ConfigureAwait(false);
 
-        if (machine is null)
+        return outcome switch
         {
-            return TypedResults.NotFound();
-        }
+            { Result: { } result } => TypedResults.Ok(result),
+            { Refusal: { Outcome: DeploymentOutcome.Invalid } invalid } => DeploymentDecisionResults.AgentInvalid(invalid),
+            { Refusal: { } refused } => DeploymentDecisionResults.AgentProblem(
+                refused,
+                DeploymentDecisionResults.RefusalStatus(refused) ?? StatusCodes.Status409Conflict),
+            { Unauthorized: true } => TypedResults.Unauthorized(),
+            _ => TypedResults.NotFound(),
+        };
+    }
 
-        if (!Principals.HoldsCurrentGeneration(user, machine))
-        {
-            return TypedResults.Unauthorized();
-        }
+    private static async Task<Results<Ok<AgentAnswersResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> AnswerAsync(
+        Guid runId,
+        AgentInputAnswers answers,
+        HttpContext context,
+        AgentAnswerSaves saves,
+        CancellationToken cancellationToken)
+    {
+        AgentAnswering answering = await saves
+            .AnswerAsync(AgentMachineFilter.MachineOf(context), runId, answers.Answers, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+            .ConfigureAwait(false);
 
-        string hash = sha256.ToLowerInvariant();
-        DeploymentArtifact? artifact = machine.ActiveDeploymentId == runId
-            ? await database.DeploymentArtifacts
-                .AsNoTracking()
-                .FirstOrDefaultAsync(a => a.DeploymentId == runId && a.Sha256 == hash, cancellationToken)
-                .ConfigureAwait(false)
-            : null;
+        return answering.Result is { } result
+            ? TypedResults.Ok(result)
+            : TypedResults.Problem(
+                title: answering.Refusal,
+                statusCode: answering.NoSuchRun ? StatusCodes.Status404NotFound : StatusCodes.Status409Conflict);
+    }
+
+    // Content addressed: the tag is the hash, so a resumed range can never splice two different files.
+    private static async Task<Results<PhysicalFileHttpResult, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> ReadFileAsync(
+        Guid runId,
+        string sha256,
+        HttpContext context,
+        RunFiles files,
+        CancellationToken cancellationToken)
+    {
+        (DeploymentArtifact? artifact, string? path) = await files
+            .FindAsync(AgentMachineFilter.MachineOf(context), runId, sha256, cancellationToken)
+            .ConfigureAwait(false);
 
         if (artifact is null)
         {
@@ -442,10 +188,7 @@ public static class AgentDeploymentEndpoints
                 statusCode: StatusCodes.Status403Forbidden);
         }
 
-        // The stored hash, never the one in the URL, names the file.
-        string path = store.ObjectPath(artifact.Sha256);
-
-        if (!File.Exists(path))
+        if (path is null)
         {
             return TypedResults.Problem(
                 title: "The file is missing from the server's library. Upload it again and assign the sequence anew.",
@@ -460,112 +203,106 @@ public static class AgentDeploymentEndpoints
     }
 
     private static async Task<Results<ContentHttpResult, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> ReadAnswerFileAsync(
-        Guid id,
-        Guid runId,
-        Guid stepId,
-        ClaimsPrincipal user,
+        [AsParameters] AgentStepRoute route,
         HttpContext context,
         DdtDbContext database,
         RunSecrets secrets,
         CancellationToken cancellationToken)
     {
-        if (await SecretMachineAsync(id, user, database, cancellationToken).ConfigureAwait(false) is not { } machine)
+        if (await SecretMachineAsync(route.Id, context, database, cancellationToken).ConfigureAwait(false) is not { } machine)
         {
-            return Principals.IsMachine(user, id) ? TypedResults.Unauthorized() : TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
+            return Principals.IsMachine(context.User, route.Id)
+                ? TypedResults.Unauthorized()
+                : TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
         }
 
         (string? answer, string? refusal) = await secrets
-            .AnswerFileAsync(machine, runId, stepId, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+            .AnswerFileAsync(machine, route.RunId, route.StepId, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
             .ConfigureAwait(false);
 
-        if (refusal is not null)
+        if (refusal is not null || answer is null)
         {
             return TypedResults.Problem(title: refusal, statusCode: StatusCodes.Status409Conflict);
         }
 
-        await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        context.Response.Headers.CacheControl = "no-store";
+        await SavedAsync(context, database, cancellationToken).ConfigureAwait(false);
 
-        return TypedResults.Text(answer!, "application/xml", Encoding.UTF8);
+        return TypedResults.Text(answer, "application/xml", Encoding.UTF8);
     }
 
     private static async Task<Results<Ok<AgentJoinDomainCredentials>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> ReadJoinCredentialsAsync(
-        Guid id,
-        Guid runId,
-        Guid stepId,
-        ClaimsPrincipal user,
+        [AsParameters] AgentStepRoute route,
         HttpContext context,
         DdtDbContext database,
         RunSecrets secrets,
         CancellationToken cancellationToken)
     {
-        if (await SecretMachineAsync(id, user, database, cancellationToken).ConfigureAwait(false) is not { } machine)
+        if (await SecretMachineAsync(route.Id, context, database, cancellationToken).ConfigureAwait(false) is not { } machine)
         {
-            return Principals.IsMachine(user, id) ? TypedResults.Unauthorized() : TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
+            return Principals.IsMachine(context.User, route.Id)
+                ? TypedResults.Unauthorized()
+                : TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
         }
 
         (AgentJoinDomainCredentials? credentials, string? refusal) = await secrets
-            .JoinCredentialsAsync(machine, runId, stepId, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+            .JoinCredentialsAsync(machine, route.RunId, route.StepId, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
             .ConfigureAwait(false);
 
-        if (refusal is not null)
+        if (refusal is not null || credentials is null)
         {
             return TypedResults.Problem(title: refusal, statusCode: StatusCodes.Status409Conflict);
         }
 
-        await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        context.Response.Headers.CacheControl = "no-store";
+        await SavedAsync(context, database, cancellationToken).ConfigureAwait(false);
 
-        return TypedResults.Ok(credentials!);
+        return TypedResults.Ok(credentials);
     }
 
     private static async Task<Results<Ok<AgentStepAccounts>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> ReadStepAccountsAsync(
-        Guid id,
-        Guid runId,
-        Guid stepId,
-        ClaimsPrincipal user,
+        [AsParameters] AgentStepRoute route,
         HttpContext context,
         DdtDbContext database,
-        RunSecrets secrets,
+        StepAccounts accounts,
         CancellationToken cancellationToken)
     {
-        if (await SecretMachineAsync(id, user, database, cancellationToken).ConfigureAwait(false) is not { } machine)
+        if (await SecretMachineAsync(route.Id, context, database, cancellationToken).ConfigureAwait(false) is not { } machine)
         {
-            return Principals.IsMachine(user, id) ? TypedResults.Unauthorized() : TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
+            return Principals.IsMachine(context.User, route.Id)
+                ? TypedResults.Unauthorized()
+                : TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
         }
 
-        (AgentStepAccounts? accounts, string? refusal) = await secrets
-            .StepAccountsAsync(machine, runId, stepId, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+        (AgentStepAccounts? read, string? refusal) = await accounts
+            .ReadAsync(machine, route.RunId, route.StepId, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
             .ConfigureAwait(false);
 
-        if (refusal is not null)
+        if (refusal is not null || read is null)
         {
             return TypedResults.Problem(title: refusal, statusCode: StatusCodes.Status409Conflict);
         }
 
-        await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        context.Response.Headers.CacheControl = "no-store";
+        await SavedAsync(context, database, cancellationToken).ConfigureAwait(false);
 
-        return TypedResults.Ok(accounts!);
+        return TypedResults.Ok(read);
     }
 
     // The machine the token names, in the token's generation, or null.
-    private static async Task<Machine?> SecretMachineAsync(Guid id, ClaimsPrincipal user, DdtDbContext database, CancellationToken cancellationToken)
+    private static async Task<Machine?> SecretMachineAsync(Guid id, HttpContext context, DdtDbContext database, CancellationToken cancellationToken)
     {
-        if (!Principals.IsMachine(user, id))
+        if (!Principals.IsMachine(context.User, id))
         {
             return null;
         }
 
         Machine? machine = await database.Machines.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
 
-        return machine is not null && Principals.HoldsCurrentGeneration(user, machine) ? machine : null;
+        return machine is not null && Principals.HoldsCurrentGeneration(context.User, machine) ? machine : null;
     }
 
-    // The run token comes with every answer while the run runs, so the agent has one on disk before it first restarts.
-    private static AgentRunReportResult Tokens(Machine machine, Deployment run, MachineRegistrar registrar, MachineTokenService tokens) =>
-        new(
-            registrar.CurrentToken(machine),
-            tokens.Issue(machine, MachineTokenPurpose.Resume),
-            run.State == DeploymentState.Running ? tokens.IssueRunToken(machine, run.Id) : null);
+    // The read's audit rows are saved before the secret leaves, and no-store tells anything in between not to keep it.
+    private static async Task SavedAsync(HttpContext context, DdtDbContext database, CancellationToken cancellationToken)
+    {
+        await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        context.Response.Headers.CacheControl = "no-store";
+    }
 }

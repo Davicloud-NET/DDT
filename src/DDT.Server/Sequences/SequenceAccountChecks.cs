@@ -8,11 +8,10 @@ using DDT.Server.Accounts;
 
 namespace DDT.Server.Sequences;
 
-// The accounts a sequence's steps name, anywhere in its tree: a stored account exists and has a password this server
-// can read, and every account may go where the step sends it, which is what the server checks again when the step
-// fetches it. A share whose server comes from a template is checked when the run fetches it, with the values the run
-// started with. Only a leaf step connects shares; the validator refuses shares on a group, an IF or a Repeat, so their
-// accounts are not checked here.
+// Checks the accounts a sequence's steps use. A stored account must exist and have a password this server can read.
+// Every account must be allowed where the step sends it. The server checks this again when the step fetches the
+// account, and only then for a share server made from a template. The validator refuses shares on a container, so
+// only leaf steps are checked.
 public static class SequenceAccountChecks
 {
     public static IReadOnlyList<SequenceProblem> Check(SequenceDefinition definition, SequenceReferences references)
@@ -35,8 +34,8 @@ public static class SequenceAccountChecks
 
     private static Guid? StepId(SequenceStep step) => step.Id == Guid.Empty ? null : step.Id;
 
-    // Whether a reference names exactly one of a stored account and an Account input, and whether that input exists, is
-    // the validator's to say; this adds what only the server knows: the stored accounts and where they may go.
+    // The validator checks that a reference names either a stored account or an Account input, and that the input
+    // exists. This adds what only the server knows: the stored accounts and where they may be used.
     private static ServerMessage? Problem(AccountSite site, SequenceDefinition definition, SequenceReferences references)
     {
         if (site.Reference is not { } reference || (reference.AccountId is null) == (reference.Input is null))
@@ -44,7 +43,7 @@ public static class SequenceAccountChecks
             return null;
         }
 
-        // A server written in the path, not made from a value.
+        // A server written literally in the path, not built from a value.
         string? host = site.Purpose == AccountPurpose.Share && AccountRules.WrittenHost(site.SharePath) is { } written
             && !written.Contains("{{", StringComparison.Ordinal)
                 ? written
@@ -72,7 +71,7 @@ public static class SequenceAccountChecks
         string name = reference.Input!;
         InputDeclaration? input = definition.Inputs?.FirstOrDefault(i => i is not null && AccountRules.Same(i.Name, name));
 
-        // A missing input, or one that asks for something else, is the validator's accountInputUnknown.
+        // The validator reports a missing input, or one of another kind, as accountInputUnknown.
         if (input is null || input.Kind != InputKind.Account)
         {
             return null;

@@ -10,12 +10,11 @@ using DDT.Core.Templates;
 
 namespace DDT.Core.Sequences;
 
-// The names a sequence declares, and the checks of what uses them: the declarations themselves, templates, account
-// references and shares. Names ignore case, as templates do. An account reference names its input exactly, because the
-// answer is kept for the run under the input's name.
+// The names a sequence declares, and the checks for everything that uses them. That covers the declarations,
+// templates, account references and shares.
 internal sealed partial class SequenceNames
 {
-    // Kept for DDT's own values, such as the DDT_VAR_ variables of a script's environment.
+    // Reserved for DDT's own values, such as the DDT_VAR_ variables in a script's environment.
     private const string ReservedPrefix = "DDT";
 
     private readonly SequenceDefinition _definition;
@@ -55,12 +54,12 @@ internal sealed partial class SequenceNames
         }
     }
 
-    // The names conditions test that only rules and machine roles can give a value, each once, as first written.
+    // Names that conditions test but only rules and machine roles can set. Each is listed once, as first written.
     public IReadOnlyList<string> ValueNames => _valueNames;
 
     public static bool IsName(string name) => Name().IsMatch(name);
 
-    // The type of a fact or run variable of the catalogue, or null for any other name.
+    // The catalogue's type for a fact or run variable, or null for any other name.
     public static FactType? FactTypeOf(string name)
     {
         foreach ((string fact, FactType type) in MachineVariableNames.Catalogue)
@@ -85,7 +84,7 @@ internal sealed partial class SequenceNames
     }
 
     // A name a template can use: a fact, a run variable, a declared variable, an input's answer, or one of the values
-    // DDT gives every run. An Account input's answer never is one.
+    // DDT gives every run. An Account input's answer never counts.
     public bool IsKnown(string name) =>
         FactTypeOf(name) is not null
         || _variables.ContainsKey(name)
@@ -106,9 +105,8 @@ internal sealed partial class SequenceNames
             add(field, ServerMessages.SequenceAccountInputAsValue.With("name", name));
         }
 
-        // A name this document does not know may still be a value a rule or a machine role sets, which only the server
-        // knows, so it is noted for the server's warning rather than refused here. The run fails at the step if nothing
-        // sets it after all.
+        // An unknown name may be a value that a rule or machine role sets, which only the server knows. So it's noted
+        // for the server's warning instead of refused. The run fails at the step if nothing sets it.
         foreach (TemplateProblem problem in parsed.Problems)
         {
             if (problem.Kind == TemplateProblemKind.UnknownName)
@@ -122,8 +120,8 @@ internal sealed partial class SequenceNames
         }
     }
 
-    // Exactly one of a stored account and an Account input of the sequence. Whether the account exists and may go
-    // where the step sends it is the server's to say.
+    // A step needs either a stored account or one of the sequence's Account inputs, not both. The server checks
+    // whether the account exists and is allowed where the step sends it.
     public void CheckAccount(AccountReference? account, string field, Action<string?, ServerMessage> add)
     {
         bool stored = account?.AccountId is { } id && id != Guid.Empty;
@@ -192,8 +190,8 @@ internal sealed partial class SequenceNames
         CheckTemplate(step.Value, "value", add);
     }
 
-    // The sequence's variables and inputs. An input may set a declared variable, which is how a variable is asked; an
-    // Account input sets none, so its name is its own.
+    // Checks the sequence's variables and inputs. An input may set a declared variable, which is how a variable gets
+    // asked for. An Account input never sets a variable, so its name can't match one.
     public void CheckDeclarations(List<SequenceProblem> problems)
     {
         void Add(string? field, ServerMessage message) => problems.Add(SequenceProblem.From(null, field, message));
@@ -282,7 +280,7 @@ internal sealed partial class SequenceNames
         }
     }
 
-    // A multiple choice's answer is its values separated by semicolons, so no value can hold one.
+    // A multiple choice answer is the chosen values separated by semicolons, so no value can contain one.
     private static void CheckChoices(InputDeclaration input, string at, Action<string?, ServerMessage> add)
     {
         IReadOnlyList<InputChoice?> choices = input.Choices ?? [];
@@ -320,8 +318,8 @@ internal sealed partial class SequenceNames
         }
     }
 
-    // A name as templates write it, not DDT's own, and not a fact, which only the machine or the run sets. ComputerName
-    // is a fact that is also a value: the machine's name comes from it.
+    // A name has to look the way templates write it. It can't be one of DDT's own or a fact, because only the machine
+    // or the run sets facts. ComputerName is a fact that's also a value, because the machine's name comes from it.
     private static bool CheckName(string? name, string field, Action<string?, ServerMessage> add)
     {
         if (name is null || !IsName(name))
@@ -352,7 +350,7 @@ internal sealed partial class SequenceNames
         MachineVariableNames.ChangeDuringRun.Contains(name, StringComparer.OrdinalIgnoreCase)
         || (_variables.TryGetValue(name, out VariableDeclaration? variable) && variable.SetBySteps);
 
-    // The host of \\host\share, as it is written, or null when the path is not written so.
+    // The host of a \\host\share path as written, or null when the path isn't in that form.
     private static string? Host(string? path)
     {
         if (path is null || !path.StartsWith(@"\\", StringComparison.Ordinal))
@@ -374,7 +372,8 @@ internal sealed partial class SequenceNames
         return string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(share) ? null : host;
     }
 
-    // As ValueTemplate writes a name, at most MaxValueNameLength characters. \z, because $ would allow a line end.
+    // A name the way ValueTemplate writes it, at most MaxValueNameLength characters. It ends in \z, because $ would
+    // allow a line end.
     [GeneratedRegex(@"^[A-Za-z][A-Za-z0-9_]{0,63}\z", RegexOptions.CultureInvariant)]
     private static partial Regex Name();
 }

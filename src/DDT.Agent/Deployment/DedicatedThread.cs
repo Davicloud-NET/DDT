@@ -4,8 +4,8 @@
 
 namespace DDT.Agent.Deployment;
 
-// Runs a blocking Windows call on a thread that exists for it alone, so it holds up no thread of the pool, and so a
-// thread that acts as another account ends with the call and can never carry that account into other work.
+// Runs a blocking Windows call on a thread created just for it. That way it doesn't hold up a pool thread. And a thread
+// that acts as another account ends with the call, so it can never carry that account into other work.
 public static class DedicatedThread
 {
     public static Task<T> RunAsync<T>(Func<T> action, string name)

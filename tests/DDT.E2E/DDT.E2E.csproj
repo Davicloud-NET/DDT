@@ -16,7 +16,7 @@
     <!-- For the database the host writes, which the tests read. -->
     <ProjectReference Include="..\..\src\DDT.Server\DDT.Server.csproj" />
 
-    <!-- Built with the tests, which start it as a process of its own. -->
+    <!-- Built with the tests, which start it as a separate process. -->
     <ProjectReference Include="..\..\src\DDT.Host\DDT.Host.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 

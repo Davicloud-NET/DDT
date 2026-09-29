@@ -6,13 +6,9 @@ using DDT.Agent.Sequences;
 
 namespace DDT.Agent.Deployment;
 
-// Keeps a restart that Windows PE owes the run as a file in the agent's directory on X:, the RAM disk that Windows PE
-// builds anew from boot.wim at every start, so a restart clears it. A file is simpler than a volatile registry key,
-// which a restart of Windows PE clears as well: it needs only the file system, holds where the restart leads as its
-// text, and a test can keep it in a temporary folder. An agent stopped before the restart, or started again by hand
-// after wpeutil failed, finds it and restarts instead of going on as if the restart had happened. A dry run starts its
-// agent over for every restart, so the restarts it asks for always happen, and it only says what it would record. A
-// marker that cannot be written or read only costs the check, so neither fails the run.
+// A restart that WinPE still owes the run, kept as a file on X:. Every WinPE start builds X: from scratch, so the
+// restart clears it. An agent stopped before the restart, or started by hand after wpeutil failed, finds it and
+// restarts. A marker that can't be written or read only costs that check, so it never fails the run.
 public sealed class WindowsPERestartMarker(string directory, AgentLog log, bool dryRun)
 {
     public const string FileName = "restart-due";
@@ -45,6 +41,7 @@ public sealed class WindowsPERestartMarker(string directory, AgentLog log, bool 
 
     public void Set(RestartInto into)
     {
+        // A dry run starts its agent over for every restart, so the restarts it asks for always happen.
         if (dryRun)
         {
             log.Information($@"Dry run: in Windows PE the due restart would be recorded in X:\DDT\{FileName}, on the RAM disk that the restart clears.");

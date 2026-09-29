@@ -6,6 +6,6 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Contracts.Deployments;
 
-// An input of a run and whether it has its answer; the answer itself is among the run's values, and an Account input's
-// never leaves the server. AnsweredBy is who gave it, a user's name or the machine.
+// An input of a run and whether it's answered. The answer itself is in the run's values, and an Account input's
+// answer never leaves the server. AnsweredBy is who answered, a user's name or the machine.
 public sealed record RunInputView(AgentInput Input, bool Answered, string? AnsweredBy);

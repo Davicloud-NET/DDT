@@ -7,7 +7,6 @@ using System.Text.Json;
 using DDT.Contracts.Settings;
 using DDT.Server.Settings;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -24,11 +23,10 @@ internal static class SettingsRequests
         string section,
         long version,
         T values,
-        Dictionary<string, SecretUpdate>? secrets = null,
-        IReadOnlyList<string>? confirm = null,
-        string? reauthentication = null,
-        string? proof = null)
+        SettingsSaveExtras? extras = null)
     {
+        (Dictionary<string, SecretUpdate>? secrets, IReadOnlyList<string>? confirm, string? reauthentication, string? proof) = extras ?? new();
+
         using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"/api/settings/{section}", UriKind.Relative))
         {
             Content = JsonContent.Create(new SettingsSectionUpdate<T>(version, values, secrets, confirm), options: TestJson.Options),
@@ -52,17 +50,15 @@ internal static class SettingsRequests
         this SignedInClient client,
         string section,
         Func<T, T> change,
-        Dictionary<string, SecretUpdate>? secrets = null,
-        IReadOnlyList<string>? confirm = null,
-        string? reauthentication = null)
+        SettingsSaveExtras? extras = null)
     {
         SettingsSectionView<T> current = await client.SectionAsync<T>(section);
 
         return await RegisteredMachine.ReadAsync<SettingsSectionView<T>>(
-            await client.SaveAsync(section, current.Version, change(current.Values), secrets, confirm, reauthentication));
+            await client.SaveAsync(section, current.Version, change(current.Values), extras));
     }
 
-    // Every re-authentication counts against the sign-in limit of its address, so each comes from an address of its own.
+    // Every re-authentication counts against the sign-in limit of its address, so each one comes from its own address.
     public static async Task<HttpResponseMessage> ReauthenticateAsync(this SignedInClient client, string password = DdtApplication.Password, string? code = null)
     {
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/settings/reauthenticate", UriKind.Relative))

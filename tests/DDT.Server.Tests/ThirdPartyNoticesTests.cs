@@ -7,10 +7,10 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// Every package whose code ends up in the server, the agent, the console or the web bundle has to be named in
-// THIRD-PARTY-NOTICES.md, in backticks, and every package of the web bundle needs its licence text in
-// licenses/web/THIRD-PARTY-LICENSES.txt at the version the lock file holds, so that a new or upgraded
-// dependency cannot ship without its notice.
+// Every package whose code ends up in the server, the agent, the console or the web bundle must be named in
+// THIRD-PARTY-NOTICES.md, in backticks. Every package of the web bundle also needs its licence text in
+// licenses/web/THIRD-PARTY-LICENSES.txt, at the version in the lock file. That way a new or upgraded dependency can't
+// ship without its notice.
 public sealed class ThirdPartyNoticesTests
 {
     private static readonly string[] s_outputAssetKinds = ["runtime", "native", "runtimeTargets"];
@@ -64,10 +64,10 @@ public sealed class ThirdPartyNoticesTests
         Assert.Equal(expected.Order(StringComparer.Ordinal), entries.Order(StringComparer.Ordinal));
     }
 
-    // A package ships when it puts a runtime or native file into the output. Compile-time packages have none, and
-    // packages whose assets are excluded, as the agent does with ManagedWimLib's managed code, list only _._. Where
-    // target names one, only that target counts, such as the console's win-x64, which leaves out the native assets for
-    // Linux and macOS that the target without a runtime lists.
+    // A package ships when it puts a runtime or native file into the output. Compile-time packages have none.
+    // Packages with excluded assets, like ManagedWimLib's managed code in the agent, list only _._.
+    // If target is given, only that target counts.
+    // The console's win-x64 leaves out the Linux and macOS native assets that the target without a runtime lists.
     private static async Task<List<string>> NuGetPackagesAsync(string path, CancellationToken cancellationToken, string? target = null)
     {
         using JsonDocument assets = await ReadJsonAsync(path, cancellationToken);

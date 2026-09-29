@@ -10,10 +10,9 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// A run's files in run under its directory, <Windows volume>\DDT: state.json, the state the engine saves after every
-// change, in Format 1 for a flat run and Format 2 for a tree's, and token, the run token that resumes the run after a
-// restart. Each is replaced whole, through a temporary file written through to the disk, so a power loss leaves the old
-// file or the new one, never part of one. The token is a secret: it is never logged.
+// A run's files in <Windows volume>\DDT\run. state.json uses Format 1 for a list and Format 2 for a tree. token holds
+// the run token, a secret that's never logged. Each file is replaced through a temporary file written through to disk,
+// so a power loss leaves the old file or the new one, never part of one.
 public sealed class RunFiles(string runDirectory, AgentLog log)
 {
     public string StatePath => Path.Combine(runDirectory, "run", "state.json");
@@ -42,7 +41,7 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
     public Task SaveFinalReportAsync(AgentRunReport report, CancellationToken cancellationToken) =>
         ReplaceAsync(FinalReportPath, JsonSerializer.SerializeToUtf8Bytes(report, AgentJsonContext.Default.AgentRunReport), cancellationToken);
 
-    // Null when there is none, and after a warning when it cannot be read.
+    // Null when there's none. Also null, after a warning, when it can't be read.
     public async Task<AgentRunReport?> LoadFinalReportAsync(CancellationToken cancellationToken)
     {
         if (!File.Exists(FinalReportPath))
@@ -64,7 +63,8 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
         }
     }
 
-    // Null when there is no state, and after a warning when it cannot be read: a run that cannot go on is no run.
+    // Null when there's no state. Also null, after a warning, when it can't be read, because a run that can't continue
+    // is no run.
     public async Task<SequenceState?> LoadStateAsync(CancellationToken cancellationToken)
     {
         if (!File.Exists(StatePath))
@@ -115,11 +115,11 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
         }
     }
 
-    // Format 1: one entry per step of a flat list, and the index of the step the run goes on at.
+    // Format 1: one entry per step of a flat list, and the index of the step the run continues at.
     private static bool FitsList(SequenceState state) =>
         state.Definition.Steps.Count == state.Steps.Count && state.NextIndex >= 0 && state.NextIndex <= state.Steps.Count;
 
-    // Format 2: one entry per node of the tree in pre-order, no index, and a cursor at one of its nodes, or none at the end.
+    // Format 2: one entry per tree node in pre-order, no index, and a cursor at one of its nodes, or none at the end.
     private static bool FitsTree(SequenceState state)
     {
         IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(state.Definition);
@@ -131,7 +131,7 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
             && (state.Cursor is not { } cursor || nodes.Any(node => node.Id == cursor.NodeId));
     }
 
-    // The token goes first: without it the rest can no longer act as the machine.
+    // The token goes first. Without it, the rest can no longer act as the machine.
     public void Discard()
     {
         Leftovers.Delete(TokenPath, log);

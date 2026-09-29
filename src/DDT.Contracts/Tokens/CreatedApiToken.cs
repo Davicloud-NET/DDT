@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Tokens;
 
-// The only answer that carries the secret: the server keeps just its hash, so it cannot be shown again.
+// The only response that carries the secret. The server keeps only its hash, so it can't be shown again.
 public sealed record CreatedApiToken(ApiTokenView Token, string Secret);

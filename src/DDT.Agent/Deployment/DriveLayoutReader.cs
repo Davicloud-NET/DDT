@@ -26,8 +26,8 @@ public static class DriveLayoutReader
     private const int EntryGptIdOffset = 48;
     private const int GuidLength = 16;
 
-    // An MBR layout always lists four slots per table, and the extended container holding logical drives is no
-    // partition anyone would recognise, so both are left out.
+    // An MBR layout always lists four slots per table, including empty ones. The extended container that holds logical
+    // drives isn't a partition anyone would recognise either. Both are left out.
     public static int CountUsedPartitions(ReadOnlySpan<byte> layout)
     {
         int count = EntryCount(layout, out int style);
@@ -87,8 +87,8 @@ public static class DriveLayoutReader
         return ids;
     }
 
-    // The number of the GPT partition whose unique GUID is id, which diskpart's select partition takes, or null when
-    // the disk has none.
+    // The number that diskpart's select partition takes for the GPT partition whose unique GUID is id. Null when the
+    // disk has no such partition.
     public static uint? PartitionNumberOf(ReadOnlySpan<byte> layout, Guid id)
     {
         int count = EntryCount(layout, out int style);

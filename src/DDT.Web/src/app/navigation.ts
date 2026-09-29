@@ -5,8 +5,6 @@
 import type { MessageDescriptor } from "@lingui/core";
 import { msg } from "@lingui/core/macro";
 
-// The top bar holds five categories, each with its own row of pages. A new feature adds a page to a category,
-// never a tab to the bar. Settings sit with the thing they configure.
 export interface NavigationPage {
   to: string;
   label: MessageDescriptor;
@@ -18,6 +16,8 @@ export interface NavigationCategory {
   pages: [NavigationPage, ...NavigationPage[]];
 }
 
+// The top bar's categories, each with its own row of pages. A new feature adds a page to a category, never a tab to
+// the bar. Settings sit with the thing they configure.
 export const categories: NavigationCategory[] = [
   {
     id: "machines",

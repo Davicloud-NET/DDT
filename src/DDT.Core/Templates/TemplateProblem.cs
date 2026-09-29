@@ -6,8 +6,8 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Core.Templates;
 
-// What is wrong with a placeholder: Placeholder is its text, braces included, Name the value it names, and Filter the
-// filter the problem is about, where it is about one.
+// What's wrong with a placeholder. Placeholder is its text with the braces, and Name is the value it names. Filter is
+// the filter the problem is about, if it's about one.
 public sealed record TemplateProblem(TemplateProblemKind Kind, string Placeholder, string Name, string? Filter = null)
 {
     public ServerMessage Message() => Kind switch
@@ -31,15 +31,4 @@ public sealed record TemplateProblem(TemplateProblemKind Kind, string Placeholde
             ServerMessages.ValueTemplateFilterTakesNoCount.With("filter", Filter ?? "", "placeholder", Placeholder),
         _ => ServerMessages.ValueTemplateNoValue.With("placeholder", Placeholder),
     };
-}
-
-// Parse reports the first four: a name the caller does not know, and filters that are not written as DDT's filters
-// are. Rendering reports a filter problem too, and a name without a value.
-public enum TemplateProblemKind
-{
-    UnknownName,
-    UnknownFilter,
-    FilterNeedsCount,
-    FilterTakesNoCount,
-    MissingValue,
 }

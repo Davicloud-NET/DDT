@@ -6,10 +6,10 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Contracts.Deployments;
 
-// AllowSecureBootMismatch lets a raw disk image that is not signed for Secure Boot be written although the machine has
-// Secure Boot on. Answers are the answers to the sequence's inputs asked on the web.
 public sealed record AssignSequenceRequest(
     Guid SequenceId,
     string? ComputerName,
+    // Allows writing a raw disk image that isn't signed for Secure Boot, even though the machine has Secure Boot on.
     bool AllowSecureBootMismatch = false,
+    // Answers to the sequence's inputs asked on the web.
     IReadOnlyList<InputAnswer>? Answers = null);

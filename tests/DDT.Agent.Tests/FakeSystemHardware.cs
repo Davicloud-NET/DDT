@@ -6,8 +6,8 @@ using DDT.Agent.Facts;
 
 namespace DDT.Agent.Tests;
 
-// Memory and processors as each test says, Windows telling nothing unless it does. A function that throws stands for a
-// call that fails in a way Windows does not report.
+// Memory and processors as each test sets them. Windows reports nothing unless the test says so. A function that
+// throws stands for a call that fails in a way Windows doesn't report.
 internal sealed class FakeSystemHardware : ISystemHardware
 {
     public Func<ulong?> Installed { get; set; } = () => null;

@@ -264,7 +264,7 @@ describe("changedParts of a tree", () => {
       "the order of the steps",
       "the variables",
     ]);
-    // A container is not changed by what changed inside it.
+    // A change inside a container doesn't count as a change to the container.
     expect(
       changedParts(base, apply(base, { type: "updateNode", id: "b", patch: { name: "B" } })),
     ).toEqual(["B"]);

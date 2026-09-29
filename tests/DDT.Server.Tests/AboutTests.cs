@@ -124,8 +124,8 @@ public sealed class AboutTests(DdtApplication application) : IClassFixture<DdtAp
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    // A request that misses the About endpoints is redirected to the sign-in page, and following that would end on the
-    // web UI with 200.
+    // A request that misses the About endpoints is redirected to the sign-in page.
+    // Following the redirect would end on the web UI with a 200.
     private HttpClient Anonymous() => application.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
     // The build copies LICENSE, NOTICE, THIRD-PARTY-NOTICES.md and licenses/ into the legal folder under the same names.

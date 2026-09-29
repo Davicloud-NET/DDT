@@ -7,8 +7,8 @@ using System.Text.Json;
 
 namespace DDT.ConsoleProtocol;
 
-// Messages over a stream, each as its length in 4 bytes, little-endian, followed by that many bytes of JSON in UTF-8.
-// Several threads may send at once; one reads. The channel does not own the stream.
+// Sends messages over a stream. Each one is its length in 4 bytes, little-endian, followed by that many bytes of UTF-8
+// JSON. Several threads may send at once, but only one reads. The channel doesn't own the stream.
 public sealed class ConsoleChannel(Stream stream) : IDisposable
 {
     // A whole state or a batch of log lines takes a few kilobytes. A length far beyond that is not a console message,
@@ -45,8 +45,8 @@ public sealed class ConsoleChannel(Stream stream) : IDisposable
         }
     }
 
-    // The next message, or null when the stream ended between two messages. A stream that ends inside a message, a length
-    // out of range, and anything that is not a message of this protocol throw ConsoleProtocolException.
+    // Returns the next message, or null when the stream ended between two messages. Throws ConsoleProtocolException
+    // when the stream ends inside a message, a length is out of range, or the data isn't a message of this protocol.
     public async Task<ConsoleMessage?> ReceiveAsync(CancellationToken cancellationToken)
     {
         byte[] header = new byte[sizeof(int)];
@@ -87,7 +87,7 @@ public sealed class ConsoleChannel(Stream stream) : IDisposable
         }
         catch (NotSupportedException exception)
         {
-            // A message without its type, which names no message the protocol knows.
+            // A message without its type doesn't name any message the protocol knows.
             throw new ConsoleProtocolException($"The message is not one of this protocol: {exception.Message}", exception);
         }
     }

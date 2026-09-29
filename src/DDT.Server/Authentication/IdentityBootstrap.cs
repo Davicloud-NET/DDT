@@ -12,9 +12,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Authentication;
 
-// A fresh deployment has no UI to create the first account from, so DDT creates one and prints
-// the password once. No bootstrap credential is read from configuration, because an environment
-// variable holding an administrator password tends to stay set long after it was needed.
+// A fresh deployment has no UI to create the first account in, so this creates one and logs its password once. The
+// password never comes from configuration, because such an environment variable tends to stay set long after.
 public sealed partial class IdentityBootstrap(
     IServiceScopeFactory scopeFactory,
     ILogger<IdentityBootstrap> logger) : IHostedService
@@ -31,6 +30,48 @@ public sealed partial class IdentityBootstrap(
         UserManager<DdtUser> users = scope.ServiceProvider.GetRequiredService<UserManager<DdtUser>>();
         DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
 
+        if (!await CreateRolesAsync(roles).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        // A directory account always has the directory's id. One without it belongs to single sign-on. A password typed
+        // for it must never reach the directory, or a directory user with the same name could take it over.
+        await database.Users
+            .Where(u => u.Source == AccountSource.Directory && u.DirectoryObjectId == null)
+            .ExecuteUpdateAsync(user => user.SetProperty(u => u.Source, AccountSource.External), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (await database.Users.AnyAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        await CreateAdministratorAsync(users).ConfigureAwait(false);
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    // Identity requires a digit, an upper case and a lower case letter. About one draw in forty lacks one of them, and
+    // then the first administrator would silently never be created. Such a draw is thrown away instead of patched,
+    // which keeps the result uniform.
+    public static string GeneratePassword()
+    {
+        string password;
+
+        do
+        {
+            password = RandomNumberGenerator.GetString(PasswordAlphabet, PasswordLength);
+        }
+        while (!password.Any(char.IsAsciiDigit) || !password.Any(char.IsAsciiLetterUpper) || !password.Any(char.IsAsciiLetterLower));
+
+        return password;
+    }
+
+    // Every start creates the missing roles, so a failure is retried at the next start. Until then, no first
+    // administrator is created, because it might end up without its role.
+    private async Task<bool> CreateRolesAsync(RoleManager<DdtRole> roles)
+    {
         foreach (string role in DdtRoleNames.All)
         {
             if (await roles.RoleExistsAsync(role).ConfigureAwait(false))
@@ -42,25 +83,16 @@ public sealed partial class IdentityBootstrap(
 
             if (!added.Succeeded)
             {
-                // Every start creates the roles that are missing, so the next one tries again. Until then no first
-                // administrator is created: it might lack its role.
                 LogRoleFailed(role, string.Join("; ", added.Errors.Select(error => error.Description)));
-                return;
+                return false;
             }
         }
 
-        // Single sign-on stored its accounts as directory accounts before M6.5. A password typed for one of them then
-        // went to the directory, which could have taken the account over for a directory user of the same name.
-        await database.Users
-            .Where(u => u.Source == AccountSource.Directory && u.DirectoryObjectId == null)
-            .ExecuteUpdateAsync(user => user.SetProperty(u => u.Source, AccountSource.External), cancellationToken)
-            .ConfigureAwait(false);
+        return true;
+    }
 
-        if (await database.Users.AnyAsync(cancellationToken).ConfigureAwait(false))
-        {
-            return;
-        }
-
+    private async Task CreateAdministratorAsync(UserManager<DdtUser> users)
+    {
         string password = GeneratePassword();
 
         DdtUser administrator = new()
@@ -83,32 +115,14 @@ public sealed partial class IdentityBootstrap(
 
         if (!granted.Succeeded)
         {
-            // Without its role the account administers nothing, and while it exists no later start creates one that
-            // does.
+            // Without its role, the account can't administer anything. While it exists, no later start would create one
+            // that can.
             IdentityResult deleted = await users.DeleteAsync(administrator).ConfigureAwait(false);
             LogBootstrapFailed(string.Join("; ", granted.Errors.Concat(deleted.Errors).Select(error => error.Description)));
             return;
         }
 
         LogAdministratorCreated(AdministratorUserName, password);
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
-    // Identity requires a digit, an upper case and a lower case letter. About one draw in forty from
-    // this alphabet has no digit, and the first administrator would silently never exist, so a draw
-    // that misses a class is thrown away rather than patched, which keeps the result uniform.
-    public static string GeneratePassword()
-    {
-        string password;
-
-        do
-        {
-            password = RandomNumberGenerator.GetString(PasswordAlphabet, PasswordLength);
-        }
-        while (!password.Any(char.IsAsciiDigit) || !password.Any(char.IsAsciiLetterUpper) || !password.Any(char.IsAsciiLetterLower));
-
-        return password;
     }
 
     [LoggerMessage(

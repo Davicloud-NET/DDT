@@ -30,62 +30,19 @@ public static class AuditEndpoints
         return group;
     }
 
-    // Newest first by id, the order the rows were stored in, which also makes the id the cursor. Action matches from its
-    // start, so machine. finds every machine action. Actor is any part of the name, in any case. From includes its
-    // moment and to does not, so consecutive ranges never list a row twice.
+    // Sorted newest first by id, which is the order the rows were stored in. That also lets the id work as the cursor.
     private static async Task<Results<Ok<AuditPage>, ValidationProblem>> ListAsync(
-        string? action,
-        string? actor,
-        string? subject,
-        DateTimeOffset? from,
-        DateTimeOffset? to,
-        long? before,
-        int? limit,
+        [AsParameters] AuditQuery query,
         DdtDbContext database,
         CancellationToken cancellationToken)
     {
-        if (from is { } start && to is { } end && end <= start)
+        if (query.From is { } start && query.To is { } end && end <= start)
         {
             return ServerProblems.Validation("to", ServerMessages.AuditRangeEnd.With());
         }
 
-        int take = Math.Clamp(limit ?? DefaultPage, 1, MaxPage);
-        IQueryable<AuditEvent> events = database.AuditEvents.AsNoTracking();
-
-        if (!string.IsNullOrWhiteSpace(action))
-        {
-            string prefix = action.Trim().ToLowerInvariant();
-            events = events.Where(e => e.Action.StartsWith(prefix));
-        }
-
-        if (!string.IsNullOrWhiteSpace(actor))
-        {
-            string part = actor.Trim().ToLowerInvariant();
-            events = events.Where(e => e.ActorName != null && e.ActorName.ToLower().Contains(part));
-        }
-
-        if (!string.IsNullOrWhiteSpace(subject))
-        {
-            string id = subject.Trim();
-            events = events.Where(e => e.SubjectId == id);
-        }
-
-        if (from is { } after)
-        {
-            events = events.Where(e => e.OccurredUtc >= after);
-        }
-
-        if (to is { } until)
-        {
-            events = events.Where(e => e.OccurredUtc < until);
-        }
-
-        if (before is { } last)
-        {
-            events = events.Where(e => e.Id < last);
-        }
-
-        List<AuditEvent> page = await events
+        int take = Math.Clamp(query.Limit ?? DefaultPage, 1, MaxPage);
+        List<AuditEvent> page = await query.Filter(database.AuditEvents.AsNoTracking())
             .OrderByDescending(e => e.Id)
             .Take(take + 1)
             .ToListAsync(cancellationToken)

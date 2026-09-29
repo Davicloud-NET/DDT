@@ -9,8 +9,8 @@ namespace DDT.Server.Tests;
 
 public sealed class DeploymentOptionsTests(ManualClockApplication application) : IClassFixture<ManualClockApplication>
 {
-    // The assign dialog predicts with this whether the server finds a machine still at its prompt, so it must be the
-    // clock the server decides with, under the name the web UI reads.
+    // The assign dialog uses this to predict whether the server still finds a machine at its prompt.
+    // So it must be the clock the server decides with, under the name the web UI reads.
     [Fact]
     public async Task TheAssignDialogLearnsTheServersTime()
     {

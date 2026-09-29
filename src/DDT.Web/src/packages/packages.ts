@@ -7,14 +7,14 @@ import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPut } from "@/lib/api";
 import { formatBytes } from "@/lib/format";
+import { removeByIds, upsertById } from "@/lib/listCache";
 import type { HardwareModel, HardwareModelCount } from "@/machines/machines";
 import type { SequenceView } from "@/sequences/sequences";
 
-// Drivers go to the machines whose model a target names. Files are unpacked for a Run script step that names
-// them.
+// Drivers go to machines whose model a target names. Files are unpacked for a Run script step naming them.
 export type PackageKind = "Drivers" | "Files";
 
-// expandedBytes is what the files take once unpacked.
+// expandedBytes is the size of the files once unpacked.
 export interface PackageSummary {
   id: string;
   name: string;
@@ -32,7 +32,7 @@ export interface PackageSummary {
   bootImage: boolean;
 }
 
-// The last save wins: the server keeps no revision of a package.
+// The last save wins, because the server keeps no revision of a package.
 export interface UpdatePackageRequest {
   name: string;
   description: string | null;
@@ -50,19 +50,11 @@ function byName(a: PackageSummary, b: PackageSummary): number {
 }
 
 export function upsertPackage(queryClient: QueryClient, item: PackageSummary): void {
-  queryClient.setQueryData(packagesQuery.queryKey, (list) =>
-    list === undefined
-      ? list
-      : [item, ...list.filter((existing) => existing.id !== item.id)].sort(byName),
-  );
+  queryClient.setQueryData(packagesQuery.queryKey, (list) => upsertById(list, item, byName));
 }
 
 export function removePackages(queryClient: QueryClient, packageIds: readonly string[]): void {
-  const removed = new Set(packageIds);
-
-  queryClient.setQueryData(packagesQuery.queryKey, (list) =>
-    list?.filter((item) => !removed.has(item.id)),
-  );
+  queryClient.setQueryData(packagesQuery.queryKey, (list) => removeByIds(list, packageIds));
 }
 
 export const packagesQuery = queryOptions({
@@ -79,14 +71,15 @@ export function deletePackage(id: string): Promise<void> {
   return apiDelete(`/api/packages/${id}`);
 }
 
-// The server's HardwareModels: trimmed, runs of white space as one, compared in upper case.
+// Works like the server's HardwareModels: values are trimmed, runs of white space become one space, and
+// they're compared in upper case.
 function normalized(value: string | null): string | null {
   const cleaned = value?.trim().split(/\s+/).join(" ") ?? "";
 
   return cleaned === "" ? null : cleaned.toUpperCase();
 }
 
-// A null pattern matches anything, and a pattern ending in * every value that starts with the text before it.
+// A null pattern matches anything. A pattern ending in * matches values that start with the part before it.
 export function matchesModel(pattern: string | null, value: string | null): boolean {
   const expected = normalized(pattern);
 
@@ -103,8 +96,8 @@ export function matchesModel(pattern: string | null, value: string | null): bool
   return expected.endsWith("*") ? actual.startsWith(expected.slice(0, -1)) : actual === expected;
 }
 
-// How many registered machines report a model one of the targets names, for information: the server matches
-// again when a sequence is assigned.
+// How many registered machines report a model that one of the targets names. It's only for information,
+// because the server matches again when a sequence is assigned.
 export function matchingMachines(
   targets: readonly HardwareModel[],
   models: readonly HardwareModelCount[],
@@ -120,8 +113,8 @@ export function matchingMachines(
     .reduce((sum, model) => sum + model.machines, 0);
 }
 
-// The sequences that give the package to machines: a Run script step that names a Files package, or an Inject
-// drivers step, which adds every driver package whose targets match the machine.
+// The sequences that give the package to machines. A Files package needs a Run script step that names it.
+// Drivers need any Inject drivers step, which adds every driver package whose targets match the machine.
 export function sequencesUsing(
   item: PackageSummary,
   sequences: readonly SequenceView[],
@@ -139,7 +132,7 @@ export function describeTarget(target: HardwareModel): string {
   return target.manufacturer === null ? target.model : `${target.manufacturer} ${target.model}`;
 }
 
-// users is null while not every sequence is read.
+// users is null until every sequence has been read.
 export function deletionConsequence(
   item: PackageSummary,
   users: readonly SequenceView[] | null,

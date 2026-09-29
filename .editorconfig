@@ -204,6 +204,53 @@ dotnet_naming_rule.parameters_and_locals_are_camel_case.symbols = parameters_and
 dotnet_naming_rule.parameters_and_locals_are_camel_case.style = camel_case
 dotnet_naming_rule.parameters_and_locals_are_camel_case.severity = warning
 
+# docs/code-style.md: one type per file, named after it, and methods of at most 60 lines (Meziantou).
+dotnet_diagnostic.MA0048.severity = warning
+dotnet_diagnostic.MA0051.severity = warning
+MA0051.maximum_lines_per_method = 60
+MA0051.maximum_statements_per_method = 40
+
+# ReSharper: wrapping the way the code is already written
+resharper_csharp_max_line_length = 140
+resharper_csharp_wrap_parameters_style = chop_if_long
+resharper_csharp_wrap_arguments_style = chop_if_long
+resharper_csharp_wrap_chained_method_calls = chop_if_long
+resharper_csharp_wrap_before_binary_opsign = true
+resharper_csharp_wrap_before_arrow_with_expressions = false
+resharper_csharp_place_type_attribute_on_same_line = false
+resharper_csharp_place_method_attribute_on_same_line = false
+resharper_csharp_keep_blank_lines_in_code = 1
+resharper_csharp_keep_blank_lines_in_declarations = 1
+
+# ReSharper: the style guide's rules as inspections
+resharper_check_namespace_highlighting = warning
+resharper_class_can_be_sealed_local_highlighting = warning
+resharper_class_can_be_sealed_global_highlighting = suggestion
+resharper_member_can_be_private_local_highlighting = warning
+resharper_member_can_be_private_global_highlighting = suggestion
+resharper_unused_member_local_highlighting = warning
+resharper_unused_parameter_local_highlighting = warning
+resharper_not_accessed_field_local_highlighting = warning
+resharper_redundant_using_directive_highlighting = warning
+resharper_method_supports_cancellation_highlighting = warning
+resharper_method_has_async_overload_highlighting = warning
+resharper_method_has_async_overload_with_cancellation_highlighting = warning
+resharper_async_void_lambda_highlighting = warning
+resharper_invert_if_highlighting = hint
+resharper_convert_to_primary_constructor_highlighting = suggestion
+
+# ReSharper: quiet the noise (DI, minimal APIs and JSON contracts look unused; German texts look misspelt)
+resharper_unused_member_global_highlighting = suggestion
+resharper_suggest_base_type_for_parameter_highlighting = none
+resharper_suggest_base_type_for_parameter_in_constructor_highlighting = none
+resharper_loop_can_be_converted_to_query_highlighting = none
+resharper_string_literal_typo_highlighting = none
+resharper_comment_typo_highlighting = suggestion
+resharper_identifier_typo_highlighting = suggestion
+
+[tests/**.cs]
+resharper_unused_member_local_highlighting = suggestion
+
 # EF Core generates migration files that do not follow the house style and must not be reformatted.
 [**/Migrations/*.cs]
 generated_code = true

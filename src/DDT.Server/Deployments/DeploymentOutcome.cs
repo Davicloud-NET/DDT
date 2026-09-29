@@ -8,12 +8,12 @@ public enum DeploymentOutcome
 {
     Accepted,
 
-    // A repeated terminal report: nothing to save, and the agent gets its tokens as if it had been.
+    // A repeated terminal report. There's nothing to save, and the agent gets its tokens as if it had been saved.
     Unchanged,
     NotFound,
     Conflict,
     Invalid,
 
-    // The run was ended because it cannot go on: the change is saved, and the caller answers 409 with the reason.
+    // The run was ended because it can't continue. The change is saved, and the caller answers 409 with the reason.
     Refused,
 }

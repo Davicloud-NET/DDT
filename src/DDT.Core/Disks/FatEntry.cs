@@ -4,5 +4,5 @@
 
 namespace DDT.Core.Disks;
 
-// A file or directory in a FAT volume. Name is its long name when it has one, else its short name.
+// A file or directory in a FAT volume. Name is the long name if there is one, otherwise the short name.
 public sealed record FatEntry(string Name, bool IsDirectory, long Size, uint FirstCluster);

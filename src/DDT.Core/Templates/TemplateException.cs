@@ -4,7 +4,7 @@
 
 namespace DDT.Core.Templates;
 
-// A template that could not be rendered. The message is the problem's English, which names the placeholder.
+// Thrown when a template can't be rendered. The message is the problem's English text, which names the placeholder.
 public sealed class TemplateException : InvalidOperationException
 {
     public TemplateException()

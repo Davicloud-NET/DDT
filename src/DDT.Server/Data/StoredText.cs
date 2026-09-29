@@ -6,8 +6,8 @@ namespace DDT.Server.Data;
 
 public static class StoredText
 {
-    // PostgreSQL text cannot hold a NUL and refuses a value longer than its column, and an agent whose report is
-    // refused for either would send it again forever. Null for nothing.
+    // PostgreSQL text can't hold a NUL and refuses a value longer than its column. An agent whose report is refused
+    // for either reason would send it again forever. Returns null for an empty value.
     public static string? Bound(string? value, int maxLength)
     {
         string? text = value?.Replace("\0", string.Empty, StringComparison.Ordinal).Trim();

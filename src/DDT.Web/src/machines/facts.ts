@@ -10,9 +10,8 @@ import { formatBytes } from "@/lib/format";
 
 import type { MachineFacts, MachineSummary } from "./machines";
 
-// The names of what a machine reports, as conditions, rules and the machine's page say them: the server's
-// MachineVariableNames.Catalogue, whose names a condition tests, in the order a page lists them. The flow builder's
-// condition builder and a run's decisions take their labels from here.
+// Labels for what a machine reports. The names are the server's MachineVariableNames.Catalogue, which conditions test.
+// They're in the order a page lists them.
 
 const factLabels: Record<string, MessageDescriptor> = {
   Manufacturer: msg`Manufacturer`,
@@ -53,7 +52,7 @@ const factLabels: Record<string, MessageDescriptor> = {
 // The catalogue's names, in its order.
 export const factNames = Object.keys(factLabels);
 
-// A fact's label, or the name as it is for a name that is not a fact, such as a sequence's own variable.
+// A fact's label. A name that isn't a fact, such as a sequence's own variable, is returned as it is.
 export function factLabel(name: string): string {
   const key = factNames.find((candidate) => candidate.toLowerCase() === name.toLowerCase());
   const descriptor = key === undefined ? undefined : factLabels[key];
@@ -61,13 +60,13 @@ export function factLabel(name: string): string {
   return descriptor === undefined ? name : i18n._(descriptor);
 }
 
-// Whether a name is one of the catalogue's, which the machine or the run reports, rather than a value a sequence, a
+// Whether a name is in the catalogue, so the machine or the run reports it. Otherwise it's a value that a sequence, a
 // rule or a machine role sets. Names ignore case.
 export function isFact(name: string): boolean {
   return factNames.some((candidate) => candidate.toLowerCase() === name.toLowerCase());
 }
 
-// The run's own values, which change while it goes on.
+// The run's own values, which change while it runs.
 export function isRunVariable(name: string): boolean {
   return ["laststepfailed", "lastexitcode"].includes(name.toLowerCase());
 }
@@ -122,8 +121,8 @@ function yesNo(value: boolean): string {
   return value ? t`Yes` : t`No`;
 }
 
-// What the machine reported besides its identity, which the machine's header already shows, as rows in the
-// catalogue's order: only what it reported.
+// Rows for what the machine reported besides its identity, in the catalogue's order. The header already shows the
+// identity. Facts the machine didn't report are left out.
 export function factRows(machine: Pick<MachineSummary, "facts">): FactRow[] {
   const facts: MachineFacts = machine.facts ?? {};
   const rows: FactRow[] = [];

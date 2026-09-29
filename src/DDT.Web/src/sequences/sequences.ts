@@ -8,76 +8,16 @@ import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import type { ServerArguments } from "@/lib/serverText";
 import type { ImageBootCapability } from "@/images/images";
 
-export type SequencePhase = "WindowsPE" | "Windows";
+import type { ConditionNode, StepCondition } from "./sequenceConditions";
 
-// The server's ConditionOperator. Versions 1 and 2 know the first four; any other makes a document version 3, as an
-// older agent's evaluator treats an operator it does not know as false.
-export type ConditionOperator =
-  | "Equals"
-  | "NotEquals"
-  | "StartsWith"
-  | "Contains"
-  | "NotContains"
-  | "EndsWith"
-  // * stands for any text and ? for one character.
-  | "Matches"
-  // value is a list separated by semicolons.
-  | "In"
-  // Whether the machine has a value at all; value is not read.
-  | "Exists"
-  | "NotExists"
-  // Compared as numbers.
-  | "Greater"
-  | "GreaterOrEqual"
-  | "Less"
-  | "LessOrEqual"
-  // An IPv4 address within a network written as 10.0.0.0/24.
-  | "InSubnet";
+export type SequencePhase = "WindowsPE" | "Windows";
 
 export type ScriptInterpreter = "Cmd" | "PowerShell";
 
 export type StepState = "Pending" | "Running" | "Done" | "Skipped" | "Failed";
 
-// What kind of value a fact holds, which decides the operators that fit it. A YesNo value is "true" or "false".
-export type FactType = "Text" | "Number" | "YesNo" | "IPv4" | "Mac";
-
-// One name of the server's MachineVariableNames.Catalogue, as GET /api/sequences/facts lists them.
-// changesDuringRun: the value can change while the run goes on, so a share's host cannot be made of it.
-export interface FactView {
-  name: string;
-  type: FactType;
-  changesDuringRun: boolean;
-}
-
-// The conditions of versions 1 and 2, kept beside when. variable is one of the server's MachineVariableNames, such
-// as "Model", "MacAddress" or "Phase".
-export interface StepCondition {
-  variable: string;
-  operator: ConditionOperator;
-  value: string;
-}
-
-// A condition as a tree: groups whose parts must all, any or none hold, and tests at the leaves. A step's when, an
-// IF's test and a repeat's until are one. An empty all or none holds, an empty any does not. variable names a fact,
-// a run variable, or a value the sequence declares or rules and machine roles set.
-export interface TestCondition {
-  kind: "test";
-  variable: string;
-  operator: ConditionOperator;
-  value: string;
-}
-
-export type ConditionGroupKind = "all" | "any" | "none";
-
-export interface ConditionGroup {
-  kind: ConditionGroupKind;
-  parts: ConditionNode[];
-}
-
-export type ConditionNode = ConditionGroup | TestCondition;
-
-// The account a step uses: exactly one of a stored account and an Account input the sequence declares, whose answer
-// is kept for the one run. Never a password.
+// The account a step uses. It's exactly one of a stored account or an Account input the sequence declares, whose
+// answer is kept for that one run. It never holds a password.
 export interface AccountReference {
   accountId: string | null;
   input: string | null;
@@ -90,8 +30,8 @@ export interface ShareConnection {
   account: AccountReference;
 }
 
-// id stays the same across edits: run state, reports and problems name a step by it. The step runs only when
-// every condition holds and when holds as well. The members of version 3 are left out of the JSON while unset.
+// id stays the same across edits, because run state, reports and problems name a step by it. The step only runs if
+// every condition holds and when holds too. Version 3 members are left out of the JSON while unset.
 interface StepBase {
   id: string;
   name: string;
@@ -114,7 +54,7 @@ export interface ApplyImageStep extends StepBase {
   imageId: string;
 }
 
-// The server picks the driver packages by the machine's model. requireMatch fails the step when it has none.
+// The server picks the driver packages by the machine's model. requireMatch fails the step if there are none for it.
 export interface InjectDriversStep extends StepBase {
   kind: "injectDrivers";
   requireMatch: boolean;
@@ -129,16 +69,16 @@ export interface WriteUnattendStep extends StepBase {
   localAdministrator: boolean;
 }
 
-// Null takes the configured default; from version 3 organizationalUnit is a template. account, version 3, is the
-// account that joins, which also names the domain; none takes the configured join account.
+// Null takes the configured default. From version 3, organizationalUnit is a template. account (version 3) is the
+// account that joins, and it also names the domain. Without one, the configured join account is used.
 export interface JoinDomainStep extends StepBase {
   kind: "joinDomain";
   organizationalUnit: string | null;
   account?: AccountReference | null;
 }
 
-// packageId names a Files package that is extracted and becomes the script's working directory. runAs, version 3
-// and the Windows phase only: the script runs as this account instead of SYSTEM, and never sees its password.
+// packageId names a Files package that's extracted and becomes the script's working directory. runAs (version 3,
+// Windows phase only) runs the script as this account instead of SYSTEM. The script never sees the password.
 export interface RunScriptStep extends StepBase {
   kind: "runScript";
   phase: SequencePhase;
@@ -168,14 +108,14 @@ export interface WriteCloudInitSeedStep extends StepBase {
   networkConfig: string | null;
 }
 
-// Runs its steps in order. Its conditions and continueOnError apply to all of them. It connects no shares itself: a
-// share belongs to the step inside that needs it, for as long as that step runs.
+// Runs its steps in order. Its conditions and continueOnError apply to all of them. It doesn't connect shares itself.
+// A share belongs to the step inside that needs it, for as long as that step runs.
 export interface GroupStep extends StepBase {
   kind: "group";
   steps: SequenceStep[];
 }
 
-// Runs then when test holds and else when it does not; both paths meet again after it. An else-if is an IF in else.
+// Runs then if test holds, and else if it doesn't. Both paths meet again after it. An else-if is an IF in else.
 export interface IfStep extends StepBase {
   kind: "if";
   test: ConditionNode;
@@ -183,8 +123,8 @@ export interface IfStep extends StepBase {
   else: SequenceStep[];
 }
 
-// Runs steps, then tests until, and again until it holds, at most maxTimes times (1 to 100). When until still does
-// not hold after the last time, the repeat fails, unless goOnAtLimit lets the run go on.
+// Runs steps, then tests until, and repeats until it holds, at most maxTimes times (1 to 100). If until still doesn't
+// hold after the last time, the Repeat fails, unless goOnAtLimit lets the run continue.
 export interface RepeatStep extends StepBase {
   kind: "repeat";
   steps: SequenceStep[];
@@ -200,7 +140,7 @@ export interface SetVariableStep extends StepBase {
   value: string;
 }
 
-// Waits until someone continues the run, or continueAfterMinutes (1 to 1440) have passed; null waits for as long as
+// Waits until someone continues the run, or until continueAfterMinutes (1 to 1440) have passed. Null waits as long as
 // it takes. message is a template.
 export interface PauseStep extends StepBase {
   kind: "pause";
@@ -233,7 +173,7 @@ export type ContainerStep = GroupStep | IfStep | RepeatStep;
 export type ContainerKind = ContainerStep["kind"];
 
 // A value the sequence uses, such as ComputerName or Office. default is a template. Only a variable with setBySteps
-// may be changed by a Set variable step or a script's output while the run goes on.
+// may be changed by a Set variable step or a script's output during the run.
 export interface VariableDeclaration {
   name: string;
   default: string | null;
@@ -245,7 +185,7 @@ export type InputKind = "Text" | "Choice" | "MultiChoice" | "YesNo" | "Account";
 
 export type InputAsk = "Both" | "Web" | "Machine";
 
-// label is what the person sees, value what the answer sets; a null label shows the value.
+// label is what the person sees, and value is what the answer sets. A null label shows the value.
 export interface InputChoice {
   value: string;
   label: string | null;
@@ -259,8 +199,8 @@ export interface AccountDestination {
   runAs: boolean;
 }
 
-// Something asked before the run starts, on the web, at the machine or both. name is the variable its answer sets;
-// an Account input sets none, and steps name it in an AccountReference. choices are for Choice and MultiChoice.
+// A question asked before the run starts, on the web, at the machine or both. name is the variable its answer sets.
+// An Account input doesn't set one, and steps name it in an AccountReference. choices are for Choice and MultiChoice.
 export interface InputDeclaration {
   name: string;
   label: string;
@@ -274,9 +214,8 @@ export interface InputDeclaration {
   account: AccountDestination | null;
 }
 
-// version is the document schema, raised when a step kind or a member older agents would ignore is added. The
-// server stores each sequence with the lowest version it needs, and leaves variables and inputs out while there are
-// none.
+// version is the schema version. It goes up with each step kind or member that older agents would ignore. The server
+// stores the lowest version a sequence needs, and leaves out variables and inputs while there are none.
 export interface SequenceDefinition {
   version: number;
   steps: SequenceStep[];
@@ -287,23 +226,22 @@ export interface SequenceDefinition {
 // The path an IF took in a run.
 export type IfBranch = "Then" | "Else";
 
-// One test of a node as a run decided it, so a page can say why it took a path. path is the test's field within
-// the step, as a problem names it, such as "test.parts[1]"; actual is the value it was tested against.
+// One test of a node as a run decided it, so a page can say why the run took a path. path is the test's field within
+// the step, as a problem names it, such as "test.parts[1]". actual is the value it was tested against.
 export interface TestEvaluation {
   path: string;
   held: boolean;
   actual: string | null;
 }
 
-// The phases a node of the tree may run in: more than one where it depends on the path an IF takes.
+// The phases a node of the tree may run in. There's more than one if it depends on the path an IF takes.
 export interface NodePhase {
   nodeId: string;
   phases: SequencePhase[];
 }
 
-// A sequence with problemCount above zero is kept as a draft and cannot run. The facts let a dialog say what
-// running it does without loading the whole document. needsComputerName: the sequence joins the domain under the
-// machine's name, or puts it in a cloud-init seed.
+// A sequence with problems is kept as a draft and can't run. The facts let a dialog say what running it does without
+// loading the whole document.
 export interface SequenceSummary {
   id: string;
   name: string;
@@ -313,51 +251,52 @@ export interface SequenceSummary {
   problemCount: number;
   warningCount: number;
   erasesDisk: boolean;
+  // The sequence joins the domain under the machine's name, or puts it in a cloud-init seed.
   needsComputerName: boolean;
   continuesInWindows: boolean;
   updatedUtc: string;
   updatedBy: string | null;
   // The raw disk image the sequence writes, if any, whether it starts with Secure Boot on, and which of Microsoft's
-  // third-party UEFI CAs its boot file is signed under, written as the machine's trustedUefiCas are.
+  // third-party UEFI CAs its boot file is signed under, in the same format as the machine's trustedUefiCas.
   rawImageName: string | null;
   rawImageBootCapability: ImageBootCapability | null;
   rawImageSignedUnder: string | null;
 }
 
-// SequenceDefinition.CurrentVersion: the highest version this page knows, which it writes. The server stores each
-// sequence with the lowest version it needs.
+// SequenceDefinition.CurrentVersion: the highest version this page knows, and the one it writes. The server stores
+// each sequence with the lowest version it needs.
 export const SEQUENCE_VERSION = 3;
 
-// stepId is null for a problem of the whole sequence. field is the camelCase name within the step, such as
-// "script" or "conditions[1].value". Every problem keeps the sequence from running; warnings do not. message is
-// the server's English, code and args the same sentence to say in the person's language (findingText).
+// Every problem keeps the sequence from running. Warnings don't.
 export interface SequenceProblem {
+  // Null for a problem of the whole sequence.
   stepId: string | null;
+  // The camelCase name within the step, such as "script" or "conditions[1].value".
   field: string | null;
+  // The server's English text. findingText shows code and args in the person's language.
   message: string;
   code?: string | null;
   args?: ServerArguments | null;
 }
 
-// stepPhases holds the phase each step runs in, in step order, as the engine decides it. Problems and warnings
-// are worked out on every read, because a deleted image or a changed setting changes them. nodePhases holds the
-// phases of every node of the tree, in pre-order.
+// Problems and warnings are worked out on every read, because a deleted image or a changed setting changes them.
 export interface SequenceView {
   id: string;
   name: string;
   description: string | null;
   revision: number;
   definition: SequenceDefinition;
+  // The phase each step runs in, in step order, as the engine decides it.
   stepPhases: SequencePhase[];
   problems: SequenceProblem[];
   warnings: SequenceProblem[];
   updatedUtc: string;
   updatedBy: string | null;
+  // The phases of every node of the tree, in pre-order.
   nodePhases?: NodePhase[] | null;
 }
 
-// A starting point for a new sequence.
-// name and description are the server's English; their codes and values say them in the person's language.
+// A starting point for a new sequence. name and description are the server's English text, next to their codes.
 export interface SequenceTemplate {
   key: string;
   name: string;
@@ -383,8 +322,8 @@ export interface SaveSequenceRequest {
   definition: SequenceDefinition;
 }
 
-// The server's SequenceChangedEvent. revision is null when the sequence was deleted; sequence is the view that
-// changed, from servers that send it.
+// The server's SequenceChangedEvent. revision is null if the sequence was deleted. sequence is the changed view, if
+// the server sends it.
 export interface SequenceChanged {
   id: string;
   revision: number | null;
@@ -404,7 +343,7 @@ export const templatesQuery = queryOptions({
   staleTime: 5 * 60_000,
 });
 
-// A root of its own, so a change of the list never reads an open editor's document again.
+// A separate root key, so a change to the list never refetches an open editor's document.
 export const sequenceDocumentsKey = ["sequence"] as const;
 
 export function sequenceQuery(id: string) {

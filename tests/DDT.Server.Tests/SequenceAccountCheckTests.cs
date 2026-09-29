@@ -12,9 +12,9 @@ using static DDT.Server.Tests.AccountRequests;
 
 namespace DDT.Server.Tests;
 
-// A sequence that names an account runs only when the account exists, has a password the server can read, and may go
-// where the step sends it: the server would refuse the step otherwise, after the disk was erased. No domain is
-// configured here, so a join without an account has a problem of its own.
+// A sequence that names an account only runs when the account exists, has a password the server can read, and may go
+// where the step sends it. Otherwise the server would refuse the step after the disk was erased. No domain is
+// configured here, so a join without an account has its own problem.
 public sealed class SequenceAccountCheckTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private async Task<SequenceValidation> ValidateAsync(SequenceDefinition definition) =>
@@ -45,7 +45,7 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
         Account = new AccountDestination { Domain = domain, Hosts = hosts, RunAs = runAs },
     };
 
-    // The step's problems with its accounts; the validator has others to say about these steps.
+    // The step's problems with its accounts. The validator reports other problems with these steps too.
     private static List<(string? Field, string? Code)> AccountProblems(SequenceValidation validation, SequenceStep step) =>
     [
         .. validation.Problems
@@ -56,7 +56,7 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
     [Fact]
     public async Task AStoredAccountMustExistAndHaveAPassword()
     {
-        AccountView without = await AccountAsync(Request(runAs: true, password: null));
+        AccountView without = await AccountAsync(Request() with { RunAs = true, Password = Secret(null) });
         RunScriptStep gone = Script(new AccountReference(Guid.NewGuid(), null));
         RunScriptStep empty = Script(new AccountReference(without.Id, null));
         RunScriptStep both = Script(new AccountReference(without.Id, "Account"));
@@ -66,17 +66,17 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
 
         Assert.Equal([("runAs", "sequence.accountGone")], AccountProblems(validation, gone));
         Assert.Equal([("runAs", "sequence.accountNoPassword")], AccountProblems(validation, empty));
-        // Naming exactly one is the validator's check, which the server does not repeat.
+        // Naming exactly one is the validator's check, and the server doesn't repeat it.
         Assert.Equal([("runAs", "sequence.accountChoose")], AccountProblems(validation, both));
         Assert.Equal([("runAs", "sequence.accountChoose")], AccountProblems(validation, neither));
         Assert.Contains(without.Name, validation.Problems.Single(problem => problem.Code == "sequence.accountNoPassword").Message, StringComparison.Ordinal);
     }
 
-    // Moving the key ring leaves a password that no longer decrypts, which the step could not be given.
+    // Moving the key ring leaves a password that no longer decrypts, so the step couldn't be given it.
     [Fact]
     public async Task AStoredPasswordMustDecrypt()
     {
-        AccountView account = await AccountAsync(Request(runAs: true));
+        AccountView account = await AccountAsync(Request() with { RunAs = true });
         string foreign = application.Services.GetRequiredService<AccountProtector>().Protect(Guid.NewGuid(), Password);
         RunScriptStep script = Script(new AccountReference(account.Id, null));
 
@@ -92,7 +92,7 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
     [Fact]
     public async Task AnAccountGoesOnlyWhereItMay()
     {
-        AccountView account = await AccountAsync(Request(domain: null, hosts: ["files.corp.example"], runAs: false));
+        AccountView account = await AccountAsync(Request() with { Domain = null, Hosts = ["files.corp.example"], RunAs = false });
         AccountReference named = new(account.Id, null);
         RunScriptStep runAs = Script(named);
         JoinDomainStep join = Join(named);
@@ -112,11 +112,11 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
         Assert.Contains("evil.example", validation.Problems.Single(problem => problem.Code == "sequence.accountHostNotAllowed").Message, StringComparison.Ordinal);
     }
 
-    // The configured domain is not the account's, so a join with an account needs none.
+    // The configured domain isn't the account's. So a join with an account doesn't need a configured domain.
     [Fact]
     public async Task AJoinWithAnAccountNeedsNoConfiguredDomain()
     {
-        AccountView account = await AccountAsync(Request(domain: "lab.example", runAs: true));
+        AccountView account = await AccountAsync(Request() with { Domain = "lab.example", RunAs = true });
         JoinDomainStep withAccount = Join(new AccountReference(account.Id, null));
         JoinDomainStep withoutAccount = Join(null);
 
@@ -164,12 +164,12 @@ public sealed class SequenceAccountCheckTests(DdtApplication application) : ICla
         Assert.Empty(AccountProblems(validation, joins));
     }
 
-    // Anywhere in the tree. Only a leaf step connects shares: the validator refuses a container's, whatever account they
-    // name, and the account checks leave them alone.
+    // Anywhere in the tree. Only a leaf step connects shares.
+    // The validator refuses a container's shares, whatever account they name, and the account checks leave them alone.
     [Fact]
     public async Task StepsInsideContainersAreCheckedAndContainersConnectNoShares()
     {
-        AccountView account = await AccountAsync(Request(hosts: ["files.corp.example"]));
+        AccountView account = await AccountAsync(Request() with { Hosts = ["files.corp.example"] });
         ShareConnection allowed = new(@"\\files.corp.example\tools", new AccountReference(account.Id, null));
         RunScriptStep inner = Script(null, new ShareConnection(@"\\evil.example\loot", new AccountReference(account.Id, null)));
         GroupStep group = new() { Id = Guid.NewGuid(), Name = "Tools", Shares = [allowed], Steps = [inner] };

@@ -4,8 +4,8 @@
 
 namespace DDT.E2E;
 
-// The repository these tests were built in, and the host built with them: the project reference builds it into its
-// own bin folder, under the same configuration and framework as this one.
+// The repository these tests were built in, and the host built with them. The project reference builds the host into
+// its own bin folder, with the same configuration and framework as this project.
 internal static class RepositoryPaths
 {
     public static string Root { get; } = FindRoot();

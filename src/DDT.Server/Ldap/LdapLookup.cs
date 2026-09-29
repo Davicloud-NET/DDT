@@ -4,22 +4,16 @@
 
 namespace DDT.Server.Ldap;
 
-// What a sign-in reads about a user, read with the bind account instead of the user's password. Found only when the
-// user filter matches exactly one entry, as a sign-in requires. ImmutableId is null when the entry has none, which a
-// sign-in refuses. GroupDns are every group the user is in, nested ones included.
+// What a sign-in reads about a user with the bind account, not with the user's password.
 public sealed record LdapLookup(
+    // Found only when the user filter matches exactly one entry.
     LdapLookupStatus Status,
     string? DistinguishedName,
     string? DisplayName,
+    // Null when the entry has no immutable id. A sign-in refuses that.
     string? ImmutableId,
+    // Every group the user is in, including nested ones. Empty while ResolveNestedGroups is off.
     IReadOnlyList<string> GroupDns)
 {
     public static LdapLookup Missing(LdapLookupStatus status) => new(status, null, null, null, []);
-}
-
-public enum LdapLookupStatus
-{
-    Found,
-    NotFound,
-    Ambiguous,
 }

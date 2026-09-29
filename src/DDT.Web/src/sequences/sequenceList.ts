@@ -7,8 +7,10 @@ import { msg, plural, t } from "@lingui/core/macro";
 import type { QueryClient } from "@tanstack/react-query";
 
 import { isActive } from "@/deployments/deployments";
+import { removeByIds } from "@/lib/listCache";
 import type { MachineSummary } from "@/machines/machines";
-import { ruleName, ruleNames, type RuleView } from "@/rules/rules";
+import type { RuleView } from "@/rules/rules";
+import { ruleName, ruleNames } from "@/rules/ruleText";
 
 import {
   sequencesQuery,
@@ -34,7 +36,7 @@ export function uniqueName(base: string, taken: readonly string[]): string {
   }
 }
 
-// Each sequence gets step ids of its own, even when two start from the same template.
+// Each sequence gets its own step ids, even when two start from the same template.
 export function withNewStepIds(definition: SequenceDefinition): SequenceDefinition {
   return {
     ...definition,
@@ -58,7 +60,7 @@ export function activeRunsOf(machines: readonly MachineSummary[], sequenceId: st
   ).length;
 }
 
-// Why the server refuses to delete the sequence now, or null when it deletes it: a rule still chooses it.
+// Why the server would refuse to delete the sequence now: a rule still chooses it. Null if it would delete it.
 export function deletionBlocker(
   sequence: SequenceSummary,
   rules: readonly RuleView[],
@@ -160,9 +162,9 @@ export function findingCounts(problemCount: number, warningCount: number): strin
 
 const computerName = /\{\{\s*ComputerName\s*\}\}/i;
 
-// The list's entry for a sequence, from the copy a save or a creation answered with, worked out as the server does.
-// The raw image's facts depend on the library and stay as the list had them: the hub's sequenceChanged makes the
-// list read the server's own entry soon after.
+// The list entry for a sequence, built from the copy a save or a creation answered with, the same way the server
+// builds it. The raw image's facts depend on the library, so they stay as the list had them. The hub's
+// sequenceChanged makes the list fetch the server's own entry soon after.
 export function summaryOf(view: SequenceView, previous?: SequenceSummary): SequenceSummary {
   const steps = view.definition.steps;
   const writesRaw = steps.some((step) => step.kind === "writeRawImage");
@@ -201,7 +203,7 @@ function compareSummaries(a: SequenceSummary, b: SequenceSummary): number {
   return left < right ? -1 : left > right ? 1 : a.id.localeCompare(b.id);
 }
 
-// Puts the answer of a creation or a save into the list, so nothing is read again for it.
+// Puts the answer to a creation or a save into the list, so nothing has to be fetched again for it.
 export function upsertSummary(queryClient: QueryClient, view: SequenceView): void {
   queryClient.setQueryData<SequenceSummary[]>(sequencesQuery.queryKey, (list) => {
     if (list === undefined) {
@@ -223,6 +225,6 @@ export function upsertSummary(queryClient: QueryClient, view: SequenceView): voi
 
 export function removeSummary(queryClient: QueryClient, id: string): void {
   queryClient.setQueryData<SequenceSummary[]>(sequencesQuery.queryKey, (list) =>
-    list?.filter((sequence) => sequence.id !== id),
+    removeByIds(list, [id]),
   );
 }

@@ -9,10 +9,8 @@ using DDT.MachineConsole.Agent;
 
 namespace DDT.MachineConsole;
 
-// ddt-console.exe --pipe <name>, as the agent starts it. It connects to the agent's pipe first, before it opens a
-// window, and ends at once when there is no agent or the agent refuses it, so the agent's text console stays in view.
-// With --session it is the shell of DDT's session in the installed Windows, which opens at once and waits for the
-// agent, whose service Windows starts alongside.
+// The agent starts it as ddt-console.exe --pipe <name>. It connects before it opens a window. If no agent accepts it,
+// it exits right away, so the agent's text console stays in view. With --session it's the shell of DDT's session.
 public static partial class Program
 {
     public const int Closed = 0;
@@ -59,8 +57,8 @@ public static partial class Program
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
-    // Software rendering only: Windows PE has no Direct3D, DXGI, Direct2D, DirectComposition or WARP. Nor has it Segoe
-    // UI, so text without a face of its own is set in the console's Archivo.
+    // Software rendering only, because WinPE has no Direct3D, DXGI, Direct2D, DirectComposition or WARP. WinPE has no
+    // Segoe UI either, so text without its own font family uses the console's Archivo.
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()
             .UseWin32()
@@ -73,9 +71,8 @@ public static partial class Program
             })
             .With(App.FontOptions);
 
-    // Avalonia waits for its next frame with the system's timer, whose steps of 15.6 ms turn the 16.7 ms of a frame at
-    // 60 per second into two steps, so everything that moves would move at 32 frames a second. Steps of 1 ms, for as
-    // long as the console runs, let it keep 60.
+    // Avalonia times its frames with the system timer. Its 15.6 ms ticks stretch a 16.7 ms frame over two ticks, so
+    // motion would run at 32 frames a second. A 1 ms timer resolution for the console's lifetime keeps it at 60.
     private static void FineTimer()
     {
         try
@@ -84,15 +81,10 @@ public static partial class Program
         }
         catch (Exception exception) when (exception is DllNotFoundException or EntryPointNotFoundException)
         {
-            // Then the console moves at the coarser rate.
+            // Without winmm.dll the console animates at the coarser rate.
         }
     }
 
     [LibraryImport("winmm.dll", EntryPoint = "timeBeginPeriod")]
     private static partial uint TimeBeginPeriod(uint milliseconds);
-}
-
-internal static class ConsoleBuild
-{
-    public static string Version => typeof(ConsoleBuild).Assembly.GetName().Version?.ToString(3) ?? "unknown";
 }

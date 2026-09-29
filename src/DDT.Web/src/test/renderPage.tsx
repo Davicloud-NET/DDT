@@ -28,13 +28,15 @@ import { LiveContext } from "@/live/LiveContext";
 import { MachinePage } from "@/machines/MachinePage";
 import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
-import { DriversPage, FilesPage } from "@/packages/PackagesPage";
+import { DriversPage } from "@/packages/DriversPage";
+import { FilesPage } from "@/packages/FilesPage";
 import { MachineRolesPage } from "@/roles/MachineRolesPage";
 import { rulesSearch } from "@/rules/rules";
 import { RulesPage } from "@/rules/RulesPage";
 
 import { testHub, type TestHub } from "./fakeHub";
 import { serve, type Routes, type TestServer } from "./server";
+import { settle } from "./settle";
 
 export interface PageOptions {
   // Where the page opens, such as "/machines?selected=m1".
@@ -45,7 +47,7 @@ export interface PageOptions {
   live?: boolean;
   // A phone's width, where the machine pages lay out differently.
   narrow?: boolean;
-  // Puts the command palette's key in the frame, as the shell does.
+  // Puts the command palette's button in the frame, as the shell does.
   palette?: boolean;
 }
 
@@ -57,15 +59,8 @@ export interface RenderedPage {
   hub: TestHub | null;
 }
 
-// Lets the promises that are ready settle, such as a hub's start.
-export function settle(): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
-}
-
-// A page as the application shows it: in the router, under a frame with a link away and the live connection. The
-// routes have the ids of the application's, which the pages read their parameters from.
+// A page as the app shows it: in the router, under a frame with a link away, and with the live connection. The
+// routes use the app's route ids, because the pages read their parameters by them.
 function testRouter(path: string, hub: TestHub | null, palette: boolean) {
   const rootRoute = createRootRoute({ component: RootLayout });
   const shellRoute = createRoute({

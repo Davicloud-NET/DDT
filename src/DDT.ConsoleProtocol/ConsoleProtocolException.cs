@@ -4,7 +4,7 @@
 
 namespace DDT.ConsoleProtocol;
 
-// The other end sent something that is not a message of this protocol, or refused this end.
+// Thrown when the other end sends something that isn't a message of this protocol, or refuses this end.
 public sealed class ConsoleProtocolException : Exception
 {
     public ConsoleProtocolException()

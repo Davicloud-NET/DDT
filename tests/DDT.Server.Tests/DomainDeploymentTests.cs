@@ -18,7 +18,7 @@ namespace DDT.Server.Tests;
 
 public sealed class DomainDeploymentTests(DomainDeploymentApplication application) : IClassFixture<DomainDeploymentApplication>
 {
-    // Installs Windows and joins the domain in it, as the Install Windows template does with a domain.
+    // Installs Windows and joins the domain in it, like the Install Windows template does when there's a domain.
     private async Task<SequenceView> DomainSequenceAsync()
     {
         Guid imageId = (await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096))).Id;
@@ -34,7 +34,7 @@ public sealed class DomainDeploymentTests(DomainDeploymentApplication applicatio
     private async Task<HttpResponseMessage> AssignAsync(Guid machineId, Guid sequenceId, string? computerName) =>
         await (await application.AdministratorAsync()).AssignAsync(machineId, sequenceId, computerName);
 
-    // Configuration locks the fields it sets, so the snapshot every deployment reads holds its values.
+    // The configuration locks the fields it sets. So the snapshot every deployment reads holds its values.
     [Fact]
     public void DeploymentsUseTheConfiguredSettings()
     {
@@ -71,7 +71,8 @@ public sealed class DomainDeploymentTests(DomainDeploymentApplication applicatio
         Assert.Equal("de", registration.ConsoleLanguage);
     }
 
-    // Anyone who presents a waiting machine's UUID and MAC polls as it, so it learns neither its name nor the domain.
+    // Anyone who presents a waiting machine's UUID and MAC can poll as that machine.
+    // So a waiting machine learns neither its name nor the domain.
     [Fact]
     public async Task AWaitingMachineLearnsItsNameAndTheDomainOnlyOnceAuthorized()
     {
@@ -120,7 +121,7 @@ public sealed class DomainDeploymentTests(DomainDeploymentApplication applicatio
         Assert.Equal("PC-0003", (await RegisteredMachine.ReadAsync<MachineSummary>(await AssignAsync(machine.Id, sequence.Id, null))).AssignedName);
     }
 
-    // The name is for the join, so a sequence that joins nothing needs none, domain or not.
+    // The name is only for the join. So a sequence that joins nothing doesn't need one, domain or not.
     [Fact]
     public async Task ASequenceThatJoinsNothingNeedsNoName()
     {
@@ -158,7 +159,7 @@ public sealed class DomainDeploymentTests(DomainDeploymentApplication applicatio
         Assert.Equal("PC-0004", (await machine.NextAsync()).AssignedName);
     }
 
-    // A rule gives no name, so an approval cannot run its domain sequence on a machine that has none.
+    // A rule doesn't give a name. So an approval can't run the rule's domain sequence on a machine without one.
     [Fact]
     public async Task AnApprovalCannotRunARulesDomainSequenceWithoutAName()
     {

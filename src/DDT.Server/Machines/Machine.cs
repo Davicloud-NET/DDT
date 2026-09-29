@@ -40,20 +40,20 @@ public sealed class Machine
 
     public AgentEnvironment AgentEnvironment { get; set; }
 
-    // What the firmware said at the last registration; null when the agent could not tell or is older than raw disk
+    // What the firmware reported at the last registration. Null if the agent couldn't tell, or is older than raw disk
     // images.
     public bool? SecureBootEnabled { get; set; }
 
-    // Which of Microsoft's third-party UEFI CAs the firmware's db held at the last registration; null when the agent
-    // could not read db or is older than this field.
+    // Which of Microsoft's third-party UEFI CAs the firmware's db held at the last registration. Null if the agent
+    // couldn't read db, or is older than this field.
     public UefiCa? TrustedUefiCas { get; set; }
 
-    // The SMBIOS chassis type from the last registration, which tells a laptop from a desktop; null when the firmware
-    // listed no enclosure or the agent is older than this field.
+    // The SMBIOS chassis type from the last registration, which tells a laptop from a desktop. Null if the firmware
+    // listed no enclosure, or the agent is older than this field.
     public int? ChassisType { get; set; }
 
-    // The MachineFacts of the last registration that sent any, as MachineFactsDocuments writes them; null until an agent
-    // of version 3 sequences registers.
+    // The MachineFacts from the last registration that sent any, as MachineFactsDocuments writes them. Null until an
+    // agent that runs version 3 sequences registers.
     public string? Facts { get; set; }
 
     public MachineState State { get; set; } = MachineState.Pending;
@@ -98,4 +98,12 @@ public sealed class Machine
 
     // The newest deployment, active or not, so the machines list loads one deployment per machine.
     public Guid? LastDeploymentId { get; set; }
+
+    public void Approve(Guid? by, DateTimeOffset now)
+    {
+        State = MachineState.Approved;
+        ApprovedByUserId = by;
+        ApprovedUtc = now;
+        FirstApprovedUtc ??= now;
+    }
 }

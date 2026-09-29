@@ -10,28 +10,29 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Sequences;
 
-// The audit detail of a save: what changed, by step name and id, and the hash of every script that changed, so the
-// log shows which code went out without holding the code. Each run keeps the full definition it ran.
+// The audit detail of a save. It lists what changed by step name and ID, plus the hash of every changed script. So
+// the log shows which code went out without holding the code. Each run keeps the full definition it ran.
 public static class SequenceChanges
 {
-    public static string Describe(string oldName, string? oldDescription, SequenceDefinition before, string newName, string? newDescription, SequenceDefinition after)
+    public static string Describe(SequenceContent saved, SequenceContent changed)
     {
-        ArgumentNullException.ThrowIfNull(before);
-        ArgumentNullException.ThrowIfNull(after);
+        ArgumentNullException.ThrowIfNull(saved);
+        ArgumentNullException.ThrowIfNull(changed);
 
+        (SequenceDefinition before, SequenceDefinition after) = (saved.Definition, changed.Definition);
         StringBuilder detail = new();
 
-        if (oldName != newName)
+        if (saved.Name != changed.Name)
         {
-            detail.Append($"Renamed from {oldName} to {newName}. ");
+            detail.Append($"Renamed from {saved.Name} to {changed.Name}. ");
         }
 
-        if (oldDescription != newDescription)
+        if (saved.Description != changed.Description)
         {
             detail.Append("Changed the description. ");
         }
 
-        // A draft can hold two steps with one id, so the first of each id stands for it.
+        // A draft can hold two steps with the same ID. The first one with each ID is used.
         Dictionary<Guid, SequenceStep> old = ById(before);
         Dictionary<Guid, SequenceStep> current = ById(after);
 

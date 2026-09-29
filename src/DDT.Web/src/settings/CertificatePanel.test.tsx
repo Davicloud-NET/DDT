@@ -92,7 +92,7 @@ describe("CertificatePanel", () => {
     });
     expect(sent(requests, "POST", "/api/settings/certificate/confirm")).toHaveLength(1);
     expect(reads(requests, "/api/settings/certificate")).toBe(before);
-    // The Boot image page reads the served certificate under its own key, and gets the same.
+    // The Boot image page reads the served certificate under its own query key, and gets the same value.
     expect(queryClient.getQueryData(["server-certificate"])).toEqual(trial.served);
   });
 
@@ -152,7 +152,7 @@ describe("CertificatePanel", () => {
 
     expect(await screen.findByText("Saved now by Ada Admin.")).toBeInTheDocument();
     const puts = sent(requests, "PUT", "/api/settings/certificate/names");
-    // The token of an earlier test may still be held, which this server refuses as well.
+    // An earlier test's token may still be held. This server refuses that one too.
     expect(
       puts.map((request) => request.headers["x-ddt-reauthentication"] === "names-proof"),
     ).toEqual([false, true]);

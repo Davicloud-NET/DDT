@@ -33,7 +33,7 @@ internal static unsafe partial class NetworkNativeMethods
         public char* Provider;
     }
 
-    // UTF-16 strings are passed pinned, not copied, so the password stays in the one managed string.
+    // UTF-16 strings are pinned, not copied, so the password stays in a single managed string.
     [LibraryImport("mpr.dll", EntryPoint = "WNetAddConnection2W", StringMarshalling = StringMarshalling.Utf16)]
     public static partial int WNetAddConnection2(NetResource* resource, string password, string userName, uint flags);
 

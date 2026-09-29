@@ -6,8 +6,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Deployments;
 
-// One step of a run, created Pending when the run is assigned and moved on by the agent's reports. The times are the
-// server's: the Windows PE clock can be hours off.
+// One step of a run. It's created Pending when the run is assigned, and the agent's reports move it on. The times are
+// the server's, because the WinPE clock can be hours off.
 public sealed class DeploymentStep
 {
     public Guid DeploymentId { get; set; }
@@ -33,8 +33,8 @@ public sealed class DeploymentStep
 
     public string? Error { get; set; }
 
-    // A run of a tree has a row per node, containers included, and Index is the node's place in pre-order. ParentId is
-    // the container the node sits in, null at the top, and Depth counts containers from 0.
+    // A run of a tree has a row per node, containers included, and Index is the node's position in pre-order. ParentId
+    // is the node's container, null at the top level, and Depth counts containers from 0.
     public Guid? ParentId { get; set; }
 
     public int Depth { get; set; }
@@ -47,6 +47,6 @@ public sealed class DeploymentStep
 
     public IfBranch? Branch { get; set; }
 
-    // The node's tests as they were decided, as DdtJsonContext writes a list of TestEvaluation; null for none.
+    // The node's tests as they were decided, as a list of TestEvaluation written by DdtJsonContext. Null for none.
     public string? Evaluation { get; set; }
 }

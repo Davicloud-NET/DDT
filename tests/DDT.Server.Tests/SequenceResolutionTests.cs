@@ -42,7 +42,7 @@ public sealed class SequenceResolutionTests(DdtApplication application) : IClass
         Assert.Equal("resolution.ruleNumbered", chosenByModel.ExplanationCode);
         Assert.Equal([modelRule.Id], chosenByModel.MatchedRuleIds);
 
-        // Below the model rule it matches too, and chooses nothing.
+        // It's below the model rule, so it matches too but chooses nothing.
         RuleView macRule = await administrator.CreatedRuleAsync(RuleRequests.MacRule(byMac.Id, mac));
         MachineSequenceResolution below = await administrator.ResolutionAsync(machine.Id);
 
@@ -70,7 +70,7 @@ public sealed class SequenceResolutionTests(DdtApplication application) : IClass
         RuleView byOther = await administrator.CreatedRuleAsync(RuleRequests.MacRule(sequence.Id, other));
         Assert.Equal(byOther.Id, (await administrator.ResolutionAsync(machine.Id)).RuleId);
 
-        // Written as a person writes an address, which the test compares by its digits.
+        // Written the way a person writes an address. The rule's test compares it by its digits.
         string written = $"{primary[..2]}:{primary[2..4]}-{primary[4..].ToLowerInvariant()}";
         RuleView byPrimary = await administrator.CreatedRuleAsync(RuleRequests.MacRule(sequence.Id, written));
         MachineSequenceResolution resolution = await administrator.ResolutionAsync(machine.Id);
@@ -115,7 +115,7 @@ public sealed class SequenceResolutionTests(DdtApplication application) : IClass
         Assert.Equal(rule.Id, (await administrator.ResolutionAsync(machine.Id)).RuleId);
     }
 
-    // Firmware of a board nobody filled in says nothing about the machine, so no prefix may match its placeholder.
+    // Firmware on a board nobody filled in says nothing about the machine. So no prefix may match its placeholder.
     [Fact]
     public async Task AMachineThatReportsAPlaceholderMatchesNoModelRule()
     {
@@ -136,7 +136,7 @@ public sealed class SequenceResolutionTests(DdtApplication application) : IClass
         Assert.Empty(resolution.MatchedRuleIds!);
     }
 
-    // A Gigabyte board reports its system's version and SKU and its asset tag as "Default string", which is no value.
+    // A Gigabyte board reports its system's version and SKU and its asset tag as "Default string". That isn't a value.
     [Fact]
     public async Task AFactABoardMakerLeftAsAPlaceholderMatchesNothing()
     {
@@ -245,7 +245,8 @@ public sealed class SequenceResolutionTests(DdtApplication application) : IClass
         Assert.EndsWith($" {broken.Name} has 1 problem, so it cannot run until it is fixed.", resolution.Explanation, StringComparison.Ordinal);
     }
 
-    // A rule may test a value a rule above it sets, as one rule says where a machine is and others what goes there.
+    // A rule may test a value that a rule above it sets.
+    // For example, one rule says where a machine is, and others say what goes there.
     [Fact]
     public async Task ARuleTestsAValueARuleAboveItSets()
     {
@@ -299,18 +300,17 @@ public sealed class SequenceResolutionTests(DdtApplication application) : IClass
         Assert.Equal(SequenceResolutionSource.None, resolution.Source);
         Assert.Empty(resolution.MatchedRuleIds!);
 
-        // A rule turned off still says how many machines it would match; one with problems matches none.
+        // A rule that's turned off still says how many machines it would match. A rule with problems matches none.
         IReadOnlyList<RuleView> rules = await administrator.RulesAsync();
         Assert.Equal(1, rules.Single(r => r.Id == off.Id).MatchingMachines);
         Assert.Equal(0, rules.Single(r => r.Id == unknown.Id).MatchingMachines);
     }
 
-    // What a run would start with: the machine's own name first, then the rules from the top, their machine roles, the
-    // sequence's defaults and the deployment defaults, each with where it came from.
-    [Fact]
-    public async Task PreviewsTheValuesARunWouldStartWith()
+    private sealed record NamedMachine(RegisteredMachine Machine, RuleView Rule, MachineRoleView Kiosk, string ComputerName);
+
+    // A machine that a rule names from its serial number, with a machine role and the rule's sequence.
+    private async Task<NamedMachine> NamedMachineAsync(SignedInClient administrator)
     {
-        SignedInClient administrator = await application.AdministratorAsync();
         string model = RuleRequests.UniqueModel();
         string serial = $"SN-{Guid.NewGuid():N}";
         string computerName = $"PC-{serial.Replace("-", "", StringComparison.Ordinal)[^6..]}";
@@ -334,12 +334,24 @@ public sealed class SequenceResolutionTests(DdtApplication application) : IClass
             Values = [new NamedValue("ComputerName", "PC-{{SerialNumber|alnum|right:6}}"), new NamedValue("Office", "Vienna")],
             RoleIds = [kiosk.Id],
         });
-        using RegisteredMachine machine = await application.RegisterWithAsync(registration => registration with
+        RegisteredMachine machine = await application.RegisterWithAsync(registration => registration with
         {
             Manufacturer = "Dell Inc.",
             Model = model,
             SerialNumber = serial,
         });
+
+        return new NamedMachine(machine, named, kiosk, computerName);
+    }
+
+    // The values a run would start with. The machine's own name comes first, then the rules from the top, their machine
+    // roles, the sequence's defaults and the deployment defaults. Each value says where it came from.
+    [Fact]
+    public async Task PreviewsTheValuesARunWouldStartWith()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        (RegisteredMachine machine, RuleView named, MachineRoleView kiosk, string computerName) = await NamedMachineAsync(administrator);
+        using RegisteredMachine _ = machine;
 
         MachineSequenceResolution resolution = await administrator.ResolutionAsync(machine.Id);
         Dictionary<string, ResolvedValue> used = resolution.Values!.Where(v => !v.Overridden).ToDictionary(v => v.Name);
@@ -358,9 +370,16 @@ public sealed class SequenceResolutionTests(DdtApplication application) : IClass
         Assert.Equal(["Office", "Owner"], resolution.Inputs!.Select(input => input.Name));
         Assert.Equal([new ResolvedValue("Office", "Vienna", ValueSource.Rule, named.Id, named.Name, false)], resolution.InputDefaults);
         Assert.Empty(resolution.ValueProblems!);
+    }
 
-        // A name the machine was given comes before every rule's, and the rules still give values to a run assigned on the
-        // web.
+    // A name the machine was given comes before every rule's, and the rules still give values to a run assigned on the web.
+    [Fact]
+    public async Task AGivenNameComesBeforeTheRulesWhichStillGiveValues()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        (RegisteredMachine machine, RuleView named, MachineRoleView kiosk, string computerName) = await NamedMachineAsync(administrator);
+        using RegisteredMachine _ = machine;
+
         SequenceView script = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
         (await administrator.AssignAsync(machine.Id, script.Id, "PC-GIVEN")).EnsureSuccessStatusCode();
         MachineSequenceResolution assigned = await administrator.ResolutionAsync(machine.Id);

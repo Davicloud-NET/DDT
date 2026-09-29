@@ -10,8 +10,22 @@ import { Tab, TabList, TabPanel, Tabs } from "@/ui/Tabs";
 
 export type InspectorTab = "node" | "variables" | "problems" | "sequence";
 
-// Beside the flow: the chosen node, the sequence's variables and inputs, every finding, and the sequence's own name
-// and description, one tab each.
+interface InspectorProps {
+  tab: InspectorTab;
+  onTab: (tab: InspectorTab) => void;
+  problemCount: number;
+  warningCount: number;
+  node: ReactNode;
+  variables: ReactNode;
+  problems: ReactNode;
+  sequence: ReactNode;
+  panelRef?: Ref<HTMLDivElement>;
+  onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
+  className?: string;
+}
+
+// The panel beside the flow. It has one tab each for the chosen node, the sequence's variables and inputs, all
+// findings, and the sequence's own name and description.
 export function Inspector({
   tab,
   onTab,
@@ -24,19 +38,7 @@ export function Inspector({
   panelRef,
   onKeyDown,
   className,
-}: {
-  tab: InspectorTab;
-  onTab: (tab: InspectorTab) => void;
-  problemCount: number;
-  warningCount: number;
-  node: ReactNode;
-  variables: ReactNode;
-  problems: ReactNode;
-  sequence: ReactNode;
-  panelRef?: Ref<HTMLDivElement>;
-  onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
-  className?: string;
-}) {
+}: InspectorProps) {
   const { t } = useLingui();
   const panel = "min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-6";
 

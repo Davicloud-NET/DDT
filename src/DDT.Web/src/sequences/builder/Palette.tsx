@@ -3,29 +3,26 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { Trans, useLingui } from "@lingui/react/macro";
-import { IconGripVertical } from "@tabler/icons-react";
-import { useState, type MouseEvent } from "react";
-import { Input, SearchField, useDrag } from "react-aria-components";
+import { useState } from "react";
+import { Input, SearchField } from "react-aria-components";
 
 import { cx } from "@/ui/cx";
-import { NodeGlyph } from "@/ui/FlowNode";
 import { fieldClass } from "@/ui/TextField";
 
 import type { StepKind } from "../sequences";
+import type { FlowDrag } from "./flowDrag";
 import { addLabel, flowKinds, workKinds } from "./nodeKinds";
-import { KIND_TYPE, type FlowDrag } from "./FlowCanvas";
+import { PaletteItem } from "./PaletteItem";
 
-// What can be added to the flow, to drag onto a wire. The keyboard picks one up with Enter, goes from wire to wire with
-// Tab and puts it down with Enter; a click adds it after the chosen node.
-export function Palette({
-  onAdd,
-  onDragChange,
-  className,
-}: {
+interface PaletteProps {
   onAdd: (kind: StepKind) => void;
   onDragChange: (drag: FlowDrag) => void;
   className?: string;
-}) {
+}
+
+// What can be added to the flow, to drag onto a wire. With the keyboard, Enter picks one up, Tab goes from wire to
+// wire, and Enter puts it down. A click adds it after the chosen node.
+export function Palette({ onAdd, onDragChange, className }: PaletteProps) {
   const { t } = useLingui();
   const [find, setFind] = useState("");
   const matches = (kind: StepKind) =>
@@ -68,51 +65,5 @@ export function Palette({
         <Trans>Drag onto a wire, or choose + on one. Arrow keys follow the flow.</Trans>
       </p>
     </aside>
-  );
-}
-
-function PaletteItem({
-  kind,
-  onAdd,
-  onDragChange,
-}: {
-  kind: StepKind;
-  onAdd: (kind: StepKind) => void;
-  onDragChange: (drag: FlowDrag) => void;
-}) {
-  const label = addLabel(kind);
-  const { dragProps, isDragging } = useDrag({
-    getItems: () => [{ [KIND_TYPE]: kind, "text/plain": label }],
-    getAllowedDropOperations: () => ["copy"],
-    onDragStart: () => {
-      onDragChange({ kind });
-    },
-    onDragEnd: () => {
-      onDragChange(null);
-    },
-  });
-
-  return (
-    <button
-      type="button"
-      {...dragProps}
-      className={cx(
-        "flex h-8.5 shrink-0 cursor-grab items-center gap-2.5 rounded-key px-2 text-left type-body text-ink motion-colors outline-none",
-        "hover:bg-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus",
-        isDragging && "bg-selected",
-      )}
-      onClick={(event: MouseEvent<HTMLButtonElement>) => {
-        dragProps.onClick?.(event);
-
-        // A screen reader's click starts a drag; a pointer's adds the kind.
-        if (!event.defaultPrevented) {
-          onAdd(kind);
-        }
-      }}
-    >
-      <NodeGlyph kind={kind} className="text-ink-2" />
-      <span className="flex-1 truncate">{label}</span>
-      <IconGripVertical aria-hidden="true" size={14} stroke={2} className="shrink-0 text-control" />
-    </button>
   );
 }

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The marker in a temporary folder that stands in for X:\DDT, which Windows PE's restart empties as Dispose does.
+// The marker in a temporary folder that stands in for X:\DDT. WinPE's restart empties that folder, and so does Dispose.
 public sealed class WindowsPERestartMarkerTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), $"ddt-restart-marker-{Guid.NewGuid():N}");
@@ -32,7 +32,7 @@ public sealed class WindowsPERestartMarkerTests : IDisposable
 
         marker.Set(RestartInto.WindowsPE);
 
-        // Another agent in the same Windows PE, as one started by hand, finds it.
+        // Another agent in the same WinPE, like one started by hand, finds it.
         Assert.Equal(RestartInto.WindowsPE, new WindowsPERestartMarker(_directory, Log(), dryRun: false).Due);
 
         marker.Set(RestartInto.Windows);
@@ -46,7 +46,7 @@ public sealed class WindowsPERestartMarkerTests : IDisposable
         Assert.Empty(_console.ToString());
     }
 
-    // Only the file's being there says that a restart is due; its text only says where to.
+    // The file existing is what says a restart is due. Its text only says where to.
     [Fact]
     public async Task AMarkerItCannotMakeSenseOfLeadsBackIntoWindowsPE()
     {

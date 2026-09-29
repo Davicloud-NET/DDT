@@ -23,16 +23,15 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# Defaults are resolved here rather than in param(): Windows PowerShell leaves $PSScriptRoot empty
+# Defaults are set here instead of in param(), because Windows PowerShell leaves $PSScriptRoot empty
 # there when the script is started with powershell -File.
 if (-not $Output) { $Output = Join-Path $PSScriptRoot '..\artifacts\agent' }
 
 $Output = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Output)
 $project = Join-Path $PSScriptRoot '..\src\DDT.Agent\DDT.Agent.csproj'
 
-# Visual Studio's VsDevCmd.bat runs vswhere.exe by bare name from the installer folder, which fails in a
-# shell that sets NoDefaultCurrentDirectoryInExePath. The error text then lands in the linker path the
-# NativeAOT targets read back, and the link step fails with exit code 123.
+# VsDevCmd.bat runs vswhere.exe by its bare name from the installer folder. A shell that sets
+# NoDefaultCurrentDirectoryInExePath refuses that, and the NativeAOT link step then fails with exit code 123.
 $installer = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer'
 if (Test-Path -LiteralPath (Join-Path $installer 'vswhere.exe')) {
     $env:PATH = "$installer;$env:PATH"

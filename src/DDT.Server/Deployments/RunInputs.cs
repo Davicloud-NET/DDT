@@ -10,11 +10,9 @@ using DDT.Server.Rules;
 
 namespace DDT.Server.Deployments;
 
-// The settings a run's answer file and domain join use, taken when the run starts, so that changing them later never
-// changes a run halfway. Never a secret: the passwords are read from the configuration when the agent fetches them.
-// They come from the run's values (From), where the deployment defaults are the last source, so without a rule, a
-// machine role, an input or a variable that sets one they are the settings as before. Facts are the machine's facts by
-// name as they were then (FactsOf), which a share's path may use; null for a run that started before they were kept.
+// The settings a run's answer file and join use, never a secret. They're taken from its values when it starts, so later
+// changes never change a run halfway. Facts are the machine's facts at that time, or null if the run started before
+// they were kept.
 public sealed record RunInputs(
     string? ComputerName,
     string? TimeZone,
@@ -44,7 +42,7 @@ public sealed record RunInputs(
     }
 
     // Taken from the values the run started with, by the names MachineValues gives the deployment defaults. The domain
-    // is always the configured one: a value naming another could send the join account to a foreign domain controller.
+    // is always the configured one. A value naming another could send the join account to a foreign domain controller.
     public static RunInputs From(IReadOnlyDictionary<string, string> values, DeploymentOptions options, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(values);
@@ -63,8 +61,9 @@ public sealed record RunInputs(
             now);
     }
 
-    // The machine's facts by name as they are now, each as a template puts it in: the ones that stay the same while a run
-    // goes on, so not Phase, which the hand-over to Windows changes, nor ComputerName, which is one of the run's values.
+    // The machine's current facts by name, each as a template would insert it. Only the ones that stay the same during
+    // a run, so not Phase, which the hand-over to Windows changes, and not ComputerName, which is one of the run's
+    // values.
     public static IReadOnlyDictionary<string, string> FactsOf(Machine machine)
     {
         ArgumentNullException.ThrowIfNull(machine);

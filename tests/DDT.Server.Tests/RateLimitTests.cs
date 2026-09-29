@@ -13,7 +13,7 @@ namespace DDT.Server.Tests;
 
 public sealed class RateLimitTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
-    // Sends until the server refuses, so the test does not repeat the configured limits.
+    // Sends until the server refuses, so the test doesn't have to repeat the configured limits.
     private static async Task<bool> RefusedWithinAsync(int attempts, Func<Task<HttpResponseMessage>> send)
     {
         for (int attempt = 0; attempt < attempts; attempt++)

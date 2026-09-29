@@ -10,7 +10,7 @@ public enum ConsoleActivity
     // Checking the run before anything on the disk changes.
     Preparing,
 
-    // A step runs.
+    // A step is running.
     Step,
 
     // Handing the run over to the installed Windows and making the disk bootable.
@@ -18,13 +18,13 @@ public enum ConsoleActivity
 
     Restarting,
 
-    // In the installed Windows only, where no console runs: waiting for Windows setup to finish.
+    // Only in the installed Windows, where no console runs. The agent waits for Windows setup to finish.
     WaitingForWindowsSetup,
 
     // Making the disk bootable and sending the last reports.
     Finishing,
 
-    // In the installed Windows only: the agent removes itself.
+    // Only in the installed Windows. The agent removes itself.
     Removing,
 
     // The run waits at its start for answers to its inputs, here or on the web.

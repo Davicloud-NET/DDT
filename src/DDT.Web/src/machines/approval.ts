@@ -22,19 +22,18 @@ export interface ApprovalPlan {
   expectedSequenceId: string | null;
   consequence: string;
   confirmLabel: string;
-  // The sequence the approval runs, for what the dialog says of it as the machine changes; null when it runs none.
+  // The sequence the approval runs, or null if it runs none. The dialog keeps its warnings about it up to date as
+  // the machine changes.
   sequence: SequenceSummary | null;
-  // The inputs of that sequence asked on the web, which the approval sends answers to, and what their fields start
-  // with for this machine.
+  // The sequence's inputs that are asked on the web, and the values their fields start with for this machine. The
+  // approval sends the answers.
   inputs: AskedInput[];
   defaults: ResolvedValue[];
 }
 
-// Null when the approval runs nothing and needs no confirmation: no rule chooses a sequence, or someone signed
-// in at the machine, who chooses the sequence there. A rule never authorizes, so with a rule's choice the
-// approval is the first human decision to run it, and the operator is told what it does. Where the server
-// would refuse the run, the approval only authorizes the machine. A sequence that needs a computer name runs on a
-// machine without one when its values give one, such as a rule's name pattern, and the operator is told that name.
+// A rule never authorizes a machine. Approving is the first human decision to run the rule's choice, so the operator
+// is told what it does. Returns null if nothing needs confirming: no rule chooses, or someone signed in at the
+// machine and chooses there. If the server would refuse the run, the approval only authorizes the machine.
 export function approvalPlan(
   machine: MachineSummary,
   resolution: MachineSequenceResolution,
@@ -46,7 +45,7 @@ export function approvalPlan(
 
   const label = machineLabel(machine);
   const name = resolution.sequenceName ?? t`a sequence`;
-  // The rule as the subject of a sentence, and inside one.
+  // The rule's words for the start of a sentence and for the middle of one.
   const { subject: rule, inside: ruleInside } = ruleChoiceWords(resolution);
   const sequence = sequences.find((candidate) => candidate.id === resolution.sequenceId);
 
@@ -74,7 +73,7 @@ export function approvalPlan(
     );
   }
 
-  // The name the run gets, where it is not the machine's own.
+  // The computer name from the machine's values. It's used when the sequence needs a name and the machine has none.
   const named =
     sequence?.needsComputerName === true && machine.assignedName === null
       ? valuesComputerName(resolution)

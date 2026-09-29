@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using Avalonia;
 using Avalonia.Headless;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
@@ -15,9 +16,8 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// Every screen drawn by Skia as the console draws it, at 1024 x 768 in both themes and both languages, and the run and
-// the sign-in at the other screen sizes the console has to fill. With DDT_CONSOLE_SHOTS set to a folder, the pictures
-// are saved there as PNG for a person to look at.
+// Draws every screen like the console does, in both themes and languages and at other screen sizes. If
+// DDT_CONSOLE_SHOTS names a folder, the pictures are saved there for a person to look at.
 public sealed class ScreenshotTests
 {
     private static readonly Dictionary<string, Action<TestConsole>> s_shots = new()
@@ -140,9 +140,9 @@ public sealed class ScreenshotTests
             foreach (UiLanguage language in new[] { UiLanguage.English, UiLanguage.German })
             {
                 string name = $"{shot}-{(dark ? "dark" : "light")}-{(language == UiLanguage.German ? "de" : "en")}";
-                (int width, int height) = await Headless.RunAsync(() => Render(shot, language, dark, 1024, 768, name));
+                PixelSize drawn = await Headless.RunAsync(() => Render(shot, language, dark, new PixelSize(1024, 768), name));
 
-                Assert.Equal((1024, 768), (width, height));
+                Assert.Equal(new PixelSize(1024, 768), drawn);
             }
         }
     }
@@ -151,19 +151,19 @@ public sealed class ScreenshotTests
     [MemberData(nameof(Sizes))]
     public async Task ScalesTheScreenToTheScreenSize(string shot, int width, int height)
     {
-        (int drawnWidth, int drawnHeight) = await Headless.RunAsync(
-            () => Render(shot, UiLanguage.English, dark: true, width, height, $"{shot}-dark-en-{width}x{height}"));
+        PixelSize drawn = await Headless.RunAsync(
+            () => Render(shot, UiLanguage.English, dark: true, new PixelSize(width, height), $"{shot}-dark-en-{width}x{height}"));
 
-        Assert.Equal((width, height), (drawnWidth, drawnHeight));
+        Assert.Equal(new PixelSize(width, height), drawn);
     }
 
-    private static (int Width, int Height) Render(string shot, UiLanguage language, bool dark, int width, int height, string name)
+    private static PixelSize Render(string shot, UiLanguage language, bool dark, PixelSize size, string name)
     {
         TestConsole console = new(language, canRestart: true);
         console.Model.IsDark = dark;
         s_shots[shot](console);
 
-        MainWindow window = new(console.Model, fullScreen: false) { Width = width, Height = height };
+        MainWindow window = new(console.Model, fullScreen: false) { Width = size.Width, Height = size.Height };
         window.Show();
         Dispatcher.UIThread.RunJobs();
 
@@ -180,7 +180,7 @@ public sealed class ScreenshotTests
 
             Assert.True(HasContent(frame), $"{name} is a blank picture.");
 
-            return (frame.PixelSize.Width, frame.PixelSize.Height);
+            return frame.PixelSize;
         }
         finally
         {
@@ -197,7 +197,7 @@ public sealed class ScreenshotTests
         account.Password = "correct horse";
     }
 
-    // More than a handful of colours: a screen that failed to draw is one colour.
+    // Checks for more than a handful of colours, because a screen that failed to draw is a single colour.
     private static bool HasContent(WriteableBitmap frame)
     {
         using ILockedFramebuffer buffer = frame.Lock();

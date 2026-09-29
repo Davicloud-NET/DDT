@@ -7,8 +7,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// Which task sequence to run, chosen by what it is: the list with the arrow keys, Enter to run the one selected. The
-// one an assignment rule suggests comes first and is selected.
+// The sequence an assignment rule suggests comes first and is selected, so Enter alone runs it.
 public sealed class SequenceChoiceViewModel : QuestionViewModel
 {
     private SequenceItem? _selected;
@@ -64,58 +63,4 @@ public sealed class SequenceChoiceViewModel : QuestionViewModel
     }
 
     protected override ConsoleAnswer? Answer() => Selected is { } item ? new ConsoleAnswer(SequenceId: item.Option.Id) : null;
-}
-
-// A sequence in the list, with its flags as tags.
-public sealed class SequenceItem(Localizer localizer, SequenceOption option) : ObservableObject
-{
-    public SequenceOption Option => option;
-
-    public string Name => option.Name;
-
-    public string? Description => string.IsNullOrWhiteSpace(option.Description) ? null : option.Description;
-
-    public bool HasDescription => Description is not null;
-
-    public IReadOnlyList<Tag> Tags
-    {
-        get
-        {
-            List<Tag> tags = [];
-
-            if (option.Suggested)
-            {
-                tags.Add(Tag.Of(localizer.T("Suggested"), TagTone.Ok));
-            }
-
-            if (option.ErasesDisk)
-            {
-                tags.Add(Tag.Of(localizer.T("Erases a disk"), TagTone.Idle));
-            }
-
-            if (option.NeedsComputerName)
-            {
-                tags.Add(Tag.Of(localizer.T("Asks for a name"), TagTone.Idle));
-            }
-
-            if (option.RequiredBytes > 0)
-            {
-                tags.Add(Tag.Of(localizer.F("Needs {size}", ("size", Say.Bytes(localizer, option.RequiredBytes))), TagTone.Idle));
-            }
-
-            if (option.NotSignedForSecureBoot)
-            {
-                tags.Add(Tag.Of(localizer.T("Not for Secure Boot"), TagTone.Attention));
-            }
-
-            if (option.NotTrustedHere)
-            {
-                tags.Add(Tag.Of(localizer.T("Not trusted by this machine"), TagTone.Attention));
-            }
-
-            return tags;
-        }
-    }
-
-    public void Refresh() => Raise(nameof(Tags));
 }

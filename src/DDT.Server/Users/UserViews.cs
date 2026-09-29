@@ -6,17 +6,15 @@ using DDT.Contracts.Messages;
 using DDT.Contracts.Users;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
-using DDT.Server.Ldap;
 using DDT.Server.Settings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Users;
 
-// What the Users page shows of an account. Where a role comes from is derived from the account's source and the group
-// maps of this moment, so a map that is emptied hands its accounts back to administrators at once. The one fact that
-// cannot be derived, that single sign-on gave the role and no administrator changed it since, is kept as a token row of
-// the account, where Identity itself keeps per-account values such as the authenticator key.
+// What the Users page shows about an account. Where a role comes from depends on the account's source and the current
+// group maps, so emptying a map hands its accounts back to administrators at once. A token row, where Identity keeps
+// per-account values, records that single sign-on gave the role and nobody has changed it.
 public sealed class UserViews(
     DdtDbContext database,
     DdtSettings settings,
@@ -26,7 +24,7 @@ public sealed class UserViews(
 
     public const string ProvisionedMarker = "RoleProvisioned";
 
-    // The groups that decide the account's role at each of its sign-ins, or null when administrators do.
+    // Returns the groups that decide the account's role at each sign-in, or null when administrators decide it.
     public RoleSource? ManagedBy(DdtUser user)
     {
         ArgumentNullException.ThrowIfNull(user);
@@ -39,7 +37,7 @@ public sealed class UserViews(
         };
     }
 
-    // Says where to change a role that DDT may not change, for the refusal.
+    // Builds the refusal that says where to change a role DDT may not change.
     public static ServerMessage ManagedMessage(DdtUser user, RoleSource managedBy)
     {
         ArgumentNullException.ThrowIfNull(user);

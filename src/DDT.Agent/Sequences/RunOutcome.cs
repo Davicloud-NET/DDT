@@ -9,10 +9,10 @@ public enum RunOutcome
     // The run is over and the machine restarts into what it installed.
     Finished,
 
-    // The machine restarts in the middle of the run, which goes on from its state on the disk.
+    // The machine restarts in the middle of the run. The run continues from its state on disk.
     Restarting,
 
-    // The run failed or could not start; the machine keeps polling.
+    // The run failed or couldn't start. The machine keeps polling.
     Failed,
 
     // The server refused the machine's token, so the agent registers again, with the run token when there is one.

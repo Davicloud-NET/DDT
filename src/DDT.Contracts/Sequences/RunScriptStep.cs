@@ -6,7 +6,6 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Sequences;
 
-// PackageId names a Files package that is extracted and becomes the script's working directory.
 public sealed record RunScriptStep : SequenceStep
 {
     public SequencePhase Phase { get; init; }
@@ -15,6 +14,7 @@ public sealed record RunScriptStep : SequenceStep
 
     public required string Script { get; init; }
 
+    // A Files package that is extracted and becomes the script's working directory.
     public Guid? PackageId { get; init; }
 
     public int TimeoutMinutes { get; init; } = 60;
@@ -23,7 +23,7 @@ public sealed record RunScriptStep : SequenceStep
 
     public IReadOnlyList<int> RebootExitCodes { get; init; } = [3010];
 
-    // Version 3, Windows phase only: the script runs as this account instead of SYSTEM, and never sees its password.
+    // Version 3, Windows phase only. The script runs as this account instead of SYSTEM, and never sees its password.
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public AccountReference? RunAs { get; init; }
 

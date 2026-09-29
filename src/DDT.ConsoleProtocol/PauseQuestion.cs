@@ -4,6 +4,6 @@
 
 namespace DDT.ConsoleProtocol;
 
-// A Pause step waits: show Message and answer with Continue once the person is done. The agent withdraws the question
-// when the run was continued on the web or the pause's time is up.
+// A Pause step is waiting. Show Message and answer with Continue once the person is done. The agent withdraws the
+// question when the run is continued on the web or the pause's time is up.
 public sealed record PauseQuestion(string StepName, string Message) : ConsoleQuestion;

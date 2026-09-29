@@ -4,18 +4,18 @@
 
 namespace DDT.Contracts.Sequences;
 
-// A definition's steps as the tree they are, for the server, the agent and the tests alike. Every walk is in pre-order:
-// a node, then its bodies in the order of Bodies. Documents come from outside, so null lists and null nodes are passed
-// over, and where an id repeats, Index keeps the first node with it; the validator reports the repeat.
+// Walks a definition's steps as a tree, for the server, the agent and the tests alike. Every walk is in pre-order,
+// so a node comes first, then its bodies in the order of Bodies. Documents come from outside, so null lists and null
+// nodes are skipped. When an id repeats, Index keeps the first node with it, and the validator reports the repeat.
 public static class SequenceTree
 {
-    // The most conditions a step may have in versions 1 and 2. Agents of those versions check it before a run, so a When
-    // is moved into Conditions only while they stay within it.
+    // The most conditions a step may have in versions 1 and 2. Agents of those versions check this before a run, so a
+    // When only moves into Conditions if the total stays within it.
     public const int LegacyMaxConditions = 10;
 
     private const int TreeVersion = 3;
 
-    // Every node, containers and the contents of their bodies included.
+    // Every node, including containers and the contents of their bodies.
     public static IReadOnlyList<SequenceStep> Nodes(SequenceDefinition definition) =>
         [.. Walk(definition).Select(position => position.Step)];
 
@@ -34,8 +34,8 @@ public static class SequenceTree
         return index;
     }
 
-    // Where a run goes on once the node is over, whether it ran or was skipped: its next sibling, leaving its parent when
-    // it was the last of its body, or null after the last node at the top.
+    // Where a run continues once the node is over, whether it ran or was skipped. That's its next sibling, or leaving
+    // its parent when it was the last node of its body, or null after the last node at the top.
     public static NodeCursor? Successor(SequenceDefinition definition, IReadOnlyDictionary<Guid, NodePosition> index, Guid nodeId)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -61,10 +61,9 @@ public static class SequenceTree
         return position.ParentId is { } parent ? new NodeCursor(parent, true) : null;
     }
 
-    // The lowest version whose agents run the whole definition as it is written: 3 for anything of the tree (a
-    // container, Set variable, Pause, When, Shares, a script's RunAs, a join's Account, variables, inputs, an operator
-    // after Contains), and for a condition on a name outside MachineVariableNames.All, which an older agent would treat
-    // as false. MinimumVersion covers the kinds and their own members.
+    // The lowest version whose agents can run the whole definition as written. It's 3 for any tree feature, and for a
+    // condition on a name outside MachineVariableNames.All, which an older agent would treat as false. MinimumVersion
+    // covers the kinds and their own members.
     public static int RequiredVersion(SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -87,8 +86,8 @@ public static class SequenceTree
         return version;
     }
 
-    // Rebuilds the tree from the leaves up: a node's bodies first, then the node itself goes through map. A list in which
-    // nothing changed comes back as it was, and null nodes stay where they are.
+    // Rebuilds the tree from the leaves up. A node's bodies go through map first, then the node itself. A list in
+    // which nothing changed is returned as it was, and null nodes stay where they are.
     public static IReadOnlyList<SequenceStep> Map(IReadOnlyList<SequenceStep> steps, Func<SequenceStep, SequenceStep> map)
     {
         ArgumentNullException.ThrowIfNull(steps);
@@ -115,7 +114,8 @@ public static class SequenceTree
         return changed ?? steps;
     }
 
-    // What Normalised stores: empty version 3 lists as none, and a When an older agent can run moved into Conditions.
+    // What Normalised stores. Empty version 3 lists become null, and a When that an older agent can run moves into
+    // Conditions.
     internal static SequenceDefinition Fold(SequenceDefinition definition) =>
         definition with
         {
@@ -184,8 +184,8 @@ public static class SequenceTree
         return folded;
     }
 
-    // The When as the Conditions of version 1, where it can be one: a test, or an all of tests, with the operators and
-    // variables an agent of version 1 knows. An all of nothing holds always, as no conditions do.
+    // The When as version 1 Conditions, if it can be written that way. That works for a test, or an all of tests, with
+    // the operators and variables a version 1 agent knows. An empty all always holds, just like no conditions.
     private static List<StepCondition>? LegacyTests(ConditionNode when)
     {
         IReadOnlyList<ConditionNode?>? parts = when switch
@@ -206,8 +206,8 @@ public static class SequenceTree
     private static bool IsLegacyTest(ConditionNode? part) =>
         part is TestCondition { Variable: not null, Value: not null } test && !NeedsTree(test.Variable, test.Operator);
 
-    // An operator after Contains, or a name an agent of version 1 or 2 does not know. A missing name needs nothing new:
-    // every version refuses it.
+    // An operator after Contains, or a name that a version 1 or 2 agent doesn't know. A missing name needs nothing
+    // new, because every version refuses it.
     private static bool NeedsTree(string? variable, ConditionOperator op) =>
         op > ConditionOperator.Contains || (variable is not null && !MachineVariableNames.All.Contains(variable, StringComparer.Ordinal));
 }

@@ -13,7 +13,7 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// What the server checks walks the whole tree: any branch may run, so every branch has to hold up.
+// The server's checks walk the whole tree. Any branch may run, so every branch has to hold up.
 public sealed class SequenceChecksTests
 {
     private static readonly Image s_windows = new()
@@ -113,8 +113,9 @@ public sealed class SequenceChecksTests
         Assert.Equal((empty.Id, "sequence.emptyContainerWarning"), (warning.StepId!.Value, warning.Code!));
     }
 
-    // Every signed-in user, Viewers too, reads a sequence's values, so a password written into one is warned of wherever it
-    // is: a variable's default, an input's, or what a step sets. A value made of other values holds none itself.
+    // Every signed-in user, Viewers too, can read a sequence's values.
+    // So a password written into one gets a warning wherever it is.
+    // That's a variable's default, an input's, or what a step sets. A value built from other values holds none itself.
     [Fact]
     public void WarnsOfValuesThatLookLikePasswords()
     {
@@ -144,8 +145,8 @@ public sealed class SequenceChecksTests
             StringComparison.Ordinal);
     }
 
-    // Kerberos needs the server's name; with an address the account's password goes by NTLM, which can be relayed. A host
-    // made of values is known only when the step runs.
+    // Kerberos needs the server's name. With an address, the account's password goes over NTLM, which can be relayed.
+    // A host built from values is only known when the step runs.
     [Fact]
     public void WarnsOfAShareNamedByItsAddress()
     {
@@ -186,8 +187,9 @@ public sealed class SequenceChecksTests
             })?.Code);
     }
 
-    // A seed may use the run's values, as the agent fills them in: the sequence's variables and value inputs, and what
-    // rules and machine roles set. An Account input's answer is no value, and a name without one stays as it is.
+    // A seed may use the run's values, which the agent fills in.
+    // Those are the sequence's variables and value inputs, and what rules and machine roles set.
+    // An Account input's answer isn't a value, and a name without a value stays as it is.
     [Fact]
     public void TakesTheRunsValuesAsTheSeedsPlaceholders()
     {
@@ -227,7 +229,8 @@ public sealed class SequenceChecksTests
         Assert.Null(SequenceChecks.RawImage(Definition(Partition()), References()));
     }
 
-    // A template's values are known only when the run takes them, so only a setting written out is checked here.
+    // A template's values are only known when the run takes them.
+    // So only a setting that's written out in full is checked here.
     [Fact]
     public void ChecksOnlyTheAnswerFileSettingsWrittenOut()
     {

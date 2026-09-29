@@ -16,7 +16,8 @@ import {
 } from "@/test/builders";
 
 import { flowDefinition, flowPhases, flowProblems, windowsImageId } from "@/test/flowSequence";
-import { node, treeMachine, treeMachineId, treeRunId, treeRunView } from "@/test/treeRun";
+import { treeMachine, treeMachineId, treeRunId, treeRunView } from "@/test/treeRun";
+import { node } from "@/test/treeSequence";
 
 import {
   accounts,
@@ -325,8 +326,8 @@ test.describe("dark", () => {
   });
 });
 
-// The rules of an office in the order they are checked, with a Latitude in Berlin tested against them; and the accounts
-// its steps use, one of them with a password this server cannot read.
+// The rules of an office in the order they're checked, with a Latitude in Berlin tested against them. Also the accounts
+// its steps use, one of them with a password this server can't read.
 const ruleAnswers = {
   "GET /api/rules": rules,
   "GET /api/machine-roles": roles,
@@ -385,7 +386,7 @@ test.describe("phone", () => {
     await expect(page).toHaveScreenshot("machines-phone.png");
   });
 
-  // On a phone the flow is its outline.
+  // On a phone, the flow shows as its outline.
   test("a task sequence", async ({ page }) => {
     await show(page, `/deployment/sequences/${flowSummary.id}`, builderAnswers);
     await expect(

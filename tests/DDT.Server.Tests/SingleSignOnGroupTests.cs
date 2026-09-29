@@ -65,7 +65,7 @@ public sealed class SingleSignOnGroupTests(GroupMappedSignInApplication applicat
         Assert.Equal(RoleSource.SingleSignOnGroups, view.RoleFrom);
     }
 
-    // Entra ID sends object ids, Keycloak paths; one claim each, or one claim holding the array.
+    // Entra ID sends object IDs and Keycloak sends paths. Either as one claim each, or as one claim holding the array.
     [Theory]
     [InlineData(EntraOperators, "", DdtRoleNames.Operator)]
     [InlineData(ViewersPath, "", DdtRoleNames.Viewer)]
@@ -112,7 +112,8 @@ public sealed class SingleSignOnGroupTests(GroupMappedSignInApplication applicat
         Assert.Equal(RoleSource.SingleSignOnGroups, view.RoleFrom);
     }
 
-    // An administrator gave the local account its role, and the groups of an identity linked to it do not take it away.
+    // An administrator gave the local account its role.
+    // The groups of an identity linked to it don't take that role away.
     [Fact]
     public async Task ALinkedLocalAccountKeepsItsRole()
     {

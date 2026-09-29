@@ -7,17 +7,18 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Contracts.Agents;
 
-// An input as the machine's console or the web asks it, from the sequence's InputDeclaration. An Account input is
-// answered with a user name and a password; every other kind with a value, a MultiChoice one with its values separated
-// by semicolons. Domain is the domain an Account input's account is for, where its destination names one, so the person
-// at the machine knows which account to give.
+// An input from the sequence's InputDeclaration, ready for the console at the machine or the web to ask.
 public sealed record AgentInput(
     string Name,
     string Label,
     string? Help,
+    // An Account input is answered with a user name and a password. A MultiChoice input gets its values separated by
+    // semicolons, and every other kind gets a single value.
     InputKind Kind,
     IReadOnlyList<InputChoice> Choices,
     string? Default,
     bool Required,
     int? MaxLength,
+    // For an Account input, the domain the account is for, if its destination names one. It tells the person at the
+    // machine which account to enter.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Domain = null);

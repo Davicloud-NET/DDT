@@ -6,8 +6,8 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Sequences;
 
-// Null settings take the server's DDT:Deployment defaults. LocalAdministrator adds the account configured there,
-// with its password, which stays in the server's configuration.
+// Null settings use the server's DDT:Deployment defaults. LocalAdministrator adds the account configured there, with
+// its password. The password stays in the server's configuration.
 public sealed record WriteUnattendStep : SequenceStep
 {
     public string? TimeZone { get; init; }

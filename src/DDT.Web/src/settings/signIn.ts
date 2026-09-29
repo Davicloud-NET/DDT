@@ -7,13 +7,14 @@ import { equalJson } from "@/lib/equalJson";
 import type { ServerMessage } from "@/lib/serverText";
 
 import type { SecretAction } from "./settings";
+import type { SettingsForm } from "./useSettingsForm";
 
-// The sections ldap and oidc as the settings API has them, and their tests (docs/settings.md, section 6).
+// The ldap and oidc sections as the settings API returns them, and their tests (docs/settings.md).
 
 export type DirectoryTransport = "Ldaps" | "StartTls" | "UnencryptedDangerous";
 
-// groupRoleMap maps a group's distinguished name to a role. timeout is a duration as .NET writes it, such as 00:00:10.
-// A text field the page empties holds null until the server makes it empty text again.
+// groupRoleMap maps a group's distinguished name to a role. timeout is a duration in .NET's format, such as 00:00:10. A
+// text field the page empties holds null until the server turns it back into empty text.
 export interface LdapSettings {
   enabled: boolean;
   host: string | null;
@@ -30,7 +31,9 @@ export interface LdapSettings {
   timeout: string;
 }
 
-// groupRoleMap maps a value of the groupsClaim claim to a role; while it has entries, autoProvisionRole is not used.
+export type LdapForm = SettingsForm<LdapSettings>;
+
+// groupRoleMap maps a value of the groupsClaim claim to a role. While it has entries, autoProvisionRole isn't used.
 export interface OidcSettings {
   enabled: boolean;
   authority: string | null;
@@ -43,8 +46,10 @@ export interface OidcSettings {
   groupRoleMap: Record<string, string>;
 }
 
-// userFound and passwordAccepted are null when no user was named. role is the one the groups would give, null for
-// none. proof is set when the one testing signed in with their own directory password and stayed an administrator.
+export type OidcForm = SettingsForm<OidcSettings>;
+
+// userFound and passwordAccepted are null when no user was named. role is the role the groups would give, or null for
+// none. proof is set when the tester used their own directory password and stayed an administrator.
 export interface LdapTestResult {
   bound: boolean;
   userFound: boolean | null;
@@ -52,7 +57,7 @@ export interface LdapTestResult {
   groups: string[];
   role: string | null;
   message: string;
-  // The message as a code with its values, said in the person's language.
+  // The message as a code with its values, so the page can show it in the user's language.
   text?: ServerMessage | null;
   proof: string | null;
 }
@@ -62,7 +67,7 @@ export interface OidcTestResult {
   issuer: string | null;
   redirectUri: string;
   message: string;
-  // The message as a code with its values, said in the person's language.
+  // The message as a code with its values, so the page can show it in the user's language.
   text?: ServerMessage | null;
 }
 
@@ -73,7 +78,7 @@ export interface LdapTestRequest {
   password: string | null;
 }
 
-// The values as the form holds them, before they are saved. A stored bind password goes only to the stored server.
+// Tests the values in the form before they're saved. A stored bind password is only sent to the stored server.
 export function testLdap(request: LdapTestRequest): Promise<LdapTestResult> {
   return apiPost<LdapTestResult>("/api/settings/ldap/test", request);
 }
@@ -82,7 +87,7 @@ export function testOidc(authority: string): Promise<OidcTestResult> {
   return apiPost<OidcTestResult>("/api/settings/oidc/test", { authority });
 }
 
-// Where the provider sends a browser back after a single sign-on; it has to be registered there.
+// Where the provider sends the browser back after a single sign-on. It must be registered with the provider.
 export function redirectUri(): string {
   return `${window.location.origin}/api/auth/external/callback`;
 }
@@ -104,8 +109,9 @@ function text(value: string | null | undefined): string {
   return (value ?? "").trim();
 }
 
-// What decides whether and as whom a directory account signs in, as the server compares it for the proof: a
-// directory administrator's save that changes any of it, or the bind password, needs a test of exactly these values.
+// The values that decide whether and as whom a directory account signs in, as the server compares them for the proof.
+// If an administrator who signs in through the directory changes any of them, or the bind password, the save needs a
+// test of exactly these values.
 function directoryPart(values: LdapSettings) {
   return {
     host: text(values.host),
@@ -129,7 +135,7 @@ export function sameDirectory(a: LdapSettings, b: LdapSettings): boolean {
   return equalJson(directoryPart(a), directoryPart(b));
 }
 
-// The keys of a role map compare without regard to case on the server, so a key that differs only in case is the same.
+// The server compares role map keys ignoring case, so keys that differ only in case are the same key.
 export function hasEntry(map: Record<string, string>, key: string): boolean {
   return entryOf(map, key) !== undefined;
 }
@@ -168,7 +174,7 @@ export function proofFits(
   );
 }
 
-// What the group search uses: it asks the directory as the section is saved.
+// The fields the group search uses. It searches the directory with the saved section.
 const CONNECTION = ["enabled", "host", "port", "transport", "baseDn", "bindDn", "timeout"] as const;
 
 export function connectionChanged(
@@ -188,7 +194,7 @@ export function connectionChanged(
   );
 }
 
-// A duration as .NET writes it, [-][d.]hh:mm:ss[.fffffff], in whole seconds; null for anything else.
+// A duration in .NET's format, [-][d.]hh:mm:ss[.fffffff], as whole seconds. Null for anything else.
 export function secondsOf(span: string | null): number | null {
   const match = /^(-)?(?:(\d+)\.)?(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d+))?$/.exec(span ?? "");
 

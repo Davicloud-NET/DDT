@@ -8,8 +8,9 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
-import { ConfirmDialog } from "./Dialog";
-import { SequenceRail, SequenceRailStrip } from "./SequenceRail";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { SequenceRail } from "./SequenceRail";
+import { SequenceRailStrip } from "./SequenceRailStrip";
 
 function renderWithI18n(node: ReactNode) {
   return render(<I18nProvider i18n={i18n}>{node}</I18nProvider>);

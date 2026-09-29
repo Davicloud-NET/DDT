@@ -76,7 +76,7 @@ public sealed class InputQuestionsTests
         Assert.Equal(["Office", "Encrypt", "JoinAccount"], InputQuestions.Check(s_inputs, []).Keys);
     }
 
-    // One answer per input, trimmed, an Account input's as its user name and password alone.
+    // One trimmed answer per input. An Account input's answer is just its user name and password.
     [Fact]
     public void AnswersEachInputAsTheServerTakesIt()
     {

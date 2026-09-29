@@ -4,7 +4,6 @@
 
 namespace DDT.ConsoleProtocol;
 
-// The last word before the sequence erases the disk. The person types Word, which is ERASE, and the console sends what
-// was typed as Text, never the word on its own, such as from a button: a word typed on purpose keeps a stray key or
-// click from erasing a disk. Anything but the word, or Back, goes back to the list of sequences and erases nothing.
+// The last question before the sequence erases the disk. The console sends what was typed as Text, never Word by itself
+// from a button, so a stray key or click can't erase a disk. Anything else, or Back, erases nothing.
 public sealed record EraseQuestion(string SequenceName, ConsoleDisk Disk, string Word) : ConsoleQuestion;

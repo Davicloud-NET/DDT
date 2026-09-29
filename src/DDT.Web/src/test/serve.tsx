@@ -18,8 +18,8 @@ import { vi } from "vitest";
 
 import type { CurrentUser } from "@/auth/auth";
 
-// A page on a fake server, for page tests: fetch answers "METHOD path" from the handlers, plus the signed-in user and
-// the CSRF token, and every request is recorded, so a test can tell that a list was not read again.
+// A page on a fake server, for page tests. fetch answers "METHOD path" from the handlers, plus the signed-in user and
+// the CSRF token. Every request is recorded, so a test can tell that a list wasn't read again.
 
 export interface Sent {
   method: string;
@@ -105,7 +105,7 @@ export function stubServer(user: CurrentUser | null, handlers: Record<string, Ha
   return requests;
 }
 
-// The clipboard a copy key writes to; jsdom has none.
+// The clipboard a copy button writes to. jsdom has none.
 export function stubClipboard(): { written: string[] } {
   const written: string[] = [];
 

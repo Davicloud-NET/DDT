@@ -6,6 +6,6 @@ using DDT.Contracts.Images;
 
 namespace DDT.Server.Images;
 
-// Whether a raw disk image starts with Secure Boot on, the sentence that says why, and the processor its boot file
-// is for, null when it has none DDT could read.
+// Says whether a raw disk image starts with Secure Boot on, with a sentence that explains why. Architecture is the
+// processor its boot file is for. It's null when the image has no boot file DDT could read.
 public sealed record BootAssessment(ImageBootCapability Capability, string Detail, string? Architecture, UefiCa? SignedUnder = null);

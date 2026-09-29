@@ -7,14 +7,13 @@ import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import { apiErrorFrom, apiFetch, apiGet, apiPost, ApiError } from "@/lib/api";
 import { serverText, type ServerMessage } from "@/lib/serverText";
 
-// The settings the pages edit, as the settings API has them (docs/settings.md, sections 6 and "Built in M6.5"). Each
-// section is one form and one unit of validation; the stored document is the desired state, applied live or by
+// The settings API (docs/settings.md). Each section is one form and one unit of validation. It applies live, or by
 // rebuilding a subsystem inside the running server.
 
 export type SettingsSectionName =
   "deployment" | "machines" | "ldap" | "oidc" | "proxies" | "pxe" | "logging" | "certificate";
 
-// A secret is never sent back: the page learns whether it is set, and whether the key ring can still read it.
+// A secret is never sent back. The page only learns whether it's set, and whether the key ring can still read it.
 export interface SecretState {
   isSet: boolean;
   unreadable: boolean;
@@ -30,9 +29,9 @@ export interface SettingsLock {
   storedDiffers: boolean;
 }
 
-// A problem keeps the section closed until it is fixed; a warning's code has to be confirmed by the save that raises
-// it. field is the field's name on the page, such as domain.name, and empty for the whole section. message is the
-// server's English, and text the same sentence as a code, which settingsText says in the person's language.
+// A stored problem keeps the section closed (not applied) until it's fixed. A warning's code must be confirmed by the
+// save that raises it. field is a path such as domain.name, or empty for the whole section. text is message as a code
+// for settingsText.
 export interface SettingsFinding {
   field: string;
   message: string;
@@ -42,8 +41,7 @@ export interface SettingsFinding {
 
 export type ApplyStateName = "Applied" | "Failed" | "Pending";
 
-// How far each host has applied a section that rebuilds a subsystem, such as the network boot listeners. text is the
-// message as a code where the host said a sentence the server knows.
+// How far each host has applied a section that rebuilds a subsystem, such as the network boot listeners.
 export interface SettingsApplyState {
   host: string;
   version: number;
@@ -53,8 +51,7 @@ export interface SettingsApplyState {
   text?: ServerMessage | null;
 }
 
-// A finding's, a host's or a test's message in the person's language, or the server's English for one without a code
-// or with a code this build does not know.
+// The message of a finding, host or test in the user's language. For an unknown code it's the server's English.
 export function settingsText(said: {
   message: string;
   text?: ServerMessage | null | undefined;
@@ -91,8 +88,8 @@ export function settingsKey(section: string) {
   return ["settings", section] as const;
 }
 
-// The certificate section holds the server names: GET /api/settings/certificate answers with the certificate and the
-// names' view inside it, and the names are saved at /api/settings/certificate/names.
+// The certificate section holds the server names. GET /api/settings/certificate returns the certificate with the names'
+// view inside it. The names are saved at /api/settings/certificate/names.
 export function settingsQuery<T>(section: SettingsSectionName) {
   return queryOptions({
     queryKey: settingsKey(section),
@@ -121,7 +118,7 @@ export async function reauthenticate(password: string, code: string | null): Pro
     { password, code },
   );
 
-  // A little before the server's end, so a save does not go out with a token that expires on the way.
+  // Expires a little before the server's deadline, so a save never goes out with a token that expires on the way.
   reauthentication = { token: answer.token, expires: Date.parse(answer.expiresUtc) - 10_000 };
 }
 
@@ -207,7 +204,7 @@ export function putSection(queryClient: QueryClient, view: SettingsSectionView<u
   queryClient.setQueryData(settingsKey(view.section), view);
 }
 
-// What configuration alone decides, and a short state of every section.
+// What only configuration decides, and a short state for every section.
 export interface SettingsOverview {
   sections: {
     section: string;
@@ -229,11 +226,15 @@ export interface SettingsOverview {
   keyRingReadable: boolean;
 }
 
+export type SectionSummary = SettingsOverview["sections"][number];
+
+export type ServerSetting = SettingsOverview["server"][number];
+
 export const settingsOverviewQuery = queryOptions({
   queryKey: ["settings-overview"],
   queryFn: () => apiGet<SettingsOverview>("/api/settings"),
 });
 
-// The server certificate as the settings API shows it; its page reads it with this key, and the hub's
+// The server certificate as the settings API shows it. Its page reads it with this key, and the hub's
 // certificateChanged replaces it.
 export const certificateKey = ["settings-certificate"] as const;

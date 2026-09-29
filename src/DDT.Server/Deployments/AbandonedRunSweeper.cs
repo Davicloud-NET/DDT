@@ -13,9 +13,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Deployments;
 
-// An agent continues its run only with the run token, and every registration and report hands out a new one. An agent
-// silent for longer than that token lasts can never continue, and its run would stay running with its files locked in
-// the library. A run that still reports is never touched: every report records that the machine was seen.
+// Fails a run whose agent has been silent for longer than a run token lasts. That run can never continue, and it would
+// keep its files locked in the library. Every report records the machine as seen, so a run that reports is never
+// touched.
 public sealed partial class AbandonedRunSweeper(
     IServiceScopeFactory scopes,
     LiveNotifier live,
@@ -26,14 +26,14 @@ public sealed partial class AbandonedRunSweeper(
 
     public async Task<int> SweepOnceAsync(CancellationToken cancellationToken)
     {
-        // Last seen lags a contact by up to its resolution, and the run token handed out then lasts from that contact.
+        // Last seen can lag a contact by up to LastSeenResolution, and the run token handed out at that contact lasts
+        // from then.
         DateTimeOffset cutoff = timeProvider.GetUtcNow() - MachineTokenLifetimes.Run - MachineLogLimits.LastSeenResolution;
 
         await using AsyncServiceScope scope = scopes.CreateAsyncScope();
         DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
-        DeploymentService deployments = scope.ServiceProvider.GetRequiredService<DeploymentService>();
 
-        // SQLite cannot compare DateTimeOffset, so the age is judged here.
+        // SQLite can't compare DateTimeOffset, so the age is checked here.
         var running = await (
                 from machine in database.Machines
                 join run in database.Deployments on machine.ActiveDeploymentId equals (Guid?)run.Id
@@ -46,7 +46,7 @@ public sealed partial class AbandonedRunSweeper(
 
         foreach (Guid machineId in running.Where(m => m.LastSeenUtc < cutoff).Select(m => m.Id))
         {
-            if (await FailAsync(database, deployments, machineId, cutoff, cancellationToken).ConfigureAwait(false))
+            if (await FailAsync(scope.ServiceProvider, machineId, cutoff, cancellationToken).ConfigureAwait(false))
             {
                 failed++;
             }
@@ -83,26 +83,24 @@ public sealed partial class AbandonedRunSweeper(
         while (await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false));
     }
 
-    // Nothing the agent holds is valid any more, so only a registration, a stop or a rejection can change the run in
-    // between, and the concurrency tokens on the machine catch each of them.
-    private async Task<bool> FailAsync(
-        DdtDbContext database,
-        DeploymentService deployments,
-        Guid machineId,
-        DateTimeOffset cutoff,
-        CancellationToken cancellationToken)
+    // Nothing the agent holds is valid any more. So only a registration, a stop or a rejection can change the run in
+    // between, and the machine's concurrency tokens catch each of them.
+    private async Task<bool> FailAsync(IServiceProvider services, Guid machineId, DateTimeOffset cutoff, CancellationToken cancellationToken)
     {
+        DdtDbContext database = services.GetRequiredService<DdtDbContext>();
         database.ChangeTracker.Clear();
 
         Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == machineId, cancellationToken).ConfigureAwait(false);
-        Deployment? run = machine is null ? null : await deployments.ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
+        Deployment? run = machine is null
+            ? null
+            : await services.GetRequiredService<RunQueries>().ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
 
         if (machine is null || machine.LastSeenUtc >= cutoff || run is not { State: DeploymentState.Running })
         {
             return false;
         }
 
-        await deployments.EndForLostContactAsync(machine, run, cancellationToken).ConfigureAwait(false);
+        await services.GetRequiredService<RunTermination>().EndForLostContactAsync(machine, run, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<DeploymentStep> changedSteps = RunReports.ChangedSteps(database);
 
         try

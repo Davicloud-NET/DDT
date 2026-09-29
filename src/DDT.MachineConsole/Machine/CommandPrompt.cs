@@ -7,15 +7,8 @@ using System.Runtime.InteropServices;
 
 namespace DDT.MachineConsole.Machine;
 
-// The command prompt a technician opens with Shift+F10 while the console runs, as in Windows Setup.
-public interface ICommandPrompt
-{
-    void Open();
-}
-
-// cmd.exe in a console window of its own, in front of the console, in the folder the console and the agent are in. The
-// console fills the screen but is not topmost, so the prompt's window covers it, and when the prompt is closed the
-// console is in front again. A development computer opens cmd.exe just the same.
+// Opens cmd.exe in its own window, in the console's folder. The console is full screen but not topmost, so the prompt
+// covers it. The console is back in front once the prompt closes.
 public sealed partial class CommandPrompt : ICommandPrompt
 {
     private const int AnyProcess = -1;
@@ -30,8 +23,8 @@ public sealed partial class CommandPrompt : ICommandPrompt
             ? comSpec
             : Path.Combine(Environment.SystemDirectory, "cmd.exe");
 
-        // The console is the foreground window while the key is pressed, which lets it hand the foreground on to
-        // whatever shows the prompt's window.
+        // The console is the foreground window while the key is pressed. That lets it pass the foreground on to
+        // whatever process shows the prompt's window.
         AllowSetForegroundWindow(AnyProcess);
 
         StartupInfo startup = new()
@@ -41,8 +34,8 @@ public sealed partial class CommandPrompt : ICommandPrompt
             ShowWindow = ShowNormal,
         };
 
-        // A console of its own, and none of the console's handles: the prompt reads and writes its own window, not
-        // the agent's text console behind it.
+        // A new console window and no inherited handles. The prompt reads and writes its own window, not the agent's
+        // text console behind it.
         if (!CreateProcess(cmd, 0, 0, 0, false, CreateNewConsole, 0, AppContext.BaseDirectory, in startup, out ProcessInformation started))
         {
             return;
@@ -55,7 +48,8 @@ public sealed partial class CommandPrompt : ICommandPrompt
         _ = Task.Run(() => BringToFrontAsync(processId));
     }
 
-    // Windows normally puts the new window in front by itself; this makes sure of it, while the console still may.
+    // Windows usually puts the new window in front by itself. This makes sure of it while the console still has the
+    // right to set the foreground window.
     private static async Task BringToFrontAsync(int processId)
     {
         long start = Stopwatch.GetTimestamp();
@@ -76,7 +70,7 @@ public sealed partial class CommandPrompt : ICommandPrompt
         }
     }
 
-    // The console window of that process: conhost draws it, but Windows names the process in it as its owner.
+    // Finds the console window of that process. conhost draws it, but Windows reports the process in it as the owner.
     private static unsafe nint? WindowOf(int processId)
     {
         Search search = new() { ProcessId = processId };
@@ -101,6 +95,7 @@ public sealed partial class CommandPrompt : ICommandPrompt
         return 0;
     }
 
+    // More than five parameters on purpose, because they mirror CreateProcessW.
     [LibraryImport("kernel32.dll", EntryPoint = "CreateProcessW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool CreateProcess(

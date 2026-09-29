@@ -93,8 +93,8 @@ public sealed class ServerConnectionTests
         Assert.Equal(0, await stream.ReadAsync(buffer, limit.Token));
     }
 
-    // The agent connects from a port of the dynamic range that it drew itself, so two connections in a row do not take
-    // the neighbouring ports that Windows would hand out.
+    // The agent connects from a port in the dynamic range that it picked at random itself. So two connections in a row
+    // don't use the neighbouring ports Windows would hand out.
     [Fact]
     public async Task TheAgentConnectsFromAPortOfTheDynamicRange()
     {

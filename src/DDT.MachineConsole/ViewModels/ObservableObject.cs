@@ -4,7 +4,6 @@
 
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows.Input;
 
 namespace DDT.MachineConsole.ViewModels;
 
@@ -30,24 +29,6 @@ public abstract class ObservableObject : INotifyPropertyChanged
 
     protected void Raise([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-    // Every property, as after the language changed.
+    // Raises a change for every property, like after the language changed.
     protected void RaiseAll() => PropertyChanged?.Invoke(this, s_everything);
-}
-
-// A command for a key on the screen. CanExecute is asked again after Refresh.
-public sealed class Command(Action execute, Func<bool>? canExecute = null) : ICommand
-{
-    public event EventHandler? CanExecuteChanged;
-
-    public bool CanExecute(object? parameter) => canExecute?.Invoke() ?? true;
-
-    public void Execute(object? parameter)
-    {
-        if (CanExecute(parameter))
-        {
-            execute();
-        }
-    }
-
-    public void Refresh() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
 }

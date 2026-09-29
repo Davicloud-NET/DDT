@@ -25,10 +25,8 @@ import {
 import { Checkbox } from "./Checkbox";
 import { cx } from "./cx";
 
-// A data table on React Aria: keyboard navigation between cells, row selection with boxes, and sorting by column.
-// It sits on a panel; rows are divided by hairlines drawn as pseudo-elements, so they take no space, and the
-// selected row takes the selection tone.
-
+// A data table on a panel. The cells draw the hairlines between rows, since a table with separate borders ignores a
+// row's own border.
 export function Table({
   className,
   ...props

@@ -8,18 +8,12 @@ using DDT.Core.Machines;
 
 namespace DDT.Core.Sequences;
 
-// Comparisons ignore case. A variable with several values, such as MacAddress, meets Equals, StartsWith and Contains
-// when any value does, and NotEquals when no value equals. A value the machine did not report meets only NotEquals.
-//
-// A condition tree (version 3) keeps those rules for every operator: a positive one holds when any value meets it, and
-// NotEquals, NotContains and NotExists when none does, so a name without a value meets only those three. It tests by
-// the type MachineVariableNames.Catalogue gives a name; a name that is not a fact is one of the run's values or
-// variables, tested as text. Manufacturer, Model and FriendlyModel are compared cleaned as HardwareModels cleans them,
-// with a board maker's placeholder as no value, so a model rule written as a condition matches the machines it matched
-// before. The legacy Conditions of a step keep their own rules, which agents of versions 1 and 2 run.
+// Comparisons ignore case. In a tree, a positive operator holds when any of a name's values meets it. NotEquals,
+// NotContains and NotExists hold when none does. Legacy Conditions keep the rules of versions 1 and 2. A name is tested
+// by its type in MachineVariableNames.Catalogue, or else as text. Model names are cleaned by HardwareModels first.
 public static class ConditionEvaluator
 {
-    // Where a node's condition is, as a SequenceProblem's Field and a TestEvaluation's Path name it.
+    // Where a condition sits in its node. SequenceProblem.Field and TestEvaluation.Path use these names.
     public const string ConditionsPath = "conditions";
     public const string WhenPath = "when";
     public const string TestPath = "test";
@@ -35,7 +29,7 @@ public static class ConditionEvaluator
 
     public static bool Holds(StepCondition condition, MachineVariables machine) => Legacy(condition, machine, out _);
 
-    // Null holds, as a step without conditions runs.
+    // Null holds, just like a step without conditions runs.
     public static bool Holds(ConditionNode? condition, MachineVariables machine)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -43,8 +37,8 @@ public static class ConditionEvaluator
         return condition is null || Evaluate(condition, machine, "", null);
     }
 
-    // A step's own conditions: every one of its Conditions, and its When. An IF's Test and a repeat's Until are not the
-    // step's own; evaluate them with TestPath and UntilPath.
+    // Evaluates a step's own conditions, which are all of its Conditions and its When. An IF's Test and a repeat's
+    // Until don't count. Evaluate those with TestPath and UntilPath.
     public static ConditionResult Evaluate(SequenceStep step, MachineVariables machine)
     {
         ArgumentNullException.ThrowIfNull(step);
@@ -56,7 +50,7 @@ public static class ConditionEvaluator
 
         for (int index = 0; index < conditions.Count; index++)
         {
-            // The validator refuses an empty condition; one that slips through never lets a step run.
+            // The validator refuses an empty condition. If one slips through anyway, the step never runs.
             if (conditions[index] is not { } condition)
             {
                 held = false;
@@ -76,7 +70,7 @@ public static class ConditionEvaluator
         return new ConditionResult(held, evaluations);
     }
 
-    // Null holds and records nothing. Path is where the condition is within its step or rule, such as TestPath.
+    // Null holds and records nothing. Path is where the condition sits in its step or rule, such as TestPath.
     public static ConditionResult Evaluate(ConditionNode? condition, MachineVariables machine, string path)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -87,7 +81,7 @@ public static class ConditionEvaluator
         return new ConditionResult(condition is null || Evaluate(condition, machine, path, evaluations), evaluations);
     }
 
-    // What a name holds: the type the catalogue gives a fact or a run variable, and Text for every other name.
+    // The type of a name's values. Facts and run variables get their type from the catalogue. Every other name is Text.
     public static FactType TypeOf(string variable)
     {
         ArgumentNullException.ThrowIfNull(variable);
@@ -103,13 +97,13 @@ public static class ConditionEvaluator
         return FactType.Text;
     }
 
-    // 00:15:5d:01:02:03, 00-15-5D-01-02-03 and 0015.5d01.0203 all become 00155D010203; a prefix such as 00:15:5D
+    // 00:15:5d:01:02:03, 00-15-5D-01-02-03 and 0015.5d01.0203 all become 00155D010203. A prefix such as 00:15:5D
     // becomes 00155D.
     internal static string NormaliseMac(string value) =>
         string.Concat(value.Where(c => c is not (':' or '-' or '.' or ' '))).ToUpperInvariant();
 
-    // Every part is evaluated, so the run can show each test, however the group turned out. A part that is null, or of a
-    // kind this version does not know, does not hold; the validator refuses both.
+    // Every part is evaluated, so the run can show each test, whatever the group's result. A part that's null, or of a
+    // kind this version doesn't know, doesn't hold. The validator refuses both.
     private static bool Evaluate(ConditionNode? node, MachineVariables machine, string path, List<TestEvaluation>? evaluations)
     {
         switch (node)
@@ -158,7 +152,7 @@ public static class ConditionEvaluator
 
         actual = null;
 
-        // The validator refuses an unknown variable; one that slips through never lets a step run.
+        // The validator refuses an unknown variable. If one slips through anyway, the step never runs.
         if (!MachineVariableNames.All.Contains(condition.Variable, StringComparer.Ordinal))
         {
             return false;
@@ -235,13 +229,13 @@ public static class ConditionEvaluator
             ConditionOperator.LessOrEqual => Any(reported, values, value => Compare(value, expected) <= 0, out actual),
             ConditionOperator.InSubnet => Any(reported, values, value => subnet is { } net && Within(value, net), out actual),
 
-            // An operator this version does not know never holds.
+            // An operator this version doesn't know never holds.
             _ => Never(reported, out actual),
         };
     }
 
-    // What a value is compared as: cleaned and in upper case for the model names, with a board maker's placeholder as
-    // no value; a MAC address's hex digits alone; anything else as it is.
+    // Turns a value into what's compared. Model names are cleaned and upper case, and a board maker's placeholder
+    // counts as no value. A MAC address keeps only its hex digits. Anything else stays as it is.
     private static string? Comparable(string value, FactType type, bool model)
     {
         if (model)
@@ -252,8 +246,8 @@ public static class ConditionEvaluator
         return type == FactType.Mac ? NormaliseMac(value) : value;
     }
 
-    // Numbers, yes or no and IPv4 addresses are the same when their values are, so 2.0 is 2 and yes is true; a value that
-    // is not of its type is compared as text.
+    // Numbers, yes/no values and IPv4 addresses compare by value, so 2.0 is 2 and yes is true. A value that doesn't
+    // fit its type is compared as text.
     private static bool Same(string value, string expected, FactType type)
     {
         switch (type)
@@ -274,11 +268,11 @@ public static class ConditionEvaluator
     private static bool Contains(string value, string expected, FactType type) =>
         type == FactType.Mac ? ContainsAtByte(value, expected) : value.Contains(expected, StringComparison.OrdinalIgnoreCase);
 
-    // A MAC address ends with a part only where a byte starts, as for Contains.
+    // For a MAC address, the part has to start on a byte boundary, just like in Contains.
     private static bool EndsWith(string value, string expected, FactType type) =>
         value.EndsWith(expected, StringComparison.OrdinalIgnoreCase) && (type != FactType.Mac || (value.Length - expected.Length) % 2 == 0);
 
-    // Null, which no comparison meets, when either is not a number.
+    // Null when either isn't a number. No comparison holds for null.
     private static int? Compare(string value, string expected) =>
         Number(value) is { } number && Number(expected) is { } other ? number.CompareTo(other) : null;
 
@@ -350,7 +344,7 @@ public static class ConditionEvaluator
         return false;
     }
 
-    // A positive test holds when any value meets it, and shows that value; one that does not hold shows them all.
+    // A positive test holds when any value meets it, and shows that value. When it doesn't hold, it shows all values.
     private static bool Any(IReadOnlyList<string> reported, IReadOnlyList<string> values, Func<string, bool> meets, out string? actual)
     {
         for (int index = 0; index < values.Count; index++)
@@ -368,7 +362,7 @@ public static class ConditionEvaluator
         return false;
     }
 
-    // A negative test holds when no value meets its positive, and shows every value.
+    // A negative test holds when no value meets the positive test. It always shows all values.
     private static bool None(IReadOnlyList<string> reported, IReadOnlyList<string> values, Func<string, bool> meets, out string? actual)
     {
         actual = Shown(reported);

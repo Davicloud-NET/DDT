@@ -8,8 +8,8 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The marker under a key of the test's own in the current user's hive, which it deletes, with the service's key as the
-// hand-over registers it: an ordinary one.
+// The marker under a test key in the current user's hive, which the test deletes. The service's key is an ordinary key,
+// like the hand-over registers it.
 public sealed class VolatileRestartMarkerTests : IDisposable
 {
     private const int ErrorChildMustBeVolatile = 1021;

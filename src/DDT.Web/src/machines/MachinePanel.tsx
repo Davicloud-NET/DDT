@@ -14,9 +14,9 @@ import { formatMac, type MachineSummary } from "@/machines/machines";
 import { secureBootFact } from "@/machines/secureBoot";
 import type { MachineActionState } from "@/machines/useMachineActions";
 import { useRunDetail } from "@/runs/useRunDetail";
-import { LinkButton } from "@/ui/Button";
 import { DeviceGlyph } from "@/ui/DeviceGlyph";
-import { Facts } from "@/ui/Layout";
+import { Facts } from "@/ui/Facts";
+import { LinkButton } from "@/ui/LinkButton";
 import { SequenceRail } from "@/ui/SequenceRail";
 import { StateTag } from "@/ui/StateTag";
 
@@ -31,9 +31,8 @@ import {
   railStepText,
 } from "./machineView";
 
-// The machine picked in the list, beside it: its run as it happens and what it is, without leaving the list. It
-// follows the machine live: the run's steps arrive from the hub while the panel is open. It enters from the list's
-// side when it opens; picking another machine only changes what it shows.
+// The panel next to the list for the picked machine. It shows what the machine is and its run, with the steps live
+// from the hub. It slides in from the list's side when it opens. Picking another machine only changes its content.
 export function MachinePanel({
   machine,
   actions,

@@ -4,8 +4,8 @@
 
 namespace DDT.Server.BootImage;
 
-// ddt-boot-image.json as Build-BootImage.ps1 writes it next to boot.wim. Everything is optional here, because the file
-// comes from outside the server: BootImageCatalog decides what makes it readable.
+// Maps ddt-boot-image.json, which Build-BootImage.ps1 writes next to boot.wim. Everything is optional here, because the
+// file comes from outside the server. BootImageCatalog decides what makes it readable.
 internal sealed class BootImageManifest
 {
     public DateTimeOffset? BuiltUtc { get; set; }
@@ -19,13 +19,4 @@ internal sealed class BootImageManifest
     public string? BootManager { get; set; }
 
     public string? AgentVersion { get; set; }
-}
-
-internal sealed class BootImageManifestDriver
-{
-    public Guid? PackageId { get; set; }
-
-    public string? Name { get; set; }
-
-    public string? Sha256 { get; set; }
 }

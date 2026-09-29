@@ -20,8 +20,8 @@ public sealed class SystemHardware : ISystemHardware
         return NativeMethods.GlobalMemoryStatusEx(ref status) && status.TotalPhys > 0 ? status.TotalPhys : null;
     }
 
-    // The first call only asks for the size. It is asked again when it grew in between, as a processor added while
-    // Windows runs would make it.
+    // The first call only asks for the size. It's asked again if it grew in between, as it would when a processor is
+    // added while Windows runs.
     public byte[]? ProcessorCores()
     {
         uint length = 0;

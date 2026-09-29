@@ -6,8 +6,8 @@ using DDT.Contracts.Packages;
 
 namespace DDT.Server.Packages;
 
-// A zip in the content store, next to the images. Its file is shared by content: the same zip uploaded as the other
-// kind is a second package of the same file.
+// A package is a zip in the content store, next to the images. Files are shared by content. The same zip uploaded as
+// the other kind becomes a second package that uses the same file.
 public sealed class Package
 {
     public Guid Id { get; set; }
@@ -24,8 +24,8 @@ public sealed class Package
 
     public int FileCount { get; set; }
 
-    // A JSON array of HardwareModel as PackageTargets writes it. A few dozen packages are matched in memory, so the
-    // targets need no table of their own.
+    // Holds a JSON array of HardwareModel, as PackageTargets writes it. A few dozen packages are matched in memory, so
+    // the targets don't need their own table.
     public string Targets { get; set; } = "[]";
 
     public string? Description { get; set; }
@@ -36,9 +36,9 @@ public sealed class Package
 
     public Guid? UploadedByUserId { get; set; }
 
-    // A driver package that Build-BootImage.ps1 adds to the Windows PE boot image, for a network or storage controller
-    // Windows PE has no driver for. A machine needs it before any sequence runs, so it goes to every machine that boots
-    // the image, whatever the package's targets say about the installed Windows.
+    // Marks a driver package that Build-BootImage.ps1 adds to the WinPE boot image. It's for a network or storage
+    // controller that WinPE has no driver for. Machines need it before any sequence runs, so every machine that boots
+    // the image gets it, whatever the targets say.
     public bool BootImage { get; set; }
 
     public string? UploadedByName { get; set; }

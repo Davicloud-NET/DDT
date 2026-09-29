@@ -11,8 +11,8 @@ using Microsoft.Win32;
 namespace DDT.Agent.WindowsPhase;
 
 // ISessionAccounts on the Windows the agent runs in, as SYSTEM. Winlogon reads the auto-logon password from the LSA
-// secret DefaultPassword when the Winlogon key has none, and only SYSTEM can read that secret, unlike the key, which
-// every user can.
+// secret DefaultPassword when the Winlogon key has none. Only SYSTEM can read that secret, while every user can read
+// the key.
 [SupportedOSPlatform("windows")]
 public sealed unsafe class WindowsSessionAccounts : ISessionAccounts
 {
@@ -46,7 +46,7 @@ public sealed unsafe class WindowsSessionAccounts : ISessionAccounts
 
         Check(status, $"The account {name} could not be created");
 
-        // A new account is in Users on a workstation already; this makes sure of it, as signing in needs it.
+        // On a workstation a new account is already in Users. This makes sure of it, because signing in needs it.
         SecurityIdentifier users = new(WellKnownSidType.BuiltinUsersSid, null);
         string group = users.Translate(typeof(NTAccount)).Value.Split('\\')[^1];
         SecurityIdentifier account = Sid(name);
@@ -67,8 +67,8 @@ public sealed unsafe class WindowsSessionAccounts : ISessionAccounts
         return true;
     }
 
-    // By the name alone: Windows looks among the local accounts before any domain's, and while setup renames the
-    // computer, its name may not yet be that of the local accounts.
+    // Looks up the bare name. Windows searches the local accounts before any domain's, and while setup renames the
+    // computer, the new computer name may not qualify the local accounts yet.
     public SecurityIdentifier Sid(string name) => (SecurityIdentifier)new NTAccount(name).Translate(typeof(SecurityIdentifier));
 
     public bool Exists(string name) => AccountExists(name);
@@ -233,7 +233,7 @@ public sealed unsafe class WindowsSessionAccounts : ISessionAccounts
                 .Select(session => session.Id),
         ];
 
-    // The user names of every session there is, for RegistrySetupProbe; none when they cannot be listed.
+    // The user names of every session, for RegistrySetupProbe. Empty when they can't be listed.
     public static IEnumerable<string> SignedInUserNames()
     {
         try

@@ -4,9 +4,8 @@
 
 namespace DDT.Pxe;
 
-// Every leaf is a string so a bad value becomes a named startup failure in PxeSetup. The binder
-// leaves an unparseable IPAddress null without complaint, and an entry created by one environment
-// variable would otherwise default its Method to Tftp.
+// Every leaf is a string, so a bad value becomes a named failure in PxeSetup. The binder silently leaves an
+// unparseable IPAddress null. And an entry made by a single environment variable would default its Method to Tftp.
 public sealed class BootTargetOptions
 {
     public string? Method { get; set; }

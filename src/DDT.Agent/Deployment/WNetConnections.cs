@@ -94,7 +94,8 @@ public sealed unsafe class WNetConnections : INetworkConnections
         return names;
     }
 
-    // Read at once, on the thread that failed: the provider's text for ERROR_EXTENDED_ERROR is kept per thread.
+    // Read right away, on the thread that failed, because the provider keeps its text for ERROR_EXTENDED_ERROR per
+    // thread.
     private static NetworkError? Error(int code)
     {
         if (code == NoError)

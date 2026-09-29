@@ -58,9 +58,7 @@ public sealed class ProxyDhcpHandlerTests
         ProxyDhcpOutcome outcome = Handler().Handle(
             Loopback.Fixture("Dhcp", "discover-uefi-x64-pxeclient"),
             ProxyDhcpListenPort.Dhcp,
-            ServedIndex,
-            IPAddress.Broadcast,
-            new IPEndPoint(IPAddress.Any, 68),
+            new DatagramArrival(ServedIndex, IPAddress.Broadcast, new IPEndPoint(IPAddress.Any, 68)),
             reply);
 
         Assert.Equal(ProxyDhcpOutcomeKind.Replied, outcome.Kind);
@@ -79,9 +77,7 @@ public sealed class ProxyDhcpHandlerTests
         ProxyDhcpOutcome outcome = Handler().Handle(
             Loopback.Fixture("Dhcp", "discover-uefi-x64-pxeclient"),
             ProxyDhcpListenPort.Dhcp,
-            LanIndex,
-            IPAddress.Broadcast,
-            new IPEndPoint(IPAddress.Any, 68),
+            new DatagramArrival(LanIndex, IPAddress.Broadcast, new IPEndPoint(IPAddress.Any, 68)),
             new byte[1500]);
 
         Assert.Equal(ProxyDhcpOutcomeKind.InterfaceNotServed, outcome.Kind);
@@ -95,9 +91,7 @@ public sealed class ProxyDhcpHandlerTests
         ProxyDhcpOutcome outcome = Handler().Handle(
             Loopback.Fixture("Dhcp", "request-4011-uefi-x64"),
             ProxyDhcpListenPort.PxeBootServer,
-            ServedIndex,
-            s_servedAddress,
-            new IPEndPoint(IPAddress.Parse("192.0.2.55"), 4011),
+            new DatagramArrival(ServedIndex, s_servedAddress, new IPEndPoint(IPAddress.Parse("192.0.2.55"), 4011)),
             reply);
 
         Assert.Equal(ProxyDhcpOutcomeKind.Replied, outcome.Kind);
@@ -114,9 +108,7 @@ public sealed class ProxyDhcpHandlerTests
         ProxyDhcpOutcome outcome = Handler(relays: "192.0.2.1").Handle(
             WithGateway(Loopback.Fixture("Dhcp", "discover-uefi-x64-pxeclient"), s_relay),
             ProxyDhcpListenPort.Dhcp,
-            ServedIndex,
-            s_servedAddress,
-            new IPEndPoint(s_relay, 67),
+            new DatagramArrival(ServedIndex, s_servedAddress, new IPEndPoint(s_relay, 67)),
             reply);
 
         Assert.Equal(ProxyDhcpOutcomeKind.Replied, outcome.Kind);
@@ -132,9 +124,7 @@ public sealed class ProxyDhcpHandlerTests
         ProxyDhcpOutcome outcome = Handler(relays: "192.0.2.1").Handle(
             WithGateway(Loopback.Fixture("Dhcp", "discover-uefi-x64-pxeclient"), s_relay),
             ProxyDhcpListenPort.Dhcp,
-            ServedIndex,
-            s_secondaryAddress,
-            new IPEndPoint(s_relay, 67),
+            new DatagramArrival(ServedIndex, s_secondaryAddress, new IPEndPoint(s_relay, 67)),
             reply);
 
         Assert.Equal(ProxyDhcpOutcomeKind.Replied, outcome.Kind);
@@ -147,9 +137,7 @@ public sealed class ProxyDhcpHandlerTests
         ProxyDhcpOutcome outcome = Handler().Handle(
             WithGateway(Loopback.Fixture("Dhcp", "discover-uefi-x64-pxeclient"), s_relay),
             ProxyDhcpListenPort.Dhcp,
-            ServedIndex,
-            s_servedAddress,
-            new IPEndPoint(s_relay, 67),
+            new DatagramArrival(ServedIndex, s_servedAddress, new IPEndPoint(s_relay, 67)),
             new byte[1500]);
 
         Assert.Equal(ProxyDhcpOutcomeKind.Silenced, outcome.Kind);
@@ -162,9 +150,7 @@ public sealed class ProxyDhcpHandlerTests
         ProxyDhcpOutcome outcome = Handler().Handle(
             Loopback.Fixture("Dhcp", "discover-option-length-overruns"),
             ProxyDhcpListenPort.Dhcp,
-            ServedIndex,
-            IPAddress.Broadcast,
-            new IPEndPoint(IPAddress.Any, 68),
+            new DatagramArrival(ServedIndex, IPAddress.Broadcast, new IPEndPoint(IPAddress.Any, 68)),
             new byte[1500]);
 
         Assert.Equal(ProxyDhcpOutcomeKind.Unparseable, outcome.Kind);

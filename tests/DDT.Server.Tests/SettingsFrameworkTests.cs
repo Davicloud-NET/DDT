@@ -90,8 +90,8 @@ public sealed class SettingsFrameworkTests
         Assert.False(services.GetRequiredService<ILoggerFactory>().CreateLogger("Other").IsEnabled(LogLevel.Information));
     }
 
-    // ForwardedHeadersMiddleware.ApplyForwarders is public, so the proxies can change while the server runs: a proxy
-    // saved on the page is believed from the next request on, and one removed is not.
+    // ForwardedHeadersMiddleware.ApplyForwarders is public, so the proxies can change while the server runs.
+    // A proxy saved on the page is believed from the next request on, and a removed one isn't.
     [Fact]
     public async Task AProxySavedOnThePageIsBelievedFromTheNextRequest()
     {
@@ -101,12 +101,12 @@ public sealed class SettingsFrameworkTests
 
         Assert.Equal("192.0.2.77", await RecordedAddressAsync(application, "198.51.100.44"));
 
-        await administrator.SavedAsync<ProxySettings>(SettingsSectionNames.Proxies, values => values with { KnownProxies = ["192.0.2.77"] }, reauthentication: token);
+        await administrator.SavedAsync<ProxySettings>(SettingsSectionNames.Proxies, values => values with { KnownProxies = ["192.0.2.77"] }, new(Reauthentication: token));
 
         Assert.Equal("198.51.100.44", await RecordedAddressAsync(application, "198.51.100.44"));
         Assert.Equal(ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto, application.Services.GetRequiredService<DdtSettings>().Current.ForwardedHeaders.ForwardedHeaders);
 
-        await administrator.SavedAsync<ProxySettings>(SettingsSectionNames.Proxies, values => values with { KnownProxies = [] }, reauthentication: token);
+        await administrator.SavedAsync<ProxySettings>(SettingsSectionNames.Proxies, values => values with { KnownProxies = [] }, new(Reauthentication: token));
 
         Assert.Equal("192.0.2.77", await RecordedAddressAsync(application, "198.51.100.44"));
     }

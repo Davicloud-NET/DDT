@@ -10,9 +10,9 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent;
 
-// Opens the TCP connections to the server itself, from a random client port, and notes how far it got, so a connect
-// timeout can say whether the name lookup, the TCP connection or the TLS handshake did not finish in time. The three
-// fail for different reasons: DNS, a route, a firewall or a stale connection, and a server that stalls.
+// Opens the TCP connections to the server itself, from a random client port, and notes how far each got. That way a
+// connect timeout can say whether the name lookup, the TCP connection or the TLS handshake ran out. Each has different
+// causes.
 public static class ServerConnection
 {
     private static readonly HttpRequestOptionsKey<Progress> s_progress = new("DDT.ServerConnection");
@@ -47,12 +47,10 @@ public static class ServerConnection
         return new NetworkStream(socket, ownsSocket: true);
     }
 
-    // Windows PE hands out the same client ports at every start, from 49668 on, and a machine that restarts or loses
-    // power never closes its connections, so the server still holds the last start's connections as established. A new
-    // connection from one of those ports collides with the old one, and the server drops its attempts until it times
-    // the old one out, which cost the agent up to 40 s after a netboot on the test machine. A port drawn at random from
-    // the dynamic range almost never meets one of the few stale connections. One that is taken, or reserved by Windows,
-    // is drawn again, and after a few draws Windows picks as before.
+    // WinPE hands out the same client ports at every start, from 49668 on. The server still holds the connections a
+    // restart never closed, and drops a new connection from such a port until the old one times out, up to 40 s.
+    // A random port from the dynamic range almost never hits one. A taken or reserved port is drawn again, and after
+    // a few draws Windows picks the port.
     public const int FirstDynamicPort = 49152;
     public const int LastDynamicPort = 65535;
     private const int PortDraws = 8;
@@ -95,7 +93,7 @@ public static class ServerConnection
             Volatile.Write(ref _resolvedAt, Environment.TickCount64);
         }
 
-        // The socket is dual mode, so an IPv4 server shows as an IPv4-mapped IPv6 address, which is shown as IPv4 again.
+        // The socket is dual mode, so an IPv4 server shows up as an IPv4-mapped IPv6 address. It's shown as IPv4 again.
         public void Connected(EndPoint? remote)
         {
             _remote = remote is IPEndPoint { Address.IsIPv4MappedToIPv6: true } mapped

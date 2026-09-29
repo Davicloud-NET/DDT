@@ -7,11 +7,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// A sequence's inputs, all on one page: a field for each, in the order the sequence declares them. Enter sends them all
-// once every field that needs an answer has one. The agent checks them and, where it refuses one, asks again with what
-// was wrong under the field; what was typed stays for the person to put right, but a password never does, and no
-// password stays on the screen once it has been sent. Esc goes back to the list of sequences where the question comes
-// after the pick. Nothing typed here is ever written to a log.
+// A sequence's inputs on one page. The agent checks them and asks again with what was wrong. Each field keeps what was
+// typed, except a password. Nothing typed here is ever logged.
 public sealed class InputsViewModel : QuestionViewModel
 {
     private readonly bool _canGoBack;
@@ -45,7 +42,7 @@ public sealed class InputsViewModel : QuestionViewModel
 
     public string Intro => F("{sequence} asks these before it starts.", ("sequence", _question.SequenceName));
 
-    // What was wrong with the answers as a whole, such as the server not taking them.
+    // What was wrong with the answers as a whole, like the server rejecting them.
     public string? Error => _question.Error;
 
     public bool HasError => !string.IsNullOrEmpty(_question.Error);
@@ -64,7 +61,7 @@ public sealed class InputsViewModel : QuestionViewModel
 
     public override bool CanGoBack => _canGoBack;
 
-    // The same inputs asked again, with what was wrong: each field keeps what was typed in it and takes its error.
+    // The same inputs asked again, with what was wrong. Each field keeps what was typed in it and shows its error.
     public override bool Accept(int id, ConsoleQuestion question)
     {
         if (question is not InputsQuestion next)
@@ -74,7 +71,7 @@ public sealed class InputsViewModel : QuestionViewModel
 
         _question = next;
 
-        // The same fields stay on the screen as they are; others are laid out again.
+        // If the fields are the same, they stay on screen as they are. Otherwise they're laid out again.
         if (HasTheFieldsOf(next))
         {
             for (int index = 0; index < _fields.Count; index++)

@@ -13,8 +13,8 @@ import type {
 } from "@/sequences/sequences";
 import type { ResolvedValue } from "@/values/values";
 
-// The questions a sequence asks before its run starts, as the web asks them: when a run is assigned or approved, and
-// on the machine's page while a run waits for its answers.
+// The questions a sequence asks before its run starts, as the web asks them. They're asked when a run is assigned or
+// approved, and on the machine's page while a run waits for its answers.
 
 // The server's AgentInput: an input as the console or the web asks it.
 export interface AgentInput {
@@ -28,8 +28,8 @@ export interface AgentInput {
   maxLength: number | null;
 }
 
-// The server's InputAnswer: value for every kind but Account, userName and password for an Account input. A
-// MultiChoice answer is its values separated by semicolons, a YesNo answer "true" or "false".
+// The server's InputAnswer. Every kind uses value, except Account, which uses userName and password. A MultiChoice
+// answer is its values separated by semicolons, and a YesNo answer is "true" or "false".
 export interface InputAnswer {
   name: string;
   value: string | null;
@@ -37,7 +37,7 @@ export interface InputAnswer {
   password?: string | null;
 }
 
-// An input as a form asks it: where an Account input's account may be used, when the page knows it.
+// An input as a form asks it. account is where an Account input's account may be used, if the page knows it.
 export interface AskedInput extends AgentInput {
   account: AccountDestination | null;
 }
@@ -92,8 +92,8 @@ function listOf(value: string): string[] {
     .filter((item) => item !== "");
 }
 
-// What each field starts with: the default the server worked out for this machine where it sent one, else the
-// input's own default. A password never has one.
+// What each field starts with: the default the server worked out for this machine if it sent one, or else the
+// input's own default. A password never has a default.
 export function initialDrafts(
   inputs: readonly AskedInput[],
   defaults: readonly ResolvedValue[] = [],
@@ -118,7 +118,7 @@ export function initialDrafts(
   );
 }
 
-// The default a field was filled in with, where the server worked one out for this machine.
+// The default a field was filled in with, if the server worked one out for this machine.
 export function prefilledBy(
   input: AskedInput,
   defaults: readonly ResolvedValue[],
@@ -145,7 +145,7 @@ function empty(input: AskedInput, draft: AnswerDraft | undefined): boolean {
   }
 }
 
-// The answers to send: every field that holds something. A required input left empty is for missingAnswers to say.
+// The answers to send: every field that holds something. missingAnswers reports a required input left empty.
 export function answersOf(inputs: readonly AskedInput[], drafts: AnswerDrafts): InputAnswer[] {
   return inputs
     .filter((input) => !empty(input, drafts[input.name]))
@@ -168,7 +168,7 @@ export function answersOf(inputs: readonly AskedInput[], drafts: AnswerDrafts): 
     });
 }
 
-// What keeps the answers from being sent, by the input's name: a required input without an answer.
+// What blocks sending the answers, keyed by input name: each required input without an answer.
 export function missingAnswers(
   inputs: readonly AskedInput[],
   drafts: AnswerDrafts,
@@ -187,7 +187,7 @@ export function missingAnswers(
   );
 }
 
-// The server's refusal of the answers, by the input's name: it names each field "answers.<name>".
+// The server's refusal of the answers, keyed by input name. The server names each field "answers.<name>".
 export function answerErrors(error: ApiError | null | undefined): Record<string, string> {
   const errors = error?.problem?.errors ?? {};
   const found: Record<string, string> = {};

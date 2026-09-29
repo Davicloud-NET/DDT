@@ -10,7 +10,7 @@ using DDT.Server.Certificates;
 
 namespace DDT.Server.Tests;
 
-// A certificate DDT did not issue, as an administrator brings one from their own CA or makes one by hand.
+// Certificates DDT didn't issue, like the ones an administrator brings from their own CA or makes by hand.
 internal static class AdministratorCertificate
 {
     public static PemPair Create(string subject, string dnsName, DateTimeOffset notBefore, DateTimeOffset notAfter)
@@ -28,14 +28,15 @@ internal static class AdministratorCertificate
         return new PemPair(certificate.ExportCertificatePem(), key.ExportPkcs8PrivateKeyPem());
     }
 
-    // On Windows, serving a chain puts its CA certificates into the user's Intermediate Certification Authorities store,
-    // and every test run makes new CAs under the same names. With a few dozen CAs of one name in that store, Windows stops
-    // building chains for the name, so the CAs made here are taken out of it again when the tests end.
+    // On Windows, serving a chain puts its CAs into the user's Intermediate Certification Authorities store, and with a
+    // few dozen CAs of one name there Windows stops building chains for it. So the CAs made here are taken out again
+    // when the tests end.
     private static readonly ConcurrentBag<string> s_authorities = [];
 
     static AdministratorCertificate() => AppDomain.CurrentDomain.ProcessExit += (_, _) => ForgetAuthorities();
 
-    // The root of an administrator's CA, or with an issuer, an intermediate CA below it.
+    // Creates the root of an administrator's CA.
+    // With an issuer, it creates an intermediate CA below that issuer instead.
     public static PemPair CreateAuthority(string subject, PemPair? issuer, DateTimeOffset notBefore, DateTimeOffset notAfter)
     {
         using RSA key = RSA.Create(2048);
@@ -76,7 +77,7 @@ internal static class AdministratorCertificate
         }
         catch (CryptographicException)
         {
-            // A store that cannot be opened keeps what it has; the tests passed or failed on their own already.
+            // If the store can't be opened, the CAs stay in it. The tests already passed or failed by then.
         }
     }
 

@@ -10,9 +10,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Rules;
 
-// Every rule as the Rules page lists them, top first, and every machine role by name. A server has a few dozen of
-// each, so the whole list is also what a change pushes: one change can move rules, rename the sequence several choose,
-// or change what another rule's condition may test.
+// Every rule, top first, and every machine role, as the pages list them. A server has a few dozen of each, so a change
+// pushes the whole list. One change can move rules, rename a sequence several choose, or change what others test.
 public static class RuleViews
 {
     public static async Task<RuleView[]> ListAsync(DdtDbContext database, CancellationToken cancellationToken)
@@ -35,8 +34,8 @@ public static class RuleViews
         ArgumentNullException.ThrowIfNull(sequences);
         ArgumentNullException.ThrowIfNull(machines);
 
-        // Every known machine is walked once, as the resolver walks it, so a rule that tests what a rule above it sets is
-        // counted as it would match.
+        // Every known machine is walked once, the same way the resolver does it. So a rule that tests what a rule above
+        // it sets is counted the way it would really match.
         Dictionary<Guid, int> counts = [];
 
         foreach (Machine machine in machines)

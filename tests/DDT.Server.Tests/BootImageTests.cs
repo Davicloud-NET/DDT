@@ -12,7 +12,6 @@ using DDT.Contracts.BootImage;
 using DDT.Contracts.Packages;
 using DDT.Server.Authentication;
 using DDT.Server.BootImage;
-using DDT.Server.Data;
 using DDT.Server.Images;
 using DDT.Server.Live;
 using DDT.Server.Machines;
@@ -24,7 +23,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The flagged drivers are the whole library's, so each test starts with none flagged and no build in the boot directory.
+// Driver flags apply to the whole library.
+// So each test starts with no drivers flagged and no build in the boot directory.
 public sealed class BootImageTests(DdtApplication application) : IClassFixture<DdtApplication>, IAsyncLifetime
 {
     private const string BootImage = "/api/boot-image";
@@ -56,7 +56,7 @@ public sealed class BootImageTests(DdtApplication application) : IClassFixture<D
     private async Task<PackageSummary> FlaggedAsync(Package package, bool? bootImage = true) =>
         await RegisteredMachine.ReadAsync<PackageSummary>(await FlagAsync(package, bootImage));
 
-    // As Build-BootImage.ps1 writes it, with the drivers it put in.
+    // Writes the manifest the way Build-BootImage.ps1 does, with the drivers it put in.
     private async Task WriteManifestAsync(params Package[] drivers)
     {
         string entries = string.Join(",", drivers.Select(d => $$"""{ "packageId": "{{d.Id}}", "name": "{{d.Name}}", "sha256": "{{d.Sha256.ToUpperInvariant()}}" }"""));
@@ -261,27 +261,5 @@ public sealed class BootImageTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"{PackageRequests.Packages}/{package.Id}")).StatusCode);
         BootImageView deleted = await LiveListener.NextAsync(pushed);
         Assert.DoesNotContain(deleted.Drivers, d => d.PackageId == package.Id);
-    }
-}
-
-// The server's clock stands still here, so the look at the boot directory happens when the test advances it.
-public sealed class BootImageWatcherTests(ManualClockApplication application) : IClassFixture<ManualClockApplication>
-{
-    [Fact]
-    public async Task PushesANewBuildOnceItsDescriptionAppears()
-    {
-        SignedInClient administrator = await application.AdministratorAsync();
-        await using LiveListener live = await LiveListener.StartAsync(application, administrator);
-        ChannelReader<BootImageView> pushed = live.Listen<BootImageView>(LiveEvents.BootImageChanged);
-        string manifest = application.Services.GetRequiredService<BootImageCatalog>().ManifestPath;
-
-        Directory.CreateDirectory(Path.GetDirectoryName(manifest)!);
-        await File.WriteAllTextAsync(manifest, """{ "builtUtc": "2026-09-27T08:15:00Z", "drivers": [], "agentVersion": "0.8.0" }""", TestContext.Current.CancellationToken);
-        application.Clock.Advance(BootImageWatcher.Interval);
-
-        BootImageView view = await LiveListener.NextAsync(pushed);
-
-        Assert.Equal("0.8.0", view.Build?.AgentVersion);
-        Assert.False(view.Stale);
     }
 }

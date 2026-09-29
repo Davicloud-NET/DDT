@@ -91,7 +91,7 @@ public sealed class SequenceEndpointTests(DdtApplication application) : IClassFi
         Assert.Equal(new[] { SequencePhase.WindowsPE, SequencePhase.WindowsPE }, view.StepPhases);
         Assert.StartsWith("administrator-", view.UpdatedBy, StringComparison.Ordinal);
 
-        // Saved although no image is chosen yet: the problem keeps it from running, not from being stored.
+        // It's saved even though no image is chosen yet. The problem keeps it from running, not from being stored.
         Assert.Equal(new SequenceProblem(definition.Steps[1].Id, "imageId", "Choose the image to apply."), Assert.Single(view.Problems));
         Assert.Empty(view.Warnings);
 
@@ -214,7 +214,7 @@ public sealed class SequenceEndpointTests(DdtApplication application) : IClassFi
         SequenceStep[] restarts = [.. Enumerable.Range(0, 200).Select(i => new RebootStep { Id = Guid.NewGuid(), Name = $"Restart {i}" })];
         GroupStep group = new() { Id = Guid.NewGuid(), Name = "Restarts", Steps = [.. restarts.Select(step => step with { Id = Guid.NewGuid() })] };
 
-        // Every node of the tree counts, the group with the steps inside it.
+        // Every node of the tree counts, both the group and the steps inside it.
         HttpResponseMessage tooMany = await administrator.CreateSequenceAsync(SequenceRequests.Definition([.. restarts, group]));
         Assert.Equal(HttpStatusCode.BadRequest, tooMany.StatusCode);
         Assert.Equal(
@@ -244,7 +244,8 @@ public sealed class SequenceEndpointTests(DdtApplication application) : IClassFi
         Assert.Equal(stepId, step.Id);
     }
 
-    // The contexts' own option does not reach the host's JSON options or the hub's, which both read requests.
+    // DdtJsonContext's AllowOutOfOrderMetadataProperties doesn't reach the host's or the hub's JSON options. Both read
+    // requests, so each sets it too, and a kind after the other members still reads.
     [Fact]
     public void TheHostAndTheHubReadAKindAfterTheOtherMembers()
     {
@@ -273,12 +274,13 @@ public sealed class SequenceEndpointTests(DdtApplication application) : IClassFi
 
         Assert.Equal(HttpStatusCode.BadRequest, (await administrator.SaveSequenceAsync(other, name: $" {name.ToLowerInvariant()}")).StatusCode);
 
-        // Its own name, in another case, is not taken.
+        // Its own name in another case doesn't count as taken.
         SequenceView renamed = await ReadAsync<SequenceView>(await administrator.SaveSequenceAsync(taken, name: name.ToUpperInvariant()));
         Assert.Equal(name.ToUpperInvariant(), renamed.Name);
     }
 
-    // A node after an IF runs in the phases of both branches; the IF in those of its start and of what it holds.
+    // A node after an IF runs in the phases of both branches.
+    // The IF runs in the phase it starts in and in the phases of what it holds.
     [Fact]
     public async Task ShowsThePhasesEveryNodeMayRunIn()
     {

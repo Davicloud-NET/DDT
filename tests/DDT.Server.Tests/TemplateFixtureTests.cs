@@ -12,9 +12,9 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The web's template field mirrors ValueTemplate by hand, for its completion and its preview, and checks its mirror
-// against the cases written here: for each template and values, the names it uses, what Parse reports with the values'
-// names as the known ones, and what it renders to or the problem that stops it.
+// The web's template field mirrors ValueTemplate by hand for its completion and preview. It checks that mirror against
+// the cases written here. Each case has a template and values, the names it uses, what Parse reports with the values'
+// names as known, and what it renders to or the problem that stops it.
 public sealed class TemplateFixtureTests
 {
     private static readonly Dictionary<string, string> s_machine = new(StringComparer.Ordinal)
@@ -135,7 +135,7 @@ public sealed class TemplateFixtureTests
         string folder = Path.Combine(Repository.Root(), "src", "DDT.Web", "src", "test", "fixtures");
         string path = Path.Combine(folder, name);
 
-        // Indented with LF line ends; the web's .prettierignore leaves the fixtures as written here.
+        // Indented, with LF line endings. The web's .prettierignore leaves the fixtures as written here.
         JsonSerializerOptions options = new()
         {
             WriteIndented = true,

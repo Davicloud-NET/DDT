@@ -90,8 +90,8 @@ public sealed class EspReaderTests
         return information;
     }
 
-    // DISK_GEOMETRY: Cylinders, MediaType, TracksPerCylinder, SectorsPerTrack and BytesPerSector at 20, each set so
-    // none can pass for another.
+    // DISK_GEOMETRY: Cylinders, MediaType, TracksPerCylinder, SectorsPerTrack and BytesPerSector at 20. Each gets a
+    // different value, so none can be mistaken for another.
     private static byte[] Geometry(uint bytesPerSector)
     {
         byte[] geometry = new byte[EspReader.GeometryLength];

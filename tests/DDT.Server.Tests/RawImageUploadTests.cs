@@ -43,7 +43,7 @@ public sealed class RawImageUploadTests(ConversionToolsApplication application) 
         return Assert.Single(await RegisteredMachine.ReadAsync<IReadOnlyList<ImageSummary>>(completed));
     }
 
-    // With startOnly, the reason is the start of what the server says, whose end comes from the framework.
+    // With startOnly, reason is only the start of the server's message. The rest comes from the framework.
     private async Task AssertRefusedAsync(byte[] file, string fileName, string reason, bool startOnly = false)
     {
         HttpResponseMessage refused = await UploadAsync(file, fileName);
@@ -61,8 +61,8 @@ public sealed class RawImageUploadTests(ConversionToolsApplication application) 
         }
     }
 
-    // A cause on the server keeps the upload: completed again, it answers the same until the cause is gone, and it can
-    // be discarded.
+    // A cause on the server keeps the upload.
+    // Completing it again gives the same answer until the cause is gone, and it can be discarded.
     private async Task AssertKeptAsync(byte[] file, string fileName, string reason)
     {
         SignedInClient administrator = await application.AdministratorAsync();

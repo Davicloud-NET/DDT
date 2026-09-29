@@ -46,7 +46,7 @@ public sealed class ForwardedHeadersTests(ProxiedApplication application, Forwar
         Assert.Equal("203.0.113.7", await RecordedAddressAsync(unconfigured, "203.0.113.7", "192.0.2.95"));
     }
 
-    // The switch adds the middleware too, and two of them would take the client's entry left of a listed address.
+    // The switch adds the middleware too. Two of them would read past the client's entry to the one left of it.
     [Fact]
     public async Task TheFrameworkSwitchNextToAListedProxyStillReadsOneEntry()
     {

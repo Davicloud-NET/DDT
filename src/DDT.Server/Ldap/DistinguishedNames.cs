@@ -8,8 +8,9 @@ namespace DDT.Server.Ldap;
 
 public static class DistinguishedNames
 {
-    // The value of the first part, such as "DDT Operators" of "CN=DDT Operators,OU=Groups,DC=corp,DC=example", for
-    // naming a group in a sentence without asking the directory. A name without "=" is returned whole.
+    // Returns the value of the first part, such as "DDT Operators" from
+    // "CN=DDT Operators,OU=Groups,DC=corp,DC=example". That names a group in a sentence without asking the directory. A
+    // name without "=" is returned whole.
     public static string FirstValue(string distinguishedName)
     {
         ArgumentNullException.ThrowIfNull(distinguishedName);

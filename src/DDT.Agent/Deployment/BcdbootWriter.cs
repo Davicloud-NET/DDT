@@ -4,9 +4,9 @@
 
 namespace DDT.Agent.Deployment;
 
-// Microsoft's sequence after applying: the applied image's own bcdboot and reagentc, which match its version.
-// bcdboot always gets /s: without it, it may write to the EFI system partition of another disk, which the technician
-// never confirmed erasing.
+// Follows Microsoft's steps after applying an image, with the bcdboot and reagentc from the image, because they match
+// its version. bcdboot always gets /s. Without it, bcdboot may write to another disk's EFI system partition, which
+// nobody confirmed erasing.
 public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, AgentLog log) : IBcdWriter
 {
     private static readonly string s_bcdedit = Path.Combine(Environment.SystemDirectory, "bcdedit.exe");
@@ -46,8 +46,8 @@ public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, A
             cancellationToken).ConfigureAwait(false);
     }
 
-    // bcdboot with /s does not reliably touch the firmware's boot entries (on Hyper-V it put its entry first, and the
-    // documentation says it is for another machine's disk), so the boot variables are checked and written here.
+    // bcdboot with /s doesn't reliably touch the firmware's boot entries. On Hyper-V it put its entry first, and the
+    // documentation says /s is for another machine's disk. So the boot variables are checked and written here.
     public async Task PutWindowsFirstAsync(TargetVolumes volumes, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(volumes);
@@ -57,13 +57,11 @@ public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, A
 
         try
         {
-            FirmwareBootEntry.MakeFirst(
-                changes,
+            new FirmwareBootEntry(changes, log).MakeFirst(
                 EspReader.Read(volumes.System),
                 FirmwareBootEntry.WindowsLoaderPath,
                 FirmwareBootEntry.WindowsDescription,
-                volumes.ErasedSystemPartitionIds,
-                log);
+                volumes.ErasedSystemPartitionIds);
         }
         catch (Exception exception)
         {
@@ -87,7 +85,7 @@ public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, A
 
         try
         {
-            FirmwareBootEntry.MakeFirst(changes, esp, loaderPath, description, erasedSystemPartitionIds, log);
+            new FirmwareBootEntry(changes, log).MakeFirst(esp, loaderPath, description, erasedSystemPartitionIds);
         }
         catch (Exception exception)
         {

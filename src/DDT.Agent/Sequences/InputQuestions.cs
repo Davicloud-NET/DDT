@@ -8,17 +8,15 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// A sequence's inputs as the console at the machine asks them, after the pick or while a run waits at its start, and
-// the answers it gives as the server takes them. The agent checks what the console can get wrong before it sends
-// anything; the server checks again and has the last word. An answer is never logged, and neither is anything made from
-// one: the words here name the input, never what was typed.
+// A sequence's inputs as the console asks them, and the answers as the server takes them. The agent checks what the
+// console can get wrong, and the server again. Answers only go into the server's payload, never into a log line.
 public static class InputQuestions
 {
     public const string YesAnswer = "true";
     public const string NoAnswer = "false";
 
-    // An Account input names the domain its account is for as the server gave it, or else as the sequence's declaration
-    // in definition does.
+    // An Account input names the domain its account is for. The domain comes from the server, or else from the
+    // input's declaration in definition.
     public static ConsoleInput ToConsole(AgentInput input, string? error, SequenceDefinition? definition = null)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -47,7 +45,7 @@ public static class InputQuestions
             domain);
     }
 
-    // What is wrong with each answer, by the input's name; empty when nothing is. An input the console gave no answer
+    // What's wrong with each answer, by the input's name. Empty when nothing is. An input the console gave no answer
     // for counts as unanswered.
     public static IReadOnlyDictionary<string, string> Check(IReadOnlyList<AgentInput> inputs, IReadOnlyList<ConsoleInputValue> values)
     {

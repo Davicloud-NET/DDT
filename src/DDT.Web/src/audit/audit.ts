@@ -8,7 +8,7 @@ import { apiGet } from "@/lib/api";
 
 export type AuditActorKind = "User" | "Machine" | "Token" | "System";
 
-// One row of the audit table as the server's AuditEntry has it. detail says what changed, in the server's words.
+// One row of the audit table, like the server's AuditEntry. detail says what changed, in the server's words.
 export interface AuditEntry {
   id: number;
   occurredUtc: string;
@@ -27,8 +27,8 @@ export interface AuditPage {
   next: number | null;
 }
 
-// action matches the start of an action, such as "machine." or "deployment.failed"; actor any part of the actor's
-// name; from and to are local dates as the date fields give them, "" when not set.
+// action matches the start of an action name, such as "machine." or "deployment.failed". actor matches any part of the
+// actor's name. from and to are local dates from the date fields, or "" when not set.
 export interface AuditFilter {
   action: string;
   actor: string;
@@ -40,7 +40,7 @@ export const auditKey = ["audit"] as const;
 
 const PAGE_SIZE = 100;
 
-// A date field's day as the start of that day in this browser's time zone, sent in UTC.
+// The start of a date field's day in the browser's time zone, sent as UTC.
 function startOfDay(date: string): string {
   return new Date(`${date}T00:00:00`).toISOString();
 }
@@ -71,7 +71,7 @@ export function auditQuery(filter: AuditFilter) {
         search.set("from", startOfDay(filter.from));
       }
 
-      // The day chosen as the last one is included.
+      // The chosen last day is included, so the range ends at the start of the next day.
       if (filter.to !== "") {
         search.set("to", dayAfter(filter.to));
       }
@@ -100,8 +100,8 @@ function passes(filter: AuditFilter, entry: AuditEntry): boolean {
   );
 }
 
-// The hub's auditAppended: the rows one save added, oldest first, go to the top of every log read so far whose filter
-// they pass.
+// Handles the hub's auditAppended. It carries the rows one save added, oldest first. They go to the top of every cached
+// log whose filter they pass.
 export function appendAudit(queryClient: QueryClient, entries: readonly AuditEntry[]): void {
   for (const [key, data] of queryClient.getQueriesData<InfiniteData<AuditPage>>({
     queryKey: auditKey,

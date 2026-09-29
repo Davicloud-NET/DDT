@@ -9,14 +9,10 @@ import { branch, draftOfSteps, group, leaf, repeat } from "@/test/trees";
 import { flowEdits } from "./flowEdits";
 import {
   afterRemoval,
-  clipboardText,
   flowCommand,
   flowTarget,
-  nodeLabel,
-  nodesFromClipboard,
   shiftEdit,
   slotAfter,
-  slotLabel,
   type FlowMove,
 } from "./flowKeyboard";
 import { indexTree } from "./flowTree";
@@ -73,7 +69,7 @@ describe("moving through the flow", () => {
     expect(go("a", "down")).toBe("b");
     expect(go("b", "down")).toBe("c");
     expect(go("c", "down")).toBe("d");
-    // The last node of a branch goes on past the join.
+    // The last node of a branch continues past the join.
     expect(go("d", "down")).toBe("f");
     expect(go("e", "down")).toBe("f");
     expect(go("f", "down")).toBe("g");
@@ -141,68 +137,5 @@ describe("editing from the keys", () => {
     expect(afterRemoval(index, "d")).toBe("c");
     expect(afterRemoval(index, "e")).toBe("b");
     expect(afterRemoval(index, "i")).toBe("f");
-  });
-});
-
-describe("what a screen reader hears", () => {
-  const named = indexTree([
-    leaf("a"),
-    {
-      ...branch("b", [leaf("c"), { ...leaf("d"), kind: "reboot", name: "Restart" } as never], []),
-      name: "Is it a Latitude?",
-    },
-    group("f"),
-  ]);
-
-  it("says where a node is, its name, its kind and its findings", () => {
-    expect(nodeLabel(named, "a", 0, 0)).toBe("Step 1, Step a, Run script");
-    expect(nodeLabel(named, "c", 1, 0)).toBe(
-      "Step 1 of Then of 'If: Is it a Latitude?', Step c, Run script, 1 problem",
-    );
-    expect(nodeLabel(named, "b", 0, 2)).toBe("Step 2, If: Is it a Latitude?, 2 warnings");
-  });
-
-  it("says where a gap is", () => {
-    expect(slotLabel(named, { parent: null, body: "steps", index: 0 })).toBe(
-      "Add a step before Step a",
-    );
-    expect(slotLabel(named, { parent: null, body: "steps", index: 1 })).toBe(
-      "Add a step between Step a and If: Is it a Latitude?",
-    );
-    expect(slotLabel(named, { parent: null, body: "steps", index: 3 })).toBe(
-      "Add a step after Group: Group f",
-    );
-    expect(slotLabel(named, { parent: "b", body: "else", index: 0 })).toBe(
-      "Add a step to Else of 'If: Is it a Latitude?'",
-    );
-    expect(slotLabel(named, { parent: "f", body: "steps", index: 0 })).toBe(
-      "Add a step to 'Group: Group f'",
-    );
-    expect(slotLabel(indexTree([]), { parent: null, body: "steps", index: 0 })).toBe(
-      "Add the first step",
-    );
-  });
-});
-
-describe("the clipboard", () => {
-  it("holds nodes as DDT's and gives them back", () => {
-    const text = clipboardText([steps[1] ?? leaf("x")]);
-
-    expect(JSON.parse(text)).toMatchObject({ ddtFlow: 1, nodes: [{ id: "b", kind: "if" }] });
-    expect(nodesFromClipboard(text)?.map((node) => node.id)).toEqual(["b"]);
-  });
-
-  it("refuses other text", () => {
-    expect(nodesFromClipboard("Apply image")).toBeNull();
-    expect(nodesFromClipboard(JSON.stringify({ ddtFlow: 2, nodes: [leaf("a")] }))).toBeNull();
-    expect(nodesFromClipboard(JSON.stringify({ ddtFlow: 1, nodes: [] }))).toBeNull();
-    expect(
-      nodesFromClipboard(JSON.stringify({ ddtFlow: 1, nodes: [{ ...leaf("a"), kind: "format" }] })),
-    ).toBeNull();
-    expect(
-      nodesFromClipboard(
-        JSON.stringify({ ddtFlow: 1, nodes: [{ ...group("g"), steps: [{ id: "x" }] }] }),
-      ),
-    ).toBeNull();
   });
 });

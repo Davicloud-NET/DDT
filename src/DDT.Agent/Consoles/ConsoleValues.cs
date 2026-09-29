@@ -9,8 +9,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Consoles;
 
-// The agent's values in the console protocol's terms. The protocol has types of its own, so the console needs neither
-// DDT.Contracts nor the agent.
+// Converts the agent's values into the console protocol's types. The protocol has its own types, so the console needs
+// neither DDT.Contracts nor the agent.
 public static class ConsoleValues
 {
     public static MicrosoftUefiCas? ToConsole(UefiCa? cas) => cas is { } known

@@ -7,9 +7,8 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// A Pause step waits for the person at the machine: the run as the run screen shows it, paused at the step, with what
-// the step's author asks to be done. Enter lets the run go on. An operator can continue it on the web too, and then the
-// agent withdraws the question.
+// A Pause step's question, shown on top of the run like the run screen shows it. When an operator continues the run on
+// the web, the agent withdraws the question.
 public sealed class PauseViewModel : QuestionViewModel
 {
     private PauseQuestion _question;
@@ -34,7 +33,7 @@ public sealed class PauseViewModel : QuestionViewModel
 
     public string Title => _question.StepName;
 
-    // Where on the path the run waits, once the agent's state names the step.
+    // Where on the path the run waits. Null until the agent's state names the step.
     public string? Position
     {
         get
@@ -61,7 +60,7 @@ public sealed class PauseViewModel : QuestionViewModel
 
     public bool HasPosition => Position is not null;
 
-    // The author's words, as the agent filled them in.
+    // The sequence author's message, with the values the agent filled in.
     public string Message => _question.Message;
 
     public bool HasMessage => !string.IsNullOrWhiteSpace(_question.Message);

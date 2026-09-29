@@ -15,6 +15,6 @@ internal enum PickerQuestion
     Inputs,
     Confirmation,
 
-    // ANYWAY, for a disk image that will not start with the Secure Boot the machine has on.
+    // ANYWAY, for a disk image that won't start under this machine's Secure Boot.
     SecureBoot,
 }

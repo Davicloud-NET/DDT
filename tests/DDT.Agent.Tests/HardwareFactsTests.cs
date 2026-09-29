@@ -8,9 +8,9 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The Windows functions behind the facts, on the machine the tests run on: its memory, cores and tables are whatever
-// they are, so only what every Windows machine has is checked. This is what proves the declarations and the layouts
-// the parsers assume.
+// The Windows functions behind the facts, on the machine the tests run on. Its memory, cores and tables are whatever
+// they are, so only what every Windows machine has is checked. This proves the declarations and the layouts the parsers
+// assume.
 public sealed class HardwareFactsTests
 {
     [Fact]
@@ -42,7 +42,7 @@ public sealed class HardwareFactsTests
         Assert.InRange(Environment.ProcessorCount, 1, count.LogicalProcessors);
     }
 
-    // Every ACPI machine has a FADT, whose signature is FACP; reading it by the id its letters make proves the order.
+    // Every ACPI machine has a FADT, whose signature is FACP. Reading it by the id its letters make proves the order.
     [Fact]
     public void ListsThisMachinesAcpiTablesByTheirSignatures()
     {

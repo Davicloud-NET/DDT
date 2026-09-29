@@ -8,60 +8,10 @@ using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace DDT.Server.Tests;
-
-// The join account of DomainDeploymentApplication, checked at a named domain controller that a fake answers for.
-public sealed class DomainJoinCheckApplication() : SettingsApplication(
-    ("DDT:Deployment:LocalAdministrator:Password", DomainDeploymentApplication.AdministratorPassword),
-    ("DDT:Deployment:Domain:Name", "corp.example"),
-    ("DDT:Deployment:Domain:OrganizationalUnit", "OU=Workstations,DC=corp,DC=example"),
-    ("DDT:Deployment:Domain:UserName", @"CORP\ddt-join"),
-    ("DDT:Deployment:Domain:Password", DomainDeploymentApplication.JoinPassword),
-    ("DDT:Deployment:Domain:Controller", "dc1.corp.example"))
-{
-    public FakeDomainDirectory Directory { get; } = new();
-
-    protected override void ConfigureTestHost(IWebHostBuilder builder)
-    {
-        base.ConfigureTestHost(builder);
-
-        builder.ConfigureServices(services => services.AddSingleton<IDomainDirectory>(Directory));
-    }
-}
-
-public sealed class FakeDomainDirectory : IDomainDirectory
-{
-    private readonly List<DomainDirectoryRequest> _requests = [];
-
-    public Func<DomainDirectoryRequest, DomainDirectoryFacts> Answer { get; set; } =
-        request => new("LDAPS", "DC=corp,DC=example", request.OrganizationalUnit, CanCreateComputers: true, 10, 0);
-
-    public IReadOnlyList<DomainDirectoryRequest> Requests
-    {
-        get
-        {
-            lock (_requests)
-            {
-                return [.. _requests];
-            }
-        }
-    }
-
-    public Task<DomainDirectoryFacts> ReadAsync(DomainDirectoryRequest request, CancellationToken cancellationToken)
-    {
-        lock (_requests)
-        {
-            _requests.Add(request);
-        }
-
-        return Task.FromResult(Answer(request));
-    }
-}
 
 public sealed class DomainJoinCheckTests(DomainJoinCheckApplication application) : IClassFixture<DomainJoinCheckApplication>
 {
@@ -178,18 +128,5 @@ public sealed class DomainJoinCheckTests(DomainJoinCheckApplication application)
         HttpResponseMessage response = await client.PostAsync(Path, new DomainJoinCheckRequest(null));
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-    }
-}
-
-public sealed class DomainJoinCheckWithoutDomainTests(DdtApplication application) : IClassFixture<DdtApplication>
-{
-    [Fact]
-    public async Task WithoutADomainTheCheckSaysWhatToSet()
-    {
-        HttpResponseMessage response = await (await application.AdministratorAsync()).PostAsync("/api/deployments/domain-check", new DomainJoinCheckRequest(null));
-        DomainJoinCheckView result = await RegisteredMachine.ReadAsync<DomainJoinCheckView>(response);
-
-        Assert.False(result.CanJoin);
-        Assert.Equal("No domain is set. Set the domain and the join account on the Deployment defaults page.", Assert.Single(result.Findings).Text);
     }
 }

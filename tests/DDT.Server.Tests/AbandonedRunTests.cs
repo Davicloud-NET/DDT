@@ -23,7 +23,8 @@ namespace DDT.Server.Tests;
 // The server's clock stands still, so a machine last seen a given time ago is exactly that old when the sweep runs.
 public sealed class AbandonedRunTests(ManualClockApplication application) : IClassFixture<ManualClockApplication>
 {
-    // Last seen lags a report by up to its resolution, and the run token that report handed out lasts from the report.
+    // Last seen can lag behind a report by up to its resolution.
+    // The run token from that report is valid from the time of the report.
     private static readonly TimeSpan s_mayStillResume = MachineTokenLifetimes.Run + MachineLogLimits.LastSeenResolution;
 
     private static readonly TimeSpan s_canNoLongerResume = s_mayStillResume + TimeSpan.FromSeconds(1);
@@ -31,7 +32,8 @@ public sealed class AbandonedRunTests(ManualClockApplication application) : ICla
     private static string Error(DateTimeOffset lastSeen) =>
         $"The agent has not been in contact since {lastSeen:u} and could no longer resume the run.";
 
-    // A run of the Minimal sequence at its first step, with the image it downloads locked in the library.
+    // Starts a run of the Minimal sequence and stops at its first step.
+    // The image it downloads is locked in the library.
     private async Task<(DeployingMachine Machine, AgentRun Run)> RunningAsync()
     {
         SignedInClient administrator = await application.AdministratorAsync();
@@ -99,7 +101,7 @@ public sealed class AbandonedRunTests(ManualClockApplication application) : ICla
         Assert.Contains($"{AuditActions.DeploymentFailed} {run.SequenceName} on machine {machine.Id:D}. {error}", await AuditAsync(run.Id));
         Assert.Equal(0, await SweepAsync());
 
-        // Its tokens died with the run.
+        // The run's tokens stopped working when the run ended.
         Assert.Equal(HttpStatusCode.Unauthorized, (await machine.Agent.NextAsync(machine.Id, machine.Token)).StatusCode);
 
         AgentRegistrationResult again = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
@@ -109,7 +111,7 @@ public sealed class AbandonedRunTests(ManualClockApplication application) : ICla
         Assert.Equal(MachineState.Pending, again.State);
     }
 
-    // Open Machines pages show the run fail, and a page that shows the machine shows its step fail.
+    // Open Machines pages show the run as failed. A page that shows the machine also shows its step as failed.
     [Fact]
     public async Task TheFailureIsPushedAsForAnyOtherEnd()
     {
@@ -124,7 +126,7 @@ public sealed class AbandonedRunTests(ManualClockApplication application) : ICla
         string error = Error(await LastSeenAsync(machine.Id, s_canNoLongerResume));
         Assert.Equal(1, await SweepAsync());
 
-        // The row's push waits for the second after its last push to end.
+        // A machine row is pushed at most once a second, so the clock has to move before this push goes out.
         application.Clock.Advance(LiveNotifier.MachinePushInterval);
 
         MachineSummary pushed = await LiveListener.NextAsync(pushes, m => m.Id == machine.Id && m.State == MachineState.Failed);
@@ -139,7 +141,7 @@ public sealed class AbandonedRunTests(ManualClockApplication application) : ICla
         Assert.Equal(error, step.Step.Error);
     }
 
-    // Nothing here calls the sweep: the server runs it every hour.
+    // Nothing here calls the sweep. The server runs it every hour on its own.
     [Fact]
     public async Task TheServerSweepsEveryHour()
     {
@@ -151,7 +153,8 @@ public sealed class AbandonedRunTests(ManualClockApplication application) : ICla
 
         DeploymentState state = DeploymentState.Running;
 
-        // Every pass moves the clock, so the sweep also comes when the sweeper's timer started after the first move.
+        // Each pass advances the clock.
+        // That way the sweep still comes if the sweeper's timer only started after the first advance.
         for (int attempt = 0; attempt < 200 && state == DeploymentState.Running; attempt++)
         {
             application.Clock.Advance(TimeSpan.FromHours(1));
@@ -162,7 +165,7 @@ public sealed class AbandonedRunTests(ManualClockApplication application) : ICla
         Assert.Equal(DeploymentState.Failed, state);
     }
 
-    // Waiting for an interactive Windows setup can take days, and the agent reports all along.
+    // An interactive Windows setup can wait for days, and the agent keeps reporting the whole time.
     [Fact]
     public async Task ARunThatStillReportsIsNotFailed()
     {
@@ -176,11 +179,13 @@ public sealed class AbandonedRunTests(ManualClockApplication application) : ICla
         Assert.Equal(DeploymentState.Running, (await administrator.RunAsync(run.Id)).Summary.State);
 
         await LastSeenAsync(machine.Id, s_canNoLongerResume);
-        await machine.ReportOkAsync(run.Id, Report(
-            DeploymentState.Running,
-            [Step(run.Sequence.Steps[0], StepState.Done), Step(run.Sequence.Steps[1], StepState.Done)],
-            phase: SequencePhase.Windows,
-            activity: RunActivity.WaitingForWindowsSetup));
+        await machine.ReportOkAsync(
+            run.Id,
+            Report(DeploymentState.Running, [Step(run.Sequence.Steps[0], StepState.Done), Step(run.Sequence.Steps[1], StepState.Done)]) with
+            {
+                Phase = SequencePhase.Windows,
+                Activity = RunActivity.WaitingForWindowsSetup,
+            });
         await SweepAsync();
 
         Assert.Equal(DeploymentState.Running, (await administrator.RunAsync(run.Id)).Summary.State);
@@ -188,7 +193,7 @@ public sealed class AbandonedRunTests(ManualClockApplication application) : ICla
         Assert.True(await LockedAsync(run.Id));
     }
 
-    // A web assignment waits on purpose, for the machine's next netboot or a sign-in at it.
+    // A run assigned on the web waits on purpose, until the machine netboots again or someone signs in at it.
     [Fact]
     public async Task AnAssignedRunWaitsHoweverLongItsMachineIsAway()
     {

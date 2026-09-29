@@ -7,10 +7,9 @@ using DDT.Contracts.Machines;
 
 namespace DDT.Agent;
 
-// SecureBootEnabled is what the firmware says, null when Windows does not tell. TrustedUefiCas says which of Microsoft's
-// third-party UEFI CAs the firmware trusts, null when its signature database cannot be read. ChassisType is the SMBIOS
-// chassis type, null when the firmware lists no enclosure. IpAddresses are the primary adapter's IPv4 addresses, which only
-// the console at the machine shows. Facts are the rest of what conditions test, each null where it could not be read.
+// What the agent tells the server about the machine. A fact is null when the firmware or Windows doesn't provide it.
+// TrustedUefiCas are the Microsoft third-party UEFI CAs that the firmware trusts. Only the console shows the
+// IpAddresses.
 public sealed record MachineIdentity(
     string SmbiosUuid,
     string PrimaryMac,

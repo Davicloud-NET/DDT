@@ -7,14 +7,15 @@ using System.Text;
 
 namespace DDT.Agent.Deployment;
 
-// Microsoft's UEFI layout: EFI system, MSR, Windows, and a recovery partition right after Windows so that Windows
-// can grow it later. 300 MB covers 4K native disks too, and 1 GB leaves WinRE its 250 MB free: the defaults, which a
-// Partition step can change.
+// Microsoft's UEFI layout: EFI system, MSR, Windows, and a recovery partition right after Windows, so Windows can
+// grow it.
 public static class DiskpartScript
 {
+    // 300 MB covers 4K native disks too, and 1 GB leaves WinRE its 250 MB free. A Partition step can change both.
     public const int SystemPartitionMegabytes = 300;
-    public const int ReservedPartitionMegabytes = 16;
     public const int RecoveryPartitionMegabytes = 1024;
+
+    public const int ReservedPartitionMegabytes = 16;
 
     private const string RecoveryPartitionType = "de94bba4-06d1-4d40-a16a-bfd50179d6ac";
 
@@ -24,13 +25,12 @@ public static class DiskpartScript
     // diskpart reads ASCII with CRLF line ends and stops at a blank line.
     public static string Build(
         int diskNumber,
-        char system,
-        char windows,
-        char recovery,
+        PartitionLetters letters,
         int systemPartitionMegabytes = SystemPartitionMegabytes,
         int recoveryPartitionMegabytes = RecoveryPartitionMegabytes)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(diskNumber);
+        ArgumentNullException.ThrowIfNull(letters);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(systemPartitionMegabytes);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(recoveryPartitionMegabytes);
 
@@ -41,15 +41,15 @@ public static class DiskpartScript
             "convert gpt",
             string.Create(CultureInfo.InvariantCulture, $"create partition efi size={systemPartitionMegabytes}"),
             "format quick fs=fat32 label=\"System\"",
-            $"assign letter={system}",
+            $"assign letter={letters.System}",
             string.Create(CultureInfo.InvariantCulture, $"create partition msr size={ReservedPartitionMegabytes}"),
             "create partition primary",
             string.Create(CultureInfo.InvariantCulture, $"shrink minimum={recoveryPartitionMegabytes}"),
             "format quick fs=ntfs label=\"Windows\"",
-            $"assign letter={windows}",
+            $"assign letter={letters.Windows}",
             "create partition primary",
             "format quick fs=ntfs label=\"Recovery\"",
-            $"assign letter={recovery}",
+            $"assign letter={letters.Recovery}",
             $"set id=\"{RecoveryPartitionType}\"",
             $"gpt attributes={RecoveryAttributes}",
             "exit",
@@ -66,8 +66,8 @@ public static class DiskpartScript
         return Script([string.Create(CultureInfo.InvariantCulture, $"select disk {diskNumber}"), "clean", "exit"]);
     }
 
-    // Gives the system and recovery partitions of a run letters again after a restart. The recovery partition keeps
-    // its attributes: they only keep Windows from giving it a letter by itself.
+    // Gives a run's system and recovery partitions their letters again after a restart. The recovery partition keeps
+    // its attributes. They only stop Windows from giving it a letter by itself.
     public static string AssignLetters(int diskNumber, uint systemPartition, char system, uint recoveryPartition, char recovery)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(diskNumber);

@@ -21,8 +21,8 @@ import {
 import { renderPage } from "@/test/renderPage";
 import type { Routes } from "@/test/server";
 
-// The inputs a sequence asks before it runs, on the web: when a run is assigned and when a waiting machine is approved
-// with the sequence a rule chose.
+// The inputs a sequence asks for on the web before it runs. They're asked when a run is assigned, and when a waiting
+// machine is approved with the sequence a rule chose.
 
 const sequenceId = "0193a4b2-0000-7000-8000-0000000000e1";
 const installWindows = sequenceSummary({ id: sequenceId });

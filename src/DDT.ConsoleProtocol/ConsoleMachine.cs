@@ -4,19 +4,20 @@
 
 namespace DDT.ConsoleProtocol;
 
-// What the agent knows about the machine, for a side panel, empty until it has read the machine. MacAddresses start with
-// the primary one, the adapter with the default route, each as 12 hexadecimal digits. IpAddresses are that adapter's
-// IPv4 addresses. SecureBootEnabled and TrustedUefiCas are null where the firmware does not say. Disks are the disks DDT
-// can install on, null until they are read. KeyboardLayout is the layout the boot image set, which every typed
-// password depends on.
+// What the agent knows about the machine, for a side panel. It's empty until the agent has read the machine.
 public sealed record ConsoleMachine(
     string? Manufacturer,
     string? Model,
     string? SerialNumber,
     string? SmbiosUuid,
+    // 12 hexadecimal digits each, the adapter with the default route first.
     IReadOnlyList<string> MacAddresses,
+    // The IPv4 addresses of the adapter with the default route.
     IReadOnlyList<string> IpAddresses,
+    // Null, like TrustedUefiCas, when the firmware doesn't say.
     bool? SecureBootEnabled,
     MicrosoftUefiCas? TrustedUefiCas,
+    // The disks DDT can install on. Null until they're read.
     IReadOnlyList<ConsoleDisk>? Disks,
+    // The keyboard layout the boot image set. Every typed password depends on it.
     string? KeyboardLayout);

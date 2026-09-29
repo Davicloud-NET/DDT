@@ -14,8 +14,8 @@ public static class RuleLimits
 
     public const int MaxRoleNameLength = 128;
 
-    // Every change pushes the whole list, with the machines each rule matches counted, so it stays short enough to send
-    // and count at once.
+    // Every change pushes the whole list and counts the machines each rule matches. So the list must stay short enough
+    // to send and count in one go.
     public const int MaxRules = 500;
 
     public const int MaxRoles = 200;
@@ -27,8 +27,8 @@ public static class RuleLimits
 
     public const int MaxRolesPerRule = 32;
 
-    // What a rule or a machine role sets. A name longer than a value's name can be is a problem; one longer than
-    // MaxStoredValueNameLength is not stored at all.
+    // The values a rule or a machine role sets. A name longer than MaxValueNameLength is a problem. One longer than
+    // MaxStoredValueNameLength isn't stored at all.
     public const int MaxValues = 64;
 
     public const int MaxValueNameLength = 64;

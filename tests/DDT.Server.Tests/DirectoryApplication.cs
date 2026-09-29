@@ -11,8 +11,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DDT.Server.Tests;
 
-// Directory sign-in against FakeLdapAuthenticator, whose groups the map gives each role, and a mapped group the
-// directory no longer has.
+// Directory sign-in against FakeLdapAuthenticator. The map gives each role one of its groups.
+// It also maps a group the directory no longer has.
 public class DirectoryApplication : DdtApplication
 {
     public const string Host = "dc.corp.example";
@@ -46,9 +46,4 @@ public class DirectoryApplication : DdtApplication
             services.AddSingleton<ILdapAuthenticator>(Ldap);
         });
     }
-}
-
-public sealed class UnmappedDirectoryApplication : DirectoryApplication
-{
-    protected override bool MapsGroups => false;
 }

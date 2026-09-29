@@ -15,7 +15,7 @@ function offline(): LiveStatus {
   return "offline";
 }
 
-// Whether changes arrive by push. Lists read again on a timer only while they do not.
+// Whether changes arrive by push. Lists are only read on a timer while they don't.
 export function useLiveStatus(): LiveStatus {
   const live = useContext(LiveContext);
 

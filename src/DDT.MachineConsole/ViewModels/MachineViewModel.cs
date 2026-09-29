@@ -7,8 +7,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// Everything the agent knows about the machine, and about itself: identity, network, disks, Secure Boot, the keyboard
-// layout and the agent.
+// Everything the agent knows about the machine and about itself.
 public sealed class MachineViewModel(Localizer localizer) : OverlayViewModel(localizer)
 {
     private ConsoleState? _state;
@@ -17,8 +16,7 @@ public sealed class MachineViewModel(Localizer localizer) : OverlayViewModel(loc
 
     public override string CloseLabel => T("Close the details");
 
-    // Set by the console, which opens the command prompt on Shift+F10 wherever it is. None in DDT's session in the
-    // installed Windows, where no command prompt opens.
+    // Null in DDT's session, where no command prompt opens.
     public Command? PromptCommand { get; set; }
 
     public bool HasPrompt => PromptCommand is not null;

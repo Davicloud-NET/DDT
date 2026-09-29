@@ -7,8 +7,8 @@ using DDT.Agent.Deployment;
 namespace DDT.Agent.Tests;
 
 // Records each tool call as the file name and its arguments joined by spaces, instead of running it. Answer decides
-// what a call prints, or throws; without it every call prints nothing. AnswerExitCode decides the exit code of a
-// call that asks for one, or throws; without it every such call ends with 0. Options holds each such call's options.
+// what a call prints, or throws. Without it every call prints nothing. AnswerExitCode decides the exit code of a call
+// that asks for one, or throws. Without it every such call ends with 0. Options holds each such call's options.
 internal sealed class RecordingToolRunner : IToolRunner
 {
     private readonly Lock _lock = new();

@@ -44,7 +44,7 @@ public sealed class AgentRunLoopTests : IDisposable
     private AgentRun InstallWindows(DeploymentState state = DeploymentState.Assigned, int? diskNumber = null) =>
         TestRuns.Run(TestRuns.InstallWindows, _image, state, diskNumber);
 
-    // Goes on in Windows after the answer file.
+    // Continues in Windows after the answer file.
     private AgentRun InWindows(DeploymentState state) =>
         TestRuns.Run([.. TestRuns.InstallWindows, TestRuns.Script(4, SequencePhase.Windows)], _image, state);
 
@@ -87,10 +87,7 @@ public sealed class AgentRunLoopTests : IDisposable
         await TestAgents.Loop(
             server,
             new ScriptedSignInPrompt { IsAvailable = false },
-            _tools,
-            new AgentLog(time, TextWriter.Null),
-            time,
-            new DryRunMachineIdentityReader(1, secureBootEnabled: true, trustedUefiCas: UefiCa.Microsoft2011)).RunAsync(server.Stop.Token);
+            new(_tools, new AgentLog(time, TextWriter.Null), time) { Identity = new DryRunMachineIdentityReader(1, secureBootEnabled: true, trustedUefiCas: UefiCa.Microsoft2011) }).RunAsync(server.Stop.Token);
 
         AgentRegistration registration = Assert.Single(server.Registrations);
         Assert.True(registration.SecureBootEnabled);
@@ -177,7 +174,7 @@ public sealed class AgentRunLoopTests : IDisposable
             .OnSequences(() => [s_choice]);
 
         ImmediateTimeProvider time = new();
-        await TestAgents.Loop(server, prompt, _tools, new AgentLog(time, console), time).RunAsync(server.Stop.Token);
+        await TestAgents.Loop(server, prompt, new(_tools, new AgentLog(time, console), time)).RunAsync(server.Stop.Token);
 
         Assert.Equal([new AgentRunRequest(inventory.Id, null, null)], server.RunRequests);
         AgentRunReport report = Assert.Single(server.RunReports);
@@ -222,7 +219,7 @@ public sealed class AgentRunLoopTests : IDisposable
         Assert.Equal([new AgentRunRequest(inventory.Id, null, "PC-7")], server.RunRequests);
         Assert.Equal(["Sequence number", "Computer name"], prompt.Labels);
 
-        // Nothing erases a disk, so none was read for the picker: only for the registration.
+        // Nothing erases a disk, so no disks were read for the picker, only for the registration.
         Assert.Equal(["list"], _tools.Calls);
     }
 
@@ -298,7 +295,7 @@ public sealed class AgentRunLoopTests : IDisposable
 
         await CreateLoop(server, new ScriptedSignInPrompt { IsAvailable = false }).RunAsync(server.Stop.Token);
 
-        // Every attempt, the run's and then the loop's, carries the run's own failure.
+        // Every attempt, first the run's and then the loop's, carries the run's failure.
         List<AgentRunReport> failed = [.. server.RunReports.Where(report => report.State == DeploymentState.Failed)];
         Assert.Equal(tokenRefused ? 2 : ServerCallRules.MaxRetries + 2, failed.Count);
         Assert.All(failed, report => Assert.Equal("The scripted step failed.", report.Error));
@@ -320,7 +317,7 @@ public sealed class AgentRunLoopTests : IDisposable
         Assert.Equal(["list", "list", "prepare", "partition 0", "reboot into Windows PE"], _tools.Calls);
         RestartHappened();
 
-        // A new agent after the restart: it presents the run token it finds on the disk, and the server resumes the run.
+        // A new agent after the restart presents the run token it finds on the disk, and the server resumes the run.
         server.OnRegister(registration => Registered(MachineState.Deploying) with { RunId = run.Id, RunToken = registration.RunToken })
             .OnNext(_ => Next(MachineState.Deploying, "session-3", run with { State = DeploymentState.Running }));
 
@@ -334,8 +331,8 @@ public sealed class AgentRunLoopTests : IDisposable
         Assert.Single(_tools.Calls, call => call.StartsWith("partition", StringComparison.Ordinal));
     }
 
-    // Ctrl+C right after the restart step, and the agent started again by hand in the same Windows PE. The run's state
-    // already goes on after the step, so the agent restarts first, and the run goes on only after the restart.
+    // Ctrl+C right after the restart step, and the agent started again by hand in the same WinPE. The run's state
+    // already points past the step, so the agent restarts first. The run continues only after the restart.
     [Fact]
     public async Task AStopRightAfterARestartStepRestartsAtTheNextStartInsteadOfGoingOn()
     {
@@ -365,7 +362,7 @@ public sealed class AgentRunLoopTests : IDisposable
         ImmediateTimeProvider time = new();
         StringWriter console = new();
 
-        int restarting = await TestAgents.Loop(again, new ScriptedSignInPrompt { IsAvailable = false }, _tools, new AgentLog(time, console), time)
+        int restarting = await TestAgents.Loop(again, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, new AgentLog(time, console), time))
             .RunAsync(again.Stop.Token);
 
         Assert.Equal(AgentExitCodes.Restarting, restarting);
@@ -387,8 +384,8 @@ public sealed class AgentRunLoopTests : IDisposable
             _tools.Calls[6..]);
     }
 
-    // However the restart came to be due, a start that finds it makes it the same way and says so once: back into
-    // Windows PE from the boot entry this start came from, or into the installed Windows by the boot order the run left.
+    // However the restart became due, a start that finds it restarts the same way and says so once. It goes back into
+    // WinPE from the boot entry this start came from, or into the installed Windows by the boot order the run left.
     [Theory]
     [InlineData(RestartInto.WindowsPE)]
     [InlineData(RestartInto.Windows)]
@@ -403,9 +400,9 @@ public sealed class AgentRunLoopTests : IDisposable
         AgentLog log = new(time, console);
         TestAgents.RestartMarker(_tools, log).Set(into);
         ScriptedAgentServer server = new();
-        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, toolRunner: tools, rebooter: new WindowsPERebooter(tools, firmware, log));
+        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, new() { ToolRunner = tools, Rebooter = new WindowsPERebooter(tools, firmware, log) });
 
-        int exitCode = await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, _tools, log, time, runner: runner)
+        int exitCode = await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, log, time) { Runner = runner })
             .RunAsync(server.Stop.Token);
 
         Assert.Equal(AgentExitCodes.Restarting, exitCode);
@@ -437,10 +434,10 @@ public sealed class AgentRunLoopTests : IDisposable
         AgentLog log = new(time, console);
         TestAgents.RestartMarker(_tools, log).Set(RestartInto.WindowsPE);
         ScriptedAgentServer server = new();
-        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, toolRunner: tools, rebooter: new WindowsPERebooter(tools, firmware, log));
+        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, new() { ToolRunner = tools, Rebooter = new WindowsPERebooter(tools, firmware, log) });
         await server.Stop.CancelAsync();
 
-        int exitCode = await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, _tools, log, time, runner: runner)
+        int exitCode = await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, log, time) { Runner = runner })
             .RunAsync(server.Stop.Token);
 
         Assert.Equal(AgentExitCodes.Stopped, exitCode);
@@ -467,8 +464,8 @@ public sealed class AgentRunLoopTests : IDisposable
         _tools.FailAt = "reboot";
 
         // A dry run's hand-over, which needs no SYSTEM hive to register the service in.
-        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, dryRunHandOver: true);
-        int first = await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, _tools, log, time, runner: runner)
+        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, new() { DryRunHandOver = true });
+        int first = await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, log, time) { Runner = runner })
             .RunAsync(server.Stop.Token);
 
         Assert.Equal(AgentExitCodes.Restarting, first);
@@ -512,8 +509,8 @@ public sealed class AgentRunLoopTests : IDisposable
         AgentLog log = new(time, TextWriter.Null);
 
         // A dry run's hand-over, which needs no SYSTEM hive to register the service in.
-        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, dryRunHandOver: true);
-        int exitCode = await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, _tools, log, time, runner: runner)
+        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, new() { DryRunHandOver = true });
+        int exitCode = await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, log, time) { Runner = runner })
             .RunAsync(server.Stop.Token);
 
         Assert.Equal(AgentExitCodes.Restarting, exitCode);
@@ -533,7 +530,7 @@ public sealed class AgentRunLoopTests : IDisposable
             .OnNext(_ => Next(MachineState.Approved, "session-2") with { Deployment = deployment });
 
         ImmediateTimeProvider time = new();
-        await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, _tools, new AgentLog(time, console), time)
+        await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, new AgentLog(time, console), time))
             .RunAsync(server.Stop.Token);
 
         Assert.Single(console.ToString().Split(Environment.NewLine), line => line.Contains("no longer runs", StringComparison.Ordinal));
@@ -542,7 +539,7 @@ public sealed class AgentRunLoopTests : IDisposable
 
     private static AgentLog Log() => new(new ImmediateTimeProvider(), TextWriter.Null);
 
-    // As an earlier start of the agent leaves it: the steps in Windows PE done, the answer file written, and the run
+    // The disk as an earlier start of the agent leaves it: the WinPE steps done, the answer file written, and the run
     // token.
     private async Task LeaveRunOnDiskAsync(SequencePhase phase, CancellationToken cancellationToken)
     {
@@ -566,7 +563,7 @@ public sealed class AgentRunLoopTests : IDisposable
 
     private RestartInto? RestartDue() => TestAgents.RestartMarker(_tools, Log()).Due;
 
-    // The restart that was due happened: it built Windows PE's RAM disk anew, without the marker.
+    // The due restart happened. It rebuilt WinPE's RAM disk, without the marker.
     private void RestartHappened()
     {
         Assert.NotNull(RestartDue());
@@ -577,6 +574,6 @@ public sealed class AgentRunLoopTests : IDisposable
     {
         ImmediateTimeProvider time = new();
 
-        return TestAgents.Loop(server, prompt, _tools, new AgentLog(time, TextWriter.Null), time);
+        return TestAgents.Loop(server, prompt, new(_tools, new AgentLog(time, TextWriter.Null), time));
     }
 }

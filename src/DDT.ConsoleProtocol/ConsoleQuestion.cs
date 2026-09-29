@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 namespace DDT.ConsoleProtocol;
 
 // Something the agent asks the person at the machine. Each kind says which part of a ConsoleAnswer it takes. A question
-// whose answer the agent refuses comes again, and where it has an Error, that says why, in the words the agent logged.
+// whose answer the agent refuses comes again. If it has an Error, that says why, in the words the agent logged.
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
 [JsonDerivedType(typeof(SignInQuestion), "signIn")]
 [JsonDerivedType(typeof(SequenceQuestion), "sequence")]

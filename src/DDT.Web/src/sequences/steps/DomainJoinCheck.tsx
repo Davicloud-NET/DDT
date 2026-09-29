@@ -9,7 +9,7 @@ import {
   checkDomainJoin,
   domainFindingText,
   type DomainJoinFindingLevel,
-} from "@/deployments/deployments";
+} from "@/deployments/domainJoinCheck";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/ui/Button";
 import { cx } from "@/ui/cx";
@@ -21,9 +21,8 @@ const levelTone: Record<DomainJoinFindingLevel, StateTone> = {
   Problem: "fail",
 };
 
-// Asks the domain whether the join account can join a machine into this step's organizational unit, the way the
-// step would, before a machine finds out in the middle of its run. The server answers with its settings of the
-// moment, so a check after they changed uses the new ones.
+// Asks the domain whether the join account can join a machine into this organizational unit, the way the step would.
+// That way a machine doesn't find out in the middle of its run. The server checks with its current settings.
 export function DomainJoinCheck({
   organizationalUnit,
   className,

@@ -14,20 +14,22 @@ import {
   type SettingsSectionView,
 } from "./settings";
 
-// The server names: the names the server is reached by, which Generate issues for and an upload has to cover.
+// The server names: the names the server is reached by. Generate issues a certificate for them, and an uploaded
+// one must cover them.
 export interface CertificateSettings {
   subjectAlternativeNames: string[];
 }
 
-// The certificate as GET /api/settings/certificate answers it. manageable is false, with the reason in
-// notManageable, when the page cannot change the certificate. provisionalUntil is set while a new pair waits for its
-// confirmation, which has to come from a connection that was served it. servedHere says whether this page's
-// connection was served the certificate that is served now; null without TLS, and the hub keeps the page's own.
+// The certificate as GET /api/settings/certificate answers it.
 export interface CertificateView {
   manageable: boolean;
+  // Why the page cannot change the certificate, while manageable is false.
   notManageable: string | null;
   served: ServerCertificateView | null;
+  // Set while a new pair waits to be confirmed. The confirmation must come from a connection that was served it.
   provisionalUntil: string | null;
+  // Whether this page's connection was served the current certificate, or null without TLS. A hub update keeps
+  // the page's own value, since it's per connection.
   servedHere: boolean | null;
   canGenerate: boolean;
   hasRoot: boolean;
@@ -41,8 +43,8 @@ export type CertificateUpload =
 // The confirmation an upload or a Generate needs when the pair does not come from DDT's root.
 export const newRootCode = "certificate.newRoot";
 
-// The names' section is kept under its own key as well, where the form that edits them and the hub's settingsChanged
-// find it; reading the certificate fills it, so the form does not read the certificate a second time.
+// The server names section is also cached under its own key, for its form and the hub's settingsChanged. Reading
+// the certificate fills that key, so the form doesn't read the certificate a second time.
 export const certificateQuery = queryOptions({
   queryKey: certificateKey,
   queryFn: async ({ client }) => {
@@ -63,8 +65,7 @@ function putNames(queryClient: QueryClient, view: CertificateView): void {
   }
 }
 
-// An action's answer is the certificate as it is served now. The Boot image page reads the served certificate as
-// well, so it gets the same.
+// An action answers with the certificate as it's served now. The Boot image page shows it too.
 export function putCertificate(queryClient: QueryClient, view: CertificateView): void {
   queryClient.setQueryData(certificateKey, view);
   putNames(queryClient, view);
@@ -107,7 +108,7 @@ export function confirmCertificate(): Promise<CertificateView> {
   return post("/api/settings/certificate/confirm", {});
 }
 
-// A PFX file as the upload sends it.
+// A PFX file as base64, the way the upload sends it.
 export async function base64Of(file: Blob): Promise<string> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   let binary = "";

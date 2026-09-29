@@ -10,8 +10,8 @@ using DDT.Core.Unattend;
 
 namespace DDT.Server.Deployments;
 
-// A mistake here surfaces only at the first start of a deployed machine, long after DDT reported it done, so
-// every one is refused at startup instead, all of them at once.
+// A mistake here only shows up at the first start of a deployed machine, long after DDT reported it done. So every
+// mistake is refused at startup instead, all of them at once.
 public static class DeploymentOptionsValidation
 {
     private const int MaxAdministratorNameLength = 20;
@@ -52,47 +52,50 @@ public static class DeploymentOptionsValidation
                     MaxAdministratorNameLength)));
         }
 
-        if (string.IsNullOrWhiteSpace(options.Domain.Name))
+        if (!string.IsNullOrWhiteSpace(options.Domain.Name))
         {
-            return problems;
-        }
-
-        DomainOptions domain = options.Domain;
-
-        if (string.IsNullOrWhiteSpace(domain.UserName))
-        {
-            problems.Add(new("Domain:UserName", ServerMessages.SettingsDeploymentDomainUserNameRequired.With()));
-        }
-        else if (!IsQualifiedUserName(domain.UserName))
-        {
-            problems.Add(new("Domain:UserName", ServerMessages.SettingsDeploymentDomainUserNameForm.With("value", domain.UserName)));
-        }
-
-        if (string.IsNullOrEmpty(domain.Password))
-        {
-            problems.Add(new("Domain:Password", ServerMessages.SettingsDeploymentRequiredWithDomain.With()));
-        }
-
-        if (string.IsNullOrEmpty(options.LocalAdministrator.Password))
-        {
-            problems.Add(new("LocalAdministrator:Password", ServerMessages.SettingsDeploymentAdministratorPasswordRequired.With()));
-        }
-
-        if (!string.IsNullOrWhiteSpace(domain.OrganizationalUnit) && OrganizationalUnitMessage(domain.OrganizationalUnit) is { } problem)
-        {
-            problems.Add(new("Domain:OrganizationalUnit", problem));
-        }
-
-        if (!string.IsNullOrWhiteSpace(domain.Controller) && Uri.CheckHostName(domain.Controller.Trim()) == UriHostNameType.Unknown)
-        {
-            problems.Add(new("Domain:Controller", ServerMessages.SettingsDeploymentControllerInvalid.With("value", domain.Controller)));
+            problems.AddRange(DomainProblems(options));
         }
 
         return problems;
     }
 
-    // Without the culture data of the operating system, as in a globalization invariant build, no name can be checked,
-    // and every one is let through.
+    private static IEnumerable<SettingProblem> DomainProblems(DeploymentOptions options)
+    {
+        DomainOptions domain = options.Domain;
+
+        if (string.IsNullOrWhiteSpace(domain.UserName))
+        {
+            yield return new("Domain:UserName", ServerMessages.SettingsDeploymentDomainUserNameRequired.With());
+        }
+        else if (!IsQualifiedUserName(domain.UserName))
+        {
+            yield return new("Domain:UserName", ServerMessages.SettingsDeploymentDomainUserNameForm.With("value", domain.UserName));
+        }
+
+        if (string.IsNullOrEmpty(domain.Password))
+        {
+            yield return new("Domain:Password", ServerMessages.SettingsDeploymentRequiredWithDomain.With());
+        }
+
+        if (string.IsNullOrEmpty(options.LocalAdministrator.Password))
+        {
+            yield return new("LocalAdministrator:Password", ServerMessages.SettingsDeploymentAdministratorPasswordRequired.With());
+        }
+
+        if (!string.IsNullOrWhiteSpace(domain.OrganizationalUnit) && OrganizationalUnitMessage(domain.OrganizationalUnit) is { } problem)
+        {
+            yield return new("Domain:OrganizationalUnit", problem);
+        }
+
+        if (!string.IsNullOrWhiteSpace(domain.Controller) && Uri.CheckHostName(domain.Controller.Trim()) == UriHostNameType.Unknown)
+        {
+            yield return new("Domain:Controller", ServerMessages.SettingsDeploymentControllerInvalid.With("value", domain.Controller));
+        }
+    }
+
+    // Without the operating system's culture data, as in a globalization invariant build, no name can be checked. So
+    // every name is let through.
     private static bool IsCulture(string name)
     {
         try
@@ -126,7 +129,7 @@ public static class DeploymentOptionsValidation
         && name.Length <= MaxAdministratorNameLength
         && name.AsSpan().IndexOfAny(s_forbiddenInAccountName) < 0;
 
-    // Setup takes the name whole in Credentials/Username, which only works in a qualified form.
+    // Setup takes the name as is in Credentials/Username, which only works in a qualified form.
     private static bool IsQualifiedUserName(string userName)
     {
         string[] down = userName.Split('\\');

@@ -11,9 +11,9 @@ using ZstdSharp.Unsafe;
 
 namespace DDT.Agent.Tests;
 
-// A raw disk image of 8 MiB as a distribution lays its cloud image out, and the file the server stores for it: an EFI
-// system partition at 1 MiB with \EFI\BOOT\BOOTX64.EFI, and a root partition whose first 2 MiB are random, with the
-// backup table at the image's end. tail adds bytes that are not a whole sector.
+// An 8 MiB raw disk image laid out like a distribution's cloud image, and the file the server stores for it. It has an
+// EFI system partition at 1 MiB with \EFI\BOOT\BOOTX64.EFI, a root partition whose first 2 MiB are random, and the
+// backup table at the image's end. tail adds bytes that aren't a whole sector.
 internal sealed class TestRawImage
 {
     public const long Sectors = 16384;

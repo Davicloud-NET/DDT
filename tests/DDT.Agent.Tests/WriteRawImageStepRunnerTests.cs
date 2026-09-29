@@ -34,7 +34,7 @@ public sealed class WriteRawImageStepRunnerTests : IDisposable
 
     private StepRunnerFixture Fixture(ImageBootCapability capability, bool? secureBootEnabled, bool allowed = false)
     {
-        StepRunnerFixture run = new([s_step], [_image.RunImage(capability)], secureBootEnabled: secureBootEnabled, allowSecureBootMismatch: allowed);
+        StepRunnerFixture run = new([s_step], [_image.RunImage(capability)], secureBoot: new(secureBootEnabled, MismatchAllowed: allowed));
         _image.Serve(run.Server);
 
         return run;
@@ -99,12 +99,13 @@ public sealed class WriteRawImageStepRunnerTests : IDisposable
         Assert.Equal(["clean 0"], _run.Tools.Calls);
     }
 
-    // A firmware with only the 2011 CA does not start a shim signed since June 2026, under the 2023 one.
+    // Firmware with only the 2011 CA doesn't start a shim signed under the 2023 CA, which is how shims are signed since
+    // June 2026.
     [Fact]
     public async Task RefusesASignedImageWhereTheFirmwareDoesNotTrustItsCa()
     {
         AgentRunImage image2023 = _image.RunImage(signedUnder: UefiCa.Microsoft2023);
-        Use(new StepRunnerFixture([s_step], [image2023], secureBootEnabled: true, trustedUefiCas: UefiCa.Microsoft2011));
+        Use(new StepRunnerFixture([s_step], [image2023], secureBoot: new(true, UefiCa.Microsoft2011)));
         _image.Serve(_run.Server);
 
         DeploymentStepException refusal = await Assert.ThrowsAsync<DeploymentStepException>(RunAsync);
@@ -116,11 +117,11 @@ public sealed class WriteRawImageStepRunnerTests : IDisposable
             refusal.Message);
         Assert.Empty(_run.Tools.Calls);
 
-        Use(new StepRunnerFixture([s_step], [image2023], secureBootEnabled: true, allowSecureBootMismatch: true, trustedUefiCas: UefiCa.Microsoft2011));
+        Use(new StepRunnerFixture([s_step], [image2023], secureBoot: new(true, UefiCa.Microsoft2011, MismatchAllowed: true)));
         _image.Serve(_run.Server);
         Assert.Equal(StepOutcome.Done, (await RunAsync()).Outcome);
 
-        Use(new StepRunnerFixture([s_step], [image2023], secureBootEnabled: true, trustedUefiCas: UefiCa.Microsoft2011 | UefiCa.Microsoft2023));
+        Use(new StepRunnerFixture([s_step], [image2023], secureBoot: new(true, UefiCa.Microsoft2011 | UefiCa.Microsoft2023)));
         _image.Serve(_run.Server);
         Assert.Equal(StepOutcome.Done, (await RunAsync()).Outcome);
     }

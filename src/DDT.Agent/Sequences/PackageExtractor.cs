@@ -7,10 +7,9 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Sequences;
 
-// Unpacks a package zip into a new directory. The agent runs as SYSTEM, so it checks every entry itself, although the
-// server checked the package at upload: before anything is written, it refuses a name that leaves the directory, names
-// a device such as CON or an alternate data stream, or that Windows would shorten into another name, and sizes that
-// together need more than the disk has free. While unpacking, it refuses an entry that holds more than it declares.
+// Unpacks a package zip into a new directory. The agent runs as SYSTEM, so it checks every entry's name and size before
+// it writes anything, even though the server checked the package at upload. It checks each entry's content as it
+// unpacks it too.
 public static class PackageExtractor
 {
     private const int BufferSize = 1024 * 1024;
@@ -44,58 +43,66 @@ public static class PackageExtractor
 
         using (archive)
         {
-            List<(ZipArchiveEntry Entry, string Path)> files = [];
-            List<string> directories = [];
-            HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
-            long declared = 0;
+            Contents contents = ContentsOf(archive, root, name);
 
-            foreach (ZipArchiveEntry entry in archive.Entries)
-            {
-                bool directory = entry.FullName.EndsWith('/') || entry.FullName.EndsWith('\\');
-                string path = PathOf(entry.FullName, root, name);
-
-                if (directory)
-                {
-                    directories.Add(path);
-
-                    continue;
-                }
-
-                if (entry.Length < 0)
-                {
-                    throw new DeploymentStepException($"The {name} declares an impossible size for {entry.FullName}.");
-                }
-
-                if (!paths.Add(path))
-                {
-                    throw new DeploymentStepException($"The {name} holds {entry.FullName} twice, so it is not unpacked.");
-                }
-
-                // Saturates rather than wrapping, so sizes made to overflow still count as too much.
-                declared += Math.Min(entry.Length, long.MaxValue - declared);
-                files.Add((entry, path));
-            }
-
-            if (declared > availableBytes)
+            if (contents.DeclaredBytes > availableBytes)
             {
                 throw new DeploymentStepException(
-                    $"The {name} unpacks to {ByteSize.Format(declared)}, but the disk has only {ByteSize.Format(availableBytes)} free.");
+                    $"The {name} unpacks to {ByteSize.Format(contents.DeclaredBytes)}, but the disk has only {ByteSize.Format(availableBytes)} free.");
             }
 
             Directory.CreateDirectory(root);
 
-            foreach (string directory in directories)
+            foreach (string directory in contents.Directories)
             {
                 Directory.CreateDirectory(directory);
             }
 
-            foreach ((ZipArchiveEntry entry, string path) in files)
+            foreach ((ZipArchiveEntry entry, string path) in contents.Files)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 await CopyAsync(entry, path, name, cancellationToken).ConfigureAwait(false);
             }
         }
+    }
+
+    // Checks every entry before anything is written.
+    private static Contents ContentsOf(ZipArchive archive, string root, string name)
+    {
+        List<(ZipArchiveEntry Entry, string Path)> files = [];
+        List<string> directories = [];
+        HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
+        long declared = 0;
+
+        foreach (ZipArchiveEntry entry in archive.Entries)
+        {
+            bool directory = entry.FullName.EndsWith('/') || entry.FullName.EndsWith('\\');
+            string path = PathOf(entry.FullName, root, name);
+
+            if (directory)
+            {
+                directories.Add(path);
+
+                continue;
+            }
+
+            if (entry.Length < 0)
+            {
+                throw new DeploymentStepException($"The {name} declares an impossible size for {entry.FullName}.");
+            }
+
+            if (!paths.Add(path))
+            {
+                throw new DeploymentStepException($"The {name} holds {entry.FullName} twice, so it is not unpacked.");
+            }
+
+            // Saturates rather than wrapping, so sizes made to overflow still count as too much.
+            declared += Math.Min(entry.Length, long.MaxValue - declared);
+            files.Add((entry, path));
+        }
+
+        return new Contents(files, directories, declared);
     }
 
     private static string PathOf(string entryName, string root, string name)
@@ -118,8 +125,8 @@ public static class PackageExtractor
         return path;
     }
 
-    // Windows drops a trailing dot or space, so "a." would meet "a", and it opens a device for a name such as
-    // "con.txt" in any directory.
+    // Windows drops a trailing dot or space, so "a." would clash with "a". And Windows opens a device for a name such
+    // as "con.txt" in any directory.
     private static bool IsSafe(string segment) =>
         segment.Length > 0
         && segment is not ("." or "..")
@@ -179,4 +186,6 @@ public static class PackageExtractor
             }
         }
     }
+
+    private sealed record Contents(IReadOnlyList<(ZipArchiveEntry Entry, string Path)> Files, IReadOnlyList<string> Directories, long DeclaredBytes);
 }

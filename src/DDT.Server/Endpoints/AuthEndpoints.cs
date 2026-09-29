@@ -45,9 +45,8 @@ public static class AuthEndpoints
         return TypedResults.Ok();
     }
 
-    // Antiforgery tokens are bound to the authenticated identity, so a token minted while
-    // anonymous stops validating the moment sign in succeeds. Every endpoint that changes the
-    // identity hands back a fresh one.
+    // Antiforgery tokens are bound to the signed-in identity, so one minted while anonymous stops validating once a
+    // sign-in succeeds. Every endpoint that changes the identity hands back a fresh one.
     private static void RefreshAntiforgeryToken(HttpContext context, IAntiforgery antiforgery)
     {
         AntiforgeryTokenSet tokens = antiforgery.GetAndStoreTokens(context);
@@ -56,39 +55,23 @@ public static class AuthEndpoints
 
     private static async Task<Results<Ok<LoginResponse>, UnauthorizedHttpResult>> LoginAsync(
         LoginRequest request,
-        SignInManager<DdtUser> signInManager,
-        UserManager<DdtUser> userManager,
+        [AsParameters] SignInServices services,
         DirectorySignInService directory,
-        UserActivity activity,
         HttpContext context,
-        IAntiforgery antiforgery,
-        ILoggerFactory loggerFactory)
+        IAntiforgery antiforgery)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        ILogger logger = loggerFactory.CreateLogger(typeof(AuthEndpoints));
+        ILogger logger = services.LoggerFactory.CreateLogger(typeof(AuthEndpoints));
         string address = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-        // A code belongs to the account Identity keeps in its two-factor cookie, which a success clears. After an
-        // OpenID Connect sign-in the request names no account at all.
+        // A code belongs to the account that Identity keeps in its two-factor cookie, which a success clears. After an
+        // OpenID Connect sign-in, the request doesn't name an account at all.
         DdtUser? codeAccount = request.RecoveryCode is { Length: > 0 } || request.TwoFactorCode is { Length: > 0 }
-            ? await signInManager.GetTwoFactorAuthenticationUserAsync().ConfigureAwait(false)
+            ? await services.SignInManager.GetTwoFactorAuthenticationUserAsync().ConfigureAwait(false)
             : null;
         string userName = codeAccount?.UserName ?? request.UserName;
-
-        SignInResult result = request switch
-        {
-            // Identity does not know DDT's disabled flag, and the account may have been disabled since the first step.
-            _ when codeAccount is { IsDisabled: true } => SignInResult.NotAllowed,
-            { RecoveryCode.Length: > 0 } =>
-                await signInManager.TwoFactorRecoveryCodeSignInAsync(request.RecoveryCode!).ConfigureAwait(false),
-            { TwoFactorCode.Length: > 0 } =>
-                await signInManager
-                    .TwoFactorAuthenticatorSignInAsync(request.TwoFactorCode!, isPersistent: false, rememberClient: false)
-                    .ConfigureAwait(false),
-            _ => await CredentialSignInAsync(request, signInManager, userManager, directory, context.RequestAborted)
-                .ConfigureAwait(false),
-        };
+        SignInResult result = await SignInAsync(request, codeAccount, services, directory, context.RequestAborted).ConfigureAwait(false);
 
         if (result.RequiresTwoFactor)
         {
@@ -98,7 +81,7 @@ public static class AuthEndpoints
         if (result.IsLockedOut)
         {
             AuthLog.LockedOut(logger, userName);
-            await LockedOutAsync(userName, userManager, activity, context.RequestAborted).ConfigureAwait(false);
+            await LockedOutAsync(userName, services.UserManager, services.Activity, context.RequestAborted).ConfigureAwait(false);
 
             return TypedResults.Ok(new LoginResponse(LoginStatus.LockedOut));
         }
@@ -119,13 +102,32 @@ public static class AuthEndpoints
         AuthLog.SignedIn(logger, userName);
         RefreshAntiforgeryToken(context, antiforgery);
 
-        if ((codeAccount ?? await userManager.FindByNameAsync(userName).ConfigureAwait(false)) is { } account)
+        if ((codeAccount ?? await services.UserManager.FindByNameAsync(userName).ConfigureAwait(false)) is { } account)
         {
-            await activity.SignedInAsync(account, context.RequestAborted).ConfigureAwait(false);
+            await services.Activity.SignedInAsync(account, context.RequestAborted).ConfigureAwait(false);
         }
 
         return TypedResults.Ok(new LoginResponse(LoginStatus.Succeeded));
     }
+
+    private static async Task<SignInResult> SignInAsync(
+        LoginRequest request,
+        DdtUser? codeAccount,
+        SignInServices services,
+        DirectorySignInService directory,
+        CancellationToken cancellationToken) => request switch
+        {
+            // Identity does not know DDT's disabled flag, and the account may have been disabled since the first step.
+            _ when codeAccount is { IsDisabled: true } => SignInResult.NotAllowed,
+            { RecoveryCode.Length: > 0 } =>
+                await services.SignInManager.TwoFactorRecoveryCodeSignInAsync(request.RecoveryCode!).ConfigureAwait(false),
+            { TwoFactorCode.Length: > 0 } =>
+                await services.SignInManager
+                    .TwoFactorAuthenticatorSignInAsync(request.TwoFactorCode!, isPersistent: false, rememberClient: false)
+                    .ConfigureAwait(false),
+            _ => await CredentialSignInAsync(request, services.SignInManager, services.UserManager, directory, cancellationToken)
+                .ConfigureAwait(false),
+        };
 
     // The Users page shows how long a lockout lasts.
     internal static async Task LockedOutAsync(string userName, UserManager<DdtUser> userManager, UserActivity activity, CancellationToken cancellationToken)
@@ -151,9 +153,9 @@ public static class AuthEndpoints
                 .ConfigureAwait(false);
         }
 
-        // An unknown user and a wrong password must be indistinguishable in both body and timing,
-        // so the password is hashed anyway rather than returning early. An account of single sign-on has no password,
-        // and a password typed for it must not count towards a lockout that would also stop its single sign-on.
+        // An unknown user and a wrong password must not differ in body or timing, so the password is hashed anyway. A
+        // single sign-on account has no password, and a guess must not count towards a lockout that would also stop its
+        // single sign-on.
         if (user is null or { Source: AccountSource.External })
         {
             _ = userManager.PasswordHasher.HashPassword(new DdtUser { UserName = request.UserName }, request.Password);
@@ -178,9 +180,8 @@ public static class AuthEndpoints
     {
         await signInManager.SignOutAsync().ConfigureAwait(false);
 
-        // SignOutAsync clears the response cookie but leaves HttpContext.User set for the rest of
-        // this request. Minting the replacement token before resetting it would bind the token to
-        // the identity being signed out, and the next request would fail validation.
+        // SignOutAsync clears the cookie but leaves HttpContext.User set for this request. A token minted now would be
+        // bound to the signed-out identity and fail the next request.
         context.User = new ClaimsPrincipal(new ClaimsIdentity());
         RefreshAntiforgeryToken(context, antiforgery);
 
@@ -214,12 +215,12 @@ public static class AuthEndpoints
     private static async Task<Results<Ok, ValidationProblem, UnauthorizedHttpResult>> ChangePasswordAsync(
         ChangePasswordRequest request,
         ClaimsPrincipal principal,
-        UserManager<DdtUser> userManager,
-        SignInManager<DdtUser> signInManager,
-        UserActivity activity,
+        [AsParameters] SignInServices services,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        (SignInManager<DdtUser> signInManager, UserManager<DdtUser> userManager, UserActivity activity, _) = services;
 
         DdtUser? user = await userManager.GetUserAsync(principal).ConfigureAwait(false);
 
@@ -247,7 +248,7 @@ public static class AuthEndpoints
             return result.ToValidationProblem();
         }
 
-        // The new password is one nobody else was shown, so the account reaches everything its role allows again. The
+        // Nobody else has seen the new password, so the account can reach everything its role allows again. The
         // refreshed cookie no longer carries the claim.
         Claim[] mustChange = [.. (await userManager.GetClaimsAsync(user).ConfigureAwait(false)).Where(claim => claim.Type == DdtClaimTypes.MustChangePassword)];
 
@@ -267,7 +268,8 @@ public static class AuthEndpoints
         return TypedResults.Ok();
     }
 
-    // Identity's refusals by the field each is about, Identity's code unless field says otherwise.
+    // Lists Identity's errors by the field each one is about. That's Identity's error code unless field says
+    // otherwise.
     internal static ValidationProblem ToValidationProblem(this IdentityResult result, Func<IdentityError, string>? field = null)
     {
         FieldProblems problems = new();
@@ -280,7 +282,7 @@ public static class AuthEndpoints
         return problems.ToResult();
     }
 
-    // An error DdtIdentityErrorDescriber did not make says its English as it is.
+    // An error that DdtIdentityErrorDescriber didn't create keeps its English text as it is.
     internal static ServerMessage MessageOf(IdentityError error) =>
         DdtIdentityErrorDescriber.MessageOf(error) ?? ServerMessages.IdentityOther.With("description", error.Description);
 

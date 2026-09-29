@@ -58,7 +58,7 @@ internal static unsafe partial class SessionNativeMethods
         public char* Buffer;
     }
 
-    // LSA_OBJECT_ATTRIBUTES, which LsaOpenPolicy wants zeroed but for its length.
+    // LSA_OBJECT_ATTRIBUTES, which LsaOpenPolicy wants zeroed except for its length.
     [StructLayout(LayoutKind.Sequential)]
     public struct LsaObjectAttributes
     {

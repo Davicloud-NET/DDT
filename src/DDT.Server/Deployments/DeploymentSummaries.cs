@@ -50,7 +50,7 @@ public static class DeploymentSummaries
         };
     }
 
-    // Someone continued the pause the run waits at, and its agent goes on once its next report learns it.
+    // Someone continued the pause the run waits at. Its agent continues once its next report learns that.
     public static bool Continued(Deployment deployment)
     {
         ArgumentNullException.ThrowIfNull(deployment);
@@ -84,7 +84,7 @@ public static class DeploymentSummaries
     public static string? WriteEvaluation(IReadOnlyList<TestEvaluation>? evaluation) =>
         evaluation is null ? null : JsonSerializer.Serialize(evaluation, DdtJsonContext.Default.IReadOnlyListTestEvaluation);
 
-    // Null for none, and for one another build wrote that no longer reads: it only explains a decision.
+    // Null for none, and for one written by another build that no longer reads. It only explains a decision.
     public static IReadOnlyList<TestEvaluation>? ReadEvaluation(string? evaluation)
     {
         if (evaluation is null)

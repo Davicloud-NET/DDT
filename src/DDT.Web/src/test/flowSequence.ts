@@ -9,9 +9,8 @@ import type {
   SequenceStep,
 } from "@/sequences/sequences";
 
-// The design canvas's builder as a sequence: an IF on the model choosing the image, a computer name from a template,
-// the join, a group for one office with a share, a repeat that tries a share until it answers, a pause and a restart.
-// Plain objects, so the screenshots can use it outside the web client's build too.
+// The sequence of the design canvas's builder, with an IF, a group, a repeat and a pause. Plain objects, so the
+// screenshots can use it outside the web client's build too.
 
 const base = { conditions: [], continueOnError: false, rebootAfter: false };
 

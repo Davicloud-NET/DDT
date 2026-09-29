@@ -5,7 +5,6 @@
 using System.Security.Cryptography.X509Certificates;
 using DDT.Server.Certificates;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -14,8 +13,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// A pair the settings page installs is served at once but provisionally: unless it is confirmed from a connection that
-// was served it, within 5 minutes, DDT goes back to the pair before it, files and all.
+// A pair the settings page installs is served at once, but only provisionally. Unless a connection that was served it
+// confirms it within 5 minutes, DDT goes back to the previous pair, files and all.
 public sealed class ProvisionalCertificateTests : IDisposable
 {
     private static readonly string[] s_names = ["localhost", "127.0.0.1"];
@@ -83,11 +82,11 @@ public sealed class ProvisionalCertificateTests : IDisposable
         Assert.Equal(confirmed, certificates.Current!.Thumbprint);
     }
 
-    // The deadline is kept in a file: a restart before it keeps waiting, and one after it goes back at once.
+    // The deadline is kept in a file. A restart before the deadline keeps waiting, and one after it goes back at once.
     [Fact]
     public async Task ARestartDoesNotMakeAProvisionalPairPermanent()
     {
-        // Each process has a clock of its own here, so only the one a test advances acts.
+        // Each process has its own clock here, so only the process whose clock a test advances acts.
         ServerCertificates first = await CertificatesAsync();
         string before = first.Current!.Thumbprint;
         string installed = (await first.GenerateAsync(s_names, TestContext.Current.CancellationToken)).Certificate.Thumbprint;
@@ -109,7 +108,8 @@ public sealed class ProvisionalCertificateTests : IDisposable
         Assert.False(File.Exists(_folder.Files.ProvisionalPath));
     }
 
-    // A pair half replaced by hand, a certificate with a key that is not its own, gives way to the previous pair at startup.
+    // A pair half replaced by hand has a certificate whose key isn't its own.
+    // At startup, the previous pair replaces it.
     [Fact]
     public async Task AtStartupAPairThatDoesNotLoadGivesWayToThePreviousOne()
     {
@@ -126,8 +126,9 @@ public sealed class ProvisionalCertificateTests : IDisposable
         Assert.Equal(before, restarted.Current!.Thumbprint);
     }
 
-    // Kestrel hands each connection the pair of the moment and the page learns which one it was; during a provisional
-    // pair, a connection served the one before is closed after its answer, so the next request gets the new pair.
+    // Kestrel hands each connection the current pair, and the page learns which one it was.
+    // While a pair is provisional, a connection that was served the one before is closed after its answer.
+    // So the next request gets the new pair.
     [Fact]
     public async Task AConnectionServedThePairBeforeIsClosedWhileANewOneWaits()
     {
@@ -141,7 +142,7 @@ public sealed class ProvisionalCertificateTests : IDisposable
 
         X509Certificate2 installed = (await certificates.GenerateAsync(s_names, cancellationToken)).Certificate;
 
-        // The answer on the old connection closes it; the next one connects anew and gets the new pair.
+        // The answer on the old connection closes it. The next request connects again and gets the new pair.
         Assert.Equal(before, await probe.GetAsync(cancellationToken));
         Assert.Equal(installed.SerialNumber, await probe.GetAsync(cancellationToken));
         Assert.Equal(2, probe.Handshakes);

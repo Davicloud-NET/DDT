@@ -9,15 +9,16 @@
 Starts DDT from source with the web and pxe roles, reachable from the Hyper-V test machine.
 
 .DESCRIPTION
-Listens on every interface with a certificate DDT issues from its own root under certs in the store,
-naming this computer's Default Switch DNS name, <computer>.mshome.net. That name moves with the switch
-when Windows gives it a new address after a restart, so a boot image built with it keeps working. The
-boot image pins the root, so it also keeps working when DDT renews the certificate or adds a name.
-Deleting the certs folder makes a new root, and every boot image then has to be built again.
+Listens on every interface with a certificate that DDT issues from its own root, kept under certs in
+the store. The certificate names this computer's Default Switch DNS name, <computer>.mshome.net. That
+name follows the switch when Windows gives it a new address after a restart, so a boot image built
+with it keeps working. The boot image pins the root, so it also keeps working when DDT renews the
+certificate or adds a name. Deleting the certs folder creates a new root, and then every boot image
+has to be rebuilt.
 
-Serves artifacts\agent\ddt-agent.exe, which Publish-Agent.ps1 writes, as the agent every netbooting
-machine switches to, and artifacts\ddt-console.zip, which Publish-Console.ps1 writes, as the console it
-shows, so a published change reaches the test machine at its next boot without a new boot image.
+Serves artifacts\agent\ddt-agent.exe from Publish-Agent.ps1 as the agent every netbooting machine
+switches to. It also serves artifacts\ddt-console.zip from Publish-Console.ps1 as the console the agent
+shows. That way a published change reaches the test machine at its next boot without a new boot image.
 
 Prints the -ServerUrl and -RootCertificatePath to build the boot image with.
 
@@ -46,8 +47,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# Resolved here rather than in param(): Windows PowerShell leaves $PSScriptRoot empty there when the
-# script is started with powershell -File.
+# Resolved here instead of in param(), because Windows PowerShell leaves $PSScriptRoot empty there when
+# the script is started with powershell -File.
 $repository = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).ProviderPath
 if (-not $StorePath) { $StorePath = Join-Path (Split-Path -Qualifier $repository) 'var\lib\ddt' }
 

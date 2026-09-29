@@ -4,13 +4,11 @@
 
 using System.Net;
 using System.Net.Http.Json;
-using System.Security.Cryptography.X509Certificates;
 using DDT.Contracts.Settings;
 using DDT.Server.Certificates;
 using DDT.Server.Machines;
 using DDT.Server.Settings;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -18,7 +16,7 @@ using Xunit;
 namespace DDT.Server.Tests;
 
 // The certificate on the settings page. The test server has no TLS, so no request here was served a pair and none can
-// confirm one; ProvisionalCertificateTests does that on a real Kestrel.
+// confirm one. ProvisionalCertificateTests does that on a real Kestrel.
 public sealed class SettingsCertificateTests(SettingsCertificateTests.CertificateApplication application)
     : IClassFixture<SettingsCertificateTests.CertificateApplication>
 {
@@ -54,7 +52,7 @@ public sealed class SettingsCertificateTests(SettingsCertificateTests.Certificat
             audit => audit.Action == AuditActions.CertificateReplaced && audit.Detail!.Contains("Generated the server certificate"),
             TestContext.Current.CancellationToken)));
 
-        // No connection of the test server was served it, so none proves that a browser accepts it.
+        // No connection to the test server was served it, so none can prove that a browser accepts it.
         HttpResponseMessage confirm = await administrator.PostAsync("/api/settings/certificate/confirm");
         Assert.Equal(HttpStatusCode.Conflict, confirm.StatusCode);
         Assert.StartsWith("This connection was served the certificate before the new one", await TestDatabase.TitleAsync(confirm), StringComparison.Ordinal);
@@ -131,7 +129,7 @@ public sealed class SettingsCertificateTests(SettingsCertificateTests.Certificat
         Assert.Equal(HttpStatusCode.Forbidden, (await administrator.SaveAsync(SettingsSectionNames.Certificate + "/names", before.Names.Version, names)).StatusCode);
 
         SettingsSectionView<CertificateSettings> saved = await RegisteredMachine.ReadAsync<SettingsSectionView<CertificateSettings>>(
-            await administrator.SaveAsync(SettingsSectionNames.Certificate + "/names", before.Names.Version, names, reauthentication: await administrator.TokenAsync()));
+            await administrator.SaveAsync(SettingsSectionNames.Certificate + "/names", before.Names.Version, names, new(Reauthentication: await administrator.TokenAsync())));
 
         Assert.Contains("ddt2.corp.example", saved.Values.SubjectAlternativeNames);
 
@@ -139,7 +137,7 @@ public sealed class SettingsCertificateTests(SettingsCertificateTests.Certificat
             SettingsSectionNames.Certificate + "/names",
             saved.Version,
             new CertificateSettings(["not a name!"]),
-            reauthentication: await administrator.TokenAsync());
+            new(Reauthentication: await administrator.TokenAsync()));
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
         Assert.Contains("subjectAlternativeNames", (await SettingsRequests.ProblemsAsync(invalid)).Errors.Keys);
 
@@ -147,7 +145,7 @@ public sealed class SettingsCertificateTests(SettingsCertificateTests.Certificat
             SettingsSectionNames.Certificate + "/names",
             saved.Version,
             before.Names.Values,
-            reauthentication: await administrator.TokenAsync());
+            new(Reauthentication: await administrator.TokenAsync()));
     }
 
     // A PFX, a key under a password or TLS at a proxy is managed by hand.

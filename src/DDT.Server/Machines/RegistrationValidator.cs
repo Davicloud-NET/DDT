@@ -12,8 +12,8 @@ using DDT.Core.Machines;
 
 namespace DDT.Server.Machines;
 
-// Everything here was typed by whoever booted boot.wim, so it is bounded and normalised before it
-// reaches the database or the web UI.
+// Whoever booted boot.wim controls everything here, so it's bounded and normalised before it reaches the database or
+// the web UI.
 public static partial class RegistrationValidator
 {
     private const int MaxMacAddresses = 16;
@@ -23,7 +23,7 @@ public static partial class RegistrationValidator
     private const int MaxDiskModelLength = 64;
     private const int MaxBusTypeLength = 16;
 
-    // The agent drops the chassis type's lock bit, which leaves seven.
+    // The agent drops the chassis type's lock bit, which leaves seven bits.
     private const int MaxChassisType = 0x7F;
 
     // The column's length. PostgreSQL refuses a longer value, and the agent would resend it forever.
@@ -35,7 +35,7 @@ public static partial class RegistrationValidator
     private const long MaxMemoryMegabytes = 1L << 30;
     private const int MaxProcessors = 1 << 16;
 
-    // A DNS name's longest.
+    // The longest a DNS name can be.
     private const int MaxDnsNameLength = 253;
 
     public static bool TryNormalise(
@@ -54,33 +54,11 @@ public static partial class RegistrationValidator
             return false;
         }
 
-        if (registration.MacAddresses is null || registration.MacAddresses.Count is 0 or > MaxMacAddresses)
+        (List<string> macs, string? primary, string? refusal) = Macs(registration);
+
+        if (refusal is not null || primary is null)
         {
-            error = $"macAddresses must hold between 1 and {MaxMacAddresses} addresses.";
-
-            return false;
-        }
-
-        List<string> macs = [];
-
-        foreach (string mac in registration.MacAddresses)
-        {
-            if (NormaliseMac(mac) is not { } parsed)
-            {
-                error = "macAddresses contains a value that is not a MAC address.";
-
-                return false;
-            }
-
-            if (!macs.Contains(parsed))
-            {
-                macs.Add(parsed);
-            }
-        }
-
-        if (NormaliseMac(registration.PrimaryMac) is not { } primary || !macs.Contains(primary))
-        {
-            error = "primaryMac must be one of macAddresses.";
+            error = refusal ?? string.Empty;
 
             return false;
         }
@@ -92,9 +70,45 @@ public static partial class RegistrationValidator
             return false;
         }
 
+        normalised = Normalised(registration, uuid, macs, primary);
+        error = string.Empty;
+
+        return true;
+    }
+
+    // Each MAC address once, and the primary one must be among them.
+    private static (List<string> Macs, string? Primary, string? Refusal) Macs(AgentRegistration registration)
+    {
+        List<string> macs = [];
+
+        if (registration.MacAddresses is null || registration.MacAddresses.Count is 0 or > MaxMacAddresses)
+        {
+            return (macs, null, $"macAddresses must hold between 1 and {MaxMacAddresses} addresses.");
+        }
+
+        foreach (string mac in registration.MacAddresses)
+        {
+            if (NormaliseMac(mac) is not { } parsed)
+            {
+                return (macs, null, "macAddresses contains a value that is not a MAC address.");
+            }
+
+            if (!macs.Contains(parsed))
+            {
+                macs.Add(parsed);
+            }
+        }
+
+        return NormaliseMac(registration.PrimaryMac) is { } primary && macs.Contains(primary)
+            ? (macs, primary, null)
+            : (macs, null, "primaryMac must be one of macAddresses.");
+    }
+
+    private static NormalisedRegistration Normalised(AgentRegistration registration, Guid uuid, List<string> macs, string primary)
+    {
         AgentDisk[]? disks = registration.Disks is null ? null : [.. registration.Disks.OfType<AgentDisk>()];
 
-        normalised = new NormalisedRegistration(
+        return new NormalisedRegistration(
             uuid.ToString("D"),
             primary,
             macs,
@@ -112,13 +126,10 @@ public static partial class RegistrationValidator
             registration.TrustedUefiCas,
             registration.ChassisType is >= 0 and <= MaxChassisType ? registration.ChassisType : null,
             registration.Facts is { } facts ? Normalise(facts) : null);
-        error = string.Empty;
-
-        return true;
     }
 
-    // Conditions and rules test these, and the machine's page shows them. Text is cleaned and cut like the names above,
-    // and a number, an address or a date that cannot be right reads as unknown rather than refusing the registration.
+    // Conditions and rules test these, and the machine's page shows them. Text is cleaned and cut like the names above.
+    // A number, an address or a date that can't be right reads as unknown, instead of refusing the registration.
     private static MachineFacts Normalise(MachineFacts facts) => new()
     {
         MemoryMegabytes = facts.MemoryMegabytes is > 0 and <= MaxMemoryMegabytes ? facts.MemoryMegabytes : null,
@@ -145,8 +156,8 @@ public static partial class RegistrationValidator
                 : null,
     };
 
-    // Only the plain dotted form, which conditions compare and subnets are worked out from. The parser also takes forms
-    // such as 10.1 or 010.0.0.1, which read as other addresses than a person would think.
+    // Only the plain dotted form, which conditions compare and subnets are worked out from. The parser also accepts
+    // forms such as 10.1 or 010.0.0.1, which mean other addresses than a person would expect.
     private static string? IPv4(string? value) =>
         FactText(value, MaxTextLength) is { } text
         && IPAddress.TryParse(text, out IPAddress? address)
@@ -155,21 +166,20 @@ public static partial class RegistrationValidator
             ? text
             : null;
 
-    // Board makers leave placeholders such as "Default string" or "To be filled by O.E.M." in the fields they did not fill
-    // in, which say nothing about the machine. They are dropped here, where every agent's facts arrive, so a condition
-    // never matches one and the machine's page shows the field as unknown.
+    // Board makers leave placeholders such as "Default string" in fields they did not fill in. They are dropped where every
+    // agent's facts arrive, so no condition matches one and the machine's page shows the field as unknown.
     private static string? FirmwareText(string? value) =>
         FactText(value, MaxTextLength) is { } text && !HardwareModels.IsPlaceholder(text) ? text : null;
 
-    // PostgreSQL text holds neither a NUL nor half of a surrogate pair, and a line break has no place in one value.
+    // PostgreSQL text can't hold a NUL or half of a surrogate pair, and a line break has no place in a single value.
     private static string? FactText(string? value, int maxLength) =>
         Bound(value is null ? null : new string([.. value.Where(c => !char.IsControl(c) && !char.IsSurrogate(c))]), maxLength);
 
     [GeneratedRegex(@"^[0-9]{1,2}\.[0-9]{1,2}$", RegexOptions.CultureInvariant)]
     private static partial Regex TpmVersionPattern();
 
-    // One line per disk, whole lines only, so the list stays readable when it has to be cut short. The count
-    // stays exact: it decides whether a web assignment can pick the disk by itself.
+    // One line per disk, and only whole lines, so the list stays readable when it's cut short. The count stays exact,
+    // because it decides whether a web assignment can pick the disk by itself.
     private static string? DescribeDisks(AgentDisk[] disks)
     {
         List<string> lines = [];

@@ -12,7 +12,7 @@ using Xunit;
 namespace DDT.Agent.Tests;
 
 // The console of DDT's session over a real named pipe, with consoles in this process that connect, leave and come
-// back, as the session's shell does while Windows and the agent's service restart.
+// back, like the session's shell does while Windows and the agent's service restart.
 public sealed class SessionMachineConsoleTests : IAsyncDisposable
 {
     private const string Password = "Tr0ub4dor&3-join";
@@ -62,7 +62,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
             Assert.Equal(ConsoleStage.Connecting, state.Stage);
         }
 
-        // Another, after the first left: the whole state again, and the lines from before it came.
+        // Another console, after the first left, gets the whole state again and the lines from before it connected.
         await using ConsoleClient second = await ConnectAsync();
         (ConsoleState again, List<string> backlog) = await ReadAsync(second, "Written while it was connected.");
 
@@ -129,7 +129,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
         await using ConsoleClient client = await ConnectAsync();
         await ReadAsync(client, "The console of DDT's session, Test console, is connected.");
 
-        // Reading all the while, as the console does.
+        // Reading the whole time, like the console does.
         Task<ConsoleState?> reading = Task.Run(
             async () =>
             {
@@ -153,7 +153,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
         Assert.Equal(ConsoleStage.Failed, (await reading)?.Stage);
     }
 
-    // A Pause step asks while Windows restarts the session: the question waits, and each console that connects gets it
+    // A Pause step asks while Windows restarts the session. The question waits, and each console that connects gets it
     // after the state and the lines, until one answers.
     [Fact]
     public async Task AsksEachConsoleThatConnectsAfterTheStateAndTheLinesUntilOneAnswers()
@@ -191,7 +191,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
         Assert.Equal(new ConsoleAnswer(Continue: true), await asked.WaitAsync(TimeSpan.FromSeconds(20), Cancellation));
     }
 
-    // Continued on the web: the asker no longer needs the answer, and the console closes the question.
+    // Continued on the web. The asker no longer needs the answer, and the console closes the question.
     [Fact]
     public async Task WithdrawsTheQuestionOnceTheAskerNoLongerNeedsIt()
     {
@@ -207,7 +207,8 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
         Assert.Equal(new WithdrawMessage(question.Id), (await UntilAsync<WithdrawMessage>(client)).Message);
     }
 
-    // Enter pressed on the screen of a question withdrawn meanwhile, or an answer to an id never asked, answers nothing.
+    // Enter on a question that was withdrawn in the meantime, or an answer to an id that was never asked, answers
+    // nothing.
     [Fact]
     public async Task LeavesAnAnswerToAQuestionNoLongerOpenAlone()
     {
@@ -230,8 +231,8 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
         Assert.Equal(new ConsoleAnswer(Continue: true), await asked.WaitAsync(TimeSpan.FromSeconds(20), Cancellation));
     }
 
-    // An account asked for the run goes to the agent with its password, and no line of the log, on the console or in the
-    // file, has the password in it.
+    // An account asked for the run goes to the agent with its password, and no line of the log, on the console or in
+    // the file, has the password in it.
     [Fact]
     public async Task NeverLogsWhatAnAnswerCarries()
     {

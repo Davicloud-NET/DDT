@@ -10,9 +10,8 @@ using Microsoft.Win32;
 
 namespace DDT.Agent.WindowsPhase;
 
-// What the DdtSequence service runs: the agent the hand-over staged into <Windows volume>\DDT\agent, with the agent.json
-// beside it, going on with the run. Nobody watches its console, so it logs into DDT\logs\agent.log as well as to the
-// server.
+// What the DdtSequence service runs: the agent the hand-over staged into <Windows volume>\DDT\agent, continuing the
+// run. Nobody watches its console, so it logs to DDT\logs\agent.log as well as to the server.
 public static class WindowsPhaseService
 {
     public static string LogPathIn(string windowsRoot) => Path.Combine(windowsRoot, "DDT", "logs", "agent.log");
@@ -20,7 +19,6 @@ public static class WindowsPhaseService
     public static async Task<int> RunAsync(CancellationToken cancellationToken)
     {
         string windowsRoot = Path.GetPathRoot(Environment.SystemDirectory)!;
-        string directory = Path.Combine(windowsRoot, "DDT");
         string logPath = LogPathIn(windowsRoot);
         Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
 
@@ -33,7 +31,7 @@ public static class WindowsPhaseService
 
             try
             {
-                return await RunAsync(windowsRoot, directory, log, cancellationToken).ConfigureAwait(false);
+                return await RunAsync(windowsRoot, log, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
@@ -44,7 +42,7 @@ public static class WindowsPhaseService
         }
     }
 
-    private static async Task<int> RunAsync(string windowsRoot, string directory, AgentLog log, CancellationToken cancellationToken)
+    private static async Task<int> RunAsync(string windowsRoot, AgentLog log, CancellationToken cancellationToken)
     {
         if (!AgentOptions.TryParse([], out AgentOptions? options, out string error))
         {
@@ -56,11 +54,11 @@ public static class WindowsPhaseService
         string version = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "unknown";
         using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate);
         ToolRunner tools = new(log, TimeProvider.System, new AccountProcessStarter(log));
-        WindowsRebooter rebooter = new(tools);
+        ServiceParts parts = new(windowsRoot, log, server, tools, new WindowsRebooter(tools), version);
         AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
 
-        // The console of DDT's session, which Windows starts at its auto-logon, gets the run as the console in Windows PE
-        // does. Its pipe opens once the session is prepared, for the session's account alone.
+        // The console of DDT's session, which Windows starts at its auto-logon, gets the run just like the console in
+        // WinPE. Its pipe opens once the session is prepared, and only for the session's account.
         DeploySession? session = null;
         SessionMachineConsole console = new(log, version, () => session?.SessionIsUp());
 
@@ -71,73 +69,70 @@ public static class WindowsPhaseService
             session = new DeploySession(
                 windowsRoot,
                 new WindowsSessionAccounts(),
-                Registry.LocalMachine,
-                Registry.Users,
-                tools,
+                new SessionRegistry(Registry.LocalMachine, Registry.Users, tools),
                 log,
                 TimeProvider.System,
                 (sid, pipeName) => console.Start(() => SessionMachineConsole.CreatePipe(pipeName, sid)));
 
-            return await RunAsync(windowsRoot, directory, log, version, server, tools, rebooter, staged, session, status, cancellationToken)
-                .ConfigureAwait(false);
+            WindowsPhaseLoop loop = Loop(parts, Runner(parts, staged, status), session, status);
+
+            // The control manager only needs to know whether the service failed.
+            return await loop.RunAsync(cancellationToken).ConfigureAwait(false) switch
+            {
+                AgentExitCodes.Deployed or AgentExitCodes.Restarting => AgentExitCodes.Stopped,
+                int exitCode => exitCode,
+            };
         }
     }
 
-    private static async Task<int> RunAsync(
-        string windowsRoot,
-        string directory,
-        AgentLog log,
-        string version,
-        HttpAgentServer server,
-        ToolRunner tools,
-        WindowsRebooter rebooter,
-        AgentConfiguration staged,
-        DeploySession session,
-        ConsoleStatus status,
-        CancellationToken cancellationToken)
+    private static SequenceRunner Runner(ServiceParts parts, AgentConfiguration staged, ConsoleStatus status)
     {
-        SequenceRunner runner = new(
-            server,
-            new DiskpartPartitioner(tools, log, TimeProvider.System, directory),
-            new PhysicalDisks(),
-            new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(directory, "logs", "wimlib.log")),
-            new BcdbootWriter(tools, new UefiVariables(), log),
-            rebooter,
-            new WindowsPERestartMarker(directory, log, dryRun: false),
-            tools,
-            new NetJoinDomainJoiner(),
-            new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: false), Environment.ProcessPath!, staged, log, dryRun: false),
-            log,
-            TimeProvider.System,
-            RunHeartbeat.DefaultInterval,
-            directory,
-            Environment.SystemDirectory,
-            dryRun: false,
-            status);
+        AgentLog log = parts.Log;
+        ToolRunner tools = parts.Tools;
 
-        WindowsPhaseLoop loop = new(
-            server,
-            new HardwareMachineIdentityReader(),
-            runner,
-            new RegistrySetupProbe(),
-            rebooter,
-            new VolatileRestartMarker(log),
-            new AgentRemoval(windowsRoot, tools, new MoveFileRestartDeleter(log), log),
-            log,
-            TimeProvider.System,
-            RunHeartbeat.DefaultInterval,
-            windowsRoot,
-            version,
-            dryRun: false,
-            session,
-            status,
-            new ConsoleLogo(server, status, Path.Combine(windowsRoot, "DDT", WindowsHandOver.ConsoleDirectory), log));
-
-        // The control manager only needs to know whether the service failed.
-        return await loop.RunAsync(cancellationToken).ConfigureAwait(false) switch
+        return new SequenceRunnerBuilder
         {
-            AgentExitCodes.Deployed or AgentExitCodes.Restarting => AgentExitCodes.Stopped,
-            int exitCode => exitCode,
-        };
+            Server = parts.Server,
+            Partitioner = new DiskpartPartitioner(tools, log, TimeProvider.System, parts.Directory),
+            RawDisks = new PhysicalDisks(),
+            Applier = new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(parts.Directory, "logs", "wimlib.log")),
+            BcdWriter = new BcdbootWriter(tools, new UefiVariables(), log),
+            Rebooter = parts.Rebooter,
+            RestartMarker = new WindowsPERestartMarker(parts.Directory, log, dryRun: false),
+            Tools = tools,
+            Joiner = new NetJoinDomainJoiner(),
+            HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: false), Environment.ProcessPath!, staged, log, dryRun: false),
+            Log = log,
+            TimeProvider = TimeProvider.System,
+            Options = new SequenceRunnerOptions(RunHeartbeat.DefaultInterval, parts.Directory, Environment.SystemDirectory, DryRun: false),
+            Status = status,
+        }.Build();
+    }
+
+    private static WindowsPhaseLoop Loop(ServiceParts parts, SequenceRunner runner, DeploySession session, ConsoleStatus status) =>
+        new WindowsPhaseLoopBuilder
+        {
+            Server = parts.Server,
+            IdentityReader = new HardwareMachineIdentityReader(),
+            Runner = runner,
+            Setup = new RegistrySetupProbe(),
+            Rebooter = parts.Rebooter,
+            RestartMarker = new VolatileRestartMarker(parts.Log),
+            Removal = new AgentRemoval(parts.WindowsRoot, parts.Tools, new MoveFileRestartDeleter(parts.Log), parts.Log),
+            Log = parts.Log,
+            TimeProvider = TimeProvider.System,
+            HeartbeatInterval = RunHeartbeat.DefaultInterval,
+            WindowsRoot = parts.WindowsRoot,
+            AgentVersion = parts.Version,
+            DryRun = false,
+            Session = session,
+            Status = status,
+            Logo = new ConsoleLogo(parts.Server, status, Path.Combine(parts.Directory, WindowsHandOver.ConsoleDirectory), parts.Log),
+        }.Build();
+
+    // What the service's runner and loop share.
+    private sealed record ServiceParts(string WindowsRoot, AgentLog Log, HttpAgentServer Server, ToolRunner Tools, WindowsRebooter Rebooter, string Version)
+    {
+        public string Directory => Path.Combine(WindowsRoot, "DDT");
     }
 }

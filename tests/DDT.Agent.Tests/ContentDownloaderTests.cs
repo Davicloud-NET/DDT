@@ -327,16 +327,14 @@ public sealed class ContentDownloaderTests : IDisposable
     {
         AgentLog log = new(time, TextWriter.Null);
         ContentDownloader downloader = new(
-            (token, sha256, offset, call) => server.OpenRunFileAsync(s_machineId, token, s_runId, sha256, offset, call),
+            (token, sha256, offset, call) => server.OpenRunFileAsync(s_machineId, token, new RunFileRange(s_runId, sha256, offset), call),
             tokens ?? new DeploymentTokens("session", "resume"),
             log,
             time,
             s_tokenWait);
 
         return downloader.DownloadAsync(
-            "Windows 11 Pro",
-            _image.Sha256,
-            _image.Content.Length,
+            new ContentFile("Windows 11 Pro", _image.Sha256, _image.Content.Length),
             PartPath,
             FinalPath,
             new Progress<int>(),

@@ -35,7 +35,7 @@ internal sealed class AdminApi : IDisposable
 
     public CookieContainer Cookies { get; } = new();
 
-    // Trusts DDT's root and nothing else, as the agent does.
+    // Trusts DDT's root and nothing else, like the agent.
     public static SocketsHttpHandler Handler(X509Certificate2 rootCertificate, CookieContainer? cookies)
     {
         SocketsHttpHandler handler = new()
@@ -64,10 +64,11 @@ internal sealed class AdminApi : IDisposable
     {
         await RefreshCsrfTokenAsync(cancellationToken).ConfigureAwait(false);
         LoginResponse response = await SendAsync(
-            HttpMethod.Post,
-            "api/auth/login",
-            new LoginRequest(userName, password, null, null),
-            DdtJsonContext.Default.LoginRequest,
+            new JsonRequest<LoginRequest>(
+                HttpMethod.Post,
+                "api/auth/login",
+                new LoginRequest(userName, password, null, null),
+                DdtJsonContext.Default.LoginRequest),
             DdtJsonContext.Default.LoginResponse,
             HttpStatusCode.OK,
             cancellationToken).ConfigureAwait(false);
@@ -77,7 +78,7 @@ internal sealed class AdminApi : IDisposable
             throw new InvalidOperationException($"Signing in as {userName} ended with {response.Status}.");
         }
 
-        // The token is bound to the identity, so the one from before the sign in no longer counts.
+        // The token is bound to the identity, so the token from before the sign-in is no longer valid.
         await RefreshCsrfTokenAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -90,16 +91,13 @@ internal sealed class AdminApi : IDisposable
     }
 
     public async Task<TResult> SendAsync<TBody, TResult>(
-        HttpMethod method,
-        string path,
-        TBody body,
-        JsonTypeInfo<TBody> bodyType,
+        JsonRequest<TBody> request,
         JsonTypeInfo<TResult> resultType,
         HttpStatusCode expected,
         CancellationToken cancellationToken)
     {
-        using HttpRequestMessage request = new(method, new Uri(path, UriKind.Relative)) { Content = JsonContent.Create(body, bodyType) };
-        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using HttpRequestMessage message = request.ToMessage();
+        using HttpResponseMessage response = await SendAsync(message, cancellationToken).ConfigureAwait(false);
         await ExpectAsync(response, expected, cancellationToken).ConfigureAwait(false);
 
         return (await response.Content.ReadFromJsonAsync(resultType, cancellationToken).ConfigureAwait(false))!;
@@ -118,53 +116,48 @@ internal sealed class AdminApi : IDisposable
         return (await response.Content.ReadFromJsonAsync(resultType, cancellationToken).ConfigureAwait(false))!;
     }
 
-    // A write that needs the signed-in user's password entered again, such as an account's: the proof of it goes with the
-    // request, as the page sends it after its dialog.
+    // A write that needs the signed-in user's password again, such as saving an account. The proof goes with the
+    // request, the same way the page sends it after its dialog.
     public async Task<TResult> SendReauthenticatedAsync<TBody, TResult>(
-        HttpMethod method,
-        string path,
+        JsonRequest<TBody> request,
         string password,
-        TBody body,
-        JsonTypeInfo<TBody> bodyType,
         JsonTypeInfo<TResult> resultType,
         HttpStatusCode expected,
         CancellationToken cancellationToken)
     {
         ReauthenticationToken proof = await SendAsync(
-            HttpMethod.Post,
-            "api/settings/reauthenticate",
-            new ReauthenticateRequest(password, null),
-            DdtJsonContext.Default.ReauthenticateRequest,
+            new JsonRequest<ReauthenticateRequest>(
+                HttpMethod.Post,
+                "api/settings/reauthenticate",
+                new ReauthenticateRequest(password, null),
+                DdtJsonContext.Default.ReauthenticateRequest),
             DdtJsonContext.Default.ReauthenticationToken,
             HttpStatusCode.OK,
             cancellationToken).ConfigureAwait(false);
 
-        using HttpRequestMessage request = new(method, new Uri(path, UriKind.Relative)) { Content = JsonContent.Create(body, bodyType) };
-        request.Headers.Add(ReauthenticationTokens.HeaderName, proof.Token);
-        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using HttpRequestMessage message = request.ToMessage();
+        message.Headers.Add(ReauthenticationTokens.HeaderName, proof.Token);
+        using HttpResponseMessage response = await SendAsync(message, cancellationToken).ConfigureAwait(false);
         await ExpectAsync(response, expected, cancellationToken).ConfigureAwait(false);
 
         return (await response.Content.ReadFromJsonAsync(resultType, cancellationToken).ConfigureAwait(false))!;
     }
 
-    // For a request the server is to refuse: returns the body of its answer.
+    // For a request the server should refuse. Returns the body of the response.
     public async Task<string> SendRefusedAsync<TBody>(
-        HttpMethod method,
-        string path,
-        TBody body,
-        JsonTypeInfo<TBody> bodyType,
+        JsonRequest<TBody> request,
         HttpStatusCode expected,
         CancellationToken cancellationToken)
     {
-        using HttpRequestMessage request = new(method, new Uri(path, UriKind.Relative)) { Content = JsonContent.Create(body, bodyType) };
-        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using HttpRequestMessage message = request.ToMessage();
+        using HttpResponseMessage response = await SendAsync(message, cancellationToken).ConfigureAwait(false);
         await ExpectAsync(response, expected, cancellationToken).ConfigureAwait(false);
 
         return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    // A rule's delete answers the rules that are left, whose places moved; everything else answers nothing.
-    public async Task DeleteAsync(string path, CancellationToken cancellationToken, HttpStatusCode expected = HttpStatusCode.NoContent)
+    // Deleting a rule returns the remaining rules, because their positions moved. Every other delete returns nothing.
+    public async Task DeleteAsync(string path, HttpStatusCode expected, CancellationToken cancellationToken)
     {
         using HttpRequestMessage request = new(HttpMethod.Delete, new Uri(path, UriKind.Relative));
         using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -192,10 +185,11 @@ internal sealed class AdminApi : IDisposable
     {
         FileInfo info = new(file);
         ImageUploadSession session = await SendAsync(
-            HttpMethod.Post,
-            "api/images/uploads",
-            new CreateImageUploadRequest(info.Name, info.Length, new DateTimeOffset(info.LastWriteTimeUtc).ToUnixTimeMilliseconds(), kind),
-            DdtJsonContext.Default.CreateImageUploadRequest,
+            new JsonRequest<CreateImageUploadRequest>(
+                HttpMethod.Post,
+                "api/images/uploads",
+                new CreateImageUploadRequest(info.Name, info.Length, new DateTimeOffset(info.LastWriteTimeUtc).ToUnixTimeMilliseconds(), kind),
+                DdtJsonContext.Default.CreateImageUploadRequest),
             DdtJsonContext.Default.ImageUploadSession,
             HttpStatusCode.Created,
             cancellationToken).ConfigureAwait(false);

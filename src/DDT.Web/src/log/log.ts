@@ -12,8 +12,8 @@ export type AgentLogLevel = "Information" | "Warning" | "Error";
 
 export const logLevels: readonly AgentLogLevel[] = ["Information", "Warning", "Error"];
 
-// timestampUtc is the agent's time corrected by how far its clock was off when it sent the line, which in
-// Windows PE can be hours; agentTimestampUtc is the agent's own. receivedUtc is the server's. deploymentId is
+// timestampUtc is the agent's time, corrected by how far its clock was off when it sent the line. In WinPE
+// that can be hours. agentTimestampUtc is the agent's own time, and receivedUtc the server's. deploymentId is
 // the run that was active when the line arrived, and stepId the step the agent was running then.
 export interface MachineLogEntry {
   id: number;
@@ -32,7 +32,7 @@ export interface MachineLogPage {
   hasOlder: boolean;
 }
 
-// Without before or after, the newest lines. deploymentId keeps the lines of one run.
+// Without before or after, the server returns the newest lines. deploymentId limits the read to one run.
 export interface LogRead {
   before?: number;
   after?: number;
@@ -40,7 +40,7 @@ export interface LogRead {
   deploymentId: string | null;
 }
 
-// The server's default read; it answers at most 1000 lines.
+// The server's default page size. It returns at most 1000 lines per read.
 export const LOG_PAGE_LINES = 500;
 
 // The server's MachineLogLimits.MaxStoredLinesPerMachine.
@@ -108,6 +108,16 @@ export function filterLines(
       (filter.stepId === null || line.stepId === filter.stepId) &&
       (needle === "" || line.message.toLowerCase().includes(needle)),
   );
+}
+
+export function countByLevel(lines: readonly MachineLogEntry[]): Map<AgentLogLevel, number> {
+  const byLevel = new Map<AgentLogLevel, number>();
+
+  for (const line of lines) {
+    byLevel.set(line.level, (byLevel.get(line.level) ?? 0) + 1);
+  }
+
+  return byLevel;
 }
 
 // A row shows the first line of a message and how many follow.

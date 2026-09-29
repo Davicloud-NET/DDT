@@ -2,8 +2,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- The type of the console as classes on TextBlock, each in the face and size the tokens give it, and the colours text
-     takes. Archivo carries every width; Martian Mono is only for identifiers and logs. -->
+<!-- The console's type styles as classes on TextBlock, each in the font and size the tokens give it, plus the text
+     colours. Archivo covers every width. Martian Mono is only for identifiers and logs. -->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
@@ -72,7 +72,7 @@
     <Setter Property="LineHeight" Value="{DynamicResource SgTypeDataLineHeight}" />
   </Style>
 
-  <!-- The console's large text, in the faces of the types above. -->
+  <!-- The console's large text, in the fonts of the types above. -->
   <Style Selector="TextBlock.hero">
     <Setter Property="FontFamily" Value="{DynamicResource SgTypeDisplayFamily}" />
     <Setter Property="FontSize" Value="{DynamicResource ConsoleHeroSize}" />
@@ -102,7 +102,7 @@
     <Setter Property="FontSize" Value="{DynamicResource ConsoleIdentifierSize}" />
   </Style>
 
-  <!-- Colours of text. Ink is the default; signal colours only say state. -->
+  <!-- Text colours. Ink is the default, and signal colours only show state. -->
   <Style Selector="TextBlock.ink">
     <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
   </Style>

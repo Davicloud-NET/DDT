@@ -4,22 +4,24 @@
 
 namespace DDT.Contracts.Users;
 
-// Role is the highest role of the account, null for none. RoleFrom names the groups for an account whose groups decide
-// its role, even while they give it none, and is null for any other account without a role. LockedOutUntil is set only
-// while a lockout lasts. ExternalProvider is the display name of the single sign-on provider linked to the account.
 public sealed record UserView(
     Guid Id,
     string UserName,
     string? DisplayName,
     string? Email,
     UserSource Source,
+    // The account's highest role, null for none.
     string? Role,
+    // Names the groups for an account whose groups decide its role, even while they give it no role. Null for any
+    // other account without a role.
     RoleSource? RoleFrom,
     bool Disabled,
+    // Set only while a lockout lasts.
     DateTimeOffset? LockedOutUntil,
     bool TwoFactorEnabled,
     bool HasPassword,
     bool MustChangePassword,
+    // The display name of the single sign-on provider linked to the account.
     string? ExternalProvider,
     DateTimeOffset CreatedUtc,
     DateTimeOffset? LastSignInUtc);

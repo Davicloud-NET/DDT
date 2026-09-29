@@ -12,16 +12,14 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace DDT.Server.Data;
 
-// Every audit row is written in the save of the change it records, so watching the saves finds every new row without a
-// call site having to remember it. The rows go to the administrators' live connections once they are stored: after the
-// save, or after the commit of a transaction the save ran in, and never when that transaction rolls back. A row whose
-// actor is the user of a request authenticated by an API token is marked with the token before it is stored.
+// Pushes every new audit row to the live connections once it's stored. That's after the save, or after its transaction
+// commits, and never after a rollback. When a user acted with an API token, the row gets the token before it's stored.
 public sealed class AuditInterceptor(LiveNotifier live, IHttpContextAccessor httpContextAccessor) : ISaveChangesInterceptor, IDbTransactionInterceptor
 {
     private const int MaxActorNameLength = 256;
 
-    // The rows of a save in progress, and those saved in a transaction that has not committed yet, per context. A pooled
-    // context serves one request at a time, and the table forgets a context that is gone.
+    // Holds, per context, the rows of a save in progress and the rows saved in a transaction that hasn't committed
+    // yet. A pooled context serves one request at a time, and the table forgets a context once it's gone.
     private readonly ConditionalWeakTable<DbContext, List<AuditEvent>> _saving = [];
     private readonly ConditionalWeakTable<DbContext, List<AuditEvent>> _uncommitted = [];
 
@@ -121,7 +119,8 @@ public sealed class AuditInterceptor(LiveNotifier live, IHttpContextAccessor htt
         }
     }
 
-    // Named as alice (token build-server), so the log reads right without a lookup, and the token's id kept beside it.
+    // Names the actor as alice (token build-server), so the log reads right without a lookup. The token's id is kept
+    // next to it.
     private void NameTokenActor(List<AuditEvent> added)
     {
         if (httpContextAccessor.HttpContext?.User is not { } user

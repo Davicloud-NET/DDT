@@ -17,9 +17,8 @@ import {
 
 import { cx } from "./cx";
 
-// A menu floats above the page, so it is an overlay: the lightest surface, and one of the few things with a shadow.
-// It comes from the side of its trigger and leaves towards it. Outside a MenuTrigger, triggerRef names what it opens
-// from and isOpen and onOpenChange whether it is open, as for a node's menu opened by a key.
+// A menu in a popover at its trigger. Outside a MenuTrigger, triggerRef names what it opens from, and isOpen
+// and onOpenChange say whether it's open. A node's menu, opened by right-click or Shift+F10, works this way.
 export function Menu<T extends object>({
   className,
   placement = "bottom end",

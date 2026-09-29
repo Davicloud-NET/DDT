@@ -5,10 +5,11 @@
 import type { ReactNode } from "react";
 
 import { cx } from "./cx";
+import { RailModule } from "./RailModule";
+import { railColumns } from "./railColumns";
 
-// The sequence rail: one module per step of a task sequence. It is the same part at every size: a thin strip in a
-// table row, a labelled row on a run's page, large on the console in Windows PE, and along the top of a node in a
-// flow. A paused step waits for someone, in the signal colour for that.
+// The sequence rail has one module per step. It's the same part in a table row, on a run's page, on the console in
+// WinPE and along the top of a flow node. A paused step waits for someone, so it takes the signal colour.
 export type RailStepState = "done" | "running" | "failed" | "skipped" | "waiting" | "paused";
 
 export interface RailStep {
@@ -20,8 +21,8 @@ export interface RailStep {
   meta?: ReactNode;
   // A finding on a step of a sequence being edited: a problem keeps the sequence from running, a warning does not.
   mark?: "problem" | "warning";
-  // The step's number in its sequence, where it is not its place on the rail: a run's rail leaves out the steps of the
-  // branches it did not take.
+  // The step's number in its sequence, if it differs from its place on the rail. A run's rail leaves out the steps of
+  // branches the run didn't take.
   number?: number;
 }
 
@@ -29,72 +30,6 @@ export interface RailPhase {
   label: ReactNode;
   // How many consecutive steps, from the previous phase's end, belong to this phase.
   steps: number;
-}
-
-// One fill serves the running and the done step, so a step that moves on or finishes fills on in slow, and turns
-// from the running blue to done, instead of jumping. The stripes run only while the step does. className sets the
-// module's height, and its corners where it sits on something else's edge.
-export function RailModule({ step, className }: { step: RailStep; className: string }) {
-  const percent = Math.min(100, Math.max(0, step.percent ?? 0));
-  const fill =
-    step.state === "done" || step.state === "paused" ? 100 : step.state === "running" ? percent : 0;
-
-  return (
-    <span
-      aria-hidden="true"
-      className={cx(
-        "relative block overflow-hidden rounded-tag bg-well shadow-[inset_0_0_0_1px_var(--color-rail-edge)]",
-        step.state === "running" && "shadow-[0_0_0_1px_var(--color-run)]",
-        className,
-      )}
-    >
-      <span
-        className={cx(
-          "absolute inset-y-0 left-0 motion-fill",
-          step.state === "done"
-            ? "bg-rail-done"
-            : step.state === "paused"
-              ? "bg-attention"
-              : "bg-run",
-          step.state === "running" && "rail-live",
-        )}
-        style={{ width: `${String(fill)}%` }}
-      />
-      {step.state === "failed" ? <span className="absolute inset-0 hatch-fail" /> : null}
-      {step.state === "skipped" ? <span className="absolute inset-0 hatch-skip" /> : null}
-      {step.mark === "problem" ? <span className="absolute inset-0 hatch-fail" /> : null}
-      {step.mark === "warning" ? <span className="absolute inset-0 bg-attention" /> : null}
-    </span>
-  );
-}
-
-function columns(count: number) {
-  return { gridTemplateColumns: `repeat(${String(Math.max(count, 1))}, minmax(0, 1fr))` };
-}
-
-// A strip for table rows. `label` says the same in words, for screen readers and as a tooltip.
-export function SequenceRailStrip({
-  steps,
-  label,
-  className,
-}: {
-  steps: RailStep[];
-  label: string;
-  className?: string;
-}) {
-  return (
-    <span
-      role="img"
-      aria-label={label}
-      title={label}
-      className={cx("grid gap-0.75", className)}
-      style={columns(steps.length)}
-    >
-      {steps.map((step, index) => (
-        <RailModule key={index} step={step} className="h-2" />
-      ))}
-    </span>
-  );
 }
 
 // The labelled rail of a run's page, optionally with the phases the steps run in drawn above them.
@@ -140,7 +75,7 @@ export function SequenceRail({
           ))}
         </div>
       ) : null}
-      <ol className="grid gap-1.5" style={columns(steps.length)}>
+      <ol className="grid gap-1.5" style={railColumns(steps.length)}>
         {steps.map((step, index) => {
           const running = step.state === "running";
 

@@ -6,9 +6,7 @@ using DDT.Contracts.Machines;
 
 namespace DDT.Contracts.Agents;
 
-// Every poll hands out fresh tokens, so they only expire when the agent cannot reach the server. Run, CanPickSequence
-// and SuggestedSequenceId are new members rather than a reshaped Deployment, so an agent from before task sequences
-// never mistakes a run for an image deployment. SuggestedSequenceId is the sequence an assignment rule chose.
+// Every poll hands out fresh tokens, so they only expire when the agent cannot reach the server.
 public sealed record AgentNextResult(
     MachineState State,
     string Token,
@@ -19,6 +17,9 @@ public sealed record AgentNextResult(
     bool CanPickImage = false,
     bool DomainConfigured = false,
     string? AssignedName = null,
+    // Run and the members after it are new members, not a reshaped Deployment. That way an agent that predates task
+    // sequences never mistakes a run for an image deployment.
     AgentRun? Run = null,
     bool CanPickSequence = false,
+    // The sequence an assignment rule chose.
     Guid? SuggestedSequenceId = null);

@@ -6,8 +6,8 @@ using DDT.Agent.Facts;
 
 namespace DDT.Agent.Tests;
 
-// Firmware tables in memory: Lists holds what EnumSystemFirmwareTables writes per provider, Tables each table. Every call
-// throws Failure when it is set.
+// Firmware tables in memory. Lists holds what EnumSystemFirmwareTables writes per provider, and Tables holds each
+// table. Every call throws Failure when it's set.
 internal sealed class FakeFirmwareTables : IFirmwareTables
 {
     public Dictionary<uint, byte[]> Lists { get; } = [];

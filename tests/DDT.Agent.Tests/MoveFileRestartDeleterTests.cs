@@ -7,7 +7,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// MoveFileEx itself would mark a path on this computer, so only what it is asked to do is checked.
+// Calling MoveFileEx for real would mark a path on this computer, so the test only checks what it's asked to do.
 public sealed class MoveFileRestartDeleterTests
 {
     // With any other flag and no new name, MoveFileEx deletes nothing when Windows next starts, and C:\DDT stays.

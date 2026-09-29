@@ -5,11 +5,12 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
+import { upsertById } from "@/lib/listCache";
 
 export type TokenRole = "Administrator" | "Operator" | "Viewer";
 
-// An API token as the server shows it: never its secret, only its last four characters as hint. A revoked token keeps
-// its row, with who revoked it.
+// An API token as the server shows it. It never includes the secret, only its last four characters as a hint. A revoked
+// token keeps its row, with who revoked it.
 export interface ApiTokenView {
   id: string;
   name: string;
@@ -37,7 +38,7 @@ export interface CreateApiTokenRequest {
   expiresInDays: number;
 }
 
-// The signed-in person's own tokens.
+// The signed-in user's own tokens.
 export const ownTokensQuery = queryOptions({
   queryKey: ["tokens", "own"],
   queryFn: () => apiGet<ApiTokenView[]>("/api/tokens"),
@@ -65,16 +66,14 @@ function newestFirst(a: ApiTokenView, b: ApiTokenView): number {
   return Date.parse(b.createdUtc) - Date.parse(a.createdUtc);
 }
 
-// A token created, used or revoked, from an answer or from the hub's tokenChanged, which may arrive twice.
+// Puts a created, used or revoked token into the lists. It comes from an answer or from the hub's tokenChanged, so it
+// may arrive twice.
 export function upsertToken(
   queryClient: QueryClient,
   token: ApiTokenView,
   ownUserId: string | null,
 ): void {
-  const upsert = (list: ApiTokenView[] | undefined) =>
-    list === undefined
-      ? list
-      : [token, ...list.filter((existing) => existing.id !== token.id)].sort(newestFirst);
+  const upsert = (list: ApiTokenView[] | undefined) => upsertById(list, token, newestFirst);
 
   queryClient.setQueryData(allTokensQuery.queryKey, upsert);
 

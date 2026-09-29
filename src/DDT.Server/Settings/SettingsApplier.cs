@@ -14,9 +14,9 @@ using Microsoft.Extensions.Primitives;
 
 namespace DDT.Server.Settings;
 
-// Rebuilds, inside the running server, the components the oidc and proxies sections configure, whenever their version
-// changes, and records each result for this host. The proxies need nothing rebuilt: the middleware reads the snapshot
-// of each request. The pxe listeners are rebuilt by PxeHost itself.
+// Applies the OIDC and proxies sections in the running server when their version changes, and records each result for
+// this host. Only OIDC needs a rebuild. The proxies middleware reads the snapshot on each request, and PxeHost rebuilds
+// the PXE listeners itself.
 public sealed partial class SettingsApplier(
     DdtSettings settings,
     IAuthenticationSchemeProvider schemes,
@@ -85,9 +85,9 @@ public sealed partial class SettingsApplier(
         }
     }
 
-    // While single sign-on is off the scheme is not registered at all: the authentication middleware builds the options
-    // of every registered remote scheme on every request, and empty ones fail validation there. A scheme some other
-    // registration added under the name, such as a test's stand-in for the provider, is left alone.
+    // While single sign-on is off, the scheme isn't registered. The authentication middleware builds the options of
+    // every remote scheme on every request, and empty options fail validation. If another registration added a scheme
+    // under this name, such as a test's stand-in, it's left alone.
     private async Task ApplyOidcAsync(SettingsSnapshot snapshot)
     {
         SettingsSectionState state = snapshot[SettingsSectionNames.Oidc];
@@ -103,8 +103,8 @@ public sealed partial class SettingsApplier(
             schemes.RemoveScheme(OidcOptions.SchemeName);
         }
 
-        // The change token drops the cached options too, but the order of the two callbacks is not the framework's
-        // promise, so this does not rely on it.
+        // The change token drops the cached options too. The framework doesn't promise the order of the two callbacks,
+        // so this doesn't rely on it.
         openIdCache.TryRemove(OidcOptions.SchemeName);
 
         if (!snapshot.Oidc.Enabled)
@@ -127,7 +127,7 @@ public sealed partial class SettingsApplier(
             }
 
             schemes.TryAddScheme(new AuthenticationScheme(OidcOptions.SchemeName, snapshot.Oidc.DisplayName, typeof(OpenIdConnectHandler)));
-            hostStates.Record(SettingsSectionNames.Oidc, state.Version, SettingsApplyResult.Applied, null);
+            hostStates.Record(new SettingsApplyReport(SettingsSectionNames.Oidc, state.Version, SettingsApplyResult.Applied, null));
         }
         catch (Exception exception) when (exception is InvalidOperationException or ArgumentException or OptionsValidationException)
         {
@@ -138,9 +138,9 @@ public sealed partial class SettingsApplier(
     }
 
     private void Record(SettingsSectionState state, SettingsApplyResult result, ServerMessage? message) =>
-        hostStates.Record(state.Name, state.Version, result, message?.Text, text: message);
+        hostStates.Record(new SettingsApplyReport(state.Name, state.Version, result, message?.Text) { Text = message });
 
-    // What is off, and then the section's problems, one after another.
+    // Says what's off, followed by the section's problems one after another.
     private static ServerMessage Closed(SettingsSectionState state, MessageTemplate consequence) =>
         consequence.With("problems", ServerMessages.Sentences([.. state.Problems.Select(problem => problem.Text)]));
 

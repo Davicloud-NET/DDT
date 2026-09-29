@@ -10,9 +10,9 @@ using DDT.Server.Settings;
 
 namespace DDT.Server.Ldap;
 
-// The group map decides who may sign in at all, since a directory user in none of its groups is refused, so a map
-// that cannot work is refused instead of refusing everyone at their next sign-in. The connection values are checked
-// only while directory sign-in is on, so a section that is off can be filled in step by step.
+// A directory user in none of the map's groups is refused. So a map that can't work is refused now, instead of refusing
+// everyone at their next sign-in. The connection is only checked while directory sign-in is on, so a section that's
+// off can be filled in step by step.
 public static class LdapOptionsValidation
 {
     // What DDT replaces with the user name in the user filter.
@@ -63,7 +63,8 @@ public static class LdapOptionsValidation
             }
         }
 
-        // Without nested groups DDT reads no groups at all, so every directory user would be in none of the map's.
+        // Without nested groups, DDT doesn't read any groups at all, so no directory user would be in any of the map's
+        // groups.
         if (options.GroupRoleMap.Count > 0 && !options.ResolveNestedGroups)
         {
             problems.Add(new(nameof(LdapOptions.ResolveNestedGroups), ServerMessages.SettingsLdapNestedGroupsOff.With()));
@@ -72,7 +73,7 @@ public static class LdapOptionsValidation
         return problems;
     }
 
-    // Current is what applies before a save; the re-key warning is about the change itself.
+    // Current is what applies before the save. The re-key warning is about the change itself, so it needs both.
     public static IReadOnlyList<SettingWarning> FindWarnings(LdapOptions options, LdapOptions? current)
     {
         ArgumentNullException.ThrowIfNull(options);

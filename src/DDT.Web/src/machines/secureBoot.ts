@@ -7,17 +7,18 @@ import { t } from "@lingui/core/macro";
 import type { MachineSummary } from "@/machines/machines";
 import type { SequenceSummary } from "@/sequences/sequences";
 
-// What an operator is told before a run writes a raw disk image that may not start with Secure Boot on, and the
-// allowance offered. The server refuses the run where the machine said Secure Boot is on and nobody allowed the image
-// (required); where the machine did not say, the agent asks the firmware and stops before erasing anything.
+// What an operator is told before a run writes a raw disk image that may not boot with Secure Boot on, and the
+// allowance offered. If the machine reported Secure Boot on, the server refuses the run until someone allows the image
+// (required). If the machine didn't say, the agent asks the firmware and stops before erasing anything.
 export interface SecureBootRisk {
   required: boolean;
   warning: string;
   allowLabel: string;
 }
 
-// Null where the sequence writes no such image, or the machine said Secure Boot is off. An image signed for Secure Boot
-// is such an image on a machine with Secure Boot on whose firmware does not trust Microsoft's third-party UEFI CA.
+// Null if the sequence writes no such image, or the machine said Secure Boot is off. An image signed for Secure Boot
+// only counts on a machine with Secure Boot on whose firmware doesn't trust the Microsoft third-party UEFI CA it's
+// signed under.
 export function secureBootRisk(
   machine: MachineSummary,
   sequence: SequenceSummary | null | undefined,

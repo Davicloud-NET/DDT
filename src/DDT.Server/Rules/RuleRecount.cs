@@ -4,6 +4,7 @@
 
 using DDT.Server.Data;
 using DDT.Server.Live;
+using DDT.Server.Machines;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,9 +12,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Rules;
 
-// Every rule says how many known machines it matches, so the list goes out again when the machines change: when one
-// registers with something a rule may test, or machines are removed. A lab of machines netbooting at once registers
-// many, so it goes out at most once per interval, counted after the last of them, in a scope of its own.
+// Every rule shows how many machines it matches. So the list is pushed again when a registration changes what a rule
+// may test, or machines are removed. It's pushed at most once per interval, in its own scope. That way a whole lab
+// netbooting at once causes one push, after the last machine.
 public sealed partial class RuleRecount(
     IServiceScopeFactory scopes,
     LiveNotifier live,
@@ -27,6 +28,24 @@ public sealed partial class RuleRecount(
 
     public void MachinesChanged() => _throttle.Push(Guid.Empty, PushAsync);
 
+    // The machine fields a registration sets that a rule's condition may test. Tells whether the counts changed.
+    public static string Tested(Machine machine)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+
+        return string.Join(
+            '|',
+            machine.PrimaryMac,
+            machine.MacAddresses,
+            machine.Manufacturer,
+            machine.Model,
+            machine.SerialNumber,
+            machine.AgentEnvironment,
+            machine.SecureBootEnabled,
+            machine.ChassisType,
+            machine.Facts);
+    }
+
     private async Task PushAsync()
     {
         try
@@ -39,7 +58,7 @@ public sealed partial class RuleRecount(
                 live.RulesChanged(await RuleViews.ListAsync(database, lifetime.ApplicationStopping).ConfigureAwait(false));
             }
         }
-        // Stopping cancels the count, or disposes of what it needs.
+        // Stopping the host cancels the count or disposes of what it needs.
         catch (Exception) when (lifetime.ApplicationStopping.IsCancellationRequested)
         {
         }

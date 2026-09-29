@@ -4,8 +4,8 @@
 
 namespace DDT.Core.Unattend;
 
-// No domain join: a machine joins its domain in Windows, with credentials fetched while that step runs, so the join
-// account's password never lands in Panther\unattend.xml.
+// There's no domain join here. A machine joins its domain in Windows, with credentials fetched while that step runs.
+// That way the join account's password never lands in Panther\unattend.xml.
 public sealed record UnattendSettings(
     string ProcessorArchitecture,
     string ComputerName,

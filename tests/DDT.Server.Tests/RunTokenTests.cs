@@ -32,7 +32,7 @@ public sealed class RunTokenTests(DdtApplication application) : IClassFixture<Dd
         return (machine, run);
     }
 
-    // As the agent registers after the restart: a new process, without the resume token, with the run token.
+    // Registers like the agent does after a restart. It's a new process, so it has no resume token, only the run token.
     private static async Task<HttpResponseMessage> ContinueAsync(DeployingMachine machine, string? runToken, AgentEnvironment environment = AgentEnvironment.WindowsPE) =>
         await machine.Agent.RegisterAsync(machine.Registration with { RunToken = runToken, Environment = environment });
 
@@ -63,14 +63,15 @@ public sealed class RunTokenTests(DdtApplication application) : IClassFixture<Dd
         Assert.NotNull(continued.RunToken);
         Assert.Equal(generation, (await application.MachineAsync(machine.Id)).TokenGeneration);
 
-        // The generation stays, so what the agent held before the restart still works.
+        // The generation stays the same, so the tokens the agent held before the restart still work.
         Assert.Equal(HttpStatusCode.OK, (await machine.Agent.NextAsync(machine.Id, before)).StatusCode);
 
         AgentNextResult next = await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, continued.Token!));
         Assert.Equal(run.Id, next.Run?.Id);
         Assert.Equal(DeploymentState.Running, next.Run?.State);
 
-        // Not rotated: a lost answer to the registration leaves the agent with a token that still works.
+        // The run token isn't rotated.
+        // So if the answer to the registration is lost, the agent still has a token that works.
         Assert.Equal(run.Id, (await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await ContinueAsync(machine, runToken))).RunId);
 
         // Every one of them is audited with the address it came from.
@@ -79,8 +80,8 @@ public sealed class RunTokenTests(DdtApplication application) : IClassFixture<Dd
             (await AuditAsync(run.Id)).Count(a => a == $"{AuditActions.DeploymentResumed} {machine.Agent.RemoteAddress} Continued {run.SequenceName} ({run.Id:D}) from WindowsPE with its run token."));
     }
 
-    // An agent that kept its resume token continues the run with it just as well. It is told so, or the service in
-    // Windows would take the run for over and remove itself while the run stays running.
+    // An agent that kept its resume token continues the run with it just as well. It's told so.
+    // Otherwise the service in Windows would think the run is over and remove itself while the run keeps running.
     [Fact]
     public async Task TheResumeTokenContinuesARunningRunAsTheRunTokenDoes()
     {
@@ -111,9 +112,9 @@ public sealed class RunTokenTests(DdtApplication application) : IClassFixture<Dd
 
         Assert.NotNull(result.RunToken);
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, [], error: "Stopped."));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, []) with { Error = "Stopped." });
         AgentRunReportResult failed = await RegisteredMachine.ReadAsync<AgentRunReportResult>(
-            await machine.Agent.RunReportAsync(machine.Id, machine.Token, run.Id, Report(DeploymentState.Failed, [], error: "Stopped.")));
+            await machine.Agent.RunReportAsync(machine.Id, machine.Token, run.Id, Report(DeploymentState.Failed, []) with { Error = "Stopped." }));
 
         Assert.Null(failed.RunToken);
     }
@@ -163,7 +164,8 @@ public sealed class RunTokenTests(DdtApplication application) : IClassFixture<Dd
         Assert.Equal(DeploymentState.Running, (await (await application.AdministratorAsync()).RunAsync(run.Id)).Summary.State);
     }
 
-    // A token names one run: an earlier run's token does not continue the next one, though the generation is the same.
+    // A token names one run.
+    // An earlier run's token doesn't continue the next one, even though the generation is the same.
     [Fact]
     public async Task AnEarlierRunsTokenDoesNotContinueTheNextRun()
     {
@@ -173,7 +175,7 @@ public sealed class RunTokenTests(DdtApplication application) : IClassFixture<Dd
         string firstToken = machine.RunToken!;
         int generation = (await application.MachineAsync(machine.Id)).TokenGeneration;
 
-        await machine.ReportOkAsync(first.Id, Report(DeploymentState.Failed, [], error: "The script failed."));
+        await machine.ReportOkAsync(first.Id, Report(DeploymentState.Failed, []) with { Error = "The script failed." });
         SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.ScriptOnly());
         await administrator.AssignedAsync(machine.Id, sequence.Id);
         AgentRun second = (await machine.NextAsync()).Run!;
@@ -192,7 +194,8 @@ public sealed class RunTokenTests(DdtApplication application) : IClassFixture<Dd
         Assert.Equal("The machine started again during the run, with a run token the server no longer accepts.", failed.Summary.Error);
     }
 
-    // A stop, a rejection or a start over raises the generation, and that alone ends every token of the one before.
+    // A stop, a rejection or a start over raises the generation.
+    // That alone ends every token of the previous generation.
     [Fact]
     public async Task ARunTokenOfAnEarlierGenerationDoesNotContinueTheRun()
     {
@@ -243,7 +246,7 @@ public sealed class RunTokenTests(DdtApplication application) : IClassFixture<Dd
         Assert.Equal(audits, (await AuditAsync(machine.Id)).Count);
         Assert.Equal(DeploymentState.Running, (await (await application.AdministratorAsync()).RunAsync(run.Id)).Summary.State);
 
-        // Nor does one the server has never seen become a machine.
+        // Nor does a service the server has never seen become a machine.
         using AgentClient stranger = new(application.CreateDefaultClient(), TestRemoteAddress.Unique());
         AgentRegistration unknown = AgentClient.Registration(Guid.NewGuid().ToString("D"), "02AABBCCDDEE") with { Environment = AgentEnvironment.Windows };
         Assert.Equal(HttpStatusCode.Conflict, (await stranger.RegisterAsync(unknown)).StatusCode);

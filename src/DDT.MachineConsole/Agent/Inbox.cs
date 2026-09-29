@@ -7,8 +7,8 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.MachineConsole.Agent;
 
-// Between the thread that reads the pipe and the UI thread: the reader drops every message here and goes on reading,
-// and the UI takes them in order, many at a time after a burst such as the log lines from before the console started.
+// Hands messages from the reading thread to the UI thread in order. One post drains the whole queue, so a burst,
+// like the log from before the console started, costs only one dispatcher round trip.
 public sealed class Inbox(Action<Action> post)
 {
     private readonly ConcurrentQueue<ConsoleMessage> _messages = new();
@@ -18,7 +18,7 @@ public sealed class Inbox(Action<Action> post)
     private Action<LinkEnd>? _ended;
     private bool _posted;
 
-    // From the reading thread.
+    // Called from the reading thread.
     public void Add(ConsoleMessage message)
     {
         _messages.Enqueue(message);
@@ -35,7 +35,7 @@ public sealed class Inbox(Action<Action> post)
         Schedule();
     }
 
-    // From the UI thread, once there is a screen for the messages.
+    // Called from the UI thread once a screen exists for the messages.
     public void Deliver(Action<ConsoleMessage> receiver, Action<LinkEnd> ended)
     {
         lock (_lock)
@@ -83,7 +83,7 @@ public sealed class Inbox(Action<Action> post)
 
         lock (_lock)
         {
-            // Lines that came after this drain began are taken first, by the drain they scheduled.
+            // If lines arrived after this drain started, the end waits. The drain those lines scheduled reports it.
             end = _messages.IsEmpty ? _end : null;
         }
 

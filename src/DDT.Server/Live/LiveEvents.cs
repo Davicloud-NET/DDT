@@ -12,7 +12,7 @@ public static class LiveEvents
     // machines' runs are gone with them, so the run history drops those too.
     public const string MachinesRemoved = "machinesRemoved";
 
-    // Carries a RunHistoryItem whenever a run or the machine it names changes, so the run history upserts it by run id.
+    // Carries a RunHistoryItem whenever a run or its machine changes. The run history upserts it by run ID.
     public const string RunChanged = "runChanged";
 
     // Carries the ImageSummary of an image that was added or changed, which clients upsert by id.
@@ -33,13 +33,12 @@ public static class LiveEvents
     // Carries a BootImageView whenever the drivers flagged for the boot image or the build in the boot directory change.
     public const string BootImageChanged = "bootImageChanged";
 
-    // Carries every rule, RuleView top first, as GET /api/rules answers: rules are few, and one change can move rules,
-    // rename the sequence several of them choose, change what another rule's condition may test, or change how many
-    // machines each matches, which a registration or a removal of machines does too.
+    // Carries every rule, top first, the same as GET /api/rules returns. Rules are few, and one change can move
+    // several, rename a sequence they choose, or change what they test or how many machines they match.
     public const string RulesChanged = "rulesChanged";
 
-    // Carries every machine role, MachineRoleView by name, as GET /api/machine-roles answers: a change of a rule changes
-    // how many rules give a role.
+    // Carries every machine role as a MachineRoleView, by name, the same as GET /api/machine-roles returns. A rule
+    // change changes how many rules give each role.
     public const string RolesChanged = "rolesChanged";
 
     // Carries a RunStepChangedEvent, only to the connections that watch the machine.
@@ -51,7 +50,7 @@ public static class LiveEvents
     // Carries a MachineLogAppendedEvent, only to the connections that watch the machine.
     public const string MachineLogAppended = "machineLogAppended";
 
-    // Carries a UserView, only to administrators: an account was created or changed, or signed in.
+    // Carries a UserView, only to administrators, when an account was created, changed or signed in.
     public const string UserChanged = "userChanged";
 
     // Carries a UsersRemovedEvent, only to administrators.
@@ -61,34 +60,35 @@ public static class LiveEvents
     public const string AuditAppended = "auditAppended";
 
     // Carries an ApiTokenView whenever a token is created, used or revoked, to administrators and to its owner. A
-    // connection in both groups may receive it twice, which an upsert by id does not notice.
+    // connection in both groups may get it twice. That's harmless, because clients upsert it by ID.
     public const string TokenChanged = "tokenChanged";
 
-    // Carries the SettingsSectionView of the section, as GET /api/settings/{section} answers it, whenever it was saved or
-    // a host applied it: to administrators, and for the deployment and machines sections also to operators.
+    // Carries the section's SettingsSectionView, the same as GET /api/settings/{section} returns, when it was saved or
+    // a host applied it. Goes to administrators, and for the deployment and machines sections to operators too.
     public const string SettingsChanged = "settingsChanged";
 
-    // Carries every pxe host's candidate interfaces, as GET /api/settings/pxe/interfaces answers them, whenever a host
-    // applied the pxe section and reported what it found: to administrators.
+    // Carries every PXE host's candidate interfaces, the same as GET /api/settings/pxe/interfaces returns, when a host
+    // applied the pxe section and reported what it found. Goes to administrators.
     public const string PxeInterfacesChanged = "pxeInterfacesChanged";
 
-    // Carries the AgentBinaryView, as GET /api/settings/agent answers it, when an agent was uploaded: to administrators.
+    // Carries the AgentBinaryView, the same as GET /api/settings/agent returns, when an agent was uploaded. Goes to
+    // administrators.
     public const string AgentChanged = "agentChanged";
 
-    // The same for the console, as GET /api/settings/agent/console answers it, when a console was uploaded: to
+    // The same for the console, as GET /api/settings/agent/console returns it, when a console was uploaded. Goes to
     // administrators.
     public const string ConsoleChanged = "consoleChanged";
 
-    // Carries the ConsoleLogoView, as GET /api/settings/console-logo answers it, when the console's logo was uploaded or
-    // removed: to administrators and operators, who read the Deployment defaults page it is on.
+    // Carries the ConsoleLogoView, the same as GET /api/settings/console-logo returns, when the console logo was
+    // uploaded or removed. Goes to administrators and operators, because both read the Deployment defaults page.
     public const string ConsoleLogoChanged = "consoleLogoChanged";
 
-    // Carries the CertificateView, without servedHere, when a certificate was installed, confirmed or rolled back: to
-    // administrators.
+    // Carries the CertificateView, without servedHere, when a certificate was installed, confirmed or rolled back. Goes
+    // to administrators.
     public const string CertificateChanged = "certificateChanged";
 
-    // Carries the AccountView of an account that steps use, as GET /api/accounts/{id} answers it, whenever it was created or
-    // changed or a sequence started or stopped naming it. It holds no password, only whether one is set.
+    // Carries an account's AccountView, the same as GET /api/accounts/{id} returns, when it was created or changed, or
+    // a sequence started or stopped using it. It holds no password, only whether one is set.
     public const string AccountChanged = "accountChanged";
 
     // Carries an AccountsRemovedEvent, so clients drop the accounts without loading the list again.

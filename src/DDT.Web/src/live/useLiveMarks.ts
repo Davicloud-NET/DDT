@@ -12,14 +12,15 @@ import {
 } from "@tanstack/react-query";
 import { useCallback, useEffect, useEffectEvent, useState, useSyncExternalStore } from "react";
 
+import { createListeners } from "@/lib/listeners";
 import { FLASH_MS } from "@/ui/motion";
 import type { StateTone } from "@/ui/StateTag";
 
 // What a change did to one item of a list, for as long as its flash lasts.
 export interface LiveMark {
-  // The item was not in the list before, so it enters.
+  // The item wasn't in the list before, so it animates in.
   isNew: boolean;
-  // The colour it flashes in; null for an item that enters without a flash.
+  // The colour it flashes in. Null for an item that animates in without a flash.
   tone: StateTone | null;
   // Alternates with each mark of the same item, so a second change starts the flash over.
   cycle: 0 | 1;
@@ -34,7 +35,7 @@ export interface LiveMarkOptions<TKey extends QueryKey, TItem> {
   // What the list shows of an item that a change should point out, such as its state. An item whose signature
   // changes flashes; one that changes otherwise, such as a running step's percentage, does not.
   signature: (item: TItem) => string;
-  // The colour of the item's state, or null where a change of it needs no flash.
+  // The colour of the item's state, or null if a change of it needs no flash.
   tone: (item: TItem) => StateTone | null;
 }
 
@@ -43,11 +44,9 @@ interface Seen {
   tone: StateTone | null;
 }
 
-// Marks the items of a list that a change put on the screen: an item whose signature changed flashes in its tone,
-// and an item that was not there before enters as well. Only data that arrives by setQueryData counts, which is how
-// the hub's events and the answers of actions reach the cache; data the page read, on its first load, after a
-// reconnect, while polling or for older pages, is taken as it is. Returns the classes for an item's row, none for an
-// unmarked one. It changes with the marks, so a React Aria collection lists it in its dependencies.
+// Marks the items a change put on screen: a changed signature flashes in its tone, and a new item animates in.
+// Only setQueryData counts, since pushes and action answers arrive that way, so a read such as a first load never
+// flashes. The returned function changes with the marks, so put it in a React Aria collection's dependencies.
 export function useLiveMarks<TKey extends QueryKey, TItem>(
   options: LiveMarkOptions<TKey, TItem>,
 ): (id: string) => string {
@@ -99,14 +98,11 @@ function markClass(mark: LiveMark | undefined): string {
 
 function createMarkStore() {
   let marks: ReadonlyMap<string, LiveMark> = new Map();
-  const listeners = new Set<() => void>();
+  const listeners = createListeners();
 
   const publish = (next: ReadonlyMap<string, LiveMark>) => {
     marks = next;
-
-    for (const listener of [...listeners]) {
-      listener();
-    }
+    listeners.notify();
   };
 
   // Follows one query's data from what it holds now. Returns the unwatch.
@@ -201,13 +197,7 @@ function createMarkStore() {
   };
 
   return {
-    subscribe: (listener: () => void) => {
-      listeners.add(listener);
-
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    subscribe: listeners.subscribe,
     marks: () => marks,
     watch,
   };

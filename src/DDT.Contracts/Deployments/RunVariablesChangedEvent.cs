@@ -4,6 +4,6 @@
 
 namespace DDT.Contracts.Deployments;
 
-// Sent to the connections that watch the machine when the variables its run's agent reported changed: all of them, as
-// DeploymentView.Variables has them.
+// Sent to the connections that watch the machine when the variables reported by its run's agent change. It carries
+// all of them, like DeploymentView.Variables.
 public sealed record RunVariablesChangedEvent(Guid MachineId, Guid DeploymentId, IReadOnlyDictionary<string, string> Variables);

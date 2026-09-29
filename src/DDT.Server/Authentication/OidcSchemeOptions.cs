@@ -11,8 +11,8 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace DDT.Server.Authentication;
 
-// The OpenID Connect handler's options from the oidc section. The scheme DDT registers and the candidate a save checks
-// both come from here, so the check tests what would run.
+// Builds the OpenID Connect handler's options from the oidc section. The scheme DDT registers and the candidate a save
+// checks both come from here, so the check tests what would actually run.
 public static class OidcSchemeOptions
 {
     public const string CallbackPath = "/api/auth/external/callback";
@@ -22,8 +22,8 @@ public static class OidcSchemeOptions
         ArgumentNullException.ThrowIfNull(openId);
         ArgumentNullException.ThrowIfNull(oidc);
 
-        // Without this the external principal is signed straight into the application cookie:
-        // no local user, no link row, no roles, no lockout and no second factor.
+        // Without this the external principal is signed straight into the application cookie, with no local user, link,
+        // roles, lockout or second factor.
         openId.SignInScheme = IdentityConstants.ExternalScheme;
 
         openId.Authority = oidc.Authority;

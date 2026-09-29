@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import type { ConditionGroupKind, ConditionNode, SequenceStep, TestCondition } from "../sequences";
+import type { ConditionGroupKind, ConditionNode, TestCondition } from "../sequenceConditions";
+import type { SequenceStep } from "../sequences";
 
 // A node's condition trees: its when, an IF's test and a repeat's until.
 export type ConditionField = "when" | "test" | "until";
@@ -11,23 +12,22 @@ export type ConditionField = "when" | "test" | "until";
 export type ConditionPath = readonly number[];
 
 // A change of a condition tree at a path.
-// - set: puts node there; null takes the node away, which for the root leaves no when, and an empty all (which
-//   holds) for an IF's test and a repeat's until.
-// - add: adds part to the group there, at index or at the end. Added to a test, or to no when at all, it makes an all
-//   of what was there and part.
-// - update: changes the test there.
-// - remove: as set with null.
-// - group: makes the group there an all, an any or a none.
-// - wrap: puts the node there into a new group of the kind.
 export type ConditionChange =
+  // null removes the node. At the root, that leaves no when, and it leaves an IF's test or a Repeat's until as an
+  // empty all.
   | { op: "set"; node: ConditionNode | null }
+  // Adds part at index, or at the end. Adding to a test, or where there's no when, makes an all of what was there
+  // plus part.
   | { op: "add"; part: ConditionNode; index?: number }
   | { op: "update"; patch: Partial<Omit<TestCondition, "kind">> }
+  // Same as set with null.
   | { op: "remove" }
+  // Makes the group there an all, an any or a none.
   | { op: "group"; kind: ConditionGroupKind }
+  // Puts the node there into a new group of the kind.
   | { op: "wrap"; kind: ConditionGroupKind };
 
-// The tree of a node's field, null where the node has none, undefined where the field is not the node's.
+// The tree in a node's field. Null if the node has none, undefined if the node doesn't have that field.
 export function conditionOf(
   node: SequenceStep,
   field: ConditionField,
@@ -42,7 +42,7 @@ export function conditionOf(
   }
 }
 
-// The field of a place in a tree as a problem and a run's evaluation name it, such as "when" or "test.parts[1]".
+// The field name for a place in a tree, as problems and a run's evaluation use it, such as "when" or "test.parts[1]".
 export function conditionPath(field: ConditionField, path: ConditionPath): string {
   return [field, ...path.map((index) => `parts[${String(index)}]`)].join(".");
 }
@@ -73,7 +73,7 @@ export function testsOf(root: ConditionNode | null | undefined): PlacedTest[] {
   return tests;
 }
 
-// Every test of a tree with its variable changed by rename; the same tree when none changed.
+// Applies rename to the variable of every test in a tree. Returns the same tree if nothing changed.
 export function mapTests(
   root: ConditionNode,
   change: (test: TestCondition) => TestCondition,
@@ -105,7 +105,7 @@ function nodeAt(root: ConditionNode | null, path: ConditionPath): ConditionNode 
   return node;
 }
 
-// Puts replacement at path, or takes the node there away when it is null. Undefined when the path leads nowhere.
+// Puts replacement at path, or removes the node there if replacement is null. Undefined if the path leads nowhere.
 function replaced(
   root: ConditionNode | null,
   path: ConditionPath,
@@ -137,7 +137,7 @@ function replaced(
   };
 }
 
-// The tree after the change, null for none, undefined when the change does not fit the tree.
+// The tree after the change. Null for no tree, undefined if the change doesn't fit the tree.
 export function changedCondition(
   root: ConditionNode | null,
   path: ConditionPath,

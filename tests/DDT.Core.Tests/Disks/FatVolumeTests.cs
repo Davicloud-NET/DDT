@@ -25,7 +25,7 @@ public sealed class FatVolumeTests
         return content;
     }
 
-    // The volume one mebibyte into a larger stream, as a partition lies on a disk.
+    // Puts the volume one mebibyte into a larger stream, the way a partition sits on a disk.
     private static FatVolume Open(byte[] volume)
     {
         byte[] disk = new byte[Offset + volume.Length + 4096];
@@ -65,6 +65,26 @@ public sealed class FatVolumeTests
         Assert.Null(volume.Find(@"EFI\BOOT\BOOTAA64.EFI"));
         Assert.Null(volume.Find(@"EFI\BOOT\BOOTX64.EFI\more"));
         Assert.True(volume.Find(@"EFI\BOOT")!.IsDirectory);
+    }
+
+    // FAT12 packs two entries into three bytes, so chains that start on an even and on an odd cluster must both
+    // survive.
+    [Fact]
+    public void ReadsFat12ChainsThroughOddAndEvenClusters()
+    {
+        FatVolumeBuilder builder = new(1024 * 1024, "ESP", 1, s_timestamp) { Type = FatType.Fat12 };
+        builder.AddFile("ONE.BIN", Content(1500, 1));
+        builder.AddFile("TWO.BIN", Content(2100, 2));
+
+        FatVolume volume = Open(builder.Build());
+        FatEntry one = volume.Find("ONE.BIN")!;
+        FatEntry two = volume.Find("TWO.BIN")!;
+
+        Assert.Equal(FatType.Fat12, volume.Type);
+        Assert.Equal(0u, one.FirstCluster % 2);
+        Assert.Equal(1u, two.FirstCluster % 2);
+        Assert.Equal(Content(1500, 1), volume.ReadFile(one, MaxBytes));
+        Assert.Equal(Content(2100, 2), volume.ReadFile(two, MaxBytes));
     }
 
     [Fact]
@@ -111,8 +131,8 @@ public sealed class FatVolumeTests
         Assert.Equal("grubx64.efi", Assert.Single(Open(built).List("")).Name);
     }
 
-    // Linux and EDK2 take a volume whose 16-bit FAT size is 0 as FAT32 whatever its cluster count, as mkfs.fat -F 32
-    // makes on a small partition. The builder never makes one, so this one is cut short to 30,000 clusters.
+    // Linux and EDK2 treat a volume whose 16-bit FAT size is 0 as FAT32, whatever its cluster count. mkfs.fat -F 32
+    // makes such volumes on small partitions. The builder never does, so this one is cut short to 30,000 clusters.
     [Fact]
     public void ReadsAFat32VolumeWithFewClustersAsFat32()
     {
@@ -129,7 +149,8 @@ public sealed class FatVolumeTests
         Assert.Equal(s_loader, read.ReadFile(read.Find(@"EFI\BOOT\BOOTX64.EFI")!, MaxBytes));
     }
 
-    // A long name part numbered 0 after a complete long name, with its checksum: a damaged or hostile directory.
+    // A long name part numbered 0 after a complete long name, with its checksum. Only a damaged or hostile directory
+    // has that.
     [Fact]
     public void ReadsADirectoryWithALongNamePartNumberedZero()
     {

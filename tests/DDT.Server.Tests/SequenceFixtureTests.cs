@@ -40,40 +40,10 @@ public sealed class SequenceFixtureTests
         await MatchFixtureAsync("install-windows.sequence.json", fixedIds, "the template");
     }
 
-    // Every kind of step of versions 1 and 2, and every phase, interpreter and condition operator they have: a flat
-    // document, as agents of those versions run it. Version 3 is in every-node.sequence.json.
-    [Fact]
-    public async Task TheWebFixtureHoldsEveryKindOfStep()
+    // Every kind of step from versions 1 and 2, plus a script in every phase with every interpreter.
+    private static List<SequenceStep> EveryKindOfStep()
     {
-        List<SequenceStep> steps =
-        [
-            new PartitionStep { Id = StepId(0), Name = "Partition", SystemPartitionMegabytes = 260, RecoveryPartitionMegabytes = 2048 },
-            new ApplyImageStep { Id = StepId(1), Name = "Apply", ImageId = s_imageId },
-            new InjectDriversStep { Id = StepId(2), Name = "Drivers", RequireMatch = true },
-            new WriteUnattendStep
-            {
-                Id = StepId(3),
-                Name = "Answer file",
-                TimeZone = "W. Europe Standard Time",
-                Locale = "de-AT",
-                Keyboard = "0c07:00000407",
-                LocalAdministrator = true,
-            },
-            new JoinDomainStep { Id = StepId(4), Name = "Join", OrganizationalUnit = "OU=Lab,DC=example,DC=org" },
-            new RebootStep
-            {
-                Id = StepId(5),
-                Name = "Restart",
-                ContinueOnError = true,
-                RebootAfter = true,
-                Conditions =
-                [
-                    .. Enum.GetValues<ConditionOperator>()
-                        .Where(op => op <= ConditionOperator.Contains)
-                        .Select(op => new StepCondition(MachineVariableNames.Model, op, "Latitude 7440")),
-                ],
-            },
-        ];
+        List<SequenceStep> steps = WindowsSteps();
 
         foreach (SequencePhase phase in Enum.GetValues<SequencePhase>())
         {
@@ -104,6 +74,46 @@ public sealed class SequenceFixtureTests
             NetworkConfig = "version: 2\n",
         });
 
+        return steps;
+    }
+
+    private static List<SequenceStep> WindowsSteps() =>
+        [
+            new PartitionStep { Id = StepId(0), Name = "Partition", SystemPartitionMegabytes = 260, RecoveryPartitionMegabytes = 2048 },
+            new ApplyImageStep { Id = StepId(1), Name = "Apply", ImageId = s_imageId },
+            new InjectDriversStep { Id = StepId(2), Name = "Drivers", RequireMatch = true },
+            new WriteUnattendStep
+            {
+                Id = StepId(3),
+                Name = "Answer file",
+                TimeZone = "W. Europe Standard Time",
+                Locale = "de-AT",
+                Keyboard = "0c07:00000407",
+                LocalAdministrator = true,
+            },
+            new JoinDomainStep { Id = StepId(4), Name = "Join", OrganizationalUnit = "OU=Lab,DC=example,DC=org" },
+            new RebootStep
+            {
+                Id = StepId(5),
+                Name = "Restart",
+                ContinueOnError = true,
+                RebootAfter = true,
+                Conditions =
+                [
+                    .. Enum.GetValues<ConditionOperator>()
+                        .Where(op => op <= ConditionOperator.Contains)
+                        .Select(op => new StepCondition(MachineVariableNames.Model, op, "Latitude 7440")),
+                ],
+            },
+        ];
+
+    // Every kind of step from versions 1 and 2, and every phase, interpreter and condition operator they have.
+    // It's a flat document, as agents of those versions run it. Version 3 is in every-node.sequence.json.
+    [Fact]
+    public async Task TheWebFixtureHoldsEveryKindOfStep()
+    {
+        List<SequenceStep> steps = EveryKindOfStep();
+
         // A kind of these versions added later must be added here too.
         string[] built = [.. steps.Select(step => step.GetType().Name).Distinct().Order(StringComparer.Ordinal)];
         Assert.Equal(Kinds(maximumVersion: 2), built);
@@ -114,95 +124,13 @@ public sealed class SequenceFixtureTests
         await MatchFixtureAsync("every-step.sequence.json", definition, "the steps built here");
     }
 
-    // Every kind of node, nested (an IF in a repeat in a group), every kind of condition and operator, the members of
-    // version 3 on the kinds before it, and the sequence's variables and inputs of every kind. The document runs, so an
-    // editor opens it without problems. A sequence either installs Windows or writes a raw disk image, so the steps of the
-    // latter are in every-step.sequence.json alone.
+    // Every node, condition, variable and input in a document that still runs, so an editor opens it without problems.
+    // Raw image steps live in every-step.sequence.json alone, since a sequence either installs Windows or writes a disk.
     [Fact]
     public async Task TheWebFixtureHoldsEveryNode()
     {
         Guid accountId = new("0193a4b2-0000-7000-8000-0000000000c1");
-        IfStep choose = new()
-        {
-            Id = StepId(6),
-            Name = "If a ThinkPad",
-            Test = new AllCondition
-            {
-                Parts =
-                [
-                    new TestCondition(MachineVariableNames.Manufacturer, ConditionOperator.Equals, "LENOVO"),
-                    new TestCondition(MachineVariableNames.MemoryMegabytes, ConditionOperator.GreaterOrEqual, "8192"),
-                ],
-            },
-            Then =
-            [
-                new RunScriptStep
-                {
-                    Id = StepId(7),
-                    Name = "Install the dock's firmware",
-                    Phase = SequencePhase.Windows,
-                    Interpreter = ScriptInterpreter.PowerShell,
-                    Script = "exit 0",
-                    RunAs = new AccountReference(null, "Installer"),
-                    Shares = [new ShareConnection(@"\\files.corp.example\drivers", new AccountReference(accountId, null))],
-                },
-            ],
-            Else = [new SetVariableStep { Id = StepId(8), Name = "Office for the rest", Variable = "Office", Value = "{{Office|upper}}" }],
-        };
-        RepeatStep repeat = new()
-        {
-            Id = StepId(5),
-            Name = "Until the dock answers",
-            Until = new TestCondition(MachineVariableNames.LastExitCode, ConditionOperator.Equals, "0"),
-            MaxTimes = 5,
-            GoOnAtLimit = true,
-            Steps =
-            [
-                choose,
-                new RebootStep
-                {
-                    Id = StepId(9),
-                    Name = "Restart",
-                    When = new AllCondition { Parts = [.. Enum.GetValues<ConditionOperator>().Select(Fitting)] },
-                },
-            ],
-        };
-        List<SequenceStep> steps =
-        [
-            new PartitionStep { Id = StepId(0), Name = "Partition" },
-            new ApplyImageStep { Id = StepId(1), Name = "Apply", ImageId = s_imageId },
-            new InjectDriversStep
-            {
-                Id = StepId(2),
-                Name = "Drivers",
-                When = new AnyCondition
-                {
-                    Parts =
-                    [
-                        new TestCondition(MachineVariableNames.FriendlyModel, ConditionOperator.Matches, "ThinkPad*"),
-                        new NoneCondition { Parts = [new TestCondition(MachineVariableNames.DeviceKind, ConditionOperator.Equals, "Virtual")] },
-                    ],
-                },
-            },
-            new WriteUnattendStep { Id = StepId(3), Name = "Answer file" },
-
-            // The join comes before the group, so the repeat in it runs in Windows throughout.
-            new JoinDomainStep
-            {
-                Id = StepId(11),
-                Name = "Join",
-                OrganizationalUnit = "OU={{Office}},DC=corp,DC=example",
-                Account = new AccountReference(null, "JoinAccount"),
-            },
-            new GroupStep
-            {
-                Id = StepId(4),
-                Name = "Configure",
-                Conditions = [new StepCondition(MachineVariableNames.Phase, ConditionOperator.Equals, "Windows")],
-                ContinueOnError = true,
-                Steps = [repeat, new PauseStep { Id = StepId(10), Name = "Check the BIOS", Message = "Check {{ComputerName}}.", ContinueAfterMinutes = 30 }],
-            },
-        ];
+        List<SequenceStep> steps = EveryNode(Repeat(Choose(accountId)));
         SequenceDefinition definition = new SequenceDefinition(SequenceDefinition.CurrentVersion, steps)
         {
             Variables =
@@ -210,42 +138,7 @@ public sealed class SequenceFixtureTests
                 new VariableDeclaration { Name = "Office", Default = "Standard", Description = "The Office edition.", SetBySteps = true },
                 new VariableDeclaration { Name = MachineVariableNames.ComputerName, Default = "PC-{{SerialNumber|alnum|right:12}}" },
             ],
-            Inputs =
-            [
-                new InputDeclaration { Name = "Owner", Label = "Owner", Help = "Who gets the PC.", Required = true, MaxLength = 64, AskAt = InputAsk.Web },
-                new InputDeclaration
-                {
-                    Name = "Office",
-                    Label = "Office",
-                    Kind = InputKind.Choice,
-                    Choices = [new InputChoice("Standard"), new InputChoice("ProPlus", "Professional Plus")],
-                    Default = "Standard",
-                },
-                new InputDeclaration
-                {
-                    Name = "Languages",
-                    Label = "Languages",
-                    Kind = InputKind.MultiChoice,
-                    Choices = [new InputChoice("de-DE", "German"), new InputChoice("en-US", "English")],
-                    AskAt = InputAsk.Machine,
-                },
-                new InputDeclaration { Name = "Encrypt", Label = "Encrypt the disk", Kind = InputKind.YesNo, Default = "true" },
-                new InputDeclaration
-                {
-                    Name = "JoinAccount",
-                    Label = "Join account",
-                    Kind = InputKind.Account,
-                    Required = true,
-                    Account = new AccountDestination { Domain = "corp.example" },
-                },
-                new InputDeclaration
-                {
-                    Name = "Installer",
-                    Label = "Installer",
-                    Kind = InputKind.Account,
-                    Account = new AccountDestination { Hosts = ["files.corp.example"], RunAs = true },
-                },
-            ],
+            Inputs = EveryInput(),
         }.Normalised();
 
         // A kind, condition, operator or input kind added later must be added here too.
@@ -271,8 +164,129 @@ public sealed class SequenceFixtureTests
         await MatchFixtureAsync("every-node.sequence.json", definition, "the nodes built here");
     }
 
-    // Every operator on a machine fact of a type it takes: numbers are compared as numbers, and only an address is in a
-    // network.
+    private static IfStep Choose(Guid accountId) => new()
+    {
+        Id = StepId(6),
+        Name = "If a ThinkPad",
+        Test = new AllCondition
+        {
+            Parts =
+            [
+                new TestCondition(MachineVariableNames.Manufacturer, ConditionOperator.Equals, "LENOVO"),
+                new TestCondition(MachineVariableNames.MemoryMegabytes, ConditionOperator.GreaterOrEqual, "8192"),
+            ],
+        },
+        Then =
+        [
+            new RunScriptStep
+            {
+                Id = StepId(7),
+                Name = "Install the dock's firmware",
+                Phase = SequencePhase.Windows,
+                Interpreter = ScriptInterpreter.PowerShell,
+                Script = "exit 0",
+                RunAs = new AccountReference(null, "Installer"),
+                Shares = [new ShareConnection(@"\\files.corp.example\drivers", new AccountReference(accountId, null))],
+            },
+        ],
+        Else = [new SetVariableStep { Id = StepId(8), Name = "Office for the rest", Variable = "Office", Value = "{{Office|upper}}" }],
+    };
+
+    private static RepeatStep Repeat(IfStep choose) => new()
+    {
+        Id = StepId(5),
+        Name = "Until the dock answers",
+        Until = new TestCondition(MachineVariableNames.LastExitCode, ConditionOperator.Equals, "0"),
+        MaxTimes = 5,
+        GoOnAtLimit = true,
+        Steps =
+        [
+            choose,
+            new RebootStep
+            {
+                Id = StepId(9),
+                Name = "Restart",
+                When = new AllCondition { Parts = [.. Enum.GetValues<ConditionOperator>().Select(Fitting)] },
+            },
+        ],
+    };
+
+    private static List<SequenceStep> EveryNode(RepeatStep repeat) =>
+    [
+        new PartitionStep { Id = StepId(0), Name = "Partition" },
+        new ApplyImageStep { Id = StepId(1), Name = "Apply", ImageId = s_imageId },
+        new InjectDriversStep
+        {
+            Id = StepId(2),
+            Name = "Drivers",
+            When = new AnyCondition
+            {
+                Parts =
+                [
+                    new TestCondition(MachineVariableNames.FriendlyModel, ConditionOperator.Matches, "ThinkPad*"),
+                    new NoneCondition { Parts = [new TestCondition(MachineVariableNames.DeviceKind, ConditionOperator.Equals, "Virtual")] },
+                ],
+            },
+        },
+        new WriteUnattendStep { Id = StepId(3), Name = "Answer file" },
+
+        // The join comes before the group, so the repeat in it runs in Windows throughout.
+        new JoinDomainStep
+        {
+            Id = StepId(11),
+            Name = "Join",
+            OrganizationalUnit = "OU={{Office}},DC=corp,DC=example",
+            Account = new AccountReference(null, "JoinAccount"),
+        },
+        new GroupStep
+        {
+            Id = StepId(4),
+            Name = "Configure",
+            Conditions = [new StepCondition(MachineVariableNames.Phase, ConditionOperator.Equals, "Windows")],
+            ContinueOnError = true,
+            Steps = [repeat, new PauseStep { Id = StepId(10), Name = "Check the BIOS", Message = "Check {{ComputerName}}.", ContinueAfterMinutes = 30 }],
+        },
+    ];
+
+    private static IReadOnlyList<InputDeclaration> EveryInput() =>
+    [
+        new InputDeclaration { Name = "Owner", Label = "Owner", Help = "Who gets the PC.", Required = true, MaxLength = 64, AskAt = InputAsk.Web },
+        new InputDeclaration
+        {
+            Name = "Office",
+            Label = "Office",
+            Kind = InputKind.Choice,
+            Choices = [new InputChoice("Standard"), new InputChoice("ProPlus", "Professional Plus")],
+            Default = "Standard",
+        },
+        new InputDeclaration
+        {
+            Name = "Languages",
+            Label = "Languages",
+            Kind = InputKind.MultiChoice,
+            Choices = [new InputChoice("de-DE", "German"), new InputChoice("en-US", "English")],
+            AskAt = InputAsk.Machine,
+        },
+        new InputDeclaration { Name = "Encrypt", Label = "Encrypt the disk", Kind = InputKind.YesNo, Default = "true" },
+        new InputDeclaration
+        {
+            Name = "JoinAccount",
+            Label = "Join account",
+            Kind = InputKind.Account,
+            Required = true,
+            Account = new AccountDestination { Domain = "corp.example" },
+        },
+        new InputDeclaration
+        {
+            Name = "Installer",
+            Label = "Installer",
+            Kind = InputKind.Account,
+            Account = new AccountDestination { Hosts = ["files.corp.example"], RunAs = true },
+        },
+    ];
+
+    // Every operator on a machine fact of a type it accepts.
+    // Numbers are compared as numbers, and only an address can be in a network.
     private static TestCondition Fitting(ConditionOperator op) => op switch
     {
         ConditionOperator.Greater or ConditionOperator.GreaterOrEqual or ConditionOperator.Less or ConditionOperator.LessOrEqual =>
@@ -281,7 +295,7 @@ public sealed class SequenceFixtureTests
         _ => new TestCondition(MachineVariableNames.Model, op, "Latitude 7440"),
     };
 
-    // The kinds agents of this version run, by their type's name.
+    // The step kinds that agents of this version run, by type name.
     private static string[] Kinds(int maximumVersion) =>
     [
         .. typeof(SequenceStep).GetCustomAttributes<JsonDerivedTypeAttribute>()
@@ -290,7 +304,7 @@ public sealed class SequenceFixtureTests
             .Order(StringComparer.Ordinal),
     ];
 
-    // A node's condition trees, every group and test in them.
+    // Every group and test in a node's condition trees.
     private static IEnumerable<ConditionNode> Conditions(SequenceStep node)
     {
         IEnumerable<ConditionNode?> roots = node switch
@@ -312,7 +326,7 @@ public sealed class SequenceFixtureTests
         string folder = Path.Combine(Repository.Root(), "src", "DDT.Web", "src", "test", "fixtures");
         string path = Path.Combine(folder, name);
 
-        // Indented with LF line ends; the web's .prettierignore leaves the fixtures as written here.
+        // Indented, with LF line endings. The web's .prettierignore leaves the fixtures as written here.
         JsonSerializerOptions options = new(DdtJsonContext.Default.Options)
         {
             WriteIndented = true,

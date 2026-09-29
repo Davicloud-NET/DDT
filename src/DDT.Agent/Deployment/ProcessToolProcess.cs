@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace DDT.Agent.Deployment;
 
-// The tool the agent runs itself, through .NET's Process, as one IToolProcess so the run-as path and the agent path
+// A tool the agent runs as itself, through .NET's Process. It's an IToolProcess so the run-as path and the agent path
 // share the same output handling and timeout.
 internal sealed class ProcessToolProcess : IToolProcess
 {

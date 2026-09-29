@@ -8,23 +8,20 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// The steps of a run as the rail shows them. A flat run's steps are all there is. A run of a tree lists every node in
-// pre-order, and the rail shows its leaves in that order, the steps that do the work, without the groups, IF and repeat
-// nodes that hold them. A leaf skipped without ever being entered lies off the path: on the branch an IF did not take,
-// or in a container whose own condition did not hold. Before an IF has decided, the steps of both its branches are
-// still to come, and the rail shows them all.
+// The steps the rail shows: a tree's leaves in pre-order, without group, IF and repeat nodes. A nested leaf skipped
+// with Pass 0 is off the path, like one on the branch an IF didn't take. Before an IF decides, both branches count.
 public static class RunPath
 {
     public static IReadOnlyList<ConsoleStep> Steps(ConsoleRun run)
     {
         ArgumentNullException.ThrowIfNull(run);
 
-        HashSet<Guid> containers = [.. run.Steps.Where(step => step.ParentId is not null).Select(step => step.ParentId!.Value)];
+        HashSet<Guid> containers = [.. run.Steps.Select(step => step.ParentId).OfType<Guid>()];
 
         return [.. run.Steps.Where(step => !IsContainer(step, containers) && !IsOffThePath(step))];
     }
 
-    // Any node inside another: the run is a tree, whose path the screens name as such.
+    // True if any node sits inside another. Then the run is a tree, and the screens count its steps "on this path".
     public static bool IsTree(ConsoleRun run)
     {
         ArgumentNullException.ThrowIfNull(run);
@@ -32,7 +29,7 @@ public static class RunPath
         return run.Steps.Any(step => step.ParentId is not null || IsContainerKind(step.Kind));
     }
 
-    // The step's place on the path, from 0, or null where it is not on it.
+    // The step's zero-based index on the path, or null if it isn't on it.
     public static int? IndexOf(IReadOnlyList<ConsoleStep> steps, Guid? id)
     {
         ArgumentNullException.ThrowIfNull(steps);
@@ -48,8 +45,8 @@ public static class RunPath
         return null;
     }
 
-    // One module per step, numbered along the path. The step the run waits at for someone, while it is paused or waits for
-    // answers, is marked as such rather than as running.
+    // One module per step, numbered along the path. The step the run waits at, paused or for answers, is marked as
+    // awaiting someone rather than as running.
     public static IReadOnlyList<RailStep> Rail(Localizer l, ConsoleRun run, IReadOnlyList<ConsoleStep> steps)
     {
         ArgumentNullException.ThrowIfNull(l);
@@ -75,7 +72,7 @@ public static class RunPath
         })];
     }
 
-    // The phases the steps run in, above the rail, where they run in more than one.
+    // The phases the steps run in, shown above the rail when there's more than one.
     public static IReadOnlyList<RailPhase> Phases(Localizer l, IReadOnlyList<ConsoleStep> steps)
     {
         ArgumentNullException.ThrowIfNull(l);

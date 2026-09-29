@@ -18,7 +18,7 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// Machine roles are values that rules give machines together. Not the roles of users.
+// Machine roles are sets of values that rules give machines. They aren't the roles of users.
 public sealed class MachineRoleTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -70,7 +70,7 @@ public sealed class MachineRoleTests(DdtApplication application) : IClassFixture
         Assert.Equal(2, changed.Values.Count);
         await LiveListener.NextAsync(pushes, roles => roles.Any(r => r.Id == role.Id && r.Revision == 2));
 
-        // A save over a newer one is refused with the role as it is now.
+        // A save over a newer version is refused, and the answer has the role as it is now.
         HttpResponseMessage stale = await administrator.PutAsync(path, new SaveMachineRoleRequest(1, "Mine", null, []));
         Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
         Assert.Equal(2L, (await stale.Content.ReadFromJsonAsync<MachineRoleView>(TestJson.Options, Cancellation))!.Revision);
@@ -89,7 +89,7 @@ public sealed class MachineRoleTests(DdtApplication application) : IClassFixture
             (await AuditAsync(role.Id)).Select(e => (e.Action, e.Detail)));
     }
 
-    // A role has no problems of its own to be saved with, so what a run could not use is refused.
+    // A role has no problems list to save them in, unlike a rule. So anything a run couldn't use is refused.
     [Fact]
     public async Task RefusesARoleWhoseNameIsTakenOrWhoseValuesCannotBeUsed()
     {
@@ -122,7 +122,7 @@ public sealed class MachineRoleTests(DdtApplication application) : IClassFixture
         Assert.Equal(taken.Name.ToUpperInvariant(), renamed.Name);
     }
 
-    // As a sequence that rules choose is, so no rule ever gives a role that is gone.
+    // Like a sequence that rules choose, a role stays while rules give it. So no rule ever gives a role that's gone.
     [Fact]
     public async Task ARoleThatRulesGiveStaysUntilTheyNoLongerGiveIt()
     {

@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-// Takes the focus to a field of the step shown, by the name the server's findings give it, such as "imageId" or
-// "conditions[0].value". A finding of a whole condition shows at its value. Answers false when no such field shows,
-// so the caller can focus something else.
+// Moves the focus to a field of the shown step, by the name the server's findings use, such as "imageId" or
+// "conditions[0].value". A finding for a whole condition shows at its value. False if no such field is shown.
 export function focusField(container: HTMLElement | null, field: string | null): boolean {
   if (field === null || container === null) {
     return false;
@@ -20,8 +19,8 @@ export function focusField(container: HTMLElement | null, field: string | null):
   return target !== null;
 }
 
-// Alt with Up or Down moves the step from its fields too, except where those keys work within the field: a text
-// area, a list that opens, a number that steps.
+// Alt+Up or Alt+Down moves the step from its fields too, except where those keys work within the field: a text
+// area, a list that opens, or a number that steps.
 export function movesFrom(target: EventTarget): boolean {
   return !(
     target instanceof HTMLTextAreaElement ||

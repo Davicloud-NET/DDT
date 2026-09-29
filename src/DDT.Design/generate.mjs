@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-// Turns tokens.json into the web theme and the resources of the console in Windows PE. Run it from src/DDT.Web with
-// `npm run tokens`; a test on each side fails while the written file differs from what this renders, so the tokens
-// stay the one source.
+// Turns tokens.json into the web theme and the resources of the console in WinPE. Run it from src/DDT.Web with
+// `npm run tokens`. A test on each side fails while a written file differs from what this renders, so tokens.json
+// stays the single source.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";

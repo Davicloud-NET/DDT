@@ -109,7 +109,7 @@ public sealed class TextsTests
     public void SaysTheStagesInGerman(ConsoleStage stage, string german) =>
         Assert.Equal(german, Say.Stage(Localizer.Embedded(UiLanguage.German), stage));
 
-    // Each activity in words of its own; one that fell through to the last would say the agent removes itself.
+    // Each activity has its own words. One that fell through to the last case would say the agent removes itself.
     [Fact]
     public void SaysEveryActivityInWordsOfItsOwn()
     {

@@ -3,7 +3,6 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using DDT.Contracts.Settings;
 using DDT.Server.Data;
@@ -20,8 +19,8 @@ public sealed class SettingsStoreTests
 {
     private const string JoinPassword = "Join the domain 7";
 
-    // Each field configuration sets and the store never had is written once, secrets encrypted on the way in, and named
-    // in one audit row. A code default is never written.
+    // Each field the configuration sets and the store never had is written once, with secrets encrypted on the way in.
+    // One audit row names them all. A code default is never written.
     [Fact]
     public async Task ConfiguredValuesAreImportedFieldByField()
     {
@@ -51,8 +50,8 @@ public sealed class SettingsStoreTests
         Assert.Null(await application.QueryAsync(database => database.SettingsSections.SingleOrDefaultAsync(r => r.Section == SettingsSectionNames.Ldap, TestContext.Current.CancellationToken)));
     }
 
-    // A field written once is never imported again, so a process that starts later with other values does not overwrite
-    // what the page holds: its configured value still applies to it, as a lock.
+    // A field written once is never imported again. So a process that starts later with other values doesn't overwrite
+    // what the page holds. Its configured value still applies to that field, as a lock.
     [Fact]
     public async Task AFieldIsImportedOnlyWhileItWasNeverWritten()
     {
@@ -61,8 +60,8 @@ public sealed class SettingsStoreTests
 
         using (IServiceScope scope = application.Services.CreateScope())
         {
-            SettingsStore store = scope.ServiceProvider.GetRequiredService<SettingsStore>();
-            await store.ImportAsync(TestContext.Current.CancellationToken);
+            SettingsImporter importer = scope.ServiceProvider.GetRequiredService<SettingsImporter>();
+            await importer.ImportAsync(TestContext.Current.CancellationToken);
         }
 
         SettingsSection row = await Row(application, SettingsSectionNames.Machines);
@@ -90,7 +89,7 @@ public sealed class SettingsStoreTests
         Assert.Null(moved.Secrets["localAdministrator.password"].Value);
     }
 
-    // Every process on one database has to share the key ring; one that does not refuses to save.
+    // Every process on one database has to share the key ring. One that doesn't refuses to save.
     [Fact]
     public async Task AProcessWithAnotherKeyRingSavesNothing()
     {
@@ -104,7 +103,7 @@ public sealed class SettingsStoreTests
             keyRing.Secrets = new SettingsProtector(new EphemeralDataProtectionProvider()).CanarySecrets(DateTimeOffset.UtcNow);
             await database.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-            Assert.False(await scope.ServiceProvider.GetRequiredService<SettingsStore>().ImportAsync(TestContext.Current.CancellationToken));
+            Assert.False(await scope.ServiceProvider.GetRequiredService<SettingsImporter>().ImportAsync(TestContext.Current.CancellationToken));
         }
 
         SettingsSectionView<LoggingSettings> loaded = await administrator.SectionAsync<LoggingSettings>(SettingsSectionNames.Logging);
@@ -118,7 +117,7 @@ public sealed class SettingsStoreTests
         Assert.False((await RegisteredMachine.ReadAsync<SettingsOverview>(await administrator.GetAsync("/api/settings"))).KeyRingReadable);
     }
 
-    // Another process's save reaches this one at its next poll, and its browsers as a push.
+    // Another process's save reaches this process at its next poll, and reaches its browsers as a push.
     [Fact]
     public async Task ASaveOfAnotherProcessIsReadAtThePoll()
     {
@@ -150,8 +149,8 @@ public sealed class SettingsStoreTests
         Assert.Equal("another process", settings.Current[SettingsSectionNames.Machines].UpdatedBy);
     }
 
-    // A stored value a newer rule refuses does not stop the server; the section fails closed and lists why, and new runs
-    // are refused until the page fixes it.
+    // A stored value that a newer rule refuses doesn't stop the server.
+    // The section fails closed and lists why, and new runs are refused until the page fixes it.
     [Fact]
     public async Task StoredDeploymentProblemsRefuseNewRuns()
     {
@@ -181,7 +180,7 @@ public sealed class SettingsStoreTests
         Assert.Equal("Europe/Berlin", view.Values.TimeZone);
         Assert.StartsWith(
             "The deployment settings have problems, so no run starts until an administrator fixes them on the settings page: timeZone: 'Europe/Berlin'",
-            DDT.Server.Deployments.DeploymentService.SettingsProblem(application.Services.GetRequiredService<DdtSettings>().Current)?.Text,
+            DDT.Server.Deployments.DeploymentPolicy.SettingsProblem(application.Services.GetRequiredService<DdtSettings>().Current)?.Text,
             StringComparison.Ordinal);
     }
 

@@ -10,8 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.Server.Settings;
 
-// Connects the pxe listeners to the settings: what the snapshot says to serve, the snapshot's change token, and where
-// each result goes. PxeHost applies again only when the pxe section's version changes.
+// Connects the PXE listeners to the settings. It passes what the snapshot says to serve, the snapshot's change token,
+// and where each result goes. PxeHost only applies again when the PXE section's version changes.
 public static class PxeSettingsSource
 {
     public static PxeHostSource Create(IServiceProvider services)
@@ -26,20 +26,22 @@ public static class PxeSettingsSource
             settings.GetChangeToken,
             result =>
             {
-                hostStates.Record(
+                hostStates.Record(new SettingsApplyReport(
                     SettingsSectionNames.Pxe,
                     result.Version,
                     result.Succeeded ? SettingsApplyResult.Applied : SettingsApplyResult.Failed,
-                    result.Message,
-                    Detail(result.Interfaces),
-                    result.Text);
+                    result.Message)
+                {
+                    Detail = Detail(result.Interfaces),
+                    Text = result.Text,
+                });
 
                 return Task.CompletedTask;
             });
     }
 
-    // While the section has problems nothing is served. Configuration that names the interfaces decided what is served,
-    // so a bind failure at startup stops the host as it always did.
+    // While the section has problems nothing is served. When configuration names the interfaces, a bind failure at
+    // startup stops the host.
     public static PxeDesiredSetup Desired(SettingsSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);

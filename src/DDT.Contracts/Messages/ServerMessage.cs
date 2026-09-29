@@ -7,18 +7,17 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Messages;
 
-// A sentence the server says to a person, as a stable code from ServerMessages and the values its text names, so a
-// client can say it in the person's language. A value is a string, a number, or a message for a sentence within this
-// one. Text is the English, which the fields beside a code carry for clients that do not translate; a code this
-// version does not know has its code as its text.
+// A sentence for a person, as a code from ServerMessages plus its values, so a client can show it in the person's
+// language. A value is a string, a number, or a message for a sentence nested in this one.
 public sealed record ServerMessage(string Code, IReadOnlyDictionary<string, object> Args)
 {
+    // The English text, for clients that don't translate. A code this version doesn't know is shown as is.
     [JsonIgnore]
     public string Text => ServerMessages.Find(Code) is { } template ? template.Format(Args) : Code;
 
     public override string ToString() => Text;
 
-    // A message as JSON gives it back: an object with a code and its values, which stay JsonElement.
+    // Reads a message back from JSON, an object with a code and its values. The values stay JsonElement.
     internal static ServerMessage? FromJson(JsonElement element)
     {
         if (!element.TryGetProperty("code", out JsonElement code) || code.ValueKind != JsonValueKind.String)

@@ -14,7 +14,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// ExternalSignInApplication for the log it records: the code step is the same after a password and after OpenID Connect.
+// Uses ExternalSignInApplication for the log it records.
+// The code step is the same after a password and after OpenID Connect.
 public sealed class SecondFactorSignInTests(ExternalSignInApplication application) : IClassFixture<ExternalSignInApplication>
 {
     private const string SessionCookie = "ddt-auth";
@@ -44,7 +45,8 @@ public sealed class SecondFactorSignInTests(ExternalSignInApplication applicatio
         Assert.Contains(application.Log.Messages, m => m.StartsWith($"Sign in failed for {userName} from ", StringComparison.Ordinal));
         Assert.Null(cookies.GetCookies(browser.Http.BaseAddress!)[SessionCookie]);
 
-        // Only the flag refused it, and the refusal used nothing up: enabled again, the same code signs in.
+        // Only the flag refused it, and the refusal didn't use anything up.
+        // Once the account is enabled again, the same code signs in.
         await SetDisabledAsync(id, false);
         using HttpResponseMessage login = await browser.PostAsync("/api/auth/login", code);
 

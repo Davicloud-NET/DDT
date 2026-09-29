@@ -9,8 +9,9 @@ using DDT.Core.Boot;
 
 namespace DDT.Agent;
 
-// Which of Microsoft's third-party UEFI CAs, which sign the shims of Linux distributions, the firmware trusts, from its
-// signature database db. A machine with Secure Boot on starts no image signed only under CAs it does not trust.
+// Which of Microsoft's third-party UEFI CAs the firmware trusts, read from its signature database db. These CAs sign
+// the shims of Linux distributions. A machine with Secure Boot on won't start an image signed only by CAs it doesn't
+// trust.
 public static class SecureBootTrust
 {
     // Null when db cannot be read, as on firmware that did not start in UEFI mode, or when it is malformed.
@@ -26,7 +27,7 @@ public static class SecureBootTrust
         }
     }
 
-    // Null for no database, which firmware in setup mode has.
+    // Null when there's no database, as on firmware in setup mode.
     public static UefiCa? From(byte[]? database)
     {
         if (database is null)

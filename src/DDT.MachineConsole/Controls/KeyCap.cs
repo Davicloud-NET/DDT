@@ -14,16 +14,15 @@ using Avalonia.VisualTree;
 
 namespace DDT.MachineConsole.Controls;
 
-// A key cap, such as F1 or Enter, as the footer and the keys on the screen show it. While its key is down on the
-// keyboard the cap goes down with it, as a key does: it sinks by a pixel and darkens over press, and it comes up only
-// once it has been all the way down, so a quick tap shows too. A cap on a key that cannot be pressed stays up.
+// A key cap, such as F1, that goes down while its key is held. It comes up only after reaching the bottom, so a quick
+// tap shows too.
 public sealed class KeyCap : Border
 {
     public static readonly StyledProperty<string?> KeyProperty = AvaloniaProperty.Register<KeyCap, string?>(nameof(Key));
 
     public static readonly StyledProperty<IBrush?> ShadeProperty = AvaloniaProperty.Register<KeyCap, IBrush?>(nameof(Shade));
 
-    // How far the cap is down, from 0, up, to 1, a pixel down and darkened.
+    // How far the cap is pressed. 0 is up, 1 is a pixel down and darkened.
     public static readonly StyledProperty<double> DepthProperty = AvaloniaProperty.Register<KeyCap, double>(nameof(Depth));
 
     private readonly TextBlock _text = new() { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
@@ -58,10 +57,10 @@ public sealed class KeyCap : Border
         private set => SetValue(DepthProperty, value);
     }
 
-    // True from the key going down until the cap is on its way up again.
+    // True from the key press until the cap starts moving up again.
     public bool IsDown { get; private set; }
 
-    // Whether this cap stands for that key: F1 to F12 by name, and the keys the screens show by their marks.
+    // Whether this cap stands for that key. F1 to F12 match by name, the other keys by the mark the screens show.
     public static bool Names(string? cap, Key key) => cap switch
     {
         "Esc" => key == Avalonia.Input.Key.Escape,
@@ -91,8 +90,8 @@ public sealed class KeyCap : Border
         _top.AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel, handledEventsToo: true);
         _top.AddHandler(KeyUpEvent, OnKeyUp, RoutingStrategies.Tunnel, handledEventsToo: true);
 
-        // A key that goes down here and up in another window, such as the command prompt Shift+F10 opens, never
-        // comes up here.
+        // A key pressed here and released in another window, like the command prompt Shift+F10 opens, never sends its
+        // key up here.
         if (_top is WindowBase window)
         {
             window.Deactivated += OnDeactivated;
@@ -183,7 +182,8 @@ public sealed class KeyCap : Border
         }
     }
 
-    // Up only from the bottom, which a quick tap has not reached yet, and not if the key went down again meanwhile.
+    // The cap comes up only after it reached the bottom, which a quick tap hasn't yet. It stays down if the key was
+    // pressed again in the meantime.
     private async Task UpAsync()
     {
         int press = _presses;
@@ -212,7 +212,7 @@ public sealed class KeyCap : Border
         CancellationTokenSource moving = new();
         _moving = moving;
 
-        // Forward keeps where it got to, so the next move starts there.
+        // FillMode.Forward keeps the depth it reached, so the next move starts from there.
         Animation move = new()
         {
             Duration = Motion.Press,

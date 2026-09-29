@@ -12,8 +12,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// Under RequireWebApproval a machine needs both halves: someone signs in at it, and an operator acts on the web.
-// Either order works, and an assignment on the web is such an act.
+// Under RequireWebApproval a machine needs both halves. Someone signs in at it, and an operator acts on the web.
+// Either order works, and a web assignment counts as acting on the web.
 public sealed class WebApprovalDeploymentTests(WebApprovalApplication application) : IClassFixture<WebApprovalApplication>
 {
     private async Task<MachineSummary> AssignAsync(Guid machineId)
@@ -36,7 +36,7 @@ public sealed class WebApprovalDeploymentTests(WebApprovalApplication applicatio
 
         MachineSummary assigned = await AssignAsync(machine.Id);
 
-        // Fresh, but nobody vouched for it at the machine.
+        // It's fresh, but nobody vouched for it at the machine.
         Assert.Equal(MachineState.Pending, assigned.State);
         Assert.Null((await machine.NextAsync()).Run);
 
@@ -65,7 +65,7 @@ public sealed class WebApprovalDeploymentTests(WebApprovalApplication applicatio
         Assert.Equal(AgentSignInStatus.Succeeded, (await SignInAsync(machine, operatorName)).Status);
         Assert.Equal(MachineState.Pending, (await machine.NextAsync()).State);
 
-        // Seen long ago does not matter here: the sign-in at the machine happened in this generation.
+        // Being seen long ago doesn't matter here. The sign-in at the machine happened in this generation.
         await application.ChangeMachineAsync(machine.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(10));
 
         MachineSummary assigned = await AssignAsync(machine.Id);

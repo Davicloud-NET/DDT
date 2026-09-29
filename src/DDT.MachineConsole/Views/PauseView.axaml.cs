@@ -6,7 +6,7 @@ using Avalonia.Controls;
 
 namespace DDT.MachineConsole.Views;
 
-// Nothing on the screen takes Enter for itself, so the key under the panel gets it wherever the focus is.
+// Nothing on the screen handles Enter itself, so the key under the panel gets it wherever the focus is.
 public sealed partial class PauseView : UserControl
 {
     public PauseView()

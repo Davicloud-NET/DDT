@@ -10,10 +10,9 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Adds the driver packages the server matched to this machine's model to the applied Windows, one package at a time:
-// download, unpack, then Windows PE's DISM on the offline image. DISM's scratch directory is on the target disk,
-// because Windows PE's own scratch space holds only 512 MB.
+// Adds the driver packages the server matched to this machine's model to the applied Windows with Windows PE's DISM.
 public sealed class InjectDriversStepRunner(IToolRunner tools, RunDownloads downloads, RunSession session, AgentLog log)
+    : IStepKindRunner<InjectDriversStep>
 {
     public const string NoDismMessage =
         "This boot image has no DISM, which a driver step of this sequence needs. Build the boot image again with " +
@@ -47,39 +46,26 @@ public sealed class InjectDriversStepRunner(IToolRunner tools, RunDownloads down
         string directory = session.RunDirectory!;
         string cache = Path.Combine(directory, "cache");
         string unpacked = Path.Combine(directory, "packages", step.Id.ToString("D"));
+
+        // On the target disk, because WinPE's scratch space only holds 512 MB.
         string scratch = Path.Combine(directory, "scratch");
         string logs = Path.Combine(directory, "logs");
-        string dismLog = Path.Combine(logs, $"dism-{step.Id:D}.log");
         Directory.CreateDirectory(scratch);
         Directory.CreateDirectory(logs);
+        DismRun dism = new(volumes.Windows, scratch, Path.Combine(logs, $"dism-{step.Id:D}.log"));
 
         try
         {
             for (int index = 0; index < packages.Length; index++)
             {
-                AgentRunPackage package = packages[index];
                 int start = index * 100 / packages.Length;
                 int end = (index + 1) * 100 / packages.Length;
                 string drivers = Path.Combine(unpacked, index.ToString(CultureInfo.InvariantCulture));
 
                 await downloads
-                    .UnpackAsync(package, cache, drivers, new ScaledProgress(context.Progress, start, (start + end) / 2), cancellationToken)
+                    .UnpackAsync(packages[index], cache, drivers, new ScaledProgress(context.Progress, start, (start + end) / 2), cancellationToken)
                     .ConfigureAwait(false);
-
-                log.Information($"Adding the drivers of package {package.Name} to the applied Windows.");
-                await tools.RunAsync(
-                    DismPath,
-                    [
-                        $"/Image:{volumes.Windows}",
-                        "/Add-Driver",
-                        $"/Driver:{drivers}",
-                        "/Recurse",
-                        $"/ScratchDir:{scratch}",
-                        $"/LogPath:{dismLog}",
-                    ],
-                    cancellationToken).ConfigureAwait(false);
-
-                Leftovers.Delete(drivers, log);
+                await AddAsync(packages[index], drivers, dism, cancellationToken).ConfigureAwait(false);
                 context.Progress.Report(end);
             }
         }
@@ -91,4 +77,25 @@ public sealed class InjectDriversStepRunner(IToolRunner tools, RunDownloads down
 
         return StepResult.Done();
     }
+
+    private async Task AddAsync(AgentRunPackage package, string drivers, DismRun dism, CancellationToken cancellationToken)
+    {
+        log.Information($"Adding the drivers of package {package.Name} to the applied Windows.");
+        await tools.RunAsync(
+            DismPath,
+            [
+                $"/Image:{dism.Windows}",
+                "/Add-Driver",
+                $"/Driver:{drivers}",
+                "/Recurse",
+                $"/ScratchDir:{dism.Scratch}",
+                $"/LogPath:{dism.Log}",
+            ],
+            cancellationToken).ConfigureAwait(false);
+
+        Leftovers.Delete(drivers, log);
+    }
+
+    // The offline Windows DISM adds the drivers to, its scratch directory and its log.
+    private sealed record DismRun(string Windows, string Scratch, string Log);
 }

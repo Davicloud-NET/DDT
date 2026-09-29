@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 
 namespace DDT.Server.Images;
 
-// Hashes what is written through it to inner, so a file is hashed as it is written rather than read again after.
+// Hashes everything written through it to inner. That way a file is hashed while it's written and isn't read again.
 public sealed class HashingWriteStream(Stream inner) : Stream
 {
     private readonly IncrementalHash _hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);

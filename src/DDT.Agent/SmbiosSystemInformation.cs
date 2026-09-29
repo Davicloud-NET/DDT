@@ -4,28 +4,28 @@
 
 namespace DDT.Agent;
 
-// ChassisType is the System Enclosure's chassis type as DMTF DSP0134 numbers it, without the lock bit, and null when the
-// table has no System Enclosure structure. The other members are strings of the first structure of their type, null
-// where the table has no such structure, the structure is too old to have the field, or the firmware left it empty.
+// What the SMBIOS table says about the machine, from the first structure of each type. A member is null when there's
+// no such structure, the structure is too old to have the field, or the firmware left it empty. ChassisType has the
+// lock bit removed.
 public sealed record SmbiosSystemInformation(Guid Uuid, string? Manufacturer, string? ProductName, string? SerialNumber, byte? ChassisType)
 {
-    // The System Information structure's (type 1) version, where Lenovo puts the name a person knows the model by, and its
-    // SKU and family, which SMBIOS 2.4 added.
+    // The version, SKU and family from the System Information structure (type 1). Lenovo puts the model's everyday name
+    // in the version. SMBIOS 2.4 added the SKU and the family.
     public string? Version { get; init; }
 
     public string? Sku { get; init; }
 
     public string? Family { get; init; }
 
-    // The BIOS Information structure's (type 0) version and release date, the date as yyyy-MM-dd.
+    // The version and release date from the BIOS Information structure (type 0). The date is yyyy-MM-dd.
     public string? BiosVersion { get; init; }
 
     public string? BiosDate { get; init; }
 
-    // The Baseboard Information structure's (type 2) product.
+    // The product from the Baseboard Information structure (type 2).
     public string? BaseboardProduct { get; init; }
 
-    // The System Enclosure structure's (type 3) asset tag.
+    // The asset tag from the System Enclosure structure (type 3).
     public string? AssetTag { get; init; }
 
     // The version of the first Processor Information structure (type 4) whose socket holds a processor, such as

@@ -87,7 +87,7 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
 
         Assert.Equal(MachineState.Pending, next.State);
 
-        // Anyone can register, so what that leads to must not write anything but last seen.
+        // Anyone can register, so the tokens a registration hands out must not write anything but last seen.
         Assert.Equal(HttpStatusCode.Forbidden, (await agent.LogAsync(registered.MachineId, next.Token, OneLine("hello"))).StatusCode);
 
         IReadOnlyList<MachineSummary> machines = await ReadAsync<IReadOnlyList<MachineSummary>>(await admin.GetAsync("/api/machines"));
@@ -97,7 +97,8 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
         Assert.Null(machine.Facts);
     }
 
-    // A machine's Secure Boot state is what its agent says last, unknown for an agent older than raw disk images.
+    // A machine's Secure Boot state is what its agent reported last.
+    // It's unknown for an agent older than raw disk images.
     [Fact]
     public async Task ShowsTheSecureBootStateTheAgentReportsLast()
     {
@@ -133,8 +134,8 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
         Assert.Null((await MachineAsync(admin, registered.MachineId)).TrustedUefiCas);
     }
 
-    // The kind is what the last registration says, and unknown for an agent older than chassis types. A virtual machine
-    // is told by its names whatever chassis it reports.
+    // The kind is what the last registration says. It's unknown for an agent older than chassis types.
+    // A virtual machine is recognized by its names, whatever chassis it reports.
     [Fact]
     public async Task ShowsTheKindOfComputerTheAgentReportsLast()
     {
@@ -177,8 +178,8 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
         Assert.Equal("Desktop", machine.GetProperty("deviceKind").GetString());
     }
 
-    // Facts are what the last registration that sent any said, cleaned as the rest of a registration is. An agent older
-    // than version 3 sequences sends none, as when an old boot image starts the machine, and the machine keeps its facts.
+    // Facts come from the last registration that sent any, cleaned like the rest of a registration. An agent older than
+    // version 3 sequences sends none, like when an old boot image starts the machine. The machine then keeps its facts.
     [Fact]
     public async Task ShowsTheFactsOfTheLastRegistrationThatSentAny()
     {
@@ -424,7 +425,7 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
         (Guid machineId, string session) = await ApprovedMachineAsync(admin, agent);
         DateTimeOffset now = DateTimeOffset.UtcNow;
 
-        // A full log, stored directly: sending it would take longer than a machine's request limit allows.
+        // A full log is stored directly. Sending it would take longer than a machine's request limit allows.
         using IServiceScope scope = _application.Services.CreateScope();
         DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
         database.MachineLogLines.AddRange(Enumerable.Range(0, MachineLogLimits.MaxStoredLinesPerMachine).Select(line => new MachineLogLine
@@ -500,8 +501,8 @@ public sealed class MachineRegistrationTests : IClassFixture<DdtApplication>
 
         HttpResponseMessage response = await administrator.Http.SendAsync(request, TestContext.Current.CancellationToken);
 
-        // SameSite keeps the cookie off cross site requests only; a same site page on another port or host
-        // would otherwise read every live event.
+        // SameSite only keeps the cookie off cross-site requests.
+        // Without this check, a same-site page on another port or host could read every live event.
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 

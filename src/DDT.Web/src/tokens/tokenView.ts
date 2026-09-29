@@ -7,9 +7,9 @@ import { msg } from "@lingui/core/macro";
 
 import type { ApiTokenView } from "./tokens";
 
-// A revoked token stays revoked after it would have expired, so revoked comes first.
 export type TokenState = "active" | "expired" | "revoked";
 
+// A revoked token stays revoked after it would have expired, so revoked comes first.
 export function tokenState(token: ApiTokenView, now: number): TokenState {
   if (token.revokedUtc !== null) {
     return "revoked";
@@ -37,14 +37,14 @@ export function matchesToken(token: ApiTokenView, needle: string): boolean {
   );
 }
 
-// Tokens that still work first, each group newest first as the server sends them.
+// Tokens that still work come first. Each group stays newest first, in the order the server sends.
 export function byState(tokens: readonly ApiTokenView[], now: number): ApiTokenView[] {
   const rank: Record<TokenState, number> = { active: 0, expired: 1, revoked: 2 };
 
   return [...tokens].sort((a, b) => rank[tokenState(a, now)] - rank[tokenState(b, now)]);
 }
 
-// The token as a revoke leaves it, until the hub brings the server's copy with the same change.
+// The token as a revoke leaves it. It's shown until the hub brings the server's copy with the same change.
 export function revokedCopy(token: ApiTokenView, by: string, now: number): ApiTokenView {
   return { ...token, revokedUtc: new Date(now).toISOString(), revokedByName: by };
 }

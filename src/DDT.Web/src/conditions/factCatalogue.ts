@@ -1,0 +1,85 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+import type { FactView } from "@/sequences/sequenceConditions";
+
+// A copy of the server's MachineVariableNames.Catalogue, as GET /api/sequences/facts lists it. It's used for a server
+// that doesn't list the facts yet. The order is the one a page lists them in.
+export const factCatalogue: readonly FactView[] = (
+  [
+    ["Manufacturer", "Text"],
+    ["Model", "Text"],
+    ["FriendlyModel", "Text"],
+    ["SerialNumber", "Text"],
+    ["SmbiosUuid", "Text"],
+    ["DeviceKind", "Text"],
+    ["MacAddress", "Mac"],
+    ["PrimaryMacAddress", "Mac"],
+    ["ComputerName", "Text"],
+    ["Phase", "Text"],
+    ["MemoryMegabytes", "Number"],
+    ["ProcessorName", "Text"],
+    ["ProcessorCores", "Number"],
+    ["LogicalProcessors", "Number"],
+    ["TpmPresent", "YesNo"],
+    ["TpmVersion", "Number"],
+    ["SecureBootCapable", "YesNo"],
+    ["SecureBootEnabled", "YesNo"],
+    ["IPv4Address", "IPv4"],
+    ["IPv4PrefixLength", "Number"],
+    ["Subnet", "Text"],
+    ["DefaultGateway", "IPv4"],
+    ["DnsSuffix", "Text"],
+    ["DhcpServer", "IPv4"],
+    ["SystemVersion", "Text"],
+    ["SystemFamily", "Text"],
+    ["SystemSku", "Text"],
+    ["AssetTag", "Text"],
+    ["BaseboardProduct", "Text"],
+    ["BiosVersion", "Text"],
+    ["BiosDate", "Text"],
+    ["LastStepFailed", "YesNo"],
+    ["LastExitCode", "Number"],
+  ] as const
+).map(([name, type]) => ({
+  name,
+  type,
+  changesDuringRun: name === "Phase" || name === "LastStepFailed" || name === "LastExitCode",
+}));
+// A machine to preview templates for, with a value for every fact, as the builder shows it.
+export const sampleMachine: Readonly<Record<string, string>> = {
+  Manufacturer: "LENOVO",
+  Model: "21HD003GGE",
+  FriendlyModel: "ThinkPad T14 Gen 4",
+  SerialNumber: "PF4K2Z7Q",
+  SmbiosUuid: "4C4C4544-0052-3710-8047-B4C04F4B5A31",
+  DeviceKind: "Laptop",
+  MacAddress: "8C:16:45:A0:B2:C4",
+  PrimaryMacAddress: "8C:16:45:A0:B2:C4",
+  ComputerName: "PC-042",
+  Phase: "WindowsPE",
+  MemoryMegabytes: "32768",
+  ProcessorName: "13th Gen Intel(R) Core(TM) i7-1365U",
+  ProcessorCores: "10",
+  LogicalProcessors: "12",
+  TpmPresent: "true",
+  TpmVersion: "2.0",
+  SecureBootCapable: "true",
+  SecureBootEnabled: "true",
+  IPv4Address: "10.20.4.51",
+  IPv4PrefixLength: "24",
+  Subnet: "10.20.4.0/24",
+  DefaultGateway: "10.20.4.1",
+  DnsSuffix: "berlin.corp.example",
+  DhcpServer: "10.20.0.10",
+  SystemVersion: "ThinkPad T14 Gen 4",
+  SystemFamily: "ThinkPad T14 Gen 4",
+  SystemSku: "LENOVO_MT_21HD_BU_Think_FM_ThinkPad T14 Gen 4",
+  AssetTag: "IT-004211",
+  BaseboardProduct: "21HD003GGE",
+  BiosVersion: "R2FET58W (1.38 )",
+  BiosDate: "2026-03-14",
+  LastStepFailed: "false",
+  LastExitCode: "0",
+};

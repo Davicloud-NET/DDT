@@ -4,6 +4,6 @@
 
 namespace DDT.Contracts.Sequences;
 
-// Revision is null when the sequence was deleted. Sequence is the sequence as it is now, so a page that shows it needs
-// no read of its own; null when it was deleted.
+// Revision is null when the sequence was deleted. Sequence is the sequence as it is now, so a page that shows it
+// doesn't have to read it again. It's also null when the sequence was deleted.
 public sealed record SequenceChangedEvent(Guid Id, long? Revision, string? ChangedBy, SequenceView? Sequence = null);

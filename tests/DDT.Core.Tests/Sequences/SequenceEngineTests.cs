@@ -67,7 +67,7 @@ public sealed class SequenceEngineTests
         Assert.Equal(SequencePhase.WindowsPE, result.State.Phase);
     }
 
-    // The brief's rule for the engine: serialise the state mid-sequence and resume from the blob in a fresh engine.
+    // The engine's rule: serialise the state mid-sequence and resume from the blob in a fresh engine.
     [Fact]
     public async Task ResumesFromTheSavedBlobInAFreshEngineAfterARestart()
     {
@@ -163,7 +163,7 @@ public sealed class SequenceEngineTests
         Assert.All(windows.Runs, run => Assert.Equal(SequencePhase.Windows, run.Context.Machine.Phase));
     }
 
-    // A later kind needs only the agent's runner for it, and the engine stays as it is, as M6's raw image steps did.
+    // A new step kind only needs a runner in the agent. The engine doesn't change.
     [Fact]
     public async Task RunsAKindItDoesNotKnowAndCompletesWithoutWindows()
     {
@@ -314,7 +314,8 @@ public sealed class SequenceEngineTests
         ScriptedStepRunner runner = new ScriptedStepRunner()
             .On(step, ending == StepState.Failed ? StepResult.Failed(ExitCodeOne) : StepResult.Done());
 
-        // Only the save that records how the step ended fails, so a run that ignored it would go on to the next step.
+        // Only the save that records how the step ended fails, so a run that ignored it would move on to the next
+        // step.
         BlobStore store = new() { FailWhen = state => state.Steps[1].State == ending && state.Steps[2].State == StepState.Pending };
 
         SequenceRunResult result = await Engine(runner, store).RunAsync(Start(partition, step, next), s_machine, Token);
@@ -383,8 +384,8 @@ public sealed class SequenceEngineTests
         Assert.Equal(SequenceEngine.InterruptedError, resumed.Error);
     }
 
-    // A runner may end a stopped step as Failed rather than throw, such as a script whose timeout is linked to the stop.
-    // The step then counts as interrupted, so a resumed run does not go on past it.
+    // A runner may end a stopped step as Failed instead of throwing, such as a script whose timeout is linked to the
+    // stop. The step then counts as interrupted, so a resumed run doesn't move past it.
     [Fact]
     public async Task StopsAndKeepsTheRunningMarkWhenTheStepFailsAsTheStopCame()
     {
@@ -436,7 +437,8 @@ public sealed class SequenceEngineTests
         Assert.Equal("1 Done Pending", Summary(BlobStore.Load(store.Latest)));
     }
 
-    // Runs the sequence until the step starts and returns the blob saved at that moment, as a power loss would leave it.
+    // Runs the sequence until the step starts and returns the blob saved at that moment, as a power loss would leave
+    // it.
     private static async Task<string> BlobWhileRunningAsync(SequenceStep step, SequenceState start)
     {
         BlobStore store = new();

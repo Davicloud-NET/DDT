@@ -23,7 +23,7 @@ public sealed class LegacyCertificateApplication : DdtApplication
 
     public PemPair Legacy { get; }
 
-    // What the host logged, from its start on.
+    // Everything the host logged since it started.
     public RecordingLoggerProvider Log { get; } = new();
 
     protected override void ConfigureTestHost(IWebHostBuilder builder)

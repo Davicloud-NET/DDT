@@ -6,9 +6,9 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// NOTICE's attribution term points at the copyright notices in the source files, so every source file has to start
-// with the licence header. IDE0073 enforces it for C# at build time; this also covers the web client, the console's
-// XAML and the scripts.
+// NOTICE's attribution term points at the copyright notices in the source files.
+// So every source file has to start with the licence header. IDE0073 enforces it for C# at build time.
+// This test also covers the web client, the console's XAML and the scripts.
 public sealed class SourceHeaderTests
 {
     private static readonly string[] s_headerLines =
@@ -28,6 +28,8 @@ public sealed class SourceHeaderTests
         [".mjs"] = ("// ", ""),
         [".css"] = ("/* ", " */"),
         [".ps1"] = ("# ", ""),
+        [".psm1"] = ("# ", ""),
+        [".psd1"] = ("# ", ""),
         [".py"] = ("# ", ""),
         [".axaml"] = ("<!-- ", " -->"),
     };

@@ -12,8 +12,9 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Consoles;
 
-// What the console at the machine shows, kept whole and handed to it after every change, in order. The update check,
-// the loop and the run change it, from their own threads. The console to ask questions on comes with it.
+// What the console at the machine shows. It's kept whole and handed to the console after every change, in order.
+// The update check, the loop and the run change it from their own threads. It also carries the console to ask
+// questions on.
 public sealed class ConsoleStatus
 {
     private readonly Lock _lock = new();
@@ -55,7 +56,7 @@ public sealed class ConsoleStatus
     // The agent registers, or registers again after the server refused its token.
     public void Registering() => Change(state => state with { Stage = ConsoleStage.Connecting });
 
-    // A call to the server failed; the agent tries again by itself.
+    // A call to the server failed. The agent tries again by itself.
     public void Unreachable(Exception exception)
     {
         ArgumentNullException.ThrowIfNull(exception);
@@ -119,13 +120,13 @@ public sealed class ConsoleStatus
             Restart = null,
         });
 
-    // The language the server has the console speak, from the registration: en, de, or null for the language of Windows.
+    // The language the server has the console speak, from the registration: en, de, or null for Windows' language.
     public void SetLanguage(string? language) => Change(state => state with { Language = language });
 
-    // The logo the console shows, as the path of a PNG ConsoleLogo downloaded, or null for none.
+    // The logo the console shows, as the path of a PNG that ConsoleLogo downloaded. Null for none.
     public void SetLogo(string? path) => Change(state => state with { Logo = path });
 
-    // The agent in the installed Windows registered again to go on with its run, which it shows next.
+    // The agent in the installed Windows registered again to continue its run. The run is shown next.
     public void Registered(Guid machineId) =>
         Change(state => state with { Server = state.Server with { Problem = null, FailedStage = null, Failures = 0 }, MachineId = machineId });
 
@@ -143,7 +144,7 @@ public sealed class ConsoleStatus
     public void Stopped(string reason) =>
         Change(state => state with { Stage = ConsoleStage.Stopped, Problem = new ConsoleProblem(reason, ConsoleRemedy.Restart) });
 
-    // A run begins, or goes on after a restart. The heartbeat tells of every change after this.
+    // A run begins, or continues after a restart. The heartbeat reports every change after this.
     public void RunBegins(AgentRun run, SequenceState sequenceState)
     {
         ArgumentNullException.ThrowIfNull(run);
@@ -158,7 +159,7 @@ public sealed class ConsoleStatus
         });
     }
 
-    // In the installed Windows, before the run goes on: Windows setup has yet to finish.
+    // In the installed Windows, before the run continues. Windows setup hasn't finished yet.
     public void WaitingForSetup(AgentRun run, SequenceState sequenceState)
     {
         ArgumentNullException.ThrowIfNull(run);
@@ -212,7 +213,7 @@ public sealed class ConsoleStatus
             Restart = new ConsoleRestart(reason, into == RestartInto.WindowsPE ? RestartTarget.WindowsPE : RestartTarget.InstalledSystem),
         });
 
-    // The machine was to restart but could not; the agent stops, and someone has to restart it.
+    // The machine should have restarted but couldn't. The agent stops, and someone has to restart the machine.
     public void RestartFailed(string reason) =>
         Change(state => state with { Stage = ConsoleStage.Stopped, Problem = new ConsoleProblem(reason, ConsoleRemedy.Restart) });
 
@@ -241,10 +242,9 @@ public sealed class ConsoleStatus
         ];
     }
 
-    // A tree's run lists every node in pre-order, with where it sits, so the console's rail can follow the path. A node
-    // the engine skipped without entering it, on the branch an IF did not take or inside a node that was skipped or
-    // failed, has no tests of its own; the console takes it as off the path by its pass of 0. A node without a phase of
-    // its own shows the phase of the step before it, as a flat list does.
+    // Every node in pre-order with its position, so the console's rail can follow the path. A node the engine never
+    // entered, such as one on the branch an IF didn't take, gets pass 0, and the console takes that as off the path.
+    // A node without a RequiredPhase shows the phase of the step before it, like in a flat list.
     private static ConsoleStep[] Nodes(SequenceState state)
     {
         IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(state.Definition);
@@ -290,7 +290,8 @@ public sealed class ConsoleStatus
         }
     }
 
-    // Under the lock, so the console gets every state in the order it came about. A console only keeps it and returns.
+    // Called under the lock, so the console gets every state in the order it happened. A console only stores it and
+    // returns.
     private void Show(ConsoleState state)
     {
         _state = state;

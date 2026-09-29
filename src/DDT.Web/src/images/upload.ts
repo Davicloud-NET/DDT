@@ -6,8 +6,8 @@ import { resumableUpload, type UploadOptions, type UploadOutcome } from "@/uploa
 
 import type { ImageSummary } from "./images";
 
+export { backoff } from "@/lib/backoff";
 export {
-  backoff,
   MAX_FAILURES,
   type UploadOptions,
   type UploadOutcome,

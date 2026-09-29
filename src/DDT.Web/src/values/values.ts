@@ -4,11 +4,10 @@
 
 import { t } from "@lingui/core/macro";
 
-// The values a run works with, such as ComputerName or TimeZone, and where each came from, as the server's
-// DDT.Contracts.Values has them; and the values rules and machine roles set, as their pages edit them. The server works a
-// run's values out when it starts, from the first source that sets a name: input answers, the machine's own values,
-// rules from the top, machine roles, the sequence's defaults and the deployment defaults. The machine's page lists
-// them with valueRows.ts.
+// A run's values, such as ComputerName or TimeZone, and where each came from, as in the server's DDT.Contracts.Values.
+// Also the values that rules and machine roles set. When a run starts, the server takes each name from the first
+// source that sets it: input answers, the machine's own values, rules from the top, machine roles, the sequence's
+// defaults, then the deployment defaults. The machine's page lists them with valueRows.ts.
 
 // A value a rule or a machine role sets, such as TimeZone = W. Europe Standard Time. value is a template, such as
 // PC-{{SerialNumber|alnum|right:12}}. Every signed-in user can read it, so it never holds a password.
@@ -20,9 +19,9 @@ export interface NamedValue {
 export type ValueSource =
   "Input" | "Machine" | "Rule" | "Role" | "SequenceDefault" | "DeploymentDefault" | "Fact" | "Step";
 
-// The server's ResolvedValue. sourceId and sourceName name the rule, machine role or step that set it, where one did.
-// overridden marks a value a source further up also set, which is not used. value is null for a secret, which shows
-// only that it is set.
+// The server's ResolvedValue. sourceId and sourceName name the rule, machine role or step that set it, if any.
+// overridden means a source higher up also set the name, so this value isn't used. value is null for a secret, so
+// the page only shows that it's set.
 export interface ResolvedValue {
   name: string;
   value: string | null;
@@ -32,8 +31,8 @@ export interface ResolvedValue {
   overridden: boolean;
 }
 
-// What a value's line says of its source, such as "From the rule Berlin office". answeredBy is who answered an input,
-// where the page knows it; step is the step that set a value while the run went on, with its number.
+// The text that says where a value came from, such as "From the rule Berlin office". answeredBy is who answered an
+// input, if the page knows. step is the step that set the value during the run, with its number.
 export function valueSourceText(
   value: Pick<ResolvedValue, "source" | "sourceName">,
   more: { answeredBy?: string | null; step?: { number: number | null; name: string } | null } = {},
@@ -75,7 +74,8 @@ export function valueSourceText(
   }
 }
 
-// What an input's field says of the answer it starts with, such as "Filled in from the rule Berlin office.".
+// The text an input's field shows about where its prefilled answer came from, such as "Filled in from the rule
+// Berlin office.".
 export function prefillText(value: Pick<ResolvedValue, "source" | "sourceName">): string {
   const name = value.sourceName;
 
@@ -106,8 +106,8 @@ export function usedValues(values: readonly ResolvedValue[]): ResolvedValue[] {
   return values.filter((value) => !value.overridden);
 }
 
-// A value of the list that a rule's or a machine role's drawer edits, with a key that stays when rows above it are
-// taken away.
+// A row in the value list of a rule's or machine role's drawer. Its key stays the same when rows above it are
+// removed.
 export interface EditedValue extends NamedValue {
   key: string;
 }
@@ -120,15 +120,15 @@ function isBlank(row: NamedValue): boolean {
   return row.name.trim() === "" && row.value.trim() === "";
 }
 
-// What is sent: the rows without their keys, a row with neither a name nor a value left out.
+// The rows to send, without their keys. Rows with neither a name nor a value are left out.
 export function namedValues(rows: readonly EditedValue[]): NamedValue[] {
   return rows
     .filter((row) => !isBlank(row))
     .map(({ name, value }) => ({ name: name.trim(), value }));
 }
 
-// A field of what was sent, such as values[1].name, as the field of the row it came from: the blank rows left out
-// before it move it down.
+// Maps a field that was sent, such as values[1].name, back to the row it came from. Blank rows weren't sent, so each
+// blank row before it moves it down by one.
 export function rowField(rows: readonly EditedValue[], field: string): string {
   const match = /^values\[(\d+)\](.*)$/.exec(field);
 

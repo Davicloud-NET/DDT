@@ -9,8 +9,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// Without both certificate paths, as behind a proxy that ends TLS, Kestrel serves its own certificate and DDT has none
-// to describe and no root to offer.
+// Without both certificate paths, like behind a proxy that ends TLS, Kestrel serves its own certificate.
+// DDT then has no certificate to describe and no root to offer.
 public sealed class UnmanagedCertificateTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     [Fact]

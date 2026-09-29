@@ -9,8 +9,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// A registered machine that keeps the tokens a real agent keeps: every next and every report hands out fresh
-// ones, and a machine that deploys never polls with its first token again.
+// A registered machine that keeps its tokens the way a real agent does.
+// Every next and every report hands out fresh ones, and a deploying machine never polls with its first token again.
 public sealed class DeployingMachine : IDisposable
 {
     private DeployingMachine(AgentClient agent, AgentRegistration registration, AgentRegistrationResult registered)
@@ -44,14 +44,13 @@ public sealed class DeployingMachine : IDisposable
     public static async Task<DeployingMachine> RegisterAsync(
         DdtApplication application,
         IReadOnlyList<AgentDisk>? disks = null,
-        string? remoteAddress = null,
         bool? secureBootEnabled = null,
         int? sequenceVersion = null,
         UefiCa? trustedUefiCas = null)
     {
         ArgumentNullException.ThrowIfNull(application);
 
-        AgentClient agent = new(application.CreateDefaultClient(), remoteAddress ?? TestRemoteAddress.Unique());
+        AgentClient agent = new(application.CreateDefaultClient(), TestRemoteAddress.Unique());
         AgentRegistration registration = AgentClient.Registration(
             Guid.NewGuid().ToString("D"),
             "02" + Convert.ToHexString(Guid.NewGuid().ToByteArray(), 0, 5)) with
@@ -72,7 +71,7 @@ public sealed class DeployingMachine : IDisposable
         return new DeployingMachine(agent, registration, registered);
     }
 
-    // An operator signed in at it: approved, and allowed to choose a sequence at the machine.
+    // A machine an operator signed in at. It's approved and may choose a sequence at the machine.
     public static async Task<DeployingMachine> SignedInAsync(
         DdtApplication application,
         string userName,
@@ -91,7 +90,7 @@ public sealed class DeployingMachine : IDisposable
         return machine;
     }
 
-    // Approved on the web: nobody signed in at it, so only a web assignment gives it a run.
+    // A machine approved on the web. Nobody signed in at it, so only a web assignment gives it a run.
     public static async Task<DeployingMachine> ApprovedAsync(
         DdtApplication application,
         SignedInClient operatorClient,
@@ -117,7 +116,7 @@ public sealed class DeployingMachine : IDisposable
         return next;
     }
 
-    // A run's report, keeping the tokens it hands out as the agent does.
+    // Sends a run's report and keeps the tokens it hands out, like the agent does.
     public async Task<HttpResponseMessage> ReportAsync(Guid runId, AgentRunReport report)
     {
         HttpResponseMessage response = await Agent.RunReportAsync(Id, Token, runId, report);
@@ -141,7 +140,7 @@ public sealed class DeployingMachine : IDisposable
         Assert.True(response.IsSuccessStatusCode, $"{(int)response.StatusCode} {await response.Content.ReadAsStringAsync()}");
     }
 
-    // Without the resume token, as a new agent process does after the machine netbooted again.
+    // Registers again without the resume token, like a new agent process after the machine netbooted again.
     public async Task<AgentRegistrationResult> RegisterAgainAsync(AgentClient? from = null)
     {
         AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(

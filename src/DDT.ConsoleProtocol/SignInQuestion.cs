@@ -4,8 +4,7 @@
 
 namespace DDT.ConsoleProtocol;
 
-// One field of the sign-in with a DDT account, which authorizes the machine: the user name, then the password for
-// UserName, then, for an account with an authenticator, the code. Answer with Text. An empty password goes back to the
-// user name, to use another account, and an empty code back to the password. Error is what went wrong with the last
-// attempt, such as a wrong password or a locked account. The password is typed where nobody else sees it.
+// One field of the sign-in that authorizes the machine. The fields are user name, password, then the authenticator code
+// if the account has one. Answer with Text. An empty password or code goes back one field. The password is typed where
+// nobody sees it.
 public sealed record SignInQuestion(SignInField Field, string? UserName, string? Error) : ConsoleQuestion;

@@ -9,12 +9,9 @@ using DDT.Core.Templates;
 
 namespace DDT.Core.CloudInit;
 
-// The seed files of a Write the cloud-init seed step are text with placeholders such as {{ComputerName}} for the
-// machine's values, written as ValueTemplate writes them, filters included. A value is escaped for a double-quoted YAML
-// string, where the placeholders belong. The names in Names are placeholders, ignoring case, and so is the name of any
-// of the run's values, such as a variable of the sequence or a value a rule sets, as long as the run has that value.
-// Anything else between double braces stays as it is, because cloud-init's own Jinja templates use the same braces, and
-// so does a known name with a filter DDT does not have.
+// Fills placeholders such as {{ComputerName}} in cloud-init seed files, escaped for a double-quoted YAML string. Other
+// double braces are left alone, even a known name with a filter DDT doesn't have. cloud-init's Jinja templates use
+// them too.
 public static class CloudInitTemplate
 {
     public static IReadOnlyList<string> Names { get; } =
@@ -27,7 +24,7 @@ public static class CloudInitTemplate
         MachineVariableNames.MacAddress,
     ];
 
-    // Every name between double braces that looks like a placeholder, known or not, once each, in order.
+    // Every name in double braces that looks like a placeholder, known or not. Each name comes once, in order.
     public static IReadOnlyList<string> Placeholders(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -39,10 +36,8 @@ public static class CloudInitTemplate
     public static string? Known(string placeholder) =>
         Names.FirstOrDefault(name => string.Equals(name, placeholder, StringComparison.OrdinalIgnoreCase));
 
-    // Replaces each placeholder with its value from values, whose names are looked up ignoring case: those in Names, and
-    // any other name values has a value for, the run's values. Throws InvalidOperationException, whose message names the
-    // placeholder, when a name in Names that the text uses has no value. Line ends become LF, which shell scripts in
-    // user-data need.
+    // A placeholder is a name from Names or any key in values, ignoring case. A name from Names without a value throws
+    // an InvalidOperationException that names it. Line ends become LF, because shell scripts in user-data need that.
     public static string Render(string text, IReadOnlyDictionary<string, string?> values)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -86,8 +81,8 @@ public static class CloudInitTemplate
         return null;
     }
 
-    // What YAML needs escaped in a double-quoted string: the backslash, the quote and control characters, the C1 ones
-    // too, which firmware strings read as Latin-1 can hold and YAML parsers refuse unescaped.
+    // Escapes the backslash, the quote and control characters for a double-quoted YAML string. That includes the C1
+    // controls. Firmware strings read as Latin-1 can contain them, and YAML parsers refuse them unescaped.
     private static string Escape(string value)
     {
         StringBuilder escaped = new(value.Length);

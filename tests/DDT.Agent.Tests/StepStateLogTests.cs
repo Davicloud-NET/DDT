@@ -50,8 +50,8 @@ public sealed class StepStateLogTests
         _log = new AgentLog(new ImmediateTimeProvider(), _console);
     }
 
-    // Only the conditions that did not hold, in the web's words, with what the machine reported for each: nothing for
-    // a variable it did not report, and a MAC address with colons.
+    // Only the conditions that didn't hold, in the web's words, with what the machine reported for each. A variable it
+    // didn't report shows nothing, and a MAC address has colons.
     [Fact]
     public void NamesASkippedStepWithTheConditionsThatDidNotHold()
     {
@@ -72,7 +72,7 @@ public sealed class StepStateLogTests
             Lines());
     }
 
-    // As its own error says: the Running mark saved before the step was still there when the run went on.
+    // As its error says, the Running mark saved before the step was still there when the run continued.
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -92,7 +92,7 @@ public sealed class StepStateLogTests
             Lines());
     }
 
-    // The run goes on from a state that already holds the skipped and the interrupted step, as after a restart.
+    // The run continues from a state that already holds the skipped and the interrupted step, like after a restart.
     [Fact]
     public void SaysNothingOfStepsSettledBeforeTheRunWentOn()
     {
@@ -110,7 +110,8 @@ public sealed class StepStateLogTests
         Assert.Empty(Lines());
     }
 
-    // The runner's machine is in Windows PE, but a step in Windows is checked in Windows, as the engine checks it.
+    // The runner's machine is in WinPE, but a step in Windows is checked as in Windows, the same way the engine checks
+    // it.
     [Fact]
     public void ChecksAStepInThePhaseItWouldHaveRunIn()
     {
@@ -130,7 +131,7 @@ public sealed class StepStateLogTests
     }
 
     // An interrupted step's line goes with the step's own log. A skipped step never ran, so its line is the run's. The
-    // step that runs meanwhile keeps its lines.
+    // step that runs in the meantime keeps its lines.
     [Fact]
     public async Task OnlyAnInterruptedStepsLineNamesItsStep()
     {
@@ -147,10 +148,8 @@ public sealed class StepStateLogTests
         Assert.Equal([(Guid?)null, s_tool.Id, running], server.SentLines.Select(line => line.StepId));
     }
 
-    // The engine walks a tree and the log follows the states it saves: the branch an IF took and why, each time through
-    // a repeat, a repeat that stops at its limit, a group that failed and lets the run go on, and a step whose own
-    // condition did not hold. The step on the branch not taken and the one after the failure inside the group pass in
-    // silence, and so does everything that ran.
+    // The log tells the branch an IF took, a repeat's rounds and its limit, a failed group the run continues after, and
+    // a skipped step. The branch not taken, the rest of the failed group and everything that ran pass silently.
     [Fact]
     public async Task TellsWhatATreesRunDecided()
     {
@@ -181,7 +180,7 @@ public sealed class StepStateLogTests
         Assert.Equal([TestTree.OnLatitude.Id, TestTree.UntilItWorks.Id, TestTree.UntilItWorks.Id, TestTree.Twice.Id, TestTree.Twice.Id, TestTree.Failing.Id], runner.Ran);
     }
 
-    // After a restart the log goes on from the state found, and says nothing twice.
+    // After a restart the log continues from the state found and says nothing twice.
     [Fact]
     public async Task SaysNothingOfATreesDecisionsBeforeTheRunWentOn()
     {
@@ -190,7 +189,7 @@ public sealed class StepStateLogTests
         await new SequenceEngine(new TestTree.Runner(), new TestTree.Store(saved.Add), new Progress<StepPercent>())
             .RunAsync(start, s_machine, TestContext.Current.CancellationToken);
 
-        // Gone on from the state saved while the tool ran for the second time.
+        // Continued from the state saved while the tool ran for the second time.
         SequenceState resumed = saved.First(state => state.Steps.Any(step => step.StepId == TestTree.UntilItWorks.Id && step is { State: StepState.Running, Pass: 2 }));
         StepStateLog steps = new(_log, resumed, s_machine);
 

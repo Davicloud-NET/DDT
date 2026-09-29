@@ -102,7 +102,7 @@ function serve(handlers: Record<string, Handler> = {}, user = administrator) {
   return servePage({
     user,
     path: "/boot/network",
-    // In the main landmark, as the shell shows it.
+    // Inside the main landmark, like the shell renders it.
     component: () => (
       <main>
         <NetworkBootPage />
@@ -223,7 +223,8 @@ describe("NetworkBootPage", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
-    // 10.20.0.5 is eth0's address on ddt-02, so eth0 counts as listed; "ethernet" is Ethernet already.
+    // 10.20.0.5 is eth0's address on ddt-02, so eth0 counts as listed. "ethernet" is already listed as Ethernet, so it
+    // isn't added again.
     expect(
       within(screen.getByRole("list", { name: "Interfaces on ddt-02" })).getByRole("checkbox", {
         name: "eth0",

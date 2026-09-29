@@ -17,8 +17,8 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Views;
 
-// In Windows PE and as the shell of DDT's session the window fills the screen without a frame; on a development
-// computer it is an ordinary window. The function keys and Esc reach the console before any field or list sees them.
+// In WinPE and as the shell of DDT's session the window fills the screen without a frame. On a development computer
+// it's an ordinary window. The function keys and Esc reach the console before any field or list sees them.
 public sealed partial class MainWindow : Window
 {
     private static readonly ScreenTransition s_overlaySwitch = new();
@@ -53,18 +53,23 @@ public sealed partial class MainWindow : Window
         ShowOverlayContent();
         _frames = FrameMeter.For(this);
         _step = StepOf(model);
+
+        if (_frames is not null)
+        {
+            model.End.PropertyChanged += OnEndChanged;
+        }
     }
 
-    // The one time the console takes the foreground: when it opens. Later it never takes it back, so a command prompt
-    // in front of it keeps the keyboard.
+    // The console takes the foreground only once, when it opens. It never takes it back later, so a command prompt in
+    // front of it keeps the keyboard.
     protected override void OnOpened(EventArgs e)
     {
         base.OnOpened(e);
         Activate();
     }
 
-    // Alt+F4 or the close button, while the agent works: refused with a note, so a passer-by cannot take the console
-    // away. The console's own close, a shutdown and a restart go through as they are.
+    // Alt+F4 or the close button while the agent works is refused with a note, so a passer-by can't close the console.
+    // The console's own close, a shutdown and a restart go through unchanged.
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         ArgumentNullException.ThrowIfNull(e);
@@ -96,7 +101,7 @@ public sealed partial class MainWindow : Window
 
         if (_frames is not null)
         {
-            MeasureFrames(e.PropertyName);
+            MeasureFrames(_frames, _model, e.PropertyName);
         }
 
         if (e.PropertyName is nameof(MainViewModel.IsDark) or "")
@@ -115,35 +120,48 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    // What moves when that changes, and for how long, for the frame meter.
-    private void MeasureFrames(string? change)
+    // Tells the frame meter what moves when that property changes, and for how long.
+    private void MeasureFrames(FrameMeter frames, MainViewModel model, string? change)
     {
         switch (change)
         {
             case nameof(MainViewModel.Screen):
-                _frames!.Measure("screen", Motion.Fast + Motion.Normal);
-                _step = StepOf(_model!);
+                frames.Measure("screen", Motion.Fast + Motion.Normal);
+                _step = StepOf(model);
                 break;
             case nameof(MainViewModel.HasOverlay):
-                _frames!.Measure(_model!.HasOverlay ? "overlay in" : "overlay out", _model.HasOverlay ? Motion.Normal : Motion.Fast);
+                frames.Measure(model.HasOverlay ? "overlay in" : "overlay out", model.HasOverlay ? Motion.Normal : Motion.Fast);
                 break;
-            case nameof(MainViewModel.ShowsEndBand):
-                _frames!.Measure("ended band", Motion.Normal);
+            case nameof(MainViewModel.State) when StepOf(model) != _step:
+                _step = StepOf(model);
+                frames.Measure("step", Motion.Slow);
                 break;
-            case nameof(MainViewModel.ConfirmingRestart):
-                _frames!.Measure(_model!.ConfirmingRestart ? "confirm in" : "confirm out", _model.ConfirmingRestart ? Motion.Normal : Motion.Fast);
+        }
+    }
+
+    private void OnEndChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_frames is null || _model is null)
+        {
+            return;
+        }
+
+        switch (e.PropertyName)
+        {
+            case nameof(EndViewModel.ShowsEndBand):
+                _frames.Measure("ended band", Motion.Normal);
                 break;
-            case nameof(MainViewModel.State) when StepOf(_model!) != _step:
-                _step = StepOf(_model!);
-                _frames!.Measure("step", Motion.Slow);
+            case nameof(EndViewModel.ConfirmingRestart):
+                bool shown = _model.End.ConfirmingRestart;
+                _frames.Measure(shown ? "confirm in" : "confirm out", shown ? Motion.Normal : Motion.Fast);
                 break;
         }
     }
 
     private static (ConsoleStage? Stage, Guid? Step) StepOf(MainViewModel model) => (model.State?.Stage, model.State?.Run?.CurrentStepId);
 
-    // What the overlay shows. Closing it keeps what it showed while it leaves; opening it shows the new content at once,
-    // as the overlay enters, and only switching from one to another lets the first give way to the next.
+    // What the overlay shows. When it closes, it keeps its content while it leaves. When it opens, the new content
+    // shows right away as the overlay enters. Only a switch from one overlay to another plays a transition.
     private void ShowOverlayContent()
     {
         if (_model?.OverlayContent is not { } content || ReferenceEquals(OverlayPages.Content, content))
@@ -156,8 +174,8 @@ public sealed partial class MainWindow : Window
         OverlayPages.Content = content;
     }
 
-    // Back from the log or the details, the screen's field or list has the focus again, so typing goes on there: in
-    // the screen now shown, not in one still leaving.
+    // After the log or the details close, the screen's field or list gets the focus back, so typing continues there.
+    // That's the screen now shown, not one that's still leaving.
     private void FocusScreen()
     {
         InputElement? target = Screen.GetVisualDescendants()
@@ -175,7 +193,8 @@ public sealed partial class MainWindow : Window
         element.GetVisualAncestors().OfType<ContentPresenter>().LastOrDefault(presenter => presenter.TemplatedParent == Screen) is { } page
         && ReferenceEquals(page.Content, _model?.Screen);
 
-    // A new theme changes every colour at once: nothing that fades its colour on hover or change fades into the theme.
+    // A new theme changes every colour at once. The switching class stops controls that fade their colour on hover or
+    // change from fading into the new theme.
     private void ApplyTheme(bool dark)
     {
         ThemeVariant theme = dark ? ThemeVariant.Dark : ThemeVariant.Light;

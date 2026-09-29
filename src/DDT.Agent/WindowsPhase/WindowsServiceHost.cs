@@ -7,9 +7,10 @@ using DDT.Agent.Sequences;
 
 namespace DDT.Agent.WindowsPhase;
 
-// Runs the agent as the DdtSequence service the hand-over registered, by hand, as NativeAOT has no ServiceBase: the
-// dispatcher takes over the calling thread, starts ServiceMain on its own thread and calls HandlerEx with each control.
-// Both are called from native code, so no exception may leave them. One service per process, so the state is static.
+// Runs the agent as the DdtSequence service the hand-over registered, by hand, because NativeAOT has no ServiceBase.
+// The dispatcher takes over the calling thread, starts ServiceMain on a separate thread and calls HandlerEx with each
+// control. Both are called from native code, so no exception may leave them. There's one service per process, so the
+// state is static.
 public static unsafe class WindowsServiceHost
 {
     // The ImagePath the hand-over registers passes this, and nothing else.
@@ -41,7 +42,7 @@ public static unsafe class WindowsServiceHost
             }
         }
 
-        // The dispatcher returns once Stopped is reported, which may be before ServiceMain's thread goes on.
+        // The dispatcher returns once Stopped is reported, which may be before ServiceMain's thread continues.
         exitCode = s_lifetime?.ExitCode ?? (int)ServiceLifetime.ErrorExceptionInService;
 
         return true;
@@ -62,7 +63,7 @@ public static unsafe class WindowsServiceHost
 
             if (s_statusHandle == 0)
             {
-                // Without a handle the service can never report Stopped, and the dispatcher would wait for ever. Ending
+                // Without a handle the service can never report Stopped, and the dispatcher would wait forever. Ending
                 // the process counts as a crash, after which the control manager restarts the service.
                 Environment.Exit(Marshal.GetLastPInvokeError());
             }

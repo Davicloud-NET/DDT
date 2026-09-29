@@ -8,15 +8,13 @@ using System.Text;
 
 namespace DDT.Core.Disks;
 
-// Reads a FAT12, FAT16 or FAT32 volume, such as the EFI system partition of a disk image, from a stream at an offset,
-// as Microsoft's FAT specification (version 1.03) lays it out. The volume comes from an uploaded file and may hold
-// anything, so every size is capped and every cluster chain checked.
+// Reads a FAT12, FAT16 or FAT32 volume as Microsoft's FAT specification 1.03 lays it out, such as a disk image's EFI
+// system partition. The volume comes from an uploaded file, so every size is capped and every cluster chain checked.
 public sealed class FatVolume
 {
     public const int MaxFatClusters12 = 4084;
     public const int MaxFatClusters16 = 65524;
 
-    private const int MaxFatBytes = 16 * 1024 * 1024;
     private const int MaxDirectoryBytes = 65536 * DirectoryEntryBytes;
     private const int DirectoryEntryBytes = 32;
     private const byte LongNameAttributes = 0x0F;
@@ -24,144 +22,52 @@ public sealed class FatVolume
     private const byte DirectoryAttribute = 0x10;
 
     private readonly Stream _stream;
-    private readonly long _offset;
-    private readonly byte[] _fat;
+    private readonly FatTable _fat;
     private readonly long _dataOffset;
     private readonly long _rootOffset;
     private readonly int _rootBytes;
     private readonly uint _rootCluster;
-    private readonly uint _clusterCount;
+    private readonly long _clusterCount;
 
-    private FatVolume(
-        Stream stream,
-        long offset,
-        FatType type,
-        int clusterBytes,
-        uint clusterCount,
-        byte[] fat,
-        long rootOffset,
-        int rootBytes,
-        uint rootCluster,
-        long dataOffset)
+    private FatVolume(Stream stream, long offset, FatBootSector boot, FatTable fat)
     {
         _stream = stream;
-        _offset = offset;
-        Type = type;
-        ClusterBytes = clusterBytes;
-        _clusterCount = clusterCount;
+        Type = boot.Type;
+        ClusterBytes = boot.ClusterBytes;
+        _clusterCount = boot.ClusterCount;
         _fat = fat;
-        _rootOffset = rootOffset;
-        _rootBytes = rootBytes;
-        _rootCluster = rootCluster;
-        _dataOffset = dataOffset;
+        _rootOffset = offset + (boot.RootDirectorySector * boot.BytesPerSector);
+        _rootBytes = boot.RootSectors * boot.BytesPerSector;
+        _rootCluster = boot.RootCluster;
+        _dataOffset = offset + (boot.FirstDataSector * boot.BytesPerSector);
     }
 
     public FatType Type { get; }
 
     public int ClusterBytes { get; }
 
-    // From the root directory's volume label entry, else from the boot sector; null when the volume has none.
+    // Read from the root directory's volume label entry, or else from the boot sector. Null when the volume has none.
     public string? Label { get; private set; }
 
-    // Throws InvalidDataException when the volume at offset, length bytes long, is no FAT volume DDT can read.
+    // Opens the volume at offset, which is length bytes long. Throws InvalidDataException when it isn't a FAT volume
+    // DDT can read.
     public static FatVolume Open(Stream stream, long offset, long length)
     {
         ArgumentNullException.ThrowIfNull(stream);
 
-        byte[] boot = ReadExactly(stream, offset, 512, "boot sector");
-
-        if (boot[510] != 0x55 || boot[511] != 0xAA)
-        {
-            throw new InvalidDataException("The partition holds no FAT file system.");
-        }
-
-        int bytesPerSector = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(11));
-        int sectorsPerCluster = boot[13];
-        int reserved = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(14));
-        int fats = boot[16];
-        int rootEntries = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(17));
-        long totalSectors = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(19)) is ushort small and not 0
-            ? small
-            : BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(32));
-        ushort fatSectors16 = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(22));
-        long fatSectors = fatSectors16 != 0 ? fatSectors16 : BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(36));
-
-        if (bytesPerSector is not (512 or 1024 or 2048 or 4096)
-            || sectorsPerCluster is 0 or > 128
-            || !int.IsPow2(sectorsPerCluster)
-            || reserved == 0
-            || fats == 0
-            || fatSectors == 0
-            || totalSectors * bytesPerSector > length)
-        {
-            throw new InvalidDataException("The partition holds no FAT file system DDT can read.");
-        }
-
-        int rootSectors = ((rootEntries * DirectoryEntryBytes) + bytesPerSector - 1) / bytesPerSector;
-        long firstData = reserved + (fats * fatSectors) + rootSectors;
-
-        if (firstData >= totalSectors)
-        {
-            throw new InvalidDataException("The partition's FAT file system is damaged.");
-        }
-
-        long clusters = (totalSectors - firstData) / sectorsPerCluster;
-
-        if (clusters > uint.MaxValue - 2)
-        {
-            throw new InvalidDataException("The partition's FAT file system is damaged or larger than DDT reads.");
-        }
-
-        uint clusterCount = (uint)clusters;
-
-        // As Linux and EDK2 do: a volume without a 16-bit FAT size is FAT32 whatever its cluster count, as mkfs.fat -F 32
-        // makes on a small partition. Otherwise the cluster count decides between FAT12 and FAT16.
-        FatType type = fatSectors16 == 0 ? FatType.Fat32 : clusterCount <= MaxFatClusters12 ? FatType.Fat12 : FatType.Fat16;
-
-        if (type == FatType.Fat16 && clusterCount > MaxFatClusters16)
-        {
-            throw new InvalidDataException("The partition's FAT file system is damaged.");
-        }
-
-        long fatBytesNeeded = type switch
-        {
-            FatType.Fat12 => ((((long)clusterCount + 2) * 3) + 1) / 2,
-            FatType.Fat16 => ((long)clusterCount + 2) * 2,
-            _ => ((long)clusterCount + 2) * 4,
-        };
-
-        if (fatBytesNeeded > fatSectors * bytesPerSector || fatBytesNeeded > MaxFatBytes)
-        {
-            throw new InvalidDataException("The partition's FAT file system is damaged or larger than DDT reads.");
-        }
-
-        if (type == FatType.Fat32 && rootEntries != 0)
-        {
-            throw new InvalidDataException("The partition's FAT file system is damaged.");
-        }
-
-        byte[] fat = ReadExactly(stream, offset + ((long)reserved * bytesPerSector), (int)fatBytesNeeded, "allocation table");
-        FatVolume volume = new(
+        FatBootSector boot = FatBootSector.Parse(ReadExactly(stream, offset, FatBootSector.Size, "boot sector"), length);
+        byte[] fat = ReadExactly(
             stream,
-            offset,
-            type,
-            sectorsPerCluster * bytesPerSector,
-            clusterCount,
-            fat,
-            offset + ((reserved + (fats * fatSectors)) * bytesPerSector),
-            rootSectors * bytesPerSector,
-            type == FatType.Fat32 ? BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(44)) : 0,
-            offset + (firstData * bytesPerSector));
-
-        int labelOffset = type == FatType.Fat32 ? 71 : 43;
-        int signatureOffset = type == FatType.Fat32 ? 66 : 38;
-        string? bootLabel = boot[signatureOffset] == 0x29 ? Encoding.ASCII.GetString(boot, labelOffset, 11).TrimEnd(' ') : null;
-        volume.Label = volume.ReadRootLabel() ?? (bootLabel is null or "" or "NO NAME" ? null : bootLabel);
+            offset + ((long)boot.ReservedSectors * boot.BytesPerSector),
+            (int)FatTable.BytesFor(boot.Type, boot.ClusterCount),
+            "allocation table");
+        FatVolume volume = new(stream, offset, boot, new FatTable(boot.Type, fat));
+        volume.Label = volume.ReadRootLabel() ?? (boot.Label is "" or "NO NAME" ? null : boot.Label);
 
         return volume;
     }
 
-    // The entries of the directory at path, such as "EFI\BOOT"; "" is the root.
+    // The entries of the directory at path, such as "EFI\BOOT". An empty path is the root.
     public IReadOnlyList<FatEntry> List(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -180,7 +86,7 @@ public sealed class FatVolume
             : throw new DirectoryNotFoundException($"{path} is a file.");
     }
 
-    // The entry at path, compared without regard to case; null when there is none.
+    // The entry at path, ignoring case, or null when there's none.
     public FatEntry? Find(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -242,7 +148,7 @@ public sealed class FatVolume
     private byte[] RootDirectory() =>
         Type == FatType.Fat32 ? Chain(_rootCluster, MaxDirectoryBytes) : ReadExactly(_stream, _rootOffset, _rootBytes, "root directory");
 
-    // The clusters of the chain that starts at first, up to maxBytes of them.
+    // Reads the cluster chain that starts at first, up to maxBytes.
     private byte[] Chain(uint first, int maxBytes)
     {
         using MemoryStream content = new();
@@ -262,9 +168,9 @@ public sealed class FatVolume
             }
 
             content.Write(ReadExactly(_stream, _dataOffset + ((long)(cluster - 2) * ClusterBytes), ClusterBytes, "cluster"));
-            uint next = Next(cluster);
+            uint next = _fat.Get(cluster);
 
-            if (IsEnd(next))
+            if (_fat.IsEnd(next))
             {
                 break;
             }
@@ -275,30 +181,11 @@ public sealed class FatVolume
         return content.ToArray();
     }
 
-    private uint Next(uint cluster) => Type switch
-    {
-        FatType.Fat12 => (cluster & 1) == 0
-            ? (uint)(BinaryPrimitives.ReadUInt16LittleEndian(_fat.AsSpan((int)(cluster + (cluster / 2)))) & 0x0FFF)
-            : (uint)(BinaryPrimitives.ReadUInt16LittleEndian(_fat.AsSpan((int)(cluster + (cluster / 2)))) >> 4),
-        FatType.Fat16 => BinaryPrimitives.ReadUInt16LittleEndian(_fat.AsSpan((int)(cluster * 2))),
-        _ => BinaryPrimitives.ReadUInt32LittleEndian(_fat.AsSpan((int)(cluster * 4))) & 0x0FFFFFFF,
-    };
-
-    private bool IsEnd(uint value) => Type switch
-    {
-        FatType.Fat12 => value >= 0xFF8,
-        FatType.Fat16 => value >= 0xFFF8,
-        _ => value >= 0x0FFFFFF8,
-    };
-
-    // Long names are taken only when every part is there and their checksum names the short entry that follows.
     private static (List<FatEntry> Entries, string? Label) ReadEntries(byte[] directory)
     {
         List<FatEntry> entries = [];
         string? label = null;
-        char[]? longName = null;
-        int expected = 0;
-        byte checksum = 0;
+        FatLongNameParts longName = new();
 
         for (int offset = 0; offset + DirectoryEntryBytes <= directory.Length; offset += DirectoryEntryBytes)
         {
@@ -313,39 +200,19 @@ public sealed class FatVolume
 
             if (entry[0] == 0xE5)
             {
-                longName = null;
+                longName.Clear();
 
                 continue;
             }
 
             if ((attributes & 0x3F) == LongNameAttributes)
             {
-                int order = entry[0] & 0x1F;
-
-                if ((entry[0] & 0x40) != 0 && order > 0)
-                {
-                    longName = new char[order * FatNames.LongNameCharacters];
-                    expected = order;
-                    checksum = entry[13];
-                }
-
-                if (longName is null || order == 0 || order != expected || entry[13] != checksum)
-                {
-                    longName = null;
-
-                    continue;
-                }
-
-                ReadLongNamePart(entry, longName.AsSpan((order - 1) * FatNames.LongNameCharacters, FatNames.LongNameCharacters));
-                expected--;
+                longName.Add(entry);
 
                 continue;
             }
 
-            string? name = longName is not null && expected == 0 && FatNames.Checksum(entry) == checksum
-                ? LongName(longName)
-                : null;
-            longName = null;
+            string? name = longName.TakeFor(entry);
 
             if ((attributes & VolumeIdAttribute) != 0)
             {
@@ -356,36 +223,14 @@ public sealed class FatVolume
 
             name ??= FatNames.Read(entry);
 
-            if (name is "." or "..")
+            if (name is not ("." or ".."))
             {
-                continue;
+                uint cluster = ((uint)BinaryPrimitives.ReadUInt16LittleEndian(entry[20..]) << 16) | BinaryPrimitives.ReadUInt16LittleEndian(entry[26..]);
+                entries.Add(new FatEntry(name, (attributes & DirectoryAttribute) != 0, BinaryPrimitives.ReadUInt32LittleEndian(entry[28..]), cluster));
             }
-
-            uint cluster = ((uint)BinaryPrimitives.ReadUInt16LittleEndian(entry[20..]) << 16) | BinaryPrimitives.ReadUInt16LittleEndian(entry[26..]);
-            entries.Add(new FatEntry(name, (attributes & DirectoryAttribute) != 0, BinaryPrimitives.ReadUInt32LittleEndian(entry[28..]), cluster));
         }
 
         return (entries, label is "" ? null : label);
-    }
-
-    private static void ReadLongNamePart(ReadOnlySpan<byte> entry, Span<char> part)
-    {
-        int index = 0;
-
-        foreach ((int start, int count) in new[] { (1, 5), (14, 6), (28, 2) })
-        {
-            for (int character = 0; character < count; character++)
-            {
-                part[index++] = (char)BinaryPrimitives.ReadUInt16LittleEndian(entry[(start + (character * 2))..]);
-            }
-        }
-    }
-
-    private static string LongName(char[] name)
-    {
-        int end = Array.IndexOf(name, '\0');
-
-        return new string(name, 0, end < 0 ? name.Length : end);
     }
 
     private static string[] Split(string path) => path.Split(['\\', '/'], StringSplitOptions.RemoveEmptyEntries);

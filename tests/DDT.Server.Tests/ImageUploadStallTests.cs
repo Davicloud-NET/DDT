@@ -30,7 +30,7 @@ public sealed class ImageUploadStallTests(ManualClockApplication application) : 
 
         Task<HttpResponseMessage> sending = administrator.SendAsync(request, cancellationToken);
 
-        // Once the server has armed its timeout, the time passes without another byte.
+        // Once the server has armed its timeout, the clock moves past it without another byte arriving.
         while (!application.Clock.HasTimerDueIn(ImageUploadLimits.NoProgressTimeout))
         {
             await Task.Delay(TimeSpan.FromMilliseconds(10), cancellationToken);
@@ -44,7 +44,7 @@ public sealed class ImageUploadStallTests(ManualClockApplication application) : 
         Assert.Equal(HttpStatusCode.RequestTimeout, stalled.StatusCode);
         Assert.Equal(0, ImageUploadRequests.OffsetOf(stalled));
 
-        // The session is free again, and nothing of the chunk that stopped counts.
+        // The session is free again, and nothing from the stalled chunk counts.
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.SendChunkAsync(session.Id, 0, file)).StatusCode);
         Assert.Equal(HttpStatusCode.Created, (await administrator.CompleteUploadAsync(session.Id)).StatusCode);
     }

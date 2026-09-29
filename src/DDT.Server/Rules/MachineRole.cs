@@ -4,22 +4,22 @@
 
 namespace DDT.Server.Rules;
 
-// Values that rules give machines together, such as "Kiosk", see MachineRoleView. Not a user role. Values is JSON as
-// DdtJsonContext writes a list of NamedValue.
+// A named set of values that rules give machines, such as "Kiosk" (see MachineRoleView). It isn't a user role. Values
+// is a list of NamedValue, as JSON written by DdtJsonContext.
 public sealed class MachineRole
 {
     public Guid Id { get; set; }
 
     public required string Name { get; set; }
 
-    // The trimmed name in upper case, unique, so two roles cannot differ only in case.
+    // The trimmed name in upper case. It's unique, so two role names can't differ only in case.
     public required string NormalizedName { get; set; }
 
     public string? Description { get; set; }
 
     public string Values { get; set; } = "[]";
 
-    // Raised by every save and checked on it, so an editor saving over a newer save is told instead.
+    // Every save checks it and raises it. An editor who saves over a newer save is told, instead of overwriting it.
     public long Revision { get; set; }
 
     public DateTimeOffset CreatedUtc { get; set; }

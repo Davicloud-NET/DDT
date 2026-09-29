@@ -6,8 +6,8 @@ namespace DDT.Agent;
 
 public static class AgentBuild
 {
-    // Only dotnet publish defines DDT_PUBLISHED. RuntimeFeature cannot tell: PublishAot switches dynamic code off
-    // in the JIT build as well.
+    // Only dotnet publish defines DDT_PUBLISHED. RuntimeFeature can't tell the builds apart, because PublishAot
+    // switches dynamic code off in the JIT build too.
 #if DDT_PUBLISHED
     public static bool IsPublished => true;
 #else

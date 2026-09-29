@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace DDT.Agent;
 
-// The kernel32 functions the agent reads the machine's identity and facts with. Windows PE has all of them, where it has
+// The kernel32 functions the agent uses to read the machine's identity and facts. WinPE has all of them, while it has
 // neither WMI nor the TPM Base Services.
 internal static partial class NativeMethods
 {
@@ -39,7 +39,7 @@ internal static partial class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetLogicalProcessorInformationEx(int relationshipType, byte[]? buffer, ref uint returnedLength);
 
-    // MEMORYSTATUSEX, whose Length the caller sets to its size.
+    // MEMORYSTATUSEX. The caller sets Length to the struct's size.
     [StructLayout(LayoutKind.Sequential)]
     public struct MemoryStatus
     {

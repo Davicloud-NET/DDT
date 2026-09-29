@@ -5,15 +5,16 @@
 import { t } from "@lingui/core/macro";
 
 import type { AccountView } from "@/accounts/accounts";
-import { conditionSummary, legacyTree, type Subject } from "@/conditions/conditions";
+import { conditionSummary, legacyTree } from "@/conditions/conditions";
+import type { Subject } from "@/conditions/conditionSubjects";
 
 import { findingText, type Findings } from "../problems";
 import type { AccountReference, SequenceStep } from "../sequences";
 import { EMPTY_ID, interpreterLabel, phaseLabel } from "../steps";
-import type { StepCatalog } from "../useSequenceEditor";
+import type { StepCatalog } from "../useStepCatalog";
 
-// The one line a node's card shows under its name: its first problem while it has one, otherwise when it runs and
-// what it does, such as the image it applies or the value it sets. code marks a value such as a template.
+// The line a node's card shows under its name. That's its first problem if it has one. Otherwise it's when the node
+// runs and what it does, such as the image it applies or the value it sets. code marks a value such as a template.
 export interface NodeDetail {
   text: string;
   code: boolean;

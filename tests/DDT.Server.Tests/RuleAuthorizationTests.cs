@@ -39,7 +39,7 @@ public sealed class RuleAuthorizationTests(DdtApplication application) : IClassF
         Assert.Null(listed.Deployment);
         Assert.False(listed.EverApproved);
 
-        // The rules did match; they only chose.
+        // The rules did match. They only chose a sequence and authorized nothing.
         Assert.Equal(SequenceResolutionSource.Rule, (await administrator.ResolutionAsync(machine.Id)).Source);
     }
 }

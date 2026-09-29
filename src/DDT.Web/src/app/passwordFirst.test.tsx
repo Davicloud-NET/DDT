@@ -14,7 +14,7 @@ import { administrator, json, stubServer } from "@/test/serve";
 
 import { createAppRouter } from "./router";
 
-// The shell's live connection, as the shell asks for it: on or off.
+// Records whether the shell asks for its live connection on or off.
 const live = vi.hoisted(() => ({ enabled: [] as boolean[] }));
 
 vi.mock("@/live/useLiveUpdates", () => ({

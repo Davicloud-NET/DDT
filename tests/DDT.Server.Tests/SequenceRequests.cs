@@ -26,7 +26,7 @@ internal static class SequenceRequests
         new PartitionStep { Id = Guid.NewGuid(), Name = "Partition" },
         new ApplyImageStep { Id = Guid.NewGuid(), Name = "Apply", ImageId = imageId });
 
-    // Writes the raw disk image and a seed that names the machine, as the Install Linux template does.
+    // Writes the raw disk image and a seed that names the machine, like the Install Linux template does.
     public static SequenceDefinition Linux(Guid imageId) => Definition(
         new WriteRawImageStep { Id = Guid.NewGuid(), Name = "Write the disk", ImageId = imageId },
         new WriteCloudInitSeedStep

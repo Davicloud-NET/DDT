@@ -9,14 +9,14 @@ using DDT.Contracts.Values;
 
 namespace DDT.Server.Rules;
 
-// The stored forms of a rule's When, Values and RoleIds and a machine role's Values are the contract types as
-// DdtJsonContext writes them.
+// A rule's When, Values and RoleIds, and a machine role's Values, are stored as the contract types written by
+// DdtJsonContext.
 public static class RuleDocuments
 {
     public static string? WriteWhen(ConditionNode? when) =>
         when is null ? null : JsonSerializer.Serialize(when, DdtJsonContext.Default.ConditionNode);
 
-    // False for a condition another build wrote that no longer parses, which then never holds.
+    // Returns false for a condition written by another build that no longer parses. Such a condition never holds.
     public static bool TryReadWhen(string? when, out ConditionNode? condition)
     {
         condition = null;
@@ -48,8 +48,8 @@ public static class RuleDocuments
     public static IReadOnlyList<NamedValue> ReadValues(string values) =>
         Read(values, DdtJsonContext.Default.IReadOnlyListNamedValue)?.OfType<NamedValue>().ToArray() ?? [];
 
-    // Names are trimmed, as templates name them; a value's text is kept as it was written, without a NUL, which
-    // PostgreSQL text cannot hold. RuleChecks.ValuesBound refuses a value that is missing.
+    // Names are trimmed, the way templates use them. A value's text is kept as written, minus any NUL, which
+    // PostgreSQL text can't hold. RuleChecks.ValuesBound refuses a missing value.
     public static IReadOnlyList<NamedValue> Clean(IReadOnlyList<NamedValue>? values) =>
     [
         .. (values ?? []).Select(value => new NamedValue(

@@ -68,7 +68,7 @@ The CI workflow in [.github/workflows/ci.yml](.github/workflows/ci.yml) runs on 
 
 | Job | What it runs |
 |---|---|
-| Windows | `dotnet build DDT.slnx`, `dotnet format whitespace DDT.slnx --verify-no-changes`, and `dotnet test --solution DDT.slnx -- --filter-not-trait "Category=E2E" --ignore-exit-code 8` |
+| Windows | `dotnet build DDT.slnx`, `dotnet format whitespace DDT.slnx --verify-no-changes`, `Invoke-ScriptAnalyzer -Path build -Recurse` from the PSScriptAnalyzer module, and `dotnet test --solution DDT.slnx -- --filter-not-trait "Category=E2E" --ignore-exit-code 8` |
 | Linux | the tests of `DDT.Core`, `DDT.Protocols`, `DDT.Pxe` and `DDT.Server`, with PostgreSQL in Docker |
 | End to end | `dotnet test --project tests/DDT.E2E`, which needs the Visual C++ build tools |
 | Web client | from `src/DDT.Web`: `npm ci`, `npm run lint`, `npm run format`, `npm run build` and `npm test` |

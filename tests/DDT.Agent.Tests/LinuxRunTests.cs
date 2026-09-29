@@ -64,16 +64,9 @@ public sealed class LinuxRunTests : IDisposable
         server ??= _image.Serve(new ScriptedAgentServer());
         ImmediateTimeProvider time = new();
         StringWriter console = new();
-        SequenceRunner runner = TestAgents.Runner(server, _tools, new AgentLog(time, console), time, rawDisks: _disks);
+        SequenceRunner runner = TestAgents.Runner(server, _tools, new AgentLog(time, console), time, new() { RawDisks = _disks });
 
-        RunResult result = await runner.RunAsync(
-            s_machineId,
-            run,
-            null,
-            null,
-            new DeploymentTokens("session-0", "resume-0"),
-            Identity(secureBootEnabled),
-            server.Stop.Token);
+        RunResult result = await runner.RunAsync(new RunRequest(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), Identity(secureBootEnabled)), server.Stop.Token);
 
         return (result, server, console.ToString());
     }
@@ -91,7 +84,7 @@ public sealed class LinuxRunTests : IDisposable
         Assert.Equal((DeploymentState.Done, RunActivity.Finishing), (server.RunReports[^1].State, server.RunReports[^1].Activity));
         Assert.Equal([StepState.Done, StepState.Done], server.RunReports[^1].Steps.Select(step => step.State));
 
-        // Nothing of the run is kept on the disk it wrote: the image is the disk.
+        // Nothing of the run is kept on the disk it wrote, because the image is the disk.
         MemoryRawDisk disk = _disks.Disks[0];
         GptLayout layout = GptLayout.Read(disk.ReadAt(0, RawDiskWriter.HeadBytes));
         Assert.Equal(["EFI", "root", CloudInitSeed.Label], layout.Partitions.Select(partition => partition.Name));
@@ -159,8 +152,8 @@ public sealed class LinuxRunTests : IDisposable
         Assert.StartsWith("The machine has no value for {{ComputerName}}. Assign the sequence with a computer name", server.RunReports[^1].Error, StringComparison.Ordinal);
     }
 
-    // A run assigned without a name, which a rule's pattern gives it: the values the report that started the run brought
-    // name the machine in its seed.
+    // A run assigned without a name, which a rule's pattern then gives it. The values from the report that started the
+    // run name the machine in its seed.
     [Fact]
     public async Task NamesTheMachineInTheSeedAsTheRunsValuesDo()
     {

@@ -7,8 +7,9 @@ using Microsoft.Win32.SafeHandles;
 
 namespace DDT.Agent.Deployment;
 
-// Signing an account in, its token, profile and environment, and starting a process as it in a window station and
-// desktop of its own, inside a job object. The installed Windows has all of them; only its agent runs as an account.
+// Signs an account in, reads its token, profile and environment, and starts a process as it on a separate window
+// station and desktop, inside a job object. The installed Windows has all of these, and only the agent there runs
+// tools as an account. The imports keep Win32's signatures, however many parameters they take.
 internal static unsafe partial class AccountNativeMethods
 {
     public const int LogonInteractive = 2;
@@ -139,7 +140,7 @@ internal static unsafe partial class AccountNativeMethods
         public nuint PeakJobMemoryUsed;
     }
 
-    // UTF-16 strings are passed pinned, not copied, so the password stays in the one managed string.
+    // UTF-16 strings are pinned, not copied, so the password stays in a single managed string.
     [LibraryImport("advapi32.dll", EntryPoint = "LogonUserW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool LogonUser(string userName, string? domain, string password, int logonType, int logonProvider, out SafeKernelHandle token);
@@ -275,21 +276,4 @@ internal static unsafe partial class AccountNativeMethods
     [LibraryImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool CloseHandle(nint handle);
-}
-
-// A token, process, thread or job, which CloseHandle closes.
-public sealed class SafeKernelHandle : SafeHandleZeroOrMinusOneIsInvalid
-{
-    public SafeKernelHandle()
-        : base(ownsHandle: true)
-    {
-    }
-
-    public SafeKernelHandle(nint handle)
-        : base(ownsHandle: true)
-    {
-        SetHandle(handle);
-    }
-
-    protected override bool ReleaseHandle() => AccountNativeMethods.CloseHandle(handle);
 }

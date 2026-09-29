@@ -181,7 +181,7 @@ describe("uploadImage", () => {
     const sent = serve({
       "POST /api/images/uploads": [created()],
       [`PATCH ${slicePath}`]: [accepted(4), accepted(6)],
-      // The first answer is lost at a proxy while the server works on; the second finds it still busy.
+      // A proxy loses the first answer while the server keeps working. The second call finds the server still busy.
       [`POST ${slicePath}/complete`]: [
         new Response(null, { status: 504 }),
         new Response(null, { status: 409, headers: { "Retry-After": "5" } }),

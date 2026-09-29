@@ -13,8 +13,8 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// A run that a rule or zero touch started waits at its start for the inputs nobody answered yet: at the machine, or on
-// the machine's page, and the values it starts with come from the server either way.
+// A run that a rule or zero touch started waits at its start for the inputs nobody answered yet. They're answered at
+// the machine or on the machine's page, and the values the run starts with come from the server either way.
 public sealed class RunInputsTests : IDisposable
 {
     private static readonly Guid s_machineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
@@ -56,8 +56,8 @@ public sealed class RunInputsTests : IDisposable
         Assert.Contains("The server took the answers, and the run starts.", _lines.ToString(), StringComparison.Ordinal);
     }
 
-    // Answered on the web meanwhile: the question at the machine goes away, and nothing is sent from here. The web answers
-    // only once the machine asked, so there is a question to go away.
+    // Answered on the web in the meantime. The question at the machine goes away, and nothing is sent from here. The
+    // web only answers once the machine asked, so there's a question to take away.
     [Fact]
     public async Task AnswersOnTheWebEndTheQuestionAtTheMachine()
     {
@@ -77,8 +77,8 @@ public sealed class RunInputsTests : IDisposable
         Assert.Contains("The inputs were answered on the web, and the run starts.", _lines.ToString(), StringComparison.Ordinal);
     }
 
-    // A run assigned on the web that asks nothing at the machine reached the agent before it started, without values: the
-    // report that started it brings them, and the steps work with them from the first one.
+    // A run assigned on the web that asks nothing at the machine reached the agent before it started, without values.
+    // The report that started it brings them, and the steps use them from the first one on.
     [Fact]
     public async Task StartsWithTheValuesTheReportThatStartedItBrings()
     {
@@ -91,16 +91,16 @@ public sealed class RunInputsTests : IDisposable
         AgentRun run = TestRuns.Run([TestRuns.Script(1) with { RebootExitCodes = [] }]);
         Assert.Null(run.Values);
 
-        RunResult result = await TestAgents.Runner(server, _tools, log, time, toolRunner: _toolRunner, status: TestAgents.Status(new ScriptedMachineConsole()))
-            .RunAsync(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), new DryRunMachineIdentityReader(1).Read(), server.Stop.Token);
+        RunResult result = await TestAgents.Runner(server, _tools, log, time, new() { ToolRunner = _toolRunner, Status = TestAgents.Status(new ScriptedMachineConsole()) })
+            .RunAsync(new RunRequest(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), new DryRunMachineIdentityReader(1).Read()), server.Stop.Token);
 
         Assert.Equal(RunOutcome.Finished, result.Outcome);
         Assert.Equal((DeploymentState.Running, RunActivity.Preparing), (server.RunReports[0].State, server.RunReports[0].Activity));
         Assert.Equal("GRZ", Assert.Single(_toolRunner.Options).Environment!["DDT_VAR_Office"]);
     }
 
-    // What the server did not take is asked again with its reason at the field, whether it answered with problems or
-    // refused the answers outright.
+    // What the server didn't accept is asked again, with the reason at the field. That's the same whether it answered
+    // with problems or refused the answers outright.
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -124,7 +124,7 @@ public sealed class RunInputsTests : IDisposable
         Assert.Equal(["GRZ", "VIE"], server.Answers.Select(answers => answers.Answers[0].Value));
     }
 
-    // Answered on the web before the machine could ask, as the answer to the report that says the run waits: the run
+    // Answered on the web before the machine could ask, in the answer to the report that says the run waits. The run
     // starts with those values, and no question is left open at the machine.
     [Fact]
     public async Task AnswersOnTheWebBeforeTheMachineAsksLeaveNoQuestion()
@@ -165,8 +165,8 @@ public sealed class RunInputsTests : IDisposable
             ],
         };
         AgentRun run = TestRuns.Run(definition.Steps) with { Sequence = definition, PendingInputs = [s_office] };
-        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, toolRunner: _toolRunner, status: status);
+        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, new() { ToolRunner = _toolRunner, Status = status });
 
-        return runner.RunAsync(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), new DryRunMachineIdentityReader(1).Read(), server.Stop.Token);
+        return runner.RunAsync(new RunRequest(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), new DryRunMachineIdentityReader(1).Read()), server.Stop.Token);
     }
 }

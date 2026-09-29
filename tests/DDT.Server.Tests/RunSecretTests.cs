@@ -27,8 +27,8 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
 {
     private static readonly XNamespace s_unattend = "urn:schemas-microsoft-com:unattend";
 
-    // Partition, apply, the answer file and the join, as the Install Windows template makes it with a domain. A script
-    // given runs in between.
+    // Partition, apply, the answer file and the join, like the Install Windows template makes it with a domain.
+    // A given script runs in between.
     private async Task<(DeployingMachine Machine, AgentRun Run)> AssignedAsync(
         WriteUnattendStep? unattend = null,
         JoinDomainStep? join = null,
@@ -53,10 +53,12 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
     private static AgentRunReport Reached(AgentRun run, int running, SequencePhase phase = SequencePhase.WindowsPE) =>
         Report(
             DeploymentState.Running,
-            [.. run.Sequence.Steps.Take(running + 1).Select((step, index) => Step(step, index < running ? StepState.Done : StepState.Running))],
-            phase: phase);
+            [.. run.Sequence.Steps.Take(running + 1).Select((step, index) => Step(step, index < running ? StepState.Done : StepState.Running))]) with
+        {
+            Phase = phase,
+        };
 
-    // The service in Windows, as it registers with the run token the agent in Windows PE handed over.
+    // Registers the service in Windows with the run token the agent in Windows PE handed over, and returns its token.
     private static async Task<string> ServiceTokenAsync(DeployingMachine machine) =>
         (await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
             machine.Registration with { RunToken = machine.RunToken, Environment = AgentEnvironment.Windows }))).Token!;
@@ -110,7 +112,7 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
             Convert.ToBase64String(Encoding.Unicode.GetBytes(DomainDeploymentApplication.AdministratorPassword + "Password")),
             answer.Descendants(s_unattend + "LocalAccount").Single().Descendants(s_unattend + "Value").Single().Value);
 
-        // The machine joins its domain later, in Windows: the join account stays out of Panther\unattend.xml.
+        // The machine joins its domain later, in Windows. So the join account stays out of Panther\unattend.xml.
         Assert.Empty(answer.Descendants(s_unattend + "JoinDomain"));
         Assert.DoesNotContain("ddt-join", xml, StringComparison.Ordinal);
         Assert.DoesNotContain(DomainDeploymentApplication.JoinPassword, xml, StringComparison.Ordinal);
@@ -219,7 +221,7 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
         Assert.Equal("OU=Kiosks,DC=corp,DC=example", credentials.OrganizationalUnit);
     }
 
-    // What the values make is checked as the settings are, before a password leaves the server.
+    // What the values produce is checked like the settings are, before a password leaves the server.
     [Fact]
     public async Task WhatWindowsWouldRefuseIsNotServed()
     {
@@ -270,7 +272,7 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
         Assert.Empty(await SecretReadsAsync(run.Id));
     }
 
-    // The settings can lose a secret with a restart of the server while the run goes on. The step then gets nothing.
+    // A server restart can remove a secret from the settings while the run continues. The step then gets nothing.
     [Fact]
     public async Task ASecretGoneFromTheSettingsIsNotServed()
     {
@@ -324,7 +326,7 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
         (await machine.Agent.RunUnattendAsync(machine.Id, machine.Token, run.Id, run.Sequence.Steps[2].Id)).EnsureSuccessStatusCode();
         await machine.ReportOkAsync(run.Id, Reached(run, 3, SequencePhase.Windows));
         (await machine.Agent.RunCredentialsAsync(machine.Id, await ServiceTokenAsync(machine), run.Id, run.Sequence.Steps[3].Id)).EnsureSuccessStatusCode();
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Done, [.. run.Sequence.Steps.Select(s => Step(s, StepState.Done))], phase: SequencePhase.Windows));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Done, [.. run.Sequence.Steps.Select(s => Step(s, StepState.Done))]) with { Phase = SequencePhase.Windows });
 
         Assert.Contains(application.Log.Entries, entry => entry.Message.Contains(run.Id.ToString("D"), StringComparison.Ordinal));
         Assert.All(application.Log.Entries, entry => Assert.All(secrets, secret =>
@@ -334,7 +336,7 @@ public sealed class RunSecretTests(DomainDeploymentApplication application) : IC
         }));
     }
 
-    // The account is bound to the domain the run started with, so a domain configured since gets nothing.
+    // The account is bound to the domain the run started with. So a domain configured since then gets nothing.
     [Fact]
     public async Task AJoinForAnotherDomainGetsNoAccount()
     {

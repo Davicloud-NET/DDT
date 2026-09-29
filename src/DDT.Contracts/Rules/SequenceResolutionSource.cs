@@ -4,14 +4,14 @@
 
 namespace DDT.Contracts.Rules;
 
-// Where a machine's sequence comes from, first match first: an assignment on the web, a choice at the machine, the
-// first rule of the ordered list that matches the machine and chooses a sequence. MacRule and ModelRule are what the
-// assignment rules before the ordered list were; the server no longer says them, and they keep their numbers.
+// Where a machine's sequence comes from. The first match wins, in this order: an assignment on the web, a choice at
+// the machine, then the first rule in the list that matches the machine and chooses a sequence.
 public enum SequenceResolutionSource
 {
     None,
     Assigned,
     Console,
+    // MacRule and ModelRule are retired. The server no longer sends them, but they keep their numbers.
     MacRule,
     ModelRule,
     Rule,

@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Server.BootImage;
 
-// Lenient, since a person may have edited the file: any case of the names, comments and trailing commas.
+// Lenient, because a person may have edited the file. It accepts names in any case, comments and trailing commas.
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     PropertyNameCaseInsensitive = true,

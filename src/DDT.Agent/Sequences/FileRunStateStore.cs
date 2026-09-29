@@ -8,24 +8,24 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// The engine's store in the agent. It keeps the state in memory until Partition gives the run its directory on the
-// disk, and from then on writes every state there, and the run token whenever it changed, so the disk always holds
-// what resumes the run. Each state is passed to saved once it is written, so the server is never told of a state the
-// disk does not have. The heartbeat writes a newer run token from its own thread, so the writes take turns.
+// The engine's store. It's in memory until Partition gives the run its directory. From then on every state and each
+// new run token go to disk before saved sees the state, so the server never hears of a state the disk doesn't have.
 public sealed class FileRunStateStore(DeploymentTokens tokens, Action<SequenceState>? saved = null) : ISequenceStateStore
 {
+    // The heartbeat writes a new run token from its own thread.
     private readonly SemaphoreSlim _writing = new(1, 1);
     private RunFiles? _files;
     private SequenceState? _state;
     private string? _writtenToken;
 
-    // The last state saved; null before the first.
+    // The last state saved. Null before the first save.
     public SequenceState? State => _state;
 
     // Null until the run has its directory.
     public RunFiles? Files => _files;
 
-    // From Partition on, or at once for a run the agent found on the disk after a restart. Writes what it holds now.
+    // Called from Partition on, or right away for a run the agent found on disk after a restart. Writes what it holds
+    // now.
     public async Task AttachAsync(RunFiles files, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(files);
@@ -74,7 +74,7 @@ public sealed class FileRunStateStore(DeploymentTokens tokens, Action<SequenceSt
         saved?.Invoke(state);
     }
 
-    // Writes the newest run token when it is not the one on the disk yet, as every save does, and before a restart.
+    // Writes the newest run token if it isn't on disk yet. Every save does this, and it's called before a restart.
     public async Task SaveTokenAsync(CancellationToken cancellationToken)
     {
         await _writing.WaitAsync(cancellationToken).ConfigureAwait(false);

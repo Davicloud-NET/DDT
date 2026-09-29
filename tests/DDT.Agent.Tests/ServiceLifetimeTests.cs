@@ -8,7 +8,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The service's side of the service control manager without one: what it reports, and how it answers controls.
+// The service's side of the service control manager, without a real one: what it reports, and how it answers controls.
 public sealed class ServiceLifetimeTests
 {
     private readonly Lock _lock = new();
@@ -104,8 +104,8 @@ public sealed class ServiceLifetimeTests
             (stopped.CurrentState, stopped.Win32ExitCode, stopped.ServiceSpecificExitCode));
     }
 
-    // Once Stopped is reported, the dispatcher may return on the main thread, where the host reads the exit code, before
-    // RunAsync returns.
+    // Once Stopped is reported, the dispatcher may return on the main thread, where the host reads the exit code,
+    // before RunAsync returns.
     [Fact]
     public async Task TheExitCodeIsKnownWhenStoppedIsReported()
     {

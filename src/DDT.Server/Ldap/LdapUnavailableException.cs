@@ -6,8 +6,8 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Server.Ldap;
 
-// The directory could not be asked: nothing answered, it refused the bind account, or it refused the search. The
-// message says which, for an administrator.
+// The directory couldn't be queried. Either nothing answered, it refused the bind account, or it refused the search.
+// The message tells an administrator which one.
 public sealed class LdapUnavailableException : Exception
 {
     public LdapUnavailableException()
@@ -30,6 +30,6 @@ public sealed class LdapUnavailableException : Exception
         Reason = reason;
     }
 
-    // The message as a code, for the web to say in the person's language.
+    // The message as a code, so the web client can show it in the person's language.
     public ServerMessage? Reason { get; }
 }

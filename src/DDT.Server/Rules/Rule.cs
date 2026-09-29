@@ -4,13 +4,10 @@
 
 namespace DDT.Server.Rules;
 
-// One rule of the ordered list, see RuleView: a rule whose When holds for a machine, or that has none, chooses the
-// sequence, sets Values and gives the machine roles RoleIds, and the first rule to choose a sequence or set a value wins
-// it. It never authorizes a machine. Position counts from 0 at the top and is unique.
-//
-// When, Values and RoleIds are JSON as DdtJsonContext writes a ConditionNode, a list of NamedValue and a list of role ids;
-// When is null for a rule that matches every machine. RoleIds can name a role that was deleted since, which gives
-// nothing.
+// If a rule's When holds for a machine, or is null, the rule chooses the sequence, sets Values and gives the roles in
+// RoleIds. The first rule to choose a sequence or set a value wins. No rule authorizes a machine. When, Values and
+// RoleIds are JSON written by DdtJsonContext, and a deleted role in RoleIds gives nothing. Position counts from 0 at
+// the top.
 public sealed class Rule
 {
     public Guid Id { get; set; }
@@ -32,7 +29,7 @@ public sealed class Rule
 
     public string RoleIds { get; set; } = "[]";
 
-    // Raised by every save and checked on it, so an editor saving over a newer save is told instead.
+    // Every save checks it and raises it. An editor who saves over a newer save is told, instead of overwriting it.
     public long Revision { get; set; }
 
     public DateTimeOffset CreatedUtc { get; set; }

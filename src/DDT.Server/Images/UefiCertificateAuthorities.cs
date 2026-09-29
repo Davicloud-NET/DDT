@@ -6,9 +6,9 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace DDT.Server.Images;
 
-// The certificates in a stock PC's Secure Boot db that sign what is not Windows, such as the shims Linux distributions
-// start from: Microsoft Corporation UEFI CA 2011 and Microsoft UEFI CA 2023, as Microsoft publishes them at
-// https://www.microsoft.com/pkiops/certs/. DDT.Server.csproj embeds them.
+// Microsoft Corporation UEFI CA 2011 and Microsoft UEFI CA 2023. In a stock PC's Secure Boot db, they sign what isn't
+// Windows, such as Linux shims. DDT.Server.csproj embeds the files that https://www.microsoft.com/pkiops/certs/
+// publishes.
 public static class UefiCertificateAuthorities
 {
     public static IReadOnlyList<X509Certificate2> Microsoft { get; } =

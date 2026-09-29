@@ -4,7 +4,7 @@
 
 namespace DDT.ConsoleProtocol;
 
-// Where a step runs: in Windows PE, or in the installed Windows after the hand-over, where no console shows it.
+// Where a step runs. That's Windows PE, or the installed Windows after the hand-over, where no console shows it.
 public enum ConsolePhase
 {
     WindowsPE,

@@ -19,8 +19,8 @@ using static DDT.Server.Tests.AccountRequests;
 
 namespace DDT.Server.Tests;
 
-// Accounts and the accounts given for a run as PostgreSQL stores them: its unique index on names, its text columns, and
-// a share fetched by a running step.
+// Stored accounts and the accounts given for a run, as PostgreSQL stores them.
+// That covers its unique index on names, its text columns, and a share fetched by a running step.
 public sealed class PostgresAccountTests
 {
     [Fact]
@@ -35,27 +35,15 @@ public sealed class PostgresAccountTests
         SignedInClient administrator = await application.AdministratorAsync();
         string proof = await administrator.TokenAsync();
 
-        AccountView account = await administrator.CreatedAccountAsync(Request(name: "Driver share", hosts: ["files.corp.example", "10.0.0.5"]));
-        HttpResponseMessage taken = await administrator.CreateAccountAsync(Request(name: "DRIVER SHARE"), proof);
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { Name = "Driver share", Hosts = ["files.corp.example", "10.0.0.5"] });
+        HttpResponseMessage taken = await administrator.CreateAccountAsync(Request() with { Name = "DRIVER SHARE" }, proof);
 
         Assert.Equal(HttpStatusCode.BadRequest, taken.StatusCode);
         Assert.Equal(["files.corp.example", "10.0.0.5"], (await administrator.AccountAsync(account.Id)).Hosts);
 
         using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator);
         Guid imageId = (await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096))).Id;
-        RunScriptStep script = new()
-        {
-            Id = Guid.NewGuid(),
-            Name = "Copy drivers",
-            Phase = SequencePhase.WindowsPE,
-            Interpreter = ScriptInterpreter.Cmd,
-            Script = "echo copied",
-            Shares =
-            [
-                new ShareConnection(@"\\files.corp.example\drivers", new AccountReference(account.Id, null)),
-                new ShareConnection(@"\\files.corp.example\given", new AccountReference(null, "Given")),
-            ],
-        };
+        RunScriptStep script = Script(account.Id);
         SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.Definition([.. SequenceRequests.Minimal(imageId).Steps, script]) with
         {
             Inputs = [new InputDeclaration { Name = "Given", Label = "Given", Kind = InputKind.Account, Account = new AccountDestination { Hosts = ["files.corp.example"] } }],
@@ -66,22 +54,7 @@ public sealed class PostgresAccountTests
         DeploymentSummary assigned = await administrator.AssignedAsync(machine.Id, sequence.Id, "PC-0009");
         AgentRun run = (await machine.NextAsync()).Run!;
 
-        using (IServiceScope scope = application.Services.CreateScope())
-        {
-            DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
-            Deployment deployment = await database.Deployments.SingleAsync(d => d.Id == assigned.Id, cancellation);
-            InputDeclaration input = SequenceDocuments.Read((await database.DeploymentSnapshots.SingleAsync(s => s.DeploymentId == assigned.Id, cancellation)).Definition)
-                .Inputs!.Single();
-
-            Assert.Null(await scope.ServiceProvider.GetRequiredService<RunCredentials>().KeepAsync(
-                deployment,
-                input,
-                new InputAnswer("Given", null, @"CORP\jane", "Given 7"),
-                new RunCredentialGiver(null, "technician\0 with a NUL", AtMachine: true),
-                cancellation));
-            await database.SaveChangesAsync(cancellation);
-        }
-
+        await GiveAsync(application, assigned.Id, cancellation);
         await machine.ReportOkAsync(run.Id, TestReports.Running(
             TestReports.Step(run.Sequence.Steps[0], StepState.Done),
             TestReports.Step(run.Sequence.Steps[1], StepState.Done),
@@ -99,7 +72,41 @@ public sealed class PostgresAccountTests
             cancellation)));
 
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAccountAsync(
-            (await administrator.CreatedAccountAsync(Request(name: "Unused"))).Id,
+            (await administrator.CreatedAccountAsync(Request() with { Name = "Unused" })).Id,
             proof)).StatusCode);
+    }
+
+    // One share with the stored account, and one with the account given for the run.
+    private static RunScriptStep Script(Guid accountId) => new()
+    {
+        Id = Guid.NewGuid(),
+        Name = "Copy drivers",
+        Phase = SequencePhase.WindowsPE,
+        Interpreter = ScriptInterpreter.Cmd,
+        Script = "echo copied",
+        Shares =
+        [
+            new ShareConnection(@"\\files.corp.example\drivers", new AccountReference(accountId, null)),
+            new ShareConnection(@"\\files.corp.example\given", new AccountReference(null, "Given")),
+        ],
+    };
+
+    // Gives the account like a technician does at the machine.
+    // The technician's name has a NUL that PostgreSQL couldn't store.
+    private static async Task GiveAsync(PostgresApplication application, Guid runId, CancellationToken cancellation)
+    {
+        using IServiceScope scope = application.Services.CreateScope();
+        DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
+        Deployment deployment = await database.Deployments.SingleAsync(d => d.Id == runId, cancellation);
+        InputDeclaration input = SequenceDocuments.Read((await database.DeploymentSnapshots.SingleAsync(s => s.DeploymentId == runId, cancellation)).Definition)
+            .Inputs!.Single();
+
+        Assert.Null(await scope.ServiceProvider.GetRequiredService<RunCredentials>().KeepAsync(
+            deployment,
+            input,
+            new InputAnswer("Given", null, @"CORP\jane", "Given 7"),
+            new RunCredentialGiver(null, "technician\0 with a NUL", AtMachine: true),
+            cancellation));
+        await database.SaveChangesAsync(cancellation);
     }
 }

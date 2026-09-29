@@ -14,10 +14,10 @@ public static class PackageLimits
 
     public const int MaxEntries = 200_000;
 
-    // A driver pack of every model a vendor makes stays well below this; more is a zip bomb.
+    // A driver pack for every model a vendor makes stays well below this. Anything bigger is a zip bomb.
     public const long MaxExpandedBytes = 64L * 1024 * 1024 * 1024;
 
-    // Under Windows' 260 character path limit once the agent's folder for the package is put in front.
+    // Stays under Windows' 260 character path limit once the agent puts its folder for the package in front.
     public const int MaxEntryNameLength = 240;
 
     public const int MaxDepth = 32;

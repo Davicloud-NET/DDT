@@ -14,9 +14,8 @@ using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Authentication;
 
-// Everything is checked on every request, as the session cookie's security stamp is checked every minute: a token stops
-// working the moment it is revoked or expires, or its user is disabled or locked out. Its role is the lower of its own
-// and the user's highest now, so demoting a user demotes their tokens.
+// Checks the token on every request, so it stops working at once when it's revoked or expires, or when its user is
+// disabled or locked out. The token gets the lower of its own role and its user's current highest role.
 public sealed class ApiTokenAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory loggerFactory,
@@ -59,32 +58,45 @@ public sealed class ApiTokenAuthenticationHandler(
         (ApiToken token, DdtUser user) = (found.Token, found.User);
         DateTimeOffset now = timeProvider.GetUtcNow();
 
+        if (await RefusalAsync(token, user, now).ConfigureAwait(false) is { } refusal)
+        {
+            return AuthenticateResult.Fail(refusal);
+        }
+
+        AuthenticationTicket ticket = await TicketAsync(token, user).ConfigureAwait(false);
+        await RecordUseAsync(token, user, now).ConfigureAwait(false);
+
+        return AuthenticateResult.Success(ticket);
+    }
+
+    private async Task<string?> RefusalAsync(ApiToken token, DdtUser user, DateTimeOffset now)
+    {
         if (token.RevokedUtc is not null)
         {
-            return AuthenticateResult.Fail($"The API token {token.Name} was revoked.");
+            return $"The API token {token.Name} was revoked.";
         }
 
         if (token.ExpiresUtc <= now)
         {
-            return AuthenticateResult.Fail($"The API token {token.Name} expired.");
+            return $"The API token {token.Name} expired.";
         }
 
         if (user.IsDisabled || (user.LockoutEnabled && user.LockoutEnd > now))
         {
-            return AuthenticateResult.Fail($"The account of the API token {token.Name} is disabled or locked out.");
+            return $"The account of the API token {token.Name} is disabled or locked out.";
         }
 
-        // An account that still has to replace a password an administrator was shown reaches nothing but its Account
-        // page with its session, so its tokens reach nothing either.
+        // An account that still has to replace a password an administrator has seen can only reach its Account page
+        // with its session. So its tokens can't reach anything either.
         bool mustChangePassword = await database.UserClaims
             .AnyAsync(claim => claim.UserId == user.Id && claim.ClaimType == DdtClaimTypes.MustChangePassword, Context.RequestAborted)
             .ConfigureAwait(false);
 
-        if (mustChangePassword)
-        {
-            return AuthenticateResult.Fail($"The account of the API token {token.Name} has to change its password first.");
-        }
+        return mustChangePassword ? $"The account of the API token {token.Name} has to change its password first." : null;
+    }
 
+    private async Task<AuthenticationTicket> TicketAsync(ApiToken token, DdtUser user)
+    {
         List<string?> roles = await database.UserRoles
             .Where(membership => membership.UserId == user.Id)
             .Join(database.Roles, membership => membership.RoleId, role => role.Id, (_, role) => role.Name)
@@ -104,15 +116,13 @@ public sealed class ApiTokenAuthenticationHandler(
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
-        await RecordUseAsync(token, user, now).ConfigureAwait(false);
-
-        return AuthenticateResult.Success(new AuthenticationTicket(
+        return new AuthenticationTicket(
             new ClaimsPrincipal(new ClaimsIdentity(claims, DdtAuthenticationSchemes.ApiToken)),
-            DdtAuthenticationSchemes.ApiToken));
+            DdtAuthenticationSchemes.ApiToken);
     }
 
-    // A script may call many times a second. Written directly rather than through a save, which would reach the audit
-    // interceptor for nothing, and only once a minute.
+    // A script may call many times a second, so the last use is only recorded once a minute. It's written directly
+    // instead of through SaveChanges, which would run the audit interceptor for nothing.
     private async Task RecordUseAsync(ApiToken token, DdtUser user, DateTimeOffset now)
     {
         if (token.LastUsedUtc is { } last && now - last < ApiTokenLimits.LastUsedInterval)

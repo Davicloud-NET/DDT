@@ -233,7 +233,7 @@ describe("RulesPage", () => {
       { ruleIds: ["r1", "r3", "r2"] },
     ]);
 
-    // At the top, Alt and the up arrow do nothing.
+    // At the top, Alt and the up arrow don't do anything.
     fireEvent.keyDown(row("Kiosk in the lobby"), { key: "ArrowUp", altKey: true });
     expect(server.changes()).toHaveLength(1);
   });
@@ -356,7 +356,7 @@ describe("RulesPage", () => {
     ).toBeInTheDocument();
   });
 
-  // The MAC contains of the assignment rules before the ordered list among them, and part of a choice typed.
+  // Including Contains on a MAC address, and part of a value typed for a subject with choices.
   it("offers every comparison the server takes for what a condition tests", async () => {
     await open([
       {

@@ -2,8 +2,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
 
-<!-- The last word before a disk is erased: what will be erased, under the hazard band, and ERASE to type. The erase
-     key works only once the word is typed, and sends what was typed. -->
+<!-- The last confirmation before a disk is erased, under the hazard band. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DDT.MachineConsole.ViewModels"

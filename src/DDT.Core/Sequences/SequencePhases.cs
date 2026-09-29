@@ -8,7 +8,7 @@ namespace DDT.Core.Sequences;
 
 public static class SequencePhases
 {
-    // A step without a phase of its own, such as a restart, runs in the phase of the step before it.
+    // A step that doesn't ask for a phase, such as a restart, runs in the phase of the step before it.
     public static SequencePhase Of(SequenceDefinition definition, int index)
     {
         ArgumentNullException.ThrowIfNull(definition);

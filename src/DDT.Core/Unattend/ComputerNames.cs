@@ -19,7 +19,7 @@ public static class ComputerNames
         return error.Length == 0;
     }
 
-    // Only the characters a DNS host name may hold, because the name becomes one on a domain. An invalid name fails
+    // Only the characters a DNS host name can contain, because on a domain the name becomes one. An invalid name fails
     // Windows setup in the specialize pass, after DDT has already reported the deployment as done.
     public static ServerMessage? Problem(string name)
     {

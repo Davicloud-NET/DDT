@@ -14,10 +14,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Rules;
 
-// The sequence a machine gets, first match first: an assignment on the web, a choice at the machine, then the first
-// rule of the ordered list that matches the machine and chooses a sequence. The rules are walked in every case, since
-// they set values and give machine roles for whatever runs. Resolving changes nothing and authorizes nothing: an
-// approval on the web runs a rule's sequence, and a console only offers it.
+// Finds the sequence a machine gets. An assignment on the web or a choice at the machine comes first, then the first
+// rule that chooses one. The rules are walked in every case, since they set values and give roles for whatever runs.
+// Resolving authorizes nothing. An approval on the web runs a rule's sequence, and a console only offers it.
 public sealed class SequenceResolver(DdtDbContext database)
 {
     public async Task<SequenceResolution> ResolveAsync(Machine machine, CancellationToken cancellationToken)

@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { Trans, useLingui } from "@lingui/react/macro";
+import { useLingui } from "@lingui/react/macro";
 import { IconX } from "@tabler/icons-react";
-import { useId, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   Button as AriaButton,
   Dialog as AriaDialog,
@@ -13,14 +13,7 @@ import {
   ModalOverlay,
 } from "react-aria-components";
 
-import { Button } from "./Button";
 import { cx } from "./cx";
-import { Notice } from "./Notice";
-import { TextField } from "./TextField";
-
-// A dialog floats over the page: the lightest surface, one of the few with a shadow, over a dimmed page. React Aria
-// traps the focus inside, closes it with Escape and gives the focus back to what opened it. It rises into place as
-// the page dims, and leaves the same way, faster; React Aria keeps it mounted until it has left.
 
 export interface DialogProps {
   isOpen: boolean;
@@ -30,13 +23,14 @@ export interface DialogProps {
   footer?: ReactNode;
   // A band above the title, for dialogs that erase something.
   hazard?: boolean;
-  // While true, Escape and a click outside do not close it, as during a save.
+  // While true, Escape and a click outside don't close it, for example during a save.
   isBusy?: boolean;
   width?: "md" | "lg";
   // The id of what a screen reader reads out with the title as the dialog opens.
   describedBy?: string;
 }
 
+// A modal over the dimmed page. React Aria traps the focus in it and keeps it mounted until its exit has run.
 export function Dialog({
   isOpen,
   onOpenChange,
@@ -91,105 +85,5 @@ export function Dialog({
         </AriaDialog>
       </AriaModal>
     </ModalOverlay>
-  );
-}
-
-export interface ConfirmDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: ReactNode;
-  // What happens, in plain words, and what cannot be undone.
-  children: ReactNode;
-  confirmLabel: ReactNode;
-  onConfirm: () => void;
-  // Actions that remove or stop something use the danger key.
-  danger?: boolean;
-  isBusy?: boolean;
-  error?: ReactNode;
-  // A word to type before the confirm key works, such as ERASE. The dialog then carries the hazard band.
-  typedWord?: string;
-  // Keeps the confirm key off for a reason the dialog's content explains, such as an allowance not given yet.
-  isConfirmDisabled?: boolean;
-}
-
-// Asks before an action. The safe way out comes first and holds the focus, so Enter never confirms by accident;
-// with a word to type, the field takes the focus instead, since nothing confirms until the word is there. What the
-// action does is read out with the title, as the focus lands on a key rather than on the text.
-export function ConfirmDialog({
-  isOpen,
-  onOpenChange,
-  title,
-  children,
-  confirmLabel,
-  onConfirm,
-  danger = false,
-  isBusy = false,
-  error,
-  typedWord,
-  isConfirmDisabled = false,
-}: ConfirmDialogProps) {
-  const [typed, setTyped] = useState("");
-  const descriptionId = useId();
-  const ready = (typedWord === undefined || typed === typedWord) && !isConfirmDisabled;
-
-  function openChange(open: boolean) {
-    if (!open) {
-      setTyped("");
-    }
-
-    onOpenChange(open);
-  }
-
-  return (
-    <Dialog
-      isOpen={isOpen}
-      onOpenChange={openChange}
-      title={title}
-      hazard={typedWord !== undefined}
-      isBusy={isBusy}
-      describedBy={descriptionId}
-      footer={
-        <>
-          <Button
-            variant="secondary"
-            autoFocus={typedWord === undefined}
-            isDisabled={isBusy}
-            onPress={() => {
-              openChange(false);
-            }}
-          >
-            <Trans>Cancel</Trans>
-          </Button>
-          <Button
-            variant={danger ? "danger" : "primary"}
-            isDisabled={isBusy || !ready}
-            className={
-              danger && ready
-                ? "bg-fail text-on-fail shadow-none hover:bg-fail pressed:bg-fail-pressed"
-                : undefined
-            }
-            onPress={onConfirm}
-          >
-            {confirmLabel}
-          </Button>
-        </>
-      }
-    >
-      <div id={descriptionId} className="flex flex-col gap-4">
-        {children}
-      </div>
-      {typedWord !== undefined ? (
-        <TextField
-          label={<Trans>Type {typedWord} to go on</Trans>}
-          value={typed}
-          onChange={setTyped}
-          mono
-          autoFocus
-          autoComplete="off"
-          spellCheck="false"
-        />
-      ) : null}
-      {error ? <Notice tone="fail">{error}</Notice> : null}
-    </Dialog>
   );
 }

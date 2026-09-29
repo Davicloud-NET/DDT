@@ -14,8 +14,8 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// DDT's session in the installed Windows, from the hand-over's plan to its end, with its accounts in memory and
-// HKEY_LOCAL_MACHINE and HKEY_USERS as keys of the test's own in the current user's hive, which it deletes.
+// DDT's session in the installed Windows, from the hand-over's plan to its end. The accounts live in memory.
+// HKEY_LOCAL_MACHINE and HKEY_USERS are test keys in the current user's hive, which the test deletes.
 public sealed class DeploySessionTests : IDisposable
 {
     private static readonly XNamespace s_unattend = "urn:schemas-microsoft-com:unattend";
@@ -103,8 +103,8 @@ public sealed class DeploySessionTests : IDisposable
         Assert.Equal(File.Password, _accounts.PasswordOf(DeploySession.AccountName));
         Assert.Null(_accounts.StoredAutoLogonPassword);
 
-        // The account's registry, loaded from its profile for the moment, names the console and takes away what
-        // Ctrl+Alt+Del offers.
+        // The account's registry hive, loaded from its profile just for this, sets the console as the shell and removes
+        // what Ctrl+Alt+Del offers.
         string hive = Path.Combine(_accounts.ProfilePath, "NTUSER.DAT");
         Assert.Equal(
             [
@@ -335,9 +335,7 @@ public sealed class DeploySessionTests : IDisposable
     private DeploySession Session(TimeProvider? time = null) => new(
         _root,
         _accounts,
-        _machine,
-        _users,
-        _tools,
+        new SessionRegistry(_machine, _users, _tools),
         Log(),
         time ?? new ImmediateTimeProvider(),
         (sid, pipe) => _started.Add((sid, pipe)));

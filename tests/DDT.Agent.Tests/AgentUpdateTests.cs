@@ -27,12 +27,12 @@ public sealed class AgentUpdateTests : IDisposable
     {
         ImmediateTimeProvider time = new();
 
-        return (new AgentUpdate(server, relauncher, new AgentLog(time, TextWriter.Null), time, CurrentSha256, _directory, arguments), time);
+        return (new AgentUpdate(server, relauncher, new AgentLog(time, TextWriter.Null), time, new RunningAgent(CurrentSha256, _directory, arguments)), time);
     }
 
     private string AgentPath => Path.Combine(_directory, "ddt-agent.exe");
 
-    // As a boot image has it: the console beside the agent, with contents of its own.
+    // The console next to the agent, like in a boot image, with its own contents.
     private string BootConsole(IReadOnlyList<byte[]> contents)
     {
         foreach ((string name, byte[] content) in ConsolePipe.Files.Zip(contents))
@@ -71,11 +71,7 @@ public sealed class AgentUpdateTests : IDisposable
             relauncher,
             new AgentLog(time, TextWriter.Null),
             time,
-            CurrentSha256,
-            _directory,
-            arguments,
-            consolePath: consolePath,
-            agentPath: AgentPath);
+            new RunningAgent(CurrentSha256, _directory, arguments, consolePath, AgentPath));
     }
 
     [Fact]
@@ -93,7 +89,7 @@ public sealed class AgentUpdateTests : IDisposable
         Assert.DoesNotContain("download", server.Calls);
     }
 
-    // The update check is the first call to the server, so the console at the machine shows why it does not get through.
+    // The update check is the first call to the server, so the console at the machine shows why it doesn't get through.
     [Fact]
     public async Task ShowsWhyTheServerCannotBeReachedUntilItAnswers()
     {
@@ -107,9 +103,7 @@ public sealed class AgentUpdateTests : IDisposable
             new ScriptedRelauncher(() => 0),
             new AgentLog(time, TextWriter.Null),
             time,
-            CurrentSha256,
-            _directory,
-            [],
+            new RunningAgent(CurrentSha256, _directory, []),
             TestAgents.Status(console));
 
         Assert.Null(await update.RunAsync(TestContext.Current.CancellationToken));
@@ -216,8 +210,8 @@ public sealed class AgentUpdateTests : IDisposable
         Assert.Null(await update.RunAsync(TestContext.Current.CancellationToken));
     }
 
-    // As in Windows PE right after a restart, before the network is up: the connection is not accepted in time. A
-    // listener that never accepts leaves the TLS handshake unanswered, which the connect timeout covers.
+    // Like in WinPE right after a restart, before the network is up, the connection isn't accepted in time. A listener
+    // that never accepts leaves the TLS handshake unanswered, and the connect timeout covers that.
     [Fact]
     public async Task SaysThatTheServerDidNotAcceptTheConnectionInTime()
     {
@@ -228,15 +222,15 @@ public sealed class AgentUpdateTests : IDisposable
         using HttpAgentServer server = new(new Uri($"https://127.0.0.1:{port}/"), null, connectTimeout: TimeSpan.FromMilliseconds(300));
         ManualTimeProvider time = new();
         using StringWriter console = new();
-        AgentUpdate update = new(server, new ScriptedRelauncher(() => 0), new AgentLog(time, console), time, CurrentSha256, _directory, []);
+        AgentUpdate update = new(server, new ScriptedRelauncher(() => 0), new AgentLog(time, console), time, new RunningAgent(CurrentSha256, _directory, []));
         using CancellationTokenSource stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         using CancellationTokenSource limit = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         limit.CancelAfter(TimeSpan.FromSeconds(10));
 
         Task<int?> running = update.RunAsync(stop.Token);
 
-        // The retry's delay only runs out when the test moves the time, so the agent waits there after one attempt,
-        // unless it gave up at once.
+        // The retry's delay only runs out when the test advances the time. So the agent waits there after one attempt,
+        // unless it gave up right away.
         while (time.PendingTimers == 0 && !running.IsCompleted)
         {
             await Task.Delay(10, limit.Token);
@@ -277,18 +271,18 @@ public sealed class AgentUpdateTests : IDisposable
         Assert.Null(await second.RunAsync(TestContext.Current.CancellationToken));
         Assert.Equal(7, busy.Calls.Count(call => call == "release"));
 
-        // Outlasts the server's one minute window, so a lab that asked all at once gets its turn.
+        // Waits longer than the server's one-minute window, so a whole lab that asked at the same time gets its turn.
         Assert.True(busyTime.Delays.Aggregate(TimeSpan.Zero, (total, delay) => total + delay) > TimeSpan.FromMinutes(1));
     }
 
-    // The server takes a console of exactly these files and names them in this order.
+    // The server accepts a console of exactly these files and lists them in this order.
     [Fact]
     public void TheConsoleIsMadeOfTheFilesTheServerTakes()
     {
         Assert.Equal(ConsoleRelease.FileNames, ConsolePipe.Files);
     }
 
-    // A newer console alone starts this agent again, with the console downloaded next to it.
+    // A newer console alone restarts this agent, with the downloaded console next to it.
     [Fact]
     public async Task StartsAgainWithTheConsoleTheServerOffers()
     {
@@ -344,7 +338,7 @@ public sealed class AgentUpdateTests : IDisposable
         Assert.Empty(relauncher.Started);
     }
 
-    // A console named on the command line is the one someone wanted.
+    // A console passed on the command line is the one someone wanted.
     [Fact]
     public async Task KeepsAConsoleNamedOnTheCommandLine()
     {

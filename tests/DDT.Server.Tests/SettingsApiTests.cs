@@ -13,7 +13,6 @@ using DDT.Server.Authentication;
 using DDT.Server.Machines;
 using DDT.Server.Settings;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -106,7 +105,7 @@ public sealed class SettingsApiTests(DdtApplication application) : IClassFixture
             SettingsSectionNames.Deployment,
             loaded.Version,
             loaded.Values,
-            new Dictionary<string, SecretUpdate> { ["localAdministrator.password"] = new(SecretAction.Set, Password) });
+            new(Secrets: new Dictionary<string, SecretUpdate> { ["localAdministrator.password"] = new(SecretAction.Set, Password) }));
         string body = await set.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         SettingsSectionView<DeploymentSettings> withSecret = await RegisteredMachine.ReadAsync<SettingsSectionView<DeploymentSettings>>(set);
 
@@ -123,7 +122,7 @@ public sealed class SettingsApiTests(DdtApplication application) : IClassFixture
         SettingsSectionView<DeploymentSettings> cleared = await administrator.SavedAsync<DeploymentSettings>(
             SettingsSectionNames.Deployment,
             values => values,
-            new Dictionary<string, SecretUpdate> { ["localAdministrator.password"] = new(SecretAction.Clear, null) });
+            new(Secrets: new Dictionary<string, SecretUpdate> { ["localAdministrator.password"] = new(SecretAction.Clear, null) }));
         Assert.False(cleared.Secrets["localAdministrator.password"].IsSet);
 
         List<string?> details = await application.QueryAsync(database => database.AuditEvents
@@ -148,7 +147,7 @@ public sealed class SettingsApiTests(DdtApplication application) : IClassFixture
             SettingsSectionNames.Deployment,
             loaded.Version,
             loaded.Values,
-            new Dictionary<string, SecretUpdate> { ["timeZone"] = new(SecretAction.Set, "x") });
+            new(Secrets: new Dictionary<string, SecretUpdate> { ["timeZone"] = new(SecretAction.Set, "x") }));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Contains("timeZone", (await SettingsRequests.ProblemsAsync(response)).Errors.Keys);
@@ -203,11 +202,11 @@ public sealed class SettingsApiTests(DdtApplication application) : IClassFixture
         Assert.Contains("zeroTouchNetworks", loaded.Reauthenticate);
 
         SettingsSectionView<MachineSettings> saved = await RegisteredMachine.ReadAsync<SettingsSectionView<MachineSettings>>(
-            await administrator.SaveAsync(SettingsSectionNames.Machines, loaded.Version, values, reauthentication: await administrator.TokenAsync()));
+            await administrator.SaveAsync(SettingsSectionNames.Machines, loaded.Version, values, new(Reauthentication: await administrator.TokenAsync())));
 
         Assert.Equal(["10.210.0.0/16"], saved.Values.ZeroTouchNetworks);
 
-        // What is stored already is no change, and needs no proof.
+        // Saving what's already stored isn't a change and needs no proof.
         Assert.Equal(HttpStatusCode.OK, (await administrator.SaveAsync(SettingsSectionNames.Machines, saved.Version, saved.Values)).StatusCode);
     }
 
@@ -219,31 +218,31 @@ public sealed class SettingsApiTests(DdtApplication application) : IClassFixture
         SettingsSectionView<ProxySettings> loaded = await administrator.SectionAsync<ProxySettings>(SettingsSectionNames.Proxies);
         ProxySettings values = loaded.Values with { KnownNetworks = ["172.16.0.0/12"] };
 
-        HttpResponseMessage unconfirmed = await administrator.SaveAsync(SettingsSectionNames.Proxies, loaded.Version, values, reauthentication: token);
+        HttpResponseMessage unconfirmed = await administrator.SaveAsync(SettingsSectionNames.Proxies, loaded.Version, values, new(Reauthentication: token));
 
         Assert.Equal(HttpStatusCode.BadRequest, unconfirmed.StatusCode);
         Assert.Equal([SettingWarningCodes.WideNetwork], await SettingsRequests.UnconfirmedAsync(unconfirmed));
         Assert.StartsWith("network.wide: 172.16.0.0/12 is wider than a /16.", Assert.Single((await SettingsRequests.ProblemsAsync(unconfirmed)).Errors["confirm"]), StringComparison.Ordinal);
 
-        // The warning to confirm carries its message as a code too, which the confirmation code is not.
+        // The warning to confirm carries its message as a code too. That code isn't the confirmation code.
         JsonNode warning = (await JsonAsync(unconfirmed))["confirm"]![0]!;
         Assert.Equal(ServerMessages.SettingsProxiesNetworkWide.Code, (string?)warning["text"]!["code"]);
         Assert.Equal("""{"network":"172.16.0.0/12","prefix":16}""", warning["text"]!["args"]!.ToJsonString());
         Assert.StartsWith("172.16.0.0/12 is wider than a /16.", (string?)warning["message"], StringComparison.Ordinal);
 
         SettingsSectionView<ProxySettings> saved = await RegisteredMachine.ReadAsync<SettingsSectionView<ProxySettings>>(
-            await administrator.SaveAsync(SettingsSectionNames.Proxies, loaded.Version, values, confirm: [SettingWarningCodes.WideNetwork], reauthentication: token));
+            await administrator.SaveAsync(SettingsSectionNames.Proxies, loaded.Version, values, new(Confirm: [SettingWarningCodes.WideNetwork], Reauthentication: token)));
 
         Assert.Equal(SettingWarningCodes.WideNetwork, Assert.Single(saved.Warnings).Code);
         Assert.NotNull(saved.Apply);
 
-        // A warning that holds already is not asked again.
+        // A warning that the stored values already have isn't asked again.
         Assert.Equal(HttpStatusCode.OK, (await administrator.SaveAsync(SettingsSectionNames.Proxies, saved.Version, saved.Values)).StatusCode);
 
-        await administrator.SavedAsync<ProxySettings>(SettingsSectionNames.Proxies, current => current with { KnownNetworks = [] }, reauthentication: token);
+        await administrator.SavedAsync<ProxySettings>(SettingsSectionNames.Proxies, current => current with { KnownNetworks = [] }, new(Reauthentication: token));
     }
 
-    // The overlap belongs to the machines section at load, and a save of either section is refused.
+    // At load, the overlap counts as a problem of the machines section, and a save of either section is refused.
     [Fact]
     public async Task AProxyInsideAZeroTouchNetworkIsRefusedOnASaveOfEitherSection()
     {
@@ -252,14 +251,14 @@ public sealed class SettingsApiTests(DdtApplication application) : IClassFixture
         await administrator.SavedAsync<MachineSettings>(
             SettingsSectionNames.Machines,
             values => values with { ZeroTouchNetworks = ["10.220.0.0/16"] },
-            reauthentication: token);
+            new(Reauthentication: token));
         SettingsSectionView<ProxySettings> proxies = await administrator.SectionAsync<ProxySettings>(SettingsSectionNames.Proxies);
 
         HttpResponseMessage refused = await administrator.SaveAsync(
             SettingsSectionNames.Proxies,
             proxies.Version,
             proxies.Values with { KnownProxies = ["10.220.0.5"] },
-            reauthentication: token);
+            new(Reauthentication: token));
 
         Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
         Assert.StartsWith(
@@ -267,7 +266,7 @@ public sealed class SettingsApiTests(DdtApplication application) : IClassFixture
             Assert.Single((await SettingsRequests.ProblemsAsync(refused)).Errors["knownProxies"]),
             StringComparison.Ordinal);
 
-        await administrator.SavedAsync<MachineSettings>(SettingsSectionNames.Machines, values => values with { ZeroTouchNetworks = [] }, reauthentication: token);
+        await administrator.SavedAsync<MachineSettings>(SettingsSectionNames.Machines, values => values with { ZeroTouchNetworks = [] }, new(Reauthentication: token));
     }
 
     // A live setting applies to the next decision, with no restart.
@@ -294,13 +293,13 @@ public sealed class SettingsApiTests(DdtApplication application) : IClassFixture
             loaded.Version,
             loaded.Values with { ImmutableIdAttribute = "entryUUID" });
 
-        // No local administrator is missing here, so the re-key is the one warning to confirm.
+        // No local administrator is missing here, so the re-key is the only warning to confirm.
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal([SettingWarningCodes.LdapRekey], await SettingsRequests.UnconfirmedAsync(response));
     }
 
-    // A refused save says each field's problems as codes beside the English, as every validation problem does. A claim
-    // value with colons is one entry of the group map, named as the page names the entry.
+    // A refused save gives each field's problems as codes next to the English, like every validation problem does.
+    // A claim value with colons is one entry of the group map, named the way the page names the entry.
     [Fact]
     public async Task ARefusalCarriesTheCodesOfItsProblemsByField()
     {
@@ -323,8 +322,8 @@ public sealed class SettingsApiTests(DdtApplication application) : IClassFixture
         Assert.Null(problem["confirm"]);
     }
 
-    // The problems of a stored section carry their message beside the English, and a warning a save confirms its
-    // confirmation code as well.
+    // The problems of a stored section carry their message next to the English.
+    // A warning that a save confirms also carries its confirmation code.
     [Fact]
     public void AViewsProblemsAndWarningsCarryTheirMessages()
     {

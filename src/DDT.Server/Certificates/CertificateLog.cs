@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Certificates;
 
-// Automatic certificate work is only logged, never audited: no person did it.
+// Automatic certificate work is only logged, never audited, because no person did it.
 public static partial class CertificateLog
 {
     public static void Checked(ILogger logger, ServerCertificates certificates, CertificateCheck check)

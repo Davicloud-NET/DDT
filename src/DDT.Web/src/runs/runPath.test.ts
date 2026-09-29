@@ -8,7 +8,8 @@ import type { DeploymentStepView } from "@/deployments/deployments";
 import { layoutFlow } from "@/sequences/flow/flowLayout";
 import { stepView } from "@/test/builders";
 import { branch, leaf, repeat } from "@/test/trees";
-import { node, treeDefinition, treeSteps } from "@/test/treeRun";
+import { treeSteps } from "@/test/treeRun";
+import { node, treeDefinition } from "@/test/treeSequence";
 
 import { leafNumbers, pathPercent, reachedCount, runPath } from "./runPath";
 
@@ -58,7 +59,7 @@ describe("runPath", () => {
     expect(toneOf(node.latitude, node.applyOther)).toEqual(["not"]);
     expect(toneOf(node.applyOther, null)).toEqual(["not", "not"]);
     expect(toneOf(node.drivers, null)).toEqual(["taken"]);
-    // The repeat went round again; the pause holds the run, so the wire to the restart is ahead.
+    // The repeat went round again. The pause holds the run, so the wire to the restart is still ahead.
     expect(toneOf(node.wait, node.wait)).toEqual(["taken"]);
     expect(toneOf(node.wait, node.pause)).toEqual(["taken"]);
     expect(toneOf(node.pause, node.restart)).toEqual(["ahead"]);

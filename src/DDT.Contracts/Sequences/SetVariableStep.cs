@@ -6,8 +6,8 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Sequences;
 
-// Sets a variable the sequence declares with SetBySteps. Value is a template, such as PC-{{SerialNumber|right:12}},
-// worked out by the agent when the step runs.
+// Sets a variable that the sequence declares with SetBySteps. Value is a template, such as
+// PC-{{SerialNumber|right:12}}, that the agent fills in when the step runs.
 public sealed record SetVariableStep : SequenceStep
 {
     public required string Variable { get; init; }

@@ -3,7 +3,6 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Text.Json.Nodes;
-using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
 using DDT.Core.Configuration;
 using DDT.Pxe;
@@ -11,27 +10,21 @@ using DDT.Server.Data;
 using DDT.Server.Machines;
 using DDT.Server.Security;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Settings;
 
-// Reads and writes ddt."SettingsSections". A save writes the row and its audit rows in one SaveChanges, as the other
-// stores of DDT do, and then publishes, so the process that saved applies the change at once. Other processes on the
-// same database read it at their next poll.
-public sealed partial class SettingsStore(
+// Reads and writes ddt."SettingsSections". A save writes the row and its audit rows in one SaveChanges and then
+// publishes. This process applies it right away, and other processes read it at their next poll.
+public sealed class SettingsStore(
     DdtDbContext database,
     SettingsProtector protector,
     SettingsSaveChecks checks,
+    SettingsSecretChanges secretChanges,
     DdtSettings settings,
-    IConfiguration configuration,
-    TimeProvider timeProvider,
-    ILogger<SettingsStore> logger)
+    TimeProvider timeProvider)
 {
-    // The shape of Values. A newer one comes with an upgrade step that runs on load, so a rename happens in code.
+    // The shape of Values. A newer shape comes with an upgrade step that runs on load, so a rename happens in code.
     public const int SchemaVersion = 1;
-
-    private const int MaxImportAttempts = 5;
 
     public async Task<IReadOnlyList<StoredSettingsSection>> LoadAsync(CancellationToken cancellationToken)
     {
@@ -56,47 +49,10 @@ public sealed partial class SettingsStore(
     public Task<Dictionary<string, long>> VersionsAsync(CancellationToken cancellationToken) =>
         database.SettingsSections.AsNoTracking().ToDictionaryAsync(row => row.Section, row => row.Version, cancellationToken);
 
-    // At every start, before the first publish. A field never written takes its configured value, if configuration has
-    // its key; code defaults are never imported. So a process that starts first cannot freeze its defaults over another
-    // process's configured values. A process whose key ring cannot read the stored secrets imports nothing at all.
-    public async Task<bool> ImportAsync(CancellationToken cancellationToken)
-    {
-        bool readable = await CheckKeyRingAsync(cancellationToken).ConfigureAwait(false);
-        settings.KeyRingReadable = readable;
-
-        if (!readable)
-        {
-            LogKeyRingUnreadable();
-
-            return false;
-        }
-
-        foreach (SettingsSectionDefinition definition in SettingsDefinitions.All)
-        {
-            // Two processes that create the same row conflict on its key, and two that import into it on its version.
-            // The loser reads again and imports what is still missing.
-            for (int attempt = 1; ; attempt++)
-            {
-                try
-                {
-                    await ImportAsync(definition, cancellationToken).ConfigureAwait(false);
-
-                    break;
-                }
-                catch (DbUpdateException) when (attempt < MaxImportAttempts)
-                {
-                    database.ChangeTracker.Clear();
-                }
-            }
-        }
-
-        return true;
-    }
-
     public async Task<SettingsSaveResult> SaveAsync(
         SettingsSectionDefinition definition,
         SettingsUpdate update,
-        SettingsActor actor,
+        Actor actor,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -108,8 +64,7 @@ public sealed partial class SettingsStore(
             return new(SettingsSaveOutcome.KeyRingUnreadable);
         }
 
-        SettingsSection? row = await database.SettingsSections.FirstOrDefaultAsync(s => s.Section == definition.Name, cancellationToken).ConfigureAwait(false);
-        StoredSettingsSection current = row is null ? StoredSettingsSection.Empty(definition.Name) : protector.Decode(row);
+        (SettingsSection? row, StoredSettingsSection current) = await ReadRowAsync(definition, cancellationToken).ConfigureAwait(false);
 
         if (update.Version != current.Version)
         {
@@ -118,85 +73,39 @@ public sealed partial class SettingsStore(
 
         SettingsSectionState before = settings.Preview(current, null)[definition.Name];
         DateTimeOffset now = timeProvider.GetUtcNow();
-        JsonObject values = current.Values.DeepClone().AsObject();
-
-        // A locked field keeps its stored value: configuration decides it, and the page's value applies again once the key
-        // is gone.
-        foreach (SettingField field in definition.Fields.Where(field => !field.IsSecret && !before.IsLocked(field)))
-        {
-            SettingsJson.Set(values, field, SettingsJson.Get(update.Values, field));
-        }
-
-        (Dictionary<string, StoredSecret> secrets, List<string> secretChanges, List<SettingProblem> secretProblems, List<SettingField> kept) =
-            Secrets(definition, before, current, update, now);
+        JsonObject values = EditableValues(definition, before, current, update);
+        (Dictionary<string, StoredSecret> secrets, List<string> changedSecrets, List<SettingProblem> secretProblems, List<SettingField> kept) =
+            secretChanges.Apply(definition, before, current, update, now);
 
         StoredSettingsSection candidate = current with { Values = values, Secrets = secrets };
         SettingsSnapshot preview = settings.Preview(candidate, definition.Name);
-        SettingsSectionState after = preview[definition.Name];
+        PendingSave save = new(definition, update, before, preview[definition.Name], preview);
 
-        // A stored secret goes only to the server it was entered for, or an administrator could have it sent to their own.
-        List<SettingProblem> refused = [.. kept.Where(field => DestinationChanged(definition, field, before, after))
-            .Select(field => new SettingProblem(field.Path, ServerMessages.SettingsSecretForNewServer.With()))];
-
-        if (refused.Count > 0)
+        if (SettingsSecretChanges.Moved(definition, kept, before, save.After) is { Count: > 0 } moved)
         {
-            database.ChangeTracker.Clear();
-            database.AuditEvents.AddRange(SettingsAudit.Rows(
-                AuditActions.SettingsRefused,
-                definition.Name,
-                actor,
-                now,
-                $"Refused a save of {definition.Name} that kept a stored secret for a new server:",
-                [.. refused.Select(problem => definition.PageName(problem.Field))]));
-            await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-            return new(SettingsSaveOutcome.Invalid, Problems: Messages(definition, refused));
+            return await RefuseMovedSecretsAsync(definition, moved, actor, now, cancellationToken).ConfigureAwait(false);
         }
 
-        SettingsSaveCheck check = await checks.CheckAsync(definition, before, after, actor, update, cancellationToken).ConfigureAwait(false);
-        List<SettingProblem> problems = [.. secretProblems, .. after.Problems, .. check.Problems];
-
-        if (problems.Count > 0)
+        if (await GateAsync(save, secretProblems, actor, cancellationToken).ConfigureAwait(false) is { } refused)
         {
-            return new(SettingsSaveOutcome.Invalid, Problems: Messages(definition, problems));
+            return refused;
         }
 
-        List<SettingWarning> unconfirmed = [.. Raised(definition, before, after, preview, check)
-            .Where(warning => !update.Confirmed.Contains(warning.Code!))];
+        List<string> changes = [.. SettingsAudit.Changes(definition, before.StoredValues, save.After.StoredValues), .. changedSecrets];
 
-        if (unconfirmed.Count > 0)
-        {
-            return new(
-                SettingsSaveOutcome.Invalid,
-                Unconfirmed: [.. unconfirmed.Select(warning => new SettingMessage(definition.PageName(warning.Field), warning.Message, warning.Code, warning.Text))]);
-        }
-
-        List<string> reauthenticate = [.. definition.Fields
-            .Where(field => field.Reauthenticate
-                && !before.IsLocked(field)
-                && !SettingsJson.Same(SettingsJson.Get(before.Values, field), SettingsJson.Get(after.Values, field)))
-            .Select(field => field.Name)];
-
-        if (reauthenticate.Count > 0 && !update.Reauthenticated)
-        {
-            return new(SettingsSaveOutcome.Reauthenticate, Fields: reauthenticate);
-        }
-
-        List<string> changes = [.. SettingsAudit.Changes(definition, before.StoredValues, after.StoredValues), .. secretChanges];
-
-        // A save of what is stored already changes nothing and records nothing.
+        // Saving what's already stored changes nothing and records nothing.
         if (changes.Count == 0)
         {
             return new(SettingsSaveOutcome.Saved, settings.Current);
         }
 
-        return await WriteAsync(definition, row, candidate, actor, AuditActions.SettingsChanged, $"Changed {definition.Name}:", changes, now, cancellationToken)
+        return await WriteAsync(new SettingsWrite(definition, row, candidate, actor, AuditActions.SettingsChanged, $"Changed {definition.Name}:", changes, now), cancellationToken)
             .ConfigureAwait(false);
     }
 
-    // The section as it is, with a new version, so that every process applies it again: for pxe, it scans its
-    // interfaces anew.
-    public async Task<SettingsSaveResult> TouchAsync(SettingsSectionDefinition definition, SettingsActor actor, string reason, CancellationToken cancellationToken)
+    // Writes the section unchanged with a new version, so every process applies it again. For PXE, that means each host
+    // rescans its interfaces.
+    public async Task<SettingsSaveResult> TouchAsync(SettingsSectionDefinition definition, Actor actor, string reason, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
 
@@ -205,22 +114,20 @@ public sealed partial class SettingsStore(
             return new(SettingsSaveOutcome.KeyRingUnreadable);
         }
 
-        SettingsSection? row = await database.SettingsSections.FirstOrDefaultAsync(s => s.Section == definition.Name, cancellationToken).ConfigureAwait(false);
-        StoredSettingsSection current = row is null ? StoredSettingsSection.Empty(definition.Name) : protector.Decode(row);
+        (SettingsSection? row, StoredSettingsSection current) = await ReadRowAsync(definition, cancellationToken).ConfigureAwait(false);
 
-        return await WriteAsync(definition, row, current, actor, AuditActions.SettingsChanged, reason, [], timeProvider.GetUtcNow(), cancellationToken)
+        return await WriteAsync(new SettingsWrite(definition, row, current, actor, AuditActions.SettingsChanged, reason, [], timeProvider.GetUtcNow()), cancellationToken)
             .ConfigureAwait(false);
     }
 
-    // For the console: every field takes its code default, and every secret is cleared. Written rather than left
-    // unwritten, so a configured value is not imported again at the next start. It does not publish: the servers read
+    // Used by the settings console. Every field takes its code default and every secret is cleared. The reset is
+    // written, so a configured value isn't imported again at the next start. It isn't published, so the servers read
     // it at their next poll.
-    public async Task ResetAsync(SettingsSectionDefinition definition, SettingsActor actor, CancellationToken cancellationToken)
+    public async Task ResetAsync(SettingsSectionDefinition definition, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
 
-        SettingsSection? row = await database.SettingsSections.FirstOrDefaultAsync(s => s.Section == definition.Name, cancellationToken).ConfigureAwait(false);
-        StoredSettingsSection current = row is null ? StoredSettingsSection.Empty(definition.Name) : protector.Decode(row);
+        (SettingsSection? row, StoredSettingsSection current) = await ReadRowAsync(definition, cancellationToken).ConfigureAwait(false);
         DateTimeOffset now = timeProvider.GetUtcNow();
         JsonObject defaults = definition.Defaults();
         JsonObject values = [];
@@ -238,43 +145,39 @@ public sealed partial class SettingsStore(
         StoredSettingsSection reset = current with { Values = values, Secrets = secrets };
 
         await WriteAsync(
-            definition,
-            row,
-            reset,
-            actor,
-            AuditActions.SettingsReset,
-            $"Reset {definition.Name} to the defaults and cleared its secrets.",
-            [],
-            now,
-            cancellationToken,
-            publish: false).ConfigureAwait(false);
+            new SettingsWrite(definition, row, reset, actor, AuditActions.SettingsReset, $"Reset {definition.Name} to the defaults and cleared its secrets.", [], now)
+            {
+                Publish = false,
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<SettingsSaveResult> WriteAsync(
-        SettingsSectionDefinition definition,
-        SettingsSection? row,
-        StoredSettingsSection section,
-        SettingsActor actor,
-        string action,
-        string lead,
-        IReadOnlyList<string> changes,
-        DateTimeOffset now,
-        CancellationToken cancellationToken,
-        bool publish = true)
+    // The row is tracked so WriteAsync can update it. It's null when the section was never written.
+    internal async Task<(SettingsSection? Row, StoredSettingsSection Current)> ReadRowAsync(SettingsSectionDefinition definition, CancellationToken cancellationToken)
     {
-        if (row is null)
+        SettingsSection? row = await database.SettingsSections.FirstOrDefaultAsync(s => s.Section == definition.Name, cancellationToken).ConfigureAwait(false);
+
+        return (row, row is null ? StoredSettingsSection.Empty(definition.Name) : protector.Decode(row));
+    }
+
+    // Returns Conflict when another process wrote the row since it was read. What this save staged is thrown away.
+    internal async Task<SettingsSaveResult> WriteAsync(SettingsWrite write, CancellationToken cancellationToken)
+    {
+        SettingsSection row = write.Row ?? new SettingsSection { Section = write.Definition.Name };
+
+        if (write.Row is null)
         {
-            row = new SettingsSection { Section = definition.Name };
             database.SettingsSections.Add(row);
         }
 
-        SettingsProtector.Encode(section, row);
+        SettingsProtector.Encode(write.Section, row);
         row.SchemaVersion = SchemaVersion;
-        row.Version = section.Version + 1;
-        row.UpdatedUtc = now;
-        row.UpdatedByUserId = actor.UserId;
-        row.UpdatedByName = StoredText.Bound(actor.Name, 256);
-        database.AuditEvents.AddRange(SettingsAudit.Rows(action, definition.Name, actor, now, lead, changes));
+        row.Version = write.Section.Version + 1;
+        row.UpdatedUtc = write.Now;
+        row.UpdatedByUserId = write.Actor.UserId;
+        row.UpdatedByName = StoredText.Bound(write.Actor.Name, 256);
+        database.AuditEvents.AddRange(SettingsAudit.Details(write.Lead, write.Changes)
+            .Select(detail => AuditEvents.Create(write.Action, write.Definition.Name, write.Actor, write.Now, detail)));
 
         try
         {
@@ -287,101 +190,108 @@ public sealed partial class SettingsStore(
             return new(SettingsSaveOutcome.Conflict);
         }
 
-        StoredSettingsSection saved = section with
+        StoredSettingsSection saved = write.Section with
         {
             SchemaVersion = SchemaVersion,
             Version = row.Version,
-            UpdatedUtc = now,
-            UpdatedByUserId = actor.UserId,
+            UpdatedUtc = write.Now,
+            UpdatedByUserId = write.Actor.UserId,
             UpdatedByName = row.UpdatedByName,
         };
 
-        return new(SettingsSaveOutcome.Saved, publish ? settings.Publish([saved]) : null);
+        return new(SettingsSaveOutcome.Saved, write.Publish ? settings.Publish([saved]) : null);
     }
 
-    private (Dictionary<string, StoredSecret> Secrets, List<string> Changes, List<SettingProblem> Problems, List<SettingField> Kept) Secrets(
+    // A locked field keeps its stored value. Configuration decides it, and the page's value applies again once the key
+    // is gone.
+    private static JsonObject EditableValues(
         SettingsSectionDefinition definition,
         SettingsSectionState before,
         StoredSettingsSection current,
-        SettingsUpdate update,
-        DateTimeOffset now)
+        SettingsUpdate update)
     {
-        Dictionary<string, StoredSecret> secrets = new(current.Secrets, StringComparer.Ordinal);
-        List<string> changes = [];
-        List<SettingProblem> problems = [];
-        List<SettingField> kept = [];
+        JsonObject values = current.Values.DeepClone().AsObject();
 
-        foreach (SettingField field in definition.Secrets.Where(field => !before.IsLocked(field)))
+        foreach (SettingField field in definition.Fields.Where(field => !field.IsSecret && !before.IsLocked(field)))
         {
-            SecretUpdate change = update.Secrets.GetValueOrDefault(field.Name) ?? new SecretUpdate(SecretAction.Keep, null);
-            StoredSecret? held = current.Secrets.GetValueOrDefault(field.Name);
-
-            switch (change.Action)
-            {
-                case SecretAction.Set when !string.IsNullOrEmpty(change.Value):
-                    secrets[field.Name] = new StoredSecret(change.Value, false, now, protector.Protect(definition.Name, field, change.Value));
-                    changes.Add($"{field.Name} set");
-                    break;
-
-                case SecretAction.Set or SecretAction.Clear:
-                    if (held?.Value is not null || held?.Unreadable == true)
-                    {
-                        secrets[field.Name] = new StoredSecret(null, false, now, null);
-                        changes.Add($"{field.Name} cleared");
-                    }
-
-                    break;
-
-                default:
-                    if (held?.Unreadable == true)
-                    {
-                        problems.Add(new(field.Path, ServerMessages.SettingsSecretCannotBeKept.With()));
-                    }
-                    else if (!string.IsNullOrEmpty(held?.Value))
-                    {
-                        kept.Add(field);
-                    }
-
-                    break;
-            }
+            SettingsJson.Set(values, field, SettingsJson.Get(update.Values, field));
         }
 
-        return (secrets, changes, problems, kept);
+        return values;
     }
 
-    private static bool DestinationChanged(SettingsSectionDefinition definition, SettingField field, SettingsSectionState before, SettingsSectionState after)
-    {
-        IReadOnlyList<string> destination = (definition.Name, field.Path) switch
-        {
-            (SettingsSectionNames.Ldap, "BindPassword") => LdapSettingsSection.Destination,
-            (SettingsSectionNames.Oidc, "ClientSecret") => OidcSettingsSection.Destination,
-            _ => [],
-        };
-
-        return destination
-            .Select(path => definition.FieldOf(path)!)
-            .Any(target => !SettingsJson.Same(SettingsJson.Get(before.Values, target), SettingsJson.Get(after.Values, target)));
-    }
-
-    // A warning needs a confirmation when the save raises it: it did not hold before, or it is about the change itself.
-    // One about the accounts, not the values, holds at every save while it holds at all.
-    private static IEnumerable<SettingWarning> Raised(
+    // A stored secret only goes to the server it was entered for. Otherwise an administrator could have it sent to
+    // their own server. The attempt is audited.
+    private async Task<SettingsSaveResult> RefuseMovedSecretsAsync(
         SettingsSectionDefinition definition,
-        SettingsSectionState before,
-        SettingsSectionState after,
-        SettingsSnapshot preview,
-        SettingsSaveCheck check)
+        List<SettingProblem> moved,
+        Actor actor,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        database.ChangeTracker.Clear();
+        database.AuditEvents.AddRange(SettingsAudit.Details(
+                $"Refused a save of {definition.Name} that kept a stored secret for a new server:",
+                [.. moved.Select(problem => definition.PageName(problem.Field))])
+            .Select(detail => AuditEvents.Create(AuditActions.SettingsRefused, definition.Name, actor, now, detail)));
+        await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        return new(SettingsSaveOutcome.Invalid, Problems: Messages(definition, moved));
+    }
+
+    // Checks, in this order, the save's problems, the warnings it raises that nobody confirmed, and the fields that
+    // need a fresh proof of identity. Returns null when none of them stops the save.
+    private async Task<SettingsSaveResult?> GateAsync(
+        PendingSave save,
+        List<SettingProblem> secretProblems,
+        Actor actor,
+        CancellationToken cancellationToken)
+    {
+        SettingsSectionDefinition definition = save.Definition;
+        SettingsSaveCheck check = await checks
+            .CheckAsync(definition, new SettingsSectionChange(save.Before, save.After), actor, save.Update, cancellationToken)
+            .ConfigureAwait(false);
+        List<SettingProblem> problems = [.. secretProblems, .. save.After.Problems, .. check.Problems];
+
+        if (problems.Count > 0)
+        {
+            return new(SettingsSaveOutcome.Invalid, Problems: Messages(definition, problems));
+        }
+
+        List<SettingWarning> unconfirmed = [.. Raised(save, check).Where(warning => !save.Update.Confirmed.Contains(warning.Code!))];
+
+        if (unconfirmed.Count > 0)
+        {
+            return new(
+                SettingsSaveOutcome.Invalid,
+                Unconfirmed: [.. unconfirmed.Select(warning => new SettingMessage(definition.PageName(warning.Field), warning.Message, warning.Code, warning.Text))]);
+        }
+
+        List<string> reauthenticate = [.. definition.Fields
+            .Where(field => field.Reauthenticate
+                && !save.Before.IsLocked(field)
+                && !SettingsJson.Same(SettingsJson.Get(save.Before.Values, field), SettingsJson.Get(save.After.Values, field)))
+            .Select(field => field.Name)];
+
+        return reauthenticate.Count > 0 && !save.Update.Reauthenticated
+            ? new(SettingsSaveOutcome.Reauthenticate, Fields: reauthenticate)
+            : null;
+    }
+
+    // A warning needs a confirmation when the save raises it. That means it didn't hold before, or it's about the
+    // change itself. A warning about the accounts, not the values, is raised at every save while it holds.
+    private static IEnumerable<SettingWarning> Raised(PendingSave save, SettingsSaveCheck check)
     {
         SettingsContext context = new()
         {
-            Machines = (MachineOptions)preview[SettingsSectionNames.Machines].Options,
-            Proxies = (DdtForwardedHeadersOptions)preview[SettingsSectionNames.Proxies].Options,
-            HttpBootPort = ((PxeOptions)preview[SettingsSectionNames.Pxe].Options).HttpBootPort,
-            Saving = definition.Name,
+            Machines = (MachineOptions)save.Preview[SettingsSectionNames.Machines].Options,
+            Proxies = (DdtForwardedHeadersOptions)save.Preview[SettingsSectionNames.Proxies].Options,
+            HttpBootPort = ((PxeOptions)save.Preview[SettingsSectionNames.Pxe].Options).HttpBootPort,
+            Saving = save.Definition.Name,
         };
 
-        IEnumerable<SettingWarning> raised = definition.FindWarnings(after.Options, before.Options, context)
-            .Where(warning => !before.Warnings.Contains(warning));
+        IEnumerable<SettingWarning> raised = save.Definition.FindWarnings(save.After.Options, save.Before.Options, context)
+            .Where(warning => !save.Before.Warnings.Contains(warning));
 
         return raised
             .Concat(check.Warnings)
@@ -392,124 +302,11 @@ public sealed partial class SettingsStore(
     private static List<SettingMessage> Messages(SettingsSectionDefinition definition, IEnumerable<SettingProblem> problems) =>
         [.. problems.Select(problem => new SettingMessage(definition.PageName(problem.Field), problem.Message, null, problem.Text))];
 
-    private async Task ImportAsync(SettingsSectionDefinition definition, CancellationToken cancellationToken)
-    {
-        JsonObject configured;
-
-        // A value that cannot be converted stopped the start already, in the configuration check.
-        try
-        {
-            configured = definition.Configured(configuration);
-        }
-        catch (InvalidOperationException)
-        {
-            return;
-        }
-
-        SettingsSection? row = await database.SettingsSections.FirstOrDefaultAsync(s => s.Section == definition.Name, cancellationToken).ConfigureAwait(false);
-        StoredSettingsSection current = row is null ? StoredSettingsSection.Empty(definition.Name) : protector.Decode(row);
-        DateTimeOffset now = timeProvider.GetUtcNow();
-        JsonObject values = current.Values.DeepClone().AsObject();
-        Dictionary<string, StoredSecret> secrets = new(current.Secrets, StringComparer.Ordinal);
-        List<string> imported = [];
-
-        foreach (SettingField field in definition.Fields.Where(field => definition.IsConfigured(configuration, field)))
-        {
-            if (field.IsSecret)
-            {
-                if (current.Secrets.ContainsKey(field.Name))
-                {
-                    continue;
-                }
-
-                string? value = configuration[definition.ConfigurationKey(field)];
-                secrets[field.Name] = string.IsNullOrEmpty(value)
-                    ? new StoredSecret(null, false, now, null)
-                    : new StoredSecret(value, false, now, protector.Protect(definition.Name, field, value));
-            }
-            else
-            {
-                if (SettingsJson.Has(current.Values, field))
-                {
-                    continue;
-                }
-
-                SettingsJson.Set(values, field, SettingsJson.Get(configured, field));
-            }
-
-            imported.Add(field.Name);
-        }
-
-        if (imported.Count == 0)
-        {
-            return;
-        }
-
-        SettingsSaveResult written = await WriteAsync(
-            definition,
-            row,
-            current with { Values = values, Secrets = secrets },
-            SettingsActor.Configuration,
-            AuditActions.SettingsImported,
-            $"Imported into {definition.Name} from configuration:",
-            imported,
-            now,
-            cancellationToken,
-            publish: false).ConfigureAwait(false);
-
-        if (written.Outcome == SettingsSaveOutcome.Conflict)
-        {
-            throw new DbUpdateException($"{definition.Name} changed while its configured values were imported.");
-        }
-
-        LogImported(definition.Name, string.Join(", ", imported));
-    }
-
-    private async Task<bool> CheckKeyRingAsync(CancellationToken cancellationToken)
-    {
-        for (int attempt = 1; ; attempt++)
-        {
-            SettingsSection? row = await database.SettingsSections
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Section == SettingsSectionNames.KeyRing, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (row is not null)
-            {
-                return protector.ReadsCanary(row);
-            }
-
-            DateTimeOffset now = timeProvider.GetUtcNow();
-            database.SettingsSections.Add(new SettingsSection
-            {
-                Section = SettingsSectionNames.KeyRing,
-                SchemaVersion = SchemaVersion,
-                Secrets = protector.CanarySecrets(now),
-                Version = 1,
-                UpdatedUtc = now,
-                UpdatedByName = SettingsActor.Configuration.Name,
-            });
-
-            try
-            {
-                await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-                return true;
-            }
-            catch (DbUpdateException) when (attempt < MaxImportAttempts)
-            {
-                // Another process created it first, with its key ring. Read that one.
-                database.ChangeTracker.Clear();
-            }
-        }
-    }
-
-    [LoggerMessage(EventId = 950, Level = LogLevel.Information, Message = "Imported the configured {Section} settings {Fields}")]
-    private partial void LogImported(string section, string fields);
-
-    [LoggerMessage(
-        EventId = 951,
-        Level = LogLevel.Warning,
-        Message = "This server's key ring cannot read the stored settings secrets, so it saves no settings. Every DDT process on one database has to share the key ring in DDT:StorePath/keys.")]
-    private partial void LogKeyRingUnreadable();
+    // A save between reading the section and writing it. After is the section as the save would leave it.
+    private sealed record PendingSave(
+        SettingsSectionDefinition Definition,
+        SettingsUpdate Update,
+        SettingsSectionState Before,
+        SettingsSectionState After,
+        SettingsSnapshot Preview);
 }

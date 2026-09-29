@@ -7,8 +7,8 @@ using System.Text;
 
 namespace DDT.Server.Tokens;
 
-// A secret is the prefix and 43 base62 characters, 256 bits from the system's random number generator. The prefix lets
-// secret scanners, such as GitHub's, recognise a token that leaked into a repository or a log.
+// A secret is the prefix plus 43 base62 characters. They hold 256 bits from the system's random number generator. The
+// prefix lets secret scanners, such as GitHub's, recognise a token that leaked into a repository or a log.
 public static class ApiTokenSecrets
 {
     public const string Prefix = "ddt_";
@@ -20,7 +20,7 @@ public static class ApiTokenSecrets
 
     public static string Create() => Prefix + RandomNumberGenerator.GetString(Alphabet, RandomLength);
 
-    // A plain hash is enough: the secret is random and long, so there is nothing to guess that a slow hash would protect.
+    // A plain hash is enough. The secret is random and long, so there's nothing guessable for a slow hash to protect.
     public static string Hash(string secret)
     {
         ArgumentNullException.ThrowIfNull(secret);

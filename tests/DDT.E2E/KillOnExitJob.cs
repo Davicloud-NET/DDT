@@ -10,9 +10,9 @@ using Microsoft.Win32.SafeHandles;
 
 namespace DDT.E2E;
 
-// A job that holds every process the tests start, and what those start. Windows closes its handle when the test
-// process ends, however it ends, and closing it kills everything in it, so no host, agent or publish outlives the
-// tests.
+// A job object that holds every process the tests start, and every process those start, so no host, agent or publish
+// outlives the tests. Windows closes the job's handle when the test process ends, however it ends, and that kills
+// everything in the job.
 internal static partial class KillOnExitJob
 {
     private const int ExtendedLimitInformation = 9;
@@ -20,7 +20,7 @@ internal static partial class KillOnExitJob
 
     private static readonly SafeFileHandle s_job = Create();
 
-    // Before the process starts one of its own, which then is in the job too.
+    // Call this before the process starts a child process, so the child is in the job too.
     public static void Add(Process process)
     {
         ArgumentNullException.ThrowIfNull(process);
@@ -40,8 +40,8 @@ internal static partial class KillOnExitJob
             throw new Win32Exception();
         }
 
-        // JOBOBJECT_EXTENDED_LIMIT_INFORMATION as a 64-bit process passes it: 144 bytes, with the limit flags of its
-        // basic limits at offset 16.
+        // JOBOBJECT_EXTENDED_LIMIT_INFORMATION as a 64-bit process passes it. It's 144 bytes, and the LimitFlags of its
+        // basic limits are at offset 16.
         byte[] limits = new byte[144];
         BinaryPrimitives.WriteUInt32LittleEndian(limits.AsSpan(16), KillOnJobClose);
 

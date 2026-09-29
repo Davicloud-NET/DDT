@@ -2,107 +2,45 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { t } from "@lingui/core/macro";
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Trans } from "@lingui/react/macro";
 import { IconChevronLeft } from "@tabler/icons-react";
-import { useQuery } from "@tanstack/react-query";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
-import { lazy, Suspense, useId, useState } from "react";
 
-import { currentUserQuery } from "@/auth/auth";
 import { isActive } from "@/deployments/deployments";
-import { relativeTime } from "@/lib/relativeTime";
 import { useNow } from "@/lib/useNow";
-import { useLiveMarks } from "@/live/useLiveMarks";
 import { LogPanel } from "@/log/LogPanel";
 import { resolutionText } from "@/rules/rules";
 import { useSequenceResolution } from "@/rules/useSequenceResolution";
 import { MachineRuns } from "@/runs/MachineRuns";
 import { RunPanel } from "@/runs/RunPanel";
-import { runTimeline } from "@/runs/runs";
-import { RunSteps } from "@/runs/RunSteps";
-import { RunTimeline } from "@/runs/RunTimeline";
 import { useRunDetail } from "@/runs/useRunDetail";
-import { cx } from "@/ui/cx";
-import { DeviceGlyph } from "@/ui/DeviceGlyph";
-import { EmptyState, Facts, Page, Skeleton } from "@/ui/Layout";
+import { EmptyState } from "@/ui/EmptyState";
 import { Notice } from "@/ui/Notice";
-import { StateTag } from "@/ui/StateTag";
-import { valueRows } from "@/values/valueRows";
+import { Page } from "@/ui/Page";
+import { Skeleton } from "@/ui/Skeleton";
 
-import { MachineActionErrors, MachineActions } from "./MachineActions";
-import { MachineFacts } from "./MachineFacts";
-import { formatMac, machinesQuery, type MachineSummary } from "./machines";
-import { MachineValues } from "./MachineValues";
-import { deviceKind, displayName, machineTag } from "./machineView";
+import { MachineActionErrors } from "./MachineActionErrors";
+import { MachineHeader } from "./page/MachineHeader";
+import { RunDetails } from "./page/RunDetails";
+import { useStepLog } from "./page/useStepLog";
 import { RunWaiting } from "./RunWaiting";
-import { secureBootFact } from "./secureBoot";
+import { useCanDecide } from "./useCanDecide";
 import { useMachineActions } from "./useMachineActions";
 
-// The flow of a run comes with the flow's code, which only a run's page needs.
-const RunFlow = lazy(() => import("@/runs/RunFlow"));
-
-// One machine: what it is, the run the page shows on its flow with its steps and log, what it waits for, the values it
-// works with, what the machine reported of itself, and every run it had. Everything on it is live: the machine and its
-// run from the hub's machine pushes, the steps, variables and log lines from its watch.
+// One machine's page: the run it shows and what that run waits for, the values, facts, log and every run the machine
+// had. It's live. The machine and its run come from the hub's pushes, and the steps, variables and log lines come from
+// the machine's watch.
 export function MachinePage() {
   const { machineId } = useParams({ from: "/shell/machines/$machineId" });
   const pinnedRunId = useSearch({ from: "/shell/machines/$machineId" }).run ?? null;
-  const user = useQuery(currentUserQuery).data ?? null;
-  const roles = user?.roles ?? [];
-  const canDecide = roles.includes("Administrator") || roles.includes("Operator");
+  const canDecide = useCanDecide();
 
   const detail = useRunDetail(machineId, pinnedRunId);
   const resolution = useSequenceResolution(machineId, detail.machine);
   const actions = useMachineActions();
   const now = useNow(1_000);
-  const { machine, summary, view } = detail;
-
-  // A step belongs to one run, so its filter ends when another run is shown.
-  const [stepFilter, setStepFilter] = useState<{ runId: string | null; stepId: string } | null>(
-    null,
-  );
-  const filteredStep = stepFilter?.runId === detail.runId ? stepFilter.stepId : null;
-  const showStepLog = (stepId: string | null) => {
-    setStepFilter(stepId === null ? null : { runId: detail.runId, stepId });
-  };
-  // From the flow, the log is further down the page, so the page goes there.
-  const logId = useId();
-  const showLogFromFlow = (stepId: string) => {
-    showStepLog(stepId);
-
-    const log = document.getElementById(logId);
-
-    if (log !== null) {
-      window.scrollTo({ top: log.getBoundingClientRect().top + window.scrollY - 16 });
-    }
-  };
-
-  const shownView =
-    view !== null && summary !== null && view.summary.id === summary.id ? view : null;
-  const flow = shownView !== null && (shownView.definition?.steps.length ?? 0) > 0;
-  const runValues = shownView?.values ?? null;
-  const preview = summary === null ? (resolution.data?.values ?? null) : null;
-  const values =
-    runValues !== null ? (
-      <MachineValues
-        title={<Trans>Values of this run</Trans>}
-        rows={valueRows({
-          values: runValues,
-          variables: shownView?.variables ?? null,
-          definition: shownView?.definition ?? null,
-          steps: shownView?.steps ?? [],
-          inputs: shownView?.inputs ?? null,
-        })}
-        empty={<Trans>No rule, machine role or input gave this run a value.</Trans>}
-      />
-    ) : preview !== null ? (
-      <MachineValues
-        title={<Trans>Values a run would start with</Trans>}
-        rows={valueRows({ values: preview })}
-        empty={<Trans>No rule, machine role or sequence sets a value for this machine.</Trans>}
-      />
-    ) : null;
+  const { machine, summary, view, removed } = detail;
+  const { logId, filteredStep, showStepLog, showLogFromFlow } = useStepLog(detail.runId);
 
   return (
     <Page>
@@ -120,7 +58,7 @@ export function MachinePage() {
         </Notice>
       ) : null}
 
-      {detail.removed ? (
+      {removed ? (
         <EmptyState title={<Trans>This machine was removed</Trans>}>
           <Trans>It registers as a new machine at its next netboot.</Trans>
         </EmptyState>
@@ -138,27 +76,13 @@ export function MachinePage() {
         </>
       )}
 
-      {machine !== null && !detail.removed ? (
+      {machine !== null && !removed ? (
         <RunWaiting machineId={machineId} run={machine.deployment} view={view} canAct={canDecide} />
       ) : null}
 
-      {detail.newerRunId !== null ? (
-        <Notice tone="info">
-          <span className="flex flex-wrap items-center gap-x-3">
-            <Trans>A new run started on this machine.</Trans>
-            <Link
-              to="/machines/$machineId"
-              params={{ machineId }}
-              search={{}}
-              className="font-semibold underline"
-            >
-              <Trans>Show it</Trans>
-            </Link>
-          </span>
-        </Notice>
-      ) : null}
+      {detail.newerRunId !== null ? <NewerRunNotice machineId={machineId} /> : null}
 
-      {summary !== null && !detail.removed ? (
+      {summary !== null && !removed ? (
         <RunPanel
           run={summary}
           view={view}
@@ -173,46 +97,19 @@ export function MachinePage() {
         </Notice>
       ) : null}
 
-      {flow && summary !== null && !detail.removed ? (
-        <Suspense fallback={<Skeleton className="h-[32rem] w-full rounded-panel" />}>
-          <RunFlow
-            key={shownView.summary.id}
-            view={shownView}
-            summary={summary}
-            now={now}
-            onShowLog={showLogFromFlow}
-          >
-            {values}
-          </RunFlow>
-        </Suspense>
+      {!removed ? (
+        <RunDetails
+          machine={machine}
+          summary={summary}
+          view={view}
+          preview={summary === null ? (resolution.data?.values ?? null) : null}
+          now={now}
+          onShowLog={showStepLog}
+          onShowLogFromFlow={showLogFromFlow}
+        />
       ) : null}
 
-      {summary !== null && view !== null && view.steps.length > 0 && !detail.removed ? (
-        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-          <RunSteps
-            runId={view.summary.id}
-            steps={view.steps}
-            runState={summary.state}
-            definition={view.definition}
-            machine={machine}
-            run={{ activity: summary.activity, pause: view.pause ?? null }}
-            values={view.values ?? []}
-            now={now}
-            onShowLog={showStepLog}
-          />
-          <div className="flex min-w-0 flex-col gap-4">
-            <RunTimeline entries={runTimeline(machine, summary, view.steps, view.definition)} />
-            {machine !== null ? <MachineFacts machine={machine} /> : null}
-          </div>
-        </div>
-      ) : machine !== null && !detail.removed ? (
-        <div className="grid items-start gap-4 xl:grid-cols-2">
-          {flow ? null : values}
-          <MachineFacts machine={machine} />
-        </div>
-      ) : null}
-
-      {!detail.removed ? (
+      {!removed ? (
         <div id={logId} className="flex flex-col">
           <LogPanel
             machineId={machineId}
@@ -231,102 +128,29 @@ export function MachinePage() {
         </Notice>
       ) : null}
 
-      {!detail.removed && (detail.historyLoaded || detail.runs.length > 0) ? (
+      {!removed && (detail.historyLoaded || detail.runs.length > 0) ? (
         <MachineRuns machineId={machineId} runs={detail.runs} shownId={detail.runId} now={now} />
       ) : null}
     </Page>
   );
 }
 
-// The machine's name, state and plate of facts, with what an operator can do to it.
-function MachineHeader({
-  machine,
-  actions,
-  resolution,
-  now,
-}: {
-  machine: MachineSummary;
-  // Null for someone who may only look.
-  actions: ReturnType<typeof useMachineActions> | null;
-  // Why the machine would get the sequence it gets, as the server explains it.
-  resolution: string | null;
-  now: number;
-}) {
-  const { i18n } = useLingui();
-  // The name and state flash when the state changes while the page is open.
-  const mark = useLiveMarks({
-    queryKey: machinesQuery.queryKey,
-    items: (list) => list.filter((candidate) => candidate.id === machine.id),
-    id: (candidate) => candidate.id,
-    signature: (candidate) => `${candidate.state} ${machineTag(candidate).tone}`,
-    tone: (candidate) => machineTag(candidate).tone,
-  });
-  const tag = machineTag(machine);
-  const maker = [machine.manufacturer, machine.model].filter((part) => part !== null).join(" ");
-  const signedInBy = machine.signedInBy;
-  const seen = relativeTime(machine.lastSeenUtc, now);
-  const from = machine.lastSeenAddress;
-  const disks =
-    machine.disks ??
-    (machine.eligibleDiskCount === 0 ? t`No disk DDT can install on` : t`Not reported`);
-
+// Links to the run the machine started while the page shows an older, pinned run.
+function NewerRunNotice({ machineId }: { machineId: string }) {
   return (
-    <header className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
-        <DeviceGlyph kind={deviceKind(machine)} size="lg" />
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span
-            className={cx(
-              "-mx-2 -my-1 flex w-fit flex-wrap items-center gap-3 rounded-key px-2 py-1",
-              mark(machine.id),
-            )}
-          >
-            <h1 className="type-title text-ink">{displayName(machine)}</h1>
-            <StateTag tone={tag.tone}>{i18n._(tag.label)}</StateTag>
-          </span>
-          <span className="text-ink-2">
-            {maker === "" ? <Trans>Model not reported</Trans> : maker}
-            {signedInBy !== null ? (
-              <>
-                {". "}
-                <Trans>{signedInBy} signed in at the machine.</Trans>
-              </>
-            ) : null}
-          </span>
-        </div>
-        {actions !== null ? (
-          <MachineActions machine={machine} actions={actions} layout="panel" />
-        ) : null}
-      </div>
-
-      <Facts
-        layout="plate"
-        items={[
-          {
-            label: <Trans>Serial</Trans>,
-            value: machine.serialNumber ?? t`Not reported`,
-            mono: true,
-          },
-          {
-            label: <Trans>MAC address</Trans>,
-            value: machine.macAddresses.map(formatMac).join(", "),
-            mono: true,
-          },
-          {
-            label: <Trans>Last seen</Trans>,
-            value: from === null ? seen : t`${seen} from ${from}`,
-          },
-          { label: <Trans>Secure Boot</Trans>, value: secureBootFact(machine) },
-          { label: <Trans>Disks</Trans>, value: disks },
-          { label: <Trans>Agent</Trans>, value: machine.agentVersion ?? t`Not reported` },
-          { label: <Trans>SMBIOS UUID</Trans>, value: machine.smbiosUuid, mono: true },
-        ]}
-      />
-
-      {resolution !== null && !isActive(machine.deployment) ? (
-        <p className="type-small text-ink-2">{resolution}</p>
-      ) : null}
-    </header>
+    <Notice tone="info">
+      <span className="flex flex-wrap items-center gap-x-3">
+        <Trans>A new run started on this machine.</Trans>
+        <Link
+          to="/machines/$machineId"
+          params={{ machineId }}
+          search={{}}
+          className="font-semibold underline"
+        >
+          <Trans>Show it</Trans>
+        </Link>
+      </span>
+    </Notice>
   );
 }
 

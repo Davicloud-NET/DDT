@@ -6,7 +6,7 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Tests;
 
-// One MemoryRawDisk per disk number, kept across openings as a real disk keeps what was written to it.
+// One MemoryRawDisk per disk number, kept across openings, just like a real disk keeps what was written to it.
 internal sealed class MemoryRawDisks : IRawDisks
 {
     public Dictionary<int, MemoryRawDisk> Disks { get; } = [];

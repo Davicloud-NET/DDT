@@ -63,8 +63,8 @@ public sealed class CloudInitTests
         Assert.Equal(MachineVariableNames.ComputerName, CloudInitTemplate.Known("COMPUTERNAME"));
     }
 
-    // The run's values come with the machine's, and a seed may use them by name, ignoring case, filters included. A name
-    // with no value stays as it is, as cloud-init's own do.
+    // The run's values come along with the machine's, and a seed may use them by name, ignoring case, with filters. A
+    // name without a value stays as it is, just like cloud-init's own placeholders.
     [Fact]
     public void FillsInTheRunsValuesAndLeavesNamesWithoutOne()
     {
@@ -95,7 +95,11 @@ public sealed class CloudInitTests
     [Fact]
     public void BuildsASeedCloudInitFindsByItsLabel()
     {
-        byte[] seed = CloudInitSeed.Build("instance-id: a\n", "#cloud-config\nhostname: \"PC-01\"\n", "version: 2\n", 0xC0FFEE, new DateTime(2026, 9, 25), 1234);
+        byte[] seed = CloudInitSeed.Build(
+            new CloudInitSeedFiles("instance-id: a\n", "#cloud-config\nhostname: \"PC-01\"\n", "version: 2\n"),
+            0xC0FFEE,
+            new DateTime(2026, 9, 25),
+            1234);
         FatVolume volume = FatVolume.Open(new MemoryStream(seed), 0, seed.Length);
 
         Assert.Equal(CloudInitSeed.SizeBytes, seed.Length);
@@ -110,7 +114,7 @@ public sealed class CloudInitTests
     [Fact]
     public void LeavesOutANetworkConfigurationThatIsNotGiven()
     {
-        byte[] seed = CloudInitSeed.Build("instance-id: a\n", "#cloud-config\n", null, 1, new DateTime(2026, 9, 25), 0);
+        byte[] seed = CloudInitSeed.Build(new CloudInitSeedFiles("instance-id: a\n", "#cloud-config\n", null), 1, new DateTime(2026, 9, 25), 0);
 
         Assert.Equal(["meta-data", "user-data"], FatVolume.Open(new MemoryStream(seed), 0, seed.Length).List("").Select(entry => entry.Name));
     }

@@ -14,13 +14,8 @@ import type {
 import { formatDuration } from "@/lib/format";
 import { formatMac, type MachineSummary } from "@/machines/machines";
 import { walk } from "@/sequences/flow/flowTree";
-import type {
-  ConditionOperator,
-  SequenceDefinition,
-  SequencePhase,
-  SequenceStep,
-  StepCondition,
-} from "@/sequences/sequences";
+import type { ConditionOperator, StepCondition } from "@/sequences/sequenceConditions";
+import type { SequenceDefinition, SequencePhase, SequenceStep } from "@/sequences/sequences";
 import { operatorTakesValue, phaseLabel, variableLabel } from "@/sequences/steps";
 
 import { leafNumbers } from "./runPath";
@@ -60,7 +55,7 @@ export function describeCondition(condition: StepCondition): string {
     : t`${variable} ${operator}`;
 }
 
-// What the machine reports for a condition's variable now; the run checked what it reported then.
+// What the machine reports for a condition's variable now. The run checked what it reported back then.
 function reported(variable: string, machine: MachineSummary, phase: SequencePhase): string | null {
   switch (variable) {
     case "Manufacturer":
@@ -82,9 +77,9 @@ function reported(variable: string, machine: MachineSummary, phase: SequencePhas
   }
 }
 
-// Why a step was skipped, for a run whose agent did not record the tests it decided with, as agents before version 3
-// sequences do not: the engine skips a step only when one of its conditions does not hold, so the page shows each
-// condition next to what the machine reports now. A run that recorded its tests says them instead (decisionLine).
+// Why a step was skipped, for agents that recorded no tests. Agents from before version 3 sequences don't record them,
+// and the others get decisionLine. The engine only skips when a condition doesn't hold, so each condition shows next
+// to what the machine reports now.
 export function skipReason(
   step: DeploymentStepView,
   planned: SequenceStep | undefined,
@@ -115,8 +110,8 @@ export function plannedSteps(definition: SequenceDefinition | null): Map<string,
   return new Map(walk(definition?.steps ?? []).map((entry) => [entry.node.id, entry.node]));
 }
 
-// Whether the run went on after a failed step. Stopping or rejecting the run also marks its running step
-// failed, and then the run ended there although the step goes on when it fails.
+// Whether the run continued after a failed step. Stopping or rejecting the run also marks its running step failed.
+// Then the run ended there, even if the step is set to continue on failure.
 export function wentOnAfter(
   step: DeploymentStepView,
   steps: readonly DeploymentStepView[],
@@ -179,8 +174,8 @@ function gap(from: string, to: string): string {
   return formatDuration(Date.parse(to) - Date.parse(from));
 }
 
-// From what the server records: the machine's first registration, the assignment or approval, the start, each
-// restart and the hand-over to Windows as the step times show them, and the end.
+// The run's timeline from what the server records: the machine's first registration, the assignment or approval, the
+// start, each restart and the hand-over to Windows as the step times show them, and the end.
 export function runTimeline(
   machine: MachineSummary | null,
   run: DeploymentSummary,
@@ -220,7 +215,7 @@ export function runTimeline(
       return;
     }
 
-    // Skipped steps never start, so the machine was back when the next started step did.
+    // Skipped steps never start. So the machine was back when the next step that did start began.
     const next = leaves.slice(position + 1).find((later) => later.startedUtc !== null) ?? null;
     const back = next?.startedUtc ?? null;
     const handsOver = step.phase === "WindowsPE" && leaves[position + 1]?.phase === "Windows";
@@ -270,7 +265,7 @@ export function runTimeline(
   return entries.sort((a, b) => Date.parse(a.utc) - Date.parse(b.utc));
 }
 
-// Says that whoever started the run let it write a raw disk image that may not start with Secure Boot on; null
+// Says that whoever started the run allowed it to write a raw disk image that may not boot with Secure Boot on. Null
 // otherwise.
 export function secureBootAllowance(view: DeploymentView): string | null {
   if (!view.allowSecureBootMismatch) {

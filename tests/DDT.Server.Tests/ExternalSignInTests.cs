@@ -39,7 +39,7 @@ public sealed class ExternalSignInTests(ExternalSignInApplication application) :
         Assert.Equal([DdtRoleNames.Operator], await users.GetRolesAsync(user!));
     }
 
-    // DDT gave the role, until an administrator chooses one.
+    // The view says DDT gave the role, until an administrator chooses one.
     [Fact]
     public async Task AProvisionedAccountIsExternalAndSaysItsRoleWasGiven()
     {
@@ -73,8 +73,8 @@ public sealed class ExternalSignInTests(ExternalSignInApplication application) :
                 : null);
     }
 
-    // The identity's own account stops at its second factor, and the sign-in page asks for the code as after a password.
-    // A new account signed in instead would carry the same identity past that factor.
+    // The identity's own account stops at its second factor, and the sign-in page asks for the code like after a
+    // password. Signing in a new account instead would carry the same identity past that factor.
     [Fact]
     public async Task AnAccountWithASecondFactorFinishesTheSignInWithItsCode()
     {

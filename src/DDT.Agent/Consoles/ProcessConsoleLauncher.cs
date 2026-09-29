@@ -8,7 +8,7 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent.Consoles;
 
-// Starts the console at path as `<path> --pipe <name>`. It runs as long as it likes: when the agent ends, the console
+// Starts the console at path as `<path> --pipe <name>`. It runs as long as it likes. When the agent ends, the console
 // sees its pipe close and decides what to show.
 public sealed class ProcessConsoleLauncher(string path) : IConsoleLauncher
 {

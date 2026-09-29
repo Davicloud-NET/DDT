@@ -1,0 +1,17 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+using System.Text.Json;
+
+namespace DDT.Agent;
+
+// How the loop treats a failed server call while the machine registers and waits, before any run. ServerCallRules
+// handles the calls during a run.
+internal static class LoopCallRules
+{
+    // JsonException covers an HTML page from a wrong URL, and a newer server reporting a state this agent doesn't
+    // know. Neither may end the agent.
+    public static bool IsTransient(Exception exception) =>
+        exception is HttpRequestException or TimeoutException or TaskCanceledException or JsonException;
+}

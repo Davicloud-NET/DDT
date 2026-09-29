@@ -149,7 +149,7 @@ public sealed class ValueTemplateTests
             new TemplateProblem(TemplateProblemKind.MissingValue, "{{Region}}", "Region").Message().Text);
     }
 
-    // The seed takes DDT's filters on its own names, and leaves anything it does not understand for cloud-init.
+    // The seed applies DDT's filters to its known names, and leaves anything it doesn't understand for cloud-init.
     [Fact]
     public void LetsTheCloudInitSeedUseFilters()
     {

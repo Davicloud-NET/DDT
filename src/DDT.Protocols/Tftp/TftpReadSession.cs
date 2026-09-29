@@ -12,9 +12,8 @@ public sealed class TftpReadSession
     private readonly TftpLimits _limits;
     private readonly TimeProvider _timeProvider;
 
-    // Block numbers on the wire are 16 bit and roll over on any file past 65535 blocks, which
-    // boot.wim comfortably is. The session counts logically in 64 bits and truncates only when a
-    // block number is put on the wire.
+    // Block numbers on the wire are 16 bits and roll over after 65535 blocks, and boot.wim is bigger than that. The
+    // session counts in 64 bits and truncates only on the wire.
     private readonly long _finalBlock;
     private long _acknowledged;
     private int _retries;
@@ -73,11 +72,35 @@ public sealed class TftpReadSession
             return new TftpStep(State, [new TftpStopRetransmit()]);
         }
 
-        if (!TftpPacket.TryReadAcknowledgement(datagram, out ushort block))
+        return TftpPacket.TryReadAcknowledgement(datagram, out ushort block)
+            ? OnAcknowledgement(block)
+            : Fail(TftpFailure.IllegalOperation, "Expected an acknowledgement");
+    }
+
+    public TftpStep OnRetransmitTimeout()
+    {
+        if (State is TftpSessionState.Completed or TftpSessionState.Failed)
         {
-            return Fail(TftpFailure.IllegalOperation, "Expected an acknowledgement");
+            return TftpStep.Nothing(State);
         }
 
+        _retries++;
+
+        if (_retries > _limits.MaxRetries)
+        {
+            State = TftpSessionState.Failed;
+            Failure = TftpFailure.ClientGone;
+
+            return new TftpStep(State, [new TftpStopRetransmit()]);
+        }
+
+        return _optionAckPending
+            ? new TftpStep(State, [new TftpSendOptionAck(Negotiated), Retransmit()])
+            : SendWindow();
+    }
+
+    private TftpStep OnAcknowledgement(ushort block)
+    {
         // Block zero means the OACK was accepted, but only while one is outstanding. Once data is
         // flowing, block zero is the wrapped block 65536 and is resolved by the logical counter.
         if (_optionAckPending)
@@ -116,38 +139,14 @@ public sealed class TftpReadSession
         return SendWindow();
     }
 
-    public TftpStep OnRetransmitTimeout()
-    {
-        if (State is TftpSessionState.Completed or TftpSessionState.Failed)
-        {
-            return TftpStep.Nothing(State);
-        }
-
-        _retries++;
-
-        if (_retries > _limits.MaxRetries)
-        {
-            State = TftpSessionState.Failed;
-            Failure = TftpFailure.ClientGone;
-
-            return new TftpStep(State, [new TftpStopRetransmit()]);
-        }
-
-        return _optionAckPending
-            ? new TftpStep(State, [new TftpSendOptionAck(Negotiated), Retransmit()])
-            : SendWindow();
-    }
-
     // The wire carries only the low 16 bits, so an acknowledgement names the first logical block at
     // or after the current position whose low bits match.
     private long ResolveBlock(ushort block)
     {
         long distance = (block - _acknowledged) & 0xFFFF;
 
-        // Only a block inside the window in flight can be a genuine advance. Without that bound a
-        // stale acknowledgement for an earlier block reads as a jump of almost 65536 once the
-        // difference is taken modulo 2^16, which walks the counter past the end of the file and
-        // reports a transfer that never happened as complete.
+        // Only a block inside the window in flight can be an advance. Modulo 2^16, a stale acknowledgement would read
+        // as a jump of almost 65536 and report a transfer that never happened as complete.
         return distance == 0 || distance > Negotiated.WindowSize ? _acknowledged : _acknowledged + distance;
     }
 
@@ -190,9 +189,8 @@ public sealed class TftpReadSession
             [new TftpSendError(TftpErrorCode.IllegalOperation, message), new TftpStopRetransmit()]);
     }
 
-    // Doubling, capped, so a lost datagram recovers quickly but a dead client is abandoned before
-    // the firmware gives up on DDT. EDK2 abandons a transfer somewhere between 15 and 24 seconds,
-    // and the whole budget here is under twelve.
+    // The delay doubles up to a cap. A lost datagram recovers quickly, but a dead client is dropped before the firmware
+    // gives up on DDT. EDK2 gives up after 15 to 24 seconds, and the whole budget here is under twelve.
     private TftpArmRetransmit Retransmit()
     {
         TimeSpan delay = Negotiated.Timeout * (1 << Math.Min(_retries, 8));
@@ -207,7 +205,7 @@ public sealed class TftpReadSession
 
     private static TftpNegotiation Negotiate(TftpRequestedOptions requested, TftpLimits limits, long fileLength)
     {
-        // RFC 2348 and RFC 7440 both allow a server only to negotiate downwards.
+        // RFC 2348 and RFC 7440 only allow a server to negotiate downwards.
         int blockSize = requested.BlockSize is int wanted and >= 8
             ? Math.Min(wanted, limits.MaxBlockSize)
             : 512;
@@ -216,8 +214,8 @@ public sealed class TftpReadSession
             ? Math.Min(window, limits.MaxWindowSize)
             : 1;
 
-        // RFC 2349: the timeout in an OACK must equal the one requested. A clamped value is not a
-        // negotiation, it is a malformed OACK, and EDK2 answers that with ERROR 4 and gives up.
+        // RFC 2349: the timeout in an OACK must equal the one requested. A clamped value isn't a negotiation but a
+        // malformed OACK, and EDK2 answers that with ERROR 4 and gives up.
         bool timeoutAcceptable = requested.Timeout is >= 1 and <= 255;
         TimeSpan timeout = timeoutAcceptable
             ? TimeSpan.FromSeconds(requested.Timeout!.Value)

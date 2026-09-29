@@ -111,15 +111,14 @@ public sealed class ConsoleLogoTests : IDisposable
         AgentLog log = new(_time, TextWriter.Null);
         AgentLoop loop = new(
             server,
-            new DryRunMachineIdentityReader(1),
+            new AgentMachine(new DryRunMachineIdentityReader(1), tools, new LocalRunLocator([tools.Volumes.Windows]), TestAgents.Version),
             status,
-            tools,
-            TestAgents.Runner(server, tools, log, _time, status: status),
-            new LocalRunLocator([tools.Volumes.Windows]),
+            TestAgents.Runner(server, tools, log, _time, new() { Status = status }),
             log,
-            _time,
-            TestAgents.Version,
-            logo);
+            _time)
+        {
+            Logo = logo,
+        };
 
         Assert.Equal(AgentExitCodes.Rejected, await loop.RunAsync(server.Stop.Token));
         Assert.Equal(LogoPath, status.State.Logo);

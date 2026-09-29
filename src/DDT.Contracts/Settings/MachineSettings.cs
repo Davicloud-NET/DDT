@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Settings;
 
-// The section machines. ZeroTouchNetworks are networks such as 10.20.0.0/16.
+// The machines section. ZeroTouchNetworks are networks such as 10.20.0.0/16.
 public sealed record MachineSettings(bool RequireWebApproval, int MaxWaitingPerAddress, int MaxWaiting, IReadOnlyList<string> ZeroTouchNetworks);

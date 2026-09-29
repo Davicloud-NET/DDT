@@ -6,8 +6,8 @@ using System.ComponentModel;
 
 namespace DDT.Agent.Deployment;
 
-// What NetJoinDomain's answers mean for whoever runs the sequence, and what to change. Some only say that no domain
-// controller answered yet, which is common while the network comes up after Windows started.
+// Explains NetJoinDomain's error codes to whoever runs the sequence, and what to change. Some only mean that no domain
+// controller answered yet. That's common while the network comes up after Windows started.
 public static class DomainJoinErrors
 {
     public const int FileNotFound = 2;
@@ -35,9 +35,9 @@ public static class DomainJoinErrors
     public static bool IsTransient(int code) =>
         code is BadNetworkPath or NetworkUnreachable or NoLogonServers or NoSuchDomain or RpcServerUnavailable;
 
-    // The organizational unit is the one the join asked for, the step's own or the server's, or null for the default
-    // Computers container. With one, the join answers "not found" when the domain has no such OU and "parameter is
-    // incorrect" when it cannot use the name, as for a typo or the Computers container, which is no OU.
+    // organizationalUnit is the OU the join asked for, from the step or the server, or null for the default Computers
+    // container. With an OU, the join answers "not found" when the domain has no such OU. It answers "parameter is
+    // incorrect" when it can't use the name, as with a typo or the Computers container, which isn't an OU.
     public static string Describe(int code, string domain, string? organizationalUnit = null) => (code, organizationalUnit) switch
     {
         (FileNotFound, { Length: > 0 } ou) =>

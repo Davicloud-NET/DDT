@@ -127,7 +127,7 @@ describe("AboutPage", () => {
       "href",
       "/api/about/legal/licenses/wimlib/COPYING.MIT",
     );
-    // Once among the notices, once among the texts.
+    // One link in the notices and one in the list of licence texts.
     expect(screen.getAllByRole("link", { name: webLicences })).toHaveLength(2);
   });
 

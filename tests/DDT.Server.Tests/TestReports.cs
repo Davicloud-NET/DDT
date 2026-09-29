@@ -8,17 +8,14 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Tests;
 
-// Reports as the agent sends them: every step that has left Pending, and the one running now as the current step.
+// Reports as the agent sends them.
+// They list every step that has left Pending, with the one running now as the current step.
 internal static class TestReports
 {
-    public static AgentRunReport Report(
-        DeploymentState state,
-        IReadOnlyList<StepRunState> steps,
-        int percent = 0,
-        string? error = null,
-        SequencePhase phase = SequencePhase.WindowsPE,
-        RunActivity activity = RunActivity.Step) =>
-        new(state, phase, steps, steps.LastOrDefault(s => s.State == StepState.Running)?.StepId, percent, activity, error);
+    // A step report from Windows PE. Its current step is the last one running.
+    // A test sets the rest with a with expression.
+    public static AgentRunReport Report(DeploymentState state, IReadOnlyList<StepRunState> steps) =>
+        new(state, SequencePhase.WindowsPE, steps, steps.LastOrDefault(s => s.State == StepState.Running)?.StepId, 0, RunActivity.Step, null);
 
     public static AgentRunReport Running(params StepRunState[] steps) => Report(DeploymentState.Running, steps);
 

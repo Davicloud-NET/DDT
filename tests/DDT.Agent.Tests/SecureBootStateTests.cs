@@ -7,7 +7,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The state as Windows records it, under a key of the test's own in the current user's hive, which it deletes.
+// The state as Windows records it, under a test key in the current user's hive, which the test deletes.
 public sealed class SecureBootStateTests : IDisposable
 {
     private readonly string _path = $@"Software\DDT-test-{Guid.NewGuid():N}";

@@ -8,11 +8,9 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Tests;
 
-// Stands in for the disk, wimlib, bcdboot, the firmware boot order and the restart, and in the installed Windows for
-// setup, the domain join, the due restart, the agent's removal and what Windows deletes when it next starts, and records
-// each call in one journal so a test can check their order. FailAt names the call that throws Failure: list, prepare,
-// partition, apply, bcd, firmware, reboot, find, join, remove, or one passed to Note. The volumes are directories in a
-// temporary folder, created by the partitioning, that Dispose removes.
+// Stands in for the disk, wimlib, bcdboot, the boot order and the restart, and in Windows for setup, the join, the
+// restart marker and the agent's removal. Every call goes into one journal, so a test can check their order. The
+// volumes are directories in a temporary folder that Dispose removes.
 internal sealed class FakeDeploymentTools
     : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IWindowsSetupProbe, IDomainJoiner, IRestartMarker, IAgentRemoval, IRestartDeleter, IDisposable
 {
@@ -32,6 +30,8 @@ internal sealed class FakeDeploymentTools
 
     public List<LocalDisk> Disks { get; }
 
+    // The call that throws Failure: list, prepare, partition, apply, bcd, firmware, reboot, find, join, remove, or one
+    // passed to Note.
     public string? FailAt { get; set; }
 
     public Exception Failure { get; set; } = new DeploymentStepException("The scripted step failed.");
@@ -164,7 +164,7 @@ internal sealed class FakeDeploymentTools
         return Task.CompletedTask;
     }
 
-    // Into Windows it is a plain reboot, as before task sequences.
+    // A reboot into Windows is journaled as a plain reboot, the same as before task sequences.
     public Task RebootAsync(RestartInto into, CancellationToken cancellationToken)
     {
         Record("reboot", into == RestartInto.WindowsPE ? " into Windows PE" : string.Empty);
@@ -272,7 +272,7 @@ internal sealed class FakeDeploymentTools
         return Task.FromResult(code);
     }
 
-    // Set until the test says Windows restarted, as the restart itself would.
+    // Stays set until the test says Windows restarted. A real restart would clear it.
     public bool RestartDue { get; set; }
 
     bool IRestartMarker.IsSet => RestartDue;
@@ -301,7 +301,7 @@ internal sealed class FakeDeploymentTools
         Record("delete at restart", $" {Path.GetRelativePath(Volumes.Windows, path)}");
     }
 
-    // Deletes what was marked, in order, as Windows does when it starts: a directory only once it is empty.
+    // Deletes what was marked, in order, like Windows does when it starts. A directory goes only once it's empty.
     public void DeleteMarkedAsWindowsStarts()
     {
         List<string> marked;

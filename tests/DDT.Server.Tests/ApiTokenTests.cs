@@ -101,7 +101,7 @@ public sealed class ApiTokenTests(DdtApplication application) : IClassFixture<Dd
         ApiToken stored = await application.TokenAsync(created.Token.Id);
         Assert.Equal(ApiTokenSecrets.Hash(created.Secret), stored.SecretHash);
 
-        // Nowhere in the database files either, whatever column or page it might have reached.
+        // It isn't in the database files either, whatever column or page it might have ended up in.
         foreach (string file in Directory.EnumerateFiles(application.StorePath, "ddt-dev.db*"))
         {
             await using FileStream stream = new(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
@@ -131,7 +131,7 @@ public sealed class ApiTokenTests(DdtApplication application) : IClassFixture<Dd
         Assert.Contains("expiresInDays", (await ProblemsAsync(await viewer.PostAsync(Tokens, new CreateApiTokenRequest("ci", DdtRoleNames.Viewer, 0)))).Keys);
         Assert.Contains("expiresInDays", (await ProblemsAsync(await viewer.PostAsync(Tokens, new CreateApiTokenRequest("ci", DdtRoleNames.Viewer, 366)))).Keys);
 
-        // Without a lifetime it lasts 90 days, and its name is taken until it is revoked.
+        // Without a lifetime, a token lasts 90 days. Its name stays taken until it's revoked.
         CreatedApiToken first = await RegisteredMachine.ReadAsync<CreatedApiToken>(await viewer.PostAsync(Tokens, new CreateApiTokenRequest("ci", DdtRoleNames.Viewer)));
         Assert.Equal(first.Token.CreatedUtc.AddDays(ApiTokenLimits.DefaultDays), first.Token.ExpiresUtc);
         Assert.Contains("name", (await ProblemsAsync(await viewer.PostAsync(Tokens, new CreateApiTokenRequest("ci", DdtRoleNames.Viewer)))).Keys);
@@ -165,7 +165,7 @@ public sealed class ApiTokenTests(DdtApplication application) : IClassFixture<Dd
         (_, string secret) = await application.SeedTokenAsync(userName, DdtRoleNames.Administrator);
         using HttpClient client = application.TokenClient(secret);
 
-        // An administrator's token of an operator acts as an operator.
+        // The token says Administrator, but its user is an operator, so it acts as an operator.
         Assert.Equal(HttpStatusCode.Forbidden, (await client.GetPathAsync("/api/audit")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await client.PostJsonAsync($"/api/machines/{await PendingMachineAsync()}/approve")).StatusCode);
 
@@ -278,8 +278,8 @@ public sealed class ApiTokenTests(DdtApplication application) : IClassFixture<Dd
         Assert.Equal(userName, me.UserName);
     }
 
-    // An account that has to replace a password an administrator was shown reaches nothing with its session, and so
-    // nothing with a token it made before either.
+    // An account that must replace a password an administrator was shown can't reach anything with its session.
+    // So it can't reach anything with a token it made earlier either.
     [Fact]
     public async Task ATokenReachesNothingWhileItsAccountHasToChangeItsPassword()
     {
@@ -314,8 +314,8 @@ public sealed class ApiTokenTests(DdtApplication application) : IClassFixture<Dd
         Assert.Equal(HttpStatusCode.Unauthorized, (await administrator.Http.SendAsync(garbage, TestContext.Current.CancellationToken)).StatusCode);
     }
 
-    // A user claim of the token's type rides in the session cookie, and must not make the session count as a token that
-    // skips the CSRF filters.
+    // A user claim with the token's claim type ends up in the session cookie.
+    // It must not make the session count as a token, because tokens skip the CSRF filters.
     [Fact]
     public async Task AClaimNamedLikeATokensDoesNotMakeASessionOne()
     {
@@ -376,7 +376,7 @@ public sealed class ApiTokenTests(DdtApplication application) : IClassFixture<Dd
             TestContext.Current.CancellationToken))).ActorTokenId);
     }
 
-    // The owner's and the administrators' token pages follow every change; nobody else hears of the token.
+    // The owner's and the administrators' token pages get every change. Nobody else hears about the token.
     [Fact]
     public async Task PushesAChangedTokenToItsOwnerAndToAdministratorsOnly()
     {
@@ -393,7 +393,7 @@ public sealed class ApiTokenTests(DdtApplication application) : IClassFixture<Dd
         await using HubConnection ownerLive = await TokenHubAsync(ownerSecret, LiveEvents.TokenChanged, ownerHeard);
         await using HubConnection otherLive = await TokenHubAsync(otherSecret, LiveEvents.TokenChanged, otherHeard);
 
-        // Its first use changes when it was last used, and the revocation ends it.
+        // Its first use updates when it was last used, and revoking it ends it.
         using HttpClient client = application.TokenClient(revokedSecret);
         (await client.GetPathAsync("/api/machines")).EnsureSuccessStatusCode();
         Assert.NotNull((await LiveListener.NextAsync(ownerHeard.Reader, t => t.Id == revoked)).LastUsedUtc);
@@ -407,7 +407,7 @@ public sealed class ApiTokenTests(DdtApplication application) : IClassFixture<Dd
         Assert.DoesNotContain(await DrainAsync(otherHeard.Reader), t => t.UserId == ownerId);
     }
 
-    // What arrived by now, after a moment for pushes on their way.
+    // Returns what arrived so far, after a short wait for pushes that are still on their way.
     private static async Task<List<ApiTokenView>> DrainAsync(ChannelReader<ApiTokenView> reader)
     {
         await Task.Delay(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken);

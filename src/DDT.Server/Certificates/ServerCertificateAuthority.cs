@@ -8,7 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace DDT.Server.Certificates;
 
-// Boot images pin the root, so it has to outlive them; the server certificate it issues can then change as often as
+// Boot images pin the root, so it has to outlive them. The server certificate it issues can then change as often as
 // needed without a new boot image.
 public static class ServerCertificateAuthority
 {
@@ -20,11 +20,11 @@ public static class ServerCertificateAuthority
 
     private static readonly Oid s_serverAuthentication = new("1.3.6.1.5.5.7.3.1");
 
-    // Windows PE often runs hours behind: it reads a firmware clock that holds local time as if it were Pacific time.
-    // Such a machine must not see a certificate issued a moment ago as not yet valid.
+    // WinPE often runs hours behind. It reads a firmware clock that holds local time as if it were Pacific time. Such a
+    // machine must not treat a certificate issued a moment ago as not yet valid.
     private static readonly TimeSpan s_backdate = TimeSpan.FromDays(1);
 
-    // A CA that can issue server certificates and nothing below them.
+    // Creates a CA that can issue server certificates but nothing below them.
     public static PemPair CreateRoot(DateTimeOffset now)
     {
         using RSA key = RSA.Create(KeySize);

@@ -6,7 +6,6 @@ using System.Net;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,8 +13,8 @@ using Xunit;
 
 namespace DDT.Pxe.Tests;
 
-// Mirrors the order in DDT.Host: routing, the gate, then authentication with a deny by default
-// fallback policy, so a request the gate lets through would meet the same policy it does in production.
+// Mirrors the order in DDT.Host. That's routing, the gate, then authentication with a deny by default fallback policy.
+// So a request the gate lets through meets the same policy as in production.
 public sealed class BootHttpEndpointsTests : IAsyncLifetime
 {
     private const int BootPort = 8080;
@@ -136,7 +135,7 @@ public sealed class BootHttpEndpointsTests : IAsyncLifetime
     {
         HttpContext context = await SendAsync(HttpMethods.Get, path);
 
-        // Not a redirect and not 401: firmware refuses the first and prompts for credentials on the second.
+        // Not a redirect and not 401. Firmware refuses the first and prompts for credentials on the second.
         Assert.Equal(StatusCodes.Status404NotFound, context.Response.StatusCode);
     }
 

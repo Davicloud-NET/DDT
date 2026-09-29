@@ -9,7 +9,7 @@ using static DDT.Core.Tests.Sequences.TreeSteps;
 
 namespace DDT.Core.Tests.Sequences;
 
-// Condition trees: a node's When, an IF's Test and a repeat's Until, with the field of a problem inside the tree.
+// Condition trees, meaning a node's When, an IF's Test and a repeat's Until. A problem's field points inside the tree.
 public sealed class SequenceValidatorConditionTests
 {
     private static TestCondition Test(string variable, ConditionOperator op, string value = "") => new(variable, op, value);
@@ -54,13 +54,13 @@ public sealed class SequenceValidatorConditionTests
             Test(MachineVariableNames.AssetTag, ConditionOperator.NotExists),
             Test("Office", ConditionOperator.Equals, "ProPlus"),
 
-            // A value of rules or machine roles, which the validator cannot know, and whose type it cannot either.
+            // A value from rules or machine roles. The validator can't know it or its type.
             Test("Site", ConditionOperator.GreaterOrEqual, "3"));
 
         Assert.Empty(ValidateWhen(when, out _));
     }
 
-    // Only rules and machine roles can give these a value, which the server knows.
+    // Only rules and machine roles can set these values, and only the server knows them.
     [Fact]
     public void ListsTheNamesOnlyRulesAndMachineRolesCanGiveAValue()
     {
@@ -180,7 +180,7 @@ public sealed class SequenceValidatorConditionTests
         Assert.Empty(ValidateWhen(All([.. Enumerable.Repeat(office, SequenceValidator.MaxTestsPerNode)]), out _));
         AssertOnlyAt(All([.. Enumerable.Repeat(office, SequenceValidator.MaxTestsPerNode + 1)]), "when", "sequence.tooManyTests");
 
-        // The step's conditions of version 1 count too.
+        // The step's version 1 conditions count too.
         RebootStep both = Reboot() with
         {
             Conditions = [.. Enumerable.Repeat(phase, SequenceValidator.MaxConditions)],
@@ -193,7 +193,8 @@ public sealed class SequenceValidatorConditionTests
             "sequence.tooManyTests");
     }
 
-    // Their evaluator knows only the operators of version 1 and holds nothing else, so a document says them in When.
+    // The legacy evaluator only knows version 1's operators and never holds for anything else. So a document has to
+    // use When for the others.
     [Fact]
     public void KeepsTheConditionsOfVersionOneToItsOperators()
     {

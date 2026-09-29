@@ -12,11 +12,8 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.MachineConsole.Controls;
 
-// One module of the sequence rail: a trough one shade below the panel, filled as its step goes. Done is filled with
-// the done tone, failed and skipped are hatched, and the running step fills with blue to its percent under stripes
-// that move, the one thing on the screen that does. A running step that gives no percent fills a paler blue. The step
-// the run waits at for someone, a Pause step, is filled with the attention colour and does not move, as nothing runs.
-// The fill grows to a new percent over slow, and a new state fades in over the one before, over slow too.
+// The module of one step on the sequence rail. The running step's stripes are the only thing on screen that moves by
+// itself. A step that waits for someone stands still, because nothing runs.
 public sealed class RailModule : Control
 {
     public static readonly StyledProperty<ConsoleStepState> StateProperty =
@@ -45,14 +42,14 @@ public sealed class RailModule : Control
     // The step is current but waits for someone to act, so it is not drawn as running.
     public static readonly StyledProperty<bool> AwaitsSomeoneProperty = AvaloniaProperty.Register<RailModule, bool>(nameof(AwaitsSomeone));
 
-    // The percent the running fill shows, which follows Percent over slow.
+    // The percent the running fill shows. It follows Percent over the Slow duration.
     public static readonly StyledProperty<double> FillProperty = AvaloniaProperty.Register<RailModule, double>(nameof(Fill));
 
-    // How far the change from the state before has come, from 0 to 1.
+    // How far the fade from the previous state has come, from 0 to 1.
     public static readonly StyledProperty<double> ChangeProperty = AvaloniaProperty.Register<RailModule, double>(nameof(Change), 1);
 
-    // How often the stripes of a running step move, in frames per second: enough to read as motion, little enough for
-    // software rendering while an image is applied.
+    // How often a running step's stripes move, in frames per second. It's enough to read as motion, and light enough
+    // for software rendering while an image is applied.
     private const double FramesPerSecond = 30;
 
     private const double StripeWidth = 6;
@@ -62,10 +59,7 @@ public sealed class RailModule : Control
     private TimeSpan _lastFrame;
     private double _offset;
     private bool _animating;
-    private ConsoleStepState _before;
-    private double _fillBefore;
-    private bool _softBefore;
-    private bool _awaitsBefore;
+    private Look _before;
     private CancellationTokenSource? _changing;
 
     static RailModule()
@@ -179,7 +173,7 @@ public sealed class RailModule : Control
         private set => SetValue(ChangeProperty, value);
     }
 
-    // Tests draw the stripes where they start.
+    // Tests turn this off, so the stripes are drawn at their starting position.
     public static bool Animates { get; set; } = true;
 
     public override void Render(DrawingContext context)
@@ -194,25 +188,24 @@ public sealed class RailModule : Control
 
         if (Change < 1)
         {
-            DrawState(context, bounds, trough, _before, _fillBefore, _softBefore, _awaitsBefore);
+            DrawState(context, bounds, trough, _before);
 
             using (context.PushOpacity(Change))
             {
-                DrawState(context, bounds, trough, State, Fill, Percent is null, AwaitsSomeone);
+                DrawState(context, bounds, trough, Now);
             }
         }
         else
         {
-            DrawState(context, bounds, trough, State, Fill, Percent is null, AwaitsSomeone);
+            DrawState(context, bounds, trough, Now);
         }
     }
 
-    // soft is a running step that gives no percent, which fills a paler blue; awaits one that waits for someone.
-    private void DrawState(DrawingContext context, Rect bounds, RoundedRect trough, ConsoleStepState state, double fill, bool soft, bool awaits)
+    private void DrawState(DrawingContext context, Rect bounds, RoundedRect trough, Look look)
     {
         const double radius = 2;
 
-        if (state == ConsoleStepState.Running && awaits)
+        if (look.State == ConsoleStepState.Running && look.Awaits)
         {
             context.DrawRectangle(Attention, null, trough);
 
@@ -221,7 +214,7 @@ public sealed class RailModule : Control
 
         using (context.PushClip(trough))
         {
-            switch (state)
+            switch (look.State)
             {
                 case ConsoleStepState.Done:
                     context.DrawRectangle(Done, null, bounds);
@@ -233,16 +226,15 @@ public sealed class RailModule : Control
                     context.DrawRectangle(Stripes.Brush(ColorOf(Edge), 2, Colors.Transparent, 4), null, bounds);
                     break;
                 case ConsoleStepState.Running:
-                    Rect filled = soft ? bounds : new Rect(0, 0, bounds.Width * Math.Clamp(fill, 0, 100) / 100, bounds.Height);
+                    Rect filled = look.Soft ? bounds : new Rect(0, 0, bounds.Width * Math.Clamp(look.Fill, 0, 100) / 100, bounds.Height);
 
-                    context.DrawRectangle(soft ? RunSoft : Run, null, filled);
+                    context.DrawRectangle(look.Soft ? RunSoft : Run, null, filled);
                     context.DrawRectangle(Stripes.Brush(ColorOf(Stripe), StripeWidth, Colors.Transparent, StripeWidth, _offset), null, filled);
                     break;
             }
         }
 
-        // The running module's edge is the run tone, every other one the rail's edge.
-        IBrush? edge = state == ConsoleStepState.Running ? Run : Edge;
+        IBrush? edge = look.State == ConsoleStepState.Running ? Run : Edge;
         context.DrawRectangle(null, new Pen(edge, 1), new RoundedRect(bounds.Deflate(0.5), radius));
     }
 
@@ -271,7 +263,7 @@ public sealed class RailModule : Control
         }
     }
 
-    // The new state fades in over the one before, where the module is on the screen already.
+    // If the module is already on screen, the new state fades in over the previous one.
     private void ChangeFrom(ConsoleStepState before)
     {
         _changing?.Cancel();
@@ -285,10 +277,7 @@ public sealed class RailModule : Control
             return;
         }
 
-        _before = before;
-        _fillBefore = Fill;
-        _softBefore = Percent is null;
-        _awaitsBefore = AwaitsSomeone;
+        _before = new Look(before, Fill, Percent is null, AwaitsSomeone);
         _changing = new CancellationTokenSource();
         Change = 0;
 
@@ -307,8 +296,10 @@ public sealed class RailModule : Control
         _ = fade.RunAsync(this, _changing.Token);
     }
 
-    // Only what runs moves.
+    // Only a running step moves.
     public bool IsMoving => State == ConsoleStepState.Running && !AwaitsSomeone;
+
+    private Look Now => new(State, Fill, Percent is null, AwaitsSomeone);
 
     private static Color ColorOf(IBrush? brush) => brush is ISolidColorBrush solid ? solid.Color : Colors.Transparent;
 
@@ -342,4 +333,7 @@ public sealed class RailModule : Control
         _animating = true;
         top.RequestAnimationFrame(Frame);
     }
+
+    // Soft is a running step without a percent, which fills a paler blue. Awaits is a step that waits for someone.
+    private readonly record struct Look(ConsoleStepState State, double Fill, bool Soft, bool Awaits);
 }

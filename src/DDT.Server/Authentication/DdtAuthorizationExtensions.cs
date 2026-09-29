@@ -45,8 +45,8 @@ public static class DdtAuthorizationExtensions
         return services;
     }
 
-    // An account signed in with a password an administrator was shown reaches only what the fallback policy guards,
-    // which is the Account page's own endpoints, until it has set a password nobody else knows.
+    // An account that signed in with a password an administrator has seen can only reach the Account page's own
+    // endpoints, which the fallback policy guards. That lasts until the user sets a password nobody else knows.
     private static bool HasOwnPassword(AuthorizationHandlerContext context) =>
         !context.User.HasClaim(claim => claim.Type == DdtClaimTypes.MustChangePassword);
 }

@@ -77,7 +77,7 @@ public sealed class ServerCertificateEndpointTests(LegacyCertificateApplication 
         Assert.Contains(view.RootSha256!, migrated.Message, StringComparison.Ordinal);
     }
 
-    // Before anyone can sign in over a connection their browser trusts.
+    // It's needed before anyone can sign in over a connection their browser trusts.
     [Fact]
     public async Task AnyoneCanFetchTheRootToTrust()
     {

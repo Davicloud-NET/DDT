@@ -9,15 +9,15 @@ import { Button as AriaButton } from "react-aria-components";
 
 import { TemplateField } from "@/sequences/builder/TemplateField";
 import { EditorLock } from "@/sequences/editorLock";
-import { TextSetting } from "@/sequences/fields";
+import { TextSetting } from "@/sequences/fields/TextSetting";
 import { fieldFindings, type Findings } from "@/sequences/problems";
 import { cx } from "@/ui/cx";
 
 import type { EditedValue } from "./values";
 
-// The values a rule or a machine role sets: a name in the mono face, such as TimeZone, and its value, a template that
-// may use the machine's facts and other values. Each row's fields are named values[1].name and values[1].value, as
-// the server's findings name them. It needs the builder's data around it for the completion of names.
+// Edits the values a rule or machine role sets. Each row has a name in the mono font, such as TimeZone, and a value.
+// The value is a template that can use the machine's facts and other values. The row fields are named values[1].name
+// and values[1].value to match the server's findings. It needs the builder's data around it to complete names.
 
 const iconKey =
   "flex size-8 cursor-pointer items-center justify-center rounded-key text-muted key-motion outline-none " +

@@ -7,7 +7,7 @@ using DDT.Contracts.Agents;
 namespace DDT.Agent.Deployment;
 
 // Joins through NetJoinDomain on this computer, with the join account's credentials. The call blocks while it looks
-// for a domain controller, so it runs on the thread pool, and once it started it cannot be cancelled.
+// for a domain controller, so it runs on the thread pool. Once it has started, it can't be cancelled.
 public sealed class NetJoinDomainJoiner : IDomainJoiner
 {
     public Task<int> JoinAsync(AgentJoinDomainCredentials credentials, CancellationToken cancellationToken)

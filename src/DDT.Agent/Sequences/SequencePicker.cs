@@ -13,13 +13,8 @@ using DDT.Core.Unattend;
 
 namespace DDT.Agent.Sequences;
 
-// What the technician signed in at the machine has chosen so far: a sequence, then only what that sequence needs: a
-// disk when it erases one and there are several, a computer name when the server needs one, starting with the one the
-// machine's own name or a rule gives, the sequence's inputs asked at the machine, ERASE before a disk is erased, and
-// ANYWAY before a disk image is written that will not start with the Secure Boot the machine has on. Anything but the
-// word at those questions goes back to the list, so nothing is erased by a stray key, and so does Back at any question
-// after the list. The sequences an assignment rule suggests for this machine come first. The answers to the inputs,
-// passwords among them, stay here until they go with the choice, and are forgotten when it is sent or the picker starts
+// What the technician signed in at the machine has chosen so far: a sequence, then only the questions it needs, up to
+// ERASE and ANYWAY. The answers to the inputs, passwords included, are forgotten once sent or when the picker starts
 // over.
 public sealed class SequencePicker(IMachineConsole console, AgentLog log)
 {
@@ -53,8 +48,8 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
     // The disk chosen so far, which is the confirmed one once Accept returns a request for a sequence that erases it.
     public LocalDisk? ChosenDisk => _disk;
 
-    // disks may be empty when no sequence erases a disk. secureBootEnabled is what the firmware says, if anything, and
-    // trustedUefiCas which of Microsoft's third-party UEFI CAs it trusts.
+    // disks may be empty when no sequence erases a disk. secureBootEnabled is what the firmware says, if anything.
+    // trustedUefiCas says which of Microsoft's third-party UEFI CAs the firmware trusts.
     public void Offer(
         IReadOnlyList<AgentSequenceChoice> sequences,
         IReadOnlyList<LocalDisk> disks,
@@ -124,120 +119,20 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
 
         string typed = answer.Text?.Trim() ?? string.Empty;
 
-        switch (_question)
+        return _question switch
         {
-            case PickerQuestion.Sequence:
-                // Back has nowhere to go from the list; the text console checks the number itself.
-                if (answer.Back)
-                {
-                    return null;
-                }
-
-                if (_sequences.FirstOrDefault(candidate => candidate.Id == answer.SequenceId) is not { } sequence)
-                {
-                    log.Warning("Choose one of the sequences shown.");
-
-                    return null;
-                }
-
-                _sequence = sequence;
-                _disk = _sequence.ErasesDisk && _disks.Count == 1 ? _disks[0] : null;
-
-                return Ask(_sequence.ErasesDisk && _disk is null ? PickerQuestion.Disk : AfterDisk());
-            case PickerQuestion.Disk:
-                if (answer.Back)
-                {
-                    StartOver();
-
-                    return null;
-                }
-
-                if (_disks.FirstOrDefault(candidate => candidate.Number == answer.DiskNumber) is not { } disk)
-                {
-                    log.Warning("Choose one of the disks shown.");
-
-                    return null;
-                }
-
-                _disk = disk;
-
-                return Ask(AfterDisk());
-            case PickerQuestion.ComputerName:
-                if (answer.Back)
-                {
-                    StartOver();
-
-                    return null;
-                }
-
-                // Enter on the name the values give keeps it, and the run takes it from them, so the machine gets no name
-                // of its own; a name typed here beats it and becomes the machine's.
-                string name = typed.Length == 0 && _sequence!.ComputerName is { } given ? given : typed;
-
-                if (!ComputerNames.IsValid(name, out string error))
-                {
-                    log.Warning(error);
-                    _computerNameError = error;
-
-                    return null;
-                }
-
-                _computerName = string.Equals(name, _sequence!.ComputerName, StringComparison.OrdinalIgnoreCase) ? null : name;
-                _computerNameError = null;
-
-                return Ask(AfterComputerName());
-            case PickerQuestion.Inputs:
-                if (answer.Back)
-                {
-                    StartOver();
-
-                    return null;
-                }
-
-                // What was typed is never logged, only which inputs it did not answer well.
-                IReadOnlyList<ConsoleInputValue> values = answer.Values ?? [];
-                _inputErrors = InputQuestions.Check(Inputs(_sequence!), values);
-                _inputsError = null;
-
-                if (_inputErrors.Count > 0)
-                {
-                    log.Warning($"Answer these again: {string.Join(", ", Inputs(_sequence!).Where(input => _inputErrors.ContainsKey(input.Name)).Select(input => input.Label))}.");
-
-                    return null;
-                }
-
-                _answers = values;
-
-                return Ask(AfterInputs());
-            case PickerQuestion.Confirmation:
-                if (answer.Back || !string.Equals(typed, ConfirmationWord, StringComparison.Ordinal))
-                {
-                    log.Information("Nothing was erased.");
-                    StartOver();
-
-                    return null;
-                }
-
-                return Ask(AfterConfirmation());
-            case PickerQuestion.SecureBoot:
-                if (answer.Back || !string.Equals(typed, SecureBootWord, StringComparison.Ordinal))
-                {
-                    log.Information("Nothing was erased.");
-                    StartOver();
-
-                    return null;
-                }
-
-                _allowSecureBootMismatch = true;
-
-                return Request();
-            default:
-                return null;
-        }
+            PickerQuestion.Sequence => AcceptSequence(answer),
+            PickerQuestion.Disk => AcceptDisk(answer),
+            PickerQuestion.ComputerName => AcceptComputerName(answer, typed),
+            PickerQuestion.Inputs => AcceptInputs(answer),
+            PickerQuestion.Confirmation => Confirmed(answer, typed, ConfirmationWord) ? Ask(AfterConfirmation()) : null,
+            PickerQuestion.SecureBoot => Confirmed(answer, typed, SecureBootWord) ? AllowSecureBootMismatch() : null,
+            _ => null,
+        };
     }
 
-    // What runs is the server's copy of the sequence as it was when it was chosen, which an administrator may have
-    // changed while the list was shown.
+    // What runs is the server's copy of the sequence at the moment it was chosen. An administrator may have changed it
+    // while the list was shown.
     public void Picked(AgentRun run)
     {
         ArgumentNullException.ThrowIfNull(run);
@@ -254,9 +149,9 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
         Reset();
     }
 
-    // The server would not take the choice; what it says decides whether offering again makes sense, so the picker
-    // starts from a fresh list. When it names answers to the sequence's inputs as what it did not take, they are asked
-    // again with what was wrong at each, and the rest of the choice stands.
+    // The picker starts from a fresh list, because the reason decides whether offering again makes sense. The exception
+    // is when the server named answers to the inputs it didn't take. Those are asked again, and the rest of the choice
+    // stands.
     public void Refused(string reason, IReadOnlyDictionary<string, string>? fieldErrors = null)
     {
         log.Warning($"The server did not accept the choice: {reason}");
@@ -274,12 +169,128 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
         Reset();
     }
 
-    // Nothing reached the server, or nothing came back: the last question is asked again.
+    // Nothing reached the server, or nothing came back. The last question is asked again.
     public void NotSent(Exception exception)
     {
         ArgumentNullException.ThrowIfNull(exception);
 
         log.Warning($"Cannot send the choice to the server ({exception.Message}). Try again.");
+    }
+
+    private AgentRunRequest? AcceptSequence(ConsoleAnswer answer)
+    {
+        // Back has nowhere to go from the list. The text console checks the number itself.
+        if (answer.Back)
+        {
+            return null;
+        }
+
+        if (_sequences.FirstOrDefault(candidate => candidate.Id == answer.SequenceId) is not { } sequence)
+        {
+            log.Warning("Choose one of the sequences shown.");
+
+            return null;
+        }
+
+        _sequence = sequence;
+        _disk = _sequence.ErasesDisk && _disks.Count == 1 ? _disks[0] : null;
+
+        return Ask(_sequence.ErasesDisk && _disk is null ? PickerQuestion.Disk : AfterDisk());
+    }
+
+    private AgentRunRequest? AcceptDisk(ConsoleAnswer answer)
+    {
+        if (answer.Back)
+        {
+            StartOver();
+
+            return null;
+        }
+
+        if (_disks.FirstOrDefault(candidate => candidate.Number == answer.DiskNumber) is not { } disk)
+        {
+            log.Warning("Choose one of the disks shown.");
+
+            return null;
+        }
+
+        _disk = disk;
+
+        return Ask(AfterDisk());
+    }
+
+    private AgentRunRequest? AcceptComputerName(ConsoleAnswer answer, string typed)
+    {
+        if (answer.Back)
+        {
+            StartOver();
+
+            return null;
+        }
+
+        // Enter keeps the name the values give. The run then takes it from the values, so the request carries no
+        // name. A name typed here wins and becomes the machine's.
+        string name = typed.Length == 0 && _sequence!.ComputerName is { } given ? given : typed;
+
+        if (!ComputerNames.IsValid(name, out string error))
+        {
+            log.Warning(error);
+            _computerNameError = error;
+
+            return null;
+        }
+
+        _computerName = string.Equals(name, _sequence!.ComputerName, StringComparison.OrdinalIgnoreCase) ? null : name;
+        _computerNameError = null;
+
+        return Ask(AfterComputerName());
+    }
+
+    private AgentRunRequest? AcceptInputs(ConsoleAnswer answer)
+    {
+        if (answer.Back)
+        {
+            StartOver();
+
+            return null;
+        }
+
+        // What was typed is never logged, only which inputs weren't answered well.
+        IReadOnlyList<ConsoleInputValue> values = answer.Values ?? [];
+        _inputErrors = InputQuestions.Check(Inputs(_sequence!), values);
+        _inputsError = null;
+
+        if (_inputErrors.Count > 0)
+        {
+            log.Warning($"Answer these again: {string.Join(", ", Inputs(_sequence!).Where(input => _inputErrors.ContainsKey(input.Name)).Select(input => input.Label))}.");
+
+            return null;
+        }
+
+        _answers = values;
+
+        return Ask(AfterInputs());
+    }
+
+    // Anything but the word, or Back, goes back to the list, so nothing is erased by a stray key.
+    private bool Confirmed(ConsoleAnswer answer, string typed, string word)
+    {
+        if (!answer.Back && string.Equals(typed, word, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        log.Information("Nothing was erased.");
+        StartOver();
+
+        return false;
+    }
+
+    private AgentRunRequest AllowSecureBootMismatch()
+    {
+        _allowSecureBootMismatch = true;
+
+        return Request();
     }
 
     private void StartOver()
@@ -308,14 +319,14 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
 
     private PickerQuestion AfterInputs() => _sequence!.ErasesDisk ? PickerQuestion.Confirmation : AfterConfirmation();
 
-    // Only where the firmware says Secure Boot is on: elsewhere the image may well start.
+    // Only when the firmware says Secure Boot is on. Otherwise the image may well start.
     private PickerQuestion AfterConfirmation() =>
         (_sequence!.RawImageBootCapability is ImageBootCapability.NotSigned or ImageBootCapability.Unknown || UntrustedCa(_sequence))
         && _secureBootEnabled == true
             ? PickerQuestion.SecureBoot
             : PickerQuestion.None;
 
-    // A sequence that has nothing more to ask starts at once.
+    // A sequence that has nothing more to ask starts right away.
     private AgentRunRequest? Ask(PickerQuestion question)
     {
         if (question == PickerQuestion.None)

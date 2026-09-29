@@ -8,9 +8,8 @@ using Avalonia.Media;
 
 namespace DDT.MachineConsole.Controls;
 
-// Lays the console out on a canvas of at least 1024 x 768 and scales it to the screen by its size in pixels, not by
-// its DPI: a technician reads the console from where they stand, so a larger screen shows the same screen larger. The
-// canvas grows in width where the screen is wider than 4:3.
+// Scales a canvas of at least 1024 x 768 by the screen's pixels, not its DPI. A technician reads the console from where
+// they stand, so a larger screen should show it larger.
 public sealed class ScreenScaler : Decorator
 {
     public const double BaseWidth = 1024;
@@ -45,7 +44,7 @@ public sealed class ScreenScaler : Decorator
         return finalSize;
     }
 
-    // The layout is in device-independent units; the screen's pixels are those times the render scaling.
+    // The layout is in device-independent units. The screen's pixels are those units times the render scaling.
     private double ScaleFrom(Size size)
     {
         if (double.IsInfinity(size.Width) || double.IsInfinity(size.Height) || size.Width <= 0 || size.Height <= 0)

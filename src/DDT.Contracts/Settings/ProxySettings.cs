@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Settings;
 
-// The section proxies: the reverse proxies whose X-Forwarded-For and X-Forwarded-Proto DDT believes.
+// The proxies section. It lists the reverse proxies whose X-Forwarded-For and X-Forwarded-Proto headers DDT trusts.
 public sealed record ProxySettings(IReadOnlyList<string> KnownProxies, IReadOnlyList<string> KnownNetworks);

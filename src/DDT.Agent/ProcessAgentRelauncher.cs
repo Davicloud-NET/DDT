@@ -26,7 +26,7 @@ public sealed class ProcessAgentRelauncher(Action? beforeStart = null) : IAgentR
 
         using Process process = Process.Start(start) ?? throw new InvalidOperationException($"{path} did not start.");
 
-        // Not cancellable: Ctrl+C reaches the new agent as well, which stops on its own.
+        // Not cancellable. Ctrl+C reaches the new agent too, and it stops on its own.
         await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
 
         return process.ExitCode;

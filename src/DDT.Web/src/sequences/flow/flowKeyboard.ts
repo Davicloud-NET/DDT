@@ -2,19 +2,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { t } from "@lingui/core/macro";
-
 import type { SequenceStep } from "../sequences";
-import { findingCounts } from "../sequenceList";
-import { isContainer, isStepKind, stepKindLabel } from "../steps";
+import { isContainer } from "../steps";
 import type { FlowEdit } from "./flowEdits";
 import { bodiesOf, type Slot, type TreeEntry, type TreeIndex } from "./flowTree";
 
-// The keys of the flow canvas, worked out from the tree alone. The canvas is one stop of the Tab key; within it the
-// arrow keys go from node to node the way the flow runs: Down goes on to what runs next, into the Then of an IF and
-// into a group or a repeat, and on past the join after the last node of a branch; Up goes back the same way. Left
-// and Right go across to the other branch of the nearest IF, Home and End to the first and the last node, Escape
-// out to the container around.
+// The flow canvas's keys, worked out from the tree alone. The canvas is one Tab stop. Up and Down follow the flow,
+// Left and Right cross an IF's branches, Home and End go to the ends, and Escape goes out to the container around.
 
 export type FlowMove = "up" | "down" | "left" | "right" | "home" | "end" | "parent";
 
@@ -27,7 +21,7 @@ export type FlowCommand =
   | { type: "cut" }
   | { type: "paste" }
   | { type: "duplicate" }
-  // Alt with Up or Down: the node trades places with the one before or after it.
+  // Alt+Up or Alt+Down: the node swaps places with the one before or after it.
   | { type: "shift"; by: -1 | 1 }
   // Shift+F10 or the menu key: the node's menu.
   | { type: "menu" };
@@ -40,8 +34,8 @@ interface KeyInput {
   altKey: boolean;
 }
 
-// The command a key gives on a node of the canvas, or null for a key the canvas leaves alone, such as Ctrl+Z, which
-// the page's history takes, and the zoom keys, which the canvas's viewport takes.
+// The command a key gives on a canvas node, or null for a key the canvas ignores. Ctrl+Z is one, because the page's
+// history handles it. The zoom keys are others, because the canvas's viewport handles them.
 export function flowCommand(event: KeyInput): FlowCommand | null {
   const command = event.ctrlKey || event.metaKey;
 
@@ -112,8 +106,8 @@ function listOf(index: TreeIndex, entry: TreeEntry): TreeEntry[] {
   );
 }
 
-// The first node inside a container the flow goes into, or null where it goes past: a leaf, a collapsed container,
-// or one with nothing inside.
+// The first node inside a container that the flow goes into. Null if the flow goes past it: for a leaf, a collapsed
+// container, or an empty one.
 function firstInside(node: SequenceStep, collapsed: ReadonlySet<string>): string | null {
   if (!isContainer(node) || collapsed.has(node.id)) {
     return null;
@@ -160,7 +154,7 @@ function after(index: TreeIndex, entry: TreeEntry): string | null {
   return parent === undefined ? null : after(index, parent);
 }
 
-// The nearest node, the node itself or a container around it, that sits in a branch of an IF.
+// The nearest node that sits in a branch of an IF: the node itself or a container around it.
 function inBranch(index: TreeIndex, entry: TreeEntry, branch: "then" | "else"): TreeEntry | null {
   let current: TreeEntry | undefined = entry;
 
@@ -175,7 +169,7 @@ function inBranch(index: TreeIndex, entry: TreeEntry, branch: "then" | "else"): 
   return null;
 }
 
-// The node a move goes to from id, or null where there is none and the focus stays.
+// The node a move from id goes to. Null if there's none, and then the focus stays.
 export function flowTarget(
   index: TreeIndex,
   id: string,
@@ -219,7 +213,7 @@ export function flowTarget(
   }
 }
 
-// Alt with Up or Down: the node trades places with its neighbour in its list; null at the end of it.
+// Alt+Up or Alt+Down: the node swaps places with its neighbour in its list. Null at the end of the list.
 export function shiftEdit(index: TreeIndex, id: string, by: -1 | 1): FlowEdit | null {
   const entry = index.byId.get(id);
 
@@ -241,7 +235,7 @@ export function shiftEdit(index: TreeIndex, id: string, by: -1 | 1): FlowEdit | 
   };
 }
 
-// The gap right after a node, where a paste or a copy goes; the end of the top list without one.
+// The gap right after a node, where a paste or a copy goes. Without a node, it's the end of the top-level list.
 export function slotAfter(index: TreeIndex, id: string | null): Slot {
   const entry = id === null ? undefined : index.byId.get(id);
 
@@ -267,173 +261,4 @@ export function afterRemoval(index: TreeIndex, id: string): string | null {
   const list = listOf(index, entry);
 
   return list[entry.index + 1]?.node.id ?? list[entry.index - 1]?.node.id ?? entry.parent ?? null;
-}
-
-// A node's name as the flow shows it: containers say their kind first.
-export function nodeTitle(node: SequenceStep): string {
-  const name = node.name.trim() === "" ? t`Unnamed step` : node.name;
-
-  switch (node.kind) {
-    case "if":
-      return t`If: ${name}`;
-    case "group":
-      return t`Group: ${name}`;
-    case "repeat":
-      return t`Repeat: ${name}`;
-    default:
-      return name;
-  }
-}
-
-// Where a node sits, such as "Step 2 of Then of 'If: Is it a Latitude?'" or, at the top, "Step 3".
-export function placeLabel(index: TreeIndex, entry: TreeEntry): string {
-  const position = entry.index + 1;
-  const container = entry.parent === null ? undefined : index.byId.get(entry.parent)?.node;
-
-  if (container === undefined) {
-    return t`Step ${position}`;
-  }
-
-  const title = nodeTitle(container);
-
-  switch (entry.body) {
-    case "then":
-      return t`Step ${position} of Then of ''${title}''`;
-    case "else":
-      return t`Step ${position} of Else of ''${title}''`;
-    default:
-      return t`Step ${position} of ''${title}''`;
-  }
-}
-
-// A node as a screen reader says it: where it is, its name, its kind where the name is not that, and its findings,
-// such as "Step 2 of Then of 'If: Is it a Latitude?', Apply image, 1 problem".
-export function nodeLabel(
-  index: TreeIndex,
-  id: string,
-  problems: number,
-  warnings: number,
-): string {
-  const entry = index.byId.get(id);
-
-  if (entry === undefined) {
-    return "";
-  }
-
-  const title = nodeTitle(entry.node);
-  const kind = stepKindLabel(entry.node.kind);
-
-  return [
-    placeLabel(index, entry),
-    title,
-    isContainer(entry.node) || title === kind ? null : kind,
-    findingCounts(problems, warnings),
-  ]
-    .filter((part) => part !== null)
-    .join(", ");
-}
-
-// A gap as the key that adds there says it.
-export function slotLabel(index: TreeIndex, slot: Slot): string {
-  const list = index.entries.filter(
-    (entry) => entry.parent === slot.parent && entry.body === slot.body,
-  );
-  const next = list[slot.index]?.node;
-  const previous = list[slot.index - 1]?.node;
-
-  if (previous !== undefined && next !== undefined) {
-    const before = nodeTitle(previous);
-    const following = nodeTitle(next);
-
-    return t`Add a step between ${before} and ${following}`;
-  }
-
-  if (next !== undefined) {
-    const name = nodeTitle(next);
-
-    return t`Add a step before ${name}`;
-  }
-
-  if (previous !== undefined) {
-    const name = nodeTitle(previous);
-
-    return t`Add a step after ${name}`;
-  }
-
-  const container = slot.parent === null ? undefined : index.byId.get(slot.parent)?.node;
-
-  if (container === undefined) {
-    return t`Add the first step`;
-  }
-
-  const title = nodeTitle(container);
-
-  switch (slot.body) {
-    case "then":
-      return t`Add a step to Then of ''${title}''`;
-    case "else":
-      return t`Add a step to Else of ''${title}''`;
-    default:
-      return t`Add a step to ''${title}''`;
-  }
-}
-
-// What Ctrl+C puts on the clipboard: the nodes as the document holds them, marked as DDT's, so a paste can tell them
-// from other text.
-export interface FlowClipboard {
-  ddtFlow: 1;
-  nodes: SequenceStep[];
-}
-
-export function clipboardText(nodes: readonly SequenceStep[]): string {
-  return JSON.stringify({ ddtFlow: 1, nodes: [...nodes] } satisfies FlowClipboard);
-}
-
-function isNode(value: unknown): value is SequenceStep {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const node = value as Record<string, unknown>;
-
-  if (
-    typeof node.kind !== "string" ||
-    !isStepKind(node.kind) ||
-    typeof node.id !== "string" ||
-    typeof node.name !== "string" ||
-    !Array.isArray(node.conditions) ||
-    typeof node.continueOnError !== "boolean" ||
-    typeof node.rebootAfter !== "boolean"
-  ) {
-    return false;
-  }
-
-  const bodies =
-    node.kind === "if"
-      ? [node.then, node.else]
-      : node.kind === "group" || node.kind === "repeat"
-        ? [node.steps]
-        : [];
-
-  return bodies.every((body) => Array.isArray(body) && body.every(isNode));
-}
-
-// The nodes of text Ctrl+C put on the clipboard, or null for any other text. Their ids are the ones copied; a paste
-// gives them new ones.
-export function nodesFromClipboard(text: string): SequenceStep[] | null {
-  try {
-    const value: unknown = JSON.parse(text);
-
-    if (typeof value !== "object" || value === null) {
-      return null;
-    }
-
-    const { ddtFlow, nodes } = value as Partial<Record<keyof FlowClipboard, unknown>>;
-
-    return ddtFlow === 1 && Array.isArray(nodes) && nodes.length > 0 && nodes.every(isNode)
-      ? nodes
-      : null;
-  } catch {
-    return null;
-  }
 }

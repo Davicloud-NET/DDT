@@ -52,11 +52,18 @@
     <PackageVersion Include="Avalonia.BuildServices" Version="11.3.2" />
   </ItemGroup>
 
+  <ItemGroup Label="Analysis">
+    <!-- Build-time only: MA0048 and MA0051, see .editorconfig. Every other rule is off (MeziantouAnalysisMode). -->
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.290" />
+  </ItemGroup>
+
   <ItemGroup Label="Tests">
     <PackageVersion Include="Avalonia.Headless" Version="12.1.3" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.12" />
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.12" />
+    <!-- The version EF Core's design-time package brings, for CodeShapeTests. -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
   </ItemGroup>

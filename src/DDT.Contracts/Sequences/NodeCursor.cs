@@ -4,6 +4,6 @@
 
 namespace DDT.Contracts.Sequences;
 
-// Where a run of a tree goes on: entering NodeId, or, with Leaving, leaving it once its body is done, which is when a
-// repeat tests Until. A run whose cursor is null is at its end.
+// Where a run of a tree continues. It either enters NodeId, or, with Leaving, leaves NodeId once its body is done.
+// That's the point where a repeat tests Until. A run whose cursor is null has ended.
 public sealed record NodeCursor(Guid NodeId, bool Leaving);

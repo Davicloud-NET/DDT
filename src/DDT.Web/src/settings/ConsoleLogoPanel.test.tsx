@@ -8,8 +8,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { administrator, json, operator, servePage, type Handler } from "@/test/serve";
 
 import type { ConsoleLogoView } from "./consoleLogo";
-import { expectAccessible } from "./serverTesting";
 import { DeploymentDefaultsPage, type DeploymentSettings } from "./DeploymentDefaultsPage";
+import { expectAccessible } from "./serverTesting";
 import type { SettingsSectionView } from "./settings";
 
 const sha256 = "5d41402abc4b2a76b9719d911017c5925d41402abc4b2a76b9719d911017c592";

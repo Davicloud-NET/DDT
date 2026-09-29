@@ -32,8 +32,8 @@ public sealed class SequenceStatesTests
         Assert.Null(empty.Cursor);
     }
 
-    // Whatever version it says, a document an agent of version 2 could run starts as Format 1; one test of version 3
-    // makes it a tree's.
+    // Whatever version it says, a document a version 2 agent could run starts as Format 1. A single version 3 test
+    // makes it start as Format 2.
     [Fact]
     public void StartsAFlatDocumentAsFormat1UnlessItUsesVersion3()
     {

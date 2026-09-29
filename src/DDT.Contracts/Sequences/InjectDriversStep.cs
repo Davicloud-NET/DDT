@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Sequences;
 
-// The server picks the driver packages by the machine's model. RequireMatch fails the step when it has none.
+// The server picks the driver packages by the machine's model. RequireMatch fails the step when no package matches.
 public sealed record InjectDriversStep : SequenceStep
 {
     public bool RequireMatch { get; init; }

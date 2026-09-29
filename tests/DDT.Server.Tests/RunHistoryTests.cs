@@ -16,8 +16,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The run history lists the runs of every machine. Other tests in the class add runs of their own, so each test finds
-// its runs by something only they have, such as a model name.
+// The run history lists the runs of every machine. Other tests in the class add their own runs, so each test finds its
+// runs by something only they have, like a model name.
 public sealed class RunHistoryTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private const string History = "/api/deployments";
@@ -27,7 +27,7 @@ public sealed class RunHistoryTests(DdtApplication application) : IClassFixture<
     private async Task<RunHistoryPage> PageAsync(string queryString, SignedInClient? client = null) =>
         await RegisteredMachine.ReadAsync<RunHistoryPage>(await (client ?? await application.AdministratorAsync()).GetAsync($"{History}?{queryString}"));
 
-    // A registered machine with the details the history shows, changed as an operator or the firmware would set them.
+    // A registered machine with the details the history shows, set the way an operator or the firmware would set them.
     private async Task<Guid> MachineAsync(string model, string? name = null, string? serial = null, int? chassisType = null)
     {
         using RegisteredMachine machine = await application.RegisterMachineAsync();
@@ -44,13 +44,14 @@ public sealed class RunHistoryTests(DdtApplication application) : IClassFixture<
         return machine.Id;
     }
 
-    // Stored directly, with the creation time a test needs. Ids are minted from it, as the server mints them.
-    private async Task<Guid> RunAsync(Guid machineId, DeploymentState state, int minute, string title = "A run", Guid? sequenceId = null, Guid? id = null)
+    // Stores a run directly, with the creation time a test needs.
+    // Its ID is made from that time, like the server makes IDs.
+    private async Task<Guid> RunAsync(Guid machineId, DeploymentState state, int minute, string title = "A run", Guid? sequenceId = null)
     {
         DateTimeOffset created = s_start.AddMinutes(minute);
         Deployment run = new()
         {
-            Id = id ?? Guid.CreateVersion7(created),
+            Id = Guid.CreateVersion7(created),
             MachineId = machineId,
             TaskSequenceId = sequenceId,
             Title = title,
@@ -103,8 +104,8 @@ public sealed class RunHistoryTests(DdtApplication application) : IClassFixture<
         Assert.Equal(new RunStateCounts(0, 1, 1, 1, 0), page.Counts);
     }
 
-    // Each page continues after the last run of the one before, whatever was added in between, and runs created in the
-    // same millisecond each come once.
+    // Each page continues after the last run of the page before, whatever was added in between.
+    // Runs created in the same millisecond each show up once.
     [Fact]
     public async Task PagesThroughEveryRunOnceWithACursor()
     {
@@ -124,7 +125,7 @@ public sealed class RunHistoryTests(DdtApplication application) : IClassFixture<
         Assert.NotNull(first.Next);
         Assert.Equal(new RunStateCounts(0, 0, 5, 0, 0), first.Counts);
 
-        // Newer than every run on the first page, so it belongs before it and never shows up further down.
+        // It's newer than every run on the first page. So it belongs before that page and never shows up further down.
         await RunAsync(machine, DeploymentState.Assigned, 10);
 
         RunHistoryPage second = await PageAsync($"query={Uri.EscapeDataString(model)}&limit=2&before={first.Next}");
@@ -241,7 +242,7 @@ public sealed class RunHistoryTests(DdtApplication application) : IClassFixture<
         Assert.NotNull(page.Next);
     }
 
-    // The history route sits beside the ones for a single run, which must keep answering.
+    // The history route sits next to the routes for a single run, and those must keep answering.
     [Fact]
     public async Task TheRoutesOfOneRunStillAnswer()
     {
@@ -279,7 +280,7 @@ public sealed class RunHistoryTests(DdtApplication application) : IClassFixture<
         Assert.Equal(DeploymentState.Cancelled, (await LiveListener.NextAsync(runs, r => r.Run.Id == assigned.Id)).Run.State);
     }
 
-    // A poll pushes the machine with its run, but the run did not change, so the history hears nothing of it.
+    // A poll pushes the machine with its run. The run didn't change, so the history hears nothing about it.
     [Fact]
     public async Task APollThatChangesNothingInTheRunPushesNoRun()
     {
@@ -292,7 +293,7 @@ public sealed class RunHistoryTests(DdtApplication application) : IClassFixture<
         DeploymentSummary assigned = await administrator.AssignedAsync(machine.Id, sequence.Id);
         await LiveListener.NextAsync(runs, r => r.Run.Id == assigned.Id);
 
-        // Past the push interval, so a run push from the poll would go out on its own rather than wait.
+        // Waits past the push interval, so a run push from the poll would go out at once instead of waiting.
         await Task.Delay(LiveNotifier.MachinePushInterval, TestContext.Current.CancellationToken);
         await application.ChangeMachineAsync(machine.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(1));
         await machine.NextAsync();

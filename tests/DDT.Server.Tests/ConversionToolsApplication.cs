@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.Server.Tests;
 
-// A host whose conversion tools are the ones a test puts into Tools, by name, and none otherwise.
+// A host that only has the conversion tools a test puts into Tools, by name.
 public sealed class ConversionToolsApplication : DdtApplication
 {
     public ConcurrentDictionary<string, string> Tools { get; } = new(StringComparer.Ordinal);

@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Settings;
 
-// Only Logging:LogLevel is DDT's: logging providers add subsections of their own, which stay in configuration.
+// Only Logging:LogLevel belongs to DDT. Logging providers add their own subsections, and those stay in configuration.
 public sealed class LoggingSettingsSection() : SettingsSectionDefinition<LoggingOptions>(
     SettingsSectionNames.Logging,
     LoggingOptions.SectionName,
@@ -39,7 +39,7 @@ public sealed class LoggingSettingsSection() : SettingsSectionDefinition<Logging
             .Select(level => new SettingProblem($"LogLevel:{level.Key}", ServerMessages.SettingsLoggingLevelUnknown.With("value", level.Value ?? string.Empty))),
     ];
 
-    // By name only: Enum.TryParse also takes a number, and "7" is no level.
+    // Parses by name only. Enum.TryParse also takes a number, and "7" isn't a level.
     public static LogLevel? TryParse(string? value) =>
         Enum.GetNames<LogLevel>().FirstOrDefault(name => string.Equals(name, value?.Trim(), StringComparison.OrdinalIgnoreCase)) is { } name
             ? Enum.Parse<LogLevel>(name)

@@ -92,8 +92,8 @@ function leaveForOtherPage() {
   press(screen.getByRole("link", { name: "About DDT" }));
 }
 
-// The server side of the upload protocol for one session: it keeps the offset it has stored and refuses a slice
-// that does not start there, as the server does. A slice waits for `hold` before it is stored.
+// A fake server for one upload session. Like the real one, it keeps the offset it has stored and refuses a
+// slice that doesn't start there. A slice waits for `hold` before it's stored.
 function uploadServer(options: {
   chunkBytes: number;
   failFirstSliceAfterStoring?: boolean;
@@ -298,7 +298,8 @@ describe("ImagesPage", () => {
       expect(await screen.findByRole("button", { name: "Windows 11 Pro" })).toBeInTheDocument();
       expect(server.count("GET /api/images")).toBe(1);
 
-      // 0 is stored but its answer lost; sent again, the server names 4; then 4 to 8 and 8 to 10.
+      // Slice 0 is stored, but its answer is lost. When it's sent again, the server names offset 4. Then come 4
+      // to 8 and 8 to 10.
       expect(upload.slices).toEqual([
         { offset: 0, bytes: 4, answer: 502 },
         { offset: 0, bytes: 4, answer: 409 },
@@ -342,7 +343,7 @@ describe("ImagesPage", () => {
       expect(screen.getByText(/^100% of 10 bytes, .* so far$/)).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: "Choose a file" })).not.toBeInTheDocument();
 
-      // The server goes on checking whatever the page does, so there is nothing to stop.
+      // The server keeps checking whatever the page does, so there's nothing to stop.
       expect(screen.queryByRole("button", { name: "Stop upload" })).not.toBeInTheDocument();
 
       const leaving = new Event("beforeunload", { cancelable: true });
@@ -412,7 +413,7 @@ describe("ImagesPage", () => {
       });
       expect(screen.getByRole("heading", { level: 1, name: "OS images" })).toBeInTheDocument();
 
-      // Asked again, the upload ends before anyone answers: the question goes away and the page stays.
+      // The page asks again, but the upload ends before anyone answers. The question closes and the page stays.
       leaveForOtherPage();
       await screen.findByRole("dialog", { name: "Stop the upload of boot.wim?" });
 
@@ -488,7 +489,7 @@ describe("ImagesPage", () => {
         [`POST /api/images/uploads/${upload.session.id}/complete`]: () => {
           completeCalls++;
 
-          // A proxy gave up on the first call while the server went on and added the images.
+          // A proxy gave up on the first call, but the server continued and added the images.
           return completeCalls === 1
             ? new Response(null, { status: 502, headers: { "Retry-After": "0" } })
             : json([imageSummary({ originalFileName: "boot.wim" })], 200);

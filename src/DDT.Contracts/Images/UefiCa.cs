@@ -6,7 +6,7 @@ namespace DDT.Contracts.Images;
 
 // Microsoft's third-party UEFI CAs, which sign the shims of Linux distributions. A boot file may be signed under one or
 // both, and a firmware's signature database may hold either, both or neither. The 2011 CA expired in June 2026, so
-// shims signed since are signed under the 2023 one, which firmware only holds once an update added it.
+// newer shims are signed under the 2023 CA. Firmware only holds that one after an update adds it.
 [Flags]
 public enum UefiCa
 {

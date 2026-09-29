@@ -9,14 +9,13 @@ using System.Text;
 
 namespace DDT.Agent.Deployment;
 
-// Runs a Windows tool and puts everything it prints into the machine log, because on a real PC that log is the
-// only record of why diskpart, bcdboot or reagentc refused. A step's script that runs as an account goes through
-// accountProcessStarter instead of .NET's Process, which cannot start another account as LocalSystem; without a starter
-// a run-as script fails, which the validator and the step runner refuse before it gets here.
+// Runs a Windows tool and logs everything it prints. On a real PC the machine log is the only record of why diskpart,
+// bcdboot or reagentc refused. A script run as an account starts through accountProcessStarter, because Process can't
+// do that.
 public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider, IAccountProcessStarter? accountProcessStarter = null) : IToolRunner
 {
-    // A process that a script starts in the background inherits its output and can keep it open long after the
-    // script ended, so the rest of the output is not waited for beyond this.
+    // A process that a script starts in the background inherits its output, and can keep it open long after the
+    // script ended. So the rest of the output isn't waited for beyond this.
     public static readonly TimeSpan OutputGrace = TimeSpan.FromSeconds(10);
 
     public async Task<IReadOnlyList<string>> RunAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
@@ -121,8 +120,8 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider, IAccount
         return exitCode;
     }
 
-    // As the account when the step runs as one, otherwise as the agent. A run-as step reached this far only past the
-    // validator and the step runner, so a missing starter is a wiring mistake, not an operator's.
+    // Starts the tool as the account when the step runs as one, otherwise as the agent. A run-as step only gets here
+    // after the validator and the step runner, so a missing starter is a wiring mistake, not an operator's.
     private IToolProcess StartFor(string fileName, IReadOnlyList<string> arguments, ToolRunOptions options, string tool)
     {
         if (options.Account is { } account)
@@ -189,7 +188,7 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider, IAccount
             throw new DeploymentStepException($"{start.FileName} cannot be started: {exception.Message}", exception);
         }
 
-        // No tool DDT runs reads its input; closing it keeps one that asks a question from waiting for ever.
+        // No tool DDT runs reads its input. Closing it keeps a tool that asks a question from waiting forever.
         process.StandardInput.Close();
 
         return process;

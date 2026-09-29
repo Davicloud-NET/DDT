@@ -11,8 +11,8 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace DDT.Server.Endpoints;
 
-// Bodies that hold a sequence document are read here rather than bound: the serializer throws NotSupportedException
-// for a step without "kind", which binding does not turn into a 400.
+// Bodies that hold a sequence document are read here instead of bound. The serializer throws NotSupportedException for
+// a step without "kind", and binding doesn't turn that into a 400.
 internal static class SequenceBodies
 {
     public static async Task<(T? Body, ProblemHttpResult? Refusal)> ReadAsync<T>(
@@ -47,7 +47,7 @@ internal static class SequenceBodies
         }
     }
 
-    // The detail is the reader's own English, for whoever writes a client.
+    // The detail is the JSON reader's own English message, for whoever writes a client.
     public static ProblemHttpResult Malformed(string detail) =>
         ServerProblems.Problem(ServerMessages.SequenceUnreadable.With(), StatusCodes.Status400BadRequest, detail: detail);
 

@@ -9,14 +9,13 @@ using Avalonia.Media.Immutable;
 
 namespace DDT.MachineConsole.Controls;
 
-// The dimming under what opens over the screen. It fades by the strength of its colour, not by its opacity: what fades
-// by opacity is drawn into a layer of its own and then onto the screen, which over the whole screen is twice the work
-// for the software renderer, while a colour of another strength is drawn once.
+// The dimming under an overlay. It fades through its colour's alpha, not Opacity. Opacity first renders into a separate
+// layer, and over the whole screen that doubles the software renderer's work.
 public sealed class Backdrop : Control
 {
     public static readonly StyledProperty<IBrush?> FillProperty = AvaloniaProperty.Register<Backdrop, IBrush?>(nameof(Fill));
 
-    // From 0, clear, to 1, the fill as it is.
+    // 0 is transparent, 1 shows the fill unchanged.
     public static readonly StyledProperty<double> StrengthProperty = AvaloniaProperty.Register<Backdrop, double>(nameof(Strength), 1);
 
     static Backdrop()

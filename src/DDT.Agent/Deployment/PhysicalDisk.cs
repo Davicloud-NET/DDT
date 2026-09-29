@@ -8,8 +8,8 @@ using Microsoft.Win32.SafeHandles;
 
 namespace DDT.Agent.Deployment;
 
-// \\.\PhysicalDriveN without the cache and with write-through, so a write is on the disk when it returns. Unbuffered I/O
-// needs aligned memory, so every read and write goes through a buffer of its own.
+// \\.\PhysicalDriveN without the cache and with write-through, so a write is on the disk when it returns.
+// Unbuffered I/O needs aligned memory, so every read and write goes through the disk's aligned buffer.
 public sealed unsafe class PhysicalDisk : IRawDisk
 {
     // DISK_GEOMETRY_EX: DISK_GEOMETRY, whose BytesPerSector is at 20, then DiskSize at 24.

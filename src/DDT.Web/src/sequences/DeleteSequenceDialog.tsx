@@ -8,14 +8,13 @@ import { Link } from "@tanstack/react-router";
 
 import { ApiError } from "@/lib/api";
 import type { RuleView } from "@/rules/rules";
-import { ConfirmDialog } from "@/ui/Dialog";
+import { ConfirmDialog } from "@/ui/ConfirmDialog";
 
 import { deletionBlocker, deletionConsequence, removeSummary } from "./sequenceList";
 import { deleteSequence, sequenceQuery, type SequenceSummary } from "./sequences";
 
-// Asks before deleting a sequence and says what that does to the machines that use it. While a rule chooses the
-// sequence the server keeps it, so the dialog says which rules to change instead of offering the deletion. The list
-// drops the sequence when the server answers; the hub tells everyone else.
+// Asks before deleting a sequence and says what that does to the machines that use it. The server keeps a sequence
+// while a rule chooses it, so then the dialog names the rules to change instead.
 export function DeleteSequenceDialog({
   sequence,
   rules,
@@ -25,7 +24,7 @@ export function DeleteSequenceDialog({
   sequence: SequenceSummary;
   // The rules that choose it.
   rules: readonly RuleView[];
-  // The machines it is assigned to or running on now.
+  // The machines it's assigned to or running on right now.
   activeRuns: number;
   onClose: () => void;
 }) {

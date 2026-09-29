@@ -6,13 +6,9 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Contracts.Sequences;
 
-// StepId is null for a problem of the whole sequence. Field is the camelCase JSON name within the step, such as
-// "script" or "conditions[1].value", so an editor can show the problem at the field. Every problem keeps a sequence
-// from running, so a warning, such as Windows steps without a local administrator, goes in a list of its own. Message
-// is English; Code and Args are the same sentence for a client that says it in the person's language.
-//
-// Two problems are equal when they say the same at the same place: the code and its values say it again, and a
-// dictionary compares only by reference.
+// Every problem keeps a sequence from running. Warnings go in a separate list. StepId is null for the whole sequence.
+// Field is the camelCase JSON path within the step, such as "conditions[1].value", so an editor can show the problem
+// there. Message is in English, and Code and Args carry the same message for a client in the person's language.
 public sealed record SequenceProblem(Guid? StepId, string? Field, string Message, string? Code = null, IReadOnlyDictionary<string, object>? Args = null)
 {
     public static SequenceProblem From(Guid? stepId, string? field, ServerMessage message)
@@ -22,6 +18,8 @@ public sealed record SequenceProblem(Guid? StepId, string? Field, string Message
         return new(stepId, field, message.Text, message.Code, message.Args);
     }
 
+    // Equal when they say the same thing at the same place. Code and Args only repeat Message, and a dictionary
+    // compares by reference.
     public bool Equals(SequenceProblem? other) =>
         other is not null && StepId == other.StepId && Field == other.Field && Message == other.Message;
 

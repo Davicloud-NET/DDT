@@ -13,7 +13,7 @@ import { LiveContext } from "@/live/LiveContext";
 import { fill, press } from "@/test/aria";
 import { logLine, stepView } from "@/test/builders";
 import { testHub, type TestHub } from "@/test/fakeHub";
-import { settle } from "@/test/renderPage";
+import { settle } from "@/test/settle";
 
 import type { MachineLogEntry } from "./log";
 import { LogPanel } from "./LogPanel";
@@ -24,7 +24,7 @@ function range(from: number, to: number): MachineLogEntry[] {
   return Array.from({ length: to - from + 1 }, (_, index) => logLine(from + index));
 }
 
-// Answers log reads as the server does, from the lines the test puts here.
+// Answers log reads like the real server, from the lines the test puts here.
 function logServer(stored: MachineLogEntry[]) {
   const reads: string[] = [];
 
@@ -64,7 +64,7 @@ function logServer(stored: MachineLogEntry[]) {
   return { reads };
 }
 
-// A live connection that is up, whose hub the test drives.
+// A live connection that's up. The test drives its hub.
 async function connected(): Promise<TestHub> {
   const hub = testHub(new QueryClient());
 

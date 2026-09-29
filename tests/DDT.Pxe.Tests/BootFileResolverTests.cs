@@ -179,8 +179,8 @@ public sealed class BootFileResolverTests : IDisposable
         Assert.False(missing.TryResolve("boot.sdi", out _));
     }
 
-    // A directory junction is the realistic attack on Windows: an unprivileged account can create
-    // one, while a symbolic link needs SeCreateSymbolicLinkPrivilege or developer mode.
+    // A directory junction is the realistic attack on Windows. An unprivileged account can create one, while a
+    // symbolic link needs SeCreateSymbolicLinkPrivilege or developer mode.
     private static bool TryCreateDirectoryLink(string link, string target)
     {
         if (!OperatingSystem.IsWindows())

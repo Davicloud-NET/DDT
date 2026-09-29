@@ -18,7 +18,7 @@ public sealed class ImageUpload
 
     public UploadKind Kind { get; set; } = UploadKind.Image;
 
-    // Bytes that are on disk and flushed, so a chunk that was cut off is sent again from here.
+    // The number of bytes that are on disk and flushed. A chunk that was cut off is sent again from here.
     public long Offset { get; set; }
 
     public Guid? CreatedByUserId { get; set; }

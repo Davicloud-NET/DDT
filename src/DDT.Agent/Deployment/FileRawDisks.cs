@@ -4,8 +4,9 @@
 
 namespace DDT.Agent.Deployment;
 
-// The dry run's disks: a file beside the dry run's root for each, as large as the disk it stands in for. It outlasts the
-// run, whose root goes when the run ends, so the disk can be looked at afterwards; the next clean deletes it.
+// The dry run's disks. Each is a file next to the dry run's root, as large as the disk it stands in for. The file
+// survives the run, whose root is deleted when the run ends, so the disk can be looked at afterwards. The next clean
+// deletes it.
 public sealed class FileRawDisks(string root, AgentLog log) : IRawDisks
 {
     public static string PathFor(string root, int diskNumber) =>

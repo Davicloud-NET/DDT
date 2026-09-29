@@ -19,8 +19,8 @@ public sealed class SystemOnlyDirectoryTests : IDisposable
         Directory.Delete(_parent, recursive: true);
     }
 
-    // The test's account created the directory, so as its owner it may still read and change the DACL, and puts one
-    // back that lets it delete the directory.
+    // The test's account created the directory. As its owner it can still read and change the DACL, so it puts back
+    // one that lets it delete the directory.
     internal static void Reopen(string directory)
     {
         if (!Directory.Exists(directory))

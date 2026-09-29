@@ -7,8 +7,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// Which disk the sequence erases, chosen by what the disk is: its model, size, bus and whether anything is on it.
-// Nothing is selected at first, so Enter alone never picks a disk.
+// Nothing is selected at first, so Enter alone never picks a disk to erase.
 public sealed class DiskChoiceViewModel : QuestionViewModel
 {
     private DiskItem? _selected;
@@ -65,24 +64,4 @@ public sealed class DiskChoiceViewModel : QuestionViewModel
     }
 
     protected override ConsoleAnswer? Answer() => Selected is { } item ? new ConsoleAnswer(DiskNumber: item.Disk.Number) : null;
-}
-
-public sealed class DiskItem(Localizer localizer, ConsoleDisk disk) : ObservableObject
-{
-    public ConsoleDisk Disk => disk;
-
-    public string Number => localizer.F("Disk {number}", ("number", localizer.Number(disk.Number)));
-
-    public string Model => Say.DiskModel(localizer, disk.Model);
-
-    public string Size => Say.Bytes(localizer, disk.SizeBytes);
-
-    public string Bus => Say.Bus(localizer, disk.BusType);
-
-    public string Partitions => Say.Partitions(localizer, disk.PartitionCount);
-
-    // A disk with partitions holds something that erasing it destroys.
-    public bool HoldsData => disk.PartitionCount > 0;
-
-    public void Refresh() => Raise(string.Empty);
 }

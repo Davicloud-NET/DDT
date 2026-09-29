@@ -7,9 +7,8 @@ using System.Runtime.Versioning;
 
 namespace DDT.Core.Wim;
 
-// wimlib through libwim-15.dll, which must sit where the runtime finds native libraries. Each operation runs on
-// its own thread with its own WIMStruct. wimlib's global settings can be made once per process, so every
-// instance has to ask for the same ones.
+// Calls wimlib through libwim-15.dll. Each operation runs on its own thread with its own WIMStruct. wimlib's global
+// settings are set once per process, so every instance must ask for the same ones.
 [SupportedOSPlatform("windows")]
 public sealed class WimLibrary : IWimLibrary
 {
@@ -20,9 +19,8 @@ public sealed class WimLibrary : IWimLibrary
 
     private readonly bool _strict;
 
-    // Strict fails initialization when the privileges to capture and apply security descriptors are missing,
-    // and fails an apply that cannot set an ACL or a symbolic link exactly. The error log receives wimlib's
-    // warnings, which it only prints and never returns.
+    // With strict, initialization fails without the privileges for security descriptors. An apply also fails when it
+    // can't set an ACL or a symbolic link exactly. The error log gets wimlib's warnings, which wimlib only prints.
     public WimLibrary(bool strict, string? errorLogPath)
     {
         _strict = strict;
@@ -42,44 +40,48 @@ public sealed class WimLibrary : IWimLibrary
 
         int flags = _strict ? WimNativeMethods.ExtractStrictAcls | WimNativeMethods.ExtractStrictSymlinks : 0;
 
-        return Task.Run(() => Apply(wimPath, index, targetDirectory, flags, progress, cancellationToken), cancellationToken);
-    }
-
-    public Task CaptureAsync(
-        string sourceDirectory,
-        string wimPath,
-        string imageName,
-        WimCompression compression,
-        IProgress<WimProgress>? progress,
-        CancellationToken cancellationToken)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(sourceDirectory);
-        ArgumentException.ThrowIfNullOrEmpty(wimPath);
-        ArgumentNullException.ThrowIfNull(imageName);
-
-        int compressionType = CompressionType(compression);
-
         return Task.Run(
-            () => Capture(sourceDirectory, wimPath, imageName, compressionType, WriteFlags(compression), progress, cancellationToken),
+            () =>
+            {
+                using WimProgressState state = new(progress, cancellationToken);
+                Apply(wimPath, index, targetDirectory, flags, state);
+            },
             cancellationToken);
     }
 
-    public Task ExportAsync(
-        string sourceWimPath,
-        int index,
-        string destinationWimPath,
-        WimCompression compression,
-        IProgress<WimProgress>? progress,
-        CancellationToken cancellationToken)
+    public Task CaptureAsync(WimCapture capture, IProgress<WimProgress>? progress, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrEmpty(sourceWimPath);
-        ArgumentOutOfRangeException.ThrowIfLessThan(index, 1);
-        ArgumentException.ThrowIfNullOrEmpty(destinationWimPath);
+        ArgumentNullException.ThrowIfNull(capture);
+        ArgumentException.ThrowIfNullOrEmpty(capture.SourceDirectory);
+        ArgumentException.ThrowIfNullOrEmpty(capture.WimPath);
+        ArgumentNullException.ThrowIfNull(capture.ImageName);
 
-        int compressionType = CompressionType(compression);
+        int compressionType = CompressionType(capture.Compression);
 
         return Task.Run(
-            () => Export(sourceWimPath, index, destinationWimPath, compressionType, WriteFlags(compression), progress, cancellationToken),
+            () =>
+            {
+                using WimProgressState state = new(progress, cancellationToken);
+                Capture(capture, compressionType, state);
+            },
+            cancellationToken);
+    }
+
+    public Task ExportAsync(WimExport export, IProgress<WimProgress>? progress, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(export);
+        ArgumentException.ThrowIfNullOrEmpty(export.SourceWimPath);
+        ArgumentOutOfRangeException.ThrowIfLessThan(export.Index, 1);
+        ArgumentException.ThrowIfNullOrEmpty(export.DestinationWimPath);
+
+        int compressionType = CompressionType(export.Compression);
+
+        return Task.Run(
+            () =>
+            {
+                using WimProgressState state = new(progress, cancellationToken);
+                Export(export, compressionType, state);
+            },
             cancellationToken);
     }
 
@@ -142,16 +144,9 @@ public sealed class WimLibrary : IWimLibrary
         $"{(strict ? "with" : "without")} strict privileges and " +
         (errorLogPath is null ? "without an error log" : $"with the error log {errorLogPath}");
 
-    private static unsafe void Apply(
-        string wimPath,
-        int index,
-        string targetDirectory,
-        int flags,
-        IProgress<WimProgress>? progress,
-        CancellationToken cancellationToken)
+    private static unsafe void Apply(string wimPath, int index, string targetDirectory, int flags, WimProgressState state)
     {
         string failure = $"Image {index} of {wimPath} could not be applied to {targetDirectory}";
-        using WimProgressState state = new(progress, cancellationToken);
         nint wim = 0;
 
         try
@@ -166,17 +161,9 @@ public sealed class WimLibrary : IWimLibrary
         }
     }
 
-    private static unsafe void Capture(
-        string sourceDirectory,
-        string wimPath,
-        string imageName,
-        int compressionType,
-        int writeFlags,
-        IProgress<WimProgress>? progress,
-        CancellationToken cancellationToken)
+    private static unsafe void Capture(WimCapture capture, int compressionType, WimProgressState state)
     {
-        string failure = $"{sourceDirectory} could not be captured into {wimPath}";
-        using WimProgressState state = new(progress, cancellationToken);
+        string failure = $"{capture.SourceDirectory} could not be captured into {capture.WimPath}";
         nint wim = 0;
 
         try
@@ -189,14 +176,14 @@ public sealed class WimLibrary : IWimLibrary
             Check(
                 WimNativeMethods.AddImage(
                     wim,
-                    sourceDirectory,
-                    imageName,
+                    capture.SourceDirectory,
+                    capture.ImageName,
                     null,
                     WimNativeMethods.AddWindowsConfiguration | WimNativeMethods.AddNoReparsePointFix),
                 failure,
                 state);
 
-            Check(WimNativeMethods.Write(wim, wimPath, WimNativeMethods.AllImages, writeFlags, 0), failure, state);
+            Check(WimNativeMethods.Write(wim, capture.WimPath, WimNativeMethods.AllImages, WriteFlags(capture.Compression), 0), failure, state);
         }
         finally
         {
@@ -204,29 +191,24 @@ public sealed class WimLibrary : IWimLibrary
         }
     }
 
-    private static unsafe void Export(
-        string sourceWimPath,
-        int index,
-        string destinationWimPath,
-        int compressionType,
-        int writeFlags,
-        IProgress<WimProgress>? progress,
-        CancellationToken cancellationToken)
+    private static unsafe void Export(WimExport export, int compressionType, WimProgressState state)
     {
-        string failure = $"Image {index} of {sourceWimPath} could not be exported to {destinationWimPath}";
-        using WimProgressState state = new(progress, cancellationToken);
+        string failure = $"Image {export.Index} of {export.SourceWimPath} could not be exported to {export.DestinationWimPath}";
         nint source = 0;
         nint destination = 0;
 
         try
         {
-            Check(WimNativeMethods.OpenWim(sourceWimPath, 0, out source), failure, state);
+            Check(WimNativeMethods.OpenWim(export.SourceWimPath, 0, out source), failure, state);
             Check(WimNativeMethods.CreateNewWim(compressionType, out destination), failure, state);
 
             // wimlib reports the export's progress on the WIM being written.
             WimNativeMethods.RegisterProgressFunction(destination, WimProgressState.Callback, state.Context);
-            Check(WimNativeMethods.ExportImage(source, index, destination, null, null, 0), failure, state);
-            Check(WimNativeMethods.Write(destination, destinationWimPath, WimNativeMethods.AllImages, writeFlags, 0), failure, state);
+            Check(WimNativeMethods.ExportImage(source, export.Index, destination, null, null, 0), failure, state);
+            Check(
+                WimNativeMethods.Write(destination, export.DestinationWimPath, WimNativeMethods.AllImages, WriteFlags(export.Compression), 0),
+                failure,
+                state);
         }
         finally
         {

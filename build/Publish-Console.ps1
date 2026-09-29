@@ -10,13 +10,13 @@ Publishes DDT.MachineConsole as ddt-console.exe, the graphical console the agent
 
 .DESCRIPTION
 Windows PE has no .NET runtime, so the console is compiled ahead of time into one native executable, like the agent.
-This needs the Visual C++ build tools. Next to ddt-console.exe the folder holds the two native libraries it draws
-with, libSkiaSharp.dll and libHarfBuzzSharp.dll; the three files go together. Pass the folder to Build-BootImage.ps1
-with -ConsolePath, which copies them to X:\DDT next to the agent.
+This needs the Visual C++ build tools. Next to ddt-console.exe, the folder holds the two native libraries it draws
+with, libSkiaSharp.dll and libHarfBuzzSharp.dll. The three files belong together. Pass the folder to
+Build-BootImage.ps1 with -ConsolePath, which copies them to X:\DDT next to the agent.
 
-It also zips the three files, at the zip's root, into -Package. Uploaded on the server's settings page, or named with
-DDT:Agent:ConsolePath, the zip is the console the agents of netbooting machines switch to, so a new console needs no
-new boot image.
+It also zips the three files into -Package, at the root of the zip. Upload the zip on the server's settings page, or
+name it with DDT:Agent:ConsolePath. Then it's the console that the agents of netbooting machines switch to, so a new
+console doesn't need a new boot image.
 
 .EXAMPLE
 .\build\Publish-Console.ps1
@@ -31,7 +31,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# Defaults are resolved here rather than in param(): Windows PowerShell leaves $PSScriptRoot empty
+# Defaults are set here instead of in param(), because Windows PowerShell leaves $PSScriptRoot empty
 # there when the script is started with powershell -File.
 if (-not $Output) { $Output = Join-Path $PSScriptRoot '..\artifacts\console' }
 if (-not $Package) { $Package = Join-Path $PSScriptRoot '..\artifacts\ddt-console.zip' }
@@ -40,9 +40,8 @@ $Output = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPat
 $Package = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Package)
 $project = Join-Path $PSScriptRoot '..\src\DDT.MachineConsole\DDT.MachineConsole.csproj'
 
-# Visual Studio's VsDevCmd.bat runs vswhere.exe by bare name from the installer folder, which fails in a
-# shell that sets NoDefaultCurrentDirectoryInExePath. The error text then lands in the linker path the
-# NativeAOT targets read back, and the link step fails with exit code 123.
+# VsDevCmd.bat runs vswhere.exe by its bare name from the installer folder. A shell that sets
+# NoDefaultCurrentDirectoryInExePath refuses that, and the NativeAOT link step then fails with exit code 123.
 $installer = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer'
 if (Test-Path -LiteralPath (Join-Path $installer 'vswhere.exe')) {
     $env:PATH = "$installer;$env:PATH"
@@ -67,7 +66,8 @@ foreach ($file in 'ddt-console.exe', 'libSkiaSharp.dll', 'libHarfBuzzSharp.dll')
     }
 }
 
-# ZipFile rather than Compress-Archive, which in Windows PowerShell 5.1 writes backslashes into the entry names.
+# ZipFile instead of Compress-Archive, because in Windows PowerShell 5.1 Compress-Archive writes backslashes into the
+# entry names.
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 if (Test-Path -LiteralPath $Package) {
     Remove-Item -LiteralPath $Package -Force

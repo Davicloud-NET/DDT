@@ -4,7 +4,6 @@
 
 using System.Net;
 using DDT.Agent.Consoles;
-using DDT.Agent.Deployment;
 using DDT.ConsoleProtocol;
 using DDT.Agent.Sequences;
 using DDT.Agent.WindowsPhase;
@@ -12,26 +11,13 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
-using DDT.Core.Sequences;
 using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The service in the installed Windows, from the state the hand-over leaves on its volume.
-public sealed class WindowsPhaseLoopTests : IDisposable
+// How the service continues the run, waits for Windows setup, and removes the agent and DDT's session once it's over.
+public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
 {
-    private static readonly Guid s_machineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
-
-    private readonly FakeDeploymentTools _tools = new();
-    private readonly RecordingToolRunner _toolRunner = new();
-    private readonly TestImage _image = new();
-
-    public void Dispose() => _tools.Dispose();
-
-    private string Windows => _tools.Volumes.Windows;
-
-    private string AnswerFile => UnattendFile.PathIn(Windows);
-
     [Fact]
     public async Task GoesOnWithTheRunAndRemovesItselfAfterTheDoneReportThenRestartsWindows()
     {
@@ -40,16 +26,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         AgentRun run = Run(cmd, powerShell);
         await HandOverAsync(run);
 
-        // What each script found when it ran.
-        List<(bool AnswerFile, string? WindowsPEReturns)> found = [];
-        _toolRunner.AnswerExitCode = (fileName, _, _) =>
-        {
-            _tools.Note($"run {Path.GetFileName(fileName)}");
-            SequenceState? state = RunFiles.In(Windows, Log()).LoadStateAsync(CancellationToken.None).GetAwaiter().GetResult();
-            found.Add((File.Exists(AnswerFile), state?.Variables.GetValueOrDefault(RunVariables.WindowsPEReturns)));
-
-            return 0;
-        };
+        List<(bool AnswerFile, string? WindowsPEReturns)> found = NoteWhatEachScriptFinds();
 
         ScriptedAgentServer server = new ScriptedAgentServer()
             .OnRegister(_ => Continued())
@@ -71,7 +48,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
             ("run-token-1", AgentEnvironment.Windows, SequenceDefinition.CurrentVersion, null, null),
             (registration.RunToken, registration.Environment, registration.SequenceVersion, registration.ResumeToken, registration.Disks));
 
-        // The installed Windows reports the facts as Windows PE did, as conditions test them in both phases.
+        // The installed Windows reports the same facts as WinPE did, because conditions test them in both phases.
         Assert.NotNull(registration.Facts);
         Assert.Equal(new DryRunMachineIdentityReader(1).Read().Facts, registration.Facts);
 
@@ -85,7 +62,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
             _toolRunner.Calls);
         Assert.StartsWith(Environment.SystemDirectory, RunScriptStepRunner.CmdPath, StringComparison.OrdinalIgnoreCase);
 
-        // The answer file went before the first step, and the count of returns to Windows PE stays with the run.
+        // The answer file was gone before the first step, and the count of returns to WinPE stays with the run.
         Assert.Equal([(false, "1"), (false, "1")], found);
 
         Assert.All(server.RunReports, report => Assert.Equal(SequencePhase.Windows, report.Phase));
@@ -124,7 +101,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
             });
         AgentLog log = Log();
 
-        int exitCode = await RunAsync(server, log: log, removal: new AgentRemoval(Windows, _toolRunner, _tools, log));
+        int exitCode = await RunAsync(server, new() { Log = log, Removal = new AgentRemoval(Windows, _toolRunner, _tools, log) });
 
         Assert.Equal(AgentExitCodes.Deployed, exitCode);
         Assert.Equal(
@@ -201,9 +178,9 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         Assert.False(File.Exists(AnswerFile));
     }
 
-    // The network may still be coming up while Windows starts, or a proxy in front of the server may answer for it:
-    // only the server's own answer that the run is over ends it here, as the agent's removal cannot be undone. A
-    // registration the server refuses as invalid is tried again as well.
+    // The network may still be coming up while Windows starts, or a proxy in front of the server may answer for it.
+    // Only the server's own answer that the run is over ends it here, because the agent's removal can't be undone. A
+    // registration the server refuses as invalid is retried as well.
     [Theory]
     [InlineData(null)]
     [InlineData(HttpStatusCode.InternalServerError)]
@@ -277,7 +254,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         };
 
         ManualTimeProvider time = new();
-        Task<int> running = RunAsync(server, time);
+        Task<int> running = RunAsync(server, new() { Time = time });
         await time.AdvanceUntilAsync(WindowsPhaseLoop.SetupPollInterval, () => running.IsCompleted);
 
         Assert.Equal(AgentExitCodes.Deployed, await running);
@@ -291,8 +268,8 @@ public sealed class WindowsPhaseLoopTests : IDisposable
         Assert.Equal((DeploymentState.Running, SequencePhase.Windows, RunActivity.WaitingForWindowsSetup), (waiting.State, waiting.Phase, waiting.Activity));
         Assert.Equal(Enumerable.Repeat(StepState.Done, 3), waiting.Steps.Select(step => step.State));
 
-        // Then the run went on. Its one quick step can be over before the heartbeat's first beat, which then says
-        // Finishing already, as changes this close together share a beat.
+        // Then the run continued. Its one quick step can finish before the heartbeat's first beat, which then already
+        // says Finishing, because changes this close together share a beat.
         Assert.Contains(server.RunReports[1].Activity, (RunActivity[])[RunActivity.Step, RunActivity.Finishing]);
         Assert.False(File.Exists(AnswerFile));
     }
@@ -311,7 +288,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
             .OnNext(_ => Next("session-1", run));
 
         ManualTimeProvider time = new();
-        Task<int> running = RunAsync(server, time, status: status);
+        Task<int> running = RunAsync(server, new() { Time = time, Status = status });
         await time.AdvanceUntilAsync(WindowsPhaseLoop.SetupPollInterval, () => running.IsCompleted);
 
         Assert.Equal(AgentExitCodes.Deployed, await running);
@@ -334,7 +311,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
 
         ManualTimeProvider time = new();
         StringWriter console = new();
-        Task<int> running = RunAsync(server, time, new AgentLog(time, console));
+        Task<int> running = RunAsync(server, new() { Time = time, Log = new AgentLog(time, console) });
         await time.AdvanceUntilAsync(WindowsPhaseLoop.SetupPollInterval, () => running.IsCompleted);
 
         Assert.Equal(AgentExitCodes.Deployed, await running);
@@ -361,7 +338,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
             return new AgentRunReportResult(token, "resume", null);
         };
 
-        int exitCode = await RunAsync(server, new ManualTimeProvider());
+        int exitCode = await RunAsync(server, new() { Time = new ManualTimeProvider() });
 
         Assert.Equal(AgentExitCodes.Stopped, exitCode);
         Assert.DoesNotContain("remove", _tools.Calls);
@@ -409,7 +386,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
             .OnNext(_ => Next("session-1", run))
             .OnRunReport(DeploymentState.Done, _ => new AgentRunReportResult("session-d", "resume-d", null));
 
-        int exitCode = await RunAsync(server, session: new FakeDeploySession(_tools));
+        int exitCode = await RunAsync(server, new() { Session = new FakeDeploySession(_tools) });
 
         Assert.Equal(AgentExitCodes.Deployed, exitCode);
         Assert.Equal(
@@ -428,7 +405,7 @@ public sealed class WindowsPhaseLoopTests : IDisposable
             .OnNext(_ => Next("session-1", run))
             .OnRunReport(DeploymentState.Failed, _ => new AgentRunReportResult("session-f", "resume-f", null));
 
-        int exitCode = await RunAsync(server, session: new FakeDeploySession(_tools));
+        int exitCode = await RunAsync(server, new() { Session = new FakeDeploySession(_tools) });
 
         Assert.Equal(AgentExitCodes.Stopped, exitCode);
         Assert.Equal(
@@ -447,535 +424,26 @@ public sealed class WindowsPhaseLoopTests : IDisposable
             .OnNext(_ => Next("session-1", run))
             .OnRunReport(DeploymentState.Failed, _ => new AgentRunReportResult("session-f", "resume-f", null));
 
-        int exitCode = await RunAsync(server, session: new FakeDeploySession(_tools, ends: false));
+        int exitCode = await RunAsync(server, new() { Session = new FakeDeploySession(_tools, ends: false) });
 
-        // The service stays, finds no run at its next start, and ends the session and itself then.
+        // The service stays, finds no run at its next start, and then ends the session and itself.
         Assert.Equal(AgentExitCodes.Stopped, exitCode);
         Assert.Equal(["prepare the session", "setup finished", "the session takes over the sign-in", "end the session once someone signed out"], _tools.Calls);
     }
 
-    [Fact]
-    public async Task AFailureTheServerDidNotGetGoesOutAfterRegisteringAgain()
+    // Whether the answer file was there when each script ran, and how often Windows PE had started again by then.
+    private List<(bool AnswerFile, string? WindowsPEReturns)> NoteWhatEachScriptFinds()
     {
-        _toolRunner.AnswerExitCode = (_, _, _) => 1;
-        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
-        await HandOverAsync(run);
-        ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-1", run))
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-2", run));
-
-        for (int attempt = 0; attempt <= ServerCallRules.MaxRetries; attempt++)
+        List<(bool AnswerFile, string? WindowsPEReturns)> found = [];
+        _toolRunner.AnswerExitCode = (fileName, _, _) =>
         {
-            server.OnRunReport(DeploymentState.Failed, _ => throw new HttpRequestException("The server is restarting."));
-        }
+            _tools.Note($"run {Path.GetFileName(fileName)}");
+            SequenceState? state = RunFiles.In(Windows, Log()).LoadStateAsync(CancellationToken.None).GetAwaiter().GetResult();
+            found.Add((File.Exists(AnswerFile), state?.Variables.GetValueOrDefault(RunVariables.WindowsPEReturns)));
 
-        int exitCode = await RunAsync(server);
-
-        Assert.Equal(AgentExitCodes.Stopped, exitCode);
-        Assert.Equal(["run-token-1", "run-token-2"], server.Registrations.Select(registration => registration.RunToken));
-        Assert.Equal("run-report Failed session-2", server.Calls[^1]);
-        Assert.StartsWith("The script ended with exit code 1", server.RunReports[^1].Error, StringComparison.Ordinal);
-        Assert.Equal("remove", _tools.Calls[^1]);
-    }
-
-    // The server was out of reach for longer than the runner tries: the Done report goes out once it is back, and the
-    // agent removes itself only then.
-    [Fact]
-    public async Task ADoneReportTheServerDidNotGetGoesOutAfterRegisteringAgain()
-    {
-        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
-        await HandOverAsync(run);
-        ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-1", run))
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-2", run));
-
-        for (int attempt = 0; attempt <= ServerCallRules.MaxRetries; attempt++)
-        {
-            server.OnRunReport(DeploymentState.Done, _ => throw new HttpRequestException("The server is restarting."));
-        }
-
-        server.OnRunReport(DeploymentState.Done, _ =>
-        {
-            _tools.Note("done report");
-
-            return new AgentRunReportResult("session-d", "resume-d", null);
-        });
-
-        int exitCode = await RunAsync(server);
-
-        Assert.Equal(AgentExitCodes.Deployed, exitCode);
-        Assert.Equal(["setup finished", "done report", "remove", "reboot"], _tools.Calls);
-        Assert.Equal(["run-token-1", "run-token-2"], server.Registrations.Select(registration => registration.RunToken));
-        Assert.Equal("run-report Done session-2", server.Calls[^1]);
-        Assert.Equal(Enumerable.Repeat(StepState.Done, 4), server.RunReports[^1].Steps.Select(step => step.State));
-        Assert.Single(_toolRunner.Calls);
-        Assert.False(File.Exists(RunFiles.StatePathIn(Windows)));
-        Assert.False(File.Exists(RunFiles.In(Windows, Log()).TokenPath));
-    }
-
-    // Windows may restart, or the service stop, while the Done report is on its way: the next start sends it, as the
-    // run token that can is still there.
-    [Fact]
-    public async Task ADoneReportAStopInterruptedGoesOutAtTheNextStart()
-    {
-        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
-        await HandOverAsync(run);
-        ScriptedAgentServer first = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-1", run));
-        first.OnRunReport(DeploymentState.Done, _ =>
-        {
-            first.Stop.Cancel();
-
-            throw new OperationCanceledException(first.Stop.Token);
-        });
-
-        Assert.Equal(AgentExitCodes.Stopped, await RunAsync(first));
-        Assert.Equal(["setup finished"], _tools.Calls);
-
-        ScriptedAgentServer second = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-2", run))
-            .OnRunReport(DeploymentState.Done, _ =>
-            {
-                _tools.Note("done report");
-
-                return new AgentRunReportResult("session-d", "resume-d", null);
-            });
-
-        Assert.Equal(AgentExitCodes.Deployed, await RunAsync(second));
-        Assert.Equal(["setup finished", "done report", "remove", "reboot"], _tools.Calls);
-        Assert.NotNull(Assert.Single(second.Registrations).RunToken);
-        AgentRunReport done = Assert.Single(second.RunReports);
-        Assert.Equal((DeploymentState.Done, SequencePhase.Windows), (done.State, done.Phase));
-        Assert.Equal(Enumerable.Repeat(StepState.Done, 4), done.Steps.Select(step => step.State));
-        Assert.Single(_toolRunner.Calls);
-        Assert.False(File.Exists(RunFiles.StatePathIn(Windows)));
-        Assert.False(File.Exists(RunFiles.In(Windows, Log()).TokenPath));
-    }
-
-    [Fact]
-    public async Task AFailureTheServerDidNotGetBeforeAStopGoesOutAtTheNextStart()
-    {
-        _toolRunner.AnswerExitCode = (_, _, _) => 1;
-        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
-        await HandOverAsync(run);
-        ScriptedAgentServer first = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-1", run));
-        first.OnRegister(_ =>
-        {
-            first.Stop.Cancel();
-
-            throw new OperationCanceledException(first.Stop.Token);
-        });
-
-        for (int attempt = 0; attempt <= ServerCallRules.MaxRetries; attempt++)
-        {
-            first.OnRunReport(DeploymentState.Failed, _ => throw new HttpRequestException("The server is restarting."));
-        }
-
-        Assert.Equal(AgentExitCodes.Stopped, await RunAsync(first));
-
-        ScriptedAgentServer second = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-2", run))
-            .OnRunReport(DeploymentState.Failed, _ =>
-            {
-                _tools.Note("failed report");
-
-                return new AgentRunReportResult("session-f", "resume-f", null);
-            });
-
-        Assert.Equal(AgentExitCodes.Stopped, await RunAsync(second));
-        Assert.Equal(["setup finished", "failed report", "remove"], _tools.Calls);
-        AgentRunReport failed = Assert.Single(second.RunReports);
-        Assert.StartsWith("The script ended with exit code 1", failed.Error, StringComparison.Ordinal);
-        Assert.Single(_toolRunner.Calls);
-        Assert.False(File.Exists(RunFiles.StatePathIn(Windows)));
-        Assert.False(File.Exists(RunFiles.In(Windows, Log()).TokenPath));
-    }
-
-    // Only a run that is over here keeps a final report, so its steps must not run again.
-    [Fact]
-    public async Task AFinalReportThatCannotBeReadStillEndsTheRun()
-    {
-        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
-        await HandOverAsync(run);
-        await File.WriteAllTextAsync(RunFiles.In(Windows, Log()).FinalReportPath, "{ not json", TestContext.Current.CancellationToken);
-        ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-1", run));
-
-        int exitCode = await RunAsync(server);
-
-        Assert.Equal(AgentExitCodes.Stopped, exitCode);
-        Assert.Equal(["remove"], _tools.Calls);
-        Assert.Empty(_toolRunner.Calls);
-        AgentRunReport failed = Assert.Single(server.RunReports);
-        Assert.Equal((DeploymentState.Failed, WindowsPhaseLoop.FinalReportLostMessage), (failed.State, failed.Error));
-        Assert.False(File.Exists(RunFiles.In(Windows, Log()).TokenPath));
-    }
-
-    [Fact]
-    public async Task ARefusedTokenBeforeTheRunRegistersAgain()
-    {
-        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
-        await HandOverAsync(run);
-        ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => throw new AgentTokenRejectedException())
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-2", run));
-
-        int exitCode = await RunAsync(server);
-
-        Assert.Equal(AgentExitCodes.Deployed, exitCode);
-        Assert.Equal(2, server.Registrations.Count);
-        Assert.Single(_toolRunner.Calls);
-    }
-
-    [Fact]
-    public async Task AWindowsPEStepAfterTheWindowsStepsFailsTheRun()
-    {
-        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows), TestRuns.Script(6));
-        await HandOverAsync(run);
-        ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-1", run));
-
-        int exitCode = await RunAsync(server);
-
-        Assert.Equal(AgentExitCodes.Stopped, exitCode);
-        Assert.Single(_toolRunner.Calls);
-        Assert.Equal((DeploymentState.Failed, SequenceRunner.WindowsPEAfterWindowsMessage), (server.RunReports[^1].State, server.RunReports[^1].Error));
-        Assert.Equal("remove", _tools.Calls[^1]);
-    }
-
-    [Fact]
-    public async Task ARestartIsRecordedFirstAndWaitsForWindowsToStopTheService()
-    {
-        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows), TestRuns.Reboot, TestRuns.Script(6, SequencePhase.Windows));
-        await HandOverAsync(run);
-        ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-1", run));
-        server.AnswerRunReports = (report, token) =>
-        {
-            if (report.Activity == RunActivity.Restarting)
-            {
-                _tools.Note("restarting report");
-            }
-
-            return new AgentRunReportResult(token, "resume", null);
+            return 0;
         };
 
-        // Five minutes never pass, so nothing asks for the restart again.
-        Task<int> running = RunAsync(server, new ManualTimeProvider());
-        await WaitForAsync(() => _tools.Calls.Contains("reboot"));
-        await Task.Delay(50, TestContext.Current.CancellationToken);
-
-        Assert.False(running.IsCompleted);
-        await server.Stop.CancelAsync();
-        Assert.Equal(AgentExitCodes.Restarting, await running);
-
-        // The heartbeat's own beat for the new activity can leave before the runner stops it, so the same Restarting
-        // report may reach the server twice.
-        Assert.Equal(
-            ["setup finished", "restart due", "restarting report", "reboot"],
-            _tools.Calls.Where((call, index) => index == 0 || call != _tools.Calls[index - 1]));
-        Assert.Equal(5, (await RunFiles.In(Windows, Log()).LoadStateAsync(TestContext.Current.CancellationToken))?.NextIndex);
-    }
-
-    // Stopped between the step that asked for the restart and the restart itself, the service starts again in the same
-    // Windows, whose state says the step is done: it restarts Windows instead of going on.
-    [Fact]
-    public async Task AStopBeforeTheRestartRestartsWindowsAtTheNextStart()
-    {
-        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows), TestRuns.Reboot, TestRuns.Script(6, SequencePhase.Windows));
-        await HandOverAsync(run);
-        ScriptedAgentServer first = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-1", run));
-        first.AnswerRunReports = (report, token) =>
-        {
-            if (report.Activity == RunActivity.Restarting)
-            {
-                first.Stop.Cancel();
-            }
-
-            return new AgentRunReportResult(token, "resume", null);
-        };
-
-        Assert.Equal(AgentExitCodes.Stopped, await RunAsync(first));
-        Assert.Equal(["setup finished", "restart due"], _tools.Calls);
-
-        ScriptedAgentServer second = new();
-        Task<int> running = RunAsync(second, new ManualTimeProvider());
-        await WaitForAsync(() => _tools.Calls.Contains("reboot"));
-        await second.Stop.CancelAsync();
-
-        Assert.Equal(AgentExitCodes.Restarting, await running);
-        Assert.Empty(second.Registrations);
-        Assert.Equal(["setup finished", "restart due", "reboot"], _tools.Calls);
-        Assert.Single(_toolRunner.Calls);
-    }
-
-    // The server may stop taking the machine's token once the step asked for the restart, when it is told of the
-    // restart or sent the last log lines, which only the runner sends then. Unlike at the hand-over, Windows still
-    // restarts before the next step runs.
-    [Theory]
-    [InlineData("the restart")]
-    [InlineData("the last log lines")]
-    public async Task ARefusedTokenAtTheRestartStillRestartsWindowsBeforeTheNextStep(string refused)
-    {
-        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows), TestRuns.Reboot, TestRuns.Script(6, SequencePhase.Windows));
-        await HandOverAsync(run);
-        ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-1", run))
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-2", run));
-
-        if (refused == "the restart")
-        {
-            server.AnswerRunReports = (report, token) => report.Activity == RunActivity.Restarting
-                ? throw new AgentTokenRejectedException()
-                : new AgentRunReportResult(token, "resume", null);
-        }
-        else
-        {
-            server.AnswerLogs = batch =>
-            {
-                if (batch.Lines.Any(line => line.Message == "Windows restarts, and the run goes on after the restart."))
-                {
-                    throw new AgentTokenRejectedException();
-                }
-            };
-        }
-
-        Task<int> running = RunAsync(server, new ManualTimeProvider());
-        await WaitForAsync(() => _tools.Calls.Contains("reboot"));
-        await Task.Delay(50, TestContext.Current.CancellationToken);
-        await server.Stop.CancelAsync();
-
-        Assert.Equal(AgentExitCodes.Restarting, await running);
-        Assert.Equal(["setup finished", "restart due", "reboot"], _tools.Calls);
-        Assert.Single(_toolRunner.Calls);
-    }
-
-    // However the loop comes round again, a restart the run recorded comes first.
-    [Fact]
-    public async Task ARestartThatIsDueComesBeforeTheNextRegistration()
-    {
-        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
-        await HandOverAsync(run);
-        ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ =>
-            {
-                // As a run that recorded its restart and came back without it leaves the marker.
-                _tools.RestartDue = true;
-
-                throw new AgentTokenRejectedException();
-            })
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-2", run));
-
-        Task<int> running = RunAsync(server, new ManualTimeProvider());
-        await WaitForAsync(() => _tools.Calls.Contains("reboot"));
-        await server.Stop.CancelAsync();
-
-        Assert.Equal(AgentExitCodes.Restarting, await running);
-        Assert.Equal(["reboot"], _tools.Calls);
-        Assert.Single(server.Registrations);
-        Assert.Empty(_toolRunner.Calls);
-    }
-
-    [Fact]
-    public async Task AsksForTheRestartAgainWhenWindowsHasNotRestartedAfterFiveMinutes()
-    {
-        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows), TestRuns.Reboot);
-        await HandOverAsync(run);
-        ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-1", run));
-        ManualTimeProvider time = new();
-        StringWriter console = new();
-
-        Task<int> running = RunAsync(server, time, new AgentLog(time, console));
-
-        // Then the loop's wait for the restart is the only timer.
-        await WaitForAsync(() => Restarts() == 1 && time.PendingTimers == 1);
-        time.Advance(WindowsPhaseLoop.RestartTimeout - TimeSpan.FromSeconds(1));
-
-        Assert.Equal(1, Restarts());
-
-        time.Advance(TimeSpan.FromSeconds(1));
-        await WaitForAsync(() => Restarts() == 2);
-        await server.Stop.CancelAsync();
-
-        Assert.Equal(AgentExitCodes.Restarting, await running);
-        Assert.Equal(2, Restarts());
-        Assert.Contains(
-            console.ToString().Split(Environment.NewLine),
-            line => line.EndsWith("Windows has not restarted 5 minutes after the run asked it to. Asking again.", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public async Task JoinsTheDomainWithTheAccountOfTheRunningStepThenRestartsWindows()
-    {
-        AgentRun run = Run(TestRuns.Join, TestRuns.Script(4, SequencePhase.Windows));
-        await HandOverAsync(run);
-        ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-1", run))
-            .OnRunCredentials(_ => TestRuns.JoinAccount);
-        ManualTimeProvider time = new();
-        StringWriter console = new();
-
-        Task<int> running = RunAsync(server, time, new AgentLog(time, console));
-        await WaitForAsync(() => _tools.Calls.Contains("reboot"));
-        await server.Stop.CancelAsync();
-
-        Assert.Equal(AgentExitCodes.Restarting, await running);
-        Assert.Equal(["setup finished", "join corp.example.test", "restart due", "reboot"], _tools.Calls);
-        Assert.Empty(_toolRunner.Calls);
-
-        // The server hands out the account only for the step it has seen running.
-        List<string> calls = server.Calls;
-        int fetch = calls.IndexOf($"run-credentials {TestRuns.Join.Id} session-1");
-        int reportsBefore = calls.Take(fetch).Count(call => call.StartsWith("run-report", StringComparison.Ordinal));
-        Assert.Contains(new StepRunState(TestRuns.Join.Id, StepState.Running, null), server.RunReports[reportsBefore - 1].Steps);
-
-        Assert.DoesNotContain(TestRuns.JoinAccount.Password, console.ToString(), StringComparison.Ordinal);
-        Assert.DoesNotContain(server.SentLines, line => line.Message.Contains(TestRuns.JoinAccount.Password, StringComparison.Ordinal));
-        Assert.All(server.RunReports, report => Assert.DoesNotContain(TestRuns.JoinAccount.Password, report.Error ?? string.Empty, StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public async Task ADryRunReturnsAtTheRestart()
-    {
-        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows), TestRuns.Reboot);
-        await HandOverAsync(run);
-        ScriptedAgentServer server = new ScriptedAgentServer()
-            .OnRegister(_ => Continued())
-            .OnNext(_ => Next("session-1", run));
-
-        Assert.Equal(AgentExitCodes.Restarting, await RunAsync(server, dryRun: true));
-        Assert.Equal(["setup finished", "restart due", "reboot"], _tools.Calls);
-    }
-
-    private static AgentLog Log() => new(new ImmediateTimeProvider(), TextWriter.Null);
-
-    private int Restarts() => _tools.Calls.Count(call => call == "reboot");
-
-    // For what happens on the loop's own thread, which a test cannot await.
-    private static async Task WaitForAsync(Func<bool> condition)
-    {
-        using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(10));
-
-        while (!condition())
-        {
-            await Task.Delay(10, timeout.Token);
-        }
-    }
-
-    private static AgentRegistrationResult Continued() =>
-        new(s_machineId, MachineState.Deploying, "session-0", "resume-0", 10, null, TestRuns.RunId, "run-token-2");
-
-    private static AgentNextResult Next(string token, AgentRun? run) =>
-        new(MachineState.Deploying, token, "resume", 10, null, Run: run);
-
-    // The Windows PE steps of InstallWindows, then these.
-    private AgentRun Run(params SequenceStep[] inWindows) =>
-        TestRuns.Run([.. TestRuns.InstallWindows, .. inWindows], _image, DeploymentState.Running);
-
-    // As the hand-over leaves the run: the steps in Windows PE done, the answer file for setup, the run token, and one
-    // start of Windows PE too many on the way.
-    private async Task HandOverAsync(AgentRun run, SequencePhase phase = SequencePhase.Windows)
-    {
-        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
-        SequenceState state = SequenceStates.Start(run.Id, run.Sequence) with
-        {
-            Phase = phase,
-            NextIndex = 3,
-            Steps = [.. run.Sequence.Steps.Select((step, index) => new StepRunState(step.Id, index < 3 ? StepState.Done : StepState.Pending, null))],
-            Variables = new Dictionary<string, string>(RunVariables.Of(_tools.Volumes)) { [RunVariables.WindowsPEReturns] = "1" },
-        };
-        RunFiles files = RunFiles.In(Windows, Log());
-        await files.SaveStateAsync(state, cancellationToken);
-        await files.SaveTokenAsync("run-token-1", cancellationToken);
-        await UnattendFile.WriteAsync(Windows, TestImage.Unattend, cancellationToken);
-    }
-
-    private Task<int> RunAsync(
-        ScriptedAgentServer server,
-        TimeProvider? time = null,
-        AgentLog? log = null,
-        bool dryRun = false,
-        IAgentRemoval? removal = null,
-        IDeploySession? session = null,
-        ConsoleStatus? status = null)
-    {
-        time ??= new ImmediateTimeProvider();
-        log ??= new AgentLog(time, TextWriter.Null);
-        SequenceRunner runner = TestAgents.Runner(
-            server,
-            _tools,
-            log,
-            time,
-            toolRunner: _toolRunner,
-            systemDirectory: TestAgents.SystemDirectory(_tools),
-            dryRun: false,
-            status: status);
-
-        return TestAgents.WindowsLoop(server, _tools, runner, log, time, dryRun, removal, session, status).RunAsync(server.Stop.Token);
-    }
-
-    // Keeps every state the console is shown, and asks nothing.
-    private sealed class RecordingConsole(List<ConsoleState> shown) : IMachineConsole
-    {
-        public bool CanAsk => false;
-
-        public void Show(ConsoleState state)
-        {
-            lock (shown)
-            {
-                shown.Add(state);
-            }
-        }
-
-        public void Write(ConsoleLogLine line)
-        {
-        }
-
-        public Task<ConsoleAnswer?> AskAsync(ConsoleQuestion question, CancellationToken cancellationToken) => Task.FromResult<ConsoleAnswer?>(null);
-    }
-
-    // Notes what the loop asks of DDT's session among the tools' calls. ends says whether an end completes, as a stop
-    // may end the wait for a sign-out.
-    private sealed class FakeDeploySession(FakeDeploymentTools tools, bool ends = true) : IDeploySession
-    {
-        public Task PrepareAsync(CancellationToken cancellationToken)
-        {
-            tools.Note("prepare the session");
-
-            return Task.CompletedTask;
-        }
-
-        public void SetupFinished() => tools.Note("the session takes over the sign-in");
-
-        public Task<bool> EndAsync(bool signOut, CancellationToken cancellationToken)
-        {
-            tools.Note(signOut ? "end the session, signing out" : "end the session once someone signed out");
-
-            return Task.FromResult(ends);
-        }
+        return found;
     }
 }

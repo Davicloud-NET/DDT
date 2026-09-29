@@ -6,8 +6,9 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Sequences;
 
-// Runs Steps, then tests Until, and again until it holds, at most MaxTimes times (1 to 100): do ... until. When Until
-// still does not hold after the last time, the repeat fails, unless GoOnAtLimit lets the run go on after it.
+// Runs Steps, then tests Until, and repeats until it holds, at most MaxTimes times (1 to 100). It works like
+// do ... until. If Until still doesn't hold after the last time, the repeat fails, unless GoOnAtLimit lets the run
+// continue after it.
 public sealed record RepeatStep : SequenceStep
 {
     public IReadOnlyList<SequenceStep> Steps { get; init; } = [];

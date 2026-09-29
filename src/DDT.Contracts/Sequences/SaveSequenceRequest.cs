@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Sequences;
 
-// Revision is the one the client last read. A save over a newer one is refused with the current view.
+// Revision is the one the client last read. A save over a newer revision is refused and returns the current view.
 public sealed record SaveSequenceRequest(long Revision, string Name, string? Description, SequenceDefinition Definition);

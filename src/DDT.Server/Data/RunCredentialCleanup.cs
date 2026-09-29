@@ -10,10 +10,9 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace DDT.Server.Data;
 
-// A password given for one run is kept only while that run is assigned or running. Every save that moves a run out of
-// those states deletes the run's credentials in the same save, so every way a run ends is covered without a call site
-// having to remember it, including ways added later, and a save that fails keeps them with the run it did not end.
-// RunCredentialSweeper removes, at the start, whatever a run that ended some other way left.
+// Deletes a run's credentials in the save that moves the run out of Assigned or Running. That way no call site has to
+// remember it, and a failed save keeps them. At startup, RunCredentialSweeper removes what runs that ended some other
+// way left behind.
 public sealed class RunCredentialCleanup : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
@@ -50,7 +49,7 @@ public sealed class RunCredentialCleanup : SaveChangesInterceptor
 
     private static bool Keeps(DeploymentState state) => state is DeploymentState.Assigned or DeploymentState.Running;
 
-    // The runs this save moves out of Assigned or Running. Entries finds the changes the save is about to make.
+    // Returns the runs this save moves out of Assigned or Running. Entries finds the changes the save is about to make.
     private static List<Guid> Ended(DbContext context) =>
     [
         .. context.ChangeTracker.Entries<Deployment>()
@@ -60,7 +59,7 @@ public sealed class RunCredentialCleanup : SaveChangesInterceptor
             .Select(entry => entry.Entity.Id),
     ];
 
-    // A credential added in this same save was never stored, so it is dropped rather than deleted.
+    // A credential added in this same save was never stored, so it's detached instead of deleted.
     private static void Remove(DbContext context, List<Guid> ended, List<RunCredential> stored)
     {
         List<EntityEntry<RunCredential>> added =

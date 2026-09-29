@@ -20,7 +20,7 @@ using Microsoft.Net.Http.Headers;
 
 namespace DDT.Server.Endpoints;
 
-// Build-BootImage.ps1 asks what to put into the boot image, with an administrator's API token, and downloads it here.
+// Build-BootImage.ps1 uses an administrator's API token to ask what goes into the boot image, and downloads it here.
 public static class BootImageEndpoints
 {
     public static RouteGroupBuilder MapBootImageEndpoints(this RouteGroupBuilder group)
@@ -29,9 +29,8 @@ public static class BootImageEndpoints
 
         group.MapGet("/", ReadAsync).RequireAuthorization(DdtPolicies.Viewer);
 
-        // Like every package, a driver runs as SYSTEM wherever it goes, and this one goes into every machine that
-        // netboots, so only an administrator downloads it. HEAD explicitly, so a HEAD never falls through to the web
-        // UI's index page with 200.
+        // A driver goes into every machine that netboots and runs as SYSTEM, so only an administrator may download it.
+        // HEAD is mapped explicitly, so a HEAD request never falls through to the web UI's index page with 200.
         group.MapMethods("/drivers/{packageId:guid}/content", [HttpMethods.Get, HttpMethods.Head], ReadDriverAsync)
             .RequireAuthorization(DdtPolicies.Administrator);
 
@@ -41,7 +40,8 @@ public static class BootImageEndpoints
     private static async Task<Ok<BootImageView>> ReadAsync(DdtDbContext database, BootImageCatalog catalog, CancellationToken cancellationToken) =>
         TypedResults.Ok(await catalog.ViewAsync(database, cancellationToken).ConfigureAwait(false));
 
-    // The zip as the agent downloads a run's files: tagged with its hash, so a resumed download never splices two files.
+    // Serves the zip the same way the agent downloads a run's files. It's tagged with its hash, so a resumed download
+    // never splices two files together.
     private static async Task<Results<PhysicalFileHttpResult, NotFound, ProblemHttpResult>> ReadDriverAsync(
         Guid packageId,
         DdtDbContext database,

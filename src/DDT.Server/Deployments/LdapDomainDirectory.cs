@@ -12,8 +12,9 @@ using DDT.Server.Ldap;
 namespace DDT.Server.Deployments;
 
 // Reads what the join account may do, signed in as that account, so Active Directory itself answers with the account's
-// effective rights. The password never crosses the network readable: LDAPS first, and on Windows, where the LDAP
-// client can sign and seal a Kerberos or NTLM sign-in, plain LDAP with both when the controller has no certificate.
+// effective rights. The password never crosses the network in the clear. LDAPS comes first. If it fails for any reason
+// but a wrong password, plain LDAP with signing and sealing follows, but only on Windows, where the LDAP client can
+// sign and seal a Kerberos or NTLM sign-in.
 public sealed partial class LdapDomainDirectory : IDomainDirectory
 {
     private const int LdapsPort = 636;
@@ -31,7 +32,7 @@ public sealed partial class LdapDomainDirectory : IDomainDirectory
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        // The LDAP client blocks, for as long as its timeout, on every call.
+        // The LDAP client blocks on every call, for up to its timeout.
         return Task.Run(() => Read(request), cancellationToken);
     }
 
@@ -121,7 +122,7 @@ public sealed partial class LdapDomainDirectory : IDomainDirectory
         return connection;
     }
 
-    // A Negotiate sign-in takes the domain apart from the user; a user principal name goes whole.
+    // A Negotiate sign-in takes the domain separately from the user. A user principal name is passed as is.
     private static NetworkCredential Credential(string userName, string password) =>
         userName.Split('\\') is [var domain, var user] ? new NetworkCredential(user, password, domain) : new NetworkCredential(userName, password);
 
@@ -131,7 +132,7 @@ public sealed partial class LdapDomainDirectory : IDomainDirectory
             ? match.Groups[1].Value.ToLowerInvariant()
             : null, exception);
 
-    // Null when the entry does not exist, or lies outside the domain, as a referral.
+    // Null if the entry doesn't exist, or lies outside the domain and comes back as a referral.
     private static string? FindDistinguishedName(LdapConnection connection, string distinguishedName)
     {
         try
@@ -160,8 +161,8 @@ public sealed partial class LdapDomainDirectory : IDomainDirectory
             : [];
     }
 
-    // Only computers joined within the quota carry their creator's SID; those an account created by a right of its own
-    // do not count against it.
+    // Only computers joined within the quota carry their creator's SID. Those an account created with its own right
+    // don't count against the quota.
     private static int CountCreatedComputers(LdapConnection connection, string namingContext, string userName)
     {
         string accountFilter = userName.Split('\\') is [_, var user]

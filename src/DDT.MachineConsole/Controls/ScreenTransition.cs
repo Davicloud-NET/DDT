@@ -8,16 +8,14 @@ using Avalonia.Input;
 
 namespace DDT.MachineConsole.Controls;
 
-// One screen giving way to the next, for a new stage or question, or another overlay: the old one fades out over fast,
-// and then the new one fades in and rises into place over normal. One after the other, since two screens of text
-// faded over each other are read as neither.
+// The old screen leaves before the new one enters. Two screens of text faded over each other are unreadable.
 public sealed class ScreenTransition : IPageTransition
 {
     public async Task Start(Visual? from, Visual? to, bool forward, CancellationToken cancellationToken)
     {
         if (to is not null)
         {
-            // Nothing of the new screen shows while the old one leaves.
+            // The new screen stays hidden while the old one leaves.
             to.Opacity = 0;
 
             if (to is InputElement entering)
@@ -28,7 +26,7 @@ public sealed class ScreenTransition : IPageTransition
 
         if (from is not null)
         {
-            // What leaves takes no click any more.
+            // The leaving screen doesn't take clicks any more.
             if (from is InputElement leaving)
             {
                 leaving.IsHitTestVisible = false;

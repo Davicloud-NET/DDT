@@ -11,16 +11,15 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Erases the disk's partition table and writes the raw disk image over the whole disk as it downloads, unpacking it on
-// the way; nothing of it is kept elsewhere, so a disk as large as the image is enough. The image's partition table goes
-// on last, with its backup moved to the end of this disk. Before anything is erased, an image that will not start with
-// the Secure Boot this machine has on is refused, unless the run was allowed to write it.
+// Writes the raw disk image over the whole disk as it downloads, so a disk as large as the image is enough. Its
+// partition table is written last, with the backup at this disk's end. An image the machine's Secure Boot wouldn't
+// start is refused first.
 public sealed class WriteRawImageStepRunner(
     IDiskPartitioner partitioner,
     IRawDisks disks,
     RunDownloads downloads,
     RunSession session,
-    AgentLog log)
+    AgentLog log) : IStepKindRunner<WriteRawImageStep>
 {
     public const string FourKilobyteSectorsMessage =
         "has sectors of 4096 bytes, and DDT writes images made for disks with 512-byte sectors, which is what distributions publish. " +
@@ -52,7 +51,8 @@ public sealed class WriteRawImageStepRunner(
         using RawImageSink sink = new(writer);
 
         log.Information($"Writing {image.Name}, {ByteSize.Format(image.InstalledBytes)} as a disk, to {disk.Describe()} as it downloads.");
-        await downloads.DownloadToAsync(image.Name, image.Sha256, image.SizeBytes, sink, context.Progress, cancellationToken).ConfigureAwait(false);
+        await downloads.DownloadToAsync(new ContentFile(image.Name, image.Sha256, image.SizeBytes), sink, context.Progress, cancellationToken)
+            .ConfigureAwait(false);
 
         GptLayout layout = sink.Finish();
         log.Information(

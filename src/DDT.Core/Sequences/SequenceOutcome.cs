@@ -4,8 +4,8 @@
 
 namespace DDT.Core.Sequences;
 
-// RebootRequired and PhaseChangeRequired leave the host to restart the machine or hand the run over to Windows, and
-// to call the engine again with the saved state.
+// After RebootRequired or PhaseChangeRequired, the host restarts the machine or hands the run over to Windows. Then it
+// calls the engine again with the saved state.
 public enum SequenceOutcome
 {
     Completed,

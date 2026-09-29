@@ -10,10 +10,9 @@ using Microsoft.AspNetCore.DataProtection;
 
 namespace DDT.Server.Settings;
 
-// Secrets are encrypted with the key ring that already protects cookies and machine tokens. The purpose names the
-// section and the field, so a ciphertext copied into another field, or another section, does not decrypt there. The
-// encryption protects a copy of the database alone, such as a dump or a backup, not the store volume, where the key ring
-// is.
+// Encrypts secrets with the same key ring as cookies and machine tokens. The purpose names the section and field, so a
+// ciphertext copied elsewhere doesn't decrypt. This protects a copy of the database, such as a backup. It doesn't
+// protect the store volume, because that holds the key ring.
 public sealed class SettingsProtector(IDataProtectionProvider provider)
 {
     private const string Purpose = "DDT.Settings";
@@ -41,7 +40,7 @@ public sealed class SettingsProtector(IDataProtectionProvider provider)
         }
     }
 
-    // The reserved keyring row holds a known value, which a process whose key ring differs cannot read.
+    // The reserved keyring row holds a known value. A process with a different key ring can't read it.
     public string ProtectCanary() => provider.CreateProtector(Purpose, SettingsSectionNames.KeyRing, CanaryField).Protect(CanaryValue);
 
     public bool ReadsCanary(SettingsSection row)
@@ -68,7 +67,7 @@ public sealed class SettingsProtector(IDataProtectionProvider provider)
             new Dictionary<string, StoredSecretDocument> { [CanaryField] = new(ProtectCanary(), now) },
             SettingsJsonContext.Default.DictionaryStringStoredSecretDocument);
 
-    // A value of another build that no longer parses reads as nothing written, and the fields take their defaults.
+    // Values from another build that no longer parse read as nothing written, and the fields take their defaults.
     public StoredSettingsSection Decode(SettingsSection row)
     {
         ArgumentNullException.ThrowIfNull(row);

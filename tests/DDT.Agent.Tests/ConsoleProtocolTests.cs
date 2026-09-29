@@ -10,7 +10,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The messages between the agent and ddt-console.exe, as the console project will read and write them.
+// The messages between the agent and ddt-console.exe, in the form the console project reads and writes them.
 public sealed class ConsoleProtocolTests
 {
     private static readonly Guid s_stepId = Guid.Parse("0193a4b2-0000-7000-8000-00000000b001");
@@ -45,7 +45,7 @@ public sealed class ConsoleProtocolTests
         new ConsoleRestart(RestartReason.StepAsked, RestartTarget.WindowsPE),
         new ConsoleProblem("The run failed: no disk.", ConsoleRemedy.RunAgain));
 
-    // A repeat holding an IF that took Else, in its second time through, the script in Then skipped.
+    // A repeat holding an IF that took Else on its second pass, so the script in Then was skipped.
     private static readonly Guid s_repeatId = Guid.Parse("0193a4b2-0000-7000-8000-00000000b002");
     private static readonly Guid s_ifId = Guid.Parse("0193a4b2-0000-7000-8000-00000000b003");
 
@@ -89,7 +89,7 @@ public sealed class ConsoleProtocolTests
         ["continue"] = new AnswerMessage(8, new ConsoleAnswer(Continue: true)),
     };
 
-    // Every kind of input is asked in words, and a password never reaches the text a log would show.
+    // Every kind of input is asked in words, and a password never ends up in text a log would show.
     [Fact]
     public void NamesTheInputsInWordsAndKeepsPasswordsOutOfTheText()
     {

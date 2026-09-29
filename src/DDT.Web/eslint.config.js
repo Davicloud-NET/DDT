@@ -42,6 +42,23 @@ export default defineConfig([
       ],
     },
   },
+  // docs/code-style.md's size limits. serverMessages.ts is written by the server's tests.
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/**/*.test.{ts,tsx}", "src/lib/serverMessages.ts"],
+    rules: {
+      "max-lines": ["error", 400],
+      "max-lines-per-function": ["error", 120],
+      "max-depth": ["error", 3],
+      "max-params": ["error", 5],
+    },
+  },
+  {
+    files: ["src/**/*.test.{ts,tsx}"],
+    rules: {
+      "max-lines": ["error", 700],
+    },
+  },
   {
     files: ["**/*.config.ts", "eslint.config.js"],
     languageOptions: { globals: globals.node },

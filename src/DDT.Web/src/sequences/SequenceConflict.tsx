@@ -7,23 +7,23 @@ import { Trans } from "@lingui/react/macro";
 import { useState } from "react";
 
 import { Button } from "@/ui/Button";
-import { ConfirmDialog } from "@/ui/Dialog";
+import { ConfirmDialog } from "@/ui/ConfirmDialog";
 import { Notice } from "@/ui/Notice";
 
 import type { SequenceView } from "./sequences";
 import { clockTime } from "./sequenceView";
 
-// Another administrator saved while this page had unsaved edits. Nothing is saved until one copy is chosen: theirs,
-// which throws this page's edits away, or this page's, saved over theirs once confirmed.
+// Another administrator saved while this page had unsaved edits. Nothing is saved until one copy is chosen. Taking
+// theirs throws away this page's edits. Keeping this page's copy saves it over theirs, once confirmed.
 export function SequenceConflict({
   theirs,
   changes,
   onTakeTheirs,
   onKeepMine,
 }: {
-  // Their copy, once it is read.
+  // Their copy, once it's loaded.
   theirs: SequenceView | null;
-  // What they changed against the copy this page started from, such as "the name" or a step's name.
+  // What they changed compared with the copy this page started from, such as "the name" or a step's name.
   changes: string[];
   onTakeTheirs: () => void;
   onKeepMine: () => void;

@@ -9,8 +9,8 @@ import type { MachineSummary } from "@/machines/machines";
 
 import { sequenceResolutionQuery } from "./rules";
 
-// What chooses the machine's sequence. An approval, an assignment or the end of a run changes it, and the machine
-// list follows those live, so it is read again when the machine's state or run changes.
+// What chooses the machine's sequence. An approval, an assignment or the end of a run changes it. The machine list
+// follows those live, so this is fetched again when the machine's state or run changes.
 export function useSequenceResolution(machineId: string, machine: MachineSummary | null) {
   const queryClient = useQueryClient();
   const resolution = useQuery(sequenceResolutionQuery(machineId));

@@ -9,8 +9,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// An account is bound to its destinations and a run's account to its run, so a password copied into another row or
-// field must not decrypt there: it would reach a destination it was never given for.
+// An account's password is bound to its destinations, and a run's account to its run. A password copied into another
+// row or field must not decrypt there, or it would reach a destination it was never given for.
 public sealed class CredentialProtectorTests
 {
     private const string Password = "Winter2026!";
@@ -43,11 +43,11 @@ public sealed class CredentialProtectorTests
         Assert.Null(protector.Unprotect(Guid.NewGuid(), "JoinAccount", ciphertext));
         Assert.Null(protector.Unprotect(run, "ShareAccount", ciphertext));
 
-        // The input's name as the sequence declares it: another spelling is another field.
+        // The input name must match the sequence exactly. Another spelling is another field.
         Assert.Null(protector.Unprotect(run, "joinaccount", ciphertext));
     }
 
-    // The same id under the other purpose, with the input named as the account's field, still does not decrypt.
+    // The same ID under the other purpose doesn't decrypt, even with the input named like the account's field.
     [Fact]
     public void AStoredAccountAndARunsAccountNeverReadAsEachOther()
     {

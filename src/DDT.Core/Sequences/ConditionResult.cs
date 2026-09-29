@@ -6,6 +6,6 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// Whether a condition held, and each of its tests as it was decided, in the order they are written and at most
-// TestEvaluation.MaxPerNode of them, for StepRunState.Evaluation.
+// Whether a condition held, and how each of its tests turned out, for StepRunState.Evaluation. The tests are in the
+// order they're written, at most TestEvaluation.MaxPerNode of them.
 public sealed record ConditionResult(bool Held, IReadOnlyList<TestEvaluation> Evaluations);

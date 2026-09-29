@@ -11,32 +11,32 @@ using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Images;
 
-// Uploads are staged on the same volume as the library, so finishing one is a rename. The objects are images and
-// packages alike, each stored once by its hash.
+// Uploads are staged on the same volume as the library, so finishing one is a rename. The objects are both images and
+// packages. Each file is stored once, under its hash.
 public sealed partial class ImageStore(IOptions<DdtOptions> options, ILogger<ImageStore> logger)
 {
     public string ObjectsDirectory => Path.GetFullPath(Path.Combine(options.Value.StorePath, "images", "objects"));
 
     public string UploadsDirectory => Path.GetFullPath(Path.Combine(options.Value.StorePath, "images", "uploads"));
 
-    // Held while stored files and the rows that refer to them change together: the commit of a completed upload,
-    // the removal of an image or a package, an assignment or a pick that refers to them, and the creation of an
-    // upload session, whose free space check counts the others.
+    // Hold this while stored files and their rows change together. That covers completing an upload, removing an image
+    // or a package, and saving an assignment or a pick that refers to them. Creating an upload session holds it too,
+    // because its free space check counts the other sessions.
     public SemaphoreSlim LibraryLock { get; } = new(1, 1);
 
     public string ObjectPath(string sha256) => Path.Combine(ObjectsDirectory, sha256);
 
     public string PartPath(Guid uploadId) => Path.Combine(UploadsDirectory, $"{uploadId:N}.part");
 
-    // Where the import of a disk image keeps the raw disk and its compressed copy until the copy joins the library.
+    // The import of a disk image keeps the raw disk and its compressed copy here until the copy is in the library.
     public string RawPath(Guid uploadId) => Path.Combine(UploadsDirectory, $"{uploadId:N}.raw");
 
     public string CompressedPath(Guid uploadId) => Path.Combine(UploadsDirectory, $"{uploadId:N}.zst");
 
-    // Every file an upload may have on the volume.
+    // Returns every file an upload may have on the volume.
     public IEnumerable<string> UploadFiles(Guid uploadId) => [PartPath(uploadId), RawPath(uploadId), CompressedPath(uploadId)];
 
-    // On Linux DriveInfo measures the file system of the path it is given, which is the store volume.
+    // On Linux, DriveInfo measures the file system of the path it's given. Here that's the store volume.
     public DriveInfo Volume() => new(Directory.CreateDirectory(UploadsDirectory).FullName);
 
     // Call with LibraryLock held, so no completed upload can add a row for this hash in between.

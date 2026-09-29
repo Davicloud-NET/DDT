@@ -4,7 +4,7 @@
 
 namespace DDT.Core.Templates;
 
-// A template's placeholders in the order they are written, each time it is, and its problems, each once.
+// A template's placeholders in written order, repeats included, and its problems, each listed once.
 public sealed record ParsedTemplate(IReadOnlyList<TemplatePlaceholder> Placeholders, IReadOnlyList<TemplateProblem> Problems)
 {
     // Every name the template uses, once, ignoring case, in the order they first appear.

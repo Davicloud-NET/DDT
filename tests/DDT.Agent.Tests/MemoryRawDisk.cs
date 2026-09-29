@@ -6,8 +6,8 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Tests;
 
-// A disk in memory that holds only the pages written to it, so a disk of 256 GiB costs what its image does. Every write
-// is recorded in order, which shows that the partition table went on last.
+// A disk in memory that holds only the pages written to it, so a 256 GiB disk costs only as much as its image. Every
+// write is recorded in order, which shows that the partition table was written last.
 internal sealed class MemoryRawDisk(long length, int sectorSize = 512) : IRawDisk
 {
     private const int PageBytes = 1024 * 1024;

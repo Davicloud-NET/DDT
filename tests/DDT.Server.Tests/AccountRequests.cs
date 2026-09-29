@@ -11,31 +11,23 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The Accounts page's requests, as the page sends them: writes carry the proof of a password entered again.
+// The Accounts page's requests, sent the way the page sends them.
+// Writes carry the proof that the password was entered again.
 internal static class AccountRequests
 {
     public const string AccountsPath = "/api/accounts";
 
     public const string Password = "Share <pass> & \"7\"";
 
-    public static SaveAccountRequest Request(
-        string? name = null,
-        string userName = @"CORP\svc-ddt",
-        string? domain = "corp.example",
-        IReadOnlyList<string>? hosts = null,
-        bool runAs = false,
-        string? password = Password,
-        long revision = 0) =>
-        new(
-            revision,
-            name ?? $"Account {Guid.NewGuid():N}",
-            userName,
-            domain,
-            hosts ?? ["files.corp.example"],
-            runAs,
-            password is null ? new SecretUpdate(SecretAction.Keep, null) : new SecretUpdate(SecretAction.Set, password));
+    // A new account. A test changes the fields it cares about with a with expression.
+    public static SaveAccountRequest Request() =>
+        new(0, $"Account {Guid.NewGuid():N}", @"CORP\svc-ddt", "corp.example", ["files.corp.example"], false, Secret(Password));
 
-    // A save of the view as it is, with the password kept.
+    // Sets the password, or keeps the stored one when it's null.
+    public static SecretUpdate Secret(string? password) =>
+        password is null ? new SecretUpdate(SecretAction.Keep, null) : new SecretUpdate(SecretAction.Set, password);
+
+    // Saves the view unchanged and keeps the password.
     public static SaveAccountRequest Keep(AccountView view) =>
         new(view.Revision, view.Name, view.UserName, view.Domain, view.Hosts, view.RunAs, new SecretUpdate(SecretAction.Keep, null));
 
@@ -74,7 +66,7 @@ internal static class AccountRequests
     public static async Task<AccountView> AccountAsync(this SignedInClient client, Guid id) =>
         await RegisteredMachine.ReadAsync<AccountView>(await client.GetAsync($"{AccountsPath}/{id:D}"));
 
-    // The problem's code, from the extension a page reads it from.
+    // The problem's code, read from the extension the page reads it from.
     public static async Task<string?> CodeAsync(HttpResponseMessage response)
     {
         using JsonDocument problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));

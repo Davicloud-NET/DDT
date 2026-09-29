@@ -4,8 +4,8 @@
 
 namespace DDT.Contracts.Sequences;
 
-// New operators go at the end, so the numbers of the old ones never move. Everything after Contains needs a
-// SequenceDefinition of version 3: an older agent's evaluator treats an operator it does not know as false.
+// New operators go at the end, so the numbers of the old ones never change. Everything after Contains needs a
+// version 3 SequenceDefinition, because an older agent's evaluator treats an unknown operator as false.
 public enum ConditionOperator
 {
     Equals,
@@ -18,7 +18,7 @@ public enum ConditionOperator
     // * stands for any text and ? for one character.
     Matches,
 
-    // Value is a list separated by semicolons; the test holds when the machine's value is one of them.
+    // Value is a list separated by semicolons. The test holds when the machine's value is one of them.
     In,
 
     // Whether the machine has a value at all. Value is not read.

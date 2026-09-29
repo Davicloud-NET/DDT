@@ -4,7 +4,7 @@
 
 namespace DDT.Server.Images;
 
-// Released by disposing it, exactly once however often that happens.
+// Disposing it releases the lock. That happens only once, however often Dispose is called.
 public sealed class ImageUploadLock : IDisposable
 {
     private readonly ImageUploadLocks _owner;

@@ -6,8 +6,8 @@ using Xunit;
 
 namespace DDT.E2E;
 
-// The test classes of dry runs share one lab, which publishes the agent once and starts one host, and run one after the
-// other: rules match every dry run's machine, as all of them report the same model on the same network.
+// One lab for the dry run classes. It publishes the agent once and starts one host. The classes run one after the
+// other, because a rule matches every dry run's machine. They all report the same model and network.
 [CollectionDefinition(Name)]
 public sealed class DryRunCollection : ICollectionFixture<DryRunLab>
 {

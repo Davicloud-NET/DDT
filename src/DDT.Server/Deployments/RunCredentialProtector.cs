@@ -7,15 +7,15 @@ using Microsoft.AspNetCore.DataProtection;
 
 namespace DDT.Server.Deployments;
 
-// A password given for one run is encrypted with the key ring, as settings and accounts are. The purpose names the run
-// and the input, so a ciphertext copied into another run's row, or another input's, does not decrypt there.
+// A password given for one run is encrypted with the key ring, like settings and accounts. The purpose includes the run
+// and the input, so a ciphertext copied into another run's or input's row won't decrypt there.
 public sealed class RunCredentialProtector(IDataProtectionProvider provider)
 {
     private const string Purpose = "DDT.RunCredentials";
 
     public string Protect(Guid runId, string inputName, string password) => Protector(runId, inputName).Protect(password);
 
-    // Null for a ciphertext of another run, another input or another key ring.
+    // Returns null if the ciphertext belongs to another run, another input or another key ring.
     public string? Unprotect(Guid runId, string inputName, string protectedPassword)
     {
         try

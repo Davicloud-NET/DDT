@@ -18,15 +18,16 @@ public static class Principals
         return Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out Guid id) ? id : null;
     }
 
-    // The API token a user's request was authenticated by, null for the session cookie. Only the identity the token
-    // handler made counts, so no claim of that name from anywhere else lets a cookie request skip the CSRF filters.
+    // The API token that authenticated a user's request, or null for the session cookie. Only the identity the token
+    // handler created counts, so a claim with that name from anywhere else can't let a cookie request skip the CSRF
+    // filters.
     public static Guid? ApiTokenId(ClaimsPrincipal user) =>
         Guid.TryParse(TokenIdentity(user)?.FindFirst(DdtClaimTypes.ApiTokenId)?.Value, out Guid id) ? id : null;
 
     public static string? ApiTokenName(ClaimsPrincipal user) => TokenIdentity(user)?.FindFirst(DdtClaimTypes.ApiTokenName)?.Value;
 
-    // The name to record for who acted: the user's, and the token's beside it when the request came with one, such as
-    // alice (token build-server).
+    // The name to record for who acted. It's the user's name, plus the token's name when the request used one, such as
+    // "alice (token build-server)".
     public static string? ActorName(ClaimsPrincipal user)
     {
         ArgumentNullException.ThrowIfNull(user);
@@ -41,8 +42,8 @@ public static class Principals
         return UserId(user) == machineId;
     }
 
-    // The token was checked against an earlier read. Registered again, rejected or stopped since then, the machine
-    // belongs to a newer generation whose tokens and content this caller must not receive.
+    // The token was checked against an earlier read. If the machine was registered again, rejected or stopped since
+    // then, it belongs to a newer generation. This caller must not receive that generation's tokens or content.
     public static bool HoldsCurrentGeneration(ClaimsPrincipal user, Machine machine)
     {
         ArgumentNullException.ThrowIfNull(user);

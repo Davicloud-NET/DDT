@@ -8,10 +8,10 @@ namespace DDT.Agent.Facts;
 // EnumSystemFirmwareTables and GetSystemFirmwareTable give them. Providers and table ids are the DWORDs those take.
 public interface IFirmwareTables
 {
-    // The provider's table ids, four bytes each, as EnumSystemFirmwareTables writes them; null when Windows cannot list
+    // The provider's table ids, four bytes each, as EnumSystemFirmwareTables writes them. Null when Windows can't list
     // them. For ACPI these are the tables' signatures with their letters in order, such as "TPM2".
     byte[]? List(uint provider);
 
-    // The table as GetSystemFirmwareTable writes it; null when there is none or Windows cannot read it.
+    // The table as GetSystemFirmwareTable writes it. Null when there's none or Windows can't read it.
     byte[]? Read(uint provider, uint id);
 }

@@ -30,7 +30,8 @@ public sealed class PushThrottleTests
         }
     }
 
-    // The trailing push runs on the timer's continuation, which the clock only starts.
+    // The trailing push runs in the timer's continuation.
+    // Advancing the clock only starts it, so this waits until the push is sent.
     private async Task<string[]> SentAfterAsync(int count)
     {
         for (int attempt = 0; attempt < 500 && Sent().Length < count; attempt++)
@@ -60,7 +61,7 @@ public sealed class PushThrottleTests
         _clock.Advance(TimeSpan.FromMilliseconds(1));
         Assert.Equal(["first", "another machine", "third"], await SentAfterAsync(3));
 
-        // The trailing push started a second of its own.
+        // The trailing push started a new one-second window.
         throttle.Push(machine, Push("fourth"));
         Assert.Equal(3, Sent().Length);
 
@@ -72,7 +73,7 @@ public sealed class PushThrottleTests
         Assert.Equal("fifth", Sent()[^1]);
     }
 
-    // When the server stops, a push that waits is dropped rather than keep its timer.
+    // When the server stops, a waiting push is dropped instead of keeping its timer.
     [Fact]
     public async Task AStopDropsThePushThatWaits()
     {

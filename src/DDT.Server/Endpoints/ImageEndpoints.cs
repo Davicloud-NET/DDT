@@ -2,16 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Security.Claims;
-using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Contracts.Messages;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
-using DDT.Server.Deployments;
 using DDT.Server.Images;
-using DDT.Server.Live;
-using DDT.Server.Machines;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -35,7 +30,7 @@ public static class ImageEndpoints
         return group;
     }
 
-    // A library holds tens of images, and sorting here gives every database the same order.
+    // A library only holds tens of images. Sorting here, not in the database, gives every database the same order.
     private static async Task<Ok<IReadOnlyList<ImageSummary>>> ListAsync(DdtDbContext database, CancellationToken cancellationToken)
     {
         List<Image> images = await database.Images.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
@@ -52,61 +47,13 @@ public static class ImageEndpoints
 
     private static async Task<Results<NoContent, NotFound, ProblemHttpResult>> DeleteAsync(
         Guid id,
-        ClaimsPrincipal user,
         HttpContext context,
-        DdtDbContext database,
-        ImageStore store,
-        LiveNotifier live,
-        TimeProvider timeProvider,
-        CancellationToken cancellationToken)
-    {
-        // Under the library lock, so an upload of the same file cannot add rows for the stored file while it goes.
-        await store.LibraryLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-        try
+        ImageLibrary library,
+        CancellationToken cancellationToken) =>
+        await library.DeleteAsync(id, Actor.Of(context), cancellationToken).ConfigureAwait(false) switch
         {
-            Image? image = await database.Images.FirstOrDefaultAsync(i => i.Id == id, cancellationToken).ConfigureAwait(false);
-
-            if (image is null)
-            {
-                return TypedResults.NotFound();
-            }
-
-            bool inUse = await ActiveArtifacts.Of(database)
-                .AnyAsync(a => a.Kind == ArtifactKind.Image && a.SourceId == id, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (inUse)
-            {
-                return ServerProblems.Problem(ServerMessages.ImageInUse.With(), StatusCodes.Status409Conflict);
-            }
-
-            database.Images.Remove(image);
-            database.AuditEvents.Add(new AuditEvent
-            {
-                OccurredUtc = timeProvider.GetUtcNow(),
-                Action = AuditActions.ImageDeleted,
-                ActorUserId = Principals.UserId(user),
-                ActorName = user.Identity?.Name,
-                SubjectId = image.Id.ToString("D"),
-                SourceAddress = context.Connection.RemoteIpAddress?.ToString(),
-                Detail = image.Kind == ImageKind.RawDisk
-                    ? $"{image.Name}, a raw disk image, SHA-256 {image.Sha256}."
-                    : $"{image.Name}, index {image.WimIndex}, SHA-256 {image.Sha256}.",
-            });
-
-            await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-            // The row is gone, so the stored file goes too unless another index of the same file still uses it.
-            await store.DeleteObjectIfUnreferencedAsync(database, image.Sha256, CancellationToken.None).ConfigureAwait(false);
-        }
-        finally
-        {
-            store.LibraryLock.Release();
-        }
-
-        live.ImagesRemoved([id]);
-
-        return TypedResults.NoContent();
-    }
+            LibraryDeletion.NotFound => TypedResults.NotFound(),
+            LibraryDeletion.InUse => ServerProblems.Problem(ServerMessages.ImageInUse.With(), StatusCodes.Status409Conflict),
+            _ => TypedResults.NoContent(),
+        };
 }

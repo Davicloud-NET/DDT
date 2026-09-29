@@ -7,9 +7,8 @@ namespace DDT.Core.Sequences;
 // Outputs become run variables that later steps see, and they survive restarts in the run's state.
 public sealed record StepResult(StepOutcome Outcome, string? Error, IReadOnlyDictionary<string, string>? Outputs)
 {
-    // The exit code of what the step ran, such as a script, whether it is done or failed. In a tree's run the engine keeps
-    // it as LastExitCode for the conditions after it, so a repeat can try again until a script works. Null for a step
-    // without one, which leaves LastExitCode as it was.
+    // The exit code of what the step ran, whether it's done or failed. A tree's run keeps it as LastExitCode, so a
+    // repeat can retry until a script works. Null leaves LastExitCode as it was.
     public int? ExitCode { get; init; }
 
     public static StepResult Done(IReadOnlyDictionary<string, string>? outputs = null) => new(StepOutcome.Done, null, outputs);

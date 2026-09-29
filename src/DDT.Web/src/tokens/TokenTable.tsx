@@ -6,15 +6,15 @@ import { Trans, useLingui } from "@lingui/react/macro";
 
 import { fullTime, relativeTime, relativeTimeAhead } from "@/lib/relativeTime";
 import { Button } from "@/ui/Button";
-import { StateTag } from "@/ui/StateTag";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@/ui/Table";
 import { roleLabel } from "@/users/userView";
 
 import type { ApiTokenView } from "./tokens";
+import { TokenStateCell } from "./TokenStateCell";
 import { tokenState } from "./tokenView";
 
-// API tokens as the Account page lists a person's own and Administration lists everyone's. Only the last four
-// characters of a secret are known; a token that still works can be revoked.
+// A table of API tokens. The Account page lists the user's own, and Administration lists everyone's. Only the
+// last four characters of a secret are known. A token that still works can be revoked.
 export function TokenTable({
   tokens,
   now,
@@ -147,45 +147,4 @@ function LastUsed({ token, now }: { token: ApiTokenView; now: number }) {
       )}
     </span>
   );
-}
-
-function TokenStateCell({ token, now }: { token: ApiTokenView; now: number }) {
-  switch (tokenState(token, now)) {
-    case "active":
-      return (
-        <StateTag tone="ok">
-          <Trans>Active</Trans>
-        </StateTag>
-      );
-    case "expired":
-      return (
-        <StateTag tone="retired">
-          <Trans>Expired</Trans>
-        </StateTag>
-      );
-    case "revoked": {
-      const when = relativeTime(token.revokedUtc ?? token.expiresUtc, now);
-      const by = token.revokedByName;
-
-      return (
-        <span className="flex min-w-0 flex-col gap-1">
-          <StateTag tone="retired">
-            <Trans>Revoked</Trans>
-          </StateTag>
-          <span
-            className="truncate type-small text-muted"
-            title={fullTime(token.revokedUtc ?? token.expiresUtc)}
-          >
-            {by === null ? (
-              when
-            ) : (
-              <Trans>
-                {when} by {by}
-              </Trans>
-            )}
-          </span>
-        </span>
-      );
-    }
-  }
 }

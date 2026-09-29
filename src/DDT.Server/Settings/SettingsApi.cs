@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Text.Json.Nodes;
 using DDT.Contracts.Settings;
 using DDT.Pxe;
 using DDT.Server.Authentication;
@@ -13,73 +12,6 @@ using DDT.Server.Machines;
 using DDT.Server.Security;
 
 namespace DDT.Server.Settings;
-
-// How each section appears to the page. The page's shapes are records of their own in DDT.Contracts, mapped here field by
-// field, so a secret or a value that only configuration sets cannot reach them by accident, and the stored document can
-// change without changing the API.
-public abstract class SettingsSectionApi
-{
-    public abstract SettingsSectionDefinition Definition { get; }
-
-    public string Name => Definition.Name;
-
-    // Operators may read these, and nothing else of the page: what an assignment will do depends on them.
-    public bool OperatorsMayRead => Name is SettingsSectionNames.Deployment or SettingsSectionNames.Machines;
-
-    public abstract object View(
-        SettingsSectionState state,
-        IReadOnlyList<SettingMessage> warnings,
-        IReadOnlyList<SettingApplyState>? apply);
-}
-
-public sealed class SettingsSectionApi<TValues>(
-    SettingsSectionDefinition definition,
-    Func<object, TValues> toValues,
-    Func<TValues, object> toOptions) : SettingsSectionApi
-    where TValues : class
-{
-    public override SettingsSectionDefinition Definition => definition;
-
-    public TValues Values(object options) => toValues(options);
-
-    // The whole section as its option class serializes it. A field configuration locks is ignored by the save.
-    public JsonObject Document(TValues values) => definition.Write(toOptions(values));
-
-    public object Options(TValues values) => toOptions(values);
-
-    public override object View(SettingsSectionState state, IReadOnlyList<SettingMessage> warnings, IReadOnlyList<SettingApplyState>? apply) =>
-        TypedView(state, warnings, apply);
-
-    public SettingsSectionView<TValues> TypedView(
-        SettingsSectionState state,
-        IReadOnlyList<SettingMessage> warnings,
-        IReadOnlyList<SettingApplyState>? apply)
-    {
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentNullException.ThrowIfNull(warnings);
-
-        return new SettingsSectionView<TValues>(
-            state.Name,
-            state.Version,
-            state.UpdatedUtc,
-            state.UpdatedBy,
-            toValues(state.Options),
-            state.Secrets,
-            [.. state.Locks.Select(settingLock => new SettingLock(
-                settingLock.Field.Name,
-                settingLock.ConfigurationKey,
-                SettingsSectionDefinition.EnvironmentVariable(settingLock.ConfigurationKey),
-                settingLock.Source,
-                settingLock.StoredDiffers))],
-            [.. state.Problems.Select(problem => new SettingMessage(definition.PageName(problem.Field), problem.Message, null, problem.Text))],
-            [
-                .. state.Warnings.Select(warning => new SettingMessage(definition.PageName(warning.Field), warning.Message, warning.Code, warning.Text)),
-                .. warnings,
-            ],
-            apply,
-            [.. definition.Fields.Where(field => field.Reauthenticate).Select(field => field.Name)]);
-    }
-}
 
 public static class SettingsApi
 {
@@ -267,7 +199,7 @@ public static class SettingsApi
 
     public static SettingsSectionApi? Find(string name) => All.FirstOrDefault(api => api.Name == name);
 
-    // Lists the page shows as lists are comma separated text in configuration, for the reason DDT:Roles is.
+    // Configuration keeps these lists as comma separated text, so one key or environment variable sets a whole list.
     private static List<string> Split(string value) =>
         [.. value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)];
 

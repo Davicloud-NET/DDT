@@ -10,26 +10,18 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent;
 
-// The fake machine a dry run stands in for, in this process: it starts the agent as Windows PE would, and once the run
-// went over to the installed Windows, as that Windows starts its service, with the agent.json the hand-over staged,
-// which connect turns into the server the service reaches. Its disk is root, the only thing that outlasts a restart:
-// each restart starts the phase the run's state names over with new instances, as a real restart does, until the run
-// ends. Tools only log, and nothing on this computer is changed, so the dry run works in a normal Windows session. A
-// dry run that was stopped goes on when it is started again with the same dry run id, which names the same root. The
-// console shows Windows PE's part, as the service in the installed Windows has none.
+// The machine a dry run stands in for. Each restart starts the phase named in the run's state again, with new
+// instances, until the run ends. Tools only log, and nothing on this computer changes. The installed Windows reaches
+// the server through connect, with the settings from the agent.json that the hand-over staged.
 public sealed class DryRunMachine(
-    AgentOptions options,
+    DryRunMachineOptions options,
     IAgentServer server,
     Func<AgentOptions, IAgentServer> connect,
     ConsoleStatus status,
-    string root,
-    string agentPath,
     AgentLog log,
-    TimeProvider timeProvider,
-    TimeSpan heartbeatInterval,
-    string agentVersion)
+    TimeProvider timeProvider)
 {
-    private string Windows => Path.Combine(root, "W");
+    private string Windows => Path.Combine(options.Root, "W");
 
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
@@ -51,14 +43,14 @@ public sealed class DryRunMachine(
 
     private Task<int> RunWindowsPEAsync(CancellationToken cancellationToken)
     {
-        DryRunDiskPartitioner disks = new(root, log);
-        SequenceRunner runner = Runner(server, disks, new DryRunToolRunner(log), new DryRunRebooter(log), root, status);
-        AgentLoop loop = new(server, Identity(), status, disks, runner, new LocalRunLocator([Windows]), log, timeProvider, agentVersion);
+        DryRunDiskPartitioner disks = new(options.Root, log);
+        SequenceRunner runner = Runner(server, disks, new DryRunToolRunner(log), new DryRunRebooter(log), SequencePhase.WindowsPE);
+        AgentLoop loop = new(server, new AgentMachine(Identity(), disks, new LocalRunLocator([Windows]), options.AgentVersion), status, runner, log, timeProvider);
 
         return loop.RunAsync(cancellationToken);
     }
 
-    // As Windows would start the service: the staged agent.json has to name the server.
+    // Starts the agent the way Windows would start the service. The staged agent.json has to name the server.
     private async Task<int> RunWindowsAsync(CancellationToken cancellationToken)
     {
         string configuration = Path.Combine(Windows, "DDT", WindowsHandOver.AgentDirectory, WindowsHandOver.ConfigurationFileName);
@@ -77,22 +69,23 @@ public sealed class DryRunMachine(
         {
             DryRunToolRunner tools = new(log);
             WindowsRebooter rebooter = new(tools);
-            IAgentRemoval removal = new DryRunAgentRemoval(new AgentRemoval(Windows, tools, new DryRunRestartDeleter(log), log), root, log);
 
-            WindowsPhaseLoop loop = new(
-                windowsServer,
-                Identity(),
-                Runner(windowsServer, new DryRunDiskPartitioner(root, log), tools, rebooter, Path.Combine(Windows, "DDT"), null),
-                new DryRunSetupProbe(log),
-                rebooter,
-                new DryRunRestartMarker(log),
-                removal,
-                log,
-                timeProvider,
-                heartbeatInterval,
-                Windows,
-                agentVersion,
-                dryRun: true);
+            WindowsPhaseLoop loop = new WindowsPhaseLoopBuilder
+            {
+                Server = windowsServer,
+                IdentityReader = Identity(),
+                Runner = Runner(windowsServer, new DryRunDiskPartitioner(options.Root, log), tools, rebooter, SequencePhase.Windows),
+                Setup = new DryRunSetupProbe(log),
+                Rebooter = rebooter,
+                RestartMarker = new DryRunRestartMarker(log),
+                Removal = new DryRunAgentRemoval(new AgentRemoval(Windows, tools, new DryRunRestartDeleter(log), log), options.Root, log),
+                Log = log,
+                TimeProvider = timeProvider,
+                HeartbeatInterval = options.HeartbeatInterval,
+                WindowsRoot = Windows,
+                AgentVersion = options.AgentVersion,
+                DryRun = true,
+            }.Build();
 
             return await loop.RunAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -102,36 +95,32 @@ public sealed class DryRunMachine(
         }
     }
 
-    private DryRunMachineIdentityReader Identity() => new(options.DryRunId, options.DryRunSecureBoot);
+    private DryRunMachineIdentityReader Identity() => new(options.Agent.DryRunId, options.Agent.DryRunSecureBoot);
 
-    // The hand-over really stages the agent into the directory that stands in for Windows.
-    private SequenceRunner Runner(
-        IAgentServer runServer,
-        DryRunDiskPartitioner disks,
-        DryRunToolRunner tools,
-        IRebooter rebooter,
-        string workDirectory,
-        ConsoleStatus? runStatus)
+    // The hand-over really stages the agent into the directory that stands in for Windows. In WinPE the root stands
+    // in for the agent's directory. The console only shows the run in WinPE.
+    private SequenceRunner Runner(IAgentServer runServer, DryRunDiskPartitioner disks, DryRunToolRunner tools, IRebooter rebooter, SequencePhase phase)
     {
-        AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
+        bool inWindows = phase == SequencePhase.Windows;
+        string workDirectory = inWindows ? Path.Combine(Windows, "DDT") : options.Root;
+        AgentConfiguration staged = new(options.Agent.ServerUrl.AbsoluteUri, options.Agent.RootCertificate?.ExportCertificatePem(), null);
 
-        return new SequenceRunner(
-            runServer,
-            disks,
-            new FileRawDisks(root, log),
-            new DryRunImageApplier(log),
-            new DryRunBcdWriter(log),
-            rebooter,
-            new WindowsPERestartMarker(workDirectory, log, dryRun: true),
-            tools,
-            new DryRunDomainJoiner(log),
-            new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), agentPath, staged, log, dryRun: true),
-            log,
-            timeProvider,
-            heartbeatInterval,
-            workDirectory,
-            Environment.SystemDirectory,
-            dryRun: true,
-            runStatus);
+        return new SequenceRunnerBuilder
+        {
+            Server = runServer,
+            Partitioner = disks,
+            RawDisks = new FileRawDisks(options.Root, log),
+            Applier = new DryRunImageApplier(log),
+            BcdWriter = new DryRunBcdWriter(log),
+            Rebooter = rebooter,
+            RestartMarker = new WindowsPERestartMarker(workDirectory, log, dryRun: true),
+            Tools = tools,
+            Joiner = new DryRunDomainJoiner(log),
+            HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), options.AgentPath, staged, log, dryRun: true),
+            Log = log,
+            TimeProvider = timeProvider,
+            Options = new SequenceRunnerOptions(options.HeartbeatInterval, workDirectory, Environment.SystemDirectory, DryRun: true),
+            Status = inWindows ? null : status,
+        }.Build();
     }
 }

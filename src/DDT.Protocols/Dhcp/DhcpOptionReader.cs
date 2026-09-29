@@ -22,9 +22,8 @@ public ref struct DhcpOptionReader
 
     public ReadOnlySpan<byte> Value { get; private set; }
 
-    // True when the block ended inside a length prefixed option rather than at End or the buffer
-    // edge. Without this the parser cannot tell "options ended" from "declared length 200 with two
-    // bytes left" and would hand a half parsed message to the responder.
+    // The block ended inside an option instead of at End or the buffer's edge. The parser mustn't treat that as a
+    // whole message.
     public bool Truncated { get; private set; }
 
     public bool MoveNext()

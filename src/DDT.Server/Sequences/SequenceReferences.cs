@@ -8,17 +8,17 @@ using DDT.Server.Packages;
 
 namespace DDT.Server.Sequences;
 
-// What the steps of a sequence refer to outside of it, read once for every sequence a request checks.
+// What a sequence's steps refer to outside the sequence. It's read once for all the sequences a request checks.
 public sealed record SequenceReferences(
     IReadOnlyDictionary<Guid, Image> Images,
     IReadOnlyDictionary<Guid, Package> Packages,
     bool DomainConfigured,
     bool LocalAdministratorConfigured)
 {
-    // The stored accounts steps may name, by id.
+    // The stored accounts that steps may use, by ID.
     public IReadOnlyDictionary<Guid, AccountFacts> Accounts { get; init; } = new Dictionary<Guid, AccountFacts>();
 
-    // The names rules and machine roles give values, and the deployment defaults', ignoring case: a sequence may use them
+    // The value names that rules, machine roles and the deployment defaults set, ignoring case. A sequence may use them
     // without declaring them.
     public IReadOnlySet<string> ValueNames { get; init; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 }

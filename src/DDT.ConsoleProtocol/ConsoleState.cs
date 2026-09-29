@@ -4,23 +4,24 @@
 
 namespace DDT.ConsoleProtocol;
 
-// Everything the console shows besides the log and the open question. Stage is what the agent does now. MachineId is the
-// machine's id on the server once it registered, and SignedInBy names who signed in at the machine while an operator
-// still has to approve it on the Machines page. Run is the run going on, or the last one, until the next one starts.
-// Restart says why the machine restarts while Stage is Restarting. Problem is the last thing that went wrong and what
-// can be done about it, until a run starts. Language is the language the server has the console speak, en or de, once
-// the agent has registered; null leaves it to Windows. Logo is the path of a PNG the console shows at the right end of
-// its top bar, which is dark in both themes, once the agent has registered and downloaded it; null shows none.
+// Everything the console shows besides the log and the open question.
 public sealed record ConsoleState(
     ConsoleStage Stage,
     string AgentVersion,
     bool DryRun,
     ConsoleServer Server,
     ConsoleMachine Machine,
+    // Once the machine has registered with the server.
     Guid? MachineId,
+    // Who signed in at the machine while an operator still has to approve it on the Machines page.
     string? SignedInBy,
+    // The run in progress, or the last one until the next one starts.
     ConsoleRun? Run,
+    // While Stage is Restarting.
     ConsoleRestart? Restart,
+    // The last thing that went wrong, until a run starts.
     ConsoleProblem? Problem,
+    // en or de, as the server says once the agent has registered. Null leaves it to Windows.
     string? Language = null,
+    // A PNG for the right end of the top bar, which is dark in both themes. Null shows no logo.
     string? Logo = null);

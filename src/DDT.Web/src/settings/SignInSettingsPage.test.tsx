@@ -110,7 +110,8 @@ const directory: DirectoryView = {
   groupRoleMap: [{ group: OPERATORS, name: "DDT Operators", role: "Operator" }],
 };
 
-// A directory administrator, whose saves of the connection or the map need a test of their own sign-in.
+// An administrator who signs in through the directory. Saving the connection or the map needs a test of their own
+// sign-in first.
 const directoryAdministrator: CurrentUser = {
   ...administrator,
   userName: "j.admin",
@@ -145,7 +146,7 @@ function puts<T>(requests: readonly Sent[], section: string) {
     }));
 }
 
-// Chooses the role an entry of a map gives. An option's name is the role and what the role may do.
+// Picks the role a map entry gives. An option's name is the role plus what the role may do.
 async function chooseRole(map: HTMLElement, key: string, role: string): Promise<void> {
   press(selectKey(map, `Role that ${key} gives`));
   const listbox = await screen.findByRole("listbox");
@@ -167,7 +168,7 @@ function panel(title: string): HTMLElement {
   return section;
 }
 
-// Saves the section as its own answer, with the values the save sent.
+// Answers a save with the section, holding the values the save sent.
 function savedAs<T>(
   section: (overrides: Partial<SettingsSectionView<T>>) => SettingsSectionView<T>,
 ) {

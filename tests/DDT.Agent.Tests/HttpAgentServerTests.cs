@@ -63,7 +63,7 @@ public sealed class HttpAgentServerTests
         Assert.Equal(ConnectionStage.Answer, timeout.Stage);
     }
 
-    // The connect timeout covers the TLS handshake, which a listener that never accepts leaves unanswered once the kernel
+    // The connect timeout covers the TLS handshake. A listener that never accepts leaves it unanswered once the kernel
     // has taken the TCP connection. The request timeout is far away, so only the connect timeout can end the request.
     [Fact]
     public async Task SaysWhenTheServerTookTheConnectionButNotTheTlsHandshake()
@@ -83,7 +83,7 @@ public sealed class HttpAgentServerTests
         Assert.Equal(ConnectionStage.SecureConnection, timeout.Stage);
     }
 
-    // ConnectionFailure's words rely on how SocketsHttpHandler reports this, which a real connection shows.
+    // ConnectionFailure's messages rely on how SocketsHttpHandler reports this, and only a real connection shows that.
     [Fact]
     public async Task SaysWhenNothingListensOnTheServersPort()
     {
@@ -312,7 +312,7 @@ public sealed class HttpAgentServerTests
             cancellationToken);
         using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
 
-        AgentImageStream file = await server.OpenRunFileAsync(s_machineId, "session", s_runId, "ab12", 1000, cancellationToken);
+        AgentImageStream file = await server.OpenRunFileAsync(s_machineId, "session", new RunFileRange(s_runId, "ab12", 1000), cancellationToken);
 
         await using (file)
         {
@@ -456,7 +456,7 @@ public sealed class HttpAgentServerTests
         Assert.Equal(new Dictionary<string, string> { ["Office"] = "VIE" }, result.Values);
     }
 
-    // A validation problem names the fields it refused, such as an answer to an input, which the console shows at it.
+    // A validation problem names the fields it refused, like an answer to an input. The console shows it at that field.
     [Fact]
     public async Task ARefusalCarriesTheFieldsTheServerRefused()
     {
@@ -544,7 +544,7 @@ public sealed class HttpAgentServerTests
         }
     }
 
-    // Answers one request at once with the given status line and headers, and returns the request, with its body.
+    // Answers one request right away with the given status line and headers, and returns the request with its body.
     private static async Task<string> AnswerAsync(TcpListener listener, string head, byte[] body, CancellationToken cancellationToken)
     {
         using TcpClient client = await listener.AcceptTcpClientAsync(cancellationToken);
@@ -565,7 +565,7 @@ public sealed class HttpAgentServerTests
         return Encoding.UTF8.GetString([.. request]);
     }
 
-    // A JSON body goes out in chunks, other bodies with their length.
+    // A JSON body is sent in chunks, other bodies with a Content-Length.
     private static bool IsComplete(string request)
     {
         int headEnd = request.IndexOf("\r\n\r\n", StringComparison.Ordinal);

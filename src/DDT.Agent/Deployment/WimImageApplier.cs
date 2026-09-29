@@ -7,11 +7,11 @@ using DDT.Core.Wim;
 
 namespace DDT.Agent.Deployment;
 
-// Applies with wimlib, strict: an image whose ACLs or links cannot be written exactly fails instead of booting
+// Applies with wimlib in strict mode. An image whose ACLs or links can't be written exactly fails, instead of booting
 // into a subtly broken Windows. wimlib only prints its warnings, so its error file is copied into the log.
 public sealed class WimImageApplier(AgentLog log, string libraryDirectory, string errorLogPath) : IImageApplier
 {
-    // A damaged image can warn about every file; the rest stays in the file on the machine.
+    // A damaged image can warn about every file. The rest stays in the file on the machine.
     private const int MaxForwardedLines = 200;
 
     private const char ByteOrderMark = (char)0xFEFF;

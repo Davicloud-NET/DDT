@@ -6,20 +6,6 @@ using System.Text.Json;
 
 namespace DDT.Server.Settings;
 
-public enum SettingFieldKind
-{
-    // One value: a text, a number, a switch, or a list kept as comma separated text.
-    Value,
-
-    // A map or a list, which configuration sets and locks as a whole, never entry by entry.
-    Collection,
-
-    // Written, never read back. It is stored encrypted, and the page only learns whether it is set.
-    Secret,
-}
-
-// One field of a section. Path is its configuration key below the section, such as Domain:Name. The page and the stored
-// document both name it in camel case, domain.name, so that a field reads the same everywhere but in configuration.
 public sealed class SettingField
 {
     public SettingField(
@@ -40,11 +26,13 @@ public sealed class SettingField
         Name = string.Join('.', Segments);
     }
 
+    // The configuration key below the section, such as Domain:Name.
     public string Path { get; }
 
+    // Path in camel case, such as domain.name, so the page and the stored document use the same name.
     public string Name { get; }
 
-    // Where the stored document and the serialized options keep it.
+    // The path where the stored document and the serialized options keep the field.
     public IReadOnlyList<string> Segments { get; }
 
     public SettingFieldKind Kind { get; }
@@ -54,16 +42,16 @@ public sealed class SettingField
 
     public bool IsSecret => Kind == SettingFieldKind.Secret;
 
-    // Configuration only seeds it: its key is imported while the field was never written, but it never locks the field,
-    // because the key means something of its own that stays in configuration.
+    // Configuration only seeds this field. Its key is imported as long as the field was never written, but it never
+    // locks the field. The key has a meaning of its own that stays in configuration.
     public bool Seeds { get; }
 
-    // The members of a map's entries where an entry is an object, such as a boot target's Method, by their names in
-    // configuration; empty where an entry is a single value, such as the role of a group in a group map.
+    // The member names of a map's entries, as configuration spells them, when an entry is an object, such as a boot
+    // target's Method. It's empty when an entry is a single value, such as the role of a group in a group map.
     public IReadOnlyList<string> EntryMembers { get; }
 
     public override string ToString() => Name;
 
-    // As the source generated context names the members of the options, so both agree on every name.
+    // Uses the same naming as the source generated context uses for the options' members, so both agree on every name.
     internal static string Camel(string segment) => JsonNamingPolicy.CamelCase.ConvertName(segment);
 }

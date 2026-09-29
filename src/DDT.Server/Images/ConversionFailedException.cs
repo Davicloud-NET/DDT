@@ -4,7 +4,7 @@
 
 namespace DDT.Server.Images;
 
-// A conversion tool failed. The message says which, and what it said.
+// A conversion tool failed. The message names the tool and what it said.
 public sealed class ConversionFailedException : Exception
 {
     public ConversionFailedException()

@@ -8,8 +8,8 @@ import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import type { RuleView } from "@/rules/rules";
 import { editedValues, namedValues, type EditedValue, type NamedValue } from "@/values/values";
 
-// A machine role, such as "Kiosk" or "Finance laptop": values that rules give machines together. Not a user role,
-// which says what a person may do. ruleCount is how many rules give it.
+// A machine role, such as "Kiosk" or "Finance laptop". It's a set of values that rules give machines together. A user
+// role is something else: it says what a person may do. ruleCount is how many rules give it.
 export interface MachineRoleView {
   id: string;
   name: string;
@@ -21,7 +21,7 @@ export interface MachineRoleView {
   updatedBy: string | null;
 }
 
-// revision is the one the page last read; a new role has none to name.
+// revision is the one the page last read. A new role doesn't have one yet.
 export interface SaveMachineRoleRequest {
   revision: number;
   name: string;
@@ -74,7 +74,7 @@ export function rulesGiving(rules: readonly RuleView[], roleId: string): RuleVie
   return rules.filter((rule) => rule.roleIds.includes(roleId));
 }
 
-// What a role's drawer edits, as typed.
+// The fields a role's drawer edits, as typed.
 export interface RoleEdit {
   name: string;
   description: string;

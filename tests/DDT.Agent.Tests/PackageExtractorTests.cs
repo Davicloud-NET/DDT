@@ -87,8 +87,8 @@ public sealed class PackageExtractorTests : IDisposable
         Assert.Equal($"The {Name} holds DRIVERS/Net.inf twice, so it is not unpacked.", exception.Message);
     }
 
-    // The zip says 10 bytes, in its local header and its central directory, for an entry that holds 1000. .NET cuts a
-    // compressed entry off at its declared size itself; a stored one it reads to its stored length.
+    // The zip declares 10 bytes, in its local header and its central directory, for an entry that holds 1000. .NET cuts
+    // a compressed entry off at its declared size by itself. A stored entry it reads to its stored length.
     [Theory]
     [InlineData(CompressionLevel.NoCompression)]
     [InlineData(CompressionLevel.Optimal)]

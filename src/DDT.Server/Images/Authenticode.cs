@@ -9,11 +9,10 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace DDT.Server.Images;
 
-// Checks the Authenticode signatures of an EFI program as UEFI firmware does in Secure Boot: each WIN_CERTIFICATE on
-// its own, its signature over the file's hash, and a certificate in the firmware's db somewhere up the signer's chain.
-// Like firmware, it ignores validity periods and key usages, and a certificate in trusted is an anchor whether or not
-// it signed itself. Unlike firmware, it reads no revocation list, neither dbx nor SBAT, so a revoked file counts as
-// trusted here.
+// Checks an EFI program's Authenticode signatures the way Secure Boot firmware does. Each signature is checked on its
+// own against the file's hash and must chain to a certificate in trusted. A trusted certificate is an anchor even if it
+// isn't self-signed. Like firmware, it ignores validity periods and key usages. Unlike firmware, it doesn't read dbx or
+// SBAT, so a revoked file still counts as trusted.
 public static class Authenticode
 {
     private const string IndirectDataContentType = "1.3.6.1.4.1.311.2.1.4";
@@ -41,87 +40,87 @@ public static class Authenticode
             return new AuthenticodeResult(AuthenticodeStatus.Unreadable, image.Machine, null, "has a damaged signature table");
         }
 
-        Dictionary<HashAlgorithmName, byte[]> hashes = [];
-        List<X509Certificate2> anchors = [];
-        string? trustedSigner = null;
-        string? otherSigner = null;
-        bool mismatch = false;
-        bool unreadable = false;
+        Tally tally = new();
 
         foreach (byte[] signature in signatures)
         {
-            SignedCms cms = new();
-            (HashAlgorithmName Algorithm, byte[] Digest)? indirect;
-
-            try
-            {
-                cms.Decode(signature);
-                indirect = cms.ContentInfo.ContentType.Value == IndirectDataContentType && cms.SignerInfos.Count == 1
-                    ? ReadIndirectData(cms.ContentInfo.Content)
-                    : null;
-            }
-            catch (Exception exception) when (exception is CryptographicException or AsnContentException)
-            {
-                indirect = null;
-            }
-
-            if (indirect is not { } content)
-            {
-                unreadable = true;
-
-                continue;
-            }
-
-            if (!hashes.TryGetValue(content.Algorithm, out byte[]? hash))
-            {
-                hash = image.Hash(content.Algorithm);
-                hashes[content.Algorithm] = hash;
-            }
-
-            SignerInfo signer = cms.SignerInfos[0];
-
-            if (!CryptographicOperations.FixedTimeEquals(hash, content.Digest) || signer.Certificate is not { } certificate || !Verifies(signer))
-            {
-                mismatch = true;
-
-                continue;
-            }
-
-            string name = certificate.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
-
-            // Every signature counts: a shim signed under both of Microsoft's CAs starts where either is trusted.
-            if (ChainsTo(certificate, cms.Certificates, trusted) is { } anchor)
-            {
-                trustedSigner ??= name;
-
-                if (!anchors.Contains(anchor))
-                {
-                    anchors.Add(anchor);
-                }
-
-                continue;
-            }
-
-            otherSigner ??= name;
+            Count(signature, image, trusted, tally);
         }
 
-        if (trustedSigner is not null)
+        if (tally.TrustedSigner is not null)
         {
-            return new AuthenticodeResult(AuthenticodeStatus.Trusted, image.Machine, trustedSigner, null, anchors);
+            return new AuthenticodeResult(AuthenticodeStatus.Trusted, image.Machine, tally.TrustedSigner, null, tally.Anchors);
         }
 
-        if (otherSigner is not null)
+        if (tally.OtherSigner is not null)
         {
-            return new AuthenticodeResult(AuthenticodeStatus.SignedByOthers, image.Machine, otherSigner, null);
+            return new AuthenticodeResult(AuthenticodeStatus.SignedByOthers, image.Machine, tally.OtherSigner, null);
         }
 
-        return mismatch
+        return tally.Mismatch
             ? new AuthenticodeResult(AuthenticodeStatus.NotSigned, image.Machine, null, "carries a signature that does not match its content")
             : new AuthenticodeResult(
-                unreadable ? AuthenticodeStatus.Unreadable : AuthenticodeStatus.NotSigned,
+                tally.Unreadable ? AuthenticodeStatus.Unreadable : AuthenticodeStatus.NotSigned,
                 image.Machine,
                 null,
-                unreadable ? "carries a signature DDT cannot read" : "carries no signature");
+                tally.Unreadable ? "carries a signature DDT cannot read" : "carries no signature");
+    }
+
+    // Every signature counts. A shim signed under both of Microsoft's CAs starts on a PC that trusts either one.
+    private static void Count(byte[] signature, PeImage image, IReadOnlyCollection<X509Certificate2> trusted, Tally tally)
+    {
+        SignedCms cms = new();
+        (HashAlgorithmName Algorithm, byte[] Digest)? indirect;
+
+        try
+        {
+            cms.Decode(signature);
+            indirect = cms.ContentInfo.ContentType.Value == IndirectDataContentType && cms.SignerInfos.Count == 1
+                ? ReadIndirectData(cms.ContentInfo.Content)
+                : null;
+        }
+        catch (Exception exception) when (exception is CryptographicException or AsnContentException)
+        {
+            indirect = null;
+        }
+
+        if (indirect is not { } content)
+        {
+            tally.Unreadable = true;
+
+            return;
+        }
+
+        if (!tally.Hashes.TryGetValue(content.Algorithm, out byte[]? hash))
+        {
+            hash = image.Hash(content.Algorithm);
+            tally.Hashes[content.Algorithm] = hash;
+        }
+
+        SignerInfo signer = cms.SignerInfos[0];
+
+        if (!CryptographicOperations.FixedTimeEquals(hash, content.Digest) || signer.Certificate is not { } certificate || !Verifies(signer))
+        {
+            tally.Mismatch = true;
+
+            return;
+        }
+
+        string name = certificate.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+        if (ChainsTo(certificate, cms.Certificates, trusted) is { } anchor)
+        {
+            tally.TrustedSigner ??= name;
+
+            if (!tally.Anchors.Contains(anchor))
+            {
+                tally.Anchors.Add(anchor);
+            }
+
+            return;
+        }
+
+        tally.OtherSigner ??= name;
     }
 
     private static bool Verifies(SignerInfo signer)
@@ -138,7 +137,7 @@ public static class Authenticode
         }
     }
 
-    // SpcIndirectDataContent: the data it describes, then a DigestInfo with the file's hash.
+    // SpcIndirectDataContent holds the data it describes, then a DigestInfo with the file's hash.
     private static (HashAlgorithmName, byte[])? ReadIndirectData(byte[] content)
     {
         AsnReader indirect = new AsnReader(content, AsnEncodingRules.BER).ReadSequence();
@@ -157,7 +156,7 @@ public static class Authenticode
         };
     }
 
-    // The trusted certificate the signer's chain leads to, or null.
+    // Returns the trusted certificate the signer's chain leads to, or null.
     private static X509Certificate2? ChainsTo(X509Certificate2 signer, X509Certificate2Collection carried, IReadOnlyCollection<X509Certificate2> trusted)
     {
         X509Certificate2 current = signer;
@@ -226,5 +225,22 @@ public static class Authenticode
         {
             return false;
         }
+    }
+
+    // Collects the results for all signatures of one file. Each hash is computed once and shared by the signatures that
+    // use it.
+    private sealed class Tally
+    {
+        public Dictionary<HashAlgorithmName, byte[]> Hashes { get; } = [];
+
+        public List<X509Certificate2> Anchors { get; } = [];
+
+        public string? TrustedSigner { get; set; }
+
+        public string? OtherSigner { get; set; }
+
+        public bool Mismatch { get; set; }
+
+        public bool Unreadable { get; set; }
     }
 }

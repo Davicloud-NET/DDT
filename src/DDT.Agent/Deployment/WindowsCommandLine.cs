@@ -6,9 +6,9 @@ using System.Text;
 
 namespace DDT.Agent.Deployment;
 
-// The command line CreateProcess takes, quoted as Process quotes ProcessStartInfo.ArgumentList, so a tool gets the same
-// arguments whether it runs as the agent or as an account: the file name always in quotes, and an argument only when it
-// is empty or holds a space, a tab or a quote, with the backslashes before a quote doubled.
+// The command line CreateProcess takes, quoted the way Process quotes ProcessStartInfo.ArgumentList, so a tool gets the
+// same arguments whether it runs as the agent or as an account. The file name is always quoted. An argument is only
+// quoted when it's empty or holds a space, a tab or a quote, and backslashes before a quote are doubled.
 public static class WindowsCommandLine
 {
     public static string Build(string fileName, IReadOnlyList<string> arguments)

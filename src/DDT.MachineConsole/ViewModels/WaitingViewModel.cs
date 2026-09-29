@@ -7,8 +7,7 @@ using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
 
-// Authorized and waiting: for a sequence someone assigns on the Machines page, or, while the person here chooses, for
-// the agent's next question.
+// The WaitingForSequence stage, and Choosing until the agent asks its next question.
 public sealed class WaitingViewModel(Localizer localizer) : StageViewModel(localizer)
 {
     private ConsoleState? _state;

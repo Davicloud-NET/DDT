@@ -9,13 +9,12 @@ public interface IBcdWriter
     // Makes the applied Windows bootable and registers its recovery environment.
     Task WriteAsync(TargetVolumes volumes, CancellationToken cancellationToken);
 
-    // Makes the firmware start Windows Boot Manager on the new system partition first. The last change to the
-    // machine, after the answer file: until then a restart still starts it from the network. A failure is only a
-    // warning, because Windows is installed either way.
+    // Puts Windows Boot Manager on the new system partition first. It's the last change, after the answer file, because
+    // until then a restart still boots from the network. A failure only warns, because Windows is installed either way.
     Task PutWindowsFirstAsync(TargetVolumes volumes, CancellationToken cancellationToken);
 
-    // Makes the firmware start loaderPath on the EFI system partition esp first, under description, as the fallback file
-    // of a raw disk image. A failure is only a warning.
+    // Makes the firmware start loaderPath on the EFI system partition esp first, under description. It's used for the
+    // fallback file of a raw disk image. A failure is only a warning.
     Task PutFirstAsync(
         EspPartition esp,
         string loaderPath,
@@ -23,7 +22,7 @@ public interface IBcdWriter
         IReadOnlyCollection<Guid> erasedSystemPartitionIds,
         CancellationToken cancellationToken);
 
-    // Puts back the firmware boot entries and order that PutWindowsFirstAsync or PutFirstAsync changed in this run, for
-    // a run that ends without finishing. Never throws: a failure is only a warning.
+    // For a run that ends without finishing, puts back the firmware boot entries and order that PutWindowsFirstAsync or
+    // PutFirstAsync changed in this run. Never throws. A failure is only a warning.
     Task RestoreBootOrderAsync(CancellationToken cancellationToken);
 }

@@ -15,7 +15,7 @@ const tones: Record<NoticeTone, string> = {
   info: "bg-panel text-ink shadow-panel",
 };
 
-// Its actions are the keys that answer it, such as Undo, and sit under its text.
+// Its actions are the buttons that answer it, such as Undo. They sit under its text.
 export function Notice({
   tone = "info",
   title,

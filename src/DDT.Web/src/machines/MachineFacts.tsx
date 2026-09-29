@@ -4,13 +4,14 @@
 
 import { Trans } from "@lingui/react/macro";
 
-import { Facts, Panel } from "@/ui/Layout";
+import { Facts } from "@/ui/Facts";
+import { Panel } from "@/ui/Panel";
 
 import { factRows } from "./facts";
 import type { MachineSummary } from "./machines";
 
-// What the machine reported besides its identity, which conditions and rules can test: memory, processor, TPM, its
-// network and its firmware's names, each under the name a condition gives it. The header shows its identity.
+// What the machine reported besides its identity: memory, processor, TPM, network and firmware names. Conditions
+// and rules can test these, and each one shows under the name a condition uses. The header shows the identity.
 export function MachineFacts({ machine }: { machine: MachineSummary }) {
   const rows = factRows(machine);
 

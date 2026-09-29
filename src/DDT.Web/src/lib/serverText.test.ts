@@ -59,7 +59,7 @@ describe("serverText", () => {
     ).toBe("Das Gerät hat den Zustand „Wartet“.");
   });
 
-  // A server newer than this page may send a code it does not know yet, also within another message.
+  // A server newer than this page may send a code the page doesn't know yet, even inside another message.
   it("keeps the server's English for a code it does not know", async () => {
     await inGerman();
 

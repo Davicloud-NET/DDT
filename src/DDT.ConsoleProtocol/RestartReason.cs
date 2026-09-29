@@ -6,15 +6,15 @@ namespace DDT.ConsoleProtocol;
 
 public enum RestartReason
 {
-    // A step asked for it, and the run goes on after the restart.
+    // A step asked for it, and the run continues after the restart.
     StepAsked,
 
-    // The run goes on in the installed Windows.
+    // The run continues in the installed Windows.
     HandOver,
 
     // The run is done.
     RunDone,
 
-    // An earlier start of the agent was to restart and did not, so this one restarts before anything else.
+    // An earlier start of the agent should have restarted and didn't, so this one restarts before anything else.
     WasDue,
 }

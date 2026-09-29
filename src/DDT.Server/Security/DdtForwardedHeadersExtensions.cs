@@ -22,9 +22,9 @@ public static class DdtForwardedHeadersExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // The unnamed options belong to ASPNETCORE_FORWARDEDHEADERS_ENABLED, which has the host put its own copy of the
-        // middleware in front of everything with them. The switch's own setup clears both lists, so the host's copy would
-        // trust every address and take the entry of X-Forwarded-For the proxy added, leaving the client's to DDT's copy.
+        // ASPNETCORE_FORWARDEDHEADERS_ENABLED makes the host add its own copy of the middleware first. That copy uses
+        // the unnamed options, and their setup clears both lists. So it would trust every address and take the proxy's
+        // X-Forwarded-For entry, leaving only the client's entry for DDT's copy. None turns the host's copy off, and
         // PostConfigure runs after that setup.
         services.PostConfigure<ForwardedHeadersOptions>(options => options.ForwardedHeaders = ForwardedHeaders.None);
 
@@ -33,8 +33,8 @@ public static class DdtForwardedHeadersExtensions
         return services;
     }
 
-    // The proxies section can change while the server runs, so the framework's middleware is built again for each
-    // snapshot, and only its ApplyForwarders is used, rather than one instance for the life of the process.
+    // The proxies section can change while the server runs. So the framework's middleware is rebuilt for each settings
+    // snapshot instead of living for the whole process, and DDT only calls its ApplyForwarders.
     public static IApplicationBuilder UseDdtForwardedHeaders(this IApplicationBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);
@@ -46,8 +46,8 @@ public static class DdtForwardedHeadersExtensions
         {
             ForwardedHeadersOptions options = settings.Current.ForwardedHeaders;
 
-            // The middleware takes the first entry from a connection with no address, such as a Unix socket or a named
-            // pipe, as if a listed proxy had sent it.
+            // On a connection with no address, such as a Unix socket or a named pipe, the middleware would take the
+            // first entry as if a listed proxy had sent it.
             if (options.ForwardedHeaders != ForwardedHeaders.None && context.Connection.RemoteIpAddress is not null)
             {
                 forwarders.For(options).ApplyForwarders(context);
@@ -75,8 +75,8 @@ public static class DdtForwardedHeadersExtensions
         ];
     }
 
-    // Replaces the framework defaults rather than adding to them, because those trust loopback: a proxy on the same
-    // host is listed like any other.
+    // Replaces the framework defaults instead of adding to them, because the defaults trust loopback. A proxy on the
+    // same host has to be listed like any other.
     public static void TrustOnly(ForwardedHeadersOptions options, DdtForwardedHeadersOptions configured)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -101,11 +101,11 @@ public static class DdtForwardedHeadersExtensions
             ? ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
             : ForwardedHeaders.None;
 
-        // Only the entry the nearest proxy added. Anything to its left came from the client.
+        // Only use the entry the nearest proxy added. Anything to its left came from the client.
         options.ForwardLimit = 1;
     }
 
-    // The entries that are addresses and networks, for the rules that compare them with other networks.
+    // Returns the entries that parse as addresses and networks, for the rules that compare them with other networks.
     public static IReadOnlyList<IPAddress> Proxies(string configured) => [.. Split(configured).Select(TryParseAddress).OfType<IPAddress>()];
 
     public static IReadOnlyList<IPNetwork> Networks(string configured) => [.. Split(configured).Select(TryParseNetwork).OfType<IPNetwork>()];
@@ -133,7 +133,7 @@ public static class DdtForwardedHeadersExtensions
                 : null;
     }
 
-    // The middleware of the last snapshot, built again only when the proxies changed.
+    // Keeps the middleware for the last snapshot and only rebuilds it when the proxies changed.
     private sealed class Forwarders(ILoggerFactory loggerFactory)
     {
         private Built? _built;

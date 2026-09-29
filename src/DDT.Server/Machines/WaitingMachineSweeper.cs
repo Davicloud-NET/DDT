@@ -13,8 +13,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Machines;
 
-// Anyone who reaches the server can register a machine, so registrations nobody ever approved are removed once
-// they have not been seen for a while. A machine approved once is never removed here: it keeps its log.
+// Anyone who reaches the server can register a machine, so registrations nobody ever approved are removed once they
+// haven't been seen for a while. A machine that was approved once is never removed here, so it keeps its log.
 public sealed partial class WaitingMachineSweeper(
     IServiceScopeFactory scopes,
     LiveNotifier live,
@@ -31,9 +31,9 @@ public sealed partial class WaitingMachineSweeper(
         await using AsyncServiceScope scope = scopes.CreateAsyncScope();
         DdtDbContext database = scope.ServiceProvider.GetRequiredService<DdtDbContext>();
 
-        // SQLite cannot compare DateTimeOffset, so the age is judged here. The delete repeats the rest of the
-        // condition, because a machine may have been approved in between. A machine an operator assigned a sequence
-        // is kept: it waits for its next netboot or a sign-in at it.
+        // SQLite can't compare DateTimeOffset, so the age is checked here. The delete repeats the rest of the
+        // condition, because a machine may have been approved in between. A machine an operator assigned a sequence is
+        // kept, because it waits for its next netboot or a sign-in.
         var waiting = await database.Machines
             .Where(m => m.State == MachineState.Pending && m.FirstApprovedUtc == null && m.ActiveDeploymentId == null)
             .Select(m => new { m.Id, m.LastSeenUtc })

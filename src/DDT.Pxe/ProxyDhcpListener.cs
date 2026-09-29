@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Pxe;
 
-public sealed class ProxyDhcpListener : IAsyncDisposable
+public sealed class ProxyDhcpListener : IPxeListener, IAsyncDisposable
 {
     // RFC 2131 only requires 576 octets, but nothing stops a client sending a jumbo datagram. A larger
     // one is reported as MessageSize and skipped rather than truncated into something parseable.
@@ -71,68 +71,32 @@ public sealed class ProxyDhcpListener : IAsyncDisposable
     {
         byte[] buffer = new byte[ReceiveBufferLength];
         byte[] reply = new byte[ReplyBufferLength];
-        EndPoint anySource = new IPEndPoint(IPAddress.Any, 0);
         int port = ((IPEndPoint)socket.LocalEndPoint!).Port;
         int egressInterface = 0;
         bool seenFirst = false;
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            SocketReceiveMessageFromResult received;
-
-            try
-            {
-                received = await socket.ReceiveMessageFromAsync(buffer, SocketFlags.None, anySource, cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            if (await PxeSocket.ReceiveAsync(socket, buffer, port, _logger, cancellationToken).ConfigureAwait(false) is not { } received)
             {
                 return;
-            }
-            catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (SocketException exception) when (PxeSocket.IsTransient(exception))
-            {
-                continue;
-            }
-            catch (SocketException) when (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (SocketException exception)
-            {
-                // Never let the loop end: a dead listener leaves every machine unable to boot.
-                PxeLog.ReceiveFailed(_logger, port, exception);
-
-                if (!await PxeSocket.PauseAsync(cancellationToken).ConfigureAwait(false))
-                {
-                    return;
-                }
-
-                continue;
             }
 
             IPEndPoint source = (IPEndPoint)received.RemoteEndPoint;
 
-            // Nothing a client sends may end this loop: a listener that dies on one malformed datagram
-            // leaves every machine on the segment unable to boot until the process restarts.
+            // Nothing a client sends may end this loop. A listener that dies on one malformed datagram leaves every
+            // machine on the segment unable to boot until the process restarts.
             try
             {
                 ProxyDhcpOutcome outcome = _handler.Handle(
                     buffer.AsSpan(0, received.ReceivedBytes),
                     _role,
-                    received.PacketInformation.Interface,
-                    received.PacketInformation.Address,
-                    source,
+                    new DatagramArrival(received.PacketInformation.Interface, received.PacketInformation.Address, source),
                     reply);
 
-                if (!seenFirst && outcome.Kind != ProxyDhcpOutcomeKind.InterfaceNotServed
-                    && _interfaces.TryGetInterface(received.PacketInformation.Interface, out ServedInterface? served))
+                if (!seenFirst)
                 {
-                    seenFirst = true;
-                    PxeLog.FirstDatagram(_logger, port, source, served.Name);
+                    seenFirst = LogFirst(outcome, received.PacketInformation.Interface, source, port);
                 }
 
                 if (outcome.Kind == ProxyDhcpOutcomeKind.Replied)
@@ -193,6 +157,19 @@ public sealed class ProxyDhcpListener : IAsyncDisposable
             outcome.Message?.Architecture,
             port,
             destination.ToString());
+    }
+
+    // Returns whether it logged. Only a datagram from a served interface gets logged.
+    private bool LogFirst(ProxyDhcpOutcome outcome, int arrivalInterface, IPEndPoint source, int port)
+    {
+        if (outcome.Kind == ProxyDhcpOutcomeKind.InterfaceNotServed || !_interfaces.TryGetInterface(arrivalInterface, out ServedInterface? served))
+        {
+            return false;
+        }
+
+        PxeLog.FirstDatagram(_logger, port, source, served.Name);
+
+        return true;
     }
 
     private void LogUnanswered(ProxyDhcpOutcome outcome, IPEndPoint source, int arrivalInterface, int port)

@@ -4,7 +4,7 @@
 
 import { formattingLocale } from "@/i18n/i18n";
 
-// The time of a save, as the builder and its conflict say it.
+// The time of a save, as the builder and its conflict notice show it.
 export function clockTime(time: number | string): string {
   return new Date(time).toLocaleTimeString(formattingLocale(), {
     hour: "2-digit",

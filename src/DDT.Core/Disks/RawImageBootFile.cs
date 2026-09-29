@@ -4,5 +4,5 @@
 
 namespace DDT.Core.Disks;
 
-// A file from a disk image's EFI system partition. Path is as the volume names it, such as \EFI\BOOT\BOOTX64.EFI.
+// A file from a disk image's EFI system partition. Path is the volume's name for it, such as \EFI\BOOT\BOOTX64.EFI.
 public sealed record RawImageBootFile(string Path, byte[] Content);

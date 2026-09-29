@@ -9,8 +9,9 @@ using ZstdSharp;
 
 namespace DDT.Agent.Deployment;
 
-// A raw disk image compressed with zstd, unpacked as it downloads and written onto the disk by a RawDiskWriter. It keeps
-// nothing when the agent stops, which fails the step as interrupted, so it holds nothing from an earlier attempt.
+// A raw disk image compressed with zstd. It's unpacked as it downloads, and a RawDiskWriter writes it onto the disk.
+// It keeps nothing when the agent stops, and a stop fails the step as interrupted. So it never holds anything from an
+// earlier attempt.
 public sealed class RawImageSink(RawDiskWriter writer) : IDownloadSink, IDisposable
 {
     public const string DamagedMessage = "The image's zstd data is damaged. Upload the image again.";
@@ -57,7 +58,7 @@ public sealed class RawImageSink(RawDiskWriter writer) : IDownloadSink, IDisposa
         _status = OperationStatus.NeedMoreData;
     }
 
-    // Once every byte arrived and matched: the rest of the disk and its partition table.
+    // Called once every byte arrived and matched. Writes the rest of the disk and its partition table.
     public GptLayout Finish() =>
         _status == OperationStatus.Done
             ? writer.Finish()

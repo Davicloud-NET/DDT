@@ -4,7 +4,7 @@
 
 namespace DDT.Contracts.Settings;
 
-// The section pxe. BootTargets are keyed by client architecture, such as X64Uefi.
+// The pxe section.
 public sealed record PxeSettings(
     IReadOnlyList<string> Interfaces,
     bool EnableProxyDhcp,
@@ -13,12 +13,5 @@ public sealed record PxeSettings(
     int TftpMaxWindowSize,
     int MaxConcurrentTftpTransfers,
     IReadOnlyList<string> AuthorisedRelayAgents,
+    // Keyed by client architecture, such as X64Uefi.
     IReadOnlyDictionary<string, BootTargetSettings> BootTargets);
-
-// Method is Tftp or Http.
-public sealed record BootTargetSettings(
-    string? Method,
-    string? BootFile,
-    string? ServerAddress,
-    string? ServerHostName,
-    bool AdvertiseBootServerDiscovery);

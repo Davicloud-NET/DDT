@@ -6,13 +6,12 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Server.Deployments;
 
-// The steps of a run's path as far as it is decided, which a list of runs counts and shows as a rail: the leaves of its
-// tree in pre-order, but none in the branch an IF did not take, and of an IF that has not decided yet those of the branch
-// with more steps, Then when both have as many. In a container that was skipped, or that failed and caught the failure,
-// only the steps that ran are on the path. A step a repeat runs again counts once. A flat run's path is all its steps.
+// The leaves of a run's path as far as it's decided, which a list counts. That's nothing from an IF's untaken branch,
+// the longer branch of an undecided IF (Then on a tie), only the steps that ran in a container that was skipped or
+// caught a failure, and a repeated step once.
 public static class RunPaths
 {
-    // Tree is the run's definition, or null for a run without containers, whose rows say all there is.
+    // Tree is the run's definition, or null for a run without containers. Its rows then say all there is.
     public static IReadOnlyList<Guid> Leaves(SequenceDefinition? tree, IReadOnlyList<DeploymentStep> rows)
     {
         ArgumentNullException.ThrowIfNull(rows);
@@ -32,8 +31,8 @@ public static class RunPaths
         return Series(tree.Steps, byId, open: true);
     }
 
-    // The node's place on the path, counting from 0, as DeploymentSummary.StepIndex has it: a step's own, or for a node
-    // off the path, such as a container, the number of steps on the path before it.
+    // The node's position on the path from 0, as in DeploymentSummary.StepIndex. For a step, it's the step's own
+    // position. For a node off the path, such as a container, it's the number of steps on the path before it.
     public static int Number(IReadOnlyList<Guid> path, IReadOnlyList<DeploymentStep> rows, DeploymentStep node)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -56,7 +55,7 @@ public static class RunPaths
     private static List<Guid> Series(IReadOnlyList<SequenceStep?>? steps, Dictionary<Guid, DeploymentStep> rows, bool open) =>
         [.. (steps ?? []).OfType<SequenceStep>().SelectMany(step => Node(step, rows, open))];
 
-    // Open is whether the steps that have not run yet are still to come.
+    // Open says whether the steps that haven't run yet are still to come.
     private static List<Guid> Node(SequenceStep step, Dictionary<Guid, DeploymentStep> rows, bool open)
     {
         DeploymentStep? row = rows.GetValueOrDefault(step.Id);

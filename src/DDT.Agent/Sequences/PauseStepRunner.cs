@@ -11,12 +11,10 @@ using DDT.Core.Templates;
 
 namespace DDT.Agent.Sequences;
 
-// Waits at a Pause step until someone continues the run: at the machine, where the console asks, on the web, which a
-// report's answer brings for this visit of the step, or once ContinueAfterMinutes have passed. The pause is reported at
-// once with its message worked out, so the machine's page shows it, and the heartbeat reports as often as the server
-// asks meanwhile. The first to continue wins; the others are called off, which takes the console's question away. A
-// pause found running after a restart waits again, for the same visit.
+// Waits at a Pause step until someone continues at the machine or on the web, or ContinueAfterMinutes pass. The first
+// one wins and the others are called off. A pause found running after a restart waits again, for the same visit.
 public sealed class PauseStepRunner(RunHeartbeat heartbeat, IMachineConsole? console, AgentLog log, TimeProvider timeProvider)
+    : IStepKindRunner<PauseStep>
 {
     public async Task<StepResult> RunAsync(PauseStep step, StepContext context, CancellationToken cancellationToken)
     {
@@ -35,6 +33,7 @@ public sealed class PauseStepRunner(RunHeartbeat heartbeat, IMachineConsole? con
 
         try
         {
+            // Right away, so the machine's page shows the pause and its message.
             await heartbeat.ReportNowAsync(cancellationToken).ConfigureAwait(false);
             log.Information(after is { } limit
                 ? $"The run pauses until someone continues it at this machine or on the web, or for {Minutes(limit)} at most."
@@ -69,8 +68,8 @@ public sealed class PauseStepRunner(RunHeartbeat heartbeat, IMachineConsole? con
         }
     }
 
-    // True once someone continued at the machine; false when nobody can answer there or the question was called off. The
-    // console in DDT's session asks even while none is connected, as Windows may start its session any moment.
+    // True once someone continued at the machine. False when nobody can answer there or the question was called off.
+    // The console in DDT's session asks even while none is connected, because Windows may start its session any moment.
     private async Task<bool> AskAsync(PauseStep step, string message, CancellationToken cancellationToken)
     {
         if (console is null || !(console.CanAsk || console is SessionMachineConsole))

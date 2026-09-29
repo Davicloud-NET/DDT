@@ -11,8 +11,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Tests;
 
-// New accounts on, and FakeOidcHandler under the scheme name of the OpenID Connect handler, which DDT does not
-// register while DDT:Oidc:Enabled is off. Its log is recorded.
+// DDT:Oidc:AutoProvision is on. FakeOidcHandler runs under the OpenID Connect handler's scheme name, which DDT doesn't
+// register while DDT:Oidc:Enabled is off. The log is recorded.
 public sealed class ExternalSignInApplication : DdtApplication
 {
     public RecordingLoggerProvider Log { get; } = new();

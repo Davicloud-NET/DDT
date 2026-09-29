@@ -6,8 +6,8 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.Agent;
 
-// A request to the server that ran out of time, with how far it got, which the console at the machine shows. The message
-// says which limit ran out.
+// A request to the server that ran out of time. Stage says how far it got, and the console at the machine shows it.
+// The message says which limit ran out.
 public sealed class ServerTimeoutException : TimeoutException
 {
     public ServerTimeoutException()

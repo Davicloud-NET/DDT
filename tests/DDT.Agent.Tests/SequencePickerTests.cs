@@ -146,8 +146,8 @@ public sealed class SequencePickerTests
         Assert.Contains(Lines(console), line => line.EndsWith("A computer name can hold only the letters A to Z, digits and hyphens.", StringComparison.Ordinal));
     }
 
-    // The question starts with the name the machine's values give, such as a rule's pattern: Enter keeps it, and the run
-    // takes it from the values, so no name goes with the choice; a name typed instead beats it.
+    // The question starts with the name from the machine's values, like a rule's pattern. Enter keeps it, and the run
+    // takes it from the values, so no name goes with the choice. A name typed instead wins.
     [Theory]
     [InlineData("", null)]
     [InlineData("pc-00042", null)]
@@ -274,7 +274,7 @@ public sealed class SequencePickerTests
         Assert.False(picker.IsOffered);
     }
 
-    // The inputs asked at the machine come after the computer name, all on one page, and before ERASE; their answers go
+    // The inputs asked at the machine come after the computer name, all on one page, and before ERASE. Their answers go
     // with the choice.
     [Fact]
     public async Task AsksTheSequencesInputsAfterTheComputerNameAndSendsTheAnswers()
@@ -300,8 +300,8 @@ public sealed class SequencePickerTests
         Assert.Equal([new InputAnswer("Office", "GRZ"), new InputAnswer("JoinAccount", null, @"CORP\join", "Pa55-word")], request?.Answers);
     }
 
-    // What the console got wrong is asked again at once, and what the server did not take after the choice was sent;
-    // the rest of the choice stands, and ERASE is asked again. What was typed never reaches the log.
+    // What the console found wrong is asked again right away, and so is what the server refused after the choice was
+    // sent. The rest of the choice stands, and ERASE is asked again. What was typed never reaches the log.
     [Fact]
     public async Task AsksTheInputsAgainWithWhatWasWrong()
     {
@@ -370,7 +370,7 @@ public sealed class SequencePickerTests
         return (picker, prompt, console);
     }
 
-    // Asks as the text console does, which these tests pin.
+    // Asks like the text console does, which these tests pin down.
     private static SequencePicker TextPicker(ScriptedSignInPrompt prompt, StringWriter console)
     {
         AgentLog log = new(new ImmediateTimeProvider(), console);

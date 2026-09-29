@@ -14,7 +14,7 @@ namespace DDT.Pxe;
 // happen in the same loop, so the session is only ever touched by one thread and needs no lock.
 internal sealed class TftpTransfer
 {
-    // An acknowledgement is four octets and an error is short; anything larger is not from a client.
+    // An acknowledgement is four octets and an error is short. Anything larger isn't from a client.
     private const int ReceiveBufferLength = TftpPacket.HeaderLength + 512;
 
     private readonly ITftpTransport _transport;
@@ -34,18 +34,16 @@ internal sealed class TftpTransfer
         IPEndPoint client,
         FileInfo file,
         TftpReadRequest request,
-        TftpLimits limits,
-        TimeProvider timeProvider,
-        ILogger logger,
+        TftpTransferServices services,
         CancellationToken stopping)
     {
         _transport = transport;
         _client = client;
         _file = file;
         _request = request;
-        _limits = limits;
-        _timeProvider = timeProvider;
-        _logger = logger;
+        _limits = services.Limits;
+        _timeProvider = services.TimeProvider;
+        _logger = services.Logger;
         _stopping = stopping;
         _cancellation = CancellationTokenSource.CreateLinkedTokenSource(stopping);
     }

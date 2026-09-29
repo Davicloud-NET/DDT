@@ -13,7 +13,7 @@ public sealed class BootCapabilitiesTests
 {
     private static readonly GptLayout s_table = GptLayout.Create(16384, Guid.Parse("0193a4b2-0000-4000-8000-0000000000c1"));
 
-    // Another processor's boot file next to a BOOTX64.EFI that cannot be read does not make the image that processor's.
+    // An unreadable BOOTX64.EFI next to another processor's boot file doesn't make the image one for that processor.
     [Fact]
     public void TakesAnImageWithAnUnreadableX64BootFileForNoOtherProcessor()
     {

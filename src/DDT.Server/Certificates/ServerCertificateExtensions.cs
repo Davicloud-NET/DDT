@@ -14,10 +14,11 @@ namespace DDT.Server.Certificates;
 
 public static class ServerCertificateExtensions
 {
-    // The connection item that names the pair a connection was served, by thumbprint.
+    // The connection item that stores the thumbprint of the pair a connection was served.
     private const string ServedKey = "ddt.served-certificate";
 
-    // Every HTTPS endpoint serves the certificate held in memory, whatever Kestrel:Certificates:Default loaded at startup.
+    // Every HTTPS endpoint serves the certificate held in memory, whatever Kestrel:Certificates:Default loaded at
+    // startup.
     public static WebApplicationBuilder AddDdtServerCertificates(this WebApplicationBuilder builder, ServerCertificates certificates)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -30,14 +31,14 @@ public static class ServerCertificateExtensions
 
         builder.WebHost.ConfigureKestrel((context, kestrel) =>
         {
-            // Kestrel would otherwise watch the certificate files and load its whole configuration again whenever a renewal
-            // renames one into place, while DDT already serves the new pair from memory.
+            // Otherwise Kestrel watches the certificate files and reloads its whole configuration whenever a renewal
+            // renames one into place. DDT already serves the new pair from memory.
             kestrel.Configure(context.Configuration.GetSection("Kestrel"), reloadOnChange: false);
             kestrel.ConfigureHttpsDefaults(https =>
             {
-                // The selector keeps Kestrel from loading Kestrel:Certificates:Default itself, but a selected
-                // certificate goes out without the intermediates of an administrator's certificate. So each
-                // connection is handed the context instead, which carries them, and remembers which pair it got.
+                // The selector keeps Kestrel from loading Kestrel:Certificates:Default itself. But a selected
+                // certificate goes out without its intermediates. So each connection gets the context, which carries
+                // them, and remembers which pair it got.
                 https.ServerCertificateSelector = (_, _) => certificates.Current;
                 https.OnAuthenticate = (connection, tls) =>
                 {
@@ -52,7 +53,7 @@ public static class ServerCertificateExtensions
         return builder;
     }
 
-    // The thumbprint of the pair the request's connection was served, null without TLS.
+    // Returns the thumbprint of the pair the request's connection was served, or null without TLS.
     public static string? ServedThumbprint(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -62,8 +63,8 @@ public static class ServerCertificateExtensions
             : null;
     }
 
-    // While a provisional pair waits for its confirmation, a connection that was served another pair is closed after its
-    // answer, so the browser's next request makes a new one, gets the new pair, and can confirm it.
+    // While a provisional pair waits for confirmation, a connection that was served another pair is closed after its
+    // response. The browser's next request then opens a new connection, gets the new pair and can confirm it.
     private sealed class StaleConnectionFilter(ServerCertificates certificates) : IStartupFilter
     {
         public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>

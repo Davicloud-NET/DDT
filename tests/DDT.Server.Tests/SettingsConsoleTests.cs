@@ -5,7 +5,6 @@
 using DDT.Contracts.Authentication;
 using DDT.Contracts.Settings;
 using DDT.Host.Startup;
-using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Machines;
 using DDT.Server.Settings;
@@ -17,8 +16,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The recovery that needs no page: the verbs run next to the running server, against its store, and the server applies
-// what they wrote at its next poll.
+// Recovery without the page.
+// The verbs run next to the running server, against its store, and the server applies what they wrote at its next poll.
 public sealed class SettingsConsoleTests
 {
     [Fact]
@@ -29,8 +28,9 @@ public sealed class SettingsConsoleTests
         await administrator.SavedAsync<LdapSettings>(
             SettingsSectionNames.Ldap,
             values => values with { Enabled = true, Host = "dc1.corp.example", BaseDn = "dc=corp,dc=example" },
-            new Dictionary<string, SecretUpdate> { ["bindPassword"] = new(SecretAction.Set, "Bind password 7") },
-            reauthentication: await administrator.TokenAsync());
+            new(
+                Secrets: new Dictionary<string, SecretUpdate> { ["bindPassword"] = new(SecretAction.Set, "Bind password 7") },
+                Reauthentication: await administrator.TokenAsync()));
         StringWriter output = new();
 
         int exit = await SettingsConsole.RunAsync(["settings", "reset", "ldap"], output, Store(application));

@@ -40,11 +40,11 @@ public sealed class Image
 
     public string? UploadedByName { get; set; }
 
-    // Raw disk images only: whether the image starts with Secure Boot on, the sentence that says why, and the SHA-256
-    // of the uncompressed disk, which finds the same disk uploaded again in another format.
+    // Only set for raw disk images. They hold whether the image starts with Secure Boot on, the sentence that says why,
+    // and the SHA-256 of the uncompressed disk. That hash finds the same disk uploaded again in another format.
     public ImageBootCapability? BootCapability { get; set; }
 
-    // For an image signed for Secure Boot: which of Microsoft's third-party UEFI CAs its boot file is signed under.
+    // For an image signed for Secure Boot, this says which of Microsoft's third-party UEFI CAs its boot file chains to.
     public UefiCa? SignedUnder { get; set; }
 
     public string? BootDetail { get; set; }

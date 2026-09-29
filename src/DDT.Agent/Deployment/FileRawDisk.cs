@@ -7,8 +7,8 @@ using Microsoft.Win32.SafeHandles;
 
 namespace DDT.Agent.Deployment;
 
-// A file that stands in for a disk of length bytes in 512-byte sectors, for the dry run. It is sparse on NTFS, so a
-// disk of 128 GiB takes on this computer only what is written to it.
+// A file that stands in for a disk of length bytes in 512-byte sectors, for the dry run. It's sparse on NTFS, so a
+// 128 GiB disk only takes up as much space on this computer as was written to it.
 public sealed unsafe class FileRawDisk : IRawDisk
 {
     private readonly FileStream _file;
@@ -51,7 +51,7 @@ public sealed unsafe class FileRawDisk : IRawDisk
 
     public void Dispose() => _file.Dispose();
 
-    // Not every file system can hold sparse files; the dry run then needs the room itself.
+    // Not every file system can hold sparse files. Then the dry run needs the full space.
     private static void MakeSparse(SafeFileHandle file) =>
         DiskNativeMethods.DeviceIoControl(file, DiskNativeMethods.FsctlSetSparse, null, 0, null, 0, out _, 0);
 }

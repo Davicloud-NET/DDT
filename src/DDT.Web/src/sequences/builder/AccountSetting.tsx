@@ -4,54 +4,32 @@
 
 import { useLingui } from "@lingui/react/macro";
 import { useContext, type ReactNode } from "react";
-import { Header, ListBoxSection } from "react-aria-components";
 
-import type { AccountView } from "@/accounts/accounts";
 import { ListBoxItem, Select } from "@/ui/Select";
 import { TextField } from "@/ui/TextField";
 
 import { EditorLock } from "../editorLock";
 import { fieldFindings, type Findings } from "../problems";
-import type { AccountReference, InputDeclaration } from "../sequences";
+import type { AccountReference } from "../sequences";
+import { NONE, referenceOf, type AccountUse } from "./account/accountChoices";
+import { AccountSection } from "./account/AccountSection";
+import { useAccountChoices } from "./account/useAccountChoices";
 
-import { useBuilder } from "./builderData";
-
-// What an account is for: running a script as it, joining the domain with it, or connecting a share with it. Only
-// accounts and Account inputs bound to that destination are offered; the server checks the rest when the step runs.
-export type AccountUse = "runAs" | "join" | "share";
-
-const NONE = "none";
-
-function keyOf(reference: AccountReference | null): string {
-  if (reference === null || (reference.accountId === null && reference.input === null)) {
-    return NONE;
-  }
-
-  return reference.accountId !== null
-    ? `account:${reference.accountId}`
-    : `input:${reference.input ?? ""}`;
-}
-
-function fits(use: AccountUse, account: AccountView): boolean {
-  return use === "runAs" ? account.runAs : use === "join" ? account.domain !== null : true;
-}
-
-function inputFits(use: AccountUse, input: InputDeclaration): boolean {
-  if (input.kind !== "Account") {
-    return false;
-  }
-
-  const destination = input.account;
-
-  return use === "runAs"
-    ? destination?.runAs === true
-    : use === "join"
-      ? (destination?.domain ?? null) !== null
-      : true;
+interface AccountSettingProps {
+  label: ReactNode;
+  field: string;
+  findings: Findings;
+  hint?: ReactNode;
+  value: AccountReference | null;
+  use: AccountUse;
+  // The label for choosing no account, if the step may have none.
+  noneLabel?: string;
+  onChange: (value: AccountReference | null) => void;
+  className?: string;
 }
 
 // Chooses the account a step uses: one stored on the server, or an Account input of this sequence that is asked for
-// the run. noneLabel names the choice of no account where the step may have none.
+// the run.
 export function AccountSetting({
   label,
   field,
@@ -62,57 +40,18 @@ export function AccountSetting({
   noneLabel,
   onChange,
   className,
-}: {
-  label: ReactNode;
-  field: string;
-  findings: Findings;
-  hint?: ReactNode;
-  value: AccountReference | null;
-  use: AccountUse;
-  noneLabel?: string;
-  onChange: (value: AccountReference | null) => void;
-  className?: string;
-}) {
+}: AccountSettingProps) {
   const { t } = useLingui();
   const locked = useContext(EditorLock);
-  const { accounts, inputs } = useBuilder();
-  const { problems, warnings } = fieldFindings(findings, field);
-  const stored = (accounts ?? []).filter((account) => fits(use, account));
-  const asked = inputs.filter((input) => inputFits(use, input));
-  const key = keyOf(value);
-  const accountName = (account: AccountView) => {
-    const name = account.name;
-    const user = account.userName;
-
-    return t`${name} (${user})`;
-  };
-  const inputName = (input: InputDeclaration) => {
-    const name = input.label.trim() === "" ? input.name : input.label;
-
-    return t`${name}, asked for the run`;
-  };
-
-  const chosenAccount = stored.find((account) => account.id === value?.accountId);
-  const chosenInput = asked.find(
-    (input) => value?.accountId === null && input.name === value.input,
+  const { key, missing, chosenLabel, noneStored, storedItems, askedItems } = useAccountChoices(
+    value,
+    use,
+    noneLabel,
   );
-  const lostInput = value?.input ?? "";
-  // A choice the lists do not have any more, such as an account deleted since, is still shown as it is.
-  const missing =
-    key === NONE || chosenAccount !== undefined || chosenInput !== undefined
-      ? null
-      : value?.accountId !== null && value?.accountId !== undefined
-        ? t`An account this server does not have`
-        : t`${lostInput}, an input this sequence does not declare`;
-  const chosenLabel =
-    chosenAccount !== undefined
-      ? accountName(chosenAccount)
-      : chosenInput !== undefined
-        ? inputName(chosenInput)
-        : (missing ?? noneLabel ?? t`None`);
+  const { problems, warnings } = fieldFindings(findings, field);
   const described = [
     hint,
-    accounts === null && !locked ? t`No account is stored on the server yet.` : null,
+    noneStored && !locked ? t`No account is stored on the server yet.` : null,
     ...warnings,
   ].filter((part) => part !== null && part !== undefined);
   const description =
@@ -153,17 +92,9 @@ export function AccountSetting({
         onChange={(chosen) => {
           const text = String(chosen);
 
-          if (text === key) {
-            return;
+          if (text !== key) {
+            onChange(referenceOf(text));
           }
-
-          onChange(
-            text === NONE
-              ? null
-              : text.startsWith("account:")
-                ? { accountId: text.slice("account:".length), input: null }
-                : { accountId: null, input: text.slice("input:".length) },
-          );
         }}
       >
         {noneLabel === undefined ? null : (
@@ -176,41 +107,8 @@ export function AccountSetting({
             {missing}
           </ListBoxItem>
         )}
-        {stored.length > 0 ? (
-          <ListBoxSection>
-            <Header className="px-2.5 pt-2 pb-1 type-small text-muted">{t`Stored accounts`}</Header>
-            {stored.map((account) => {
-              const text = accountName(account);
-
-              return (
-                <ListBoxItem
-                  key={account.id}
-                  id={`account:${account.id}`}
-                  textValue={text}
-                  {...(account.domain === null ? {} : { description: account.domain })}
-                >
-                  {text}
-                </ListBoxItem>
-              );
-            })}
-          </ListBoxSection>
-        ) : null}
-        {asked.length > 0 ? (
-          <ListBoxSection>
-            <Header className="px-2.5 pt-2 pb-1 type-small text-muted">
-              {t`Asked for the run`}
-            </Header>
-            {asked.map((input) => {
-              const text = inputName(input);
-
-              return (
-                <ListBoxItem key={input.name} id={`input:${input.name}`} textValue={text}>
-                  {text}
-                </ListBoxItem>
-              );
-            })}
-          </ListBoxSection>
-        ) : null}
+        <AccountSection title={t`Stored accounts`} items={storedItems} />
+        <AccountSection title={t`Asked for the run`} items={askedItems} />
       </Select>
     </div>
   );

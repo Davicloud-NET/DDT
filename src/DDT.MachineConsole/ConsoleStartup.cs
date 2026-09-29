@@ -14,27 +14,24 @@ using DDT.MachineConsole.Views;
 
 namespace DDT.MachineConsole;
 
-// The console once it is connected: the language Windows PE speaks, the window, and the pipe read from the moment the
-// window exists until the agent closes it. As the shell of DDT's session in the installed Windows, the console opens at
-// once, as there is nothing else on the screen, and connects to the agent whenever the agent is there: it starts with
-// Windows as the session does, and goes and comes back as its service stops and starts.
+// Opens the window and feeds it the agent's messages. In DDT's session the window opens right away, because nothing
+// else is on the screen. The console reconnects each time the agent's service restarts.
 public sealed class ConsoleStartup
 {
-    // Between two attempts to reach the agent in DDT's session, and how long each may wait for the pipe.
+    // In DDT's session: the pause between two tries to reach the agent, and how long each try waits for the pipe.
     public static readonly TimeSpan SessionRetry = TimeSpan.FromSeconds(2);
     public static readonly TimeSpan SessionConnectTimeout = TimeSpan.FromSeconds(5);
 
-    private readonly IAgentConnection? _connection;
-    private readonly string? _sessionPipe;
+    private readonly Func<Localizer, IClassicDesktopStyleApplicationLifetime, MainWindow> _open;
 
     public ConsoleStartup(IAgentConnection connection)
     {
         ArgumentNullException.ThrowIfNull(connection);
 
-        _connection = connection;
+        _open = (localizer, desktop) => OpenConnected(localizer, desktop, connection);
     }
 
-    private ConsoleStartup(string sessionPipe) => _sessionPipe = sessionPipe;
+    private ConsoleStartup(string sessionPipe) => _open = (localizer, desktop) => OpenSession(localizer, desktop, sessionPipe);
 
     public static ConsoleStartup ForSession(string pipeName) => new(pipeName);
 
@@ -43,9 +40,7 @@ public sealed class ConsoleStartup
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(desktop);
 
-        Localizer localizer = Localizer.Embedded(Catalogs.FromWindows());
-
-        return _sessionPipe is { } pipeName ? OpenSession(localizer, desktop, pipeName) : OpenConnected(localizer, desktop, _connection!);
+        return _open(Localizer.Embedded(Catalogs.FromWindows()), desktop);
     }
 
     private static MainWindow OpenConnected(Localizer localizer, IClassicDesktopStyleApplicationLifetime desktop, IAgentConnection connection)
@@ -71,7 +66,7 @@ public sealed class ConsoleStartup
         return window;
     }
 
-    // Nothing is asked in the installed Windows, so no answer goes back; F9 signs out once the run is over.
+    // The installed Windows asks no questions, so no answers go back. F9 signs out once the run is over.
     private static MainWindow OpenSession(Localizer localizer, IClassicDesktopStyleApplicationLifetime desktop, string pipeName)
     {
         CancellationTokenSource stop = new();
@@ -110,7 +105,7 @@ public sealed class ConsoleStartup
 
                 await using (link.ConfigureAwait(false))
                 {
-                    // One inbox per connection: the agent sends its state and newest lines anew each time.
+                    // One inbox per connection. The agent sends its state and newest lines again on every connection.
                     Inbox inbox = new(action => Dispatcher.UIThread.Post(action));
                     Dispatcher.UIThread.Post(() =>
                     {

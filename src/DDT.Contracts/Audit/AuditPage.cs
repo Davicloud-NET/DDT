@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Audit;
 
-// Newest first. Next is the id to pass as before for the page after this one, null on the last page.
+// Newest first. Next is the id to pass as the before parameter to get the next page. It's null on the last page.
 public sealed record AuditPage(IReadOnlyList<AuditEntry> Items, long? Next);

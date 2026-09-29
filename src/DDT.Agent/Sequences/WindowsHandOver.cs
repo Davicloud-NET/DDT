@@ -10,13 +10,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Prepares the installed Windows to go on with the run: this agent, as agentPath names it, goes into the run's
-// directory as <Windows volume>\DDT\agent\ddt-agent.exe, with configuration as its agent.json, which holds only the
-// server's URL and root certificate; the service that starts the agent there is registered; and the run's state is
-// saved as in the Windows phase, with the run token. The agent's own file, not the boot image's: the running one may
-// be a newer one it updated itself to. The graphical console goes into <Windows volume>\DDT\console, where DDT's
-// session in Windows starts it as its shell, when consoleDirectory names where it is: asked at the hand-over, as only
-// then is it known whether the console that ran speaks this agent's version of the protocol.
+// Prepares the installed Windows to continue the run. It stages this agent with its agent.json and the console for
+// DDT's session, registers the service that starts the agent, and saves the run's state in the Windows phase.
 public sealed class WindowsHandOver(
     OfflineServiceRegistration service,
     string agentPath,
@@ -30,7 +25,7 @@ public sealed class WindowsHandOver(
     public const string ConfigurationFileName = "agent.json";
     public const string ConsoleDirectory = "console";
 
-    // SYSTEM may change the console, and the session's account, a member of Users, only read and start it.
+    // SYSTEM may change the console. The session's account, a member of Users, may only read and start it.
     public const string ConsoleSddl = "D:P(A;OICI;FA;;;SY)(A;OICI;0x1200a9;;;BU)";
 
     public async Task StageAsync(RunSession session, FileRunStateStore store, SequenceState state, CancellationToken cancellationToken)
@@ -41,7 +36,7 @@ public sealed class WindowsHandOver(
 
         string windows = session.RequireVolumes().Windows;
 
-        // Inside the run's directory, whose DACL it inherits: only SYSTEM can change what the service starts.
+        // Inside the run's directory, whose DACL it inherits, so only SYSTEM can change what the service starts.
         string directory = Path.Combine(session.RunDirectory!, AgentDirectory);
         Directory.CreateDirectory(directory);
 
@@ -50,6 +45,7 @@ public sealed class WindowsHandOver(
             log.Information($"Dry run: {directory} is left open. In Windows PE it inherits the run directory's DACL ({SystemOnlyDirectory.Sddl}).");
         }
 
+        // The running agent, not the boot image's, because it may have updated itself to a newer one.
         File.Copy(agentPath, Path.Combine(directory, AgentFileName), overwrite: true);
         await File.WriteAllBytesAsync(
             Path.Combine(directory, ConfigurationFileName),
@@ -64,12 +60,13 @@ public sealed class WindowsHandOver(
 
         await service.RegisterAsync(windows, cancellationToken).ConfigureAwait(false);
 
-        // Only once the service that goes on with the run exists. Like the engine's saves, without the stop token: the
-        // state must match what the disk holds.
+        // Only once the service that continues the run exists. Like the engine's saves, this runs without the stop
+        // token, because the state must match what the disk holds.
         await store.SaveAsync(state with { Phase = SequencePhase.Windows }, CancellationToken.None).ConfigureAwait(false);
     }
 
-    // Without all of its files there is no console, and the run in Windows shows only on the server. True once staged.
+    // consoleDirectory is only asked now, once it's known whether the console that ran speaks this agent's protocol.
+    // Without all of its files there's no console, and the run in Windows only shows on the server. True once staged.
     private bool StageConsole(string runDirectory)
     {
         if (consoleDirectory?.Invoke() is not { } source)

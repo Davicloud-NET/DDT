@@ -20,7 +20,7 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// Runs of sequences that write a raw disk image, and who may let one that will not start with Secure Boot on run.
+// Runs of sequences that write a raw disk image, and who may let one run that won't start with Secure Boot on.
 public sealed class RawImageRunTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private Task<Image> DiskImageAsync(ImageBootCapability capability = ImageBootCapability.SecureBootOk, UefiCa? signedUnder = null) =>
@@ -28,8 +28,7 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
             RandomNumberGenerator.GetBytes(4096),
             capability,
             name: $"noble {Guid.NewGuid():N}",
-            installedBytes: 3_500_000_000,
-            signedUnder: signedUnder);
+            disk: new(3_500_000_000, signedUnder));
 
     private async Task<SequenceView> LinuxAsync(Image image) =>
         await (await application.AdministratorAsync()).CreatedSequenceAsync(SequenceRequests.Linux(image.Id));
@@ -150,22 +149,22 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
             refused.Errors["allowSecureBootMismatch"]);
 
         DeploymentSummary allowed = (await RegisteredMachine.ReadAsync<MachineSummary>(
-            await administrator.AssignAsync(on.Id, sequence.Id, "LINUX-03", allowSecureBootMismatch: true))).Deployment!;
+            await administrator.AssignAsync(on.Id, new AssignSequenceRequest(sequence.Id, "LINUX-03", AllowSecureBootMismatch: true)))).Deployment!;
         Assert.True(Assert.IsType<AgentRun>((await on.NextAsync()).Run).AllowSecureBootMismatch);
         Assert.True((await administrator.RunAsync(allowed.Id)).AllowSecureBootMismatch);
         Assert.Equal(
             [$"{sequence.Name}, revision 1, to machine {on.Id:D}. It may write {image.Name} although it will not start with Secure Boot on."],
             await AuditAsync(allowed.Id));
 
-        // Where the machine did not say, its agent checks the firmware itself before it writes.
+        // If the machine didn't report it, its agent checks the firmware itself before it writes.
         DeploymentSummary unasked = await administrator.AssignedAsync(unknown.Id, sequence.Id, "LINUX-04");
         Assert.False(Assert.IsType<AgentRun>((await unknown.NextAsync()).Run).AllowSecureBootMismatch);
         Assert.Equal([$"{sequence.Name}, revision 1, to machine {unknown.Id:D}."], await AuditAsync(unasked.Id));
     }
 
-    // A machine with Secure Boot on starts no image signed only under CAs its firmware does not trust: one that holds
-    // only the 2011 CA refuses a shim signed since June 2026, and a Secured-core PC or Hyper-V's Windows template
-    // refuses both.
+    // A machine with Secure Boot on won't start an image signed only under CAs its firmware doesn't trust.
+    // Firmware with only the 2011 CA refuses a shim signed since June 2026.
+    // A Secured-core PC or Hyper-V's Windows template refuses both.
     [Fact]
     public async Task AsksForTheOverrideForASignedImageWhereTheFirmwareDoesNotTrustItsCa()
     {
@@ -189,7 +188,7 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
             refused.Errors["allowSecureBootMismatch"]);
 
         DeploymentSummary allowed = (await RegisteredMachine.ReadAsync<MachineSummary>(
-            await administrator.AssignAsync(only2011.Id, sequence.Id, "LINUX-07", allowSecureBootMismatch: true))).Deployment!;
+            await administrator.AssignAsync(only2011.Id, new AssignSequenceRequest(sequence.Id, "LINUX-07", AllowSecureBootMismatch: true)))).Deployment!;
         AgentRun run = Assert.IsType<AgentRun>((await only2011.NextAsync()).Run);
         Assert.True(run.AllowSecureBootMismatch);
         Assert.Equal(UefiCa.Microsoft2023, Assert.Single(run.Images).SignedUnder);
@@ -209,7 +208,7 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
         SequenceView sequence = await LinuxAsync(await DiskImageAsync());
 
         DeploymentSummary run = (await RegisteredMachine.ReadAsync<MachineSummary>(
-            await administrator.AssignAsync(machine.Id, sequence.Id, "LINUX-05", allowSecureBootMismatch: true))).Deployment!;
+            await administrator.AssignAsync(machine.Id, new AssignSequenceRequest(sequence.Id, "LINUX-05", AllowSecureBootMismatch: true)))).Deployment!;
 
         Assert.False((await administrator.RunAsync(run.Id)).AllowSecureBootMismatch);
     }

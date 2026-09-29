@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Sequences;
 
-// Runs Then when Test holds and Else when it does not; both paths meet again after it. An else-if is an IF in Else.
+// Runs Then when Test holds and Else when it doesn't. Both paths continue after the IF. An else-if is an IF in Else.
 public sealed record IfStep : SequenceStep
 {
     public required ConditionNode Test { get; init; }

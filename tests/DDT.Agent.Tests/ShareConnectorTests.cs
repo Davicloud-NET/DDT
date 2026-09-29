@@ -103,7 +103,7 @@ public sealed class ShareConnectorTests
         IAsyncDisposable connected = await Connector.ConnectAsync([drivers, apps], null, TestContext.Current.CancellationToken);
         await connected.DisposeAsync();
 
-        // Both connect; Windows allows a second share on a server the account already reached.
+        // Both connect. Windows allows a second share on a server the account already reached.
         Assert.Equal(
             [
                 @"add \\files.example\drivers as CORP\svc",

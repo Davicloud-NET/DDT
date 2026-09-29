@@ -4,16 +4,15 @@
 
 namespace DDT.Server.Accounts;
 
-// An account steps use, see AccountView, bound to its destinations: Domain, the domain a join with it may join, Hosts,
-// the share hosts it may connect to, as DdtJsonContext writes a list of strings, and RunAs, whether a script may run as
-// it. ProtectedPassword is the password as AccountProtector protects it for this account, null when none is set.
+// An account that steps use. It's limited to where it may be used: Domain for a domain join, Hosts (JSON) for
+// shares, RunAs for scripts. AccountProtector encrypts ProtectedPassword for this account. It's null if none is set.
 public sealed class Account
 {
     public Guid Id { get; set; }
 
     public required string Name { get; set; }
 
-    // The trimmed name in upper case, unique, so two accounts cannot differ only in case.
+    // The trimmed name in upper case. It's unique, so two account names can't differ only in case.
     public required string NormalizedName { get; set; }
 
     public required string UserName { get; set; }
@@ -28,7 +27,7 @@ public sealed class Account
 
     public DateTimeOffset? PasswordUpdatedUtc { get; set; }
 
-    // Raised by every save and checked on it, so an editor saving over a newer save is told instead.
+    // Every save checks it and raises it. An editor who saves over a newer save is told, instead of overwriting it.
     public long Revision { get; set; }
 
     public DateTimeOffset CreatedUtc { get; set; }

@@ -78,7 +78,7 @@ function row(name: string): HTMLElement {
   return within(table()).getByRole("row", { name: new RegExp(`^${name}`), hidden: true });
 }
 
-// The server wants the password of the person again for every change that comes without a recent proof.
+// The server asks for the person's password again for every change that doesn't carry a recent proof.
 function reauthenticate(): Response {
   return json(
     {
@@ -347,7 +347,7 @@ describe("AccountsPage", () => {
         within(table()).queryByRole("row", { name: /^Software share/, hidden: true }),
       ).toBeNull();
     });
-    // The first went out with whatever proof the page held, which the server no longer took.
+    // The first delete carried the proof the page already held, and the server didn't accept it anymore.
     expect(deletes.map(proofOf)[1]).toBe("proof");
   });
 

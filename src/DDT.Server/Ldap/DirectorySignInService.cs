@@ -22,12 +22,12 @@ public sealed partial class DirectorySignInService(
     DdtSettings settings,
     ILogger<DirectorySignInService> logger)
 {
-    // Once per scope, as the authenticator takes it: a change applies at the next sign-in.
+    // Read once per scope, the same way the authenticator reads it. A change applies at the next sign-in.
     private readonly LdapOptions _options = settings.Current.Ldap;
 
     public bool Enabled => _options.Enabled;
 
-    // Enabled, and with the server and the part of the directory to search.
+    // Enabled, with a server and a base DN to search.
     public bool Configured => _options.Enabled && !string.IsNullOrWhiteSpace(_options.Host) && !string.IsNullOrWhiteSpace(_options.BaseDn);
 
     public async Task<SignInResult> SignInAsync(string userName, string password, CancellationToken cancellationToken)
@@ -42,8 +42,8 @@ public sealed partial class DirectorySignInService(
         return result;
     }
 
-    // Everything a directory sign in checks and updates, without issuing a cookie. The user is returned only
-    // on success. A user whose groups give no role while the map decides roles gets NoRoleSignInResult.
+    // Does everything a directory sign-in checks and updates, but doesn't issue a cookie. The user is only returned on
+    // success. If the group map decides roles and the user's groups give no role, this returns NoRoleSignInResult.
     public async Task<(SignInResult Result, DdtUser? User)> AuthenticateAsync(
         string userName,
         string password,
@@ -56,24 +56,9 @@ public sealed partial class DirectorySignInService(
 
         DdtUser? existing = await userManager.FindByNameAsync(userName).ConfigureAwait(false);
 
-        if (existing is not null)
+        if (existing is not null && await RefusalAsync(existing).ConfigureAwait(false) is { } refused)
         {
-            if (existing.Source != AccountSource.Directory)
-            {
-                return (SignInResult.Failed, null);
-            }
-
-            if (existing.IsDisabled)
-            {
-                return (SignInResult.NotAllowed, null);
-            }
-
-            // DDT applies its own lockout before forwarding anything to the directory. Without
-            // this brake, DDT is a convenient way to lock out arbitrary domain accounts.
-            if (await userManager.IsLockedOutAsync(existing).ConfigureAwait(false))
-            {
-                return (SignInResult.LockedOut, null);
-            }
+            return (refused, null);
         }
 
         LdapIdentity? identity = await authenticator
@@ -92,21 +77,94 @@ public sealed partial class DirectorySignInService(
 
         GroupRoles mapped = GroupRoles.From(identity.GroupDns, _options.GroupRoleMap);
 
-        // The directory is authoritative: an account whose groups no longer give it a role loses the one it had, and no
-        // account is made for a user whose groups never gave one.
+        // The directory is authoritative. An account whose groups no longer give it a role loses the role it had. No
+        // account is created for a user whose groups never gave one.
         if (mapped.Decides && mapped.Role is null)
         {
-            if (await KnownAsync(identity.ImmutableId, existing).ConfigureAwait(false) is { } known
-                && (await ApplyRoleAsync(known, null).ConfigureAwait(false)).Changed)
-            {
-                await activity.ChangedAsync(known, cancellationToken).ConfigureAwait(false);
-            }
-
-            LogNoRole(identity.UserName, identity.ImmutableId);
+            await TakeRoleAsync(identity, existing, cancellationToken).ConfigureAwait(false);
 
             return (NoRoleSignInResult.Instance, null);
         }
 
+        return await AcceptAsync(identity, existing, mapped, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Explains what a sign-in with this user name would give and why. It reads with the bind account, so there's no
+    // password, no new account and no cookie. Throws LdapUnavailableException when the directory can't be queried.
+    public async Task<DirectoryCheck> CheckAsync(string userName, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userName);
+
+        LdapLookup lookup = await authenticator.LookUpAsync(userName, cancellationToken).ConfigureAwait(false);
+
+        switch (lookup.Status)
+        {
+            case LdapLookupStatus.NotFound:
+                return NotFound(ServerMessages.DirectoryNoEntry.With("baseDn", _options.BaseDn, "name", userName));
+            case LdapLookupStatus.Ambiguous:
+                return NotFound(ServerMessages.DirectoryManyEntries.With("baseDn", _options.BaseDn, "name", userName));
+        }
+
+        GroupRoles mapped = GroupRoles.From(lookup.GroupDns, _options.GroupRoleMap);
+        (string? role, ServerMessage message) = await ReasonAsync(userName, lookup, mapped).ConfigureAwait(false);
+
+        return new DirectoryCheck(
+            true,
+            lookup.DistinguishedName,
+            lookup.DisplayName,
+            lookup.GroupDns,
+            [.. mapped.Matches.Select(match => new DirectoryGroupMatch(match.Group, match.Role))],
+            role,
+            message.Text,
+            message.Code,
+            message.Args);
+    }
+
+    // Returns a role DDT knows as a message, so the web client names it the same way its role pages do. Any other role
+    // is returned as it is.
+    internal static object RoleName(string role) => role switch
+    {
+        DdtRoleNames.Administrator => ServerMessages.RoleAdministrator.With(),
+        DdtRoleNames.Operator => ServerMessages.RoleOperator.With(),
+        DdtRoleNames.Viewer => ServerMessages.RoleViewer.With(),
+        _ => role,
+    };
+
+    // Runs before anything goes to the directory. DDT applies its own lockout first. Without this brake, DDT would be a
+    // convenient way to lock out arbitrary domain accounts.
+    private async Task<SignInResult?> RefusalAsync(DdtUser existing)
+    {
+        if (existing.Source != AccountSource.Directory)
+        {
+            return SignInResult.Failed;
+        }
+
+        if (existing.IsDisabled)
+        {
+            return SignInResult.NotAllowed;
+        }
+
+        return await userManager.IsLockedOutAsync(existing).ConfigureAwait(false) ? SignInResult.LockedOut : null;
+    }
+
+    private async Task TakeRoleAsync(LdapIdentity identity, DdtUser? existing, CancellationToken cancellationToken)
+    {
+        if (await KnownAsync(identity.ImmutableId, existing).ConfigureAwait(false) is { } known
+            && (await ApplyRoleAsync(known, null).ConfigureAwait(false)).Changed)
+        {
+            await activity.ChangedAsync(known, cancellationToken).ConfigureAwait(false);
+        }
+
+        LogNoRole(identity.UserName, identity.ImmutableId);
+    }
+
+    // The directory accepted the password. The account is created or updated, and its role is applied.
+    private async Task<(SignInResult Result, DdtUser? User)> AcceptAsync(
+        LdapIdentity identity,
+        DdtUser? existing,
+        GroupRoles mapped,
+        CancellationToken cancellationToken)
+    {
         (DdtUser? user, bool created) = await ReconcileAsync(identity, existing).ConfigureAwait(false);
 
         if (user is null)
@@ -119,7 +177,7 @@ public sealed partial class DirectorySignInService(
             return (SignInResult.NotAllowed, null);
         }
 
-        // A user Identity refused to save has no row, so handing it back would sign in an account that does not
+        // If Identity refused to save the user, it has no row. Returning it would sign in an account that doesn't
         // exist, with roles that were never stored.
         if (!Saved(user, await userManager.ResetAccessFailedCountAsync(user).ConfigureAwait(false)))
         {
@@ -143,64 +201,38 @@ public sealed partial class DirectorySignInService(
         return (SignInResult.Success, user);
     }
 
-    // What a sign-in with this user name would give and why, read with the bind account: no password, no account made,
-    // no cookie. It follows the sign-in's own order, so the first reason that would stop a sign-in is the one given.
-    // Throws LdapUnavailableException when the directory cannot be asked.
-    public async Task<DirectoryCheck> CheckAsync(string userName, CancellationToken cancellationToken)
+    // Checks in the same order as the sign-in, so the reason given is the first one that would stop a sign-in.
+    private async Task<(string? Role, ServerMessage Message)> ReasonAsync(string userName, LdapLookup lookup, GroupRoles mapped)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(userName);
-
-        LdapLookup lookup = await authenticator.LookUpAsync(userName, cancellationToken).ConfigureAwait(false);
-
-        switch (lookup.Status)
-        {
-            case LdapLookupStatus.NotFound:
-                return NotFound(ServerMessages.DirectoryNoEntry.With("baseDn", _options.BaseDn, "name", userName));
-            case LdapLookupStatus.Ambiguous:
-                return NotFound(ServerMessages.DirectoryManyEntries.With("baseDn", _options.BaseDn, "name", userName));
-        }
-
-        GroupRoles mapped = GroupRoles.From(lookup.GroupDns, _options.GroupRoleMap);
-        DirectoryCheck Found(string? role, ServerMessage message) => new(
-            true,
-            lookup.DistinguishedName,
-            lookup.DisplayName,
-            lookup.GroupDns,
-            [.. mapped.Matches.Select(match => new DirectoryGroupMatch(match.Group, match.Role))],
-            role,
-            message.Text,
-            message.Code,
-            message.Args);
-
         DdtUser? account = await userManager.FindByNameAsync(userName).ConfigureAwait(false);
 
         if (account?.Source == AccountSource.Local)
         {
-            return Found(null, ServerMessages.DirectoryLocalAccount.With("name", userName));
+            return (null, ServerMessages.DirectoryLocalAccount.With("name", userName));
         }
 
         if (account?.Source == AccountSource.External)
         {
-            return Found(null, ServerMessages.DirectorySingleSignOnAccount.With("name", userName));
+            return (null, ServerMessages.DirectorySingleSignOnAccount.With("name", userName));
         }
 
         if (lookup.ImmutableId is null)
         {
-            return Found(null, ServerMessages.DirectoryNoImmutableId.With("attribute", _options.ImmutableIdAttribute));
+            return (null, ServerMessages.DirectoryNoImmutableId.With("attribute", _options.ImmutableIdAttribute));
         }
 
         DdtUser? known = await KnownAsync(lookup.ImmutableId, account).ConfigureAwait(false);
 
         if (known?.IsDisabled == true)
         {
-            return Found(null, ServerMessages.DirectoryAccountDisabled.With("name", known.UserName ?? ""));
+            return (null, ServerMessages.DirectoryAccountDisabled.With("name", known.UserName ?? ""));
         }
 
         if (!mapped.Decides)
         {
             string? held = known is null ? null : DdtRoleNames.Highest(await userManager.GetRolesAsync(known).ConfigureAwait(false));
 
-            return Found(held, (known, held) switch
+            return (held, (known, held) switch
             {
                 (null, _) => ServerMessages.DirectoryNoMapNewAccount.With(),
                 (_, null) => ServerMessages.DirectoryNoMapNoRole.With(),
@@ -210,7 +242,7 @@ public sealed partial class DirectorySignInService(
 
         if (mapped.Role is null)
         {
-            return Found(null, ServerMessages.DirectoryNoMappedGroup.With("name", userName));
+            return (null, ServerMessages.DirectoryNoMappedGroup.With("name", userName));
         }
 
         GroupRole best = mapped.Matches.First(match => match.Role == mapped.Role);
@@ -219,27 +251,16 @@ public sealed partial class DirectorySignInService(
             ? ServerMessages.DirectoryRoleFromGroup.With("name", userName, "role", RoleName(mapped.Role), "group", group)
             : ServerMessages.DirectoryRoleFromGroups.With("name", userName, "count", mapped.Matches.Count, "role", RoleName(mapped.Role), "group", group);
 
-        return Found(
-            mapped.Role,
-            known is not null && await userManager.IsLockedOutAsync(known).ConfigureAwait(false)
-                ? ServerMessages.DirectoryLockedOut.With("reason", reason)
-                : reason);
+        return (mapped.Role, known is not null && await userManager.IsLockedOutAsync(known).ConfigureAwait(false)
+            ? ServerMessages.DirectoryLockedOut.With("reason", reason)
+            : reason);
     }
-
-    // A role DDT knows as a message, so the web names it as its role pages do; any other as it is.
-    internal static object RoleName(string role) => role switch
-    {
-        DdtRoleNames.Administrator => ServerMessages.RoleAdministrator.With(),
-        DdtRoleNames.Operator => ServerMessages.RoleOperator.With(),
-        DdtRoleNames.Viewer => ServerMessages.RoleViewer.With(),
-        _ => role,
-    };
 
     private static DirectoryCheck NotFound(ServerMessage message) =>
         new(false, null, null, [], [], null, message.Text, message.Code, message.Args);
 
-    // Keyed on the directory's immutable identifier, never on the user name or the distinguished
-    // name: both of those change when someone is renamed or moved between organisational units.
+    // Keyed on the directory's immutable identifier, never on the user name or the distinguished name. Both of those
+    // change when someone is renamed or moved between organisational units.
     private async Task<DdtUser?> KnownAsync(string immutableId, DdtUser? matchedByName) =>
         await userManager.Users
             .FirstOrDefaultAsync(u => u.DirectoryObjectId == immutableId)

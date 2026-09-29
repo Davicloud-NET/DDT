@@ -4,6 +4,7 @@
 
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using DDT.MachineConsole.Controls;
 
 namespace DDT.MachineConsole.Views;
 

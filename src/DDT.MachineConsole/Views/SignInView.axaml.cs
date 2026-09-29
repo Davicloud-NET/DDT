@@ -12,8 +12,8 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Views;
 
-// The field the agent asks for has the focus, so the person just types. A field asked for next enters, and so do the
-// agent's words about each refused attempt, even where they are the same as before.
+// The field the agent asks for has the focus, so the person just types. The next field animates in, and so does the
+// agent's message about each refused attempt, even if it's the same as before.
 public sealed partial class SignInView : UserControl
 {
     private SignInViewModel? _model;
@@ -80,7 +80,7 @@ public sealed partial class SignInView : UserControl
         }
     }
 
-    // After the layout, once the field is visible and enabled.
+    // Runs after layout, once the field is visible and enabled.
     private void FocusField() =>
         Dispatcher.UIThread.Post(
             () =>

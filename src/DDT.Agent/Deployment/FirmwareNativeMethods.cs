@@ -6,7 +6,8 @@ using System.Runtime.InteropServices;
 
 namespace DDT.Agent.Deployment;
 
-// The firmware variable functions of kernel32, and what enabling SeSystemEnvironmentPrivilege takes from advapi32.
+// The firmware variable functions of kernel32, and what enabling SeSystemEnvironmentPrivilege takes from advapi32. The
+// imports keep Win32's signatures, however many parameters they take.
 internal static unsafe partial class FirmwareNativeMethods
 {
     public const uint TokenAdjustPrivileges = 0x0020;

@@ -4,17 +4,18 @@
 
 namespace DDT.Agent.WindowsPhase;
 
-// DDT's session in the installed Windows, which shows the run on DDT's console, as WindowsPhaseLoop uses it.
+// DDT's session in the installed Windows, which shows the run on DDT's console. WindowsPhaseLoop uses it.
 public interface IDeploySession
 {
-    // At every start of the service, before the run goes on. Never fails the run: without a session, the machine shows
-    // Windows' own screens and the run goes on all the same.
+    // Called at every start of the service, before the run continues. Never fails the run. Without a session, the
+    // machine shows Windows' own screens and the run still continues.
     Task PrepareAsync(CancellationToken cancellationToken);
 
-    // Once Windows setup has finished, its first user included, and before the next step.
+    // Called once Windows setup has finished, including its first user, and before the next step.
     void SetupFinished();
 
-    // Once the run is over here. signOut ends the session at once; otherwise the console shows how the run ended until
-    // someone at the machine signs out. False when the stop token ended that wait, which the next start takes up again.
+    // Called once the run is over here. signOut ends the session right away. Otherwise the console shows how the run
+    // ended until someone at the machine signs out. Returns false when the stop token ended that wait, and the next
+    // start picks it up again.
     Task<bool> EndAsync(bool signOut, CancellationToken cancellationToken);
 }

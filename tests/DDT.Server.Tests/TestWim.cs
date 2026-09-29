@@ -9,9 +9,9 @@ using System.Text;
 
 namespace DDT.Server.Tests;
 
-// The parts of a WIM file the server reads, laid out as WimMetadata expects them: the 208-byte header, bytes that
-// stand in for the image data, and the image list as uncompressed UTF-16 LE XML with a byte order mark. The data
-// bytes are random, so every file has its own hash and no test sees another test's upload in the library.
+// The parts of a WIM file the server reads, laid out as WimMetadata expects: the 208-byte header, stand-in image data,
+// and the image list as UTF-16 LE XML with a byte order mark. The data is random, so no test sees another test's upload
+// in the library.
 internal static class TestWim
 {
     public const int X86 = 0;
@@ -21,7 +21,8 @@ internal static class TestWim
     private const int HeaderLength = 208;
     private const int DataLength = 4096;
 
-    // One image per architecture code, indexed from 1; null leaves the ARCH element out, as a captured data folder has.
+    // One image per architecture code, indexed from 1.
+    // null leaves out the ARCH element, like a captured data folder does.
     public static byte[] Create(params int?[] architectures) => Build(totalParts: 1, architectures);
 
     // The first part of a WIM split into two .swm files.

@@ -4,13 +4,11 @@
 
 namespace DDT.Contracts.Agents;
 
-// The graphical console the agents of netbooting machines switch to, file by file. Frozen like AgentRelease: agents
-// inside boot images built long ago read it, so its members are never renamed or removed.
+// The files of the graphical console that the agents of netbooting machines switch to. Frozen like AgentRelease.
+// Agents inside old boot images read it, so its members are never renamed or removed.
 public sealed record ConsoleRelease(IReadOnlyList<ConsoleReleaseFile> Files)
 {
-    // What a console is made of, as ConsolePipe.Files names it for the agent: the console, first, and the two libraries
-    // it draws with.
+    // The files of a console, named the way ConsolePipe.Files names them for the agent. The console comes first, then
+    // the two libraries it draws with.
     public static IReadOnlyList<string> FileNames { get; } = ["ddt-console.exe", "libSkiaSharp.dll", "libHarfBuzzSharp.dll"];
 }
-
-public sealed record ConsoleReleaseFile(string Name, string Sha256, long Size);

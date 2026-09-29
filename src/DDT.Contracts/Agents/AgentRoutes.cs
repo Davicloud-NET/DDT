@@ -33,14 +33,14 @@ public static class AgentRoutes
 
     public static string RunReport(Guid machineId, Guid runId) => $"api/agents/{machineId:D}/runs/{runId:D}/report";
 
-    // POST the AgentInputAnswers given at the machine while the run waits at its start.
+    // POST the AgentInputAnswers given at the machine while the run waits to start.
     public static string RunAnswers(Guid machineId, Guid runId) => $"api/agents/{machineId:D}/runs/{runId:D}/answers";
 
-    // Any image or package of the run, by its hash, with range requests.
+    // Serves any image or package of the run by its hash, and supports range requests.
     public static string RunFile(Guid machineId, Guid runId, string sha256) =>
         $"api/agents/{machineId:D}/runs/{runId:D}/files/{sha256}";
 
-    // Secrets, served only while the step is the run's Running step.
+    // These serve secrets, and only while the step is the run's Running step.
     public static string RunStepUnattend(Guid machineId, Guid runId, Guid stepId) =>
         $"api/agents/{machineId:D}/runs/{runId:D}/steps/{stepId:D}/unattend";
 
@@ -51,7 +51,7 @@ public static class AgentRoutes
     public static string RunStepAccounts(Guid machineId, Guid runId, Guid stepId) =>
         $"api/agents/{machineId:D}/runs/{runId:D}/steps/{stepId:D}/accounts";
 
-    // Frozen: agents inside boot images built long ago ask these, so the paths never change.
+    // Frozen. Agents inside old boot images call these, so the paths never change.
     public const string Release = "api/agents/release";
 
     public const string ReleaseBinary = "api/agents/release/binary";

@@ -4,6 +4,6 @@
 
 namespace DDT.ConsoleProtocol;
 
-// The agent's answer to a console that speaks another version, before it closes the pipe and carries on with its text
+// The agent's answer to a console that speaks another version, before it closes the pipe and continues with its text
 // console. Version is the agent's. Like HelloMessage, it never changes.
 public sealed record RefusedMessage(int Version, string Reason) : ConsoleMessage;

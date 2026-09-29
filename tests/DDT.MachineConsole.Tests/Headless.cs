@@ -9,13 +9,13 @@ using Xunit;
 
 namespace DDT.MachineConsole.Tests;
 
-// The console's App with its styles, fonts and tokens, drawn by Skia into memory instead of a window, so a test can
-// press keys on a screen and save what it shows. One session serves every test, on its own UI thread.
+// The console's App, drawn by Skia into memory, so a test can press keys on a real window and capture it. One session
+// on its own UI thread serves every test.
 public static class Headless
 {
     private static readonly Lazy<HeadlessUnitTestSession> s_session = new(() =>
     {
-        // What a test looks at has settled; the tests of the motion turn it on for themselves.
+        // Motion is off, so everything a test checks has settled. The motion tests turn it on themselves.
         RailModule.Animates = false;
         Motion.IsEnabled = false;
 

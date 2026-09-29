@@ -10,9 +10,9 @@ using DDT.Core;
 
 namespace DDT.Server.Packages;
 
-// Every agent unpacks a package as SYSTEM, so a zip is checked here before any machine gets it: its names, which
-// must stay inside the folder they are unpacked to, and its sizes and checksums, which are proven by inflating every
-// entry into nothing. The server never writes an entry anywhere.
+// Every agent unpacks a package as SYSTEM, so a zip is checked before any machine gets it. Its names have to stay
+// inside the folder they're unpacked to. Inflating every entry and throwing the data away proves its sizes and
+// checksums.
 public static class PackageArchiveCheck
 {
     private const int BufferBytes = 1024 * 1024;
@@ -60,29 +60,12 @@ public static class PackageArchiveCheck
 
         foreach (ZipArchiveEntry entry in entries)
         {
-            string name = entry.FullName;
-
-            if (NameProblem(name) is { } problem)
+            if (EntryProblem(entry, names) is { } problem)
             {
                 return Refused(problem);
             }
 
-            if (entry.IsEncrypted)
-            {
-                return Refused(ServerMessages.PackageEntryEncrypted.With("entry", Shown(name)));
-            }
-
-            if (((entry.ExternalAttributes >> 16) & UnixTypeMask) == UnixSymbolicLink)
-            {
-                return Refused(ServerMessages.PackageEntrySymbolicLink.With("entry", Shown(name)));
-            }
-
-            if (!names.Add(PathOf(name)))
-            {
-                return Refused(ServerMessages.PackageEntryTwice.With("entry", Shown(name)));
-            }
-
-            if (IsFolder(name))
+            if (IsFolder(entry.FullName))
             {
                 continue;
             }
@@ -95,18 +78,12 @@ public static class PackageArchiveCheck
 
             declared += entry.Length;
             files.Add(entry);
-            filePaths.Add(PathOf(name));
+            filePaths.Add(PathOf(entry.FullName));
         }
 
-        foreach (string path in filePaths)
+        if (FileAndFolder(filePaths) is { } clash)
         {
-            for (int slash = path.IndexOf('/', StringComparison.Ordinal); slash > 0; slash = path.IndexOf('/', slash + 1))
-            {
-                if (filePaths.Contains(path[..slash]))
-                {
-                    return Refused(ServerMessages.PackageFileAndFolder.With("entry", Shown(path[..slash])));
-                }
-            }
+            return Refused(clash);
         }
 
         if (kind == PackageKind.Drivers && !files.Any(f => f.FullName.EndsWith(".inf", StringComparison.OrdinalIgnoreCase)))
@@ -117,9 +94,49 @@ public static class PackageArchiveCheck
         return Inflate(files, declared, cancellationToken);
     }
 
-    // The sizes in the zip are the uploader's word. Inflating proves them, so the agent can check its disk space
-    // against them and stop unpacking at them. A reader stops at the stated size without an error, so only the
-    // checksum shows an entry that holds more than it says.
+    // Each entry's path is added to names, so a second entry with the same path is refused.
+    private static ServerMessage? EntryProblem(ZipArchiveEntry entry, HashSet<string> names)
+    {
+        string name = entry.FullName;
+
+        if (NameProblem(name) is { } problem)
+        {
+            return problem;
+        }
+
+        if (entry.IsEncrypted)
+        {
+            return ServerMessages.PackageEntryEncrypted.With("entry", Shown(name));
+        }
+
+        if (((entry.ExternalAttributes >> 16) & UnixTypeMask) == UnixSymbolicLink)
+        {
+            return ServerMessages.PackageEntrySymbolicLink.With("entry", Shown(name));
+        }
+
+        return names.Add(PathOf(name)) ? null : ServerMessages.PackageEntryTwice.With("entry", Shown(name));
+    }
+
+    // Finds a file whose path is also a folder of another file.
+    private static ServerMessage? FileAndFolder(HashSet<string> filePaths)
+    {
+        foreach (string path in filePaths)
+        {
+            for (int slash = path.IndexOf('/', StringComparison.Ordinal); slash > 0; slash = path.IndexOf('/', slash + 1))
+            {
+                if (filePaths.Contains(path[..slash]))
+                {
+                    return ServerMessages.PackageFileAndFolder.With("entry", Shown(path[..slash]));
+                }
+            }
+        }
+
+        return null;
+    }
+
+    // The zip's sizes are only the uploader's word. Inflating proves them, so the agent can check its disk space and
+    // stop unpacking at those sizes. A reader stops at the stated size without an error, so only the checksum shows an
+    // entry that holds more.
     private static PackageInspection Inflate(List<ZipArchiveEntry> files, long declared, CancellationToken cancellationToken)
     {
         byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferBytes);
@@ -172,7 +189,8 @@ public static class PackageArchiveCheck
         return new PackageInspection(files.Count, declared, null);
     }
 
-    // Each part of the name has to be one Windows can create, inside the folder the package is unpacked to.
+    // Each part of the name has to be a name Windows can create, and the path has to stay inside the folder the
+    // package is unpacked to.
     private static ServerMessage? NameProblem(string name)
     {
         string entry = Shown(name);

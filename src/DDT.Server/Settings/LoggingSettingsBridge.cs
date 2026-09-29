@@ -8,9 +8,8 @@ using Microsoft.Extensions.Primitives;
 
 namespace DDT.Server.Settings;
 
-// The logger factory reads its filter rules through an options monitor and applies new ones when the monitor reports a
-// change, which the change token below makes it do on every publish. The rules are added after those of configuration,
-// and a later rule wins among rules for the same category.
+// The logger factory applies new filter rules when its options monitor reports a change. The change token makes it
+// report one at every publish. These rules come after configuration's, and a later rule wins for the same category.
 public sealed class LoggingSettingsBridge(DdtSettings settings) : IConfigureOptions<LoggerFilterOptions>, IOptionsChangeTokenSource<LoggerFilterOptions>
 {
     public string? Name => Options.DefaultName;

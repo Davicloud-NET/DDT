@@ -13,8 +13,6 @@ import { renderPage, type RenderedPage } from "@/test/renderPage";
 import type { Routes } from "@/test/server";
 import { toasts } from "@/ui/toasts";
 import {
-  node,
-  pauseMessage,
   treeMachine,
   treeMachineId,
   treeRunId,
@@ -22,10 +20,10 @@ import {
   treeRunView,
   treeSteps,
 } from "@/test/treeRun";
+import { node, pauseMessage } from "@/test/treeSequence";
 
-// A machine whose run goes through a tree and waits at a pause, on its page: the flow with the path it took, what each
-// node decided, the notice that lets the run go on, the answers a run can wait for, its values and the machine's
-// facts, all kept live.
+// A machine's page while its run goes through a tree and waits. It shows the path taken, what each node decided, the
+// notice to continue the run or answer its inputs, the values and the machine's facts. All of it stays live.
 
 const now = new Date("2026-09-16T10:06:00Z");
 
@@ -101,7 +99,7 @@ function flowNode(name: RegExp): HTMLElement {
   });
 }
 
-// What the pause answered with: the pause step done, and the run going on.
+// The server's answer to continuing the pause: the pause step is done and the run is going again.
 function continued(): DeploymentView {
   const summary = treeRunSummary({
     activity: "Step",
@@ -148,8 +146,11 @@ describe("a machine's page with a tree run", () => {
     expect(screen.getByText("Step 12, Restart, not started")).toBeInTheDocument();
     expect(screen.queryByText(/^Step 4, /)).not.toBeInTheDocument();
 
-    // The flow draws every node, the one not taken as such, and shows the paused one first.
-    expect(await screen.findByRole("group", { name: "Flow of this run" })).toBeInTheDocument();
+    // The flow draws every node, marks the one not taken, and shows the paused one first.
+    // The flow's code loads the first time it's shown. That takes over a second while every test file runs.
+    expect(
+      await screen.findByRole("group", { name: "Flow of this run" }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
     expect(flowNode(/Apply Windows 11, Not taken$/)).toBeInTheDocument();
     expect(flowNode(/Check the asset tag, Paused$/)).toHaveAttribute("aria-current", "true");
     expect(screen.getByRole("button", { name: "Follow the run" })).toHaveAttribute(
@@ -175,7 +176,7 @@ describe("a machine's page with a tree run", () => {
     expect(within(decision).getByText("Holds")).toBeInTheDocument();
     expect(within(decision).getByText("The machine reported Latitude 7450.")).toBeInTheDocument();
 
-    // The steps of the path, with where they sit and what they decided; the step not taken is not among them.
+    // The steps of the path, with where they sit and what they decided. The step not taken isn't listed.
     const steps = within(stepsList());
     expect(
       within(stepRow("If: Is it a Latitude?")).getByText(
@@ -200,7 +201,7 @@ describe("a machine's page with a tree run", () => {
     ).toBeInTheDocument();
     expect(steps.queryByText("Apply Windows 11")).not.toBeInTheDocument();
 
-    // The values of the run with their sources; a secret only says it was given.
+    // The run's values with their sources. A secret only says that it was given.
     const values = panel("Values of this run");
     expect(values).toHaveTextContent("ComputerNamePC-G2341KXQSet by step 5, Name the computer");
     expect(values).toHaveTextContent("TimeZoneW. Europe Standard TimeFrom the rule Berlin office");
@@ -402,7 +403,7 @@ describe("a machine's page with a tree run", () => {
       );
     });
 
-    // The run goes on: the pause is done, the restart runs, the machine no longer waits.
+    // The run continues: the pause is done, the restart runs and the machine no longer waits.
     const next = continued();
     act(() => {
       hub?.push("runStepChanged", {
@@ -439,7 +440,7 @@ describe("a machine's page with a tree run", () => {
       ).toBeInTheDocument();
     });
 
-    // Waiting again, the machine says so at once.
+    // When the machine waits again, it shows that at once.
     act(() => {
       hub?.push(
         "machineChanged",
@@ -464,7 +465,7 @@ describe("a machine's page with a tree run", () => {
       expect(follow).toHaveAttribute("aria-pressed", "true");
     });
 
-    // One stop of the Tab key, on the node chosen; Up goes back the way the flow runs, into the repeat.
+    // The flow has one Tab stop, on the chosen node. Up moves backwards along the flow, into the repeat.
     const paused = flowNode(/Check the asset tag, Paused$/);
     expect(paused).toHaveAttribute("tabindex", "0");
     paused.focus();

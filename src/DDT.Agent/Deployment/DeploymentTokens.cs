@@ -4,9 +4,8 @@
 
 namespace DDT.Agent.Deployment;
 
-// The machine's current session and resume tokens during a run. Every report hands out fresh ones; the download and
-// the unattend request read whatever is current. The run token resumes the run after a restart: the server issues it
-// while the run is running and does not rotate it, and the newest one it sent is kept.
+// The machine's session and resume tokens, which every answer renews, and the run token, which resumes a run after a
+// restart. The server does not rotate the run token, so the newest one it sent is kept.
 public sealed class DeploymentTokens(string token, string resumeToken, string? runToken = null)
 {
     private readonly Lock _lock = new();
@@ -49,7 +48,7 @@ public sealed class DeploymentTokens(string token, string resumeToken, string? r
         }
     }
 
-    // A null newRunToken keeps the run token there is: an answer without one does not end the run.
+    // A null newRunToken keeps the current run token. An answer without one doesn't end the run.
     public void Update(string newToken, string newResumeToken, string? newRunToken = null)
     {
         TaskCompletionSource changed;

@@ -16,6 +16,10 @@ public static class SequenceServiceCollectionExtensions
         services.AddScoped<SequenceCatalog>();
         services.AddScoped<SequenceResolver>();
         services.AddScoped<MachineValues>();
+        services.AddScoped<SequencePreviews>();
+        services.AddScoped<SequenceEditor>();
+        services.AddScoped<RuleEditor>();
+        services.AddScoped<MachineRoleEditor>();
 
         return services;
     }

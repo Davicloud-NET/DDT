@@ -15,10 +15,9 @@ using ZstdSharp.Unsafe;
 
 namespace DDT.Server.Images;
 
-// Turns an uploaded disk image into what the library stores: the raw disk, inspected, then compressed with zstd into a
-// file the caller names by its SHA-256. DDT reads raw, gzip and zstd itself, and converts xz and qcow2 with the
-// ConversionTools. The raw disk and the compressed copy sit next to the upload's part file while this runs, and an
-// import that stops leaves them for the next attempt or the sweeper.
+// Turns an uploaded disk image into a raw disk, inspects it, then compresses it with zstd. DDT reads raw, gzip and
+// zstd itself. It converts xz and qcow2 with ConversionTools. If an import stops, the files it left next to the part
+// file wait for the next attempt or the sweeper.
 public sealed partial class RawImageImporter(ImageStore store, ConversionTools tools, ILogger<RawImageImporter> logger)
 {
     public static readonly string NotAnImageMessage = ServerMessages.UploadNotAnImage.With().Text;
@@ -66,7 +65,6 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
 
     public async Task<RawImport> ImportAsync(Guid uploadId, CancellationToken cancellationToken)
     {
-        string part = store.PartPath(uploadId);
         string raw = store.RawPath(uploadId);
         string compressed = store.CompressedPath(uploadId);
         bool imported = false;
@@ -76,49 +74,10 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
 
         try
         {
-            byte[] head = await ReadHeadAsync(part, cancellationToken).ConfigureAwait(false);
-            DiskImageFormat format = Sniff(head);
+            RawImport import = await ConvertAsync(uploadId, cancellationToken).ConfigureAwait(false);
+            imported = import.Refusal is null;
 
-            if (Unsupported(format) is { } unsupported)
-            {
-                return new RawImport(unsupported);
-            }
-
-            string source = part;
-
-            if (format != DiskImageFormat.Raw)
-            {
-                if (await ExpandAsync(uploadId, format, head, part, raw, cancellationToken).ConfigureAwait(false) is { } refused)
-                {
-                    return refused;
-                }
-
-                source = raw;
-            }
-
-            RawImageInfo info;
-
-            await using (FileStream disk = new(source, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 81920, FileOptions.None))
-            {
-                try
-                {
-                    info = RawImageInspector.Inspect(disk);
-                }
-                catch (InvalidGptException exception)
-                {
-                    return new RawImport(
-                        format == DiskImageFormat.Raw && exception.Reason?.Code == ServerMessages.GptNoTable.Code
-                            ? ServerMessages.UploadNotAnImage.With()
-                            : exception.Reason ?? ServerMessages.GptDamaged.With());
-                }
-            }
-
-            long started = Stopwatch.GetTimestamp();
-            (string sourceSha256, string sha256, long size) = await CompressAsync(source, compressed, cancellationToken).ConfigureAwait(false);
-            LogCompressed(uploadId, info.SizeBytes, size, Stopwatch.GetElapsedTime(started).TotalSeconds);
-            imported = true;
-
-            return new RawImport(null, compressed, sha256, size, sourceSha256, info);
+            return import;
         }
         catch (Exception exception) when (IsDiskFull(exception))
         {
@@ -143,6 +102,55 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
         }
     }
 
+    // Expands the part file's disk if it's compressed, inspects it, then compresses it with zstd.
+    private async Task<RawImport> ConvertAsync(Guid uploadId, CancellationToken cancellationToken)
+    {
+        string part = store.PartPath(uploadId);
+        byte[] head = await ReadHeadAsync(part, cancellationToken).ConfigureAwait(false);
+        DiskImageFormat format = Sniff(head);
+
+        if (Unsupported(format) is { } unsupported)
+        {
+            return new RawImport(unsupported);
+        }
+
+        string source = part;
+
+        if (format != DiskImageFormat.Raw)
+        {
+            if (await ExpandAsync(uploadId, format, head, cancellationToken).ConfigureAwait(false) is { } refused)
+            {
+                return refused;
+            }
+
+            source = store.RawPath(uploadId);
+        }
+
+        RawImageInfo info;
+
+        await using (FileStream disk = new(source, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 81920, FileOptions.None))
+        {
+            try
+            {
+                info = RawImageInspector.Inspect(disk);
+            }
+            catch (InvalidGptException exception)
+            {
+                return new RawImport(
+                    format == DiskImageFormat.Raw && exception.Reason?.Code == ServerMessages.GptNoTable.Code
+                        ? ServerMessages.UploadNotAnImage.With()
+                        : exception.Reason ?? ServerMessages.GptDamaged.With());
+            }
+        }
+
+        string compressed = store.CompressedPath(uploadId);
+        long started = Stopwatch.GetTimestamp();
+        (string sourceSha256, string sha256, long size) = await CompressAsync(source, compressed, cancellationToken).ConfigureAwait(false);
+        LogCompressed(uploadId, info.SizeBytes, size, Stopwatch.GetElapsedTime(started).TotalSeconds);
+
+        return new RawImport(null, compressed, sha256, size, sourceSha256, info);
+    }
+
     private static ServerMessage? Unsupported(DiskImageFormat format) => format switch
     {
         DiskImageFormat.Vhdx or DiskImageFormat.Vmdk or DiskImageFormat.Vdi =>
@@ -150,15 +158,12 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
         _ => null,
     };
 
-    // Writes the raw disk to raw, or says why it cannot.
-    private async Task<RawImport?> ExpandAsync(
-        Guid uploadId,
-        DiskImageFormat format,
-        byte[] head,
-        string part,
-        string raw,
-        CancellationToken cancellationToken)
+    // Writes the raw disk next to the part file, or says why it cannot.
+    private async Task<RawImport?> ExpandAsync(Guid uploadId, DiskImageFormat format, byte[] head, CancellationToken cancellationToken)
     {
+        string part = store.PartPath(uploadId);
+        string raw = store.RawPath(uploadId);
+
         switch (format)
         {
             case DiskImageFormat.Gzip:
@@ -207,8 +212,8 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
         }
     }
 
-    // qemu-img would read a backing file or an external data file from the server's own disk, wherever the upload's
-    // header points, into the image.
+    // qemu-img would copy a backing file or an external data file into the image. It would read that file from the
+    // server's own disk, wherever the upload's header points.
     private static ServerMessage? Qcow2Problem(ReadOnlySpan<byte> head)
     {
         if (head.Length < 104)
@@ -231,13 +236,13 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
             return ServerMessages.UploadQcow2Encrypted.With();
         }
 
-        // Bit 2: the data lives in an external file.
+        // Bit 2 means the data lives in an external file.
         return (incompatible & 0x4) != 0
             ? ServerMessages.UploadQcow2ExternalData.With()
             : null;
     }
 
-    // One pass: the raw disk is hashed as it is read, and the compressed copy as it is written.
+    // Works in one pass. The raw disk is hashed as it's read, and the compressed copy is hashed as it's written.
     private static async Task<(string SourceSha256, string Sha256, long Size)> CompressAsync(
         string source,
         string compressed,
@@ -255,7 +260,8 @@ public sealed partial class RawImageImporter(ImageStore store, ConversionTools t
             {
                 zstd.SetParameter(ZSTD_cParameter.ZSTD_c_nbWorkers, RawImageLimits.CompressionWorkers);
 
-                // The agent's decompressor then checks the content as it unpacks it, besides the file's SHA-256.
+                // With the checksum, the agent's decompressor checks the content while it unpacks it. That's on top of
+                // the file's SHA-256.
                 zstd.SetParameter(ZSTD_cParameter.ZSTD_c_checksumFlag, 1);
                 int read;
 

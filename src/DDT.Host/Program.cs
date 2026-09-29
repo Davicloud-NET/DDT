@@ -22,7 +22,7 @@ using DDT.Server.Security;
 using DDT.Server.Sequences;
 using DDT.Server.Settings;
 
-// The console verbs run next to a running server and start none of their own.
+// The console verbs run next to a running server. They don't start a server themselves.
 if (SettingsConsole.Handles(args))
 {
     Environment.ExitCode = await SettingsConsole.RunAsync(args, Console.Out);
@@ -42,7 +42,7 @@ builder.Services.Configure<DdtOptions>(builder.Configuration.GetSection(DdtOptio
 
 string activeRoles = string.Join(", ", roles.Order());
 
-// Before Kestrel reads Kestrel:Certificates:Default at startup, so the files exist and are current by then.
+// Runs before Kestrel reads Kestrel:Certificates:Default at startup, so the files exist and are current by then.
 ServerCertificates? certificates = CertificateBootstrap.Create(builder.Configuration, options);
 CertificateCheck? certificateCheck = null;
 
@@ -54,7 +54,8 @@ if (certificates is not null)
 
 builder.Services.ConfigureHttpJsonOptions(json =>
 {
-    // The contexts' own option reaches only their own options, not these: a step's "kind" may come after its members.
+    // A step's "kind" may come after its other members. Setting this on the JSON contexts only changes their own
+    // options, not these.
     json.SerializerOptions.AllowOutOfOrderMetadataProperties = true;
     json.SerializerOptions.TypeInfoResolverChain.Insert(0, DdtJsonContext.Default);
     json.SerializerOptions.TypeInfoResolverChain.Insert(0, AgentJsonContext.Default);
@@ -84,8 +85,8 @@ builder.Services.AddDdtSequences();
 string version = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
 builder.Services.AddSingleton(AboutCatalog.Load(version, Path.Combine(AppContext.BaseDirectory, "legal")));
 
-// After the data services, so hosted services start in dependency order, and before the endpoint
-// check, because the Kestrel endpoint the pxe role adds changes which settings Kestrel honours.
+// Comes after the data services, so hosted services start in dependency order. Comes before the endpoint check,
+// because the pxe role adds a Kestrel endpoint, and that changes which settings Kestrel honours.
 PxeBootstrap? pxe = roles.Contains(DeploymentRole.Pxe) ? builder.AddDdtPxe(options.StorePath, PxeSettingsSource.Create) : null;
 
 HttpsConfigurationCheck.Validate(builder.Configuration, options, roles);
@@ -101,8 +102,8 @@ if (certificates is not null && certificateCheck is not null)
 
 app.MapDefaultEndpoints();
 
-// First, so everything after it sees the client's address and scheme rather than the proxy's: the boot file log,
-// HSTS, the rate limiter, Secure cookies and the same origin filters.
+// Goes first, so everything after it sees the client's address and scheme instead of the proxy's. That includes the
+// boot file log, HSTS, the rate limiter, Secure cookies and the same origin filters.
 app.UseDdtForwardedHeaders();
 
 app.UseRouting();
@@ -120,14 +121,14 @@ if (!app.Environment.IsDevelopment())
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// After authorization, so a request without a valid token never spends the window of the machine its route
-// names. Anonymous endpoints pass authorization and stay limited per address.
+// The rate limiter runs after authorization, so a request without a valid token can't use up the window of the
+// machine named in its route. Anonymous endpoints pass authorization and are still limited per address.
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
-// DisableCookieRedirect makes an unauthenticated API call answer 401 instead of redirecting to a
-// login page: the redirect is inferred per endpoint from metadata, so it cannot be relied on.
+// DisableCookieRedirect makes an unauthenticated API call return 401 instead of redirecting to a login page.
+// ASP.NET Core infers the redirect per endpoint from metadata, so we can't rely on it.
 RouteGroupBuilder api = app.MapGroup("/api")
     .DisableCookieRedirect()
     .AddEndpointFilter<SameOriginEndpointFilter>()

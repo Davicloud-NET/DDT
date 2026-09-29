@@ -1,0 +1,18 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+using DDT.Contracts.Messages;
+
+namespace DDT.Core.Values;
+
+// Name is the value or input the problem is about.
+public sealed record ValueProblem(string Name, ServerMessage Message)
+{
+    // Equal when the same thing is said about the same name. It compares the code and text instead of the values,
+    // because the values are a dictionary and would compare by reference.
+    public bool Equals(ValueProblem? other) =>
+        other is not null && Name == other.Name && Message.Code == other.Message.Code && Message.Text == other.Message.Text;
+
+    public override int GetHashCode() => HashCode.Combine(Name, Message.Code, Message.Text);
+}

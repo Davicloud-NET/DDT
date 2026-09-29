@@ -6,8 +6,8 @@ using System.Text;
 
 namespace DDT.Agent.Deployment;
 
-// Stands in for a disk with three directories under root, which the runner deletes when the run ends. Its partitions
-// always have the same ids, SystemPartitionId, WindowsPartitionId and RecoveryPartitionId.
+// Stands in for a disk with three directories under root, which the runner deletes when the run ends. The partitions
+// always have the same ids: SystemPartitionId, WindowsPartitionId and RecoveryPartitionId.
 public sealed class DryRunDiskPartitioner(string root, AgentLog log) : IDiskPartitioner
 {
     public static readonly Guid SystemPartitionId = Guid.Parse("d7c1a5e0-0000-4000-8000-000000000001");
@@ -41,7 +41,7 @@ public sealed class DryRunDiskPartitioner(string root, AgentLog log) : IDiskPart
         Directory.CreateDirectory(volumes.Windows);
         Directory.CreateDirectory(volumes.Recovery);
 
-        string script = DiskpartScript.Build(disk.Number, 'S', 'W', 'R', systemPartitionMegabytes, recoveryPartitionMegabytes);
+        string script = DiskpartScript.Build(disk.Number, new PartitionLetters('S', 'W', 'R'), systemPartitionMegabytes, recoveryPartitionMegabytes);
         await File.WriteAllTextAsync(Path.Combine(root, "partition.txt"), script, Encoding.ASCII, cancellationToken)
             .ConfigureAwait(false);
 
@@ -57,7 +57,7 @@ public sealed class DryRunDiskPartitioner(string root, AgentLog log) : IDiskPart
         return volumes;
     }
 
-    // The file that stands in for the disk goes, as the table on a real disk would.
+    // Deletes the file that stands in for the disk, the way clean removes the partition table of a real disk.
     public Task<IReadOnlyList<Guid>> CleanAsync(LocalDisk disk, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(disk);
@@ -73,7 +73,7 @@ public sealed class DryRunDiskPartitioner(string root, AgentLog log) : IDiskPart
         return Task.FromResult<IReadOnlyList<Guid>>([]);
     }
 
-    // The directories are where the partitioning left them; nothing gets a letter.
+    // The directories are where the partitioning left them. Nothing gets a letter.
     public Task<TargetVolumes> FindAsync(RunDiskIds ids, string windowsRoot, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);

@@ -18,8 +18,8 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The agent every netbooting machine runs as SYSTEM, uploaded on the settings page: only with a fresh proof of identity,
-// only a Windows executable, and not while configuration names the file.
+// The agent that every netbooting machine runs as SYSTEM, uploaded on the settings page. The upload needs a fresh proof
+// of identity and takes only a Windows executable. It's refused while the configuration names the file.
 public sealed class AgentUploadTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     [Fact]
@@ -40,7 +40,7 @@ public sealed class AgentUploadTests(DdtApplication application) : IClassFixture
         Assert.Equal(agent.Length, uploaded.Size);
         Assert.Equal(AgentBinarySource.Uploaded, uploaded.Source);
 
-        // The answer is the view as it is read from now on, so the page puts it in place without reading it again.
+        // The answer is the same view a read returns from now on. So the page can use it without reading it again.
         AgentBinaryView view = await RegisteredMachine.ReadAsync<AgentBinaryView>(await administrator.GetAsync("/api/settings/agent"));
         Assert.Equal(AgentBinarySource.Uploaded, view.Source);
         Assert.Equal(sha256, view.Sha256);
@@ -49,7 +49,7 @@ public sealed class AgentUploadTests(DdtApplication application) : IClassFixture
         Assert.NotNull(view.UploadedUtc);
         Assert.NotNull(uploaded.UploadedUtc);
 
-        // Other administrators' pages take it from the hub.
+        // Other administrators' pages get it from the hub.
         JsonElement pushed = await LiveListener.NextAsync(changes);
         Assert.Equal(sha256, pushed.GetProperty("sha256").GetString());
         Assert.Equal("Uploaded", pushed.GetProperty("source").GetString());

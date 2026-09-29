@@ -11,7 +11,7 @@ namespace DDT.Core.Tests.Boot;
 
 public sealed class SignatureDatabaseTests
 {
-    // EFI_CERT_SHA256_GUID: each signature's data is a hash, as in dbx.
+    // EFI_CERT_SHA256_GUID. Each signature's data is a hash, like in dbx.
     private static readonly Guid s_sha256Type = Guid.Parse("c1c41626-504c-4092-aca9-41f936934328");
     private static readonly Guid s_owner = Guid.Parse("77fa9abd-0359-4d32-bd60-28f4e78f784b");
 

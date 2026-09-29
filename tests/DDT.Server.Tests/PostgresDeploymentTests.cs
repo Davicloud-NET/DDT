@@ -52,22 +52,7 @@ public sealed class PostgresDeploymentTests
             new RebootStep { Id = Guid.NewGuid(), Name = "A NUL\0 in a step" },
         ]));
 
-        DeploymentSummary run = await administrator.AssignedAsync(machine.Id, sequence.Id, "PC-0006");
-        DeploymentView view = await administrator.RunAsync(run.Id);
-
-        Assert.Equal("A NUL in a step", view.Steps[2].Name);
-        Assert.Equal(image.Sha256, Assert.Single(view.Artifacts).Sha256);
-
-        IReadOnlyList<MachineSummary> machines = await RegisteredMachine.ReadAsync<IReadOnlyList<MachineSummary>>(
-            await administrator.GetAsync("/api/machines"));
-        MachineSummary assigned = Assert.Single(machines, m => m.Id == machine.Id);
-
-        Assert.Equal(DeploymentState.Assigned, assigned.Deployment?.State);
-        Assert.Equal("PC-0006", assigned.AssignedName);
-        Assert.DoesNotContain('\0', assigned.Disks!);
-        Assert.Equal(
-            [run.Id],
-            (await RegisteredMachine.ReadAsync<IReadOnlyList<DeploymentSummary>>(await administrator.GetAsync($"/api/machines/{machine.Id}/deployments"))).Select(r => r.Id));
+        DeploymentSummary run = await AssignedAsync(administrator, machine, sequence, image);
 
         // An account given for the run lives until the run ends.
         await application.QueryAsync(database =>
@@ -94,7 +79,35 @@ public sealed class PostgresDeploymentTests
             await RegisteredMachine.ReadAsync<IReadOnlyList<MachineSummary>>(await administrator.GetAsync("/api/machines")),
             m => m.Id == machine.Id).State);
 
-        // A run whose agent is gone for good fails.
+        await AbandonedAsync(application, administrator, sequence);
+    }
+
+    // Assigns the sequence and checks the run's rows and its machine's row as PostgreSQL stored them.
+    private static async Task<DeploymentSummary> AssignedAsync(SignedInClient administrator, DeployingMachine machine, SequenceView sequence, Image image)
+    {
+        DeploymentSummary run = await administrator.AssignedAsync(machine.Id, sequence.Id, "PC-0006");
+        DeploymentView view = await administrator.RunAsync(run.Id);
+
+        Assert.Equal("A NUL in a step", view.Steps[2].Name);
+        Assert.Equal(image.Sha256, Assert.Single(view.Artifacts).Sha256);
+
+        IReadOnlyList<MachineSummary> machines = await RegisteredMachine.ReadAsync<IReadOnlyList<MachineSummary>>(
+            await administrator.GetAsync("/api/machines"));
+        MachineSummary assigned = Assert.Single(machines, m => m.Id == machine.Id);
+
+        Assert.Equal(DeploymentState.Assigned, assigned.Deployment?.State);
+        Assert.Equal("PC-0006", assigned.AssignedName);
+        Assert.DoesNotContain('\0', assigned.Disks!);
+        Assert.Equal(
+            [run.Id],
+            (await RegisteredMachine.ReadAsync<IReadOnlyList<DeploymentSummary>>(await administrator.GetAsync($"/api/machines/{machine.Id}/deployments"))).Select(r => r.Id));
+
+        return run;
+    }
+
+    // A run whose agent is gone for good fails. An account stored for it is deleted at the next start.
+    private static async Task AbandonedAsync(PostgresApplication application, SignedInClient administrator, SequenceView sequence)
+    {
         using DeployingMachine silent = await DeployingMachine.ApprovedAsync(application, administrator);
         await administrator.AssignedAsync(silent.Id, sequence.Id);
         AgentRun abandoned = (await silent.NextAsync()).Run!;
@@ -104,7 +117,7 @@ public sealed class PostgresDeploymentTests
         Assert.Equal(1, await application.Services.GetRequiredService<AbandonedRunSweeper>().SweepOnceAsync(TestContext.Current.CancellationToken));
         Assert.Equal(DeploymentState.Failed, (await administrator.RunAsync(abandoned.Id)).Summary.State);
 
-        // An account stored for a run that is over, as a change by hand would leave it, goes at the next start.
+        // An account stored for a run that's over, as a change by hand could leave it, is deleted at the next start.
         await application.QueryAsync(database =>
         {
             database.RunCredentials.Add(Credential(abandoned.Id));
@@ -116,8 +129,8 @@ public sealed class PostgresDeploymentTests
         Assert.Equal(0, await CredentialsAsync(application, abandoned.Id));
     }
 
-    // A tree's rows, the answers the run waits for, compared and replaced in one statement, its values and variables as
-    // JSON, and a pause, each with a NUL where the agent or a person could put one.
+    // Covers a tree's rows, the answers the run waits for (compared and replaced in one statement), its values and
+    // variables as JSON, and a pause. Each has a NUL wherever the agent or a person could put one.
     [Fact]
     public async Task RunsATreeThatWaitsForAnswersAndPauses()
     {
@@ -140,13 +153,13 @@ public sealed class PostgresDeploymentTests
         AgentRun run = (await machine.NextAsync()).Run!;
 
         Assert.Equal("Room", Assert.Single(run.PendingInputs!).Name);
-        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, [], activity: RunActivity.WaitingForInput));
+        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, []) with { Activity = RunActivity.WaitingForInput });
         DeploymentView answered = await RegisteredMachine.ReadAsync<DeploymentView>(
             await administrator.AnswerAsync(machine.Id, new InputAnswer("Room", "A 1")));
         Assert.False(answered.Summary.Waiting);
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.AnswerAsync(machine.Id, new InputAnswer("Room", "B 2"))).StatusCode);
 
-        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, [], activity: RunActivity.WaitingForInput));
+        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, []) with { Activity = RunActivity.WaitingForInput });
         Assert.Equal("A 1", machine.LastReported!.Values!["Room"]);
 
         StepRunState[] paused =
@@ -155,8 +168,9 @@ public sealed class PostgresDeploymentTests
             TreeSequences.Visit(group, StepState.Running),
             TreeSequences.Visit(pause, StepState.Running),
         ];
-        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, paused, activity: RunActivity.Paused) with
+        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, paused) with
         {
+            Activity = RunActivity.Paused,
             PauseMessage = "Check\0 the BIOS.",
             Variables = new Dictionary<string, string> { ["Office"] = "Pro\0Plus" },
         });
@@ -167,7 +181,7 @@ public sealed class PostgresDeploymentTests
         Assert.Equal([(Guid?)null, null, group.Id, group.Id], waiting.Steps.Select(step => step.ParentId));
 
         (await administrator.PostAsync($"/api/machines/{machine.Id}/deployments/current/continue", new ContinueRunRequest(pause.Id, 1))).EnsureSuccessStatusCode();
-        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, paused, activity: RunActivity.Paused));
+        await machine.ReportOkAsync(runId, TestReports.Report(DeploymentState.Running, paused) with { Activity = RunActivity.Paused });
         Assert.Equal(pause.Id, machine.LastReported!.ContinueStepId);
 
         await machine.ReportOkAsync(runId, TestReports.Report(
@@ -200,30 +214,8 @@ public sealed class PostgresDeploymentTests
         SignedInClient administrator = await application.AdministratorAsync();
         Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
 
-        SequenceView created = await RegisteredMachine.ReadAsync<SequenceView>(await administrator.PostAsync(
-            SequenceRequests.Sequences,
-            new CreateSequenceRequest("Install", "A NUL\0 in the description", SequenceRequests.Minimal(image.Id))));
-        SequenceView saved = await RegisteredMachine.ReadAsync<SequenceView>(await administrator.SaveSequenceAsync(
-            created,
-            created.Definition with { Steps = [.. created.Definition.Steps, new RebootStep { Id = Guid.NewGuid(), Name = "A NUL\0 in a step" }] },
-            "Install Windows"));
-
-        Assert.Equal("A NUL in the description", saved.Description);
-        Assert.Equal(2, saved.Revision);
-        Assert.Empty(saved.Problems);
-        Assert.Equal(HttpStatusCode.BadRequest, (await administrator.CreateSequenceAsync(saved.Definition, "INSTALL WINDOWS")).StatusCode);
-        Assert.Equal(HttpStatusCode.Conflict, (await administrator.SaveSequenceAsync(created)).StatusCode);
-
-        PackageSummary package = await administrator.UploadedPackageAsync(PackageRequests.DriverZip(), UploadKind.Drivers);
-        PackageSummary targeted = await RegisteredMachine.ReadAsync<PackageSummary>(await administrator.PutAsync(
-            $"{PackageRequests.Packages}/{package.Id}",
-            new UpdatePackageRequest("Latitude", "A NUL\0 here too", [new HardwareModel("Dell Inc.", "Latitude 5440")])));
-
-        Assert.Equal("A NUL here too", targeted.Description);
-        Assert.Equal(new HardwareModel("Dell Inc.", "Latitude 5440"), Assert.Single(targeted.Targets));
-
-        await application.AddAssignedRunAsync(ArtifactKind.Drivers, package.Id, package.Sha256);
-        Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{PackageRequests.Packages}/{package.Id}")).StatusCode);
+        SequenceView saved = await SavedSequenceAsync(administrator, image);
+        await TargetedPackageAsync(application, administrator);
 
         MachineRoleView role = await administrator.CreatedRoleAsync(new SaveMachineRoleRequest(0, "Finance\0 laptops", "A NUL\0 here", [new NamedValue("Office", "Vienna\0")]));
         RuleView other = await administrator.CreatedRuleAsync(RuleRequests.MacRule(saved.Id, RuleRequests.RandomMac()));
@@ -244,7 +236,7 @@ public sealed class PostgresDeploymentTests
         Assert.Contains(new ResolvedValue("ComputerName", "PC-00000000", ValueSource.Rule, rule.Id, rule.Name, false), resolution.Values!);
         Assert.Contains(new ResolvedValue("Office", "Vienna", ValueSource.Role, role.Id, role.Name, false), resolution.Values!);
 
-        // The places are unique, so a reorder and a delete move rules through places no rule has, in one transaction.
+        // Places are unique. So a reorder and a delete move rules through places no rule has, in one transaction.
         IReadOnlyList<RuleView> rules = await administrator.RulesAsync();
         IReadOnlyList<RuleView> reordered = await RegisteredMachine.ReadAsync<IReadOnlyList<RuleView>>(
             await administrator.ReorderAsync([.. rules.Select(r => r.Id).Reverse()]));
@@ -257,5 +249,41 @@ public sealed class PostgresDeploymentTests
 
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{RuleRequests.Roles}/{role.Id}")).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{SequenceRequests.Sequences}/{saved.Id}")).StatusCode);
+    }
+
+    // Creates a sequence, then saves it under a new name with a new step.
+    // Saves with a taken name or a stale revision are refused.
+    private static async Task<SequenceView> SavedSequenceAsync(SignedInClient administrator, Image image)
+    {
+        SequenceView created = await RegisteredMachine.ReadAsync<SequenceView>(await administrator.PostAsync(
+            SequenceRequests.Sequences,
+            new CreateSequenceRequest("Install", "A NUL\0 in the description", SequenceRequests.Minimal(image.Id))));
+        SequenceView saved = await RegisteredMachine.ReadAsync<SequenceView>(await administrator.SaveSequenceAsync(
+            created,
+            created.Definition with { Steps = [.. created.Definition.Steps, new RebootStep { Id = Guid.NewGuid(), Name = "A NUL\0 in a step" }] },
+            "Install Windows"));
+
+        Assert.Equal("A NUL in the description", saved.Description);
+        Assert.Equal(2, saved.Revision);
+        Assert.Empty(saved.Problems);
+        Assert.Equal(HttpStatusCode.BadRequest, (await administrator.CreateSequenceAsync(saved.Definition, "INSTALL WINDOWS")).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await administrator.SaveSequenceAsync(created)).StatusCode);
+
+        return saved;
+    }
+
+    // A driver package for a model. A run it's frozen into keeps it from being deleted.
+    private static async Task TargetedPackageAsync(PostgresApplication application, SignedInClient administrator)
+    {
+        PackageSummary package = await administrator.UploadedPackageAsync(PackageRequests.DriverZip(), UploadKind.Drivers);
+        PackageSummary targeted = await RegisteredMachine.ReadAsync<PackageSummary>(await administrator.PutAsync(
+            $"{PackageRequests.Packages}/{package.Id}",
+            new UpdatePackageRequest("Latitude", "A NUL\0 here too", [new HardwareModel("Dell Inc.", "Latitude 5440")])));
+
+        Assert.Equal("A NUL here too", targeted.Description);
+        Assert.Equal(new HardwareModel("Dell Inc.", "Latitude 5440"), Assert.Single(targeted.Targets));
+
+        await application.AddAssignedRunAsync(ArtifactKind.Drivers, package.Id, package.Sha256);
+        Assert.Equal(HttpStatusCode.Conflict, (await administrator.DeleteAsync($"{PackageRequests.Packages}/{package.Id}")).StatusCode);
     }
 }

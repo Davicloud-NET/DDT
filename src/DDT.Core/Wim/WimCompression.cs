@@ -10,6 +10,6 @@ public enum WimCompression
     Xpress,
     Lzx,
 
-    // Written as a solid resource, the form of Windows Setup ESD files.
+    // Written as a solid resource, the format Windows Setup ESD files use.
     Lzms,
 }

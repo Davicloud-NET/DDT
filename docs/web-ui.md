@@ -52,7 +52,7 @@ The pages never reload after an action, and never read a whole list again becaus
 - Every action is an API call whose answer is the changed thing. The page puts that answer into the TanStack Query
   cache with `setQueryData` and is done.
 - Changes made elsewhere arrive through the hub (`/hubs/live`). Each event carries what changed, and
-  `src/live/liveConnection.ts` patches the cache with it: `machineChanged` carries the machine, `machinesRemoved`
+  `src/live/cacheEvents.ts` patches the cache with it: `machineChanged` carries the machine, `machinesRemoved`
   the IDs that are gone, and so on. A new event follows that pattern; an event that only says "something
   changed" is not added.
 - While the live connection is up, a list the hub keeps current is not read again on focus, on a new page or when a
@@ -70,18 +70,18 @@ The Task sequences page edits a sequence as a flow. The page is `src/sequences/b
 | Where | What |
 |---|---|
 | `sequences/flow/flowTree.ts` | The tree as the server's `SequenceTree` walks it, in pre-order: where each node sits, the slots where nodes can go, and the version a document needs. |
-| `sequences/flow/flowEdits.ts` | The reducer, grown from the rail editor's `SequenceEdit`: insert at a slot, move, remove, wrap in a group, an IF or a Repeat, unwrap, update, the sequence's variables and inputs, and renaming a name everywhere. |
+| `sequences/flow/flowEdits.ts` | The reducer, grown from the rail editor's `SequenceEdit`: insert at a slot, move, remove, wrap in a group, an IF or a Repeat, unwrap, update, the sequence's variables and inputs, and renaming a name everywhere, over `treeChanges.ts`, `structureEdits.ts`, `nodeEdits.ts` and `declarationEdits.ts`. |
 | `sequences/flow/conditionTree.ts` | Edits of a node's condition trees, its when, an IF's test and a Repeat's until, by path. |
 | `sequences/flow/references.ts` | Where a sequence names its variables and inputs, for "Used by" and "Rename everywhere". |
 | `sequences/flow/templates.ts` | The server's `ValueTemplate`, mirrored for completion and the preview on a sample machine. |
-| `sequences/flow/flowLayout.ts` | The layout, see below. |
-| `sequences/flow/flowKeyboard.ts` | The keys of the canvas, the labels a screen reader reads, and the clipboard's format. |
+| `sequences/flow/flowLayout.ts` | The layout, see below, with its parts in `flowGeometry.ts`, `layoutSeries.ts`, `layoutBranches.ts`, `layoutFrame.ts`, `layoutParts.ts` and `wirePaths.ts`. |
+| `sequences/flow/flowKeyboard.ts` | The keys of the canvas; `flowLabels.ts` holds the labels a screen reader reads, and `flowClipboard.ts` the clipboard's format. |
 | `sequences/flow/history.ts` | Undo and redo. |
-| `sequences/builder` | `FlowBuilder` (the page), `FlowCanvas` (cards, slots, the node's menu, drag and drop), `FlowOutline`, `Palette`, `AddNodeMenu`, the `Inspector` with its tabs Node, Variables, Problems and Sequence, `TemplateField` and `AccountSetting`. |
+| `sequences/builder` | `FlowBuilder` (the page), `FlowCanvas` (cards, slots, the node's menu, drag and drop), `FlowOutline`, `Palette`, `AddNodeMenu`, the `Inspector` with its tabs Node, Variables, Problems and Sequence, `TemplateField` and `AccountSetting`; their parts sit in `page/`, `canvas/`, `outline/`, `inspector/`, `variables/`, `problems/`, `template/` and `account/`. |
 | `src/conditions` | `ConditionBuilder`, which the rules share: nested all, any and none groups, the subjects in sections (the machine, the run, rules and machine roles, the sequence), the operators that fit each kind of value, and the sentence a condition reads as. |
-| `src/ui` | `FlowViewport` and `viewTransform.ts` (pan, wheel, Ctrl+wheel and pinch zoom, fit), `FlowWires` (SVG wires, arrows, ports and join dots under the cards), `FlowNode` (the card, with the rail's module along its top edge, and the frame of a container) and `Minimap`. |
+| `src/ui` | `FlowViewport` with `usePanZoom`, `useWheelGesture`, `usePointerGestures`, `useRevealHandle` and `viewTransform.ts` (pan, wheel, Ctrl+wheel and pinch zoom, fit), `FlowWires` and `FlowDots` (SVG wires, arrows, ports and join dots under the cards), `FlowNode` and `NodeGlyph` (the card, with the rail's module along its top edge), `FlowFrame` (a container's frame) and `Minimap`. |
 
-**The layout.** `flowLayout.ts` works out every box, frame, port, join, wire, arrow and slot from the tree alone, top
+**The layout.** `flowLayout.ts` and its parts work out every box, frame, port, join, wire, arrow and slot from the tree alone, top
 to bottom, in pixels of the flow at 100 %. A series stacks its nodes on one axis. An IF is its card with the Then and
 Else ports on its bottom edge, the branches side by side, and curves from each port to its branch and back to a join
 dot. A group or a Repeat is a frame around its header card and its body, and a Repeat keeps a lane on the left for
@@ -187,7 +187,7 @@ Datenträger, Ausführung for a run, Freigabe for an approval.
 
 The server's refusals and the texts in its data, such as a sequence's problems or why a machine gets its sequence,
 come with a stable code and the values the text names, beside the English.
-`src/DDT.Contracts/Messages/ServerMessages.cs` lists every code with its English as an ICU message, which the server
+`ServerMessages` in `src/DDT.Contracts/Messages`, one `ServerMessages.*.cs` part per area, lists every code with its English as an ICU message, which the server
 formats for the English it sends.
 
 - A refusal's problem details carry `code` and `args` beside `title`; a validation problem carries `errorCodes`,

@@ -10,8 +10,8 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The graphical console over a real named pipe, with a console in this process at the other end, and the text console
-// behind it, which takes over whenever the graphical one fails.
+// The graphical console over a real named pipe, with a console in this process at the other end. The text console
+// behind it takes over whenever the graphical one fails.
 public sealed class PipeMachineConsoleTests : IAsyncDisposable
 {
     private static readonly SignInQuestion s_userName = new(SignInField.UserName, null, null);
@@ -212,7 +212,7 @@ public sealed class PipeMachineConsoleTests : IAsyncDisposable
             await channel.SendAsync(new HelloMessage(HelloMessage.CurrentVersion, "Confused console"), killed);
             await channel.ReceiveAsync(killed);
 
-            // A console only answers; this one withdraws, and then waits to be ended.
+            // A console only answers. This one withdraws, and then waits to be ended.
             await channel.SendAsync(new WithdrawMessage(1), killed);
             await Task.Delay(Timeout.Infinite, killed);
 
@@ -239,7 +239,7 @@ public sealed class PipeMachineConsoleTests : IAsyncDisposable
         status.Stopped("The agent was stopped.");
         await console.DisposeAsync();
 
-        // The console saw the pipe close and ended by itself; it was not ended.
+        // The console saw the pipe close and exited by itself. Nothing stopped it.
         Assert.Equal(0, await launcher.Started!.Exited);
         Assert.False(launcher.Started.Stopped);
         Assert.Equal(ConsoleStage.Stopped, graphical.Received.OfType<StateMessage>().Last().State.Stage);
@@ -277,7 +277,7 @@ public sealed class PipeMachineConsoleTests : IAsyncDisposable
         Assert.Null(PipeMachineConsole.PathFor(options, inputRedirected: true, _directory));
         Assert.Null(PipeMachineConsole.PathFor(options with { DryRun = true }, inputRedirected: false, _directory));
 
-        // Asked for by name, it starts whatever the case.
+        // A console asked for by name always starts.
         AgentOptions named = options with { DryRun = true, ConsolePath = @"C:\Tools\console.exe" };
         Assert.Equal(@"C:\Tools\console.exe", PipeMachineConsole.PathFor(named, inputRedirected: true, _directory));
     }

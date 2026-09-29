@@ -10,20 +10,17 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Pxe;
 
-// Port 69 accepts read requests and each one becomes a TftpTransfer running on its own task, so one
-// slow client cannot stall the rest. By default a transfer answers from its own ephemeral port. In
-// single port mode it answers from port 69 and this loop routes the client's datagrams to it.
-public sealed class TftpListener : IAsyncDisposable
+// Each read request on port 69 becomes a TftpTransfer on a separate task, so one slow client can't stall the rest. A
+// transfer answers from its own port. In single port mode it answers from port 69, and this loop routes its datagrams.
+public sealed class TftpListener : IPxeListener, IAsyncDisposable
 {
     private const int ReceiveBufferLength = 1024;
 
     private readonly IPEndPoint _bindTo;
     private readonly NetworkInterfaceMap _interfaces;
     private readonly BootFileResolver _files;
-    private readonly TftpLimits _limits;
-    private readonly int _maxTransfers;
-    private readonly bool _singlePort;
-    private readonly TimeProvider _timeProvider;
+    private readonly TftpServing _serving;
+    private readonly TftpTransferServices _transferServices;
     private readonly ILogger _logger;
     private readonly CancellationTokenSource _stopping = new();
     private readonly ConcurrentDictionary<TftpTransfer, IPEndPoint> _transfers = new();
@@ -38,25 +35,22 @@ public sealed class TftpListener : IAsyncDisposable
         IPEndPoint bindTo,
         NetworkInterfaceMap interfaces,
         BootFileResolver files,
-        TftpLimits limits,
-        int maxTransfers,
-        bool singlePort,
+        TftpServing serving,
         TimeProvider timeProvider,
         ILogger<TftpListener> logger)
     {
         ArgumentNullException.ThrowIfNull(bindTo);
         ArgumentNullException.ThrowIfNull(interfaces);
         ArgumentNullException.ThrowIfNull(files);
+        ArgumentNullException.ThrowIfNull(serving);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(logger);
 
         _bindTo = bindTo;
         _interfaces = interfaces;
         _files = files;
-        _limits = limits;
-        _maxTransfers = maxTransfers;
-        _singlePort = singlePort;
-        _timeProvider = timeProvider;
+        _serving = serving;
+        _transferServices = new TftpTransferServices(serving.Limits, timeProvider, logger);
         _logger = logger;
     }
 
@@ -88,45 +82,14 @@ public sealed class TftpListener : IAsyncDisposable
     private async Task RunAsync(Socket socket, CancellationToken cancellationToken)
     {
         byte[] buffer = new byte[ReceiveBufferLength];
-        EndPoint anySource = new IPEndPoint(IPAddress.Any, 0);
         bool seenFirst = false;
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            SocketReceiveMessageFromResult received;
-
-            try
-            {
-                received = await socket.ReceiveMessageFromAsync(buffer, SocketFlags.None, anySource, cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            if (await PxeSocket.ReceiveAsync(socket, buffer, _bindTo.Port, _logger, cancellationToken).ConfigureAwait(false)
+                is not { } received)
             {
                 return;
-            }
-            catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (SocketException exception) when (PxeSocket.IsTransient(exception))
-            {
-                continue;
-            }
-            catch (SocketException) when (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (SocketException exception)
-            {
-                // Never let the loop end: a dead listener leaves every machine unable to boot.
-                PxeLog.ReceiveFailed(_logger, _bindTo.Port, exception);
-
-                if (!await PxeSocket.PauseAsync(cancellationToken).ConfigureAwait(false))
-                {
-                    return;
-                }
-
-                continue;
             }
 
             IPEndPoint client = (IPEndPoint)received.RemoteEndPoint;
@@ -178,15 +141,11 @@ public sealed class TftpListener : IAsyncDisposable
 
         if (opcode != TftpOpcode.ReadRequest)
         {
-            if (_singlePortClients.TryGetValue(client, out TftpTransfer? running)
-                && running.Transport is SharedPortTftpTransport shared)
-            {
-                shared.Deliver(datagram.Span);
-            }
-            else if (opcode == TftpOpcode.WriteRequest)
+            if (!RouteToRunning(client, datagram.Span) && opcode == TftpOpcode.WriteRequest)
             {
                 PxeLog.TftpRefusedOperation(_logger, opcode, client);
-                await SendErrorAsync(socket, localAddress, client, TftpErrorCode.IllegalOperation, "Write requests are not supported", cancellationToken)
+                using ITftpTransport refusal = CreateTransport(socket, localAddress, client);
+                await SendErrorAsync(refusal, TftpErrorCode.IllegalOperation, "Write requests are not supported", cancellationToken)
                     .ConfigureAwait(false);
             }
 
@@ -197,32 +156,33 @@ public sealed class TftpListener : IAsyncDisposable
             || !request.Mode.Equals("octet", StringComparison.OrdinalIgnoreCase))
         {
             PxeLog.TftpRefusedOperation(_logger, opcode, client);
-            await SendErrorAsync(socket, localAddress, client, TftpErrorCode.IllegalOperation, "Only octet mode reads are supported", cancellationToken)
+            using ITftpTransport refusal = CreateTransport(socket, localAddress, client);
+            await SendErrorAsync(refusal, TftpErrorCode.IllegalOperation, "Only octet mode reads are supported", cancellationToken)
                 .ConfigureAwait(false);
 
             return;
         }
 
-        // A repeated request means the client has not yet seen an answer, or saw it late. With a port per
-        // transfer the repeat simply gets its own transfer: the client keeps whichever port it heard from
-        // first and the other times out unanswered. Cancelling the first could kill the one the client
-        // chose. In single port mode both would share a port and interleave, so a repeat replaces a
-        // transfer the client has not answered and is ignored once it has.
-        if (_singlePortClients.TryGetValue(client, out TftpTransfer? previous))
-        {
-            if (previous.ClientAnswered)
-            {
-                return;
-            }
+        await AcceptReadAsync(socket, request, localAddress, client, cancellationToken).ConfigureAwait(false);
+    }
 
-            previous.Cancel();
+    private async Task AcceptReadAsync(
+        Socket socket,
+        TftpReadRequest request,
+        IPAddress localAddress,
+        IPEndPoint client,
+        CancellationToken cancellationToken)
+    {
+        if (!ReplacePrevious(client))
+        {
+            return;
         }
 
-        // Dropped rather than refused: an ERROR aborts the client's boot, while a dropped request is
-        // retransmitted and succeeds once a transfer finishes.
-        if (_transfers.Count >= _maxTransfers)
+        // Dropped instead of refused. An ERROR aborts the client's boot, while a dropped request is retransmitted and
+        // succeeds once a transfer finishes.
+        if (_transfers.Count >= _serving.MaxTransfers)
         {
-            PxeLog.TftpBusy(_logger, request.FileName, client, _maxTransfers);
+            PxeLog.TftpBusy(_logger, request.FileName, client, _serving.MaxTransfers);
 
             return;
         }
@@ -230,23 +190,59 @@ public sealed class TftpListener : IAsyncDisposable
         if (!_files.TryResolve(request.FileName, out FileInfo? file))
         {
             PxeLog.TftpNotFound(_logger, request.FileName, client);
-            await SendErrorAsync(socket, localAddress, client, TftpErrorCode.FileNotFound, "File not found", cancellationToken)
-                .ConfigureAwait(false);
+            using ITftpTransport refusal = CreateTransport(socket, localAddress, client);
+            await SendErrorAsync(refusal, TftpErrorCode.FileNotFound, "File not found", cancellationToken).ConfigureAwait(false);
 
             return;
         }
 
         PxeLog.TftpRead(_logger, request.FileName, client, file.FullName);
+        StartTransfer(CreateTransport(socket, localAddress, client), client, file, request, cancellationToken);
+    }
 
-        ITftpTransport transport = _singlePort
-            ? new SharedPortTftpTransport(socket, client)
-            : new ConnectedTftpTransport(PxeSocket.CreateTransfer(localAddress, client));
+    // In single port mode every datagram from a client with a running transfer goes to it, except a new read request.
+    private bool RouteToRunning(IPEndPoint client, ReadOnlySpan<byte> datagram)
+    {
+        if (_singlePortClients.TryGetValue(client, out TftpTransfer? running) && running.Transport is SharedPortTftpTransport shared)
+        {
+            shared.Deliver(datagram);
 
-        TftpTransfer transfer = new(transport, client, file, request, _limits, _timeProvider, _logger, cancellationToken);
+            return true;
+        }
+
+        return false;
+    }
+
+    // A repeated request means no answer has reached the client yet. With a port per transfer, it gets its own transfer
+    // and the client keeps the port it heard first. In single port mode it replaces an unanswered transfer. False means
+    // the request is ignored.
+    private bool ReplacePrevious(IPEndPoint client)
+    {
+        if (_singlePortClients.TryGetValue(client, out TftpTransfer? previous))
+        {
+            if (previous.ClientAnswered)
+            {
+                return false;
+            }
+
+            previous.Cancel();
+        }
+
+        return true;
+    }
+
+    private void StartTransfer(
+        ITftpTransport transport,
+        IPEndPoint client,
+        FileInfo file,
+        TftpReadRequest request,
+        CancellationToken cancellationToken)
+    {
+        TftpTransfer transfer = new(transport, client, file, request, _transferServices, cancellationToken);
 
         _transfers[transfer] = client;
 
-        if (_singlePort)
+        if (_serving.SinglePort)
         {
             _singlePortClients[client] = transfer;
         }
@@ -262,10 +258,13 @@ public sealed class TftpListener : IAsyncDisposable
             TaskScheduler.Default);
     }
 
-    private async Task SendErrorAsync(
-        Socket socket,
-        IPAddress localAddress,
-        IPEndPoint client,
+    private ITftpTransport CreateTransport(Socket socket, IPAddress localAddress, IPEndPoint client) =>
+        _serving.SinglePort
+            ? new SharedPortTftpTransport(socket, client)
+            : new ConnectedTftpTransport(PxeSocket.CreateTransfer(localAddress, client));
+
+    private static async Task SendErrorAsync(
+        ITftpTransport transport,
         TftpErrorCode code,
         string message,
         CancellationToken cancellationToken)
@@ -276,10 +275,6 @@ public sealed class TftpListener : IAsyncDisposable
         {
             return;
         }
-
-        using ITftpTransport transport = _singlePort
-            ? new SharedPortTftpTransport(socket, client)
-            : new ConnectedTftpTransport(PxeSocket.CreateTransfer(localAddress, client));
 
         try
         {

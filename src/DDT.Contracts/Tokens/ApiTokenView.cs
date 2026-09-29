@@ -4,14 +4,15 @@
 
 namespace DDT.Contracts.Tokens;
 
-// An API token as its owner and administrators see it, never with its secret. Role is the most the token may do; it
-// never does more than its user may at the time. Hint is the secret's last four characters, to tell tokens apart.
+// An API token as its owner and administrators see it, never with its secret.
 public sealed record ApiTokenView(
     Guid Id,
     string Name,
+    // The most the token may do. It never does more than its user is allowed to at that moment.
     string Role,
     Guid UserId,
     string UserName,
+    // The secret's last four characters, to tell tokens apart.
     string Hint,
     DateTimeOffset CreatedUtc,
     DateTimeOffset ExpiresUtc,

@@ -130,7 +130,7 @@ public sealed class SequenceAssignmentTests(DdtApplication application) : IClass
         DeploymentArtifactView artifact = Assert.Single(view.Artifacts);
         Assert.Equal(new DeploymentArtifactView(sequence.Definition.Steps[1].Id, ArtifactKind.Image, image.Id, image.Name, image.Sha256, image.SizeBytes), artifact);
 
-        // The image cannot go while the run may still download it.
+        // The image can't be deleted while the run may still download it.
         HttpResponseMessage delete = await administrator.DeleteAsync($"/api/images/{image.Id}");
         Assert.Equal(HttpStatusCode.Conflict, delete.StatusCode);
     }
@@ -212,8 +212,8 @@ public sealed class SequenceAssignmentTests(DdtApplication application) : IClass
         Assert.NotEqual(first, again.Deployment!.Id);
     }
 
-    // Done refuses every token, and the tokens the machine held while it ran must stay dead once an assignment
-    // makes the machine Approved again: the agent that held them rebooted.
+    // Done refuses every token. The tokens the machine held while it ran must stay invalid once an assignment makes the
+    // machine Approved again, because the agent that held them rebooted.
     [Fact]
     public async Task AnAssignmentAfterDoneKeepsTheFinishedRunsTokensDead()
     {
@@ -346,7 +346,7 @@ public sealed class SequenceAssignmentTests(DdtApplication application) : IClass
             await AuditAsync(run));
         Assert.Equal(HttpStatusCode.Unauthorized, (await machine.Agent.NextAsync(machine.Id, machine.Token)).StatusCode);
 
-        // Its resume token died with the generation, so the agent starts over.
+        // Its resume token stopped working with the old generation, so the agent starts over.
         AgentRegistrationResult again = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
             await machine.Agent.RegisterAsync(machine.Registration with { ResumeToken = machine.ResumeToken }));
 
@@ -385,12 +385,12 @@ public sealed class SequenceAssignmentTests(DdtApplication application) : IClass
             await AuditAsync(run));
         Assert.Null((await application.MachineAsync(running.Id)).ActiveDeploymentId);
 
-        // The step that ran ended with the run.
+        // The step that was running ended with the run.
         DeploymentStepView step = Assert.Single((await administrator.RunAsync(run)).Steps);
         Assert.Equal(StepState.Failed, step.State);
         Assert.Equal(failed.Deployment?.Error, step.Error);
 
-        // Rejected stays final: a second rejection is refused.
+        // Rejected stays final. A second rejection is refused.
         Assert.Equal(HttpStatusCode.Conflict, (await administrator.PostAsync($"/api/machines/{running.Id}/reject")).StatusCode);
     }
 
@@ -429,10 +429,10 @@ public sealed class SequenceAssignmentTests(DdtApplication application) : IClass
         Machine firstMachine = await firstDatabase.Machines.SingleAsync(m => m.Id == machine.Id, cancellationToken);
         Machine secondMachine = await secondDatabase.Machines.SingleAsync(m => m.Id == machine.Id, cancellationToken);
 
-        DeploymentDecision firstDecision = await first.ServiceProvider.GetRequiredService<DeploymentService>()
-            .AssignAsync(firstMachine, new AssignSequenceRequest(sequence.Id, null), null, "first", null, cancellationToken);
-        DeploymentDecision secondDecision = await second.ServiceProvider.GetRequiredService<DeploymentService>()
-            .AssignAsync(secondMachine, new AssignSequenceRequest(sequence.Id, null), null, "second", null, cancellationToken);
+        DeploymentDecision firstDecision = await first.ServiceProvider.GetRequiredService<RunAssignments>()
+            .AssignAsync(firstMachine, new AssignSequenceRequest(sequence.Id, null), new Actor(null, "first", null), cancellationToken);
+        DeploymentDecision secondDecision = await second.ServiceProvider.GetRequiredService<RunAssignments>()
+            .AssignAsync(secondMachine, new AssignSequenceRequest(sequence.Id, null), new Actor(null, "second", null), cancellationToken);
 
         Assert.Equal(DeploymentOutcome.Accepted, firstDecision.Outcome);
         Assert.Equal(DeploymentOutcome.Accepted, secondDecision.Outcome);
@@ -502,7 +502,7 @@ public sealed class SequenceAssignmentTests(DdtApplication application) : IClass
         (await EndCurrentAsync(machine.Id)).EnsureSuccessStatusCode();
         machines = await RegisteredMachine.ReadAsync<IReadOnlyList<MachineSummary>>(await viewer.GetAsync("/api/machines"));
 
-        // Nothing active: the one created last.
+        // Nothing is active, so the machine shows the run created last.
         DeploymentSummary shown = Assert.IsType<DeploymentSummary>(Assert.Single(machines, m => m.Id == machine.Id).Deployment);
         Assert.Equal(latest, shown.Id);
         Assert.Equal(DeploymentState.Cancelled, shown.State);

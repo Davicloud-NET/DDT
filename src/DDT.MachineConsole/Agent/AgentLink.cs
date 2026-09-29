@@ -6,23 +6,13 @@ using DDT.ConsoleProtocol;
 
 namespace DDT.MachineConsole.Agent;
 
-// Why the pipe to the agent ended.
-public enum LinkEnd
-{
-    // The agent closed it, as it does when it ends.
-    Closed,
-
-    // It broke, or the agent sent what is not a message of the protocol.
-    Broken,
-}
-
-// Reads everything the agent sends, all the time, and hands each message on in order; answers go back from any thread.
-// Reading never waits for the screen, so the agent never finds its console slow.
+// Reads the agent's messages without waiting for the UI thread, so a busy UI never makes the agent wait.
+// AnswerAsync can be called from any thread.
 public sealed class AgentLink(IAgentConnection connection) : IAsyncDisposable
 {
     private readonly CancellationTokenSource _stop = new();
 
-    // Completes when the pipe has ended, with why. received gets each message on the reading thread.
+    // Returns why the pipe ended. The received callback runs on the reading thread.
     public async Task<LinkEnd> ReadAsync(Action<ConsoleMessage> received)
     {
         ArgumentNullException.ThrowIfNull(received);
@@ -42,13 +32,13 @@ public sealed class AgentLink(IAgentConnection connection) : IAsyncDisposable
         }
         catch (Exception)
         {
-            // Whatever it was, nothing more comes, and the screen has to say so: a broken pipe, what is not a
-            // message of the protocol, or the pipe closed under the reader.
+            // The reading thread stops here. An IOException, a malformed message or a pipe disposed under the reader
+            // all end the link, and the screen shows it.
             return LinkEnd.Broken;
         }
     }
 
-    // False when the answer could not be sent, because the pipe has ended.
+    // Returns false if the pipe has ended and the answer couldn't be sent.
     public async Task<bool> AnswerAsync(int questionId, ConsoleAnswer answer)
     {
         ArgumentNullException.ThrowIfNull(answer);

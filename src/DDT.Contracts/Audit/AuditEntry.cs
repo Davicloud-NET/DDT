@@ -4,16 +4,17 @@
 
 namespace DDT.Contracts.Audit;
 
-// One row of the audit log. ActorName is a copy taken when it happened, so it outlives a renamed or deleted account.
-// SubjectId is the id of what the action was done to, such as a machine, a run or a package, or a domain's name.
+// One row of the audit log.
 public sealed record AuditEntry(
     long Id,
     DateTimeOffset OccurredUtc,
     string Action,
     AuditActorKind ActorKind,
+    // Copied when the action happened, so it survives a renamed or deleted account.
     string? ActorName,
     Guid? ActorUserId,
     Guid? ActorMachineId,
+    // The id of what the action was done to, such as a machine, a run or a package. For a domain it's the name.
     string? SubjectId,
     string? SourceAddress,
     string? Detail);

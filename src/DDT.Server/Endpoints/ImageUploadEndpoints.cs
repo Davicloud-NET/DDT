@@ -9,6 +9,7 @@ using DDT.Contracts.Images;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
 using DDT.Server.Authentication;
+using DDT.Server.Data;
 using DDT.Server.Images;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -18,9 +19,8 @@ using Microsoft.AspNetCore.Routing;
 
 namespace DDT.Server.Endpoints;
 
-// A resumable upload: create or find a session, send the file in chunks at the offset the server holds, then
-// complete it. Every answer to a chunk carries the committed offset in Upload-Offset, and the client continues
-// from there.
+// A resumable upload. The client creates a session, sends the file in chunks at the offset the server holds, then
+// completes it. Every answer to a chunk carries the committed offset in Upload-Offset, where the client continues.
 public static class ImageUploadEndpoints
 {
     private const string UploadOffsetHeader = "Upload-Offset";
@@ -33,7 +33,7 @@ public static class ImageUploadEndpoints
         group.MapGet("/", ListAsync).RequireAuthorization(DdtPolicies.Administrator);
 
         // The body is streamed to disk and never bound, so the CSRF filters run before any of it is read. The handler
-        // refuses an oversized chunk by its Content-Length; the size limit is a second line of defence.
+        // refuses an oversized chunk by its Content-Length. The size limit is a second line of defence.
         group.MapPatch("/{id:guid}", AppendAsync)
             .RequireAuthorization(DdtPolicies.Administrator)
             .WithMetadata(new RequestSizeLimitAttribute(ImageUploadLimits.ChunkBytes + 1));
@@ -142,7 +142,6 @@ public static class ImageUploadEndpoints
         ProblemHttpResult,
         StatusCodeHttpResult>> CompleteAsync(
         Guid id,
-        ClaimsPrincipal user,
         HttpContext context,
         ImageUploadCompleter completer,
         CancellationToken cancellationToken)
@@ -152,12 +151,12 @@ public static class ImageUploadEndpoints
         try
         {
             completion = await completer
-                .CompleteAsync(id, Principals.UserId(user), user.Identity?.Name, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+                .CompleteAsync(id, Actor.Of(context), cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // The client has gone. The work goes on, and its stored result answers the client's next attempt.
+            // The client is gone. The work continues, and its stored result answers the client's next attempt.
             return TypedResults.StatusCode(StatusCodes.Status499ClientClosedRequest);
         }
 

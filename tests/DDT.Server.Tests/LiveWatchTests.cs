@@ -46,7 +46,7 @@ public sealed class LiveWatchTests(DdtApplication application) : IClassFixture<D
         Assert.Equal(machine.Id, appended.MachineId);
         Assert.Equal(await LastLineIdAsync(machine.Id), appended.LastLineId);
 
-        // A second batch within the second comes when it ends, as one push with the newest line.
+        // A second batch within the same second arrives when that second ends, as one push with the newest line.
         (await machine.Agent.LogAsync(machine.Id, machine.Token, Lines("third"))).EnsureSuccessStatusCode();
         (await machine.Agent.LogAsync(machine.Id, machine.Token, Lines("fourth"))).EnsureSuccessStatusCode();
         long newest = await LastLineIdAsync(machine.Id);
@@ -64,7 +64,7 @@ public sealed class LiveWatchTests(DdtApplication application) : IClassFixture<D
         Assert.False(otherLogs.TryRead(out _));
         Assert.False(otherSteps.TryRead(out _));
 
-        // Unwatched, nothing more comes, not even the push that was waiting for its second to end.
+        // After unwatching, nothing more arrives. Not even the push that was waiting for its second to end.
         await watcher.UnwatchAsync(machine.Id);
         (await machine.Agent.LogAsync(machine.Id, machine.Token, Lines("fifth"))).EnsureSuccessStatusCode();
         await Task.Delay(LiveNotifier.LogPushInterval * 2, TestContext.Current.CancellationToken);
@@ -83,7 +83,7 @@ public sealed class LiveWatchTests(DdtApplication application) : IClassFixture<D
             await listener.WatchAsync(machine);
         }
 
-        // Watching one of them again takes no room.
+        // Watching one of them again doesn't use up a slot.
         await listener.WatchAsync(machines[0]);
 
         HubException refused = await Assert.ThrowsAsync<HubException>(() => listener.WatchAsync(Guid.NewGuid()));

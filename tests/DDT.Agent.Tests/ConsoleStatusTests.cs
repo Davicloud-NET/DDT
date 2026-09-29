@@ -17,9 +17,9 @@ public sealed class ConsoleStatusTests
     private static readonly MachineVariables s_machine =
         new("Dell Inc.", "Latitude 5440", "SN-1", "4c4c4544-0042-3510-8052-b4c04f4d3232", ["00155D010203"], null, SequencePhase.WindowsPE);
 
-    // Every node in pre-order with where it sits, so the console's rail follows the path: a step on the branch the IF did
-    // not take, or skipped after a failure inside its group, was never entered and has a pass of 0, while a step skipped
-    // by its own condition was.
+    // Every node in pre-order with its position, so the console's rail follows the path. A step on the branch the IF
+    // didn't take, or one skipped after a failure in its group, was never entered and has a pass of 0. A step
+    // skipped by its own condition was entered.
     [Fact]
     public async Task ShowsATreesRunAsItsNodesInPreOrder()
     {
@@ -52,7 +52,7 @@ public sealed class ConsoleStatusTests
             console.States[^1].Run!.Steps);
     }
 
-    // A step without a phase of its own shows the phase of the step before it, in the tree as in a list.
+    // A step without its own phase shows the phase of the step before it, in a tree just like in a list.
     [Fact]
     public void ShowsANodeWithoutAPhaseInThePhaseBeforeIt()
     {

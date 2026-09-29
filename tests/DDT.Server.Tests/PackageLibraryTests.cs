@@ -274,7 +274,7 @@ public sealed class PackageLibraryTests(DdtApplication application) : IClassFixt
         Assert.Equal(HttpStatusCode.Conflict, inUse.StatusCode);
         Assert.StartsWith("Machines are waiting to install this package", await TestDatabase.TitleAsync(inUse), StringComparison.Ordinal);
 
-        // The files package of the same zip goes, but the run still downloads the file.
+        // The files package of the same zip is deleted, but the run still downloads the file.
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"{PackageRequests.Packages}/{files.Id}")).StatusCode);
         Assert.True(File.Exists(stored));
 

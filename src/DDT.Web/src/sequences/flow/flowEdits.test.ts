@@ -8,12 +8,8 @@ import { branch, draftOfSteps, group, leaf, repeat } from "@/test/trees";
 
 import type { SequenceDraft } from "../sequenceDraft";
 import { sequenceEdits, type SequenceEdit } from "../sequenceEdits";
-import type {
-  ConditionNode,
-  InputDeclaration,
-  SequenceStep,
-  VariableDeclaration,
-} from "../sequences";
+import type { ConditionNode } from "../sequenceConditions";
+import type { InputDeclaration, SequenceStep, VariableDeclaration } from "../sequences";
 import { newStep } from "../steps";
 import { insertCopies, insertNode, withNewIds, wrapIn } from "./flowEdits";
 import { findNode, walk } from "./flowTree";

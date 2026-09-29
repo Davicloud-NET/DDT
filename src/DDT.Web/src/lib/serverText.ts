@@ -17,8 +17,8 @@ export type ServerArguments = Record<string, ServerArgument>;
 
 export type ServerArgument = string | number | ServerMessage;
 
-// The server's sentence in the person's language. A code this build does not know, in the message or in one within
-// it, leaves the English the server sent, fallback, which is also what a text without a code says.
+// The server's sentence in the person's language. If this build doesn't know a code, in the message or in one
+// nested in it, the English the server sent (fallback) is used. A text without a code also shows fallback.
 export function serverText(
   code: string | null | undefined,
   args: ServerArguments | null | undefined,

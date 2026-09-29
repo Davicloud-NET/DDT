@@ -4,9 +4,9 @@
 
 namespace DDT.Contracts.Agents;
 
-// Windows is the agent running as the temporary service in the installed Windows, to finish a run there.
 public enum AgentEnvironment
 {
     WindowsPE,
+    // The temporary service in the installed Windows that finishes a run there.
     Windows,
 }

@@ -10,10 +10,9 @@ import { afterEach } from "vitest";
 // Tests read the English text: with no catalog, the macros fall back to the message in the code.
 i18n.loadAndActivate({ locale: "en", messages: {} });
 
-// jsdom has no Web Animations. React Aria's shared elements, such as the underline of tabs, ask an element for its
-// animations without checking first; here no element ever runs one, so every entrance and exit ends at once, as in a
-// browser with "reduce motion". A test that needs a running animation stubs this. Tests that run in Node have no
-// elements at all.
+// jsdom has no Web Animations, and React Aria's shared elements, such as the tabs' underline, call getAnimations
+// without checking. No animation ever runs here, so entrances and exits end at once. A test that needs one stubs
+// this.
 if (typeof Element !== "undefined" && !Reflect.has(Element.prototype, "getAnimations")) {
   Element.prototype.getAnimations = () => [];
 }

@@ -88,8 +88,8 @@ public sealed class UnattendRendererTests
         Assert.Null(settings.LocalAdministrator);
     }
 
-    // The agent fetches the answer file after steps may have changed the run's variables, so its templates and the
-    // settings the run started with are worked out from them then, and checked as a sequence's settings are.
+    // The agent fetches the answer file after steps may have changed the run's variables. So its templates and the
+    // settings the run started with are worked out from them at that point, and checked like a sequence's settings.
     [Fact]
     public void TheStepsTemplatesAndTheRunsSettingsComeFromTheValuesWhenTheFileIsMade()
     {
@@ -113,7 +113,7 @@ public sealed class UnattendRendererTests
             ("PC-0002", "W. Europe Standard Time", "fr-FR", "0407:00000407"),
             (settings!.ComputerName, settings.TimeZone, settings.Locale, settings.Keyboard));
 
-        // Without values the run's own settings stand, as for a run that started before it had values.
+        // Without values, the run's own settings stand, like for a run that started before runs had values.
         (UnattendSettings? plain, _) = new UnattendRenderer().Settings(inputs, step with { TimeZone = null, Keyboard = null }, "en-US", null, _ => null);
         Assert.Equal(("PC-0001", "UTC", "de-AT"), (plain!.ComputerName, plain.TimeZone, plain.Locale));
     }

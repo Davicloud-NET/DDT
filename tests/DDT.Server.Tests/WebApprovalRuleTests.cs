@@ -38,7 +38,8 @@ public sealed class WebApprovalRuleTests(WebApprovalApplication application) : I
             await RegisteredMachine.ReadAsync<IReadOnlyList<MachineSummary>>(await administrator.GetAsync("/api/machines")),
             m => m.Id == machine.Id).EverApproved);
 
-        // Whoever signed in there chooses the sequence at the machine, so an approval cannot also run the rule's.
+        // Whoever signed in there chooses the sequence at the machine.
+        // So an approval can't also run the rule's sequence.
         HttpResponseMessage refused = await administrator.ApproveAsync(machine.Id, sequence.Id);
 
         Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
@@ -48,7 +49,7 @@ public sealed class WebApprovalRuleTests(WebApprovalApplication application) : I
         Assert.Equal(MachineState.Pending, (await application.MachineAsync(machine.Id)).State);
     }
 
-    // Approving with the rule's sequence is no more than the web half either: without the sign-in it approves nothing.
+    // Approving with the rule's sequence is only the web half too. Without the sign-in, it approves nothing.
     [Fact]
     public async Task AnApprovalWithTheRulesSequenceStillNeedsTheSignIn()
     {

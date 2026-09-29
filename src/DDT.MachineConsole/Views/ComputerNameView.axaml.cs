@@ -11,8 +11,7 @@ using DDT.MachineConsole.ViewModels;
 
 namespace DDT.MachineConsole.Views;
 
-// The field has the focus, so the person just types, and a name it starts with is selected, so typing replaces it. What
-// was wrong with a refused name fades in with each refusal.
+// The prefilled name is selected, so typing replaces it. The error animates in again with each refusal.
 public sealed partial class ComputerNameView : UserControl
 {
     private ComputerNameViewModel? _model;

@@ -7,10 +7,9 @@ using DDT.Contracts.Messages;
 
 namespace DDT.Core.Machines;
 
-// Manufacturer and model names as firmware reports them differ in case and spacing between models of one vendor, so
-// they are compared cleaned and in upper case. Board makers leave placeholders in unset fields, which say nothing
-// about the machine and must never choose drivers or a sequence. The server matches driver packages and rules with it,
-// and ConditionEvaluator compares Manufacturer and Model by the same rules.
+// Firmware's manufacturer and model names differ in case and spacing, even within one vendor. So they're cleaned and
+// compared in upper case, and a board maker's placeholder never matches. Driver packages, rules and ConditionEvaluator
+// all use this.
 public static class HardwareModels
 {
     public const int MaxLength = 128;
@@ -20,8 +19,8 @@ public static class HardwareModels
     // Shorter prefixes, such as "20*" on a Lenovo, would match unrelated models.
     public const int MinPrefixLength = 3;
 
-    // The server also drops these from the facts an agent registers with, where the other defaults of AMI and ASUS
-    // firmware turn up: the system's version, serial number and SKU, and the enclosure's asset tag.
+    // The server also drops these from the facts an agent registers with. That's where the other AMI and ASUS firmware
+    // defaults show up, in the system's version, serial number and SKU and in the enclosure's asset tag.
     private static readonly HashSet<string> s_placeholders = new(StringComparer.Ordinal)
     {
         "TO BE FILLED BY O.E.M.",
@@ -41,7 +40,7 @@ public static class HardwareModels
         "ASSET-1234567890",
     };
 
-    // Trimmed, with every run of white space as one space; null for nothing.
+    // Trims the value and turns every run of white space into one space. Returns null for an empty value.
     public static string? Clean(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -63,8 +62,8 @@ public static class HardwareModels
 
     public static bool IsPlaceholder(string? value) => Normalize(value) is { } normalized && s_placeholders.Contains(normalized);
 
-    // What is wrong with a manufacturer or model an administrator entered to match machines by, or null. Only a model
-    // can end in the wildcard.
+    // What's wrong with a manufacturer or model an admin entered to match machines, or null. Only a model can end in
+    // the wildcard.
     public static ServerMessage? Problem(string? value, bool required, bool wildcard)
     {
         string? cleaned = Clean(value);

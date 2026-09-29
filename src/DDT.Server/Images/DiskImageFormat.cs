@@ -4,7 +4,8 @@
 
 namespace DDT.Server.Images;
 
-// What an uploaded disk image is, from its first bytes. Raw is anything else, which the partition table then proves.
+// The format of an uploaded disk image, detected from its first bytes. Raw covers anything else. The partition table
+// then has to prove that it really is a disk.
 public enum DiskImageFormat
 {
     Raw,

@@ -3,7 +3,11 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import type { CreateImageUploadRequest, ImageUploadSession, UploadKind } from "@/images/images";
-import { ApiError, apiErrorFrom, apiFetch, apiPatch } from "@/lib/api";
+import { apiErrorFrom, apiFetch, apiPatch } from "@/lib/api";
+import { backoff } from "@/lib/backoff";
+
+import { throwIfAborted, waitFor } from "./abortableWait";
+import { isTransient, readOffset, refusal, retryAfter } from "./uploadAnswers";
 
 export type UploadPhase = "uploading" | "verifying";
 
@@ -18,12 +22,12 @@ export interface UploadProgress {
   retrying: boolean;
 }
 
-// "added": this upload put the file's contents into the library. "duplicate": they were in the library
-// already. "unclear": they are in the library, but an earlier complete request whose answer never arrived may
-// have added them, and the server answers a repeated complete as it answers a duplicate.
+// "added": this upload put the file's contents into the library. "duplicate": they were already in the
+// library. "unclear": they're in the library, but an earlier complete request whose answer never arrived may
+// have added them. The server answers a repeated complete the same way as a duplicate.
 export type UploadOutcome = "added" | "duplicate" | "unclear";
 
-// library is what the server answers the completion with: the images of a WIM, or the package of a zip.
+// library is the server's answer to the completion: the images of a WIM, or the package of a zip.
 export interface ResumableResult<T> {
   outcome: UploadOutcome;
   library: T;
@@ -33,7 +37,7 @@ export interface UploadOptions {
   signal: AbortSignal;
   onSession?: (session: ImageUploadSession) => void;
   onProgress?: (progress: UploadProgress) => void;
-  // Replaced in tests, so the back off does not wait for real.
+  // Replaced in tests, so the back off doesn't really wait.
   wait?: (milliseconds: number, signal: AbortSignal) => Promise<void>;
 }
 
@@ -42,11 +46,26 @@ export interface UploadOptions {
 export const MAX_FAILURES = 10;
 
 const DEFAULT_CHUNK_BYTES = 8 * 1024 * 1024;
-const MAX_WAIT = 60_000;
 
-// The server keeps the offset it has stored, so every request says where its bytes start, and a refusal
-// says where the server stands. That covers a lost answer, a second tab and a reload, which the server
-// recognises by the file's name, length, modification time and kind.
+// One upload's state, which its requests share.
+interface Transfer {
+  readonly file: File;
+  readonly options: UploadOptions;
+  readonly signal: AbortSignal;
+  // The pause before a request is sent again. The abort ends it.
+  readonly pause: (milliseconds: number) => Promise<void>;
+  phase: UploadPhase;
+  offset: number;
+  sentBytes: number;
+  retrying: boolean;
+  // Failed requests in a row.
+  failures: number;
+  completeRequests: number;
+}
+
+// The server keeps the offset it has stored. Every request says where its bytes start, and a refusal says
+// where the server is. That covers a lost answer, a second tab and a reload. The server recognises the file
+// by its name, length, modification time and kind.
 export async function resumableUpload<T>(
   file: File,
   kind: UploadKind,
@@ -54,57 +73,87 @@ export async function resumableUpload<T>(
 ): Promise<ResumableResult<T>> {
   const { signal } = options;
   const wait = options.wait ?? waitFor;
-
-  let phase: UploadPhase = "uploading";
-  let offset = 0;
-  let sentBytes = 0;
-  let retrying = false;
-  let failures = 0;
-  let completeRequests = 0;
-
-  const report = () => {
-    options.onProgress?.({ phase, offset, length: file.size, sentBytes, retrying });
+  const transfer: Transfer = {
+    file,
+    options,
+    signal,
+    pause: (milliseconds) => wait(milliseconds, signal),
+    phase: "uploading",
+    offset: 0,
+    sentBytes: 0,
+    retrying: false,
+    failures: 0,
+    completeRequests: 0,
   };
 
-  // Network errors and transient statuses are sent again after a pause. Anything else is an answer.
-  const send = async (attempt: () => Promise<Response>): Promise<Response> => {
-    for (;;) {
-      throwIfAborted(signal);
+  const session = await createSession(transfer, kind);
+  const path = `/api/images/uploads/${session.id}`;
+  const chunkBytes = session.chunkBytes > 0 ? session.chunkBytes : DEFAULT_CHUNK_BYTES;
 
-      let response: Response | null = null;
+  options.onSession?.(session);
+  transfer.offset = session.offset;
+  report(transfer);
 
-      try {
-        response = await attempt();
-      } catch {
-        // A network error, or the abort, which the check below turns into the abort error.
-        throwIfAborted(signal);
-      }
+  for (;;) {
+    await sendSlices(transfer, path, chunkBytes);
 
-      if (response !== null && !isTransient(response.status)) {
-        failures = 0;
+    const result = await complete<T>(transfer, path);
 
-        if (retrying) {
-          retrying = false;
-          report();
-        }
-
-        return response;
-      }
-
-      failures++;
-
-      if (failures >= MAX_FAILURES) {
-        throw new Error(
-          `The server did not take the upload after ${String(MAX_FAILURES)} attempts. Select the file again to resume.`,
-        );
-      }
-
-      retrying = true;
-      report();
-      await wait((response === null ? null : retryAfter(response)) ?? backoff(failures), signal);
+    if (result !== null) {
+      return result;
     }
-  };
+  }
+}
 
+function report(transfer: Transfer): void {
+  const { phase, offset, file, sentBytes, retrying } = transfer;
+
+  transfer.options.onProgress?.({ phase, offset, length: file.size, sentBytes, retrying });
+}
+
+// Network errors and transient statuses are sent again after a pause. Anything else is an answer.
+async function send(transfer: Transfer, attempt: () => Promise<Response>): Promise<Response> {
+  for (;;) {
+    throwIfAborted(transfer.signal);
+
+    let response: Response | null = null;
+
+    try {
+      response = await attempt();
+    } catch {
+      // A network error, or the abort. The check below turns the abort into the abort error.
+      throwIfAborted(transfer.signal);
+    }
+
+    if (response !== null && !isTransient(response.status)) {
+      transfer.failures = 0;
+
+      if (transfer.retrying) {
+        transfer.retrying = false;
+        report(transfer);
+      }
+
+      return response;
+    }
+
+    transfer.failures++;
+
+    if (transfer.failures >= MAX_FAILURES) {
+      throw new Error(
+        `The server did not take the upload after ${String(MAX_FAILURES)} attempts. Select the file again to resume.`,
+      );
+    }
+
+    transfer.retrying = true;
+    report(transfer);
+    await transfer.pause(
+      (response === null ? null : retryAfter(response)) ?? backoff(transfer.failures),
+    );
+  }
+}
+
+async function createSession(transfer: Transfer, kind: UploadKind): Promise<ImageUploadSession> {
+  const { file, signal } = transfer;
   // The server reads an upload without a kind as an image.
   const request: CreateImageUploadRequest = {
     fileName: file.name,
@@ -113,7 +162,7 @@ export async function resumableUpload<T>(
     ...(kind === "Image" ? {} : { kind }),
   };
 
-  const created = await send(() =>
+  const created = await send(transfer, () =>
     apiFetch("/api/images/uploads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -126,84 +175,77 @@ export async function resumableUpload<T>(
     throw await apiErrorFrom(created);
   }
 
-  const session = (await created.json()) as ImageUploadSession;
-  const path = `/api/images/uploads/${session.id}`;
-  const chunkBytes = session.chunkBytes > 0 ? session.chunkBytes : DEFAULT_CHUNK_BYTES;
+  return (await created.json()) as ImageUploadSession;
+}
 
-  options.onSession?.(session);
-  offset = session.offset;
-  report();
+async function sendSlices(transfer: Transfer, path: string, chunkBytes: number): Promise<void> {
+  const { file, signal } = transfer;
 
-  for (;;) {
-    phase = "uploading";
+  transfer.phase = "uploading";
 
-    while (offset < file.size) {
-      const start = offset;
-      const end = Math.min(start + chunkBytes, file.size);
-      const response = await send(() =>
-        apiPatch(path, file.slice(start, end), {
-          headers: { "Upload-Offset": String(start) },
-          signal,
-        }),
-      );
+  while (transfer.offset < file.size) {
+    const start = transfer.offset;
+    const end = Math.min(start + chunkBytes, file.size);
+    const response = await send(transfer, () =>
+      apiPatch(path, file.slice(start, end), {
+        headers: { "Upload-Offset": String(start) },
+        signal,
+      }),
+    );
 
-      if (response.ok) {
-        offset = readOffset(response, file.size) ?? end;
-        sentBytes += Math.max(0, offset - start);
-      } else if (response.status === 409) {
-        await followConflict(response, start, file.size, wait, signal, (moved) => {
-          offset = moved;
-        });
-      } else {
-        throw await refusal(response);
-      }
-
-      report();
-    }
-
-    phase = "verifying";
-    report();
-
-    const response = await send(() => {
-      completeRequests++;
-      return apiFetch(`${path}/complete`, { method: "POST", signal });
-    });
-
-    if (response.status === 200 || response.status === 201) {
-      return {
-        // Only the request that did the work answers 201. A 200 means a duplicate only when no complete
-        // request went before it.
-        outcome:
-          response.status === 201 ? "added" : completeRequests === 1 ? "duplicate" : "unclear",
-        library: (await response.json()) as T,
-      };
-    }
-
-    if (response.status !== 409) {
+    if (response.ok) {
+      transfer.offset = readOffset(response, file.size) ?? end;
+      transfer.sentBytes += Math.max(0, transfer.offset - start);
+    } else if (response.status === 409) {
+      await followConflict(transfer, response, start);
+    } else {
       throw await refusal(response);
     }
 
-    // Either the server is still working on it, or it holds fewer bytes than the file has.
-    await followConflict(response, file.size, file.size, wait, signal, (moved) => {
-      offset = moved;
-    });
+    report(transfer);
   }
 }
 
-// A 409 either names another offset the server has stored, or asks to try again later because another
-// request holds the session. A busy answer to a chunk names the offset too, and it is the one just sent.
-async function followConflict(
-  response: Response,
-  sent: number,
-  length: number,
-  wait: (milliseconds: number, signal: AbortSignal) => Promise<void>,
-  signal: AbortSignal,
-  move: (offset: number) => void,
-): Promise<void> {
-  const moved = readOffset(response, length);
+// Null when the server holds fewer bytes than the file, or is still busy with it. Then the upload continues.
+async function complete<T>(transfer: Transfer, path: string): Promise<ResumableResult<T> | null> {
+  transfer.phase = "verifying";
+  report(transfer);
+
+  const response = await send(transfer, () => {
+    transfer.completeRequests++;
+    return apiFetch(`${path}/complete`, { method: "POST", signal: transfer.signal });
+  });
+
+  if (response.status === 200 || response.status === 201) {
+    return {
+      // Only the request that did the work gets a 201. A 200 only means a duplicate when no complete request
+      // came before it.
+      outcome:
+        response.status === 201
+          ? "added"
+          : transfer.completeRequests === 1
+            ? "duplicate"
+            : "unclear",
+      library: (await response.json()) as T,
+    };
+  }
+
+  if (response.status !== 409) {
+    throw await refusal(response);
+  }
+
+  await followConflict(transfer, response, transfer.file.size);
+
+  return null;
+}
+
+// A 409 either names a different offset the server has stored, or asks to try again later because another
+// request holds the session. A busy answer to a chunk also names an offset, and it's the one just sent.
+async function followConflict(transfer: Transfer, response: Response, sent: number): Promise<void> {
+  const moved = readOffset(response, transfer.file.size);
 
   if (moved !== null && moved !== sent) {
-    move(moved);
+    transfer.offset = moved;
     return;
   }
 
@@ -211,91 +253,9 @@ async function followConflict(
 
   // The offset did not move, so a Retry-After means the server is busy with this upload.
   if (delay !== null) {
-    await wait(delay, signal);
+    await transfer.pause(delay);
     return;
   }
 
   throw await apiErrorFrom(response);
-}
-
-async function refusal(response: Response): Promise<ApiError> {
-  if (response.status === 404) {
-    return new ApiError(
-      404,
-      "The server no longer has this upload, so it was discarded. Select the file again to start over.",
-    );
-  }
-
-  return apiErrorFrom(response);
-}
-
-// Answers that say "not now" rather than "no". 507, a full store, is a refusal.
-const transientStatuses = [408, 429, 500, 502, 503, 504];
-
-function isTransient(status: number): boolean {
-  return transientStatuses.includes(status);
-}
-
-function readOffset(response: Response, length: number): number | null {
-  const header = response.headers.get("Upload-Offset");
-
-  if (header === null) {
-    return null;
-  }
-
-  const offset = Number(header);
-
-  if (header.trim() === "" || !Number.isSafeInteger(offset) || offset < 0 || offset > length) {
-    throw new Error(`The server answered with an offset the file does not have: ${header}.`);
-  }
-
-  return offset;
-}
-
-function retryAfter(response: Response): number | null {
-  const header = response.headers.get("Retry-After");
-
-  if (header === null || header.trim() === "") {
-    return null;
-  }
-
-  const seconds = Number(header);
-  const milliseconds = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(header) - Date.now();
-
-  return Number.isNaN(milliseconds) ? null : Math.min(MAX_WAIT, Math.max(0, milliseconds));
-}
-
-export function backoff(failures: number): number {
-  return Math.min(30_000, 1_000 * 2 ** Math.max(0, failures - 1));
-}
-
-function abortError(): DOMException {
-  return new DOMException("The upload was stopped.", "AbortError");
-}
-
-function throwIfAborted(signal: AbortSignal): void {
-  if (signal.aborted) {
-    throw abortError();
-  }
-}
-
-function waitFor(milliseconds: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (signal.aborted) {
-      reject(abortError());
-      return;
-    }
-
-    const onAbort = () => {
-      clearTimeout(timer);
-      reject(abortError());
-    };
-
-    const timer = setTimeout(() => {
-      signal.removeEventListener("abort", onAbort);
-      resolve();
-    }, milliseconds);
-
-    signal.addEventListener("abort", onAbort, { once: true });
-  });
 }

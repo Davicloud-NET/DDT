@@ -4,7 +4,7 @@
 
 namespace DDT.Server.Deployments;
 
-// The definition a run was given, in a table of its own, so the run's row that every report updates stays small.
+// The definition a run was given. It's in its own table, so the run's row, which every report updates, stays small.
 public sealed class DeploymentSnapshot
 {
     public Guid DeploymentId { get; set; }

@@ -11,11 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Authentication;
 
-// Guards the single most damaging misconfiguration in the external sign in path. If SignInScheme
-// resolves to the application cookie rather than the external one, every identity the configured
-// provider will authenticate gets a DDT session with no local user, no roles, no lockout and no
-// second factor. It is silent when it happens, so it is checked at startup instead. It reads the
-// options of the scheme the settings registered; a save checks its candidate on its own.
+// If SignInScheme pointed at the application cookie instead of the external one, every identity the provider
+// authenticates would silently get a session with no local user, roles, lockout or second factor. So this checks the
+// registered scheme at startup. A settings save checks its own candidate.
 public sealed class ExternalSignInSchemeGuard(
     IOptionsMonitor<OpenIdConnectOptions> options,
     IAuthenticationSchemeProvider schemes,
@@ -23,7 +21,7 @@ public sealed class ExternalSignInSchemeGuard(
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        // Values that do not start the handler leave the scheme unregistered, which the host reports as failed.
+        // If the settings can't start the handler, the scheme stays unregistered, and the host reports that as failed.
         if (!settings.Current.Oidc.Enabled
             || await schemes.GetSchemeAsync(OidcOptions.SchemeName).ConfigureAwait(false) is not { } scheme
             || scheme.HandlerType != typeof(OpenIdConnectHandler))

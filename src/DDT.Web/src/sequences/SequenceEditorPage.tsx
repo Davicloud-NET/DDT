@@ -8,24 +8,27 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 
 import { currentUserQuery } from "@/auth/auth";
+import { useIsAdministrator } from "@/auth/useIsAdministrator";
 import { ApiError } from "@/lib/api";
 import { liveListOptions } from "@/live/freshness";
 import { useLiveStatus } from "@/live/useLiveStatus";
-import { EmptyState, Page, Skeleton } from "@/ui/Layout";
+import { EmptyState } from "@/ui/EmptyState";
 import { Notice } from "@/ui/Notice";
+import { Page } from "@/ui/Page";
+import { Skeleton } from "@/ui/Skeleton";
 
 import { FlowBuilder } from "./builder/FlowBuilder";
 import { sequenceQuery } from "./sequences";
 
-// One task sequence, edited in place as a flow by administrators and read by everyone else. The route loads it on its
-// own, with the flow builder.
+// One task sequence. Administrators edit it in place as a flow, and everyone else can read it. The route lazy-loads
+// this page together with the flow builder.
 export function SequenceEditorPage() {
   const { sequenceId } = useParams({ from: "/shell/deployment/sequences/$sequenceId" });
   const sequence = useQuery({ ...sequenceQuery(sequenceId), ...liveListOptions(useLiveStatus()) });
   const user = useQuery(currentUserQuery).data ?? null;
 
-  const isAdministrator = user?.roles.includes("Administrator") === true;
-  // The editor keeps its copy once open, and says itself when the sequence goes away.
+  const isAdministrator = useIsAdministrator();
+  // Once open, the editor keeps its own copy and shows by itself when the sequence is deleted.
   const missing =
     sequence.data === undefined &&
     sequence.error instanceof ApiError &&

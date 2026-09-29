@@ -4,5 +4,5 @@
 
 namespace DDT.Contracts.Users;
 
-// The directory sign-in as configured, read-only until the settings page takes it over.
+// The directory sign-in as configured, read-only here because the settings page edits it.
 public sealed record DirectoryView(bool Enabled, string Host, string BaseDn, IReadOnlyList<DirectoryGroupMapping> GroupRoleMap);

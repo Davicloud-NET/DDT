@@ -8,7 +8,7 @@ using Avalonia.Threading;
 
 namespace DDT.MachineConsole.Views;
 
-// The field has the focus: the word is typed, never clicked.
+// The field has the focus, because the word is typed, never clicked.
 public sealed partial class EraseView : UserControl
 {
     public EraseView()

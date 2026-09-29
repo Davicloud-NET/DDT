@@ -4,7 +4,7 @@
 
 namespace DDT.Agent.Sequences;
 
-// Passes a part's 0 to 100 on as its share of the step, from to to, so a step made of a download and an apply
+// Maps a part's 0 to 100 onto its share of the step, between from and to. So a step made of a download and an apply
 // reports one percent that never goes back.
 internal sealed class ScaledProgress(IProgress<int> percent, int from, int to) : IProgress<int>
 {

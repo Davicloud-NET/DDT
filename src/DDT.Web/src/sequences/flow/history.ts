@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-// Undo and redo of a document edited in place, as copies of the whole document: each edit keeps the copy before it.
-// Typing into one field in a row is one step, as long as no second passes between keys. An undo is saved like any
-// edit. When the page takes in a copy someone else saved, the steps no longer lead anywhere and are dropped.
+// Undo and redo keep copies of the whole document. Typing into one field with less than a second between keys counts
+// as one step. The page drops the history when it takes in someone else's copy, because the steps would lead elsewhere.
 
 export const HISTORY_DEPTH = 100;
 
 export const TYPING_JOINS_MS = 1_000;
 
 export interface History<T> {
-  // The copies before each edit, oldest first, and the copies an undo left, the next to redo last.
+  // past has the copies from before each edit, oldest first. future has the copies that undo left, with the next redo
+  // last.
   past: T[];
   future: T[];
-  // The field typed into last and when, so typing on in it joins that step.
+  // The field typed into last and when, so more typing in it joins that step.
   typing: { key: string; at: number } | null;
 }
 
@@ -22,8 +22,8 @@ export function emptyHistory<T>(): History<T> {
   return { past: [], future: [], typing: null };
 }
 
-// The history after an edit that changed before into something else. key names the field typed into, as typingKey
-// does, and is null for every other edit. A new edit drops what there was to redo.
+// The history after an edit that changed before into something else. key names the field typed into, in the same
+// form as typingKey, and is null for every other edit. A new edit drops everything there was to redo.
 export function recorded<T>(
   history: History<T>,
   before: T,
@@ -83,8 +83,8 @@ export function redone<T>(history: History<T>, present: T): Stepped<T> | null {
 
 export type HistoryCommand = "undo" | "redo";
 
-// Ctrl+Z (⌘Z on a Mac) undoes; Ctrl+Y and Ctrl+Shift+Z (⌘⇧Z) redo. A page leaves them to a text field it is
-// pressed in (isTextField), whose own undo takes back its typing.
+// Ctrl+Z (⌘Z on a Mac) undoes. Ctrl+Y and Ctrl+Shift+Z (⌘⇧Z) redo. A page leaves these keys to a text field they're
+// pressed in (isTextField), so the field's own undo takes back its typing.
 export function historyCommand(event: {
   key: string;
   ctrlKey: boolean;

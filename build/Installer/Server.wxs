@@ -1,0 +1,98 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The published server in Program Files, and DDT.Host.exe as the DDT service with its firewall rules -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:fw="http://wixtoolset.org/schemas/v4/wxs/firewall"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Fragment>
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="DDT" />
+    </StandardDirectory>
+
+    <!-- Which network profiles the firewall rules cover: 1 is Domain, 2 Private and 4 Public -->
+    <Property Id="FIREWALLPROFILES" Value="3" Secure="yes" />
+
+    <ComponentGroup Id="Server" Directory="INSTALLFOLDER">
+      <!-- DDT.Host.exe comes from its own component below, which carries the service. -->
+      <Files Include="!(bindpath.Payload)\**">
+        <Exclude Files="!(bindpath.Payload)\DDT.Host.exe" />
+      </Files>
+
+      <Component Id="Host">
+        <File Id="DDTHostExe" Source="!(bindpath.Payload)\DDT.Host.exe" KeyPath="yes" />
+
+        <!-- NT SERVICE\DDT is a virtual account -->
+        <ServiceInstall Name="DDT"
+                        DisplayName="DDT Deployment Server"
+                        Description="Serves the DDT web UI and API together with the netbooting functionality."
+                        Type="ownProcess"
+                        Start="auto"
+                        ErrorControl="normal"
+                        Account="NT SERVICE\DDT"
+                        Vital="yes">
+          <!-- Windows Installer's own failure actions don't work as documented (warning WIX1149). -->
+          <util:ServiceConfig FirstFailureActionType="restart"
+                              SecondFailureActionType="restart"
+                              ThirdFailureActionType="restart"
+                              RestartServiceDelayInSeconds="60"
+                              ResetPeriodInDays="1" />
+        </ServiceInstall>
+        <ServiceControl Name="DDT" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
+
+        <!-- The virtual account can't register an event source itself -->
+        <util:EventSource Name="DDT"
+                          Log="Application"
+                          EventMessageFile="[INSTALLFOLDER]System.Diagnostics.EventLog.Messages.dll" />
+
+        <!-- For the program rather than for ports, because TFTP answers each transfer from a port of its own -->
+        <fw:FirewallException Id="HostTcp"
+                              Name="DDT Server (TCP)"
+                              Description="HTTPS for browsers and agents, and HTTP boot."
+                              File="DDTHostExe"
+                              Protocol="tcp"
+                              Scope="any"
+                              Profile="[FIREWALLPROFILES]" />
+        <fw:FirewallException Id="HostUdp"
+                              Name="DDT Server (UDP)"
+                              Description="ProxyDHCP and TFTP, for machines that netboot."
+                              File="DDTHostExe"
+                              Protocol="udp"
+                              Scope="any"
+                              Profile="[FIREWALLPROFILES]" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- As SYSTEM, after the service made its root. Failing only costs a browser warning. -->
+    <CustomAction Id="TrustRoot"
+                  FileRef="DDTHostExe"
+                  ExeCommand="setup trust-root"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+    <CustomAction Id="UntrustRoot"
+                  FileRef="DDTHostExe"
+                  ExeCommand="setup untrust-root"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+    <!-- ServerDlg's card, as a setting. Only on a new install.. someone's own choice stays. -->
+    <CustomAction Id="SetNetbootInterface"
+                  FileRef="DDTHostExe"
+                  ExeCommand="settings netboot-interface &quot;[NETBOOTINTERFACE]&quot;"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+    <InstallExecuteSequence>
+      <Custom Action="TrustRoot" After="StartServices" Condition="NOT REMOVE" />
+      <!-- Before the service starts, or both create the schema at once -->
+      <Custom Action="SetNetbootInterface"
+              Before="StartServices"
+              Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED AND NETBOOTINTERFACE AND NETBOOTINTERFACE &lt;&gt; &quot;later&quot;" />
+      <Custom Action="UntrustRoot" Before="RemoveFiles" Condition="REMOVE ~= &quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
+  </Fragment>
+
+</Wix>

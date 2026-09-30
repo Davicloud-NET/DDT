@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup Label="Hosting">
+    <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.10.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.19.1" />
@@ -50,6 +51,14 @@
          rendering never loads. -->
     <PackageVersion Include="Avalonia.Angle.Windows.Natives" Version="2.1.27548.20260419" />
     <PackageVersion Include="Avalonia.BuildServices" Version="11.3.2" />
+  </ItemGroup>
+
+  <ItemGroup Label="Installer">
+    <PackageVersion Include="WixToolset.Dtf.CustomAction" Version="7.0.0" />
+    <PackageVersion Include="WixToolset.Dtf.WindowsInstaller" Version="7.0.0" />
+    <PackageVersion Include="WixToolset.Firewall.wixext" Version="7.0.0" />
+    <PackageVersion Include="WixToolset.UI.wixext" Version="7.0.0" />
+    <PackageVersion Include="WixToolset.Util.wixext" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup Label="Analysis">

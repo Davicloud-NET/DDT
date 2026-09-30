@@ -32,6 +32,7 @@ public sealed class SourceHeaderTests
         [".psd1"] = ("# ", ""),
         [".py"] = ("# ", ""),
         [".axaml"] = ("<!-- ", " -->"),
+        [".wxs"] = ("<!-- ", " -->"),
     };
 
     private static readonly string[] s_sourceFolders = ["src", "tests", "build"];

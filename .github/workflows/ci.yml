@@ -54,6 +54,11 @@ jobs:
           $findings | Format-Table RuleName, Severity, ScriptName, Line, Message -AutoSize -Wrap
           if ($findings.Count -gt 0) { throw "PSScriptAnalyzer found $($findings.Count) problems in build/." }
 
+      # Proves the WiX sources still build. Without the web UI, which the web job checks.
+      - name: Build the MSI
+        shell: powershell
+        run: .\build\Build-Installer.ps1 -SkipWeb
+
       # Docker on a Windows runner runs Windows containers, so the PostgreSQL tests could not start theirs. With Docker
       # stopped they skip, as on a PC where it is not running, and the Linux job runs them.
       - name: Stop Docker

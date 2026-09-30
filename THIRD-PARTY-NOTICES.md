@@ -41,10 +41,11 @@ Contributors, with the same permission text.
   [licenses/aspnetcore/THIRD-PARTY-NOTICES.TXT](licenses/aspnetcore/THIRD-PARTY-NOTICES.TXT),
   the notices file both packages carry, taken from version 10.0.12.
 - .NET runtime libraries: `System.DirectoryServices.Protocols`,
-  `System.Security.Cryptography.Pkcs`, `Microsoft.Bcl.Cryptography` and
-  `Microsoft.Extensions.DependencyModel`. The code by others in them is listed in
+  `System.Security.Cryptography.Pkcs`, `Microsoft.Bcl.Cryptography`,
+  `Microsoft.Extensions.DependencyModel`, `Microsoft.Extensions.Hosting.WindowsServices` and
+  `System.ServiceProcess.ServiceController`. The code by others in them is listed in
   [licenses/dotnet/THIRD-PARTY-NOTICES.TXT](licenses/dotnet/THIRD-PARTY-NOTICES.TXT), the
-  notices file of the .NET runtime, which all four packages carry. For
+  notices file of the .NET runtime, which all six packages carry. For
   `System.DirectoryServices.Protocols` it includes the notice for ldap4net.
 - Entity Framework Core: `Microsoft.EntityFrameworkCore`,
   `Microsoft.EntityFrameworkCore.Abstractions`, `Microsoft.EntityFrameworkCore.Relational`,
@@ -322,3 +323,23 @@ source comes from Ubuntu (`apt-get source <package>`, or https://launchpad.net/u
 Microsoft (https://github.com/dotnet/dotnet, with the image definition at
 https://github.com/dotnet/dotnet-docker). Distributing the image distributes these packages too,
 under their own licences.
+
+## The Windows installer, `DDT.msi`
+
+`build/Build-Installer.ps1` publishes the server self-contained for win-x64 and packs it into
+`DDT.msi` with the WiX Toolset. The MSI installs the same server as `/app`, with its `legal`
+folder, so everything listed for the server and the web UI bundle applies to it too.
+
+Because it's self-contained, it also carries the .NET runtime and the ASP.NET Core shared framework,
+which the container gets from its base image instead. Both are under the MIT licence in
+[licenses/dotnet/LICENSE.TXT](licenses/dotnet/LICENSE.TXT). The code by others in them is listed in
+[licenses/dotnet/THIRD-PARTY-NOTICES.TXT](licenses/dotnet/THIRD-PARTY-NOTICES.TXT) and
+[licenses/aspnetcore/THIRD-PARTY-NOTICES.TXT](licenses/aspnetcore/THIRD-PARTY-NOTICES.TXT).
+
+The MSI also holds parts of the WiX Toolset 7.0.0, Copyright (c) .NET Foundation and contributors,
+under the Microsoft Reciprocal License in [licenses/wix/LICENSE.TXT](licenses/wix/LICENSE.TXT): the
+custom actions of its Util, Firewall and UI extensions, which Windows Installer runs during setup,
+and the dialogs and pictures of its setup UI. They're programs of their own, not part of DDT, and
+the MSI doesn't install them. Their source is at https://github.com/wixtoolset/wix, tag `v7.0.0`.
+DDT's own setup checks, from `build/Installer/CustomActions`, carry WiX's
+`WixToolset.Dtf.WindowsInstaller` in the same way.

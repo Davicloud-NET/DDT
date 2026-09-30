@@ -4,6 +4,7 @@
 
 using DDT.Server.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -35,6 +36,8 @@ public static class DataServiceCollectionExtensions
             string file = Path.Combine(options.StorePath, "ddt-dev.db");
             services.AddDbContextPool<DdtDbContext>((provider, db) => db
                 .UseSqlite($"Data Source={file}")
+                // One warning per table on every start, into the event log
+                .ConfigureWarnings(warnings => warnings.Ignore(SqliteEventId.SchemaConfiguredWarning))
                 .AddInterceptors(provider.GetRequiredService<AuditInterceptor>(), provider.GetRequiredService<RunCredentialCleanup>()));
         }
         else

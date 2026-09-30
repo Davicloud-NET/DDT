@@ -1,6 +1,6 @@
 <Project>
 
-  <PropertyGroup Condition="'$(MSBuildProjectExtension)' != '.esproj'">
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' != '.esproj' And '$(MSBuildProjectExtension)' != '.wixproj'">
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -16,7 +16,7 @@
     <MeziantouAnalysisMode>None</MeziantouAnalysisMode>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(MSBuildProjectExtension)' != '.esproj'">
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' != '.esproj' And '$(MSBuildProjectExtension)' != '.wixproj'">
     <PackageReference Include="Meziantou.Analyzer" PrivateAssets="all" />
   </ItemGroup>
 

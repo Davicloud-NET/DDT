@@ -164,15 +164,17 @@ directory today, where `UseStaticFiles` and the fallback to `index.html` look fo
 (Program.cs:120-121,161). The `legal` folder already comes from `AppContext.BaseDirectory`
 (Program.cs:85).
 
-**The bootstrap file.** The service and the console verbs read `%ProgramData%\DDT\ddt.json` on
+**The bootstrap file.** The service and the console verbs read `%ProgramData%\DDT\ddt.ini` on
 Windows, after `appsettings.json` and before environment variables and the command line, so both
-still override it. It is what ENV lines are in the image (build/Dockerfile:44-47): the defaults of an
-install, not of the code, for the reasons settings.md section 2 gives. So the store's code default
-stays `/var/lib/ddt` (src/DDT.Server/Configuration/DdtOptions.cs:13) and the file names
-`%ProgramData%\DDT`. It holds only keys of settings.md section 2: a key of a page field there would
-lock that field (README, Configuration wins, and locks). `DDT.Host settings create-admin`, which
-SettingsConsole.cs:16 runs with `docker exec` today, then finds the same database on Windows from any
-elevated prompt.
+still override it. It's an INI file because Windows Installer writes those itself, with rollback,
+where JSON would need a custom action; .NET reads it with `AddIniFile`. The MSI only writes keys
+that are missing, so an upgrade keeps what an administrator changed. It is what ENV lines are in the
+image (build/Dockerfile:44-47): the defaults of an install, not of the code, for the reasons
+settings.md section 2 gives. So the store's code default stays `/var/lib/ddt`
+(src/DDT.Server/Configuration/DdtOptions.cs:13) and the file names `%ProgramData%\DDT`. It holds
+only keys of settings.md section 2: a key of a page field there would lock that field (README,
+Configuration wins, and locks). `DDT.Host settings create-admin`, which SettingsConsole.cs:16 runs
+with `docker exec` today, then finds the same database on Windows from any elevated prompt.
 
 **What differs on Windows.** The server's tests run on Windows in CI (.github/workflows/ci.yml:25-55),
 and the PXE sockets and the key files have Windows code of their own (src/DDT.Pxe/PxeSocket.cs:15-31,
@@ -243,6 +245,18 @@ production store (DatabaseInitializer.cs:119). So one command needs a database s
 
 With (a), PostgreSQL stays for installs that want it, and the compose file keeps it as an option. An
 install does not move between the two; an export and import can come later.
+
+**SQL Server** too, for shops that run it already (ConfigMgr, WSUS, MDT's database). Needs:
+
+- `NO ACTION` on the foreign keys SQL Server calls multiple cascade paths (the user references on
+  `Machine`, `ApiToken`, `Deployment`), with the code clearing them before a user is deleted;
+- a filter on the unique `DdtUser.DirectoryObjectId` index, which allows one NULL otherwise;
+- a binary collation on hash and token columns, since the default one ignores case;
+- `sp_getapplock` around the migration at start, like PostgreSQL's lock;
+- tests against a SQL Server container in CI.
+
+**One migration per provider.** At the end of 4.4 the migrations are reset: one initial migration
+each for SQLite, PostgreSQL and SQL Server.
 
 ### 4.5 The first administrator
 

@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
+# Template: build/New-WingetManifest.ps1 fills in the {{...}} values.
+
+PackageIdentifier: Davicloud.DDT
+PackageVersion: {{Version}}
+MinimumOSVersion: 10.0.17763.0
+InstallerType: wix
+Scope: machine
+InstallModes:
+- interactive
+- silent
+- silentWithProgress
+UpgradeBehavior: install
+ElevationRequirement: elevatesSelf
+ReleaseDate: {{ReleaseDate}}
+Installers:
+- Architecture: x64
+  InstallerUrl: {{InstallerUrl}}
+  InstallerSha256: {{InstallerSha256}}
+  ProductCode: '{{ProductCode}}'
+ManifestType: installer
+ManifestVersion: 1.12.0

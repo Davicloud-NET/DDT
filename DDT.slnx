@@ -39,5 +39,12 @@
     <File Path="build/Dockerfile" />
     <File Path="build/Dockerfile.dockerignore" />
     <File Path="build/compose.yaml" />
+    <!-- Windows only, and built from build/Build-Installer.ps1, so a solution build leaves it out. -->
+    <Project Path="build/Installer/DDT.Installer.wixproj">
+      <Build Project="false" />
+    </Project>
+    <Project Path="build/Installer/CustomActions/DDT.Installer.CustomActions.csproj">
+      <Build Project="false" />
+    </Project>
   </Folder>
 </Solution>

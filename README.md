@@ -113,7 +113,7 @@ There is no installer yet (that is M6.6), so for now DDT is built from source. Y
 - the Windows ADK with its WinPE add-on, 10.1.26100.2454 or later, for the boot image.
 
 Run the whole development stack, server and web UI, through Aspire. On its first start the server
-prints the password of the first administrator.
+writes the first administrator's password to `first-admin.txt` in its store, and logs where that is.
 
 ```bash
 dotnet run --project src/DDT.AppHost

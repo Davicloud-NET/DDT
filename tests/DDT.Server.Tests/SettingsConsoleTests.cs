@@ -90,6 +90,25 @@ public sealed class SettingsConsoleTests
         Assert.StartsWith("Usage: DDT.Host settings reset <section>", output.ToString(), StringComparison.Ordinal);
     }
 
+    // What setup's netboot settings are
+    [Fact]
+    public async Task NetbootInterfaceSetsTheInterfacesOnlyWhileThereAreNone()
+    {
+        using DdtApplication application = new();
+        SignedInClient administrator = await application.AdministratorAsync();
+        StringWriter first = new();
+        StringWriter second = new();
+
+        Assert.Equal(0, await SettingsConsole.RunAsync(["settings", "netboot-interface", "Ethernet"], first, Store(application)));
+        Assert.Equal(0, await SettingsConsole.RunAsync(["settings", "netboot-interface", "Wi-Fi"], second, Store(application)));
+
+        await application.RefreshSettingsAsync();
+        SettingsSectionView<PxeSettings> view = await administrator.SectionAsync<PxeSettings>(SettingsSectionNames.Pxe);
+        Assert.Equal(["Ethernet"], view.Values.Interfaces);
+        Assert.StartsWith("PXE serves Ethernet now.", first.ToString(), StringComparison.Ordinal);
+        Assert.StartsWith("PXE already serves Ethernet", second.ToString(), StringComparison.Ordinal);
+    }
+
     private static Dictionary<string, string?> Store(DdtApplication application) => new()
     {
         ["DDT:StorePath"] = application.StorePath,

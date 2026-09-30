@@ -1,0 +1,26 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- Setup's own checks, from build/Installer/CustomActions -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <Fragment>
+    <Binary Id="SetupChecks" SourceFile="DDT.Installer.CustomActions.CA.dll" />
+
+    <CustomAction Id="CheckPort" BinaryRef="SetupChecks" DllEntry="CheckPort" Execute="immediate" Return="check" />
+    <CustomAction Id="ListNetworkCards" BinaryRef="SetupChecks" DllEntry="ListNetworkCards" Execute="immediate" Return="ignore" />
+    <CustomAction Id="PortTaken" Error="Port [PORT] is in use by another program, or isn't a port. Pass a free one, as in PORT=8444." />
+
+    <InstallUISequence>
+      <Custom Action="ListNetworkCards" After="CostFinalize" Condition="NOT Installed" />
+    </InstallUISequence>
+
+    <!-- Again here for quiet installs, which skip ServerDlg -->
+    <InstallExecuteSequence>
+      <Custom Action="CheckPort" After="AppSearch" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
+      <Custom Action="PortTaken" After="CheckPort" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED AND (PORTINUSE OR PORTINVALID)" />
+    </InstallExecuteSequence>
+  </Fragment>
+
+</Wix>

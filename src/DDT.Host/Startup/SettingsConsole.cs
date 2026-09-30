@@ -61,11 +61,19 @@ public static class SettingsConsole
 
                 return 0;
 
+            case ["settings", "netboot-interface", string name]:
+                await using (WebApplication app = await StartAsync(settings).ConfigureAwait(false))
+                {
+                    await output.WriteLineAsync(await NetbootInterface.SetAsync(app.Services, name).ConfigureAwait(false)).ConfigureAwait(false);
+                }
+
+                return 0;
+
             default:
                 await output.WriteLineAsync(
                     "Usage: DDT.Host settings reset <section>, where section is one of " +
                     $"{string.Join(", ", SettingsDefinitions.All.Select(definition => definition.Name))}; " +
-                    "or DDT.Host settings create-admin [user name].").ConfigureAwait(false);
+                    "DDT.Host settings create-admin [user name]; or DDT.Host settings netboot-interface <name>.").ConfigureAwait(false);
 
                 return 2;
         }
@@ -79,6 +87,11 @@ public static class SettingsConsole
         if (settings is not null)
         {
             builder.Configuration.AddInMemoryCollection(settings);
+        }
+        else
+        {
+            // Finds the service's store and database on Windows.
+            BootstrapFile.Add(builder.Configuration, BootstrapFile.DefaultPath);
         }
 
         DdtOptions options = builder.Configuration.GetSection(DdtOptions.SectionName).Get<DdtOptions>() ?? new DdtOptions();

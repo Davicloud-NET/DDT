@@ -21,6 +21,8 @@ using DDT.Server.Machines;
 using DDT.Server.Security;
 using DDT.Server.Sequences;
 using DDT.Server.Settings;
+using Microsoft.Extensions.Hosting.WindowsServices;
+using Microsoft.Extensions.Logging.EventLog;
 
 // The console verbs run next to a running server. They don't start a server themselves.
 if (SettingsConsole.Handles(args))
@@ -30,7 +32,39 @@ if (SettingsConsole.Handles(args))
     return;
 }
 
+if (SetupConsole.Handles(args))
+{
+    Environment.ExitCode = SetupConsole.Run(args, Console.Out);
+
+    return;
+}
+
+bool service = WindowsServiceHelpers.IsWindowsService();
+
+// Services start in System32. wwwroot and relative paths resolve against the program folder instead.
+if (service)
+{
+    Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+}
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Only the service reads ddt.ini, so tests and dotnet run on a machine with DDT installed don't pick it up.
+if (service)
+{
+    BootstrapFile.Add(builder.Configuration, BootstrapFile.DefaultPath);
+
+    // Registered by the MSI
+    builder.Services.Configure<EventLogSettings>(eventLog =>
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            eventLog.SourceName = "DDT";
+        }
+    });
+}
+
+builder.Services.AddWindowsService(windows => windows.ServiceName = "DDT");
 
 DdtOptions options = builder.Configuration.GetSection(DdtOptions.SectionName).Get<DdtOptions>() ?? new DdtOptions();
 IReadOnlySet<DeploymentRole> roles = DeploymentRoles.Parse(options.Roles);

@@ -54,6 +54,7 @@ public static class DdtAuthenticationExtensions
         // The default is 30 minutes, which is how long a disabled account keeps working.
         services.Configure<SecurityStampValidatorOptions>(stamp => stamp.ValidationInterval = TimeSpan.FromMinutes(1));
 
+        services.AddSingleton<FirstAdministratorFile>();
         services.AddHostedService<IdentityBootstrap>();
 
         return services;

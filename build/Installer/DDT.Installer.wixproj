@@ -1,0 +1,45 @@
+<Project Sdk="WixToolset.Sdk">
+
+  <!-- Built by build/Build-Installer.ps1, which publishes the server into PayloadDir and writes LicenseRtf. -->
+  <PropertyGroup>
+    <OutputName>DDT</OutputName>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- WiX v7 builds only once its Open Source Maintenance Fee EULA is accepted (OSMFEULA.txt in the WiX repo). -->
+    <AcceptEula>wix7</AcceptEula>
+    <Version Condition="'$(Version)' == ''">0.0.1</Version>
+    <!-- What the script's last run left, so the project also builds on its own, as from Visual Studio. -->
+    <PayloadDir Condition="'$(PayloadDir)' == ''">$(MSBuildThisFileDirectory)..\..\artifacts\installer-work\payload</PayloadDir>
+    <LicenseRtf Condition="'$(LicenseRtf)' == ''">$(MSBuildThisFileDirectory)..\..\artifacts\installer-work\License.rtf</LicenseRtf>
+    <DefineConstants>Version=$(Version);LicenseRtf=$(LicenseRtf)</DefineConstants>
+    <!-- ICE60: native DLLs like e_sqlite3.dll have a version but no language. -->
+    <SuppressIces>ICE60</SuppressIces>
+  </PropertyGroup>
+
+  <!-- The custom actions build on their own. -->
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);CustomActions\**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <BindPath Include="$(PayloadDir)" BindName="Payload" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="CustomActions\DDT.Installer.CustomActions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Firewall.wixext" />
+    <PackageReference Include="WixToolset.UI.wixext" />
+    <PackageReference Include="WixToolset.Util.wixext" />
+  </ItemGroup>
+
+  <Target Name="CheckInputs" BeforeTargets="CoreCompile">
+    <Error Condition="'$(PayloadDir)' == '' Or !Exists('$(PayloadDir)\DDT.Host.exe')"
+           Text="PayloadDir has to name the published server. Build the MSI with build/Build-Installer.ps1." />
+    <Error Condition="'$(LicenseRtf)' == '' Or !Exists('$(LicenseRtf)')"
+           Text="LicenseRtf has to name the licence text of the setup dialog. Build the MSI with build/Build-Installer.ps1." />
+  </Target>
+
+</Project>

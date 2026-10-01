@@ -19,7 +19,10 @@ ddt.ini, the bootstrap file, to %ProgramData%\DDT. It takes these properties, as
   STOREFOLDER       The store, %ProgramData%\DDT\ by default. Only SYSTEM, Administrators and the service get in.
   CONNECTIONSTRING  A PostgreSQL connection string. Without one, DDT keeps its database in SQLite in the store.
   FIREWALLPROFILES  The network profiles the firewall rules cover: 1 Domain, 2 Private, 4 Public, added up. 3 by
-                    default.
+                    default; an upgrade keeps the last install's.
+  FIREWALLPUBLIC=1  Adds Public to FIREWALLPROFILES, like the checkbox setup shows on a public network.
+  IISHOSTNAME       With IISCERTIFICATE, a thumbprint from the machine store: an IIS site under this name forwards
+                    to DDT. Needs IIS with URL Rewrite and ARR. Uninstall removes the site.
   NETBOOTINTERFACE  The network card that answers netboot, by name, such as Ethernet. Unset, PXE stays off until
                     someone picks a card in DDT.
   REMOVESTORE=1     On uninstall, deletes the store and ddt.ini too, with the database and DDT's root key.

@@ -12,8 +12,29 @@
       <Directory Id="INSTALLFOLDER" Name="DDT" />
     </StandardDirectory>
 
-    <!-- Which network profiles the firewall rules cover: 1 is Domain, 2 Private and 4 Public -->
-    <Property Id="FIREWALLPROFILES" Value="3" Secure="yes" />
+    <!-- Which network profiles the firewall rules cover: 1 is Domain, 2 Private and 4 Public. 3, or what the last install used. -->
+    <Property Id="FIREWALLPROFILES" Secure="yes" />
+    <!-- Adds Public. ServerDlg's checkbox. -->
+    <Property Id="FIREWALLPUBLIC" Secure="yes" />
+    <Property Id="REMEMBEREDFIREWALLPROFILES" Secure="yes">
+      <RegistrySearch Id="RememberedFirewallProfiles"
+                      Root="HKLM"
+                      Key="SOFTWARE\Davicloud\DDT"
+                      Name="FirewallProfiles"
+                      Type="raw" />
+    </Property>
+    <SetProperty Id="FIREWALLPROFILES"
+                 Action="RememberFirewallProfiles"
+                 Value="[REMEMBEREDFIREWALLPROFILES]"
+                 After="AppSearch"
+                 Sequence="both"
+                 Condition="NOT FIREWALLPROFILES AND REMEMBEREDFIREWALLPROFILES" />
+    <SetProperty Id="FIREWALLPROFILES"
+                 Action="DefaultFirewallProfiles"
+                 Value="3"
+                 After="RememberFirewallProfiles"
+                 Sequence="both"
+                 Condition="NOT FIREWALLPROFILES" />
 
     <ComponentGroup Id="Server" Directory="INSTALLFOLDER">
       <!-- DDT.Host.exe comes from its own component below, which carries the service. -->
@@ -72,6 +93,13 @@
                   Execute="deferred"
                   Impersonate="no"
                   Return="ignore" />
+    <!-- A first install that fails leaves no trusted root -->
+    <CustomAction Id="RollbackTrustRoot"
+                  FileRef="DDTHostExe"
+                  ExeCommand="setup untrust-root"
+                  Execute="rollback"
+                  Impersonate="no"
+                  Return="ignore" />
     <CustomAction Id="UntrustRoot"
                   FileRef="DDTHostExe"
                   ExeCommand="setup untrust-root"
@@ -85,8 +113,48 @@
                   Execute="deferred"
                   Impersonate="no"
                   Return="ignore" />
+    <!-- IisDlg: IIS ARR going to DDT-->
+    <Property Id="IISHOSTNAME" Secure="yes" />
+    <Property Id="IISCERTIFICATE" Secure="yes" />
+    <CustomAction Id="TrustLocalProxy"
+                  FileRef="DDTHostExe"
+                  ExeCommand="settings trust-local-proxy"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+    <CustomAction Id="PublishToIis"
+                  FileRef="DDTHostExe"
+                  ExeCommand="setup iis &quot;[IISHOSTNAME]&quot; [IISCERTIFICATE]"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check" />
+    <CustomAction Id="RollbackIis"
+                  FileRef="DDTHostExe"
+                  ExeCommand="setup remove-iis"
+                  Execute="rollback"
+                  Impersonate="no"
+                  Return="ignore" />
+    <CustomAction Id="RemoveIis"
+                  FileRef="DDTHostExe"
+                  ExeCommand="setup remove-iis"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
     <InstallExecuteSequence>
       <Custom Action="TrustRoot" After="StartServices" Condition="NOT REMOVE" />
+      <Custom Action="RollbackTrustRoot" Before="TrustRoot" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
+      <Custom Action="TrustLocalProxy"
+              Before="StartServices"
+              Condition="IISHOSTNAME AND IISCERTIFICATE AND NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
+      <Custom Action="RollbackIis"
+              After="TrustRoot"
+              Condition="IISHOSTNAME AND IISCERTIFICATE AND NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
+      <Custom Action="PublishToIis"
+              After="RollbackIis"
+              Condition="IISHOSTNAME AND IISCERTIFICATE AND NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
+      <!-- Only DDT's own site: remove-iis checks the site's folder -->
+      <Custom Action="RemoveIis" Before="RemoveFiles" Condition="REMOVE ~= &quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
       <!-- Before the service starts, or both create the schema at once -->
       <Custom Action="SetNetbootInterface"
               Before="StartServices"

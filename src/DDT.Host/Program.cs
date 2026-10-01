@@ -34,7 +34,14 @@ if (SettingsConsole.Handles(args))
 
 if (SetupConsole.Handles(args))
 {
-    Environment.ExitCode = SetupConsole.Run(args, Console.Out);
+    using StringWriter said = new();
+    Environment.ExitCode = SetupConsole.Run(args, said);
+    Console.Out.Write(said.ToString());
+
+    if (Environment.ExitCode == 1 && OperatingSystem.IsWindows())
+    {
+        SetupConsole.LogFailure(args, said.ToString().Trim());
+    }
 
     return;
 }

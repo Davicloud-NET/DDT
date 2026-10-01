@@ -29,6 +29,12 @@
                       Name="StoreFolder"
                       Type="raw" />
     </Property>
+    <!-- An upgrade keeps a store that was moved -->
+    <SetProperty Id="STOREFOLDER"
+                 Value="[REMEMBEREDSTOREFOLDER]"
+                 After="AppSearch"
+                 Sequence="both"
+                 Condition="NOT STOREFOLDER AND REMEMBEREDSTOREFOLDER" />
     <Property Id="REMEMBEREDDATAFOLDER" Secure="yes">
       <RegistrySearch Id="RememberedDataFolder"
                       Root="HKLM"
@@ -105,6 +111,7 @@
         <RegistryKey Root="HKLM" Key="SOFTWARE\Davicloud\DDT">
           <RegistryValue Name="StoreFolder" Type="string" Value="[STOREFOLDER]" KeyPath="yes" />
           <RegistryValue Name="DataFolder" Type="string" Value="[DATAFOLDER]" />
+          <RegistryValue Name="FirewallProfiles" Type="string" Value="[FIREWALLPROFILES]" />
         </RegistryKey>
         <util:RemoveFolderEx Property="REMEMBEREDSTOREFOLDER"
                              On="uninstall"

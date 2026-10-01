@@ -109,6 +109,24 @@ public sealed class SettingsConsoleTests
         Assert.StartsWith("PXE already serves Ethernet", second.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task TrustLocalProxyAddsLoopbackOnceAndKeepsTheOtherProxies()
+    {
+        using DdtApplication application = new();
+        SignedInClient administrator = await application.AdministratorAsync();
+        StringWriter first = new();
+        StringWriter second = new();
+
+        Assert.Equal(0, await SettingsConsole.RunAsync(["settings", "trust-local-proxy"], first, Store(application)));
+        Assert.Equal(0, await SettingsConsole.RunAsync(["settings", "trust-local-proxy"], second, Store(application)));
+
+        Assert.StartsWith("DDT trusts a proxy on this server now", first.ToString(), StringComparison.Ordinal);
+        Assert.StartsWith("DDT trusts a proxy on this server already", second.ToString(), StringComparison.Ordinal);
+        await application.RefreshSettingsAsync();
+        SettingsSectionView<ProxySettings> view = await administrator.SectionAsync<ProxySettings>(SettingsSectionNames.Proxies);
+        Assert.Equal(["127.0.0.1", "::1"], view.Values.KnownProxies);
+    }
+
     private static Dictionary<string, string?> Store(DdtApplication application) => new()
     {
         ["DDT:StorePath"] = application.StorePath,

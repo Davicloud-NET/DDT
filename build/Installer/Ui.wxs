@@ -32,7 +32,8 @@
       <Publish Dialog="LicenseAgreementDlg" Control="Next" Event="NewDialog" Value="ServerDlg" Condition="LicenseAccepted = &quot;1&quot; AND NOT WIX_UPGRADE_DETECTED" />
       <Publish Dialog="LicenseAgreementDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Condition="LicenseAccepted = &quot;1&quot; AND WIX_UPGRADE_DETECTED" />
 
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="ServerDlg" Order="1" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="ServerDlg" Order="1" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED AND NOT IISREADY" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="IisDlg" Order="1" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED AND IISREADY" />
       <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="LicenseAgreementDlg" Order="1" Condition="NOT Installed AND WIX_UPGRADE_DETECTED" />
       <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2" Condition="Installed AND NOT PATCH" />
       <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2" Condition="Installed AND PATCH" />
@@ -50,13 +51,15 @@
   <Fragment>
     <!-- "later" leaves PXE off until someone picks a card in DDT. -->
     <Property Id="NETBOOTINTERFACE" Secure="yes" />
+    <Property Id="IISPROXY" Secure="yes" />
 
     <UI>
       <Dialog Id="ServerDlg" Width="370" Height="270" Title="[ProductName] Setup">
         <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next">
           <Publish Event="DoAction" Value="CheckPort" Order="1" />
           <Publish Event="SpawnDialog" Value="PortDlg" Order="2" Condition="PORTINUSE OR PORTINVALID" />
-          <Publish Event="NewDialog" Value="VerifyReadyDlg" Order="3" Condition="NOT PORTINUSE AND NOT PORTINVALID" />
+          <Publish Event="NewDialog" Value="VerifyReadyDlg" Order="3" Condition="NOT PORTINUSE AND NOT PORTINVALID AND NOT IISREADY" />
+          <Publish Event="NewDialog" Value="IisDlg" Order="4" Condition="NOT PORTINUSE AND NOT PORTINVALID AND IISREADY" />
         </Control>
         <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
           <Publish Event="NewDialog" Value="LicenseAgreementDlg" />
@@ -81,6 +84,51 @@
           </ComboBox>
         </Control>
         <Control Id="InterfaceNote" Type="Text" X="20" Y="140" Width="320" Height="30" Text="DDT answers PXE only on this card. Pick none if WDS or another PXE server answers on its network." />
+
+        <!-- BLOCKEDNETWORK from ListNetworkCards: the main network is on a profile the firewall rules skip -->
+        <Control Id="PublicNote" Type="Text" X="20" Y="174" Width="320" Height="24" Hidden="yes" ShowCondition="BLOCKEDNETWORK" Text="This server's network is public, so the firewall blocks DDT there. Make the network private in Windows, or:" />
+        <Control Id="Public" Type="CheckBox" X="20" Y="200" Width="320" Height="17" Hidden="yes" ShowCondition="BLOCKEDNETWORK" Property="FIREWALLPUBLIC" CheckBoxValue="1" Text="&amp;Allow DDT on public networks too" />
+      </Dialog>
+
+      <!-- IISREADY from FindIis: IIS with URL Rewrite and ARR. Unticked, the host name goes, so nothing runs. -->
+      <Dialog Id="IisDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next">
+          <Publish Event="SpawnDialog" Value="IisMissingDlg" Order="1" Condition="IISPROXY AND (NOT IISHOSTNAME OR NOT IISCERTIFICATE OR IISCERTIFICATE = &quot;none&quot;)" />
+          <Publish Property="IISHOSTNAME" Value="{}" Order="2" Condition="NOT IISPROXY" />
+          <Publish Event="NewDialog" Value="VerifyReadyDlg" Order="3" Condition="NOT IISPROXY OR (IISHOSTNAME AND IISCERTIFICATE AND IISCERTIFICATE &lt;&gt; &quot;none&quot;)" />
+        </Control>
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
+          <Publish Event="NewDialog" Value="ServerDlg" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
+        </Control>
+
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="IIS can serve DDT's pages under a name and certificate of your own." />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}IIS" />
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="373" Height="0" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="373" Height="0" />
+
+        <Control Id="Publish" Type="CheckBox" X="20" Y="58" Width="320" Height="17" Property="IISPROXY" CheckBoxValue="1" Text="&amp;Publish DDT through IIS" />
+        <Control Id="HostLabel" Type="Text" X="20" Y="84" Width="320" Height="12" Text="&amp;Host name, with a DNS record that points here:" />
+        <Control Id="Host" Type="Edit" X="20" Y="98" Width="200" Height="18" Property="IISHOSTNAME" Text="{253}" DisableCondition="NOT IISPROXY" EnableCondition="IISPROXY" />
+        <Control Id="CertificateLabel" Type="Text" X="20" Y="124" Width="320" Height="12" Text="&amp;Certificate for that name, from this computer's store:" />
+        <!-- FindIis adds the certificates. The table needs a row at build time. -->
+        <Control Id="Certificate" Type="ComboBox" X="20" Y="138" Width="320" Height="16" Property="IISCERTIFICATE" ComboList="yes" DisableCondition="NOT IISPROXY" EnableCondition="IISPROXY">
+          <ComboBox Property="IISCERTIFICATE">
+            <ListItem Value="none" Text="Pick a certificate" />
+          </ComboBox>
+        </Control>
+        <Control Id="Note" Type="Text" X="20" Y="164" Width="320" Height="54" Text="IIS forwards to DDT on port [PORT]. Agents keep that port and DDT's own certificate. Give DDT a name of its own, such as ddt.contoso.com, so the other sites here keep theirs." />
+      </Dialog>
+
+      <Dialog Id="IisMissingDlg" Width="260" Height="85" Title="[ProductName] Setup">
+        <Control Id="OK" Type="PushButton" X="102" Y="57" Width="56" Height="17" Default="yes" Cancel="yes" Text="OK">
+          <Publish Event="EndDialog" Value="Return" />
+        </Control>
+        <Control Id="Text" Type="Text" X="48" Y="15" Width="194" Height="36" Text="Enter a host name and pick a certificate, or untick IIS." />
+        <Control Id="Icon" Type="Icon" X="15" Y="15" Width="24" Height="24" FixedSize="yes" IconSize="32" Text="WixUI_Ico_Exclam" />
       </Dialog>
 
       <Dialog Id="PortDlg" Width="260" Height="85" Title="[ProductName] Setup">

@@ -67,8 +67,8 @@ irm https://github.com/Davicloud-NET/DDT/releases/latest/download/install.ps1 | 
 The MSI does only what has to be in place before the web UI can serve, which is what configuration
 keeps today (settings.md section 2):
 
-1. It checks for 64-bit Windows Server 2022 or later (section 8, question 9), or Windows 11 for a
-   lab, and for an elevated prompt.
+1. It checks for 64-bit Windows Server 2019 or Windows 10 1809 or later, build 17763 (section 8,
+   question 9), and for an elevated prompt.
 2. It puts the server in `%ProgramFiles%\DDT` and the store in `%ProgramData%\DDT`.
 3. It writes the bootstrap file of section 4.3: the store, the roles `web,pxe`, the HTTPS endpoint on
    8443, the two certificate paths, and the database of section 4.4.
@@ -77,7 +77,9 @@ keeps today (settings.md section 2):
    alone (section 4.3). It registers the `DDT Helper` service of section 4.7 as well.
 5. It adds inbound firewall rules for `DDT.Host.exe` alone, for the Domain and Private profiles:
    TCP 8443 and 8080, UDP 67, 4011 and 69, and the ports of TFTP transfers, which a rule for the
-   program covers without naming them.
+   program covers without naming them. When the server's own network is public, setup says so and
+   offers to cover public networks too (`FIREWALLPUBLIC=1`, `-AllowPublicNetworks`); `install.ps1`
+   warns. Upgrades keep the profiles.
 6. It starts the service and waits until `/api/about` answers.
 7. It prints the address by the computer's DNS name, the root's SHA-256, and where the first password
    is (section 4.5).
@@ -207,9 +209,9 @@ and the PXE sockets and the key files have Windows code of their own (src/DDT.Px
   and throws for a UNC path (ImageStore.cs:39-40), which fails every upload with a 500. On Windows the
   server asks `GetDiskFreeSpaceEx` for the store's folder.
 - **Time zones on Windows Server 2019.** A time zone is checked through ICU
-  (src/DDT.Core/Unattend/WindowsTimeZones.cs:11-16). Windows Server 2022 and 2025 carry ICU; 2019 does
-  not, so .NET falls back to NLS there and every time zone is refused. Either DDT carries its own ICU,
-  which .NET supports, or it needs 2022 (section 8, question 9).
+  (src/DDT.Core/Unattend/WindowsTimeZones.cs:11-16). Windows carries ICU since Windows 10 1703,
+  Server 2019 included, as `icuuc.dll` and `icuin.dll`, and .NET 7 and later loads those. Not yet
+  tried on 2019; if it falls back to NLS there, every time zone is refused and DDT carries its own ICU.
 - **Converting disk images.** The only programs the server starts are `qemu-img` and `xz`, for qcow2
   and `.xz` uploads, found on the PATH (src/DDT.Server/Images/ConversionTools.cs:15-16,95-107). A
   missing one already refuses the upload with a message and keeps it. The Windows install carries
@@ -280,6 +282,21 @@ short name only if DHCP hands it the right suffix.
 **Trusting the root.** The checklist (section 5) links `ddt-root.pem` with its SHA-256 and a Group
 Policy recipe for the computers of those who manage DDT, and nowhere else, as the security model
 asks: the root has no name constraints (README, Security model).
+
+**IIS in front.** Where IIS has URL Rewrite and ARR, setup offers a page for an IIS site of DDT's own:
+a host name with its own DNS record and a certificate from the machine store (`IISHOSTNAME`,
+`IISCERTIFICATE`; `install.ps1 -IisHostName -IisCertificate`). `DDT.Host setup iis` makes the site,
+binds the certificate by SNI and forwards to Kestrel with `X-Forwarded-Proto`;
+`settings trust-local-proxy` lists loopback as a proxy. Browsers get the shop's certificate, and IIS
+Manager's automatic rebind follows AD CS renewals. Agents keep DDT's port and root. Uninstall removes
+the site, and only a site in DDT's own folder.
+
+ARR's proxy switch and `preserveHostHeader` exist only for the whole server, and DDT needs both:
+without the host name it takes itself for `localhost:8443`. So `setup iis` sets them only where
+ARR's proxy was off. Where ARR already proxies without the host name, it stops and names the
+command, instead of changing how the other sites are proxied. They stay set after an uninstall.
+Live updates use WebSockets where IIS has that feature, and server-sent events otherwise. Tried
+on Windows Server 2025 with IIS 10, URL Rewrite 2.1 and ARR 3.0.
 
 **A certificate from the shop's own CA.** Many MDT shops run AD CS, whose root every domain member
 trusts already. A certificate of one's own works today, but DDT does not renew it (README, A
@@ -453,6 +470,6 @@ image from the builder.
 6. **An MSI.** Recommended over a script alone: winget installs a service through one, and MDT was one.
 7. **The port.** 8443, as the container uses, or 443 when it is free?
 8. **Certificates from AD CS.** Later, or part of this milestone?
-9. **Windows Server versions.** Written as 2022 and later, because Windows Server 2019 has no ICU
-   and DDT's time zone check needs it (section 4.3). DDT could carry its own ICU to add 2019, which
-   many MDT servers still run.
+9. **Windows Server versions.** Answered 2026-09-29: Server 2019 and Windows 10 1809 and later, build
+   17763, which the MSI and `install.ps1` check. The time zone check on 2019 still needs a try
+   (section 4.3).

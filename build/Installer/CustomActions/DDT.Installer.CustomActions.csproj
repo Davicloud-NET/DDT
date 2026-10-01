@@ -11,6 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="System.Management" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="WixToolset.Dtf.CustomAction" />
     <PackageReference Include="WixToolset.Dtf.WindowsInstaller" />
   </ItemGroup>

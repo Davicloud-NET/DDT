@@ -62,18 +62,17 @@ public static class SettingsConsole
                 return 0;
 
             case ["settings", "netboot-interface", string name]:
-                await using (WebApplication app = await StartAsync(settings).ConfigureAwait(false))
-                {
-                    await output.WriteLineAsync(await NetbootInterface.SetAsync(app.Services, name).ConfigureAwait(false)).ConfigureAwait(false);
-                }
+                return await WriteAsync(settings, output, services => NetbootInterface.SetAsync(services, name)).ConfigureAwait(false);
 
-                return 0;
+            case ["settings", "trust-local-proxy"]:
+                return await WriteAsync(settings, output, LocalProxy.TrustAsync).ConfigureAwait(false);
 
             default:
                 await output.WriteLineAsync(
                     "Usage: DDT.Host settings reset <section>, where section is one of " +
                     $"{string.Join(", ", SettingsDefinitions.All.Select(definition => definition.Name))}; " +
-                    "DDT.Host settings create-admin [user name]; or DDT.Host settings netboot-interface <name>.").ConfigureAwait(false);
+                    "DDT.Host settings create-admin [user name]; DDT.Host settings netboot-interface <name>; " +
+                    "or DDT.Host settings trust-local-proxy.").ConfigureAwait(false);
 
                 return 2;
         }
@@ -109,6 +108,17 @@ public static class SettingsConsole
         }
 
         return app;
+    }
+
+    private static async Task<int> WriteAsync(
+        IEnumerable<KeyValuePair<string, string?>>? settings,
+        TextWriter output,
+        Func<IServiceProvider, Task<string>> verb)
+    {
+        await using WebApplication app = await StartAsync(settings).ConfigureAwait(false);
+        await output.WriteLineAsync(await verb(app.Services).ConfigureAwait(false)).ConfigureAwait(false);
+
+        return 0;
     }
 
     private static async Task ResetAsync(WebApplication app, SettingsSectionDefinition definition)

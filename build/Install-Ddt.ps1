@@ -33,6 +33,16 @@ The network card that answers netboot, by name, such as Ethernet. Unset, PXE sta
 .PARAMETER Database
 A PostgreSQL connection string. Without one, DDT keeps its database in SQLite in the store.
 
+.PARAMETER AllowPublicNetworks
+Lets the firewall rules cover public networks too, not only domain and private ones.
+
+.PARAMETER IisHostName
+Publishes DDT through IIS under this name, such as ddt.contoso.com, on a new install. Needs IIS with URL Rewrite and
+ARR, and -IisCertificate.
+
+.PARAMETER IisCertificate
+The thumbprint of the certificate IIS serves for -IisHostName, from the computer's store.
+
 .PARAMETER Version
 A release, as 0.1.0, instead of the latest one.
 
@@ -50,6 +60,12 @@ param(
 
     [string] $Database,
 
+    [switch] $AllowPublicNetworks,
+
+    [string] $IisHostName,
+
+    [string] $IisCertificate,
+
     [ValidatePattern('^\d{1,3}\.\d{1,3}\.\d{1,5}$')]
     [string] $Version,
 
@@ -58,7 +74,8 @@ param(
 
 # A child scope: through irm | iex, strict mode and preferences would stay in the caller's shell.
 & {
-    param([int] $Port, [string] $StoreFolder, [string] $NetbootInterface, [string] $Database, [string] $Version, [string] $Source)
+    param([int] $Port, [string] $StoreFolder, [string] $NetbootInterface, [string] $Database, [bool] $AllowPublicNetworks,
+        [string] $IisHostName, [string] $IisCertificate, [string] $Version, [string] $Source)
 
     Set-StrictMode -Version Latest
     $ErrorActionPreference = 'Stop'
@@ -117,12 +134,36 @@ param(
     if ($StoreFolder) { $arguments += "STOREFOLDER=`"$($StoreFolder.TrimEnd('\'))`"" }
     if ($NetbootInterface) { $arguments += "NETBOOTINTERFACE=`"$NetbootInterface`"" }
     if ($Database) { $arguments += "CONNECTIONSTRING=`"$Database`"" }
+    if ($AllowPublicNetworks) { $arguments += 'FIREWALLPUBLIC=1' }
+    if ([bool] $IisHostName -ne [bool] $IisCertificate) { throw '-IisHostName and -IisCertificate go together.' }
+    if ($IisHostName) { $arguments += "IISHOSTNAME=`"$IisHostName`"", "IISCERTIFICATE=$($IisCertificate -replace '\s', '')" }
 
     Write-Host 'Installing DDT'
     $started = Get-Date
     $installed = Start-Process -FilePath msiexec.exe -ArgumentList $arguments -Wait -PassThru
     if ($installed.ExitCode -notin 0, 3010) {
-        throw "Windows Installer failed with exit code $($installed.ExitCode). Its log is $log."
+        # Setup's own errors, such as a port in use, are in the log as "Product: ... -- message"
+        $reason = ''
+        foreach ($line in Get-Content -LiteralPath $log -ErrorAction SilentlyContinue) {
+            if ($line -match 'Product: .+? -- (.+)$' -and $Matches[1] -notmatch '^Installation (failed|completed)') {
+                $reason = $Matches[1].Trim()
+                break
+            }
+        }
+
+        # A setup verb's own reason. By XPath, and its text from Properties: a rollback unregisters the DDT source.
+        try {
+            $since = $started.ToUniversalTime().ToString('o')
+            $verb = Get-WinEvent -LogName Application -MaxEvents 20 -ErrorAction Stop -FilterXPath "*[System[Provider[@Name='DDT'] and Level=2 and TimeCreated[@SystemTime>='$since']]]" |
+                Where-Object { $_.Properties.Count -gt 0 -and "$($_.Properties[0].Value)" -match '^DDT\.Host .+ failed: ' } |
+                Select-Object -First 1
+            if ($verb) { $reason = "$($verb.Properties[0].Value)" }
+        }
+        catch {
+            Write-Verbose "No reason from a setup verb: $_"
+        }
+
+        throw "Windows Installer failed with exit code $($installed.ExitCode). $reason Its log is $log."
     }
 
     # An upgrade keeps what ddt.ini already says, so the port and the store come from there.
@@ -159,6 +200,7 @@ param(
     $name = [Net.Dns]::GetHostName()
     Write-Host ''
     Write-Host "DDT runs at https://${name}:$listening/"
+    if ($IisHostName) { Write-Host "Browsers can use https://$IisHostName/ through IIS." }
 
     $root = Join-Path $store 'certs\ddt-root.pem'
     if (Test-Path -LiteralPath $root) {
@@ -173,5 +215,20 @@ param(
         Write-Host "Sign in as admin. The password is in $password."
     }
 
+    # Networks with a gateway, and the netboot card. Hyper-V's switches are public too, but don't matter.
+    $rule = Get-NetFirewallRule -DisplayName 'DDT Server (TCP)' -ErrorAction SilentlyContinue
+    $covered = if ($rule) { [int] $rule.Profile } else { 0 }
+    $main = @(Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway } | ForEach-Object { $_.InterfaceAlias }) + @($NetbootInterface)
+    $bits = @{ DomainAuthenticated = 1; Private = 2; Public = 4 }
+    if ($covered -ne 0) {
+        foreach ($network in Get-NetConnectionProfile | Where-Object { $_.InterfaceAlias -in $main }) {
+            if (-not ($covered -band $bits["$($network.NetworkCategory)"])) {
+                Write-Warning ("$($network.InterfaceAlias) is on a $("$($network.NetworkCategory)".ToLowerInvariant()) network, so the firewall blocks DDT there. " +
+                    "Make it private with Set-NetConnectionProfile -InterfaceAlias '$($network.InterfaceAlias)' -NetworkCategory Private, " +
+                    'or install with -AllowPublicNetworks.')
+            }
+        }
+    }
+
     Remove-Item -LiteralPath $work -Recurse -Force
-} -Port $Port -StoreFolder $StoreFolder -NetbootInterface $NetbootInterface -Database $Database -Version $Version -Source $Source
+} -Port $Port -StoreFolder $StoreFolder -NetbootInterface $NetbootInterface -Database $Database -AllowPublicNetworks $AllowPublicNetworks -IisHostName $IisHostName -IisCertificate $IisCertificate -Version $Version -Source $Source

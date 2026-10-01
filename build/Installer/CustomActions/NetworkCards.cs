@@ -23,6 +23,9 @@ public static class NetworkCards
                 && Address(card) is not null)
             .OrderBy(card => card.Name, StringComparer.OrdinalIgnoreCase)];
 
+        Dictionary<int, int> profiles = FirewallProfiles.OfCards();
+        int allowed = FirewallProfiles.Allowed(session);
+
         using View view = session.Database.OpenView("SELECT * FROM `ComboBox`");
         view.Execute();
 
@@ -31,21 +34,37 @@ public static class NetworkCards
 
         foreach (NetworkInterface card in cards)
         {
+            int? blocked = Blocked(card, profiles, allowed);
+
             using Record row = new(4);
             row[1] = Property;
             row[2] = order++;
             row[3] = card.Name;
-            row[4] = $"{card.Name} ({Address(card)})";
+            row[4] = blocked is { } profile
+                ? $"{card.Name} ({Address(card)}), {FirewallProfiles.Name(profile)} network: firewall blocks DDT"
+                : $"{card.Name} ({Address(card)})";
             view.InsertTemporary(row);
         }
 
-        if (string.IsNullOrEmpty(session[Property]) && cards.FirstOrDefault(HasDefaultRoute) is { } routed)
+        NetworkInterface? routed = cards.FirstOrDefault(HasDefaultRoute);
+
+        if (string.IsNullOrEmpty(session[Property]) && routed is not null)
         {
             session[Property] = routed.Name;
         }
 
+        // Shows ServerDlg's warning. Only for the main network: Hyper-V's switches are public too.
+        session["BLOCKEDNETWORK"] = routed is not null && Blocked(routed, profiles, allowed) is not null ? "1" : string.Empty;
+
         return ActionResult.Success;
     }
+
+    private static int? Blocked(NetworkInterface card, Dictionary<int, int> profiles, int allowed) =>
+        card.GetIPProperties().GetIPv4Properties() is { } ipv4
+        && profiles.TryGetValue(ipv4.Index, out int profile)
+        && (allowed & profile) == 0
+            ? profile
+            : null;
 
     private static IPAddress? Address(NetworkInterface card) =>
         card.GetIPProperties().UnicastAddresses

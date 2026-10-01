@@ -10,16 +10,25 @@
 
     <CustomAction Id="CheckPort" BinaryRef="SetupChecks" DllEntry="CheckPort" Execute="immediate" Return="check" />
     <CustomAction Id="ListNetworkCards" BinaryRef="SetupChecks" DllEntry="ListNetworkCards" Execute="immediate" Return="ignore" />
+    <CustomAction Id="FindIis" BinaryRef="SetupChecks" DllEntry="FindIis" Execute="immediate" Return="ignore" />
     <CustomAction Id="PortTaken" Error="Port [PORT] is in use by another program, or isn't a port. Pass a free one, as in PORT=8444." />
+    <CustomAction Id="AllowPublicNetworks" BinaryRef="SetupChecks" DllEntry="AllowPublicNetworks" Execute="immediate" Return="check" />
+    <CustomAction Id="CheckIis" BinaryRef="SetupChecks" DllEntry="CheckIis" Execute="immediate" Return="check" />
+    <CustomAction Id="IisProblem" Error="[IISPROBLEM]" />
 
     <InstallUISequence>
       <Custom Action="ListNetworkCards" After="CostFinalize" Condition="NOT Installed" />
+      <Custom Action="FindIis" After="ListNetworkCards" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
     </InstallUISequence>
 
     <!-- Again here for quiet installs, which skip ServerDlg -->
     <InstallExecuteSequence>
       <Custom Action="CheckPort" After="AppSearch" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
       <Custom Action="PortTaken" After="CheckPort" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED AND (PORTINUSE OR PORTINVALID)" />
+      <Custom Action="CheckIis" After="PortTaken" Condition="IISHOSTNAME AND NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
+      <Custom Action="IisProblem" After="CheckIis" Condition="IISPROBLEM" />
+      <!-- After FIREWALLPROFILES has its value, before the firewall rules read it -->
+      <Custom Action="AllowPublicNetworks" Before="CostInitialize" Condition="FIREWALLPUBLIC = 1" />
     </InstallExecuteSequence>
   </Fragment>
 

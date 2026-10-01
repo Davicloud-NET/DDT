@@ -15,8 +15,10 @@ RUN npm run build -- --outDir /spa-dist --emptyOutDir
 
 FROM --platform=$BUILDPLATFORM ${DOTNET_SDK} AS build
 ARG TARGETARCH
+# The release's version, as 26.1.412. Nothing in here can count the commits, so without it Build is 0.
+ARG DDT_VERSION
 WORKDIR /src
-COPY global.json nuget.config Directory.Build.props Directory.Packages.props .editorconfig ./
+COPY global.json nuget.config Directory.Build.props Directory.Build.targets Directory.Packages.props .editorconfig ./
 COPY src/DDT.Core/DDT.Core.csproj src/DDT.Core/
 COPY src/DDT.Contracts/DDT.Contracts.csproj src/DDT.Contracts/
 COPY src/DDT.Protocols/DDT.Protocols.csproj src/DDT.Protocols/
@@ -30,7 +32,7 @@ COPY src/ src/
 COPY LICENSE NOTICE THIRD-PARTY-NOTICES.md ./
 COPY licenses/ licenses/
 COPY --from=spa /spa-dist/ src/DDT.Host/wwwroot/
-RUN dotnet publish src/DDT.Host/DDT.Host.csproj -a $TARGETARCH -c Release --no-restore -o /app
+RUN dotnet publish src/DDT.Host/DDT.Host.csproj -a $TARGETARCH -c Release --no-restore -o /app ${DDT_VERSION:+-p:Version=$DDT_VERSION}
 
 FROM ${DOTNET_RUNTIME} AS final
 # System.DirectoryServices.Protocols probes libldap.so.2, which the runtime image does not carry.

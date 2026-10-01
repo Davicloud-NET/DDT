@@ -1,0 +1,24 @@
+<Project>
+
+  <!-- Year.Major.Build, with the commits up to this one as Build. Where git has nothing to count, in a source archive
+       or a container build, Build is 0. A shallow clone counts what it has. -->
+  <Target Name="SetDdtVersion" BeforeTargets="GetAssemblyVersion" Condition="'$(DdtVersionGiven)' != 'true'">
+    <Exec Command="git rev-list --count HEAD"
+          WorkingDirectory="$(MSBuildThisFileDirectory)"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low"
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="DdtVersionBuild" />
+      <Output TaskParameter="ExitCode" PropertyName="DdtVersionGitExit" />
+    </Exec>
+
+    <PropertyGroup>
+      <DdtVersionBuild Condition="'$(DdtVersionGitExit)' != '0'">0</DdtVersionBuild>
+      <Version>$(DdtVersionYear).$(DdtVersionMajor).$(DdtVersionBuild)</Version>
+      <PackageVersion>$(Version)</PackageVersion>
+    </PropertyGroup>
+  </Target>
+
+</Project>

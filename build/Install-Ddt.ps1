@@ -55,7 +55,7 @@ Gets the Windows ADK and its Windows PE add-on from Microsoft and installs them,
 server: about 4 GB and a few minutes. That accepts Microsoft's licence terms for them.
 
 .PARAMETER Version
-A release, as 0.1.0, instead of the latest one.
+A release, as 26.1.412, instead of the latest one. A pre-release is installed this way, because latest skips it.
 
 .PARAMETER Source
 A folder or URL with DDT.msi and SHA256SUMS, instead of a release. For testing a build.
@@ -112,6 +112,11 @@ param(
 
     # GitHub only speaks TLS 1.2 and later, which Windows PowerShell doesn't always offer by default.
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+
+    # The release this copy came with, which the release workflow fills in. So a copy installs its own release, a
+    # pre-release too, which latest skips.
+    $released = ''
+    if (-not $Version) { $Version = $released }
 
     $release = if ($Source) {
         $Source.TrimEnd('/', '\')

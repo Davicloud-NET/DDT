@@ -16,13 +16,13 @@ layout of the winget-pkgs repository. A pull request there makes winget install 
 The DDT.msi that the release publishes.
 
 .PARAMETER Version
-The release's version, as major.minor.patch, without the v of the tag.
+The release's version, as Year.Major.Build, without the v of the tag.
 
 .PARAMETER InstallerUrl
 Where winget downloads the MSI. Defaults to the GitHub release of the version.
 
 .EXAMPLE
-.\build\New-WingetManifest.ps1 -Msi artifacts\installer\DDT.msi -Version 0.1.0
+.\build\New-WingetManifest.ps1 -Msi artifacts\installer\DDT.msi -Version 26.1.412
 #>
 [CmdletBinding()]
 param(

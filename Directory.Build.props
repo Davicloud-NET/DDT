@@ -1,5 +1,15 @@
 <Project>
 
+  <!-- DDT's version is Year.Major.Build. Year is the last two digits, because Windows Installer stops at 255. Major
+       counts the releases with new features in that year. Build is not set here: it is the number of commits, which
+       Directory.Build.targets and build/Get-Version.ps1 count. docs/install.md section 4.1. -->
+  <PropertyGroup>
+    <DdtVersionYear>26</DdtVersionYear>
+    <DdtVersionMajor>1</DdtVersionMajor>
+    <!-- A release passes the version it computed once, so that every file of it carries the same. -->
+    <DdtVersionGiven Condition="'$(Version)' != ''">true</DdtVersionGiven>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(MSBuildProjectExtension)' != '.esproj' And '$(MSBuildProjectExtension)' != '.wixproj'">
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>

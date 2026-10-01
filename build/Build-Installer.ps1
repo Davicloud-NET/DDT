@@ -35,7 +35,12 @@ ddt.ini, the bootstrap file, to %ProgramData%\DDT. It takes these properties, as
 PORT, STOREFOLDER, CONNECTIONSTRING and DATABASEPROVIDER only seed ddt.ini on a new install. After that, ddt.ini is the administrator's.
 
 .PARAMETER Version
-The version of the MSI and the server, as major.minor.patch. Windows Installer ignores anything after it.
+The version of the MSI, the server, the agent and the console, as Year.Major.Build. Without it, the one Get-Version.ps1
+counts for the commit that is checked out.
+
+.PARAMETER PreRelease
+Marks the server as a pre-release: the About page shows the version with -pre after it. The MSI's version stays the
+three numbers, since Windows Installer takes nothing else.
 
 .PARAMETER SkipWeb
 Uses the web UI that's already in src/DDT.Host/wwwroot instead of building it again.
@@ -45,12 +50,14 @@ Leaves the agent and the console out, which need the Visual C++ build tools and 
 offers no agent until one is uploaded. For checking that the installer builds, not for a release.
 
 .EXAMPLE
-.\build\Build-Installer.ps1 -Version 0.1.0
+.\build\Build-Installer.ps1
 #>
 [CmdletBinding()]
 param(
-    [ValidatePattern('^\d{1,3}\.\d{1,3}\.\d{1,5}$')]
-    [string] $Version = '0.0.1',
+    [ValidatePattern('^(\d{1,3}\.\d{1,3}\.\d{1,5})?$')]
+    [string] $Version,
+
+    [switch] $PreRelease,
 
     [string] $Output,
 
@@ -104,6 +111,8 @@ function ConvertTo-Rtf {
     "{\rtf1\ansi\deff0{\fonttbl{\f0 Segoe UI;}}\fs18`r`n" + ($paragraphs -join "\par\par`r`n") + "\par}`r`n"
 }
 
+if (-not $Version) { $Version = & (Join-Path $PSScriptRoot 'Get-Version.ps1') -AllowShallow }
+
 $major, $minor, $build = $Version.Split('.') | ForEach-Object { [int] $_ }
 if ($major -gt 255 -or $minor -gt 255 -or $build -gt 65535) {
     throw "Windows Installer takes versions up to 255.255.65535, not $Version."
@@ -125,7 +134,7 @@ Invoke-Checked 'dotnet' @(
     '--configuration', 'Release',
     '--runtime', 'win-x64',
     '--self-contained',
-    "-p:Version=$Version",
+    "-p:Version=$(if ($PreRelease) { "$Version-pre" } else { $Version })",
     '--output', $payload)
 
 # What the server offers machines until others are uploaded, and what builds a boot image on the server itself.
@@ -175,4 +184,4 @@ for ($attempt = 1; ; $attempt++) {
 $hash = (Get-FileHash -LiteralPath $msi -Algorithm SHA256).Hash.ToLowerInvariant()
 [IO.File]::WriteAllText((Join-Path $Output 'SHA256SUMS'), "$hash  DDT.msi`n")
 
-Write-Host ("Built {0} ({1:N1} MB)" -f $msi, ((Get-Item -LiteralPath $msi).Length / 1MB))
+Write-Host ("Built {0}, version {1} ({2:N1} MB)" -f $msi, $Version, ((Get-Item -LiteralPath $msi).Length / 1MB))

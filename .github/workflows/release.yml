@@ -1,30 +1,47 @@
 name: Release
 
-# A tag like v0.1.0 publishes DDT.msi, install.ps1 and SHA256SUMS as a GitHub release, the winget manifests as an
-# artifact, and the container image to ghcr.io/davicloud-net/ddt. Both carry the agent and console of that version,
-# which only Windows compiles, so the image waits for the MSI job and takes them from it.
+# Run by hand, from master. The version is Year.Major.Build, as build/Get-Version.ps1 counts it for the commit. The run
+# makes the tag and a GitHub release with DDT.msi, install.ps1, install.sh, compose.yaml and SHA256SUMS, and pushes the
+# image to ghcr.io/davicloud-net/ddt. Only Windows compiles the agent and console, so the image waits for the MSI job
+# and takes them from it. Nothing is published until the MSI and the image are both built.
 on:
-  push:
-    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: Pre-release. Marked as one on GitHub, and the image's latest tag stays where it is.
+        type: boolean
+        default: false
+      dry_run:
+        description: Dry run. Builds everything and publishes nothing. Works from any branch.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
   DOTNET_NOLOGO: "1"
   NUGET_XMLDOC_MODE: skip
+  PRERELEASE: ${{ inputs.prerelease }}
+  DRY_RUN: ${{ inputs.dry_run }}
 
 jobs:
   windows:
     name: MSI
     runs-on: windows-2025
     timeout-minutes: 45
-    permissions:
-      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
+      # The whole history, because the version counts the commits, and the tags, to see what is released already.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
@@ -35,9 +52,25 @@ jobs:
         with:
           node-version: 24
 
+      # A branch that is squashed into master has more commits than master gets from it, so a release from a branch
+      # would carry a higher version than the next one from master.
+      - name: Version
+        id: version
+        shell: powershell
+        run: |
+          $version = .\build\Get-Version.ps1
+          if ($env:DRY_RUN -ne 'true') {
+            if ($env:GITHUB_REF -ne 'refs/heads/master') { throw "A release is cut from master, not from $env:GITHUB_REF_NAME. Tick Dry run to try the build here." }
+            if (git tag --list "v$version") { throw "v$version is released already. A new release takes a new commit." }
+          }
+          [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "version=$version`n")
+          Write-Host "DDT $version"
+
       - name: Build the MSI
         shell: powershell
-        run: .\build\Build-Installer.ps1 -Version ($env:GITHUB_REF_NAME.TrimStart('v'))
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: .\build\Build-Installer.ps1 -Version $env:VERSION -PreRelease:($env:PRERELEASE -eq 'true')
 
       # For the container image, which can't compile them on Linux
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -48,27 +81,45 @@ jobs:
             artifacts/installer-work/payload/ddt-console.zip
           if-no-files-found: error
 
+      # winget takes no pre-releases
       - name: Write the winget manifests
+        if: ${{ !inputs.prerelease }}
         shell: powershell
-        run: .\build\New-WingetManifest.ps1 -Msi artifacts\installer\DDT.msi -Version ($env:GITHUB_REF_NAME.TrimStart('v'))
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: .\build\New-WingetManifest.ps1 -Msi artifacts\installer\DDT.msi -Version $env:VERSION
 
-      # Same names in every release, so releases/latest/download/install.ps1 always works.
+      # Same names in every release, so releases/latest/download/install.ps1 always works. The install scripts and
+      # compose.yaml name this release, so each copy installs the release it came with.
       - name: Collect the release files
         shell: powershell
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           $release = (New-Item -ItemType Directory -Force -Path artifacts\release).FullName
+          $version = $env:VERSION
+          function Copy-Stamped([string] $From, [string] $Name, [string] $Marker, [string] $Stamped) {
+            $text = [IO.File]::ReadAllText($From)
+            if (-not $text.Contains($Marker)) { throw "$From has no line $Marker to put the version into." }
+            [IO.File]::WriteAllText((Join-Path $release $Name), $text.Replace($Marker, $Stamped))
+          }
           Copy-Item artifacts\installer\DDT.msi $release
-          Copy-Item build\Install-Ddt.ps1 (Join-Path $release 'install.ps1')
+          Copy-Stamped build\Install-Ddt.ps1 install.ps1 "`$released = ''" "`$released = '$version'"
+          Copy-Stamped build\install.sh install.sh "`nreleased=`n" "`nreleased=$version`n"
+          Copy-Stamped build\compose.release.yaml compose.yaml 'ghcr.io/davicloud-net/ddt:latest' "ghcr.io/davicloud-net/ddt:$version"
           $sums = Get-ChildItem $release -File | ForEach-Object { '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name }
           [IO.File]::WriteAllText((Join-Path $release 'SHA256SUMS'), (($sums -join "`n") + "`n"))
 
-      - name: Create the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create $env:GITHUB_REF_NAME artifacts/release/DDT.msi artifacts/release/install.ps1 artifacts/release/SHA256SUMS --verify-tag --generate-notes --title "DDT $($env:GITHUB_REF_NAME)"
+      # What the release job publishes, and what a dry run leaves to look at
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release
+          path: artifacts/release/
+          if-no-files-found: error
 
       # For a pull request to microsoft/winget-pkgs, by hand until a bot account has a fork.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !inputs.prerelease }}
         with:
           name: winget-manifests
           path: artifacts/winget/
@@ -81,6 +132,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      VERSION: ${{ needs.windows.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -92,13 +145,24 @@ jobs:
           name: bundle
           path: artifacts/bundle
 
-      - name: Version
-        id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      # A pre-release leaves latest alone, so docker pull and install.sh without a version keep the last release.
+      - name: Tags
+        id: tags
+        run: |
+          tags="ghcr.io/davicloud-net/ddt:$VERSION"
+          label=$VERSION
+          if [ "$PRERELEASE" = "true" ]; then
+            label="$VERSION-pre"
+          else
+            tags="$tags,ghcr.io/davicloud-net/ddt:latest"
+          fi
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+          echo "label=$label" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        if: ${{ !inputs.dry_run }}
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -110,8 +174,33 @@ jobs:
           context: .
           file: build/Dockerfile
           platforms: linux/amd64
-          push: true
-          provenance: mode=max
-          tags: |
-            ghcr.io/davicloud-net/ddt:${{ steps.version.outputs.version }}
-            ghcr.io/davicloud-net/ddt:latest
+          push: ${{ !inputs.dry_run }}
+          provenance: ${{ inputs.dry_run && 'false' || 'mode=max' }}
+          build-args: DDT_VERSION=${{ steps.tags.outputs.label }}
+          tags: ${{ steps.tags.outputs.tags }}
+
+  release:
+    name: GitHub release
+    needs: [windows, container]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.windows.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release
+          path: release
+
+      # Makes the tag on the commit the run built
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=()
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "v$VERSION" release/DDT.msi release/install.ps1 release/install.sh release/compose.yaml release/SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --generate-notes --title "DDT $VERSION" "${flags[@]}"

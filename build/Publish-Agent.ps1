@@ -19,7 +19,8 @@ This needs the Visual C++ build tools. Pass the result to Build-BootImage.ps1 wi
 param(
     [string] $Output,
 
-    # As 0.4.0. A release gives the agent and console the server's version, so the server can tell which is newer.
+    # As 26.1.412. Without it, the build counts the version itself, as Get-Version.ps1 does. A release gives the agent
+    # and console the server's version, so the server can tell which is newer.
     [ValidatePattern('^(\d{1,3}\.\d{1,3}\.\d{1,5})?$')]
     [string] $Version
 )

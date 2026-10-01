@@ -102,7 +102,7 @@ public sealed class ApiTokenTests(DdtApplication application) : IClassFixture<Dd
         Assert.Equal(ApiTokenSecrets.Hash(created.Secret), stored.SecretHash);
 
         // It isn't in the database files either, whatever column or page it might have ended up in.
-        foreach (string file in Directory.EnumerateFiles(application.StorePath, "ddt-dev.db*"))
+        foreach (string file in Directory.EnumerateFiles(application.StorePath, "ddt.db*"))
         {
             await using FileStream stream = new(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
             using MemoryStream copy = new();

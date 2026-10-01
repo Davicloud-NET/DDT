@@ -108,7 +108,7 @@ The [roadmap](docs/roadmap.md) has the details, and what is not planned at all.
 There is no installer yet (that is M6.6), so for now DDT is built from source. You will want:
 
 - the .NET SDK 10.0.201 or a later 10.0 feature band, and Node.js 24 LTS;
-- Docker, for the container and for the PostgreSQL tests;
+- Docker, for the container and for the PostgreSQL and SQL Server tests;
 - the Visual Studio C++ build tools, for the NativeAOT agent;
 - the Windows ADK with its WinPE add-on, 10.1.26100.2454 or later, for the boot image.
 

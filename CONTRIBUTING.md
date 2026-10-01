@@ -69,7 +69,7 @@ The CI workflow in [.github/workflows/ci.yml](.github/workflows/ci.yml) runs on 
 | Job | What it runs |
 |---|---|
 | Windows | `dotnet build DDT.slnx`, `dotnet format whitespace DDT.slnx --verify-no-changes`, `Invoke-ScriptAnalyzer -Path build -Recurse` from the PSScriptAnalyzer module, and `dotnet test --solution DDT.slnx -- --filter-not-trait "Category=E2E" --ignore-exit-code 8` |
-| Linux | the tests of `DDT.Core`, `DDT.Protocols`, `DDT.Pxe` and `DDT.Server`, with PostgreSQL in Docker |
+| Linux | the tests of `DDT.Core`, `DDT.Protocols`, `DDT.Pxe` and `DDT.Server`, with PostgreSQL and SQL Server in Docker |
 | End to end | `dotnet test --project tests/DDT.E2E`, which needs the Visual C++ build tools |
 | Web client | from `src/DDT.Web`: `npm ci`, `npm run lint`, `npm run format`, `npm run build` and `npm test` |
 | Web screenshots | from `src/DDT.Web`: `npm run screens`, in Microsoft Edge on Windows |
@@ -77,7 +77,8 @@ The CI workflow in [.github/workflows/ci.yml](.github/workflows/ci.yml) runs on 
 
 The server's tests run on Linux as well as on Windows because the server runs on Linux in its
 container. A few of them run only there, and the PostgreSQL tests run only where Docker runs Linux
-containers. To run the server's tests on Linux from a Windows PC, hand the last commit to the .NET
+containers. The SQL Server tests also run against LocalDB on Windows, or against the server that
+`DDT_TEST_SQLSERVER` names with a connection string. To run the server's tests on Linux from a Windows PC, hand the last commit to the .NET
 SDK container, which builds it in a folder of its own, so the `bin` and `obj` folders of the build
 on Windows stay as they are:
 

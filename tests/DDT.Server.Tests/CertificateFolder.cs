@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Runtime.Versioning;
 using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
@@ -68,6 +69,17 @@ public sealed class CertificateFolder : IDisposable
         {
             File.SetUnixFileMode(Path, UnixFileMode.UserRead | UnixFileMode.UserExecute);
         }
+    }
+
+    // Like a key file another account made: the file is there, and its contents are someone else's.
+    [SupportedOSPlatform("windows")]
+    public static void DenyReading(string file)
+    {
+        using WindowsIdentity user = WindowsIdentity.GetCurrent();
+        FileInfo info = new(file);
+        FileSecurity security = info.GetAccessControl();
+        security.AddAccessRule(new FileSystemAccessRule(user.User!, FileSystemRights.ReadData, AccessControlType.Deny));
+        info.SetAccessControl(security);
     }
 
     public void Dispose()

@@ -32,7 +32,7 @@ internal sealed class HostProcess : IAsyncDisposable
 
     public string RootCertificatePath => Path.Combine(StorePath, "certs", "ddt-root.pem");
 
-    public string DatabasePath => Path.Combine(StorePath, "ddt-dev.db");
+    public string DatabasePath => Path.Combine(StorePath, "ddt.db");
 
     public string AdministratorPassword { get; private set; } = string.Empty;
 

@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Net;
+using System.Runtime.Versioning;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -425,6 +426,23 @@ public sealed class ServerCertificateTests : IDisposable
 
         Assert.Contains(_folder.Files.RootKeyPath, refusal.Message, StringComparison.Ordinal);
         Assert.Equal(root, File.ReadAllText(_folder.Files.RootPath));
+    }
+
+    // An administrator's dotnet run made the key, and the service's account then finds it closed.
+    [Fact]
+    [SupportedOSPlatform("windows")]
+    public async Task ARootKeyDdtMayNotReadNamesTheAccountDdtRunsAs()
+    {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "Root reads every file on Linux, so only a Windows ACL closes one here.");
+        await CheckAsync(Certificates("ddt.example"));
+        CertificateFolder.DenyReading(_folder.Files.RootKeyPath);
+        using WindowsIdentity account = WindowsIdentity.GetCurrent();
+
+        InvalidOperationException refusal = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => CheckAsync(Certificates("ddt.example")));
+
+        Assert.Contains($"DDT runs as {account.Name}. Give that account read access", refusal.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("backup", refusal.Message, StringComparison.Ordinal);
     }
 
     // Boot images built before pin the old certificate, which isn't a CA.

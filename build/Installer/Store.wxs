@@ -18,8 +18,10 @@
 
     <Property Id="STOREFOLDER" Secure="yes" />
     <Property Id="PORT" Value="8443" Secure="yes" />
-    <!-- A PostgreSQL connection string. Not DATABASE: msiexec sets that to the package path. -->
+    <!-- A database server's connection string. Not DATABASE: msiexec sets that to the package path. -->
     <Property Id="CONNECTIONSTRING" Secure="yes" Hidden="yes" />
+    <!-- PostgreSql or SqlServer. Unset, a connection string means PostgreSql. -->
+    <Property Id="DATABASEPROVIDER" Secure="yes" />
     <Property Id="REMOVESTORE" Secure="yes" />
 
     <Property Id="REMEMBEREDSTOREFOLDER" Secure="yes">
@@ -105,6 +107,21 @@
                  Section="ConnectionStrings"
                  Key="ddtdb"
                  Value="[CONNECTIONSTRING]" />
+      </Component>
+
+      <Component Id="DatabaseProvider"
+                 Directory="DATAFOLDER"
+                 Guid="2C5900F5-F1AE-489D-9C1E-F2F5998B31FF"
+                 Permanent="yes"
+                 Condition="DATABASEPROVIDER">
+        <CreateFolder />
+        <IniFile Id="DatabaseProvider"
+                 Action="createLine"
+                 Directory="DATAFOLDER"
+                 Name="ddt.ini"
+                 Section="DDT"
+                 Key="Database"
+                 Value="[DATABASEPROVIDER]" />
       </Component>
 
       <Component Id="StoreRemoval" Directory="DATAFOLDER">

@@ -18,7 +18,9 @@ ddt.ini, the bootstrap file, to %ProgramData%\DDT. It takes these properties, as
 
   PORT              The HTTPS port, 8443 by default.
   STOREFOLDER       The store, %ProgramData%\DDT\ by default. Only SYSTEM, Administrators and the service get in.
-  CONNECTIONSTRING  A PostgreSQL connection string. Without one, DDT keeps its database in SQLite in the store.
+  CONNECTIONSTRING  A connection string for PostgreSQL or SQL Server. Without one, DDT keeps its database in SQLite
+                    in the store.
+  DATABASEPROVIDER  SqlServer when CONNECTIONSTRING names a SQL Server. PostgreSql is the default.
   FIREWALLPROFILES  The network profiles the firewall rules cover: 1 Domain, 2 Private, 4 Public, added up. 3 by
                     default; an upgrade keeps the last install's.
   FIREWALLPUBLIC=1  Adds Public to FIREWALLPROFILES, like the checkbox setup shows on a public network.
@@ -30,7 +32,7 @@ ddt.ini, the bootstrap file, to %ProgramData%\DDT. It takes these properties, as
                     someone picks a card in DDT.
   REMOVESTORE=1     On uninstall, deletes the store and ddt.ini too, with the database and DDT's root key.
 
-PORT, STOREFOLDER and CONNECTIONSTRING only seed ddt.ini on a new install. After that, ddt.ini is the administrator's.
+PORT, STOREFOLDER, CONNECTIONSTRING and DATABASEPROVIDER only seed ddt.ini on a new install. After that, ddt.ini is the administrator's.
 
 .PARAMETER Version
 The version of the MSI and the server, as major.minor.patch. Windows Installer ignores anything after it.

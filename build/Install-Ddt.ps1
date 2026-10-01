@@ -31,7 +31,10 @@ Where the store goes, on a new install. %ProgramData%\DDT by default.
 The network card that answers netboot, by name, such as Ethernet. Unset, PXE stays off until someone picks one in DDT.
 
 .PARAMETER Database
-A PostgreSQL connection string. Without one, DDT keeps its database in SQLite in the store.
+A connection string for PostgreSQL or SQL Server. Without one, DDT keeps its database in SQLite in the store.
+
+.PARAMETER DatabaseProvider
+SqlServer when -Database names a SQL Server. PostgreSql is the default.
 
 .PARAMETER AllowPublicNetworks
 Lets the firewall rules cover public networks too, not only domain and private ones.
@@ -68,6 +71,9 @@ param(
 
     [string] $Database,
 
+    [ValidateSet('PostgreSql', 'SqlServer')]
+    [string] $DatabaseProvider,
+
     [switch] $AllowPublicNetworks,
 
     [string] $IisHostName,
@@ -86,7 +92,7 @@ param(
 
 # A child scope: through irm | iex, strict mode and preferences would stay in the caller's shell.
 & {
-    param([int] $Port, [string] $StoreFolder, [string] $NetbootInterface, [string] $Database, [bool] $AllowPublicNetworks,
+    param([int] $Port, [string] $StoreFolder, [string] $NetbootInterface, [string] $Database, [string] $DatabaseProvider, [bool] $AllowPublicNetworks,
         [string] $IisHostName, [string] $IisCertificate, [bool] $InstallIisModules, [bool] $InstallAdk, [string] $Version,
         [string] $Source)
 
@@ -185,7 +191,9 @@ param(
     $arguments = @('/i', "`"$msi`"", '/qn', '/norestart', '/l*v', "`"$log`"", "PORT=$Port")
     if ($StoreFolder) { $arguments += "STOREFOLDER=`"$($StoreFolder.TrimEnd('\'))`"" }
     if ($NetbootInterface) { $arguments += "NETBOOTINTERFACE=`"$NetbootInterface`"" }
+    if ($DatabaseProvider -and -not $Database) { throw '-DatabaseProvider goes with -Database.' }
     if ($Database) { $arguments += "CONNECTIONSTRING=`"$Database`"" }
+    if ($DatabaseProvider) { $arguments += "DATABASEPROVIDER=$DatabaseProvider" }
     if ($AllowPublicNetworks) { $arguments += 'FIREWALLPUBLIC=1' }
     if ([bool] $IisHostName -ne [bool] $IisCertificate) { throw '-IisHostName and -IisCertificate go together.' }
     if ($IisHostName) { $arguments += "IISHOSTNAME=`"$IisHostName`"", "IISCERTIFICATE=$($IisCertificate -replace '\s', '')" }
@@ -296,4 +304,4 @@ param(
     }
 
     Remove-Item -LiteralPath $work -Recurse -Force
-} -Port $Port -StoreFolder $StoreFolder -NetbootInterface $NetbootInterface -Database $Database -AllowPublicNetworks $AllowPublicNetworks -IisHostName $IisHostName -IisCertificate $IisCertificate -InstallIisModules $InstallIisModules -InstallAdk $InstallAdk -Version $Version -Source $Source
+} -Port $Port -StoreFolder $StoreFolder -NetbootInterface $NetbootInterface -Database $Database -DatabaseProvider $DatabaseProvider -AllowPublicNetworks $AllowPublicNetworks -IisHostName $IisHostName -IisCertificate $IisCertificate -InstallIisModules $InstallIisModules -InstallAdk $InstallAdk -Version $Version -Source $Source

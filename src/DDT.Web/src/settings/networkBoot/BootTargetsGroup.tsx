@@ -64,7 +64,14 @@ export function BootTargetsGroup({
 
       {keys.length === 0 ? (
         <p className="type-small text-muted">
-          <Trans>No boot target yet, so ProxyDHCP answers no machine.</Trans>
+          {values.enableProxyDhcp && values.enableTftp ? (
+            <Trans>
+              No boot target yet, so x64 UEFI machines get x64/bootmgfw.efi over TFTP, where a boot
+              image build puts the boot manager. Other machines get no answer.
+            </Trans>
+          ) : (
+            <Trans>No boot target yet, so ProxyDHCP answers no machine.</Trans>
+          )}
         </p>
       ) : (
         keys.map((key) => (

@@ -219,11 +219,12 @@ and the PXE sockets and the key files have Windows code of their own (src/DDT.Px
   it (PemFiles.cs:48-66). A key made by an administrator's `dotnet run` is unreadable to the
   service, and the error then speaks of restoring a backup
   (src/DDT.Server/Certificates/ServerCertificates.cs:285-292). The installer lets the service make
-  them, and the error names the account that can read the file.
+  them, and the error names the account that can read the file. Done: a key DDT may not read says
+  which account DDT runs as and that it needs read access, not to restore a backup.
 - **Relative paths.** A relative store or boot directory resolves against the current directory
   (for example src/DDT.Server/Images/ImageStore.cs:18,20, src/DDT.Pxe/PxeSetup.cs:61-62), which is
   System32 for a service. The bootstrap file names absolute paths, and DDT resolves relative ones
-  against the program's folder.
+  against the program's folder. Done: as a service DDT makes the program's folder its current one.
 - **Files in use cannot be replaced.** Linux renames over a file that is being read; Windows refuses.
   TFTP held boot files open, HTTP boot and the agent download served them with `PhysicalFile`, and
   the agent upload and the console's logo renamed over theirs. So an upload during a machine's
@@ -236,15 +237,16 @@ and the PXE sockets and the key files have Windows code of their own (src/DDT.Px
   builds on this.
 - **Free space.** `DriveInfo` measures the store's volume on Linux, but only a drive root on Windows,
   and throws for a UNC path (ImageStore.cs:39-40), which fails every upload with a 500. On Windows the
-  server asks `GetDiskFreeSpaceEx` for the store's folder.
+  server asks `GetDiskFreeSpaceEx` for the store's folder. Done (src/DDT.Core/Disks/VolumeSpace.cs).
 - **Time zones on Windows Server 2019.** A time zone is checked through ICU
   (src/DDT.Core/Unattend/WindowsTimeZones.cs:11-16). Windows carries ICU since Windows 10 1703,
   Server 2019 included, as `icuuc.dll` and `icuin.dll`, and .NET 7 and later loads those. Not yet
   tried on 2019; if it falls back to NLS there, every time zone is refused and DDT carries its own ICU.
 - **Converting disk images.** The only programs the server starts are `qemu-img` and `xz`, for qcow2
   and `.xz` uploads, found on the PATH (src/DDT.Server/Images/ConversionTools.cs:15-16,95-107). A
-  missing one already refuses the upload with a message and keeps it. The Windows install carries
-  both, or the page says which to install; this only concerns Linux images.
+  missing one already refuses the upload with a message that says which to install, and keeps the
+  upload. On Windows DDT also looks where QEMU's installer puts `qemu-img`. The install carries
+  neither; this only concerns Linux images.
 - **Logs.** Without a console, Information and below go nowhere, and warnings go to the Application
   event log: there is no file sink. The Windows install writes a rolling log file in the store, which
   the Server page offers to download. The first password leaves the log entirely (section 4.5).
@@ -253,10 +255,13 @@ and the PXE sockets and the key files have Windows code of their own (src/DDT.Px
   apply to it, and the Logging tab lists the files (`GET /api/server/logs`, administrators only).
 - **The advice for a failed bind.** It says to grant `NET_BIND_SERVICE`
   (src/DDT.Contracts/Messages/ServerMessages.cs:1808-1814). Windows has no privileged ports: there,
-  access denied means that WDS or the DHCP server holds the port, which section 4.9 names.
+  access denied means that WDS or the DHCP server holds the port, which section 4.9 names. Done: on
+  Windows the message says that another service holds the port for itself, usually WDS or the DHCP
+  server.
 - **The recovery commands** are documented as `docker exec` (src/DDT.Host/Startup/SettingsConsole.cs:16).
   Without the bootstrap file, `DDT.Host.exe settings reset` on Windows would open a SQLite file of its
-  own and reset the wrong database; with it, it finds the service's.
+  own and reset the wrong database; with it, it finds the service's. Done, and settings.md names
+  both forms.
 
 ### 4.4 The database on one server
 
@@ -291,6 +296,44 @@ install does not move between the two; an export and import can come later.
 
 **One migration per provider.** At the end of 4.4 the migrations are reset: one initial migration
 each for SQLite, PostgreSQL and SQL Server.
+
+Done, with (a):
+
+- **Which database.** `DDT:Database` is `Sqlite`, `PostgreSql` or `SqlServer`. Unset, a connection
+  string means PostgreSQL, as before, and none means SQLite. The installer takes
+  `DATABASEPROVIDER` next to `CONNECTIONSTRING`, and `install.ps1` `-DatabaseProvider` next to
+  `-Database`. The Server page names the database in use.
+- **One model, three sets of migrations.** EF Core keeps a context's migrations per type, so each
+  database has a context of its own below `DdtDbContext` (src/DDT.Server/Data), with its first
+  migration in src/DDT.Server/Migrations. A new one is added three times:
+  `dotnet ef migrations add <Name> --context SqliteDdtDbContext --output-dir Migrations/Sqlite --project src/DDT.Server --startup-project src/DDT.Server`,
+  and the same for `PostgreSqlDdtDbContext` and `SqlServerDdtDbContext`. A test fails while one of
+  the three lacks a migration for a model change.
+- **SQLite.** The file is `ddt.db` in the store, migrated at start. EF Core creates it with the
+  write-ahead log, and a writer waits up to 30 seconds for another. `DDT.Host backup <file>` copies
+  it with `VACUUM INTO` next to the running server. A file from the last build before the
+  migrations, `ddt-dev.db` with that build's fingerprint, is renamed and goes on with what it holds;
+  one from an older build is refused, as before.
+- **PostgreSQL.** The twelve migrations became one, which creates the same tables. A database at
+  the last of the twelve has its history rewritten at the next start; one that stopped earlier is
+  refused and says so.
+- **SQL Server.** Its model differs in two places. Every text column has the collation
+  `Latin1_General_100_BIN2`, so text is compared exactly as on the other two, not only hashes and
+  tokens. And the thirteen references that name a user are not cleared by the database, which
+  refuses `SET NULL` where two paths lead from a user to a table: DDT clears them in the
+  transaction that deletes the user (src/DDT.Server/Data/UserReferences.cs). The directory id's
+  unique index has its filter, and EF Core's own lock (`sp_getapplock`) serializes migrations.
+- **What ships for SQL Server.** `Microsoft.Data.SqlClient` brings two native libraries under
+  Microsoft licences that are not free software licences. Its network library for Windows ships
+  with the MSI: Microsoft allows passing it on inside an application, and NOTICE grants an
+  additional permission under GPL section 7 for combining DDT with it, so those who pass DDT on
+  may keep it in (section 8, question 10). The Entra ID broker stays out for now: nothing needs it
+  for Windows or SQL sign-in. Should brokered Entra ID sign-in to the database be wanted later, it
+  takes a permission of its own in NOTICE and its licence text, like the network library. The
+  container has neither: on Linux the client uses its managed networking.
+- **Tests.** The tests that ran on PostgreSQL run on both servers. SQL Server comes from
+  `DDT_TEST_SQLSERVER`, a connection string without a database, then from LocalDB on Windows, then
+  from a container.
 
 ### 4.5 The first administrator
 
@@ -408,7 +451,8 @@ chosen, from the list `GET /api/settings/pxe/interfaces` gives today.
 
 **A default boot target.** With ProxyDHCP on and no boot target, DDT answers nothing and only warns
 (PxeHost.cs:299). Without a configured one, `X64Uefi` boots `x64/bootmgfw.efi` over TFTP, the 2011
-boot manager that is already the default.
+boot manager that is already the default. Done: with ProxyDHCP and TFTP on and no boot target
+configured, that is the one target (src/DDT.Pxe/PxeSetup.cs), and the Network boot page says so.
 
 **Who else holds the ports.** On Windows the Microsoft DHCP server holds UDP 67, and WDS holds 69,
 4011 and, where it answers PXE itself, 67. A bind can succeed on Windows while another process takes
@@ -513,3 +557,6 @@ image from the builder.
 9. **Windows Server versions.** Answered 2026-09-29: Server 2019 and Windows 10 1809 and later, build
    17763, which the MSI and `install.ps1` check. The time zone check on 2019 still needs a try
    (section 4.3).
+10. **SQL Server's native network library.** Answered 2026-10-01: it ships with the MSI, with an
+    additional permission in NOTICE. Microsoft documents the client's managed networking on Windows
+    as meant for testing, though it worked on the test VM, Windows authentication included.

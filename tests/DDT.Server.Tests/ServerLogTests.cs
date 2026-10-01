@@ -43,7 +43,7 @@ public sealed class ServerLogTests(DdtApplication application) : IClassFixture<D
     [Theory]
     [InlineData("notes.txt")]
     [InlineData("ddt-19990101.log")]
-    [InlineData("..%2Fddt-dev.db")]
+    [InlineData("..%2Fddt.db")]
     [InlineData("..%5Cfirst-admin.txt")]
     public async Task OnlyALogFileIsHandedOut(string name)
     {

@@ -45,7 +45,7 @@ public sealed class ImageUploadSessions(
 
         // Sum as decimal. Nothing limits how many sessions are open, so a long could overflow.
         decimal required = request.Length + open.Sum(u => (decimal)(u.Length - u.Offset)) + ImageUploadLimits.FreeSpaceMargin;
-        long available = store.Volume().AvailableFreeSpace;
+        long available = store.Volume().Available;
 
         if (available < required)
         {

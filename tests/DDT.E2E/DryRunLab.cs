@@ -232,10 +232,10 @@ public sealed partial class DryRunLab : IAsyncLifetime
     // The audit events about a run, read from the host's database.
     internal async Task<IReadOnlyList<AuditEvent>> AuditAsync(Guid runId, CancellationToken cancellationToken)
     {
-        DbContextOptions<DdtDbContext> options = new DbContextOptionsBuilder<DdtDbContext>()
+        DbContextOptions<SqliteDdtDbContext> options = new DbContextOptionsBuilder<SqliteDdtDbContext>()
             .UseSqlite($"Data Source={Host.DatabasePath};Mode=ReadOnly;Pooling=False")
             .Options;
-        DdtDbContext database = new(options);
+        SqliteDdtDbContext database = new(options);
 
         await using (database.ConfigureAwait(false))
         {

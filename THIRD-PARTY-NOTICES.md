@@ -53,7 +53,17 @@ Contributors, with the same permission text.
   `System.DirectoryServices.Protocols` it includes the notice for ldap4net.
 - Entity Framework Core: `Microsoft.EntityFrameworkCore`,
   `Microsoft.EntityFrameworkCore.Abstractions`, `Microsoft.EntityFrameworkCore.Relational`,
-  `Microsoft.EntityFrameworkCore.Sqlite.Core` and `Microsoft.Data.Sqlite.Core`.
+  `Microsoft.EntityFrameworkCore.Sqlite.Core`, `Microsoft.Data.Sqlite.Core` and
+  `Microsoft.EntityFrameworkCore.SqlServer`.
+- The SQL Server client: `Microsoft.Data.SqlClient` and `Microsoft.SqlServer.Server`; the libraries
+  it signs in to Microsoft Entra ID with, `Azure.Core`, `Azure.Identity`, `System.ClientModel`,
+  `Microsoft.Identity.Client`, `Microsoft.Identity.Client.Broker` and
+  `Microsoft.Identity.Client.Extensions.Msal`; and the .NET runtime libraries it brings,
+  `Microsoft.Bcl.AsyncInterfaces`, `System.Configuration.ConfigurationManager`,
+  `System.Memory.Data` and `System.Security.Cryptography.ProtectedData`. The client's network
+  library for Windows has a section of its own below. The Entra ID broker's native library
+  (`Microsoft.Identity.Client.NativeInterop`) is under a Microsoft licence that is not a free
+  software licence, and DDT does not ship it.
 - .NET extensions: `Microsoft.Extensions.AmbientMetadata.Application`,
   `Microsoft.Extensions.Compliance.Abstractions`,
   `Microsoft.Extensions.DependencyInjection.AutoActivation`,
@@ -66,6 +76,17 @@ Contributors, with the same permission text.
   `Microsoft.IdentityModel.Logging`, `Microsoft.IdentityModel.Protocols`,
   `Microsoft.IdentityModel.Protocols.OpenIdConnect`, `Microsoft.IdentityModel.Tokens` and
   `System.IdentityModel.Tokens.Jwt`.
+
+### Microsoft.Data.SqlClient.SNI
+
+On Windows the server carries `Microsoft.Data.SqlClient.SNI.dll`, from the package
+`Microsoft.Data.SqlClient.SNI.runtime` 6.0.2, Copyright Microsoft Corporation. The SQL Server
+client loads it to reach SQL Server, and only where SQL Server is the database. Microsoft
+publishes it in object code only, under the Microsoft Software License Terms in
+[licenses/sqlclient-sni/LICENSE.txt](licenses/sqlclient-sni/LICENSE.txt), which allow passing it on
+inside an application and not on its own. It is not free software and not under the GPL: NOTICE
+grants an additional permission under section 7 for combining DDT with it. The container image does
+not carry it, because on Linux the client uses its own managed networking.
 
 ### Npgsql
 

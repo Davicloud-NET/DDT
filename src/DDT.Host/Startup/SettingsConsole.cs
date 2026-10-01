@@ -13,7 +13,7 @@ namespace DDT.Host.Startup;
 
 // Recovery for problems the settings page can't fix, such as a section that locks everyone out. It only needs the
 // database and the key ring, so it can run next to the running servers, for example with
-// docker exec ddt ./DDT.Host settings reset ldap.
+// docker exec ddt ./DDT.Host settings reset ldap, or DDT.Host.exe settings reset ldap on a Windows server.
 public static class SettingsConsole
 {
     private const string AdministratorUserName = "admin";

@@ -46,6 +46,13 @@ if (SetupConsole.Handles(args))
     return;
 }
 
+if (BackupConsole.Handles(args))
+{
+    Environment.ExitCode = BackupConsole.Run(args, Console.Out);
+
+    return;
+}
+
 bool service = WindowsServiceHelpers.IsWindowsService();
 
 // Services start in System32. wwwroot and relative paths resolve against the program folder instead.

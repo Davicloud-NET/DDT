@@ -1431,7 +1431,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "settings.apply.pxeBindFailed": msg({
     context: "settings.apply.pxeBindFailed",
-    message: "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {error, select, AccessDenied {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} AddressAlreadyInUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}",
+    message: "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}",
   }),
   "settings.apply.pxeClosed": msg({
     context: "settings.apply.pxeClosed",

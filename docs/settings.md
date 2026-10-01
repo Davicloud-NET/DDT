@@ -33,6 +33,7 @@ The page shows these settings read-only in a Server panel (section 6).
 | Setting | Why it stays |
 |---|---|
 | ConnectionStrings:ddtdb | The settings store is in this database (DataServiceCollectionExtensions.cs:23-37). |
+| DDT:Database | Which database that is: Sqlite, PostgreSql or SqlServer. Unset, a connection string means PostgreSql and none means Sqlite. |
 | DDT:StorePath | Holds the key ring that decrypts stored secrets, and the SQLite file (DataServiceCollectionExtensions.cs:25-30, DdtAuthenticationExtensions.cs:42-44). |
 | DDT:Roles | Set per process, and decides what is registered before Build (Program.cs:28-29,64). One database value cannot describe two processes with different roles. |
 | DDT:RequireHttps | Sets the cookie names and Secure policy at composition (Program.cs:43-47, DdtAuthenticationExtensions.cs:79,84-86), and refuses to start without HTTPS (HttpsConfigurationCheck.cs:46-55). A change renames both cookies and signs everyone out. |
@@ -433,6 +434,7 @@ If running separate processes is not a goal, the file store is simpler (question
 - SQLite stays for development only. The new tables change the schema fingerprint, so development
   databases are recreated once (DatabaseInitializer.cs:55-63). After that, every schema change drops
   the page settings together with the file. Values held in configuration come back through the import.
+  Since M6.6 SQLite is migrated like the others and keeps its settings (install.md section 4.4).
 
 ### 5.2 Delivery to consumers
 
@@ -836,7 +838,8 @@ problems.
 An override needs the container to be recreated. It is meant for when the page is unreachable.
 
 **Console commands.** These need no file edit and no restart. DDT.Host gets two verbs that run next to
-the running server, for example `docker exec ddt ./DDT.Host settings reset ldap`.
+the running server, for example `docker exec ddt ./DDT.Host settings reset ldap`, or on a Windows
+server `"%ProgramFiles%\DDT\DDT.Host.exe" settings reset ldap` from an elevated prompt.
 
 - `settings reset <section>` writes the code defaults and clears the section's secrets.
 - `settings create-admin` does one of two things, and prints a one-time password once:

@@ -297,8 +297,15 @@ public sealed class PxeHost : IHostedService, IDisposable
         }
         catch (SocketException exception)
         {
+            string advice = exception.SocketErrorCode switch
+            {
+                SocketError.AccessDenied => OperatingSystem.IsWindows() ? "heldOnWindows" : "privilegedPort",
+                SocketError.AddressAlreadyInUse => "inUse",
+                _ => "other",
+            };
+
             throw new PxeBindException(
-                ServerMessages.SettingsApplyPxeBindFailed.With("port", port, "protocol", kind, "error", exception.SocketErrorCode),
+                ServerMessages.SettingsApplyPxeBindFailed.With("port", port, "protocol", kind, "error", exception.SocketErrorCode, "advice", advice),
                 exception);
         }
 

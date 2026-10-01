@@ -10,14 +10,41 @@ namespace DDT.Server.Tests;
 
 public sealed class MigrationTests
 {
-    // Every other test runs on SQLite through EnsureCreated. So only this one notices a model change that nobody
-    // generated a migration for. Such a change would stop the first start on PostgreSQL. The test compares the model
-    // with the snapshot and needs no database.
-    [Fact]
-    public void TheMigrationsMatchTheModel()
+    // Most tests run on SQLite. So only this one notices a model change that nobody generated a migration for on each
+    // of the other databases, which would stop their first start. It compares the model with the snapshot and needs
+    // no database.
+    [Theory]
+    [InlineData(DatabaseProvider.Sqlite)]
+    [InlineData(DatabaseProvider.PostgreSql)]
+    [InlineData(DatabaseProvider.SqlServer)]
+    public void TheMigrationsMatchTheModel(DatabaseProvider provider)
     {
-        using DdtDbContext context = new DdtDbContextFactory().CreateDbContext([]);
+        using DdtDbContext context = Context(provider);
 
         Assert.False(context.Database.HasPendingModelChanges());
+        Assert.NotEmpty(context.Database.GetMigrations());
     }
+
+    // SQL Server allows one path from a user to a table, so it gets none of these and DDT clears them itself.
+    [Fact]
+    public void OnlySqlServerLeavesClearingAUsersReferencesToDdt()
+    {
+        Assert.Equal(
+            [0, 0, 13],
+            new[] { DatabaseProvider.Sqlite, DatabaseProvider.PostgreSql, DatabaseProvider.SqlServer }.Select(provider =>
+            {
+                using DdtDbContext context = Context(provider);
+
+                return context.Model.GetEntityTypes()
+                    .SelectMany(entity => entity.GetForeignKeys())
+                    .Count(key => key.PrincipalEntityType.ClrType == typeof(DdtUser) && key.DeleteBehavior == DeleteBehavior.ClientSetNull);
+            }));
+    }
+
+    private static DdtDbContext Context(DatabaseProvider provider) => provider switch
+    {
+        DatabaseProvider.PostgreSql => new PostgreSqlDdtDbContextFactory().CreateDbContext([]),
+        DatabaseProvider.SqlServer => new SqlServerDdtDbContextFactory().CreateDbContext([]),
+        _ => new SqliteDdtDbContextFactory().CreateDbContext([]),
+    };
 }

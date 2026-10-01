@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Core.Disks;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
@@ -36,8 +37,8 @@ public sealed partial class ImageStore(IOptions<DdtOptions> options, ILogger<Ima
     // Returns every file an upload may have on the volume.
     public IEnumerable<string> UploadFiles(Guid uploadId) => [PartPath(uploadId), RawPath(uploadId), CompressedPath(uploadId)];
 
-    // On Linux, DriveInfo measures the file system of the path it's given. Here that's the store volume.
-    public DriveInfo Volume() => new(Directory.CreateDirectory(UploadsDirectory).FullName);
+    // The store's volume, which may be a share or a mounted folder
+    public (long Available, long Total) Volume() => VolumeSpace.Of(Directory.CreateDirectory(UploadsDirectory).FullName);
 
     // Call with LibraryLock held, so no completed upload can add a row for this hash in between.
     public async Task<bool> DeleteObjectIfUnreferencedAsync(DdtDbContext database, string sha256, CancellationToken cancellationToken)

@@ -4,7 +4,6 @@
 
 using DDT.Server.Configuration;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,7 +20,7 @@ public static class DataServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(options);
 
-        string? postgres = configuration.GetConnectionString("ddtdb");
+        string connection = configuration.GetConnectionString(DatabaseProviders.ConnectionStringName) ?? string.Empty;
 
         // Sees every save. It pushes the audit rows the save added and names an API token that acted.
         services.AddHttpContextAccessor();
@@ -30,28 +29,32 @@ public static class DataServiceCollectionExtensions
         // Deletes a run's credentials in the save that ends the run.
         services.AddSingleton<RunCredentialCleanup>();
 
-        if (string.IsNullOrWhiteSpace(postgres))
+        switch (DatabaseProviders.Choose(options.Database, connection))
         {
-            Directory.CreateDirectory(options.StorePath);
-            string file = Path.Combine(options.StorePath, "ddt-dev.db");
-            services.AddDbContextPool<DdtDbContext>((provider, db) => db
-                .UseSqlite($"Data Source={file}")
-                // One warning per table on every start, into the event log
-                .ConfigureWarnings(warnings => warnings.Ignore(SqliteEventId.SchemaConfiguredWarning))
-                .AddInterceptors(provider.GetRequiredService<AuditInterceptor>(), provider.GetRequiredService<RunCredentialCleanup>()));
-        }
-        else
-        {
-            services.AddDbContextPool<DdtDbContext>((provider, db) => db
-                .UseNpgsql(postgres, npgsql => npgsql
-                    .MigrationsHistoryTable("__EFMigrationsHistory", DdtDbContext.Schema)
-                    .MigrationsAssembly(typeof(DdtDbContext).Assembly.GetName().Name)
-                    .EnableRetryOnFailure())
-                .AddInterceptors(provider.GetRequiredService<AuditInterceptor>(), provider.GetRequiredService<RunCredentialCleanup>()));
+            case DatabaseProvider.PostgreSql:
+                services.AddDbContextPool<DdtDbContext, PostgreSqlDdtDbContext>((provider, database) =>
+                    Intercepted(database.UseDdtPostgreSql(connection), provider));
+                break;
+
+            case DatabaseProvider.SqlServer:
+                services.AddDbContextPool<DdtDbContext, SqlServerDdtDbContext>((provider, database) =>
+                    Intercepted(database.UseDdtSqlServer(connection), provider));
+                break;
+
+            default:
+                Directory.CreateDirectory(options.StorePath);
+                SqliteStore.TakeOverOldFile(options.StorePath);
+                string file = SqliteStore.PathIn(options.StorePath);
+                services.AddDbContextPool<DdtDbContext, SqliteDdtDbContext>((provider, database) =>
+                    Intercepted(database.UseDdtSqlite(file), provider));
+                break;
         }
 
         services.AddHostedService<DatabaseInitializer>();
 
         return services;
     }
+
+    private static void Intercepted(DbContextOptionsBuilder database, IServiceProvider provider) =>
+        database.AddInterceptors(provider.GetRequiredService<AuditInterceptor>(), provider.GetRequiredService<RunCredentialCleanup>());
 }

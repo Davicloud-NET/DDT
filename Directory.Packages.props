@@ -30,6 +30,8 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Identity.Client.NativeInterop" Version="0.20.6" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageVersion Include="System.DirectoryServices.Protocols" Version="10.0.12" />
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.12" />
@@ -73,6 +75,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.12" />
     <!-- The version EF Core's design-time package brings, for CodeShapeTests. -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.15.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
   </ItemGroup>

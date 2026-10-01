@@ -12,6 +12,9 @@ public sealed class DdtOptions
 
     public string StorePath { get; set; } = "/var/lib/ddt";
 
+    // Sqlite, PostgreSql or SqlServer. Unset, a connection string means PostgreSql and none means Sqlite.
+    public string Database { get; set; } = string.Empty;
+
     public bool RequireHttps { get; set; } = true;
 
     public HttpsOptions Https { get; set; } = new();

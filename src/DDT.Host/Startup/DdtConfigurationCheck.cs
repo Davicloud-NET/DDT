@@ -20,7 +20,7 @@ public static class DdtConfigurationCheck
 {
     // Listed by hand, because binding DdtOptions with ErrorOnUnknownConfiguration would refuse every section.
     private static readonly string[] s_rootKeys =
-        ["Roles", "StorePath", "RequireHttps", "Https", "Deployment", "Machines", "Ldap", "Oidc", "ForwardedHeaders", "Pxe", "Agent"];
+        ["Roles", "StorePath", "Database", "RequireHttps", "Https", "Deployment", "Machines", "Ldap", "Oidc", "ForwardedHeaders", "Pxe", "Agent"];
 
     public static void Validate(IConfiguration configuration, DdtOptions options, IReadOnlySet<DeploymentRole> roles)
     {

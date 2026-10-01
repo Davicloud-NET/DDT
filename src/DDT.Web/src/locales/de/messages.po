@@ -3122,8 +3122,8 @@ msgstr "DDT verbindet diese Netzwerkfreigaben mit ihren Konten, bevor der Schrit
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.apply.pxeBindFailed"
-msgid "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {error, select, AccessDenied {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} AddressAlreadyInUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}"
-msgstr "DDT konnte UDP {port} für {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE-Bootserver} tftp {TFTP} tftpSinglePort {TFTP (ein Port)} other {{protocol}}} nicht binden ({error}). {error, select, AccessDenied {Der Prozess darf keinen privilegierten Port binden. Gewähren Sie NET_BIND_SERVICE, wie build/compose.yaml es tut.} AddressAlreadyInUse {Ein anderer DHCP-, PXE- oder TFTP-Dienst belegt diesen Port auf diesem Host bereits. Beenden Sie ihn, oder betreiben Sie DDT hier ohne die Rolle pxe.} other {Prüfen Sie, dass kein anderer Dienst den Port belegt.}}"
+msgid "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}"
+msgstr "DDT konnte UDP {port} für {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE-Bootserver} tftp {TFTP} tftpSinglePort {TFTP (ein Port)} other {{protocol}}} nicht binden ({error}). {advice, select, privilegedPort {Der Prozess darf keinen privilegierten Port binden. Gewähren Sie NET_BIND_SERVICE, wie build/compose.yaml es tut.} heldOnWindows {Ein anderer Dienst belegt diesen Port für sich allein, meist WDS oder der DHCP-Server. Beenden Sie ihn, oder betreiben Sie DDT hier ohne die Rolle pxe.} inUse {Ein anderer DHCP-, PXE- oder TFTP-Dienst belegt diesen Port auf diesem Host bereits. Beenden Sie ihn, oder betreiben Sie DDT hier ohne die Rolle pxe.} other {Prüfen Sie, dass kein anderer Dienst den Port belegt.}}"
 
 #: src/app/RouteError.tsx
 msgid "DDT could not reach its server. Check that the server is running and that this computer can reach it, then try again."
@@ -5580,6 +5580,10 @@ msgstr "Noch keine Konten"
 #: src/settings/networkBoot/BootTargetsGroup.tsx
 msgid "No boot target yet, so ProxyDHCP answers no machine."
 msgstr "Noch kein Startziel, daher antwortet ProxyDHCP keinem Gerät."
+
+#: src/settings/networkBoot/BootTargetsGroup.tsx
+msgid "No boot target yet, so x64 UEFI machines get x64/bootmgfw.efi over TFTP, where a boot image build puts the boot manager. Other machines get no answer."
+msgstr "Noch kein Startziel, daher erhalten x64-UEFI-Geräte x64/bootmgfw.efi über TFTP, wohin das Erstellen eines Startimages den Start-Manager legt. Andere Geräte erhalten keine Antwort."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.nothingToConfirm"

@@ -54,7 +54,7 @@ public static class AgentEndpoints
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentRelease);
 
-        group.MapGet("/release/binary", GetReleaseBinary)
+        group.MapGet("/release/binary", GetReleaseBinaryAsync)
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentDownload);
 
@@ -116,17 +116,29 @@ public static class AgentEndpoints
         return release is null ? TypedResults.NotFound() : TypedResults.Ok(release);
     }
 
-    private static Results<PhysicalFileHttpResult, NotFound> GetReleaseBinary(AgentReleaseStore releases)
+    // Not PhysicalFile, which opens without FileShare.Delete: an upload then can't replace the agent on Windows while
+    // a machine downloads it.
+    private static async Task<Results<FileStreamHttpResult, NotFound>> GetReleaseBinaryAsync(
+        AgentReleaseStore releases,
+        CancellationToken cancellationToken)
     {
-        string path = releases.BinaryPath;
+        if (await releases.OfferedAsync(cancellationToken).ConfigureAwait(false) is not { } agent)
+        {
+            return TypedResults.NotFound();
+        }
 
-        return File.Exists(path)
-            ? TypedResults.PhysicalFile(path, "application/octet-stream")
-            : TypedResults.NotFound();
+        try
+        {
+            return TypedResults.File(FileReplacement.OpenRead(agent.Path), "application/octet-stream");
+        }
+        catch (FileNotFoundException)
+        {
+            return TypedResults.NotFound();
+        }
     }
 
-    private static Results<PhysicalFileHttpResult, NotFound> GetConsoleLogo(ConsoleLogoStore logos) =>
-        File.Exists(logos.Path) ? TypedResults.PhysicalFile(logos.Path, "image/png") : TypedResults.NotFound();
+    private static Results<FileStreamHttpResult, NotFound> GetConsoleLogo(ConsoleLogoStore logos) =>
+        logos.Open() is { } logo ? TypedResults.File(logo, "image/png") : TypedResults.NotFound();
 
     private static async Task<Results<Ok<ConsoleRelease>, NotFound>> GetConsoleReleaseAsync(
         ConsoleReleaseStore consoles,
@@ -144,9 +156,9 @@ public static class AgentEndpoints
         ConsoleReleaseStore consoles,
         CancellationToken cancellationToken)
     {
-        ConsoleRelease? release = await consoles.CurrentAsync(cancellationToken).ConfigureAwait(false);
+        StoredConsole? console = await consoles.OfferedAsync(cancellationToken).ConfigureAwait(false);
 
-        if (release?.Files.FirstOrDefault(file => file.Name == name) is not { } file)
+        if (console?.Release.Files.FirstOrDefault(file => file.Name == name) is not { } file)
         {
             return TypedResults.NotFound();
         }
@@ -154,7 +166,7 @@ public static class AgentEndpoints
         context.Response.ContentLength = file.Size;
 
         return TypedResults.Stream(
-            body => consoles.CopyFileAsync(file.Name, body, context.RequestAborted),
+            body => ConsoleReleaseStore.CopyFileAsync(console, file.Name, body, context.RequestAborted),
             "application/octet-stream");
     }
 

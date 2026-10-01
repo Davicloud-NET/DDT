@@ -5,66 +5,53 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Settings;
 using DDT.Server.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Machines;
 
 // The console is kept as one zip, so an upload replaces it with a single rename and a machine never sees half of one.
-// Like AgentReleaseStore, it hashes the files once and keeps the hashes until the zip's length or write time changes.
-public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, IOptions<DdtOptions> ddt)
+// Like AgentReleaseStore, it offers the configured zip, else the uploaded one, else the one the server came with, and
+// hashes the files once and keeps the hashes until the zip's length or write time changes.
+public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, IOptions<DdtOptions> ddt, BundledReleases bundled)
 {
     // The console's three files are about 29 MB, and zipped about 12 MB. The agent's limit holds for the zip and for what
     // it unpacks to, so a small zip cannot fill the store either.
     public const long MaxBytes = AgentReleaseStore.MaxBytes;
 
     private readonly Lock _lock = new();
-    private (long Length, DateTime WriteTimeUtc, ConsoleRelease? Release)? _cached;
+    private readonly Dictionary<string, (long Length, DateTime WriteTimeUtc, StoredConsole? Console)> _cached = new(StringComparer.Ordinal);
 
-    public string PackagePath => Path.GetFullPath(string.IsNullOrWhiteSpace(options.Value.ConsolePath)
-        ? Path.Combine(ddt.Value.StorePath, "agent", "ddt-console.zip")
-        : options.Value.ConsolePath);
+    // True when configuration names its own zip. An upload wouldn't replace that file.
+    public bool Configured => !string.IsNullOrWhiteSpace(options.Value.ConsolePath);
+
+    // The zip configuration names, or where an upload goes
+    public string PackagePath => Path.GetFullPath(Configured
+        ? options.Value.ConsolePath
+        : Path.Combine(ddt.Value.StorePath, "agent", "ddt-console.zip"));
 
     // Null if there's no console, or the zip isn't a valid one. Machines then keep the console from their boot image.
-    public async Task<ConsoleRelease?> CurrentAsync(CancellationToken cancellationToken)
-    {
-        FileInfo file = new(PackagePath);
+    public async Task<ConsoleRelease?> CurrentAsync(CancellationToken cancellationToken) =>
+        (await OfferedAsync(cancellationToken).ConfigureAwait(false))?.Release;
 
-        if (!file.Exists)
-        {
-            return null;
-        }
+    // An upload that isn't a console hides the one the server came with, as a configured one does: someone put it there.
+    public async Task<StoredConsole?> OfferedAsync(CancellationToken cancellationToken) =>
+        Configured || File.Exists(PackagePath)
+            ? await DescribeAsync(PackagePath, Configured ? AgentBinarySource.Configuration : AgentBinarySource.Uploaded, cancellationToken).ConfigureAwait(false)
+            : await BundledAsync(cancellationToken).ConfigureAwait(false);
 
-        lock (_lock)
-        {
-            if (_cached is { } cached && cached.Length == file.Length && cached.WriteTimeUtc == file.LastWriteTimeUtc)
-            {
-                return cached.Release;
-            }
-        }
-
-        ConsoleRelease? release;
-
-        await using (FileStream stream = Open(file.FullName))
-        {
-            release = await ReadAsync(stream, cancellationToken).ConfigureAwait(false);
-        }
-
-        lock (_lock)
-        {
-            _cached = (file.Length, file.LastWriteTimeUtc, release);
-        }
-
-        return release;
-    }
+    public Task<StoredConsole?> BundledAsync(CancellationToken cancellationToken) =>
+        DescribeAsync(bundled.ConsolePath, AgentBinarySource.Bundled, cancellationToken);
 
     // Writes one of the console's files as the zip holds it now. If an upload happens in between, the download won't
     // match the release, and the agent refuses it.
-    public async Task CopyFileAsync(string name, Stream destination, CancellationToken cancellationToken)
+    public static async Task CopyFileAsync(StoredConsole console, string name, Stream destination, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(console);
         ArgumentNullException.ThrowIfNull(destination);
 
-        await using FileStream stream = Open(PackagePath);
+        await using FileStream stream = FileReplacement.OpenRead(console.Path);
         await using ZipArchive archive = await ZipArchive.CreateAsync(stream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null, cancellationToken)
             .ConfigureAwait(false);
 
@@ -74,7 +61,63 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
     }
 
     // The release of a zip that holds exactly the console's files at its root, or null.
-    public static async Task<ConsoleRelease?> ReadAsync(Stream zip, CancellationToken cancellationToken)
+    public static async Task<ConsoleRelease?> ReadAsync(Stream zip, CancellationToken cancellationToken) =>
+        (await ReadWithVersionAsync(zip, cancellationToken).ConfigureAwait(false)).Release;
+
+    // Machines then get the console the server came with, or keep their boot image's. False when nothing was uploaded.
+    public bool RemoveUpload()
+    {
+        if (Configured || !File.Exists(PackagePath))
+        {
+            return false;
+        }
+
+        FileReplacement.Delete(PackagePath);
+
+        return true;
+    }
+
+    private async Task<StoredConsole?> DescribeAsync(string path, AgentBinarySource source, CancellationToken cancellationToken)
+    {
+        FileInfo file = new(path);
+
+        if (!file.Exists)
+        {
+            return null;
+        }
+
+        lock (_lock)
+        {
+            if (_cached.TryGetValue(path, out var cached) && cached.Length == file.Length && cached.WriteTimeUtc == file.LastWriteTimeUtc)
+            {
+                return cached.Console;
+            }
+        }
+
+        StoredConsole? console;
+
+        try
+        {
+            await using FileStream stream = FileReplacement.OpenRead(path);
+            (ConsoleRelease? release, Version? version) = await ReadWithVersionAsync(stream, cancellationToken).ConfigureAwait(false);
+            console = release is null ? null : new StoredConsole(path, release, version, source);
+        }
+        catch (FileNotFoundException)
+        {
+            // Removed since the check above
+            return null;
+        }
+
+        lock (_lock)
+        {
+            _cached[path] = (file.Length, file.LastWriteTimeUtc, console);
+        }
+
+        return console;
+    }
+
+    // The version is that of ddt-console.exe, the first of the console's files.
+    private static async Task<(ConsoleRelease? Release, Version? Version)> ReadWithVersionAsync(Stream zip, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(zip);
 
@@ -85,28 +128,42 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
 
             if (archive.Entries.Count != ConsoleRelease.FileNames.Count)
             {
-                return null;
+                return (null, null);
             }
 
             List<ConsoleReleaseFile> files = [];
+            ExecutableVersion version = new();
+            byte[] buffer = new byte[81920];
 
             foreach (string name in ConsoleRelease.FileNames)
             {
                 if (archive.GetEntry(name) is not { } entry)
                 {
-                    return null;
+                    return (null, null);
                 }
 
+                using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
                 await using Stream content = await entry.OpenAsync(cancellationToken).ConfigureAwait(false);
-                byte[] hash = await SHA256.HashDataAsync(content, cancellationToken).ConfigureAwait(false);
-                files.Add(new ConsoleReleaseFile(name, Convert.ToHexStringLower(hash), entry.Length));
+                int read;
+
+                while ((read = await content.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+                {
+                    hash.AppendData(buffer, 0, read);
+
+                    if (files.Count == 0)
+                    {
+                        version.Append(buffer.AsSpan(0, read));
+                    }
+                }
+
+                files.Add(new ConsoleReleaseFile(name, Convert.ToHexStringLower(hash.GetHashAndReset()), entry.Length));
             }
 
-            return new ConsoleRelease(files);
+            return (new ConsoleRelease(files), version.Found);
         }
         catch (InvalidDataException)
         {
-            return null;
+            return (null, null);
         }
     }
 
@@ -145,7 +202,7 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
                     ?? throw new InvalidOperationException("The repacked console is not one.");
             }
 
-            File.Move(stored, path, overwrite: true);
+            FileReplacement.Replace(stored, path);
 
             return (ReleaseUploadStatus.Saved, release);
         }
@@ -284,8 +341,4 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
 
         return size;
     }
-
-    // Opened with FileShare.Delete, so an upload can rename the new zip over one that's being read.
-    private static FileStream Open(string path) =>
-        new(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 81920, useAsync: true);
 }

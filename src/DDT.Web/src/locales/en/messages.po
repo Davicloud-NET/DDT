@@ -2424,6 +2424,10 @@ msgstr "Approving {label} also runs {name} on it, which {ruleInside} chose."
 msgid "Architecture"
 msgstr "Architecture"
 
+#: src/settings/logging/LogFiles.tsx
+msgid "As a Windows service the server writes its log into the logs folder of its store, a file a day, and keeps the newest 20. The levels above decide what goes into them."
+msgstr "As a Windows service the server writes its log into the logs folder of its store, a file a day, and keeps the newest 20. The levels above decide what goes into them."
+
 #: src/sequences/builder/variables/InputAskSettings.tsx
 msgid "Asked"
 msgstr "Asked"
@@ -4969,6 +4973,10 @@ msgstr "Lockout is not enabled for this user."
 msgid "Log"
 msgstr "Log"
 
+#: src/settings/logging/LogFiles.tsx
+msgid "Log files"
+msgstr "Log files"
+
 #: src/settings/logging/LevelRows.tsx
 #: src/settings/LoggingPanel.tsx
 msgid "Log levels"
@@ -5126,6 +5134,14 @@ msgstr "Machines take it at their next netboot: the agent downloads it and shows
 #: src/settings/AgentPanel.tsx
 msgid "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
 msgstr "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
+
+#: src/settings/AgentPanel.tsx
+msgid "Machines that netboot from now on run the agent this server came with. If it came with none, they run the agent in their boot image."
+msgstr "Machines that netboot from now on run the agent this server came with. If it came with none, they run the agent in their boot image."
+
+#: src/settings/ConsolePanel.tsx
+msgid "Machines that netboot from now on show the console this server came with. If it came with none, they show the console in their boot image."
+msgstr "Machines that netboot from now on show the console this server came with. If it came with none, they show the console in their boot image."
 
 #: src/conditions/conditions.ts
 msgid "Machines where {condition} go along Then."
@@ -6830,6 +6846,22 @@ msgstr "Remove the logo"
 msgid "Remove the logo?"
 msgstr "Remove the logo?"
 
+#: src/settings/AgentPanel.tsx
+msgid "Remove the uploaded agent"
+msgstr "Remove the uploaded agent"
+
+#: src/settings/AgentPanel.tsx
+msgid "Remove the uploaded agent?"
+msgstr "Remove the uploaded agent?"
+
+#: src/settings/ConsolePanel.tsx
+msgid "Remove the uploaded console"
+msgstr "Remove the uploaded console"
+
+#: src/settings/ConsolePanel.tsx
+msgid "Remove the uploaded console?"
+msgstr "Remove the uploaded console?"
+
 #: src/conditions/builder/GroupRows.tsx
 msgid "Remove this group"
 msgstr "Remove this group"
@@ -6846,6 +6878,14 @@ msgstr "Removed {title}."
 msgid "Removed. Machines show no logo when they next register."
 msgstr "Removed. Machines show no logo when they next register."
 
+#: src/settings/AgentPanel.tsx
+msgid "Removed. Machines that netboot from now on no longer get that agent."
+msgstr "Removed. Machines that netboot from now on no longer get that agent."
+
+#: src/settings/ConsolePanel.tsx
+msgid "Removed. Machines that netboot from now on no longer get that console."
+msgstr "Removed. Machines that netboot from now on no longer get that console."
+
 #: src/deployments/deployments.ts
 msgid "Removing the agent from Windows"
 msgstr "Removing the agent from Windows"
@@ -6853,6 +6893,14 @@ msgstr "Removing the agent from Windows"
 #: src/settings/logo/LogoChange.tsx
 msgid "Removing the logo"
 msgstr "Removing the logo"
+
+#: src/settings/AgentPanel.tsx
+msgid "Removing the uploaded agent"
+msgstr "Removing the uploaded agent"
+
+#: src/settings/ConsolePanel.tsx
+msgid "Removing the uploaded console"
+msgstr "Removing the uploaded console"
 
 #: src/sequences/builder/variables/RenameField.tsx
 msgid "Rename everywhere"
@@ -8381,6 +8429,10 @@ msgid "The agent started the run"
 msgstr "The agent started the run"
 
 #: src/settings/AgentPanel.tsx
+msgid "The agent this server came with, since none was uploaded"
+msgstr "The agent this server came with, since none was uploaded"
+
+#: src/settings/AgentPanel.tsx
 msgid "The agent uploaded here"
 msgstr "The agent uploaded here"
 
@@ -8530,6 +8582,10 @@ msgstr "The console may be at most {max} MB, zipped and unpacked."
 #: src/settings/ConsolePanel.tsx
 msgid "The console runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
 msgstr "The console runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
+
+#: src/settings/ConsolePanel.tsx
+msgid "The console this server came with, since none was uploaded"
+msgstr "The console this server came with, since none was uploaded"
 
 #: src/settings/ConsolePanel.tsx
 msgid "The console uploaded here"
@@ -9632,6 +9688,14 @@ msgstr "The upload failed."
 msgid "The upload of {name} stopped. Choose the file again to resume."
 msgstr "The upload of {name} stopped. Choose the file again to resume."
 
+#: src/settings/AgentPanel.tsx
+msgid "The uploaded agent was not removed. {reason}"
+msgstr "The uploaded agent was not removed. {reason}"
+
+#: src/settings/ConsolePanel.tsx
+msgid "The uploaded console was not removed. {reason}"
+msgstr "The uploaded console was not removed. {reason}"
+
 #: src/sequences/builder/variables/InputDefault.tsx
 msgid "The value of a choice; several separated by semicolons."
 msgstr "The value of a choice; several separated by semicolons."
@@ -9932,6 +9996,14 @@ msgstr "This sequence was deleted"
 #: src/sequences/useSequenceEditor.ts
 msgid "This sequence was deleted, so nothing more is saved."
 msgstr "This sequence was deleted, so nothing more is saved."
+
+#: src/settings/AgentPanel.tsx
+msgid "This server came with agent {version}, which is newer than the uploaded one. Remove the upload, and machines run the server's own."
+msgstr "This server came with agent {version}, which is newer than the uploaded one. Remove the upload, and machines run the server's own."
+
+#: src/settings/ConsolePanel.tsx
+msgid "This server came with console {version}, which is newer than the uploaded one. Remove the upload, and machines show the server's own."
+msgstr "This server came with console {version}, which is newer than the uploaded one. Remove the upload, and machines show the server's own."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.keyRingUnreadable"
@@ -10452,6 +10524,7 @@ msgid "Variables and inputs of this sequence"
 msgstr "Variables and inputs of this sequence"
 
 #: src/images/ImageFacts.tsx
+#: src/settings/agent/CurrentBinary.tsx
 msgid "Version"
 msgstr "Version"
 

@@ -88,6 +88,24 @@ Everything else is a setting or an action, so it happens on the checklist in the
 An unattended install passes the port, the store and the database to the MSI as properties, and
 `install.ps1` passes its own parameters on.
 
+**What setup fetches.** Where something is missing, setup shows a Dependencies page with a box for
+each: the Windows ADK with its Windows PE add-on (section 4.7), ticked, and URL Rewrite with
+Application Request Routing where IIS is installed without them (section 4.6). Setup downloads what
+is ticked from Microsoft and installs it quietly, which accepts Microsoft's licence terms, and the
+page says so; DDT ships none of it. Each download has to match the SHA-256 the release names.
+Windows runs one installer at a time, and all of these are installers, so none can run inside DDT's
+own:
+
+- The IIS modules install when the page's Next is clicked, before DDT, so the IIS page can follow.
+  Windows Installer asks for elevation itself and names Microsoft as the publisher. Unattended,
+  `install.ps1 -InstallIisModules` does the same before it starts the MSI; the MSI alone cannot.
+- The ADK installs once DDT's install is done, in the background: `INSTALLADK=1` starts
+  `DDT.Host setup adk`, which waits for Windows Installer, and the Application event log says how it
+  went. `install.ps1 -InstallAdk` runs the same verb itself and shows what it says.
+
+A server without internet access installs as before, and the ADK's failure is in the event log.
+Installing IIS itself is left to the administrator: it is a server role.
+
 ### 3.2 Linux
 
 ```bash
@@ -120,7 +138,8 @@ when the release notes say that Windows PE changed, and the Boot image page says
 4.7).
 
 Removing DDT keeps `%ProgramData%\DDT` unless the removal is asked to delete it: the store holds the
-root key, and a new root means building every boot image again.
+root key, and a new root means building every boot image again. What setup fetched from Microsoft
+stays as well, as programs of their own in Apps and features.
 
 ## 4. What it takes
 
@@ -153,6 +172,12 @@ came with, so a new server offers an agent of its own version from its first sta
 says which it offers, and once an upgrade brings an agent newer than the uploaded one, it says that
 too and offers to drop the upload. `Build-BootImage.ps1` takes the bundled agent and console when
 it runs from a release and `-AgentPath` is not given.
+
+Done: `Build-Installer.ps1` compiles the agent and the console with the server's version and puts
+them into the MSI, with `Build-BootImage.ps1` and its module; the release workflow hands both to the
+container image, since only Windows compiles them. The server reads the version out of each
+executable to tell which is newer. Run from the server's folder, `Build-BootImage.ps1` also names
+the server by its DNS name and port, trusts its root and writes into its boot directory.
 
 ### 4.3 The server as a service
 
@@ -187,7 +212,9 @@ and the PXE sockets and the key files have Windows code of their own (src/DDT.Px
   mint an administrator's cookie and every machine token. Below `%ProgramData%` the Users group
   inherits read access, to the database and the images as well. The installer gives the store to
   SYSTEM, Administrators and `NT SERVICE\DDT` alone, and the key ring is encrypted with DPAPI for the
-  machine as well, which a copied store does not open elsewhere.
+  machine as well, which a copied store does not open elsewhere. Done. For the machine and not an
+  account, because the service, setup as SYSTEM and an administrator's recovery verb share the ring.
+  So a store moved to another server loses its secrets (settings.md, What the encryption protects).
 - **Key files belong to whoever wrote them first.** The ACL of a PEM key names the account that made
   it (PemFiles.cs:48-66). A key made by an administrator's `dotnet run` is unreadable to the
   service, and the error then speaks of restoring a backup
@@ -198,13 +225,15 @@ and the PXE sockets and the key files have Windows code of their own (src/DDT.Px
   System32 for a service. The bootstrap file names absolute paths, and DDT resolves relative ones
   against the program's folder.
 - **Files in use cannot be replaced.** Linux renames over a file that is being read; Windows refuses.
-  TFTP holds boot files open (src/DDT.Pxe/TftpTransfer.cs:86), HTTP boot and the agent download serve
-  them with `PhysicalFile`, and the agent upload and the console's logo rename over theirs
-  (src/DDT.Server/Endpoints/SettingsEndpoints.cs:534-576,
-  src/DDT.Server/Machines/ConsoleLogoStore.cs:67,75). So an upload during a machine's download fails,
-  and so does copying a boot image in while a machine netboots. Each of them gets a new file of its
-  own and the server switches to it, as image objects are already stored by their hash; the old file
-  goes when nothing reads it. Section 4.7 builds on this.
+  TFTP held boot files open, HTTP boot and the agent download served them with `PhysicalFile`, and
+  the agent upload and the console's logo renamed over theirs. So an upload during a machine's
+  download failed, and so did copying a boot image in while a machine netboots. Done, without new
+  file names: every reader opens its file so that it may be deleted (`FileShare.Delete`), and a
+  writer that cannot rename over the file moves the old one aside under another name first, which
+  Windows allows then; the old file goes when its last reader closes it
+  (src/DDT.Server/Machines/FileReplacement.cs, `Copy-BootFile` in build/BootImage/Private/Publish.ps1).
+  A boot image copied in by hand with Explorer still waits for a netboot to finish. Section 4.7
+  builds on this.
 - **Free space.** `DriveInfo` measures the store's volume on Linux, but only a drive root on Windows,
   and throws for a UNC path (ImageStore.cs:39-40), which fails every upload with a 500. On Windows the
   server asks `GetDiskFreeSpaceEx` for the store's folder.
@@ -219,6 +248,9 @@ and the PXE sockets and the key files have Windows code of their own (src/DDT.Px
 - **Logs.** Without a console, Information and below go nowhere, and warnings go to the Application
   event log: there is no file sink. The Windows install writes a rolling log file in the store, which
   the Server page offers to download. The first password leaves the log entirely (section 4.5).
+  Done: as a service DDT writes `logs/ddt-<date>.log` in the store, a file a day, a new one above
+  20 MB, the newest 20 kept (src/DDT.Host/Logging/FileLoggerProvider.cs). The Log levels settings
+  apply to it, and the Logging tab lists the files (`GET /api/server/logs`, administrators only).
 - **The advice for a failed bind.** It says to grant `NET_BIND_SERVICE`
   (src/DDT.Contracts/Messages/ServerMessages.cs:1808-1814). Windows has no privileged ports: there,
   access denied means that WDS or the DHCP server holds the port, which section 4.9 names.
@@ -274,16 +306,19 @@ The first administrator), and `settings create-admin` stays the way back in.
 
 ### 4.6 Names and trust
 
-**Names.** The certificate names `localhost`, the short host name and the addresses
-(src/DDT.Server/Certificates/ServerNames.cs:19,39). It names the DNS name as well, such as
-`deploy01.contoso.local`, which the installers print and the boot image uses: Windows PE resolves a
-short name only if DHCP hands it the right suffix.
+**Names.** The certificate names `localhost`, the short host name and the addresses, loopback
+included, for a browser or IIS on the server itself (src/DDT.Server/Certificates/ServerNames.cs). It
+names the DNS name as well, such as `deploy01.contoso.local`, which the installers print and the
+boot image uses: Windows PE resolves a short name only if DHCP hands it the right suffix. The DNS
+name is the host name with the computer's domain, where that makes a host name; a certificate from
+DDT's root that lacks it is issued again at the next start, as for any missing name.
 
 **Trusting the root.** The checklist (section 5) links `ddt-root.pem` with its SHA-256 and a Group
 Policy recipe for the computers of those who manage DDT, and nowhere else, as the security model
 asks: the root has no name constraints (README, Security model).
 
-**IIS in front.** Where IIS has URL Rewrite and ARR, setup offers a page for an IIS site of DDT's own:
+**IIS in front.** Where IIS has URL Rewrite and ARR, or setup just added them (section 3.1), setup
+offers a page for an IIS site of DDT's own:
 a host name with its own DNS record and a certificate from the machine store (`IISHOSTNAME`,
 `IISCERTIFICATE`; `install.ps1 -IisHostName -IisCertificate`). `DDT.Host setup iis` makes the site,
 binds the certificate by SNI and forwards to Kestrel with `X-Forwarded-Proto`;
@@ -340,6 +375,11 @@ Microsoft's `adksetup.exe` and `adkwinpesetup.exe` for the versions the release 
 quietly with the deployment tools and Windows PE only. The release names a tested pair and never the
 newest: winget offers the ADK 10.1.28000.1 with the add-on 10.1.26100.2454, which do not match, and
 2Pint recommends against 10.1.28000.1 for adding drivers.
+
+Done, ahead of the page: `DDT.Host setup adk` installs the pair 10.1.26100.9457 that way
+(src/DDT.Host/Startup/AdkSetup.cs), with each setup checked against its SHA-256, and setup and
+`install.ps1` offer it (section 3.1). It adds a missing add-on only to the ADK of the same version.
+An elevated prompt runs it by hand, after an upgrade for instance, which shows no Dependencies page.
 
 `Build-BootImage.ps1` stays the one implementation, so a build by hand on a PC gives the same image.
 

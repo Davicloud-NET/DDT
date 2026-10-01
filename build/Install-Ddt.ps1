@@ -38,10 +38,18 @@ Lets the firewall rules cover public networks too, not only domain and private o
 
 .PARAMETER IisHostName
 Publishes DDT through IIS under this name, such as ddt.contoso.com, on a new install. Needs IIS with URL Rewrite and
-ARR, and -IisCertificate.
+ARR, which -InstallIisModules adds, and -IisCertificate.
 
 .PARAMETER IisCertificate
 The thumbprint of the certificate IIS serves for -IisHostName, from the computer's store.
+
+.PARAMETER InstallIisModules
+Gets URL Rewrite and Application Request Routing from Microsoft and installs them first, where IIS lacks them. That
+accepts Microsoft's licence terms for them.
+
+.PARAMETER InstallAdk
+Gets the Windows ADK and its Windows PE add-on from Microsoft and installs them, for building boot images on this
+server: about 4 GB and a few minutes. That accepts Microsoft's licence terms for them.
 
 .PARAMETER Version
 A release, as 0.1.0, instead of the latest one.
@@ -66,6 +74,10 @@ param(
 
     [string] $IisCertificate,
 
+    [switch] $InstallIisModules,
+
+    [switch] $InstallAdk,
+
     [ValidatePattern('^\d{1,3}\.\d{1,3}\.\d{1,5}$')]
     [string] $Version,
 
@@ -75,7 +87,8 @@ param(
 # A child scope: through irm | iex, strict mode and preferences would stay in the caller's shell.
 & {
     param([int] $Port, [string] $StoreFolder, [string] $NetbootInterface, [string] $Database, [bool] $AllowPublicNetworks,
-        [string] $IisHostName, [string] $IisCertificate, [string] $Version, [string] $Source)
+        [string] $IisHostName, [string] $IisCertificate, [bool] $InstallIisModules, [bool] $InstallAdk, [string] $Version,
+        [string] $Source)
 
     Set-StrictMode -Version Latest
     $ErrorActionPreference = 'Stop'
@@ -128,6 +141,45 @@ param(
 
     if ((Get-FileHash -LiteralPath $msi -Algorithm SHA256).Hash -ne ($expected -split '\s+')[0].Trim().ToUpperInvariant()) {
         throw "DDT.msi doesn't match the release's SHA256SUMS. Nothing was installed."
+    }
+
+    # Before DDT, whose setup checks for them. Dependencies.cs of the setup pages names the same files and hashes.
+    if ($InstallIisModules) {
+        if (-not (Test-Path 'HKLM:\SOFTWARE\Microsoft\InetStp')) {
+            throw '-InstallIisModules needs IIS. Add it first, with Install-WindowsFeature Web-Server, Web-WebSockets.'
+        }
+
+        $modules = @(
+            @{
+                Name = 'URL Rewrite'
+                File = 'rewrite_amd64_en-US.msi'
+                Uri  = 'https://download.microsoft.com/download/1/2/8/128E2E22-C1B9-44A4-BE2A-5859ED1D4592/rewrite_amd64_en-US.msi'
+                Hash = '37342FF2F585F263F34F48E9DE59EB1051D61015A8E967DBDE4075716230A32A'
+            }
+            @{
+                Name = 'Application Request Routing'
+                File = 'requestRouter_amd64.msi'
+                Uri  = 'https://download.microsoft.com/download/e/9/8/e9849d6a-020e-47e4-9fd0-a023e99b54eb/requestRouter_amd64.msi'
+                Hash = 'FB61FDB7101795A34D5129CB37EEE43AB675C7ED76BA3A3B23B039D8C90C2A4B'
+            }
+        )
+
+        foreach ($module in $modules) {
+            $registered = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\IIS Extensions\$($module.Name)" -ErrorAction SilentlyContinue
+            if ($registered -and $registered.PSObject.Properties['Install'] -and $registered.Install -eq 1) { continue }
+
+            Write-Host "Installing $($module.Name) for IIS, from Microsoft"
+            $file = Join-Path $work $module.File
+            Invoke-WebRequest -UseBasicParsing -Uri $module.Uri -OutFile $file
+            if ((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne $module.Hash) {
+                throw "$($module.File) from Microsoft isn't the file this script was made for. Nothing was installed from it."
+            }
+
+            $added = Start-Process -FilePath msiexec.exe -ArgumentList @('/i', "`"$file`"", '/qn', '/norestart') -Wait -PassThru
+            if ($added.ExitCode -notin 0, 3010) {
+                throw "$($module.Name) didn't install: Windows Installer ended with exit code $($added.ExitCode)."
+            }
+        }
     }
 
     $arguments = @('/i', "`"$msi`"", '/qn', '/norestart', '/l*v', "`"$log`"", "PORT=$Port")
@@ -196,8 +248,10 @@ param(
         Start-Sleep -Seconds 2
     }
 
-    # The name the certificate has. Not the FQDN or the NetBIOS name.
+    # The DNS name, as DDT's certificate has it (ServerNames.DnsName)
     $name = [Net.Dns]::GetHostName()
+    $domain = [Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().DomainName.Trim('.')
+    if ($domain -and $name -notmatch '\.' -and [Uri]::CheckHostName("$name.$domain") -eq 'Dns') { $name = "$name.$domain" }
     Write-Host ''
     Write-Host "DDT runs at https://${name}:$listening/"
     if ($IisHostName) { Write-Host "Browsers can use https://$IisHostName/ through IIS." }
@@ -230,5 +284,16 @@ param(
         }
     }
 
+    # Last, and itself, not by INSTALLADK=1: that way it shows here how the ADK's setup went.
+    if ($InstallAdk) {
+        Write-Host ''
+        Write-Host 'Installing the Windows ADK and its Windows PE add-on, from Microsoft'
+        $programs = if ($env:ProgramW6432) { $env:ProgramW6432 } else { $env:ProgramFiles }
+        & (Join-Path $programs 'DDT\DDT.Host.exe') setup adk
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning 'DDT runs, but without the Windows ADK it builds no boot image. DDT.Host setup adk tries again.'
+        }
+    }
+
     Remove-Item -LiteralPath $work -Recurse -Force
-} -Port $Port -StoreFolder $StoreFolder -NetbootInterface $NetbootInterface -Database $Database -AllowPublicNetworks $AllowPublicNetworks -IisHostName $IisHostName -IisCertificate $IisCertificate -Version $Version -Source $Source
+} -Port $Port -StoreFolder $StoreFolder -NetbootInterface $NetbootInterface -Database $Database -AllowPublicNetworks $AllowPublicNetworks -IisHostName $IisHostName -IisCertificate $IisCertificate -InstallIisModules $InstallIisModules -InstallAdk $InstallAdk -Version $Version -Source $Source

@@ -140,6 +140,14 @@
                   Execute="deferred"
                   Impersonate="no"
                   Return="ignore" />
+    <!-- DependenciesDlg's box. Microsoft's setups are installers themselves, so they run once this one is done. -->
+    <Property Id="INSTALLADK" Secure="yes" />
+    <CustomAction Id="InstallAdk"
+                  FileRef="DDTHostExe"
+                  ExeCommand="setup adk background"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
 
     <InstallExecuteSequence>
       <Custom Action="TrustRoot" After="StartServices" Condition="NOT REMOVE" />
@@ -160,6 +168,8 @@
               Before="StartServices"
               Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED AND NETBOOTINTERFACE AND NETBOOTINTERFACE &lt;&gt; &quot;later&quot;" />
       <Custom Action="UntrustRoot" Before="RemoveFiles" Condition="REMOVE ~= &quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+      <!-- Last, so nothing can roll back under it -->
+      <Custom Action="InstallAdk" Before="InstallFinalize" Condition="INSTALLADK = 1 AND NOT REMOVE" />
     </InstallExecuteSequence>
   </Fragment>
 

@@ -10,6 +10,7 @@ import type { agentBinaryQuery, AgentBinarySource, AgentBinaryView } from "../ag
 export interface Binary {
   query: typeof agentBinaryQuery;
   upload: (file: File) => Promise<AgentBinaryView>;
+  remove: () => Promise<AgentBinaryView>;
   maxBytes: number;
   accept: string[];
   configurationKey: string;
@@ -33,4 +34,11 @@ export interface Binary {
   confirmLabel: ReactNode;
   confirmBody: (name: string, size: string) => ReactNode;
   reauthReason: ReactNode;
+  newer: (version: string) => ReactNode;
+  removeLabel: ReactNode;
+  removeTitle: ReactNode;
+  removeBody: ReactNode;
+  removing: ReactNode;
+  removed: ReactNode;
+  notRemoved: (reason: string) => ReactNode;
 }

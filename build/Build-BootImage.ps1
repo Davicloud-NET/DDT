@@ -30,6 +30,11 @@ stack, and nothing can be added to the image after that. -SkipTrim keeps everyth
 Either way, boot.wim is exported at the end, which drops what servicing and the trim left behind in
 it. The script then prints its size in megabytes of 1,048,576 bytes.
 
+An installed server has this script in its program folder, next to the agent and the console it came
+with. Run from there without -AgentPath, it takes both, names the server by its DNS name and port
+and trusts its root from the store, and writes into the server's boot directory, boot in the store.
+Each of these parameters still overrides its default.
+
 The output layout, relative to -Destination. DDT:Pxe:BootDirectory on the server must hold the same layout.
 
   x64/bootmgfw.efi      boot manager signed by Microsoft Windows Production PCA 2011 (the default)
@@ -189,6 +194,25 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# Next to an installed server, the build takes what the release brought and what the installer set up.
+. (Join-Path $PSScriptRoot 'BootImage\Private\Release.ps1')
+$release = Get-ReleaseDefault -Folder $PSScriptRoot
+
+if ($release) {
+    if (-not $Destination) { $Destination = $release.Destination }
+    if (-not $WorkDirectory) { $WorkDirectory = $release.WorkDirectory }
+
+    if (-not $AgentPath -and $release.AgentPath) {
+        $AgentPath = $release.AgentPath
+        if (-not $ServerUrl) { $ServerUrl = $release.ServerUrl }
+        if (-not $RootCertificatePath -and $release.RootCertificatePath) { $RootCertificatePath = $release.RootCertificatePath }
+
+        if (-not $ConsolePath -and $release.ConsolePackage) {
+            $ConsolePath = Expand-ReleaseConsole -Package $release.ConsolePackage -WorkDirectory $WorkDirectory
+        }
+    }
+}
 
 # Defaults are set here instead of in param(), because Windows PowerShell leaves $PSScriptRoot empty
 # there when the script is started with powershell -File.

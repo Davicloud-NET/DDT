@@ -282,17 +282,28 @@ Certificate actions have these limits:
 
 | Key | Type | Default | Secret | Applies | Who |
 |---|---|---|---|---|---|
-| Agent binary (replaces DDT:Agent:BinaryPath) | upload of ddt-agent.exe | none: machines keep the boot image agent | | live: next netboot | Admin, re-auth |
-| Console (replaces DDT:Agent:ConsolePath) | upload of a zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll | none: machines keep the boot image console | | live: next netboot | Admin, re-auth |
+| Agent binary (replaces DDT:Agent:BinaryPath) | upload of ddt-agent.exe | the agent the server came with; without one, machines keep the boot image agent | | live: next netboot | Admin, re-auth to upload |
+| Console (replaces DDT:Agent:ConsolePath) | upload of a zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll | the console the server came with; without one, machines keep the boot image console | | live: next netboot | Admin, re-auth to upload |
 
-- The upload goes to the default path `<StorePath>/agent/ddt-agent.exe` (AgentReleaseStore.cs:19-21).
-  That file is hashed again whenever it changes (AgentReleaseStore.cs:12-13,34).
-- DDT:Agent:BinaryPath stays only as a configuration override for development (Start-DevHost.ps1:71).
-  While it is set, uploads answer 409.
+- The upload goes to the default path `<StorePath>/agent/ddt-agent.exe` (AgentReleaseStore.cs).
+  That file is hashed again whenever it changes.
+- A release puts `ddt-agent.exe` and `ddt-console.zip` next to DDT.Host (BundledReleases.cs). The
+  server offers the upload, and otherwise these, so a new server offers an agent of its own version
+  from its first start. The view names the source (`Uploaded`, `Bundled`, `Configuration`, `None`)
+  and the file version, which the server reads out of the executable (ExecutableVersion.cs), on
+  Linux as well.
+- `DELETE /api/settings/agent/binary` and `DELETE /api/settings/agent/console` remove an upload
+  again, audited as `agent.upload-removed` and `console.upload-removed`, without a fresh password:
+  it only takes machines back to what the server came with. While an upload is older than the
+  bundled file, the view says so in `newerBundledVersion`, and the page offers the removal.
+- DDT:Agent:BinaryPath stays only as a configuration override for development (Start-DevHost.ps1).
+  While it is set, uploads answer 409, and the bundled agent is not offered.
 - The console goes to `<StorePath>/agent/ddt-console.zip`, repacked with the three files at its root
   (ConsoleReleaseStore.cs, SettingsConsoleEndpoints.cs). DDT:Agent:ConsolePath is its development
   override, which Start-DevHost.ps1 points at the zip Publish-Console.ps1 writes; while it is set,
   uploads answer 409.
+- An upload or removal doesn't wait for a machine that downloads the old file: the old file steps
+  aside and goes when the download ends (FileReplacement.cs).
 
 ### Logging (section `logging`)
 
@@ -694,7 +705,12 @@ stated requirement.
 **What the encryption protects.**
 
 - It protects copies that hold only the database: a dump, or a database backup.
-- It does not protect the store volume, where the key ring is plain files.
+- It does not protect the store volume on Linux, where the key ring is plain files.
+- On Windows new keys are encrypted with DPAPI for the machine (DdtAuthenticationExtensions.cs), so a
+  copied store or its backup does not open on another computer. Any account on the server itself can
+  still decrypt them, which is what the store's ACL is for. The price: a store moved to another
+  server, or restored after Windows was installed again, has lost its key ring. Stored secrets have
+  to be entered again, and machines register again.
 - Keep key ring backups apart from database backups, and protect them like the volume. The key ring
   can also mint an administrator cookie (README "Security model").
 

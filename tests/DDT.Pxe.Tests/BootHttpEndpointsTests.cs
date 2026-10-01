@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -99,6 +100,23 @@ public sealed class BootHttpEndpointsTests : IAsyncLifetime
 
         Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
         Assert.Equal(_content, await BodyOf(context));
+    }
+
+    // A new boot image moves the old file aside. Windows only lets it while every reader allows deleting the file.
+    [Fact]
+    public async Task AFileThatFirmwareDownloadsCanBeMovedAsideForANewOne()
+    {
+        string path = Path.Combine(_root, "x64", "boot.wim");
+        byte[] image = RandomNumberGenerator.GetBytes(4 * 1024 * 1024);
+        await File.WriteAllBytesAsync(path, image, TestContext.Current.CancellationToken);
+
+        // The answer has begun, and most of the file is still to come.
+        HttpContext download = await SendAsync(HttpMethods.Get, "/boot/x64/boot.wim");
+        File.Move(path, path + ".old");
+        await File.WriteAllBytesAsync(path, [1, 2, 3], TestContext.Current.CancellationToken);
+
+        Assert.Equal(image, await BodyOf(download));
+        Assert.Equal(new byte[] { 1, 2, 3 }, await BodyOf(await SendAsync(HttpMethods.Get, "/boot/x64/boot.wim")));
     }
 
     [Fact]

@@ -65,14 +65,14 @@ public static class IisCheck
         }
     }
 
-    private static bool Iis() =>
+    internal static bool Iis() =>
         Registry64(@"SOFTWARE\Microsoft\InetStp", "MajorVersion") is int major && major >= 10;
 
-    private static bool UrlRewrite() =>
+    internal static bool UrlRewrite() =>
         Registry64(@"SOFTWARE\Microsoft\IIS Extensions\URL Rewrite", "Install") is int installed && installed == 1
         || File.Exists(Path.Combine(NativeSystem(), "inetsrv", "rewrite.dll"));
 
-    private static bool Arr() =>
+    internal static bool Arr() =>
         Registry64(@"SOFTWARE\Microsoft\IIS Extensions\Application Request Routing", "Install") is int installed && installed == 1
         || File.Exists(Path.Combine(
             Environment.GetEnvironmentVariable("ProgramW6432") ?? Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),

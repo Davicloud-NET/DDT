@@ -15,6 +15,7 @@ import { Tab, TabList, TabPanel, Tabs } from "@/ui/Tabs";
 import { AgentPanel } from "../AgentPanel";
 import { CertificatePanel } from "../CertificatePanel";
 import { ConsolePanel } from "../ConsolePanel";
+import { LogFiles } from "../logging/LogFiles";
 import { LoggingPanel } from "../LoggingPanel";
 import { ProxiesPanel } from "../ProxiesPanel";
 import { serverSearch, type ServerTab } from "../serverSearch";
@@ -96,6 +97,7 @@ export function ServerSettings() {
         </TabPanel>
         <TabPanel id="logging" className="flex flex-col gap-4">
           <LoggingPanel />
+          <LogFiles />
         </TabPanel>
       </Tabs>
     </Page>

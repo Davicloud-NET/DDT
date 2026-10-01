@@ -10,7 +10,8 @@ Builds DDT.msi, the Windows installer of the DDT server.
 
 .DESCRIPTION
 Builds the web UI, publishes DDT.Host self-contained for win-x64, so the server needs no .NET runtime, and builds
-build/Installer/DDT.Installer.wixproj around it with the WiX Toolset.
+build/Installer/DDT.Installer.wixproj around it with the WiX Toolset. Next to the server go the agent and the console
+of the same version, which it offers until others are uploaded, and Build-BootImage.ps1 with its module.
 
 The MSI installs the server as the DDT service, running as NT SERVICE\DDT, adds its firewall rules, and writes
 ddt.ini, the bootstrap file, to %ProgramData%\DDT. It takes these properties, as in msiexec /i DDT.msi PORT=443:
@@ -23,6 +24,8 @@ ddt.ini, the bootstrap file, to %ProgramData%\DDT. It takes these properties, as
   FIREWALLPUBLIC=1  Adds Public to FIREWALLPROFILES, like the checkbox setup shows on a public network.
   IISHOSTNAME       With IISCERTIFICATE, a thumbprint from the machine store: an IIS site under this name forwards
                     to DDT. Needs IIS with URL Rewrite and ARR. Uninstall removes the site.
+  INSTALLADK=1      Gets Microsoft's ADK and its Windows PE add-on once setup is done, in the background, by
+                    DDT.Host setup adk. Accepts Microsoft's licence terms for them. The setup pages offer it.
   NETBOOTINTERFACE  The network card that answers netboot, by name, such as Ethernet. Unset, PXE stays off until
                     someone picks a card in DDT.
   REMOVESTORE=1     On uninstall, deletes the store and ddt.ini too, with the database and DDT's root key.
@@ -35,6 +38,10 @@ The version of the MSI and the server, as major.minor.patch. Windows Installer i
 .PARAMETER SkipWeb
 Uses the web UI that's already in src/DDT.Host/wwwroot instead of building it again.
 
+.PARAMETER SkipAgent
+Leaves the agent and the console out, which need the Visual C++ build tools and minutes to compile. Such a server
+offers no agent until one is uploaded. For checking that the installer builds, not for a release.
+
 .EXAMPLE
 .\build\Build-Installer.ps1 -Version 0.1.0
 #>
@@ -45,7 +52,9 @@ param(
 
     [string] $Output,
 
-    [switch] $SkipWeb
+    [switch] $SkipWeb,
+
+    [switch] $SkipAgent
 )
 
 Set-StrictMode -Version Latest
@@ -116,6 +125,19 @@ Invoke-Checked 'dotnet' @(
     '--self-contained',
     "-p:Version=$Version",
     '--output', $payload)
+
+# What the server offers machines until others are uploaded, and what builds a boot image on the server itself.
+if (-not $SkipAgent) {
+    $agent = Join-Path $work 'agent'
+    $console = Join-Path $work 'console'
+
+    & (Join-Path $PSScriptRoot 'Publish-Agent.ps1') -Output $agent -Version $Version
+    & (Join-Path $PSScriptRoot 'Publish-Console.ps1') -Output $console -Package (Join-Path $payload 'ddt-console.zip') -Version $Version
+    Copy-Item -LiteralPath (Join-Path $agent 'ddt-agent.exe') -Destination $payload
+}
+
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Build-BootImage.ps1'), (Join-Path $PSScriptRoot 'boot-image-trim.txt') -Destination $payload
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'BootImage') -Destination $payload -Recurse
 
 $licence = Join-Path $work 'License.rtf'
 $notice = [IO.File]::ReadAllText((Join-Path $root 'NOTICE'))

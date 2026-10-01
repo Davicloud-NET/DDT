@@ -35,12 +35,12 @@ if (SettingsConsole.Handles(args))
 if (SetupConsole.Handles(args))
 {
     using StringWriter said = new();
-    Environment.ExitCode = SetupConsole.Run(args, said);
-    Console.Out.Write(said.ToString());
+    using EchoWriter output = new(Console.Out, said);
+    Environment.ExitCode = SetupConsole.Run(args, output);
 
-    if (Environment.ExitCode == 1 && OperatingSystem.IsWindows())
+    if (OperatingSystem.IsWindows())
     {
-        SetupConsole.LogFailure(args, said.ToString().Trim());
+        SetupConsole.LogOutcome(args, said.ToString().Trim(), Environment.ExitCode);
     }
 
     return;
@@ -74,6 +74,12 @@ if (service)
 builder.Services.AddWindowsService(windows => windows.ServiceName = "DDT");
 
 DdtOptions options = builder.Configuration.GetSection(DdtOptions.SectionName).Get<DdtOptions>() ?? new DdtOptions();
+
+// A service has no console. The event log only gets warnings, and the Server page offers these files for download.
+if (service)
+{
+    builder.Logging.AddProvider(new FileLoggerProvider(LogFiles.FolderIn(options.StorePath), TimeProvider.System));
+}
 IReadOnlySet<DeploymentRole> roles = DeploymentRoles.Parse(options.Roles);
 DdtConfigurationCheck.Validate(builder.Configuration, options, roles);
 

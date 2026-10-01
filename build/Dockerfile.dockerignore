@@ -3,7 +3,8 @@
 **/out/
 **/node_modules/
 **/dist/
-artifacts/
+artifacts/*
+!artifacts/bundle/
 .git/
 .vs/
 .idea/

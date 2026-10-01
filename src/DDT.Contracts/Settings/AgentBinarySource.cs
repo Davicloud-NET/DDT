@@ -12,6 +12,9 @@ public enum AgentBinarySource
     // Uploaded on the settings page.
     Uploaded,
 
+    // The one the server came with, next to its program. Offered while nothing is uploaded.
+    Bundled,
+
     // DDT:Agent:BinaryPath names the file, so the page can't replace it.
     Configuration,
 }

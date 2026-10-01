@@ -26,8 +26,18 @@ public static class ServerEndpoints
         // Dismissing the banner that asks for a boot image rebuild hides it for everyone, so only an administrator may.
         group.MapDelete("/certificate/replaced-anchor", AcknowledgeReplacedAnchorAsync).RequireAuthorization(DdtPolicies.Administrator);
 
+        // A log names accounts, machines and addresses, and at Debug level more than that.
+        group.MapGet("/logs", GetLogs).RequireAuthorization(DdtPolicies.Administrator);
+        group.MapGet("/logs/{name}", GetLog).RequireAuthorization(DdtPolicies.Administrator);
+
         return group;
     }
+
+    // Empty where the server logs to its console, as in a container.
+    private static Ok<IReadOnlyList<LogFileView>> GetLogs(LogFiles logs) => TypedResults.Ok(logs.List());
+
+    private static Results<FileStreamHttpResult, NotFound> GetLog(string name, LogFiles logs) =>
+        logs.Open(name) is { } log ? TypedResults.File(log, "text/plain; charset=utf-8", name) : TypedResults.NotFound();
 
     // Returns 404 when Kestrel loads the certificate by itself. That's the case for a PFX, a password-protected key, or
     // TLS at a proxy.

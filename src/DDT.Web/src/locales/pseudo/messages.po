@@ -2424,6 +2424,10 @@ msgstr ""
 msgid "Architecture"
 msgstr ""
 
+#: src/settings/logging/LogFiles.tsx
+msgid "As a Windows service the server writes its log into the logs folder of its store, a file a day, and keeps the newest 20. The levels above decide what goes into them."
+msgstr ""
+
 #: src/sequences/builder/variables/InputAskSettings.tsx
 msgid "Asked"
 msgstr ""
@@ -4969,6 +4973,10 @@ msgstr ""
 msgid "Log"
 msgstr ""
 
+#: src/settings/logging/LogFiles.tsx
+msgid "Log files"
+msgstr ""
+
 #: src/settings/logging/LevelRows.tsx
 #: src/settings/LoggingPanel.tsx
 msgid "Log levels"
@@ -5125,6 +5133,14 @@ msgstr ""
 
 #: src/settings/AgentPanel.tsx
 msgid "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "Machines that netboot from now on run the agent this server came with. If it came with none, they run the agent in their boot image."
+msgstr ""
+
+#: src/settings/ConsolePanel.tsx
+msgid "Machines that netboot from now on show the console this server came with. If it came with none, they show the console in their boot image."
 msgstr ""
 
 #: src/conditions/conditions.ts
@@ -6830,6 +6846,22 @@ msgstr ""
 msgid "Remove the logo?"
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
+msgid "Remove the uploaded agent"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "Remove the uploaded agent?"
+msgstr ""
+
+#: src/settings/ConsolePanel.tsx
+msgid "Remove the uploaded console"
+msgstr ""
+
+#: src/settings/ConsolePanel.tsx
+msgid "Remove the uploaded console?"
+msgstr ""
+
 #: src/conditions/builder/GroupRows.tsx
 msgid "Remove this group"
 msgstr ""
@@ -6846,12 +6878,28 @@ msgstr ""
 msgid "Removed. Machines show no logo when they next register."
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
+msgid "Removed. Machines that netboot from now on no longer get that agent."
+msgstr ""
+
+#: src/settings/ConsolePanel.tsx
+msgid "Removed. Machines that netboot from now on no longer get that console."
+msgstr ""
+
 #: src/deployments/deployments.ts
 msgid "Removing the agent from Windows"
 msgstr ""
 
 #: src/settings/logo/LogoChange.tsx
 msgid "Removing the logo"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "Removing the uploaded agent"
+msgstr ""
+
+#: src/settings/ConsolePanel.tsx
+msgid "Removing the uploaded console"
 msgstr ""
 
 #: src/sequences/builder/variables/RenameField.tsx
@@ -8381,6 +8429,10 @@ msgid "The agent started the run"
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
+msgid "The agent this server came with, since none was uploaded"
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
 msgid "The agent uploaded here"
 msgstr ""
 
@@ -8529,6 +8581,10 @@ msgstr ""
 
 #: src/settings/ConsolePanel.tsx
 msgid "The console runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
+msgstr ""
+
+#: src/settings/ConsolePanel.tsx
+msgid "The console this server came with, since none was uploaded"
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
@@ -9632,6 +9688,14 @@ msgstr ""
 msgid "The upload of {name} stopped. Choose the file again to resume."
 msgstr ""
 
+#: src/settings/AgentPanel.tsx
+msgid "The uploaded agent was not removed. {reason}"
+msgstr ""
+
+#: src/settings/ConsolePanel.tsx
+msgid "The uploaded console was not removed. {reason}"
+msgstr ""
+
 #: src/sequences/builder/variables/InputDefault.tsx
 msgid "The value of a choice; several separated by semicolons."
 msgstr ""
@@ -9931,6 +9995,14 @@ msgstr ""
 
 #: src/sequences/useSequenceEditor.ts
 msgid "This sequence was deleted, so nothing more is saved."
+msgstr ""
+
+#: src/settings/AgentPanel.tsx
+msgid "This server came with agent {version}, which is newer than the uploaded one. Remove the upload, and machines run the server's own."
+msgstr ""
+
+#: src/settings/ConsolePanel.tsx
+msgid "This server came with console {version}, which is newer than the uploaded one. Remove the upload, and machines show the server's own."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10452,6 +10524,7 @@ msgid "Variables and inputs of this sequence"
 msgstr ""
 
 #: src/images/ImageFacts.tsx
+#: src/settings/agent/CurrentBinary.tsx
 msgid "Version"
 msgstr ""
 

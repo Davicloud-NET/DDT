@@ -42,9 +42,17 @@ public static class DdtAuthenticationExtensions
 
         // The key ring can mint an administrator cookie and every machine token, so it has to survive restarts and live
         // on the store volume, not in the read-only layer.
-        services.AddDataProtection()
+        IDataProtectionBuilder keyRing = services.AddDataProtection()
             .SetApplicationName("ddt")
             .PersistKeysToFileSystem(Directory.CreateDirectory(Path.Combine(options.StorePath, "keys")));
+
+        // On Windows, new keys are encrypted with DPAPI, so a copied store or its backup doesn't open elsewhere. For the
+        // machine, not an account: the service, setup as SYSTEM and an administrator's recovery verb share the ring.
+        // The store's ACL is what keeps other accounts on the server out.
+        if (OperatingSystem.IsWindows())
+        {
+            keyRing.ProtectKeysWithDpapi(protectToLocalMachine: true);
+        }
 
         AddIdentity(services);
         services.AddSingleton<MachineTokenService>();

@@ -2424,6 +2424,10 @@ msgstr "Mit der Freigabe von {label} läuft darauf auch {name}, die {ruleInside}
 msgid "Architecture"
 msgstr "Architektur"
 
+#: src/settings/logging/LogFiles.tsx
+msgid "As a Windows service the server writes its log into the logs folder of its store, a file a day, and keeps the newest 20. The levels above decide what goes into them."
+msgstr "Als Windows-Dienst schreibt der Server sein Protokoll in den Ordner logs seines Speichers, eine Datei pro Tag, und behält die neuesten 20. Die Stufen oben bestimmen, was hineinkommt."
+
 #: src/sequences/builder/variables/InputAskSettings.tsx
 msgid "Asked"
 msgstr "Abgefragt"
@@ -4969,6 +4973,10 @@ msgstr "Für diesen Benutzer ist die Sperre nicht aktiviert."
 msgid "Log"
 msgstr "Protokoll"
 
+#: src/settings/logging/LogFiles.tsx
+msgid "Log files"
+msgstr "Protokolldateien"
+
 #: src/settings/logging/LevelRows.tsx
 #: src/settings/LoggingPanel.tsx
 msgid "Log levels"
@@ -5126,6 +5134,14 @@ msgstr "Geräte übernehmen sie beim nächsten Netzwerkstart: Der Agent lädt si
 #: src/settings/AgentPanel.tsx
 msgid "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
 msgstr "Geräte übernehmen ihn beim nächsten Netzwerkstart: Der Agent im Startimage lädt ihn herunter und führt ihn stattdessen aus, daher muss das Startimage nicht neu erstellt werden. Ein Gerät, das ihn nicht herunterladen oder starten kann, macht mit dem Agent in seinem Startimage weiter."
+
+#: src/settings/AgentPanel.tsx
+msgid "Machines that netboot from now on run the agent this server came with. If it came with none, they run the agent in their boot image."
+msgstr "Geräte, die ab jetzt per Netzwerk starten, führen den Agent aus, der mit diesem Server geliefert wurde. Wurde keiner mitgeliefert, führen sie den Agent in ihrem Startimage aus."
+
+#: src/settings/ConsolePanel.tsx
+msgid "Machines that netboot from now on show the console this server came with. If it came with none, they show the console in their boot image."
+msgstr "Geräte, die ab jetzt per Netzwerk starten, zeigen die Konsole, die mit diesem Server geliefert wurde. Wurde keine mitgeliefert, zeigen sie die Konsole in ihrem Startimage."
 
 #: src/conditions/conditions.ts
 msgid "Machines where {condition} go along Then."
@@ -6830,6 +6846,22 @@ msgstr "Logo entfernen"
 msgid "Remove the logo?"
 msgstr "Logo entfernen?"
 
+#: src/settings/AgentPanel.tsx
+msgid "Remove the uploaded agent"
+msgstr "Hochgeladenen Agent entfernen"
+
+#: src/settings/AgentPanel.tsx
+msgid "Remove the uploaded agent?"
+msgstr "Hochgeladenen Agent entfernen?"
+
+#: src/settings/ConsolePanel.tsx
+msgid "Remove the uploaded console"
+msgstr "Hochgeladene Konsole entfernen"
+
+#: src/settings/ConsolePanel.tsx
+msgid "Remove the uploaded console?"
+msgstr "Hochgeladene Konsole entfernen?"
+
 #: src/conditions/builder/GroupRows.tsx
 msgid "Remove this group"
 msgstr "Diese Gruppe entfernen"
@@ -6846,6 +6878,14 @@ msgstr "{title} entfernt."
 msgid "Removed. Machines show no logo when they next register."
 msgstr "Entfernt. Geräte zeigen kein Logo mehr, sobald sie sich das nächste Mal registrieren."
 
+#: src/settings/AgentPanel.tsx
+msgid "Removed. Machines that netboot from now on no longer get that agent."
+msgstr "Entfernt. Geräte, die ab jetzt per Netzwerk starten, erhalten diesen Agent nicht mehr."
+
+#: src/settings/ConsolePanel.tsx
+msgid "Removed. Machines that netboot from now on no longer get that console."
+msgstr "Entfernt. Geräte, die ab jetzt per Netzwerk starten, erhalten diese Konsole nicht mehr."
+
 #: src/deployments/deployments.ts
 msgid "Removing the agent from Windows"
 msgstr "Agent wird aus Windows entfernt"
@@ -6853,6 +6893,14 @@ msgstr "Agent wird aus Windows entfernt"
 #: src/settings/logo/LogoChange.tsx
 msgid "Removing the logo"
 msgstr "Logo wird entfernt"
+
+#: src/settings/AgentPanel.tsx
+msgid "Removing the uploaded agent"
+msgstr "Hochgeladener Agent wird entfernt"
+
+#: src/settings/ConsolePanel.tsx
+msgid "Removing the uploaded console"
+msgstr "Hochgeladene Konsole wird entfernt"
 
 #: src/sequences/builder/variables/RenameField.tsx
 msgid "Rename everywhere"
@@ -8381,6 +8429,10 @@ msgid "The agent started the run"
 msgstr "Der Agent hat die Ausführung gestartet"
 
 #: src/settings/AgentPanel.tsx
+msgid "The agent this server came with, since none was uploaded"
+msgstr "Den Agent, der mit diesem Server geliefert wurde, da keiner hochgeladen wurde"
+
+#: src/settings/AgentPanel.tsx
 msgid "The agent uploaded here"
 msgstr "Den hier hochgeladenen Agent"
 
@@ -8530,6 +8582,10 @@ msgstr "Die Konsole darf gezippt und entpackt höchstens {max} MB groß sein."
 #: src/settings/ConsolePanel.tsx
 msgid "The console runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
 msgstr "Die Konsole läuft auf jedem per Netzwerk startenden Gerät als SYSTEM, daher braucht das Hochladen erneut Ihr Kennwort."
+
+#: src/settings/ConsolePanel.tsx
+msgid "The console this server came with, since none was uploaded"
+msgstr "Die Konsole, die mit diesem Server geliefert wurde, da keine hochgeladen wurde"
 
 #: src/settings/ConsolePanel.tsx
 msgid "The console uploaded here"
@@ -9632,6 +9688,14 @@ msgstr "Der Upload ist fehlgeschlagen."
 msgid "The upload of {name} stopped. Choose the file again to resume."
 msgstr "Der Upload von {name} wurde gestoppt. Wählen Sie die Datei erneut, um fortzusetzen."
 
+#: src/settings/AgentPanel.tsx
+msgid "The uploaded agent was not removed. {reason}"
+msgstr "Der hochgeladene Agent wurde nicht entfernt. {reason}"
+
+#: src/settings/ConsolePanel.tsx
+msgid "The uploaded console was not removed. {reason}"
+msgstr "Die hochgeladene Konsole wurde nicht entfernt. {reason}"
+
 #: src/sequences/builder/variables/InputDefault.tsx
 msgid "The value of a choice; several separated by semicolons."
 msgstr "Der Wert einer Auswahl; mehrere durch Semikolons getrennt."
@@ -9932,6 +9996,14 @@ msgstr "Diese Tasksequenz wurde gelöscht"
 #: src/sequences/useSequenceEditor.ts
 msgid "This sequence was deleted, so nothing more is saved."
 msgstr "Diese Tasksequenz wurde gelöscht, daher wird nichts mehr gespeichert."
+
+#: src/settings/AgentPanel.tsx
+msgid "This server came with agent {version}, which is newer than the uploaded one. Remove the upload, and machines run the server's own."
+msgstr "Dieser Server wurde mit Agent {version} geliefert, der neuer ist als der hochgeladene. Entfernen Sie den hochgeladenen Agent, damit Geräte den des Servers ausführen."
+
+#: src/settings/ConsolePanel.tsx
+msgid "This server came with console {version}, which is newer than the uploaded one. Remove the upload, and machines show the server's own."
+msgstr "Dieser Server wurde mit Konsole {version} geliefert, die neuer ist als die hochgeladene. Entfernen Sie die hochgeladene Konsole, damit Geräte die des Servers zeigen."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.keyRingUnreadable"
@@ -10452,6 +10524,7 @@ msgid "Variables and inputs of this sequence"
 msgstr "Variablen und Eingaben dieser Tasksequenz"
 
 #: src/images/ImageFacts.tsx
+#: src/settings/agent/CurrentBinary.tsx
 msgid "Version"
 msgstr "Version"
 

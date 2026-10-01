@@ -13,16 +13,49 @@ function Publish-BootFile {
     $media = Join-Path $Workspace.Directory 'media'
     $efiBoot = Join-Path $Destination 'EFI\Microsoft\Boot'
     New-Item -ItemType Directory -Force -Path (Join-Path $Destination 'x64'), (Join-Path $Destination 'Boot'), $efiBoot | Out-Null
-    Copy-Item -LiteralPath $Workspace.BootManager2011 -Destination (Join-Path $Destination 'x64\bootmgfw.efi') -Force
-    Copy-Item -LiteralPath $Workspace.BootManager2023 -Destination (Join-Path $Destination 'x64\bootmgfw_ex.efi') -Force
-    Copy-Item -LiteralPath $BcdPath -Destination (Join-Path $Destination 'Boot\BCD') -Force
-    Copy-Item -LiteralPath (Join-Path $media 'Boot\boot.sdi') -Destination (Join-Path $Destination 'Boot\boot.sdi') -Force
-    Copy-Item -LiteralPath $Workspace.ImageFile -Destination (Join-Path $Destination 'Boot\boot.wim') -Force
+    Copy-BootFile -Source $Workspace.BootManager2011 -Destination (Join-Path $Destination 'x64\bootmgfw.efi')
+    Copy-BootFile -Source $Workspace.BootManager2023 -Destination (Join-Path $Destination 'x64\bootmgfw_ex.efi')
+    Copy-BootFile -Source $BcdPath -Destination (Join-Path $Destination 'Boot\BCD')
+    Copy-BootFile -Source (Join-Path $media 'Boot\boot.sdi') -Destination (Join-Path $Destination 'Boot\boot.sdi')
+    Copy-BootFile -Source $Workspace.ImageFile -Destination (Join-Path $Destination 'Boot\boot.wim')
 
     # The boot manager asks for these under EFI\Microsoft\Boot on every boot.
-    Copy-Item -LiteralPath (Join-Path $media 'EFI\Microsoft\Boot\boot.stl') -Destination $efiBoot -Force
+    Copy-BootFile -Source (Join-Path $media 'EFI\Microsoft\Boot\boot.stl') -Destination (Join-Path $efiBoot 'boot.stl')
     $fonts = New-Item -ItemType Directory -Force -Path (Join-Path $efiBoot 'Fonts')
-    Copy-Item -Path (Join-Path $media 'EFI\Microsoft\Boot\Fonts\*') -Destination $fonts.FullName -Force
+    foreach ($font in Get-ChildItem -LiteralPath (Join-Path $media 'EFI\Microsoft\Boot\Fonts') -File) {
+        Copy-BootFile -Source $font.FullName -Destination (Join-Path $fonts.FullName $font.Name)
+    }
+}
+
+# A machine may be netbooting from the file this replaces. The server lets such a file be renamed, not overwritten: so
+# the old one steps aside, and goes when the machine has it.
+function Copy-BootFile {
+    param(
+        [Parameter(Mandatory)][string] $Source,
+        [Parameter(Mandatory)][string] $Destination
+    )
+
+    $name = Split-Path -Leaf $Destination
+    Get-ChildItem -LiteralPath (Split-Path -Parent $Destination) -Filter "$name.old-*" -File |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+
+    $new = "$Destination.new"
+    Copy-Item -LiteralPath $Source -Destination $new -Force
+
+    try {
+        if (Test-Path -LiteralPath $Destination) {
+            $old = "$Destination.old-$([Guid]::NewGuid().ToString('N'))"
+            [IO.File]::Move($Destination, $old)
+            [IO.File]::Move($new, $Destination)
+            Remove-Item -LiteralPath $old -Force -ErrorAction SilentlyContinue
+        }
+        else {
+            [IO.File]::Move($new, $Destination)
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $new -Force -ErrorAction SilentlyContinue
+    }
 }
 
 # Writes ddt-boot-image.json, which tells DDT's boot image page what the build contains. It's written after boot.wim,

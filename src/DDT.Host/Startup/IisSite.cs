@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Diagnostics;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -22,7 +21,7 @@ public sealed class IisSite(Func<string, IReadOnlyList<string>, CommandResult> r
     private static readonly string s_appCmd = Path.Combine(Environment.SystemDirectory, "inetsrv", "appcmd.exe");
     private static readonly string s_netsh = Path.Combine(Environment.SystemDirectory, "netsh.exe");
 
-    public static IisSite ForThisServer() => new(Run, Path.Combine(AppContext.BaseDirectory, "iis"), File.Exists(s_appCmd));
+    public static IisSite ForThisServer() => new(CommandResult.Run, Path.Combine(AppContext.BaseDirectory, "iis"), File.Exists(s_appCmd));
 
     // Returns null, or what stopped it
     public string? Publish(string host, string thumbprint, int port, TextWriter output)
@@ -200,21 +199,4 @@ public sealed class IisSite(Func<string, IReadOnlyList<string>, CommandResult> r
         run(program, arguments) is { ExitCode: not 0 } failed
             ? $"{Path.GetFileNameWithoutExtension(program)} {string.Join(' ', arguments)} failed: {failed.Output.Trim()}"
             : null;
-
-    private static CommandResult Run(string program, IReadOnlyList<string> arguments)
-    {
-        ProcessStartInfo start = new(program) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
-
-        foreach (string argument in arguments)
-        {
-            start.ArgumentList.Add(argument);
-        }
-
-        using Process process = Process.Start(start) ?? throw new InvalidOperationException($"{program} didn't start.");
-        Task<string> error = process.StandardError.ReadToEndAsync();
-        string output = process.StandardOutput.ReadToEnd();
-        process.WaitForExit();
-
-        return new CommandResult(process.ExitCode, output + error.GetAwaiter().GetResult());
-    }
 }

@@ -81,18 +81,40 @@ public static class BootHttpEndpoints
             return TypedResults.NotFound();
         }
 
+        // Not PhysicalFile, which opens without FileShare.Delete: on Windows a new boot image then can't move this
+        // one aside while firmware downloads it.
+        FileStream content;
+
+        try
+        {
+            content = new FileStream(
+                file.FullName,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read | FileShare.Delete,
+                81920,
+                FileOptions.Asynchronous | FileOptions.SequentialScan);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            PxeLog.HttpBootNotFound(logger, context.Request.Method, context.Request.Path, client);
+
+            return TypedResults.NotFound();
+        }
+
         PxeLog.HttpBoot(logger, context.Request.Method, context.Request.Path, client);
 
         // Firmware resumes an interrupted download with If-Match, so the ETag must be strong. A weak one is ignored,
-        // and then a range of a replaced image gets spliced onto the old one.
+        // and then a range of a replaced image gets spliced onto the old one. Time and length are of the opened file.
+        DateTime written = File.GetLastWriteTimeUtc(content.SafeFileHandle);
         EntityTagHeaderValue entityTag = new(
-            string.Create(CultureInfo.InvariantCulture, $"\"{file.LastWriteTimeUtc.Ticks:x}-{file.Length:x}\""));
+            string.Create(CultureInfo.InvariantCulture, $"\"{written.Ticks:x}-{content.Length:x}\""));
 
-        return TypedResults.PhysicalFile(
-            file.FullName,
+        return TypedResults.File(
+            content,
             ContentTypeFor(file.Name),
             fileDownloadName: null,
-            lastModified: file.LastWriteTimeUtc,
+            lastModified: written,
             entityTag: entityTag,
             enableRangeProcessing: true);
     }

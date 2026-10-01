@@ -6,7 +6,12 @@ import { t } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 
 import { BinaryPanel } from "./agent/BinaryPanel";
-import { consoleBinaryQuery, maxConsoleBytes, uploadConsole } from "./agentBinary";
+import {
+  consoleBinaryQuery,
+  maxConsoleBytes,
+  removeConsoleUpload,
+  uploadConsole,
+} from "./agentBinary";
 
 // The console that netbooting machines show, both in WinPE and as the shell of DDT's session in the installed
 // Windows. The agent downloads it the same way it downloads itself. So a console for a newer agent protocol
@@ -19,6 +24,7 @@ export function ConsolePanel() {
       binary={{
         query: consoleBinaryQuery,
         upload: uploadConsole,
+        remove: removeConsoleUpload,
         maxBytes: maxConsoleBytes,
         accept: [".zip"],
         configurationKey: "DDT:Agent:ConsolePath",
@@ -27,6 +33,7 @@ export function ConsolePanel() {
         runsLabel: <Trans>Machines show</Trans>,
         runs: {
           Uploaded: <Trans>The console uploaded here</Trans>,
+          Bundled: <Trans>The console this server came with, since none was uploaded</Trans>,
           Configuration: <Trans>The zip DDT:Agent:ConsolePath names in configuration</Trans>,
           None: <Trans>The console in their boot image, since none was uploaded</Trans>,
         },
@@ -84,6 +91,25 @@ export function ConsolePanel() {
             password again.
           </Trans>
         ),
+        newer: (version) => (
+          <Trans>
+            This server came with console {version}, which is newer than the uploaded one. Remove
+            the upload, and machines show the server's own.
+          </Trans>
+        ),
+        removeLabel: <Trans>Remove the uploaded console</Trans>,
+        removeTitle: <Trans>Remove the uploaded console?</Trans>,
+        removeBody: (
+          <Trans>
+            Machines that netboot from now on show the console this server came with. If it came
+            with none, they show the console in their boot image.
+          </Trans>
+        ),
+        removing: <Trans>Removing the uploaded console</Trans>,
+        removed: (
+          <Trans>Removed. Machines that netboot from now on no longer get that console.</Trans>
+        ),
+        notRemoved: (reason) => <Trans>The uploaded console was not removed. {reason}</Trans>,
       }}
     />
   );

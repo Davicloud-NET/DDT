@@ -39,6 +39,7 @@ public static class SettingsServiceCollectionExtensions
         services.AddScoped<LdapSettingsTest>();
         services.AddScoped<OidcSettingsTest>();
         services.AddScoped<ReleaseUploads>();
+        services.AddSingleton<LogFiles>();
         services.AddScoped<ConsoleLogos>();
         services.AddScoped<CertificateChanges>();
         services.TryAddSingleton<ILdapTester, LdapTester>();

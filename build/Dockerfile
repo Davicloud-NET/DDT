@@ -39,6 +39,12 @@ FROM ${DOTNET_RUNTIME} AS final
 RUN apt-get update && apt-get install -y --no-install-recommends libldap2 qemu-utils xz-utils && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app ./
+# The Windows agent and console of this release, which the server offers until others are uploaded. Only Windows
+# compiles them, so the release workflow puts them into artifacts/bundle. A build without them offers none.
+RUN --mount=type=bind,target=/context \
+    for file in ddt-agent.exe ddt-console.zip; do \
+        if [ -f "/context/artifacts/bundle/$file" ]; then cp "/context/artifacts/bundle/$file" /app/; fi; \
+    done
 # Defaults of the image rather than of the code: a declared Kestrel endpoint makes Kestrel ignore the URLs Aspire
 # and launch profiles assign, and both certificate paths make DDT write a certificate at startup.
 ENV DDT__StorePath=/var/lib/ddt \

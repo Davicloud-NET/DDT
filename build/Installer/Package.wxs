@@ -45,6 +45,13 @@
                  After="CostFinalize"
                  Sequence="ui"
                  Condition="NOT WIX_UPGRADE_DETECTED" />
+    <!-- After the install, which started the ADK's -->
+    <SetProperty Id="WIXUI_EXITDIALOGOPTIONALTEXT"
+                 Action="SayAdkInstalls"
+                 Value="[WIXUI_EXITDIALOGOPTIONALTEXT] The Windows ADK is installing in the background now, which takes a few minutes. The Application event log says when it's done."
+                 After="ExecuteAction"
+                 Sequence="ui"
+                 Condition="INSTALLADK = 1 AND NOT Installed" />
     <CustomAction Id="OpenDdt"
                   BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
                   DllEntry="WixUnelevatedShellExec"

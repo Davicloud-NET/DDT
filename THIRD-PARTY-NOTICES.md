@@ -30,6 +30,10 @@ closure, grouped here by the project they come from.
 `/app/legal` holds LICENSE, NOTICE, this file and `licenses/`. The server serves them without
 sign-in at `/api/about/legal/<path>`, for example `/api/about/legal/LICENSE`.
 
+A release's `/app` also holds `ddt-agent.exe` and `ddt-console.zip`, which the server hands to the
+machines it deploys. They're described in their own sections below, and their licence texts are in
+the same `legal` folder.
+
 ### Microsoft libraries
 
 MIT licence, text in [licenses/dotnet/LICENSE.TXT](licenses/dotnet/LICENSE.TXT). The packages give
@@ -328,7 +332,9 @@ under their own licences.
 
 `build/Build-Installer.ps1` publishes the server self-contained for win-x64 and packs it into
 `DDT.msi` with the WiX Toolset. The MSI installs the same server as `/app`, with its `legal`
-folder, so everything listed for the server and the web UI bundle applies to it too.
+folder, so everything listed for the server and the web UI bundle applies to it too. It installs the
+agent and the console next to it as well, and `Build-BootImage.ps1` with its module, which are
+DDT's own.
 
 Because it's self-contained, it also carries the .NET runtime and the ASP.NET Core shared framework,
 which the container gets from its base image instead. Both are under the MIT licence in
@@ -343,3 +349,8 @@ and the dialogs and pictures of its setup UI. They're programs of their own, not
 the MSI doesn't install them. Their source is at https://github.com/wixtoolset/wix, tag `v7.0.0`.
 DDT's own setup checks, from `build/Installer/CustomActions`, carry WiX's
 `WixToolset.Dtf.WindowsInstaller` in the same way.
+
+Setup can also fetch Microsoft's Windows ADK with its Windows PE add-on, and URL Rewrite and
+Application Request Routing for IIS, when the administrator ticks them or asks `install.ps1` for
+them. Neither the MSI nor a release carries any of these. They come from Microsoft's own download
+servers onto the server being set up, under Microsoft's licence terms.

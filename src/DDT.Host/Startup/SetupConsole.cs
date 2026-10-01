@@ -12,17 +12,17 @@ using DDT.Server.Certificates;
 namespace DDT.Host.Startup;
 
 // Verbs the MSI runs as SYSTEM. trust-root: the server's own browser trusts DDT without a warning. iis: IIS serves DDT
-// under a name and certificate of its own.
+// under a name and certificate of its own. adk: Microsoft's ADK, for building boot images.
 public static class SetupConsole
 {
     private const string Usage =
         "Usage, on Windows: DDT.Host setup trust-root; DDT.Host setup untrust-root; " +
-        "DDT.Host setup iis <host name> <certificate thumbprint>; or DDT.Host setup remove-iis.";
+        "DDT.Host setup iis <host name> <certificate thumbprint>; DDT.Host setup remove-iis; or DDT.Host setup adk.";
 
     public static bool Handles(string[] args) => args is ["setup", ..];
 
-    // Tests pass configuration, so they don't read the machine's ddt.ini, and a site that runs no programs.
-    public static int Run(string[] args, TextWriter output, IConfiguration? configuration = null, IisSite? iis = null)
+    // Tests pass configuration, so they don't read the machine's ddt.ini, and a site and an ADK that run no programs.
+    public static int Run(string[] args, TextWriter output, IConfiguration? configuration = null, IisSite? iis = null, AdkSetup? adk = null)
     {
         ArgumentNullException.ThrowIfNull(args);
         ArgumentNullException.ThrowIfNull(output);
@@ -47,6 +47,12 @@ public static class SetupConsole
 
                 return 0;
 
+            case ["setup", "adk"]:
+                return Report((adk ?? AdkSetup.ForThisServer()).Install(output), output);
+
+            case ["setup", "adk", "background"]:
+                return StartAdkInBackground(output);
+
             default:
                 output.WriteLine(Usage);
 
@@ -54,14 +60,25 @@ public static class SetupConsole
         }
     }
 
+    // The MSI's verbs have no console. adk runs after setup is gone, so its success is news too.
     [SupportedOSPlatform("windows")]
-    public static void LogFailure(string[] args, string said)
+    public static void LogOutcome(string[] args, string said, int exitCode)
     {
         ArgumentNullException.ThrowIfNull(args);
 
+        bool failed = exitCode == 1;
+
+        if (!failed && (exitCode != 0 || args is not ["setup", "adk"]))
+        {
+            return;
+        }
+
         try
         {
-            EventLog.WriteEntry("DDT", $"DDT.Host {string.Join(' ', args)} failed: {said}", EventLogEntryType.Error);
+            EventLog.WriteEntry(
+                "DDT",
+                $"DDT.Host {string.Join(' ', args)}{(failed ? " failed" : string.Empty)}: {said}",
+                failed ? EventLogEntryType.Error : EventLogEntryType.Information);
         }
         catch (Exception exception) when (exception is SecurityException or InvalidOperationException or Win32Exception)
         {
@@ -117,14 +134,36 @@ public static class SetupConsole
                         ? "DDT listens on 443 itself, which IIS needs. Give DDT another port in ddt.ini first."
                         : MachineCertificateProblem(thumbprint) ?? iis.Publish(host, thumbprint, port, output);
 
-        if (problem is not null)
-        {
-            output.WriteLine(problem);
+        return Report(problem, output);
+    }
 
-            return 1;
+    // For the MSI: its verbs get a console window on the desktop, and this one outlives setup. So it starts again
+    // without one and returns.
+    private static int StartAdkInBackground(TextWriter output)
+    {
+        ProcessStartInfo start = new(Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "DDT.Host.exe"))
+        {
+            CreateNoWindow = true,
+            UseShellExecute = false,
+        };
+        start.ArgumentList.Add("setup");
+        start.ArgumentList.Add("adk");
+
+        using Process? started = Process.Start(start);
+
+        return Report(started is null ? "DDT.Host setup adk didn't start." : null, output);
+    }
+
+    private static int Report(string? problem, TextWriter output)
+    {
+        if (problem is null)
+        {
+            return 0;
         }
 
-        return 0;
+        output.WriteLine(problem);
+
+        return 1;
     }
 
     private static int? HttpsPort(IConfiguration configuration) =>

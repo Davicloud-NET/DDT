@@ -5,6 +5,7 @@
 using System.Reflection;
 using DDT.Contracts;
 using DDT.Contracts.Agents;
+using DDT.Host.Helper;
 using DDT.Host.Logging;
 using DDT.Host.Startup;
 using DDT.Pxe;
@@ -42,6 +43,21 @@ if (SetupConsole.Handles(args))
     {
         SetupConsole.LogOutcome(args, said.ToString().Trim(), Environment.ExitCode);
     }
+
+    return;
+}
+
+if (HelperService.Handles(args))
+{
+    if (!OperatingSystem.IsWindows())
+    {
+        Console.Error.WriteLine("The DDT Helper is a Windows service. On Linux the boot image comes from a Windows PC.");
+        Environment.ExitCode = 2;
+
+        return;
+    }
+
+    await HelperService.RunAsync();
 
     return;
 }

@@ -32,8 +32,10 @@ it. The script then prints its size in megabytes of 1,048,576 bytes.
 
 An installed server has this script in its program folder, next to the agent and the console it came
 with. Run from there without -AgentPath, it takes both, names the server by its DNS name and port
-and trusts its root from the store, and writes into the server's boot directory, boot in the store.
-Each of these parameters still overrides its default.
+and trusts its root from the store. Without -Destination it writes a build of its own below builds
+in the server's boot directory, boot in the store, and makes it the one the server serves; the build
+before stays, and the Boot image page can go back to it. Each of these parameters still overrides
+its default. The Build button on that page runs this script the same way.
 
 The output layout, relative to -Destination. DDT:Pxe:BootDirectory on the server must hold the same layout.
 
@@ -123,6 +125,11 @@ prompt.
 .PARAMETER DriverPath
 A folder of drivers to add to boot.wim. DISM adds every .inf below it, with the files each names.
 
+.PARAMETER ServerDriverPath
+A folder of driver packages that DDT unpacked itself, one subfolder per package named by its id, with
+drivers.json naming them as GET /api/boot-image does. The Build button passes it, so its build needs
+no API token. Not together with -ApiToken.
+
 .PARAMETER ApiToken
 An administrator's API token, ddt_ followed by 43 letters and digits. Create one on the Account
 page or with POST /api/tokens. With -ServerUrl and -RootCertificatePath, the script uses it to
@@ -185,6 +192,8 @@ param(
 
     [string] $ApiToken,
 
+    [string] $ServerDriverPath,
+
     [switch] $SkipPowerShell,
 
     [string] $TrimListPath,
@@ -199,8 +208,15 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'BootImage\Private\Release.ps1')
 $release = Get-ReleaseDefault -Folder $PSScriptRoot
 
+# A build of its own below the server's boot directory, which the server then serves
+$servedBuild = $null
+
 if ($release) {
-    if (-not $Destination) { $Destination = $release.Destination }
+    if (-not $Destination) {
+        $servedBuild = [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss', [Globalization.CultureInfo]::InvariantCulture)
+        $Destination = Join-Path (Join-Path $release.Destination 'builds') $servedBuild
+    }
+
     if (-not $WorkDirectory) { $WorkDirectory = $release.WorkDirectory }
 
     if (-not $AgentPath -and $release.AgentPath) {
@@ -236,6 +252,7 @@ $build = @{
     ExtraPath           = $ExtraPath
     DriverPath          = $DriverPath
     ApiToken            = $ApiToken
+    ServerDriverPath    = $ServerDriverPath
     SkipPowerShell      = $SkipPowerShell
     TrimListPath        = $TrimListPath
     SkipTrim            = $SkipTrim
@@ -243,3 +260,8 @@ $build = @{
 
 # A module doesn't see the preferences set for this script, so the two that its commands use are passed along.
 New-DdtBootImage @build -WarningAction $WarningPreference -Verbose:($VerbosePreference -ne 'SilentlyContinue')
+
+if ($servedBuild) {
+    Set-CurrentBootBuild -BootDirectory $release.Destination -Build $servedBuild
+    Write-Host "The server serves this build, $servedBuild, from now on."
+}

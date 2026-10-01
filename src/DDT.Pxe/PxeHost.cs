@@ -328,7 +328,7 @@ public sealed class PxeHost : IHostedService, IDisposable
             // A missing boot manager is the commonest cause of "DHCP works, nothing boots".
             if (target.Method == BootMethod.Tftp && target.ServerAddress is null && !setup.Files.TryResolve(target.BootFile, out _))
             {
-                PxeLog.BootFileMissing(_logger, target.Architecture, target.BootFile, setup.Files.Root);
+                PxeLog.BootFileMissing(_logger, target.Architecture, target.BootFile, setup.Files.Serving);
             }
         }
     }

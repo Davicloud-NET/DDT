@@ -15,14 +15,18 @@ import { Page } from "@/ui/Page";
 import { PageHeader } from "@/ui/PageHeader";
 import { Panel } from "@/ui/Panel";
 
-import { bootImageQuery, type BootImageView } from "./bootImage";
+import { bootImageQuery } from "./bootImage";
 import { BuildCommand } from "./BuildCommand";
+import { BuildPanel } from "./BuildPanel";
+import { BuildState } from "./BuildState";
+import { JobPanel } from "./JobPanel";
 import { LastBuild } from "./LastBuild";
 import { ReplacedAnchor } from "./ReplacedAnchor";
+import { StoredBuilds } from "./StoredBuilds";
 import { WindowsPEDrivers } from "./WindowsPEDrivers";
 
-// The WinPE boot image that machines netboot into. Shows what the last build put in it, whether the drivers flagged for
-// WinPE changed since, and how to build it again.
+// The WinPE boot image that machines netboot into. Shows what the served build has in it and whether it still fits the
+// server, and builds it again: on a Windows server at a button, elsewhere with a command for a Windows PC.
 export function BootImagePage() {
   const live = useLiveStatus();
   const boot = useQuery({ ...bootImageQuery, ...liveListOptions(live) });
@@ -52,35 +56,15 @@ export function BootImagePage() {
             <LastBuild view={boot.data} now={now} />
             <WindowsPEDrivers view={boot.data} />
           </div>
-          <BuildCommand view={boot.data} />
+          {boot.data.builder.available ? (
+            <BuildPanel view={boot.data} />
+          ) : (
+            <BuildCommand view={boot.data} />
+          )}
+          {boot.data.job === null ? null : <JobPanel job={boot.data.job} now={now} />}
+          {boot.data.builds.length > 1 ? <StoredBuilds view={boot.data} now={now} /> : null}
         </>
       ) : null}
     </Page>
-  );
-}
-
-function BuildState({ view }: { view: BootImageView }) {
-  if (!view.stale) {
-    return view.build === null ? null : (
-      <Notice tone="info">
-        <Trans>The boot image has every driver flagged for Windows PE.</Trans>
-      </Notice>
-    );
-  }
-
-  return (
-    <Notice tone="attention">
-      {view.build === null ? (
-        <Trans>
-          Drivers are flagged for Windows PE, but no boot image built with this version of the build
-          script is in the boot directory. Build it again to add them.
-        </Trans>
-      ) : (
-        <Trans>
-          The drivers flagged for Windows PE have changed since the boot image was built. Build it
-          again so that machines netboot with them.
-        </Trans>
-      )}
-    </Notice>
   );
 }

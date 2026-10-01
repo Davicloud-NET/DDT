@@ -37,6 +37,34 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "audit.rangeEnd",
     message: "The end of the range must come after its start.",
   }),
+  "bootImage.busy": msg({
+    context: "bootImage.busy",
+    message: "A build or an install of the ADK is running already. Wait for it to end.",
+  }),
+  "bootImage.keyboardLayout": msg({
+    context: "bootImage.keyboardLayout",
+    message: "Takes an input locale and a keyboard layout, such as 0407:00000407 for German.",
+  }),
+  "bootImage.noAdk": msg({
+    context: "bootImage.noAdk",
+    message: "The Windows ADK with its Windows PE add-on is not installed on this server. Install it first.",
+  }),
+  "bootImage.noHelper": msg({
+    context: "bootImage.noHelper",
+    message: "This server cannot build the boot image itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up. On another server, build with Build-BootImage.ps1 on a Windows PC.",
+  }),
+  "bootImage.noSuchBuild": msg({
+    context: "bootImage.noSuchBuild",
+    message: "The boot directory holds no such build.",
+  }),
+  "bootImage.oldAdk": msg({
+    context: "bootImage.oldAdk",
+    message: "The Windows PE add-on on this server is {version}, and the boot image needs {oldest} or later.",
+  }),
+  "bootImage.windowSize": msg({
+    context: "bootImage.windowSize",
+    message: "Must be between 1 and {max}.",
+  }),
   "common.descriptionLength": msg({
     context: "common.descriptionLength",
     message: "The description can have at most {max} characters.",

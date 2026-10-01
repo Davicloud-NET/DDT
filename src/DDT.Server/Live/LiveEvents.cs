@@ -33,6 +33,9 @@ public static class LiveEvents
     // Carries a BootImageView whenever the drivers flagged for the boot image or the build in the boot directory change.
     public const string BootImageChanged = "bootImageChanged";
 
+    // Carries a BootImageJobOutput: the lines a build or an ADK install wrote since the last push.
+    public const string BootImageJobOutput = "bootImageJobOutput";
+
     // Carries every rule, top first, the same as GET /api/rules returns. Rules are few, and one change can move
     // several, rename a sequence they choose, or change what they test or how many machines they match.
     public const string RulesChanged = "rulesChanged";

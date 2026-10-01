@@ -49,6 +49,28 @@ function Save-ServerDriver {
     }
 }
 
+# The driver packages DDT unpacked for a build on the server itself: drivers.json and a folder per package.
+function Read-ServerDriverFolder {
+    param([Parameter(Mandatory)][string] $Path)
+
+    $folder = Resolve-InputPath -Path $Path -Name 'Driver packages' -PathType Container
+    $list = [IO.File]::ReadAllText((Resolve-InputPath -Path (Join-Path $folder 'drivers.json') -Name 'drivers.json' -PathType Leaf)) | ConvertFrom-Json
+    # Strict mode refuses a property the file leaves out
+    $drivers = @(if ($list.PSObject.Properties['drivers']) { $list.drivers })
+    $driverSetHash = if ($list.PSObject.Properties['driverSetHash']) { $list.driverSetHash } else { $null }
+
+    foreach ($driver in $drivers) {
+        if ("$($driver.packageId)" -notmatch '^[0-9a-fA-F-]{36}$') { throw "drivers.json names $($driver.packageId), which is no package id." }
+        $null = Resolve-InputPath -Path (Join-Path $folder ([string] $driver.packageId)) -Name "The drivers of $($driver.name)" -PathType Container
+    }
+
+    return [pscustomobject]@{
+        DriverSetHash = $driverSetHash
+        Drivers       = $drivers
+        Folder        = $folder
+    }
+}
+
 # An HttpClient that sends the API token and trusts only the pinned root, like the agent.
 function Connect-DdtServer {
     param(

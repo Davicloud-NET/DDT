@@ -16,4 +16,10 @@ public sealed record BootImageBuild(
     string? AdkVersion,
     // The version of the boot managers the build published.
     string? BootManager,
-    string? AgentVersion);
+    string? AgentVersion,
+    // What the image was built for: the address and root the agent in it uses, its keyboard layout and whether it has
+    // PowerShell. Null from a build script that did not record them yet.
+    string? ServerUrl = null,
+    string? RootSha256 = null,
+    string? KeyboardLayout = null,
+    bool? PowerShell = null);

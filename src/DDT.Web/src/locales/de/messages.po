@@ -1272,6 +1272,19 @@ msgstr "64-Bit-UEFI-PCs, über TFTP"
 msgid "A #cloud-config document, or a script that starts with #!."
 msgstr "Ein #cloud-config-Dokument oder ein Skript, das mit #! beginnt."
 
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.busy"
+msgid "A build or an install of the ADK is running already. Wait for it to end."
+msgstr "Ein Build oder eine Installation des ADK läuft bereits. Warten Sie, bis sie beendet ist."
+
+#: src/boot/AdkState.tsx
+msgid "A build takes Microsoft's Windows ADK with its Windows PE add-on, and this server has none."
+msgstr "Ein Build braucht Microsofts Windows ADK mit dem Windows-PE-Add-On, und dieser Server hat keines."
+
+#: src/boot/BuildPanel.tsx
+msgid "A build takes the address {address}, the server's root certificate, its agent and the drivers flagged for Windows PE. Machines netboot the new image once it is done, and the build before it stays to go back to."
+msgstr "Ein Build verwendet die Adresse {address}, das Stammzertifikat des Servers, seinen Agent und die für Windows PE markierten Treiber. Geräte starten per Netzwerk mit dem neuen Image, sobald es fertig ist, und der Build davor bleibt erhalten, um zu ihm zurückzukehren."
+
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "A change applies to runs that start after it. A Write the answer file step can set its own time zone, language and keyboard, and a Join the domain step its own organizational unit."
 msgstr "Eine Änderung gilt für Ausführungen, die danach beginnen. Ein Schritt „Antwortdatei schreiben“ kann eigene Zeitzone, Sprache und Tastatur festlegen, ein Schritt „Der Domäne beitreten“ eine eigene Organisationseinheit."
@@ -2596,9 +2609,18 @@ msgid "Boot file"
 msgstr "Startdatei"
 
 #: src/app/navigation.ts
+#: src/audit/auditView.ts
 #: src/boot/BootImagePage.tsx
 msgid "Boot image"
 msgstr "Bootimage"
+
+#: src/audit/auditView.ts
+msgid "Boot image build chosen to serve"
+msgstr "Startimage-Build zum Ausliefern gewählt"
+
+#: src/audit/auditView.ts
+msgid "Boot image build started"
+msgstr "Startimage-Build gestartet"
 
 #: src/boot/LastBuild.tsx
 msgid "Boot manager"
@@ -2608,17 +2630,45 @@ msgstr "Start-Manager"
 msgid "Boot targets"
 msgstr "Startziele"
 
+#: src/boot/JobPanel.tsx
+msgid "Build"
+msgstr "Build"
+
 #: src/boot/BuildCommand.tsx
 msgid "Build command"
 msgstr "Build-Befehl"
+
+#: src/boot/BuildPanel.tsx
+msgid "Build on this server"
+msgstr "Auf diesem Server erstellen"
+
+#: src/boot/BuildPanel.tsx
+msgid "Build the boot image"
+msgstr "Startimage erstellen"
 
 #: src/boot/BuildCommand.tsx
 msgid "Building it again"
 msgstr "Neu erstellen"
 
+#: src/boot/JobPanel.tsx
+msgid "Building the boot image, which takes several minutes"
+msgstr "Das Startimage wird erstellt, was mehrere Minuten dauert"
+
+#: src/boot/StoredBuilds.tsx
+msgid "Builds on the server"
+msgstr "Builds auf dem Server"
+
 #: src/boot/LastBuild.tsx
 msgid "Built"
 msgstr "Erstellt"
+
+#: src/boot/StoredBuilds.tsx
+msgid "Built {when}"
+msgstr "Erstellt {when}"
+
+#: src/boot/StoredBuilds.tsx
+msgid "Built at a time not recorded"
+msgstr "Erstellt zu einem nicht erfassten Zeitpunkt"
 
 #: src/settings/signIn/ProviderGroup.tsx
 msgid "Button text"
@@ -3048,6 +3098,10 @@ msgstr "Kopiert"
 msgid "Copied {title}."
 msgstr "{title} kopiert."
 
+#: src/boot/StoredBuilds.tsx
+msgid "Copied into the boot directory by hand"
+msgstr "Von Hand in das Startverzeichnis kopiert"
+
 #: src/account/RecoveryCodesDialog.tsx
 #: src/sequences/builder/canvas/NodeMenu.tsx
 #: src/ui/SecretValue.tsx
@@ -3094,6 +3148,14 @@ msgstr "Ausschneiden"
 #: src/sequences/builder/page/commandHandlers.ts
 msgid "Cut {title}."
 msgstr "{title} ausgeschnitten."
+
+#: src/boot/keyboardLayouts.ts
+msgid "Czech"
+msgstr "Tschechisch"
+
+#: src/boot/keyboardLayouts.ts
+msgid "Danish"
+msgstr "Dänisch"
 
 #: src/app/UserMenu.tsx
 msgid "Dark"
@@ -3456,6 +3518,7 @@ msgstr "Domänenbeitritt"
 msgid "Domain join checked"
 msgstr "Domänenbeitritt geprüft"
 
+#: src/boot/JobPanel.tsx
 #: src/machines/list/runDetail.ts
 #: src/machines/MachinePanel.tsx
 #: src/machines/machineView.ts
@@ -3475,6 +3538,10 @@ msgstr "Fertig"
 #: src/runs/decisions.ts
 msgid "Done after {times} of at most {most} times"
 msgstr "Fertig nach {times} von höchstens {most} Malen"
+
+#: src/boot/JobPanel.tsx
+msgid "Downloading and installing, which takes a few minutes"
+msgstr "Wird heruntergeladen und installiert, was einige Minuten dauert"
 
 #: src/sequences/builder/Palette.tsx
 msgid "Drag onto a wire, or choose + on one. Arrow keys follow the flow."
@@ -3498,9 +3565,9 @@ msgstr "Treiberpakete passend zum Modell"
 msgid "Drivers"
 msgstr "Treiber"
 
-#: src/boot/BootImagePage.tsx
-msgid "Drivers are flagged for Windows PE, but no boot image built with this version of the build script is in the boot directory. Build it again to add them."
-msgstr "Treiber sind für Windows PE markiert, aber im Startverzeichnis liegt kein Startimage, das mit dieser Version des Build-Skripts erstellt wurde. Erstellen Sie es neu, um sie hinzuzufügen."
+#: src/boot/StaleReasonText.tsx
+msgid "Drivers are flagged for Windows PE, but no boot image built with this version of the build script is in the boot directory."
+msgstr "Für Windows PE sind Treiber markiert, aber im Startverzeichnis liegt kein Startimage, das mit dieser Version des Build-Skripts erstellt wurde."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.driversBeforeImage"
@@ -3554,6 +3621,14 @@ msgstr "Duplizieren"
 #: src/sequences/builder/page/commandHandlers.ts
 msgid "Duplicated {title}."
 msgstr "{title} dupliziert."
+
+#: src/boot/keyboardLayouts.ts
+msgid "Dutch (Belgium)"
+msgstr "Niederländisch (Belgien)"
+
+#: src/boot/keyboardLayouts.ts
+msgid "Dutch (United States International)"
+msgstr "Niederländisch (USA International)"
 
 #: src/account/RecoveryCodesDialog.tsx
 msgid "Each code signs you in once if you lose the authenticator. Keep them somewhere safe: they are shown only now, and new ones replace these."
@@ -3623,6 +3698,14 @@ msgstr "Verschlüsselung"
 #: src/sequences/steps.ts
 msgid "ends with"
 msgstr "endet auf"
+
+#: src/boot/keyboardLayouts.ts
+msgid "English (United Kingdom)"
+msgstr "Englisch (Vereinigtes Königreich)"
+
+#: src/boot/keyboardLayouts.ts
+msgid "English (United States)"
+msgstr "Englisch (USA)"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.inputChoices"
@@ -3941,6 +4024,7 @@ msgstr "Läuft ab"
 msgid "Fail when no driver package matches the model"
 msgstr "Fehlschlagen, wenn kein Treiberpaket zum Modell passt"
 
+#: src/boot/JobPanel.tsx
 #: src/machines/list/runDetail.ts
 #: src/machines/MachinePanel.tsx
 #: src/machines/machineView.ts
@@ -4080,6 +4164,10 @@ msgstr "Findet den Benutzer, der sich anmeldet. Er muss {USER_TOKEN} enthalten, 
 msgid "Finishing"
 msgstr "Wird abgeschlossen"
 
+#: src/boot/keyboardLayouts.ts
+msgid "Finnish"
+msgstr "Finnisch"
+
 #: src/ui/ZoomControls.tsx
 msgid "Fit"
 msgstr "Einpassen"
@@ -4138,6 +4226,10 @@ msgstr "Für Umgebungen mit Vier-Augen-Prinzip: Eine Anmeldung am Gerät hält d
 msgid "For these hardware models"
 msgstr "Für diese Hardwaremodelle"
 
+#: src/boot/BuildPanel.tsx
+msgid "For typing at a machine in Windows PE"
+msgstr "Für Eingaben am Gerät in Windows PE"
+
 #: src/sequences/builder/nodeDetail.ts
 msgid "For Windows setup at its first start"
 msgstr "Für das Windows-Setup beim ersten Start"
@@ -4149,6 +4241,18 @@ msgstr "Format"
 #: src/settings/directory/TestResult.tsx
 msgid "Found"
 msgstr "Gefunden"
+
+#: src/boot/keyboardLayouts.ts
+msgid "French"
+msgstr "Französisch"
+
+#: src/boot/keyboardLayouts.ts
+msgid "French (Belgium)"
+msgstr "Französisch (Belgien)"
+
+#: src/boot/keyboardLayouts.ts
+msgid "French (Switzerland)"
+msgstr "Französisch (Schweiz)"
 
 #: src/machines/facts.ts
 msgid "Friendly model"
@@ -4230,6 +4334,14 @@ msgstr "Ein neues Zertifikat generieren?"
 #: src/settings/certificate/ServedCertificate.tsx
 msgid "Generate certificate"
 msgstr "Zertifikat generieren"
+
+#: src/boot/keyboardLayouts.ts
+msgid "German"
+msgstr "Deutsch"
+
+#: src/boot/keyboardLayouts.ts
+msgid "German (Switzerland)"
+msgstr "Deutsch (Schweiz)"
 
 #: src/users/ConfirmUserAction.tsx
 msgid "Give {name} a new password?"
@@ -4410,6 +4522,10 @@ msgstr "Wie die Bedingungen verknüpft werden"
 msgid "HTTP boot port"
 msgstr "HTTP-Boot-Port"
 
+#: src/boot/keyboardLayouts.ts
+msgid "Hungarian"
+msgstr "Ungarisch"
+
 #: src/account/RecoveryCodesDialog.tsx
 msgid "I have saved them"
 msgstr "Ich habe sie gespeichert"
@@ -4477,6 +4593,10 @@ msgstr "In Windows PE läuft ein Skript mit Paket erst, nachdem der Datenträger
 msgid "In Windows, after the image is applied. A script in Windows PE runs as the system."
 msgstr "In Windows, nachdem das Image angewendet ist. Ein Skript in Windows PE läuft als System."
 
+#: src/boot/LastBuild.tsx
+msgid "Included"
+msgstr "Enthalten"
+
 #: src/lib/serverMessages.ts
 msgctxt "identity.passwordMismatch"
 msgid "Incorrect password."
@@ -4506,6 +4626,10 @@ msgstr "Eingabe, im Web oder am Gerät abgefragt"
 msgid "Inspector"
 msgstr "Eigenschaften"
 
+#: src/boot/AdkState.tsx
+msgid "Install"
+msgstr "Installieren"
+
 #: src/settings/certificate/NewRootDialog.tsx
 msgid "Install a certificate from another root?"
 msgstr "Ein Zertifikat einer anderen Stammzertifizierungsstelle installieren?"
@@ -4518,6 +4642,18 @@ msgstr "Trotzdem installieren"
 msgctxt "template.installLinux"
 msgid "Install Linux"
 msgstr "Linux installieren"
+
+#: src/boot/JobPanel.tsx
+msgid "Install of the Windows ADK"
+msgstr "Installation des Windows ADK"
+
+#: src/boot/AdkState.tsx
+msgid "Install the Windows ADK"
+msgstr "Windows ADK installieren"
+
+#: src/boot/AdkState.tsx
+msgid "Install the Windows ADK?"
+msgstr "Windows ADK installieren?"
 
 #: src/lib/serverMessages.ts
 msgctxt "template.installWindows"
@@ -4611,6 +4747,10 @@ msgstr "Aussteller"
 msgid "It asks for {list}."
 msgstr "Sie fragt nach {list}."
 
+#: src/boot/StaleReasonText.tsx
+msgid "It came from the Windows ADK {builtWith}, and the server now has {installed}."
+msgstr "Es stammt aus dem Windows ADK {builtWith}, und der Server hat jetzt {installed}."
+
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "It can join machines here."
 msgstr "Es kann hier Geräte in die Domäne aufnehmen."
@@ -4645,6 +4785,10 @@ msgstr "Es ist von {from} bis {until} gültig, nicht jetzt."
 msgid "It joins the domain {domain}."
 msgstr "Es nimmt Geräte in die Domäne {domain} auf."
 
+#: src/boot/StaleReasonText.tsx
+msgid "It names the server {address}, a name or port the server no longer has. Machines that netboot it cannot reach the server."
+msgstr "Es nennt den Server {address}, einen Namen oder Port, den der Server nicht mehr hat. Geräte, die damit per Netzwerk starten, erreichen den Server nicht."
+
 #: src/lib/autosaveDecisions.ts
 msgid "It no longer exists on the server, so nothing more is saved."
 msgstr "Das gibt es auf dem Server nicht mehr, daher wird nichts mehr gespeichert."
@@ -4660,6 +4804,14 @@ msgstr "Es wartet, bis sich jemand daran anmeldet oder es aus einem Zero-Touch-N
 #: src/machines/assign/assignText.ts
 msgid "It stays waiting until someone signs in at it."
 msgstr "Es wartet, bis sich jemand daran anmeldet."
+
+#: src/boot/StaleReasonText.tsx
+msgid "It trusts another root certificate than this server's. Machines that netboot it cannot reach the server."
+msgstr "Es vertraut einem anderen Stammzertifikat als dem dieses Servers. Geräte, die damit per Netzwerk starten, erreichen den Server nicht."
+
+#: src/boot/keyboardLayouts.ts
+msgid "Italian"
+msgstr "Italienisch"
 
 #: src/runs/decisions.ts
 msgid "Iteration {times} of at most {most}"
@@ -4749,6 +4901,11 @@ msgstr "Schlüssel"
 msgid "Keyboard"
 msgstr "Tastatur"
 
+#: src/boot/BuildPanel.tsx
+#: src/boot/LastBuild.tsx
+msgid "Keyboard layout"
+msgstr "Tastaturlayout"
+
 #: src/settings/signIn/ClaimRolesGroup.tsx
 msgid "Keycloak and Authentik send group names or paths, Entra ID the object IDs of the groups."
 msgstr "Keycloak und Authentik senden Gruppennamen oder -pfade, Entra ID die Objekt-IDs der Gruppen."
@@ -4785,10 +4942,6 @@ msgstr "Laptop"
 #: src/settings/networkBoot/TransfersGroup.tsx
 msgid "Largest TFTP window"
 msgstr "Größtes TFTP-Fenster"
-
-#: src/boot/LastBuild.tsx
-msgid "Last build"
-msgstr "Letzter Build"
 
 #: src/machines/facts.ts
 msgid "Last exit code"
@@ -4862,6 +5015,10 @@ msgstr "Wenn Sie diese Seite verlassen, stoppt der Upload von {file} bei {percen
 #: src/users/ChangeUserForm.tsx
 msgid "Left empty, DDT shows the user name."
 msgstr "Bleibt es leer, zeigt DDT den Benutzernamen."
+
+#: src/boot/LastBuild.tsx
+msgid "Left out"
+msgstr "Weggelassen"
 
 #: src/ui/NumberField.tsx
 msgid "Less"
@@ -5135,6 +5292,10 @@ msgstr "Geräte übernehmen sie beim nächsten Netzwerkstart: Der Agent lädt si
 msgid "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
 msgstr "Geräte übernehmen ihn beim nächsten Netzwerkstart: Der Agent im Startimage lädt ihn herunter und führt ihn stattdessen aus, daher muss das Startimage nicht neu erstellt werden. Ein Gerät, das ihn nicht herunterladen oder starten kann, macht mit dem Agent in seinem Startimage weiter."
 
+#: src/boot/StoredBuilds.tsx
+msgid "Machines that netboot from now on get this build. A machine that is netbooting right now finishes with the build it started."
+msgstr "Geräte, die ab jetzt per Netzwerk starten, erhalten diesen Build. Ein Gerät, das gerade per Netzwerk startet, beendet den Start mit dem Build, mit dem es begonnen hat."
+
 #: src/settings/AgentPanel.tsx
 msgid "Machines that netboot from now on run the agent this server came with. If it came with none, they run the agent in their boot image."
 msgstr "Geräte, die ab jetzt per Netzwerk starten, führen den Agent aus, der mit diesem Server geliefert wurde. Wurde keiner mitgeliefert, führen sie den Agent in ihrem Startimage aus."
@@ -5340,6 +5501,11 @@ msgstr "Muss ASCII sein und darf höchstens {max} Zeichen haben."
 msgctxt "settings.atLeastOne"
 msgid "Must be at least 1."
 msgstr "Muss mindestens 1 sein."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.windowSize"
+msgid "Must be between 1 and {max}."
+msgstr "Muss zwischen 1 und {max} liegen."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.pxe.windowSizeRange"
@@ -5932,6 +6098,10 @@ msgstr "Keine. DDT verbindet die hier aufgeführten Netzwerkfreigaben, bevor der
 msgid "None. Nothing keeps this sequence from running."
 msgstr "Keine. Nichts verhindert die Ausführung dieser Tasksequenz."
 
+#: src/boot/keyboardLayouts.ts
+msgid "Norwegian"
+msgstr "Norwegisch"
+
 #: src/conditions/conditions.ts
 msgid "not ({either})"
 msgstr "nicht ({either})"
@@ -6189,6 +6359,10 @@ msgctxt "sequence.sharesOnlyOnSteps"
 msgid "Only a step connects shares, for as long as it runs. Give them to the steps inside that need them."
 msgstr "Nur ein Schritt verbindet Netzwerkfreigaben, und zwar solange er läuft. Geben Sie sie den Schritten darin, die sie brauchen."
 
+#: src/boot/BuildPanel.tsx
+msgid "Only administrators build the boot image."
+msgstr "Nur Administratoren erstellen das Startimage."
+
 #: src/settings/SignInSettingsPage.tsx
 msgid "Only administrators change how people sign in. Your own password and second factor are on the Account and security page in the account menu."
 msgstr "Nur Administratoren ändern, wie sich Personen anmelden. Ihr eigenes Kennwort und Ihren zweiten Faktor finden Sie auf der Seite Konto und Sicherheit im Kontomenü."
@@ -6387,6 +6561,10 @@ msgstr "Gliederung"
 #: src/sequences/builder/page/BuilderOutline.tsx
 msgid "Outline of {name}"
 msgstr "Gliederung von {name}"
+
+#: src/boot/JobOutput.tsx
+msgid "Output"
+msgstr "Ausgabe"
 
 #: src/settings/server/ServerSettings.tsx
 msgid "Overview"
@@ -6592,9 +6770,25 @@ msgstr "Pipefähige WIM-Dateien werden nicht unterstützt. Exportieren Sie das I
 msgid "PNG, {width} by {height} pixels"
 msgstr "PNG, {width} mal {height} Pixel"
 
+#: src/boot/keyboardLayouts.ts
+msgid "Polish (Programmers)"
+msgstr "Polnisch (Programmierer)"
+
 #: src/settings/directory/PortField.tsx
 msgid "Port"
 msgstr "Port"
+
+#: src/boot/keyboardLayouts.ts
+msgid "Portuguese"
+msgstr "Portugiesisch"
+
+#: src/boot/keyboardLayouts.ts
+msgid "Portuguese (Brazil)"
+msgstr "Portugiesisch (Brasilien)"
+
+#: src/boot/LastBuild.tsx
+msgid "PowerShell"
+msgstr "PowerShell"
 
 #: src/deployments/deployments.ts
 msgid "Preparing"
@@ -7184,10 +7378,6 @@ msgstr "Ausführung gestartet"
 msgid "Run stopped"
 msgstr "Ausführung beendet"
 
-#: src/boot/BuildCommand.tsx
-msgid "Run this in an elevated PowerShell on a Windows machine with the Windows ADK, from a copy of DDT's repository. It writes boot.wim and the boot files into the destination, which the boot directory has to hold; machines netboot with the new image at once."
-msgstr "Führen Sie dies in einer PowerShell mit Administratorrechten auf einem Windows-Rechner mit dem Windows ADK aus, in einer Kopie des DDT-Repositorys. Es schreibt boot.wim und die Startdateien in das Ziel, das im Startverzeichnis liegen muss; Geräte starten sofort mit dem neuen Image."
-
 #: src/audit/auditView.ts
 msgid "Run token refused"
 msgstr "Ausführungstoken abgelehnt"
@@ -7196,6 +7386,7 @@ msgstr "Ausführungstoken abgelehnt"
 msgid "Run went on"
 msgstr "Ausführung fortgesetzt"
 
+#: src/boot/JobPanel.tsx
 #: src/runs/flow/nodeDetail.ts
 #: src/runs/panel/RunActivity.tsx
 #: src/runs/runHistory.ts
@@ -7524,6 +7715,22 @@ msgstr "Seriennummer"
 msgid "Serve boot files over TFTP"
 msgstr "Startdateien über TFTP bereitstellen"
 
+#: src/boot/StoredBuilds.tsx
+msgid "Serve this build"
+msgstr "Diesen Build ausliefern"
+
+#: src/boot/StoredBuilds.tsx
+msgid "Serve this build?"
+msgstr "Diesen Build ausliefern?"
+
+#: src/boot/StoredBuilds.tsx
+msgid "Served"
+msgstr "Ausgeliefert"
+
+#: src/boot/LastBuild.tsx
+msgid "Served build"
+msgstr "Ausgelieferter Build"
+
 #: src/settings/certificate/ServedCertificate.tsx
 msgid "Served certificate"
 msgstr "Ausgeliefertes Zertifikat"
@@ -7542,6 +7749,7 @@ msgstr "Server"
 msgid "Server {number}"
 msgstr "Server {number}"
 
+#: src/boot/LastBuild.tsx
 #: src/settings/networkBoot/BootServerFields.tsx
 msgid "Server address"
 msgstr "Serveradresse"
@@ -7949,6 +8157,10 @@ msgstr "Beim Laden dieser Seite ist ein Fehler aufgetreten. Versuchen Sie es ern
 msgid "Source code"
 msgstr "Quellcode"
 
+#: src/boot/keyboardLayouts.ts
+msgid "Spanish"
+msgstr "Spanisch"
+
 #: src/lib/serverMessages.ts
 msgctxt "wim.split"
 msgid "Split WIM files (.swm) are not supported. Export the image into a single WIM first."
@@ -7973,6 +8185,10 @@ msgstr "Gestartet"
 #: src/runs/panel/runLine.ts
 msgid "started {started}"
 msgstr "gestartet {started}"
+
+#: src/boot/JobPanel.tsx
+msgid "Started {when} by {startedBy}"
+msgstr "Gestartet {when} von {startedBy}"
 
 #: src/machines/list/runDetail.ts
 #: src/machines/MachinePanel.tsx
@@ -8212,6 +8428,10 @@ msgstr "Etwa de-DE."
 msgid "Such as OU=Workstations,DC=example,DC=com. Empty takes the default from the Deployment defaults page."
 msgstr "Etwa OU=Workstations,DC=example,DC=com. Leer gilt der Standard von der Seite „Standardwerte der Bereitstellung“."
 
+#: src/boot/keyboardLayouts.ts
+msgid "Swedish"
+msgstr "Schwedisch"
+
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "SYSTEM"
 msgstr "SYSTEM"
@@ -8240,6 +8460,11 @@ msgstr "Tablet"
 #: src/rules/drawer/RoleTag.tsx
 msgid "Take {roleName} out"
 msgstr "{roleName} herausnehmen"
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.keyboardLayout"
+msgid "Takes an input locale and a keyboard layout, such as 0407:00000407 for German."
+msgstr "Erwartet ein Eingabegebietsschema und ein Tastaturlayout, etwa 0407:00000407 für Deutsch."
 
 #: src/machines/assign/SequencePicker.tsx
 #: src/rules/RuleTestOutcome.tsx
@@ -8488,9 +8713,18 @@ msgstr "Das Bindungskennwort und jedes bei der Anmeldung eingegebene Kennwort ge
 msgid "The boot directory holds no record of a build. A build with the current script writes ddt-boot-image.json next to boot.wim, which DDT reads here."
 msgstr "Das Startverzeichnis enthält keinen Nachweis eines Builds. Ein Build mit dem aktuellen Skript schreibt ddt-boot-image.json neben boot.wim, das DDT hier liest."
 
-#: src/boot/BootImagePage.tsx
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.noSuchBuild"
+msgid "The boot directory holds no such build."
+msgstr "Das Startverzeichnis enthält keinen solchen Build."
+
+#: src/boot/BuildState.tsx
 msgid "The boot image has every driver flagged for Windows PE."
 msgstr "Das Startimage enthält jeden für Windows PE markierten Treiber."
+
+#: src/boot/BuildState.tsx
+msgid "The boot image has to be built again"
+msgstr "Das Startimage muss neu erstellt werden"
 
 #: src/boot/WindowsPEDrivers.tsx
 msgid "The boot image has Windows PE's own drivers only. Flag a driver package under <0>Library, Drivers</0> when a machine cannot reach the network or see its disk in Windows PE."
@@ -8735,9 +8969,9 @@ msgctxt "gpt.fourKilobyteSectors"
 msgid "The disk image is made for disks with 4 KiB sectors. DDT writes images for disks with 512-byte sectors, which is what distributions publish."
 msgstr "Das Datenträgerimage ist für Datenträger mit 4-KiB-Sektoren gemacht. DDT schreibt Images für Datenträger mit 512-Byte-Sektoren, wie Distributionen sie veröffentlichen."
 
-#: src/boot/BootImagePage.tsx
-msgid "The drivers flagged for Windows PE have changed since the boot image was built. Build it again so that machines netboot with them."
-msgstr "Die für Windows PE markierten Treiber haben sich geändert, seit das Startimage erstellt wurde. Erstellen Sie es neu, damit Geräte mit ihnen per Netzwerk starten."
+#: src/boot/StaleReasonText.tsx
+msgid "The drivers flagged for Windows PE have changed since it was built."
+msgstr "Die für Windows PE markierten Treiber haben sich geändert, seit es erstellt wurde."
 
 #: src/lib/serverMessages.ts
 msgctxt "audit.rangeEnd"
@@ -9206,6 +9440,10 @@ msgstr "die Reihenfolge der Schritte"
 msgid "The organizational unit changed since, so check again."
 msgstr "Die Organisationseinheit hat sich seitdem geändert, prüfen Sie daher erneut."
 
+#: src/boot/JobOutput.tsx
+msgid "The output went on for {missing} more lines, which the server did not keep."
+msgstr "Die Ausgabe ging noch {missing} Zeilen weiter, die der Server nicht aufbewahrt hat."
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.packageGone"
 msgid "The package is no longer in the library. Choose another package, or none."
@@ -9517,8 +9755,8 @@ msgid "The sequence's default"
 msgstr "Standardwert der Tasksequenz"
 
 #: src/boot/BuildCommand.tsx
-msgid "The server address is this page's. Use the name machines reach the server by, if it is another."
-msgstr "Die Serveradresse ist die dieser Seite. Verwenden Sie den Namen, unter dem Geräte den Server erreichen, falls er ein anderer ist."
+msgid "The server address is the server's name and port, as its certificate has them. Use another name machines reach the server by, if the certificate has it too."
+msgstr "Die Serveradresse besteht aus Name und Port des Servers, wie sein Zertifikat sie enthält. Verwenden Sie einen anderen Namen, unter dem Geräte den Server erreichen, wenn das Zertifikat auch ihn enthält."
 
 #: src/lib/api.ts
 msgid "The server answered with status {status}."
@@ -9560,6 +9798,10 @@ msgstr "Der Server antwortet nicht"
 msgid "The server does not answer. The upload goes on when it does."
 msgstr "Der Server antwortet nicht. Der Upload geht weiter, sobald er antwortet."
 
+#: src/boot/AdkState.tsx
+msgid "The server downloads the Windows ADK and its Windows PE add-on from Microsoft, about 4 GB, and installs the deployment tools and Windows PE. That takes a few minutes, and this page shows how it goes."
+msgstr "Der Server lädt das Windows ADK und das Windows-PE-Add-On von Microsoft herunter, etwa 4 GB, und installiert die Bereitstellungstools und Windows PE. Das dauert einige Minuten, und diese Seite zeigt den Verlauf."
+
 #: src/packages/PackageUploadPanel.tsx
 msgid "The server goes on checking {file} after you leave and adds it to the library when it finishes. If it refuses the file, you do not see why."
 msgstr "Der Server prüft {file} weiter, nachdem Sie die Seite verlassen haben, und fügt es der Bibliothek hinzu, wenn er fertig ist. Lehnt er die Datei ab, sehen Sie nicht, warum."
@@ -9572,6 +9814,10 @@ msgstr "Der Server prüft {file} weiter, nachdem Sie die Seite verlassen haben, 
 msgctxt "upload.offsetMismatch"
 msgid "The server holds a different part of this file. Continue from the offset in the Upload-Offset header."
 msgstr "Der Server hat einen anderen Teil dieser Datei. Setzen Sie an der Position im Header Upload-Offset fort."
+
+#: src/boot/AdkState.tsx
+msgid "The server installs them without asking again. Installing accepts Microsoft's licence terms for both."
+msgstr "Der Server installiert beide ohne weitere Rückfrage. Mit der Installation akzeptieren Sie Microsofts Lizenzbedingungen für beide."
 
 #: src/lib/serverMessages.ts
 msgctxt "upload.serverStopping"
@@ -9590,6 +9836,10 @@ msgstr "Der Server braucht diese Werte, bevor er diese Seite ausliefern kann, da
 #: src/packages/packages.ts
 msgid "The server refuses while a machine is assigned or runs a sequence that uses it."
 msgstr "Der Server lehnt ab, solange einem Gerät eine Tasksequenz zugewiesen ist oder es eine ausführt, die es verwendet."
+
+#: src/boot/BuildPanel.tsx
+msgid "The server's own"
+msgstr "Das des Servers"
 
 #: src/settings/server/ServerSettings.tsx
 msgid "The server's settings could not be read."
@@ -9720,6 +9970,20 @@ msgstr "die Variablen"
 #: src/about/AboutPage.tsx
 msgid "The version and the licence texts could not be loaded."
 msgstr "Die Version und die Lizenztexte konnten nicht geladen werden."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.noAdk"
+msgid "The Windows ADK with its Windows PE add-on is not installed on this server. Install it first."
+msgstr "Das Windows ADK mit dem Windows-PE-Add-On ist auf diesem Server nicht installiert. Installieren Sie es zuerst."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.oldAdk"
+msgid "The Windows PE add-on on this server is {version}, and the boot image needs {oldest} or later."
+msgstr "Das Windows-PE-Add-On auf diesem Server hat die Version {version}, und das Startimage braucht {oldest} oder neuer."
+
+#: src/boot/AdkState.tsx
+msgid "The Windows PE add-on on this server is {version}, which is older than the boot image needs. Remove it and the Windows ADK under Windows's installed apps, then install them from here."
+msgstr "Das Windows-PE-Add-On auf diesem Server hat die Version {version} und ist damit älter, als das Startimage es braucht. Entfernen Sie es und das Windows ADK unter den installierten Apps von Windows, und installieren Sie beide dann von hier."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.machines.networkHoldsProxy"
@@ -10010,6 +10274,15 @@ msgid "This server came with console {version}, which is newer than the uploaded
 msgstr "Dieser Server wurde mit Konsole {version} geliefert, die neuer ist als die hochgeladene. Entfernen Sie die hochgeladene Konsole, damit Geräte die des Servers zeigen."
 
 #: src/lib/serverMessages.ts
+msgctxt "bootImage.noHelper"
+msgid "This server cannot build the boot image itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up. On another server, build with Build-BootImage.ps1 on a Windows PC."
+msgstr "Dieser Server kann das Startimage nicht selbst erstellen: Der Dienst DDT Helper antwortet nicht. Das Installationsprogramm von DDT für Windows richtet ihn ein. Auf einem anderen Server erstellen Sie es mit Build-BootImage.ps1 auf einem Windows-PC."
+
+#: src/boot/BuildCommand.tsx
+msgid "This server cannot build the image itself, which takes the DDT Helper service that DDT's installer for Windows sets up. Run this in an elevated PowerShell on a Windows PC with the Windows ADK, from a copy of DDT's repository. It writes boot.wim and the boot files into the destination, which the boot directory has to hold; machines netboot with the new image at once."
+msgstr "Dieser Server kann das Image nicht selbst erstellen; dafür braucht es den Dienst DDT Helper, den das Installationsprogramm von DDT für Windows einrichtet. Führen Sie diesen Befehl in einer PowerShell mit erhöhten Rechten auf einem Windows-PC mit dem Windows ADK aus, in einer Kopie des DDT-Repositorys. Er schreibt boot.wim und die Startdateien in das Ziel, das im Startverzeichnis liegen muss; Geräte starten sofort per Netzwerk mit dem neuen Image."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.keyRingUnreadable"
 msgid "This server cannot read the key ring the stored settings secrets were encrypted with, so it saves no settings. Every DDT process on one database has to share the key ring in DDT:StorePath/keys."
 msgstr "Dieser Server kann den Schlüsselbund nicht lesen, mit dem die gespeicherten Geheimnisse der Einstellungen verschlüsselt wurden, daher speichert er keine Einstellungen. Alle DDT-Prozesse an einer Datenbank müssen den Schlüsselbund in DDT:StorePath/keys teilen."
@@ -10159,6 +10432,10 @@ msgstr "Erneut versuchen"
 #: src/sequences/SaveState.tsx
 msgid "Try now"
 msgstr "Jetzt versuchen"
+
+#: src/boot/keyboardLayouts.ts
+msgid "Turkish Q"
+msgstr "Türkisch Q"
 
 #: src/settings/networkBoot/TransfersGroup.tsx
 msgid "Turn it off only when another TFTP server serves them. Every TFTP boot target then needs that server's address."
@@ -10711,6 +10988,14 @@ msgstr "Ganze Zahlen, durch Kommas getrennt."
 msgid "Windows"
 msgstr "Windows"
 
+#: src/audit/auditView.ts
+msgid "Windows ADK install started"
+msgstr "Installation des Windows ADK gestartet"
+
+#: src/boot/AdkState.tsx
+msgid "Windows ADK with the Windows PE add-on {version}"
+msgstr "Windows ADK mit dem Windows-PE-Add-On {version}"
+
 #: src/images/images.ts
 msgid "Windows image"
 msgstr "Windows-Image"
@@ -10761,6 +11046,10 @@ msgstr "Mit einem gespeicherten Konto"
 #: src/accounts/drawer/AccountFields.tsx
 msgid "With its domain, as DOMAIN\\user or user@corp.example."
 msgstr "Mit seiner Domäne, als DOMÄNE\\Benutzer oder benutzer@corp.example."
+
+#: src/boot/BuildPanel.tsx
+msgid "With PowerShell, for steps that run a script in Windows PE"
+msgstr "Mit PowerShell, für Schritte, die ein Skript in Windows PE ausführen"
 
 #: src/sequences/builder/nodeDetail.ts
 msgid "With the join account of the deployment defaults"

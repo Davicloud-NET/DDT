@@ -47,6 +47,31 @@ function Get-ReleaseDefault {
     }
 }
 
+# Names the build the server serves, in the file "current" of its boot directory. Written next to it and renamed, so
+# the server never reads half a name; it may hold the file open for an instant.
+function Set-CurrentBootBuild {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Part of a build that was asked for.')]
+    param(
+        [Parameter(Mandatory)][string] $BootDirectory,
+        [Parameter(Mandatory)][ValidatePattern('^[0-9A-Za-z][0-9A-Za-z_-]{0,63}$')][string] $Build
+    )
+
+    $marker = Join-Path $BootDirectory 'current'
+    $next = "$marker.next"
+    [IO.File]::WriteAllText($next, $Build)
+
+    for ($attempt = 1; ; $attempt++) {
+        try {
+            if (Test-Path -LiteralPath $marker) { [IO.File]::Replace($next, $marker, $null) } else { [IO.File]::Move($next, $marker) }
+            return
+        }
+        catch {
+            if ($attempt -ge 50) { throw }
+            Start-Sleep -Milliseconds 20
+        }
+    }
+}
+
 # -ConsolePath takes the console's folder, and a release carries it as the zip the server offers. Unpacked beside the
 # work directory, which the build empties.
 function Expand-ReleaseConsole {

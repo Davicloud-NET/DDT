@@ -12,6 +12,14 @@ public sealed record BootImageView(
     string? DriverSetHash,
     // Null when the boot directory holds no readable ddt-boot-image.json.
     BootImageBuild? Build,
-    // The boot image must be rebuilt to include the flagged drivers. That's the case when the build's driver set
-    // differs, or when drivers are flagged and there's no build to compare with.
-    bool Stale);
+    // The boot image must be rebuilt: StaleReasons names why.
+    bool Stale,
+    // "drivers": the flagged drivers differ from the build's, or drivers are flagged and nothing is built.
+    // "serverAddress": the image names the server by a name or port it no longer has. "root": the image trusts
+    // another root than the server's. "adk": the server's ADK is another version than the image came from.
+    IReadOnlyList<string> StaleReasons,
+    BootImageBuilder Builder,
+    // The job that runs, or the last one since the server started.
+    BootImageJob? Job,
+    // What the boot directory holds, newest first.
+    IReadOnlyList<BootImageStoredBuild> Builds);

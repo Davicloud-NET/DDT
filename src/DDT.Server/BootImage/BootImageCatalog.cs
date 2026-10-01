@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using DDT.Contracts.BootImage;
 using DDT.Contracts.Packages;
+using DDT.Pxe;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
 using Microsoft.EntityFrameworkCore;
@@ -15,15 +16,14 @@ using Microsoft.Extensions.Options;
 
 namespace DDT.Server.BootImage;
 
-// Compares the driver packages flagged for the boot image with the build in the boot directory. The build's description
-// next to boot.wim is read on every request. It's small, and it changes whenever a new build is copied in.
+// The builds in the boot directory and the driver packages flagged for the boot image. A build's description next to
+// its boot.wim is read on every request. It's small, and it changes whenever a new build becomes the current one.
 public sealed class BootImageCatalog(IOptions<DdtOptions> options, IConfiguration configuration)
 {
     public const string ManifestName = "ddt-boot-image.json";
 
-    // This is the pxe role's DDT:Pxe:BootDirectory setting, see DDT.Pxe.PxeOptions. This project doesn't reference
-    // DDT.Pxe. When both roles run in one container, as they do by default, the web role finds the build in the same
-    // store.
+    // This is the pxe role's DDT:Pxe:BootDirectory setting, see DDT.Pxe.PxeOptions. When both roles run in one
+    // process, as they do by default, the web role finds the build in the same store.
     private const string BootDirectoryKey = "DDT:Pxe:BootDirectory";
 
     // A description of one build is a few kilobytes, even with dozens of drivers.
@@ -32,7 +32,8 @@ public sealed class BootImageCatalog(IOptions<DdtOptions> options, IConfiguratio
     public string BootDirectory =>
         Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.Combine(options.Value.StorePath, configuration[BootDirectoryKey] ?? "boot")));
 
-    public string ManifestPath => Path.Combine(BootDirectory, "Boot", ManifestName);
+    // The description of the build that is served.
+    public string ManifestPath => ManifestIn(BootBuilds.Serving(BootDirectory));
 
     // Hashes one line per package, sorted by id, so the same set always has the same hash. Returns null when there are
     // no packages.
@@ -50,7 +51,8 @@ public sealed class BootImageCatalog(IOptions<DdtOptions> options, IConfiguratio
         return lines.Length == 0 ? null : Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(lines.ToString())));
     }
 
-    public async Task<BootImageView> ViewAsync(DdtDbContext database, CancellationToken cancellationToken)
+    // The driver packages flagged for the boot image, by name.
+    public static async Task<List<BootImageDriver>> FlaggedAsync(DdtDbContext database, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(database);
 
@@ -61,23 +63,96 @@ public sealed class BootImageCatalog(IOptions<DdtOptions> options, IConfiguratio
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        List<BootImageDriver> drivers = [.. flagged.OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase).ThenBy(d => d.PackageId)];
-        string? driverSetHash = DriverSetHash(drivers.Select(d => (d.PackageId, d.Sha256)));
-        BootImageBuild? build = ReadBuild();
-        bool stale = build is null ? drivers.Count > 0 : driverSetHash != build.DriverSetHash;
-
-        return new BootImageView(drivers, driverSetHash, build, stale);
+        return [.. flagged.OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase).ThenBy(d => d.PackageId)];
     }
 
-    // Returns null for a missing or broken file, so the page shows no build instead of failing. The hash is computed
-    // again from the drivers the file lists, so it's computed the same way as the server's.
-    public BootImageBuild? ReadBuild()
+    // The build that is served. Null for a missing or broken description, so the page shows no build instead of failing.
+    public BootImageBuild? ReadBuild() => ReadBuild(ManifestPath);
+
+    // What could be served, newest first: the builds below "builds", and the files in the boot directory itself.
+    public IReadOnlyList<BootImageStoredBuild> Builds()
+    {
+        string? current = BootBuilds.Current(BootDirectory);
+        List<BootImageStoredBuild> builds = [];
+
+        try
+        {
+            builds.AddRange(BootBuilds.List(BootDirectory)
+                .Where(name => File.Exists(ManifestIn(BootBuilds.FolderOf(BootDirectory, name))))
+                .Select(name => new BootImageStoredBuild(name, ReadBuild(ManifestIn(BootBuilds.FolderOf(BootDirectory, name)))?.BuiltUtc, name == current)));
+
+            if (File.Exists(Path.Combine(BootDirectory, "Boot", "boot.wim")))
+            {
+                builds.Add(new BootImageStoredBuild(null, ReadBuild(ManifestIn(BootDirectory))?.BuiltUtc, current is null));
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // A boot directory that cannot be listed has no builds to offer
+        }
+
+        return [.. builds.OrderByDescending(build => build.BuiltUtc ?? DateTimeOffset.MinValue)];
+    }
+
+    // Serves another build. Returns false for a name that is none of Builds.
+    public bool Use(string? name)
+    {
+        if (!Builds().Any(build => build.Name == name))
+        {
+            return false;
+        }
+
+        BootBuilds.SetCurrent(BootDirectory, name);
+
+        return true;
+    }
+
+    // The build that is served, by its folder. Null while the boot directory itself holds the files.
+    public string? Current => BootBuilds.Current(BootDirectory);
+
+    // Removes every build but the current one and the one to go back to.
+    public void Prune(string? previous)
+    {
+        string? current = Current;
+
+        foreach (string name in BootBuilds.List(BootDirectory).Where(name => name != current && name != previous))
+        {
+            try
+            {
+                Directory.Delete(BootBuilds.FolderOf(BootDirectory, name), recursive: true);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // A machine still netboots from it. The next build tries again.
+            }
+        }
+    }
+
+    // The watcher compares this to notice a new build without reading the file each time.
+    public (bool Exists, DateTime LastWriteUtc, long Length) Stamp()
+    {
+        try
+        {
+            FileInfo file = new(ManifestPath);
+
+            return file.Exists ? (true, file.LastWriteTimeUtc, file.Length) : (false, default, 0);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return (false, default, 0);
+        }
+    }
+
+    private static string ManifestIn(string root) => Path.Combine(root, "Boot", ManifestName);
+
+    // The hash is computed again from the drivers the file lists, so it's computed the same way as the server's.
+    private static BootImageBuild? ReadBuild(string path)
     {
         BootImageManifest? manifest;
 
         try
         {
-            FileInfo file = new(ManifestPath);
+            FileInfo file = new(path);
 
             if (!file.Exists || file.Length > MaxManifestBytes)
             {
@@ -114,21 +189,10 @@ public sealed class BootImageCatalog(IOptions<DdtOptions> options, IConfiguratio
             drivers,
             manifest.AdkVersion,
             manifest.BootManager,
-            manifest.AgentVersion);
-    }
-
-    // The watcher compares this to notice a new build without reading the file each time.
-    public (bool Exists, DateTime LastWriteUtc, long Length) Stamp()
-    {
-        try
-        {
-            FileInfo file = new(ManifestPath);
-
-            return file.Exists ? (true, file.LastWriteTimeUtc, file.Length) : (false, default, 0);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return (false, default, 0);
-        }
+            manifest.AgentVersion,
+            manifest.ServerUrl,
+            manifest.RootSha256,
+            manifest.KeyboardLayout,
+            manifest.PowerShell);
     }
 }

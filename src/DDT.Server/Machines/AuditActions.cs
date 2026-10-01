@@ -64,6 +64,9 @@ public static class AuditActions
     public const string ConsoleUploaded = "console.uploaded";
     public const string AgentUploadRemoved = "agent.upload-removed";
     public const string ConsoleUploadRemoved = "console.upload-removed";
+    public const string BootImageBuildStarted = "boot-image.build-started";
+    public const string BootImageBuildChosen = "boot-image.build-chosen";
+    public const string AdkInstallStarted = "boot-image.adk-install-started";
     public const string ConsoleLogoUploaded = "console.logo.uploaded";
     public const string ConsoleLogoRemoved = "console.logo.removed";
     public const string AdministratorCreated = "administrator.created";

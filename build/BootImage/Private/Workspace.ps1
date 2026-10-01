@@ -26,6 +26,7 @@ function New-WinPEWorkspace {
     $env:WinPERoot = $Adk.WinPE
     $env:DISMRoot = $Adk.Dism
     $env:OSCDImgRoot = $Adk.Oscdimg
+    Write-Host 'Copying Windows PE from the ADK'
     Invoke-Native $Adk.Copype amd64 $WorkDirectory | Out-Null
 
     return $workspace

@@ -65,8 +65,20 @@ function Write-BootManifest {
         [Parameter(Mandatory)][string] $Path,
         $ServerDriver,
         [Parameter(Mandatory)][string] $BootManager,
-        [string] $AgentPath
+        [string] $AgentPath,
+        [string] $ServerUrl,
+        [byte[]] $RootCertificate,
+        [string] $KeyboardLayout,
+        [switch] $PowerShell
     )
+
+    # What the image was built for. DDT says on its page when one of them is no longer true.
+    $rootSha256 = $null
+    if ($RootCertificate) {
+        $sha256 = [Security.Cryptography.SHA256]::Create()
+        try { $rootSha256 = [BitConverter]::ToString($sha256.ComputeHash($RootCertificate)).Replace('-', '') }
+        finally { $sha256.Dispose() }
+    }
 
     # The time is a string, because Windows PowerShell writes a DateTime as \/Date()\/.
     $manifest = [ordered]@{
@@ -80,6 +92,10 @@ function Write-BootManifest {
         adkVersion    = Get-AdkVersion
         bootManager   = Get-FileVersion -Path $BootManager
         agentVersion  = if ($AgentPath) { Get-FileVersion -Path $AgentPath } else { $null }
+        serverUrl     = if ($AgentPath -and $ServerUrl) { $ServerUrl.TrimEnd('/') } else { $null }
+        rootSha256    = $rootSha256
+        keyboardLayout = if ($KeyboardLayout) { $KeyboardLayout } else { $null }
+        powerShell    = [bool] $PowerShell
     }
 
     # Without a byte order mark, which Windows PowerShell's Set-Content -Encoding UTF8 would add.

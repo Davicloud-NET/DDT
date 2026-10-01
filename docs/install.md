@@ -115,18 +115,28 @@ curl -fsSL https://github.com/Davicloud-NET/DDT/releases/latest/download/install
 1. It checks for Docker Engine with the compose plugin, and without it stops and says how to install
    them. It installs nothing of its own accord.
 2. It writes `/opt/ddt/compose.yaml`, the one from the release with the image pinned to its version,
-   and `/opt/ddt/.env` with a generated database password, `DDT_ROLES=web,pxe` and `DDT_HOSTNAMES`
-   from `hostname -f`.
+   and `/opt/ddt/.env` with `DDT_ROLES=web,pxe`, `DDT_PORT` and `DDT_HOSTNAMES` from `hostname -f`.
 3. Where ufw or firewalld is active, it asks, then opens the same ports as 3.1.
 4. It runs `docker compose up -d` and waits until `/api/about` answers.
-5. It prints the address, the root's SHA-256 and the first password (section 4.5).
+5. It prints the address, the root's SHA-256 and the command that shows the first password
+   (section 4.5).
 
-With the database of section 4.4 answered as recommended, the container needs no database service,
-and the whole install is also one line without the script:
+The database is the SQLite file in the store volume (section 4.4), so the container needs no
+database service, and the whole install is also one line without the script:
 
 ```bash
 docker run -d --name ddt --network host --restart unless-stopped -e DDT__Roles=web,pxe -v ddt:/var/lib/ddt ghcr.io/davicloud-net/ddt
 ```
+
+Done: build/install.sh and build/compose.release.yaml, which the release workflow publishes as
+`install.sh` and `compose.yaml`, the latter naming the release's image. The script takes
+`--version`, `--port`, `--names`, `--firewall yes|no` and `--directory`, as in
+`... | sudo sh -s -- --port 443`. Piped into `sh` it asks about the firewall on the terminal, and
+without one it leaves the firewall alone and says which ports to open. It checks `compose.yaml`
+against the release's `SHA256SUMS`. An upgrade is the script again: it replaces `compose.yaml` and
+keeps `.env`, and changes of one's own, such as a PostgreSQL connection string, go into
+`compose.override.yaml`, which it never touches. CI runs it on the Linux runner against the image
+it just built.
 
 ### 3.3 Upgrading and removing
 
@@ -145,7 +155,7 @@ stays as well, as programs of their own in Apps and features.
 
 ### 4.1 Releases
 
-A workflow on every tag `v*`:
+A workflow that a maintainer starts by hand:
 
 - A Windows job publishes the agent and the console with NativeAOT, as Publish-Agent.ps1 and
   Publish-Console.ps1 do, and the server self-contained for win-x64, so the host needs no .NET
@@ -157,8 +167,30 @@ A workflow on every tag `v*`:
 - The release carries the MSI, a zip of the same files, `install.ps1`, `install.sh`, `compose.yaml`
   and `SHA256SUMS`, and a winget manifest goes to winget-pkgs.
 
-The version comes from the tag into the assemblies' informational version, which the About page
-already reads (src/DDT.Host/Program.cs:84). Versions start at 0.x.
+**Versions.** Decided 2026-10-02: a version is Year.Major.Build, as 26.1.412.
+
+- Year is the year's last two digits and Major counts the releases with new features in that year,
+  starting at 1 each January. Both are in `Directory.Build.props` and raised by hand. Windows
+  Installer compares exactly three numbers and takes at most 255.255.65535, so the year cannot be
+  2026.
+- Build is the number of commits up to the one built. Nobody types it: `Directory.Build.targets`
+  counts it for a plain `dotnet build`, and `build/Get-Version.ps1` prints the whole version. Without
+  git, as in a container build, Build is 0 unless the version is passed in.
+- The server, the agent, the console, the MSI, the winget manifest and the image's tag carry the
+  same version. The About page reads the server's (src/DDT.Host/Program.cs:155).
+- A pre-release has no number of its own, because the MSI takes none. GitHub marks it, the About
+  page shows `26.1.412-pre`, the image's `latest` stays where it is, and winget gets nothing.
+
+**Cutting a release.** The Release workflow is run by hand from master, with a box for a
+pre-release and one for a dry run, which builds everything from any branch and publishes nothing.
+It counts the version, refuses one that is released already, builds the MSI and the image, and only
+then makes the tag `v26.1.412` and the GitHub release. Releases come from master alone: a branch
+that is squashed into master has more commits than master gets from it, so a release from the
+branch would be newer than the next one from master, and Windows Installer would not upgrade to it.
+
+Each release's `install.ps1`, `install.sh` and `compose.yaml` name that release, so a copy installs
+the release it came with. `releases/latest/download/` skips pre-releases, so a pre-release is
+installed from its own address, `releases/download/v26.1.412/install.ps1`.
 
 ### 4.2 The agent and the console come with the server
 
@@ -424,7 +456,37 @@ Done, ahead of the page: `DDT.Host setup adk` installs the pair 10.1.26100.9457 
 `install.ps1` offer it (section 3.1). It adds a missing add-on only to the ADK of the same version.
 An elevated prompt runs it by hand, after an upgrade for instance, which shows no Dependencies page.
 
+Done, the helper and the button:
+
+- `DDT.Host helper` is the `DDTHelper` service (src/DDT.Host/Helper), which the MSI registers next
+  to `DDT`. Its pipe `DDT.Helper` lets `NT SERVICE\DDT` read and write, refuses the network, and
+  takes one request at a time as a line of JSON: `build` or `adk`. A build's name, address, keyboard
+  layout and TFTP window are checked again in the helper, and the address is put together again
+  from its parts, so nothing from the request reaches PowerShell's command line as it came.
+- The helper works in `%ProgramData%\DDT Helper`, which only SYSTEM and administrators can open. It
+  unpacks the flagged driver packages there from the store, each checked against the SHA-256 in its
+  name, runs the script, and copies the result into `boot\builds\<name>`. The image carries the
+  agent and console the release came with, not an uploaded one, which machines get at netboot
+  anyway (section 4.2).
+- A build's name is its start in UTC, `20261001-100000`. The file `boot\current` names the build
+  that TFTP and HTTP boot serve (src/DDT.Pxe/BootBuilds.cs); without it they serve the boot
+  directory itself, as before, so a build copied there by hand keeps working and shows in the list
+  as one more build to serve. After a build the server keeps it and the one served before it, and
+  removes the rest.
+- `POST /api/boot-image/build`, `/adk` and `/current` are an administrator's, and each is audited.
+  `GET /api/boot-image` names why a build is due (`drivers`, `serverAddress`, `root`, `adk`), the
+  ADK, the builds and the job; `GET /api/boot-image/job` has the job's output, and the hub pushes
+  it as `bootImageJobOutput`. The job is kept in memory, so a restart of the server forgets its
+  output, and the build it left says the rest.
+- The page offers the keyboard layout and PowerShell, starting from what the served build has. The
+  TFTP window is in the API alone.
+
+Left: the page does not say that a release changed Windows PE, since no release says so yet. The
+keyboard layout is chosen at each build and not a setting, so it has nothing to differ from.
+
 `Build-BootImage.ps1` stays the one implementation, so a build by hand on a PC gives the same image.
+Run next to an installed server without `-Destination`, it builds into `boot\builds` and marks its
+build current, as the button does.
 
 ### 4.8 The boot image from another PC
 

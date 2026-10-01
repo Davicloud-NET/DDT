@@ -32,6 +32,12 @@ public static class ImageServiceCollectionExtensions
         services.AddSingleton<ImageUploadSweeper>();
         services.AddHostedService(provider => provider.GetRequiredService<ImageUploadSweeper>());
         services.AddSingleton<BootImageCatalog>();
+        services.TryAddSingleton<InstalledAdk>();
+        services.TryAddSingleton<IBootImageHelper, PipeBootImageHelper>();
+        services.AddSingleton<CurrentBootImageJob>();
+        services.AddSingleton<BootImageViews>();
+        services.AddSingleton<BootImagePushes>();
+        services.AddSingleton<BootImageJobs>();
         services.AddHostedService<BootImageWatcher>();
 
         return services;

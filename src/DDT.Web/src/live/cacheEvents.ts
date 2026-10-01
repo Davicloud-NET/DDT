@@ -14,6 +14,7 @@ import {
 import { appendAudit, auditKey, type AuditEntry } from "@/audit/audit";
 import { currentUserQuery } from "@/auth/auth";
 import { bootImageQuery, type BootImageView } from "@/boot/bootImage";
+import { appendJobOutput, putJob, type BootImageJobOutput } from "@/boot/bootImageJob";
 import {
   imagesQuery,
   removeImages,
@@ -163,8 +164,13 @@ function libraryEvents(queryClient: QueryClient) {
     accountsRemoved: (event: AccountsRemoved) => {
       removeAccounts(queryClient, event.accountIds);
     },
+    // The view carries the state of a build or ADK install. What the job writes comes in batches of its own.
     bootImageChanged: (view: BootImageView) => {
       queryClient.setQueryData(bootImageQuery.queryKey, view);
+      putJob(queryClient, view.job);
+    },
+    bootImageJobOutput: (output: BootImageJobOutput) => {
+      appendJobOutput(queryClient, output);
     },
   };
 }

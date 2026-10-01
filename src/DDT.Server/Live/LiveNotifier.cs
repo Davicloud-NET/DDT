@@ -179,6 +179,13 @@ public sealed partial class LiveNotifier(
         _ = PushEventAsync(LiveEvents.BootImageChanged, bootImage);
     }
 
+    public void BootImageJobOutput(BootImageJobOutput output)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+
+        _ = PushEventAsync(LiveEvents.BootImageJobOutput, output);
+    }
+
     // Audit rows are for administrators only.
     public void AuditAppended(AuditEntry[] entries)
     {

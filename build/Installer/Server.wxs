@@ -63,6 +63,25 @@
         </ServiceInstall>
         <ServiceControl Name="DDT" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
 
+        <!-- The same program as SYSTEM, for what needs an administrator: building boot images, installing the ADK.
+             It listens on a named pipe that only NT SERVICE\DDT may open. -->
+        <ServiceInstall Id="Helper"
+                        Name="DDTHelper"
+                        DisplayName="DDT Helper"
+                        Description="Builds boot images and installs the Windows ADK for the DDT Deployment Server, which runs without administrator rights."
+                        Type="ownProcess"
+                        Start="auto"
+                        ErrorControl="normal"
+                        Arguments="helper"
+                        Vital="yes">
+          <util:ServiceConfig FirstFailureActionType="restart"
+                              SecondFailureActionType="restart"
+                              ThirdFailureActionType="restart"
+                              RestartServiceDelayInSeconds="60"
+                              ResetPeriodInDays="1" />
+        </ServiceInstall>
+        <ServiceControl Id="Helper" Name="DDTHelper" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
+
         <!-- The virtual account can't register an event source itself -->
         <util:EventSource Name="DDT"
                           Log="Application"

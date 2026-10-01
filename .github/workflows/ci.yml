@@ -236,3 +236,19 @@ jobs:
           done
           docker logs ddt
           exit 1
+
+      - name: Check install.sh
+        run: shellcheck --shell=sh build/install.sh
+
+      # On the runner itself, which is a Linux host with Docker as install.sh wants one. The second run is an upgrade.
+      - name: Install with install.sh
+        run: |
+          docker rm --force ddt
+          mkdir release
+          cp build/compose.release.yaml release/compose.yaml
+          (cd release && sha256sum compose.yaml > SHA256SUMS)
+          sudo sh build/install.sh --source "$PWD/release" --image ddt:ci --firewall no --names ddt.example
+          sudo grep --quiet '^DDT_HOSTNAMES=.*,ddt.example$' /opt/ddt/.env
+          sudo sh build/install.sh --source "$PWD/release" --image ddt:ci --firewall no --port 9443
+          sudo grep --quiet '^DDT_PORT=8443$' /opt/ddt/.env
+          curl --fail --silent --insecure https://localhost:8443/api/about

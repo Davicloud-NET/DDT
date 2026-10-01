@@ -1,0 +1,36 @@
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# The DDT server on a Linux host, as install.sh puts it into /opt/ddt. install.sh replaces this file at every upgrade.
+# Changes of your own go into compose.override.yaml next to it, which Docker Compose reads as well, and into .env.
+name: ddt
+
+services:
+  ddt:
+    # A release names its own version here.
+    image: ${DDT_IMAGE:-ghcr.io/davicloud-net/ddt:latest}
+    # The pxe role binds UDP 67, 4011 and 69 and TCP 8080, and has to see DHCP broadcasts, so it
+    # cannot live behind a bridge network. Host networking is a Linux host feature: on Docker
+    # Desktop broadcasts are not delivered.
+    network_mode: host
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    read_only: true
+    tmpfs: [/tmp]
+    environment:
+      DDT__Roles: ${DDT_ROLES:-web,pxe}
+      # Every name and address DDT is reached by has to be in the certificate, because the agent
+      # validates the hostname against the chain it pins.
+      DDT__Https__SubjectAlternativeNames: ${DDT_HOSTNAMES:-}
+      Kestrel__Endpoints__Https__Url: https://0.0.0.0:${DDT_PORT:-8443}
+      # The database is the SQLite file ddt.db in the store. For PostgreSQL or SQL Server, set
+      # ConnectionStrings__ddtdb, and DDT__Database for SQL Server, in compose.override.yaml.
+      # Everything else is on the settings page. A key set here overrides and locks its field there,
+      # even with an empty value, so no setting is passed through by default.
+    volumes:
+      - ddt-store:/var/lib/ddt
+    restart: unless-stopped
+
+volumes:
+  ddt-store:

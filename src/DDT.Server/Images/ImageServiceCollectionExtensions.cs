@@ -4,6 +4,7 @@
 
 using DDT.Server.BootImage;
 using DDT.Server.Import;
+using DDT.Server.Netboot;
 using DDT.Server.Packages;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -46,6 +47,8 @@ public static class ImageServiceCollectionExtensions
         services.AddSingleton<BuilderPackage>();
         services.AddSingleton<BootImageUploads>();
         services.AddHostedService<BootImageWatcher>();
+        services.AddSingleton<NetbootNeighbourhood>();
+        services.AddSingleton<NetbootHelper>();
 
         return services;
     }

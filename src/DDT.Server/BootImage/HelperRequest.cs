@@ -11,6 +11,16 @@ public sealed record HelperRequest
     public const string Build = "build";
     public const string InstallAdk = "adk";
 
+    // Netboot next to this computer's DHCP server and WDS
+    public const string DhcpScopes = "dhcp-scopes";
+    public const string DhcpOptions = "dhcp-options";
+    public const string WdsReplace = "wds-replace";
+    public const string WdsRestore = "wds-restore";
+    public const string WdsBootImage = "wds-boot-image";
+
+    // Puts a new build in place of the one WDS has from DDT, and does nothing where it has none
+    public const string WdsRefresh = "wds-refresh";
+
     public required string Kind { get; init; }
 
     // The folder name of the new build below the boot directory.
@@ -28,4 +38,11 @@ public sealed record HelperRequest
     public IReadOnlyList<HelperDriver> Drivers { get; init; } = [];
 
     public string? DriverSetHash { get; init; }
+
+    // The DHCP scopes to set options 66 and 67 for, and what the two say.
+    public IReadOnlyList<string> Scopes { get; init; } = [];
+
+    public string? BootServer { get; init; }
+
+    public string? BootFile { get; init; }
 }

@@ -9,6 +9,7 @@ using DDT.Contracts.Accounts;
 using DDT.Contracts.Audit;
 using DDT.Contracts.BootImage;
 using DDT.Contracts.Import;
+using DDT.Contracts.Netboot;
 using DDT.Contracts.Authentication;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
@@ -90,6 +91,9 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(BootImageJobOutput))]
 [JsonSerializable(typeof(BuildBootImageRequest))]
 [JsonSerializable(typeof(UseBootImageBuildRequest))]
+[JsonSerializable(typeof(NetbootNeighbours))]
+[JsonSerializable(typeof(IReadOnlyList<DhcpScope>))]
+[JsonSerializable(typeof(SetDhcpOptionsRequest))]
 [JsonSerializable(typeof(ImportSources))]
 [JsonSerializable(typeof(ImportStatus))]
 [JsonSerializable(typeof(ImportFilesRequest))]

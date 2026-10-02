@@ -223,6 +223,7 @@ api.MapGroup("/directory").MapDirectoryEndpoints();
 api.MapGroup("/audit").MapAuditEndpoints();
 api.MapGroup("/tokens").MapApiTokenEndpoints();
 api.MapGroup("/boot-image").MapBootImageEndpoints();
+api.MapGroup("/netboot").MapNetbootEndpoints();
 api.MapGroup("/settings").MapSettingsEndpoints();
 
 app.MapGroup("/api/agents").MapAgentEndpoints().MapAgentDeploymentEndpoints();

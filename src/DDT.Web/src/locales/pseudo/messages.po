@@ -975,6 +975,10 @@ msgstr ""
 msgid "{problems}, cannot run"
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "{process} (process {id})"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "directory.lockedOut"
 msgid "{reason} The account is locked out for now, so a sign-in waits until the lockout ends."
@@ -1475,6 +1479,10 @@ msgstr ""
 
 #: src/settings/logo/LogoChange.tsx
 msgid "A PNG of at most 512 KB and 2048 by 2048 pixels."
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "a process that has ended"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -2014,6 +2022,10 @@ msgstr ""
 
 #: src/settings/networkBoot/AddBootTarget.tsx
 msgid "Add boot target"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Add DDT to the WDS boot menu"
 msgstr ""
 
 #: src/settings/directory/GroupsAndRolesGroup.tsx
@@ -3001,6 +3013,11 @@ msgid "Choose the raw disk image to write."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "netboot.scopes"
+msgid "Choose the scopes to set, each by its address."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.setVariableChoose"
 msgid "Choose the variable to set."
 msgstr ""
@@ -3132,8 +3149,16 @@ msgstr ""
 msgid "Confirm and generate"
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "Confirm and go on"
+msgstr ""
+
 #: src/settings/parts/ReauthDialog.tsx
 msgid "Confirm and save"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Confirm and set"
 msgstr ""
 
 #: src/settings/agent/BinaryUpload.tsx
@@ -3190,6 +3215,10 @@ msgstr ""
 msgid "Copy SHA-256"
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Copy the PowerShell line for a Microsoft DHCP server"
+msgstr ""
+
 #: src/tokens/MakeTokenDialog.tsx
 msgid "Copy the token {tokenName}"
 msgstr ""
@@ -3242,8 +3271,17 @@ msgstr ""
 msgid "DDT"
 msgstr ""
 
+#: src/audit/auditView.ts
+msgid "DDT added to the WDS boot menu"
+msgstr ""
+
 #: src/settings/networkBoot/NetworkBootSettings.tsx
 msgid "DDT answers netboot only on the interfaces listed here. ProxyDHCP tells each machine which boot file to load, and TFTP or HTTP serves it from the boot directory."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "netboot.noHelper"
+msgid "DDT cannot change this computer's DHCP server or WDS itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3324,6 +3362,10 @@ msgstr ""
 
 #: src/tokens/TokenSecret.tsx
 msgid "DDT shows this token only now and keeps nothing but a hash of it. If it is lost, revoke it and make a new one."
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "DDT stops Windows Deployment Services and keeps it from starting with Windows, then answers netboot itself. MDT's LiteTouch no longer netboots from this server. WDS stays installed, and this page starts it again."
 msgstr ""
 
 #: src/settings/networkBoot/TransfersGroup.tsx
@@ -3484,6 +3526,10 @@ msgstr ""
 
 #: src/machines/facts.ts
 msgid "Device kind"
+msgstr ""
+
+#: src/audit/auditView.ts
+msgid "DHCP options 66 and 67 set"
 msgstr ""
 
 #: src/machines/facts.ts
@@ -5518,6 +5564,14 @@ msgstr ""
 msgid "Microsoft's boot files"
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "Microsoft's DHCP server ({process}, process {id})"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Microsoft's DHCP server runs on this computer and answers on UDP 67, so ProxyDHCP cannot. Its options 66 and 67 send machines to DDT instead, with ProxyDHCP switched off above."
+msgstr ""
+
 #: src/machines/secureBoot.ts
 msgid "Microsoft's third-party UEFI CA"
 msgstr ""
@@ -5772,6 +5826,7 @@ msgid "network"
 msgstr ""
 
 #: src/app/navigation.ts
+#: src/audit/auditView.ts
 #: src/settings/networkBoot/NetworkBootSettings.tsx
 #: src/settings/NetworkBootPage.tsx
 #: src/settings/server/SectionLink.tsx
@@ -5844,6 +5899,10 @@ msgstr ""
 
 #: src/settings/parts/SettingSecret.tsx
 msgid "New value"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/NeighboursGroup.tsx
+msgid "Next to DHCP and WDS"
 msgstr ""
 
 #: src/conditions/builder/ValueEditor.tsx
@@ -6182,6 +6241,10 @@ msgstr ""
 
 #: src/sequences/steps/SetVariableFields.tsx
 msgid "No variable of this sequence may be set by steps yet. Declare one on the Variables tab."
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "Nobody"
 msgstr ""
 
 #: src/tokens/AllTokens.tsx
@@ -6616,6 +6679,14 @@ msgctxt "identity.concurrencyFailure"
 msgid "Optimistic concurrency failure, object has been modified."
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Option 66, boot server"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Option 67, boot file"
+msgstr ""
+
 #: src/users/AddUserForm.tsx
 msgid "Optional."
 msgstr ""
@@ -6662,6 +6733,10 @@ msgstr ""
 
 #: src/machines/assign/assignText.ts
 msgid "Optional. Without a name, Windows picks one."
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Options 66 and 67 on this DHCP server"
 msgstr ""
 
 #: src/auth/SignInPage.tsx
@@ -7831,6 +7906,10 @@ msgctxt "settings.ldapTest.sendValues"
 msgid "Send the values to test."
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Sends machines to {server} for {file} now."
+msgstr ""
+
 #: src/machines/list/MachineTable.tsx
 #: src/runs/history/RunHistoryTable.tsx
 #: src/sequences/builder/Inspector.tsx
@@ -7989,6 +8068,10 @@ msgstr ""
 msgid "Set by the step {stepName}"
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Set for the chosen scopes"
+msgstr ""
+
 #: src/settings/networkBoot/ConfigurationGroup.tsx
 #: src/settings/server/ConfigurationPanel.tsx
 msgid "Set in configuration"
@@ -8004,6 +8087,10 @@ msgstr ""
 
 #: src/values/values.ts
 msgid "Set on this machine"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Set them on this DHCP server"
 msgstr ""
 
 #: src/account/AuthenticatorPanel.tsx
@@ -8028,6 +8115,10 @@ msgstr ""
 
 #: src/sequences/steps/SetVariableFields.tsx
 msgid "Sets a variable of this sequence while the run goes on. Steps after it, templates and conditions read the new value."
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Sets neither option yet."
 msgstr ""
 
 #: src/roles/drawer/RoleFields.tsx
@@ -8342,6 +8433,10 @@ msgstr ""
 msgid "Start of the stored log. The server keeps the newest {storedLimit} lines of each machine."
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Start WDS again"
+msgstr ""
+
 #: src/runs/history/RunHistoryTable.tsx
 msgid "Started"
 msgstr ""
@@ -8535,6 +8630,10 @@ msgstr ""
 
 #: src/uploads/LeaveUploadDialog.tsx
 msgid "Stop upload and leave"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "Stop WDS"
 msgstr ""
 
 #: src/machines/list/runDetail.ts
@@ -9042,6 +9141,11 @@ msgid "The DDT account {name} is disabled, so a sign-in is refused."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "netboot.helperFailed"
+msgid "The DDT Helper service could not do it: {reason}"
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.declarationEmpty"
 msgid "The declaration is empty."
 msgstr ""
@@ -9089,6 +9193,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "common.descriptionLength"
 msgid "The description can have at most {max} characters."
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "The DHCP server has no scopes."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -9681,6 +9789,10 @@ msgstr ""
 msgid "The person at the machine can let the run go on there, too."
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "The programs that hold the netboot ports on this computer. Where another program holds a port with DDT, Windows may hand the machines to it."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.oidcTest.reached"
 msgid "The provider answered as {issuer}. Register {redirectUri} as the redirect URI of DDT's client there."
@@ -9841,6 +9953,10 @@ msgstr ""
 
 #: src/machines/MachinePage.tsx
 msgid "The runs of this machine could not be loaded."
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "The scope is not active."
 msgstr ""
 
 #: src/boot/BuildCommand.tsx
@@ -10190,6 +10306,10 @@ msgstr ""
 msgid "The version and the licence texts could not be loaded."
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "The WDS boot menu offers DDT now, and gets each new boot image when it is built."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "bootImage.noAdk"
 msgid "The Windows ADK with its Windows PE add-on is not installed on this server. Install it first."
@@ -10265,6 +10385,10 @@ msgstr ""
 msgid "There was no value."
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "These options decide what every machine in the scope loads when it netboots, so setting them needs your password again."
+msgstr ""
+
 #: src/settings/certificate/ServerNames.tsx
 #: src/settings/LoggingPanel.tsx
 #: src/settings/parts/SettingsSection.tsx
@@ -10338,6 +10462,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.newRootUpload"
 msgid "This certificate does not come from DDT's root, which every boot image pins: build every boot image again with its root, and trust that root in the browsers that manage DDT."
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "This changes what every machine that netboots from this server loads, so it needs your password again."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10715,6 +10843,18 @@ msgstr ""
 msgid "Type part of a group's name to see its distinguished name for the map."
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "UDP 4011, PXE boot server"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "UDP 67, DHCP and ProxyDHCP"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "UDP 69, TFTP"
+msgstr ""
+
 #: src/sequences/builder/page/editHandlers.ts
 #: src/sequences/builder/page/UndoRedo.tsx
 msgid "Undo"
@@ -10884,6 +11024,14 @@ msgstr ""
 
 #: src/auth/TwoFactorFields.tsx
 msgid "Use an authenticator code"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Use DDT in place of WDS"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "Use DDT in place of WDS?"
 msgstr ""
 
 #: src/settings/networkBoot/TargetMethod.tsx
@@ -11114,6 +11262,14 @@ msgstr ""
 msgid "Was served this certificate."
 msgstr ""
 
+#: src/audit/auditView.ts
+msgid "WDS started again"
+msgstr ""
+
+#: src/audit/auditView.ts
+msgid "WDS stopped for DDT"
+msgstr ""
+
 #: src/audit/AuditFilters.tsx
 #: src/audit/AuditTable.tsx
 msgid "What"
@@ -11187,6 +11343,10 @@ msgstr ""
 msgid "Where new computer accounts go. Left empty, the domain's default."
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Where ProxyDHCP does not reach the machines, such as across a router, the DHCP server sends them to DDT with these two options."
+msgstr ""
+
 #: src/log/LogPanel.tsx
 msgid "Which lines"
 msgstr ""
@@ -11223,6 +11383,18 @@ msgstr ""
 
 #: src/boot/AdkState.tsx
 msgid "Windows ADK with the Windows PE add-on {version}"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "Windows Deployment Services ({process}, process {id})"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Windows Deployment Services is installed on this computer and stopped, so DDT answers netboot here. Before WDS starts again, switch off ProxyDHCP and TFTP above."
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Windows Deployment Services runs on this computer and holds UDP 69 and 4011, so machines that netboot reach WDS and not DDT. In its boot menu DDT sits next to MDT's LiteTouch and needs neither ProxyDHCP nor TFTP of its own."
 msgstr ""
 
 #: src/images/images.ts

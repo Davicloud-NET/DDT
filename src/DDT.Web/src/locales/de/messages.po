@@ -975,6 +975,10 @@ msgstr "{problems, plural, one {# Problem} other {# Probleme}}"
 msgid "{problems}, cannot run"
 msgstr "{problems}, nicht ausführbar"
 
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "{process} (process {id})"
+msgstr "{process} (Prozess {id})"
+
 #: src/lib/serverMessages.ts
 msgctxt "directory.lockedOut"
 msgid "{reason} The account is locked out for now, so a sign-in waits until the lockout ends."
@@ -1476,6 +1480,10 @@ msgstr "Eine Pause kann nach 1 bis {max} Minuten von selbst fortfahren."
 #: src/settings/logo/LogoChange.tsx
 msgid "A PNG of at most 512 KB and 2048 by 2048 pixels."
 msgstr "Ein PNG von höchstens 512 KB und 2048 mal 2048 Pixeln."
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "a process that has ended"
+msgstr "ein beendeter Prozess"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.repeatTimes"
@@ -2015,6 +2023,10 @@ msgstr "Eingabe hinzufügen"
 #: src/settings/networkBoot/AddBootTarget.tsx
 msgid "Add boot target"
 msgstr "Startziel hinzufügen"
+
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Add DDT to the WDS boot menu"
+msgstr "DDT zum WDS-Startmenü hinzufügen"
 
 #: src/settings/directory/GroupsAndRolesGroup.tsx
 msgid "Add group"
@@ -3001,6 +3013,11 @@ msgid "Choose the raw disk image to write."
 msgstr "Wählen Sie das zu schreibende Raw-Datenträgerimage."
 
 #: src/lib/serverMessages.ts
+msgctxt "netboot.scopes"
+msgid "Choose the scopes to set, each by its address."
+msgstr "Wählen Sie die Bereiche aus, die gesetzt werden sollen, jeden mit seiner Adresse."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.setVariableChoose"
 msgid "Choose the variable to set."
 msgstr "Wählen Sie die Variable, die gesetzt wird."
@@ -3132,9 +3149,17 @@ msgstr "Bestätigen und herunterladen"
 msgid "Confirm and generate"
 msgstr "Bestätigen und generieren"
 
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "Confirm and go on"
+msgstr "Bestätigen und fortfahren"
+
 #: src/settings/parts/ReauthDialog.tsx
 msgid "Confirm and save"
 msgstr "Bestätigen und speichern"
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Confirm and set"
+msgstr "Bestätigen und setzen"
 
 #: src/settings/agent/BinaryUpload.tsx
 #: src/settings/certificate/UploadDialog.tsx
@@ -3190,6 +3215,10 @@ msgstr "Befehl kopieren"
 msgid "Copy SHA-256"
 msgstr "SHA-256 kopieren"
 
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Copy the PowerShell line for a Microsoft DHCP server"
+msgstr "PowerShell-Zeile für einen Microsoft-DHCP-Server kopieren"
+
 #: src/tokens/MakeTokenDialog.tsx
 msgid "Copy the token {tokenName}"
 msgstr "Token {tokenName} kopieren"
@@ -3242,9 +3271,18 @@ msgstr "Dunkel"
 msgid "DDT"
 msgstr "DDT"
 
+#: src/audit/auditView.ts
+msgid "DDT added to the WDS boot menu"
+msgstr "DDT zum WDS-Startmenü hinzugefügt"
+
 #: src/settings/networkBoot/NetworkBootSettings.tsx
 msgid "DDT answers netboot only on the interfaces listed here. ProxyDHCP tells each machine which boot file to load, and TFTP or HTTP serves it from the boot directory."
 msgstr "DDT antwortet Geräten, die per Netzwerk starten, nur auf den hier aufgeführten Schnittstellen. ProxyDHCP teilt jedem Gerät mit, welche Startdatei es laden soll, und TFTP oder HTTP liefert sie aus dem Startverzeichnis."
+
+#: src/lib/serverMessages.ts
+msgctxt "netboot.noHelper"
+msgid "DDT cannot change this computer's DHCP server or WDS itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up."
+msgstr "DDT kann den DHCP-Server oder WDS dieses Computers nicht selbst ändern: Der Dienst DDT Helper antwortet nicht. Das Installationsprogramm von DDT für Windows richtet ihn ein."
 
 #: src/lib/serverMessages.ts
 msgctxt "rule.conditionUnreadable"
@@ -3325,6 +3363,10 @@ msgstr "DDT zeigt dieses Kennwort nur jetzt an. Bei der nächsten Anmeldung muss
 #: src/tokens/TokenSecret.tsx
 msgid "DDT shows this token only now and keeps nothing but a hash of it. If it is lost, revoke it and make a new one."
 msgstr "DDT zeigt dieses Token nur jetzt an und speichert nur einen Hash davon. Geht es verloren, widerrufen Sie es und erstellen Sie ein neues."
+
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "DDT stops Windows Deployment Services and keeps it from starting with Windows, then answers netboot itself. MDT's LiteTouch no longer netboots from this server. WDS stays installed, and this page starts it again."
+msgstr "DDT beendet die Windows-Bereitstellungsdienste und verhindert, dass sie mit Windows starten, und beantwortet Netzwerkstarts dann selbst. LiteTouch von MDT startet nicht mehr per Netzwerk von diesem Server. WDS bleibt installiert, und diese Seite startet es wieder."
 
 #: src/settings/networkBoot/TransfersGroup.tsx
 msgid "DDT tells a netbooting machine its boot file, while the site's own DHCP server keeps handing out the addresses. Turn it off where every site's DHCP server names DDT and the boot file itself; DDT then listens on neither UDP 67 nor 4011."
@@ -3485,6 +3527,10 @@ msgstr "Details für die Fehlersuche"
 #: src/machines/facts.ts
 msgid "Device kind"
 msgstr "Geräteart"
+
+#: src/audit/auditView.ts
+msgid "DHCP options 66 and 67 set"
+msgstr "DHCP-Optionen 66 und 67 gesetzt"
 
 #: src/machines/facts.ts
 msgid "DHCP server"
@@ -5518,6 +5564,14 @@ msgstr "Microsoft-CA 2011. Die Voreinstellung, der die meisten Geräte vertrauen
 msgid "Microsoft's boot files"
 msgstr "Startdateien von Microsoft"
 
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "Microsoft's DHCP server ({process}, process {id})"
+msgstr "DHCP-Server von Microsoft ({process}, Prozess {id})"
+
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Microsoft's DHCP server runs on this computer and answers on UDP 67, so ProxyDHCP cannot. Its options 66 and 67 send machines to DDT instead, with ProxyDHCP switched off above."
+msgstr "Der DHCP-Server von Microsoft läuft auf diesem Computer und antwortet auf UDP 67, daher kann ProxyDHCP es nicht. Stattdessen schicken seine Optionen 66 und 67 die Geräte zu DDT, wobei ProxyDHCP oben ausgeschaltet wird."
+
 #: src/machines/secureBoot.ts
 msgid "Microsoft's third-party UEFI CA"
 msgstr "Microsofts UEFI-CA für Drittanbieter"
@@ -5772,6 +5826,7 @@ msgid "network"
 msgstr "Netzwerk"
 
 #: src/app/navigation.ts
+#: src/audit/auditView.ts
 #: src/settings/networkBoot/NetworkBootSettings.tsx
 #: src/settings/NetworkBootPage.tsx
 #: src/settings/server/SectionLink.tsx
@@ -5845,6 +5900,10 @@ msgstr "Neue Tasksequenz"
 #: src/settings/parts/SettingSecret.tsx
 msgid "New value"
 msgstr "Neuer Wert"
+
+#: src/settings/networkBoot/neighbours/NeighboursGroup.tsx
+msgid "Next to DHCP and WDS"
+msgstr "Neben DHCP und WDS"
 
 #: src/conditions/builder/ValueEditor.tsx
 #: src/conditions/conditions.ts
@@ -6183,6 +6242,10 @@ msgstr "Keine Werte."
 #: src/sequences/steps/SetVariableFields.tsx
 msgid "No variable of this sequence may be set by steps yet. Declare one on the Variables tab."
 msgstr "Noch darf kein Schritt eine Variable dieser Tasksequenz setzen. Deklarieren Sie eine auf der Registerkarte Variablen."
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "Nobody"
+msgstr "Niemand"
 
 #: src/tokens/AllTokens.tsx
 msgid "Nobody has made an API token. Scripts that call DDT use one each, made on the Account and security page of the account they act for."
@@ -6616,6 +6679,14 @@ msgctxt "identity.concurrencyFailure"
 msgid "Optimistic concurrency failure, object has been modified."
 msgstr "Das Objekt wurde zwischenzeitlich geändert."
 
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Option 66, boot server"
+msgstr "Option 66, Startserver"
+
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Option 67, boot file"
+msgstr "Option 67, Startdatei"
+
 #: src/users/AddUserForm.tsx
 msgid "Optional."
 msgstr "Optional."
@@ -6663,6 +6734,10 @@ msgstr "Optional. Ohne Namen wählt das Image einen."
 #: src/machines/assign/assignText.ts
 msgid "Optional. Without a name, Windows picks one."
 msgstr "Optional. Ohne Namen wählt Windows einen."
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Options 66 and 67 on this DHCP server"
+msgstr "Optionen 66 und 67 auf diesem DHCP-Server"
 
 #: src/auth/SignInPage.tsx
 msgid "or"
@@ -7831,6 +7906,10 @@ msgctxt "settings.ldapTest.sendValues"
 msgid "Send the values to test."
 msgstr "Senden Sie die zu testenden Werte."
 
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Sends machines to {server} for {file} now."
+msgstr "Schickt Geräte derzeit für {file} zu {server}."
+
 #: src/machines/list/MachineTable.tsx
 #: src/runs/history/RunHistoryTable.tsx
 #: src/sequences/builder/Inspector.tsx
@@ -7989,6 +8068,10 @@ msgstr "Vom Schritt {name} gesetzt"
 msgid "Set by the step {stepName}"
 msgstr "Vom Schritt {stepName} gesetzt"
 
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Set for the chosen scopes"
+msgstr "Für die gewählten Bereiche setzen"
+
 #: src/settings/networkBoot/ConfigurationGroup.tsx
 #: src/settings/server/ConfigurationPanel.tsx
 msgid "Set in configuration"
@@ -8005,6 +8088,10 @@ msgstr "In der Konfiguration als {key} ({variable}) gesetzt. Entfernen Sie es do
 #: src/values/values.ts
 msgid "Set on this machine"
 msgstr "Auf diesem Gerät festgelegt"
+
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Set them on this DHCP server"
+msgstr "Auf diesem DHCP-Server setzen"
 
 #: src/account/AuthenticatorPanel.tsx
 msgid "Set up an authenticator"
@@ -8029,6 +8116,10 @@ msgstr "Setzt {name}"
 #: src/sequences/steps/SetVariableFields.tsx
 msgid "Sets a variable of this sequence while the run goes on. Steps after it, templates and conditions read the new value."
 msgstr "Setzt eine Variable dieser Tasksequenz während der Ausführung. Spätere Schritte, Vorlagen und Bedingungen lesen den neuen Wert."
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Sets neither option yet."
+msgstr "Setzt noch keine der beiden Optionen."
 
 #: src/roles/drawer/RoleFields.tsx
 #: src/rules/drawer/RuleFields.tsx
@@ -8342,6 +8433,10 @@ msgstr "Beginnen Sie mit einer Vorlage wie „Install Windows“: Sie partitioni
 msgid "Start of the stored log. The server keeps the newest {storedLimit} lines of each machine."
 msgstr "Anfang des gespeicherten Protokolls. Der Server behält die neuesten {storedLimit} Zeilen jedes Geräts."
 
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Start WDS again"
+msgstr "WDS wieder starten"
+
 #: src/runs/history/RunHistoryTable.tsx
 msgid "Started"
 msgstr "Gestartet"
@@ -8536,6 +8631,10 @@ msgstr "Upload stoppen"
 #: src/uploads/LeaveUploadDialog.tsx
 msgid "Stop upload and leave"
 msgstr "Upload stoppen und verlassen"
+
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "Stop WDS"
+msgstr "WDS beenden"
 
 #: src/machines/list/runDetail.ts
 #: src/machines/MachinePanel.tsx
@@ -9042,6 +9141,11 @@ msgid "The DDT account {name} is disabled, so a sign-in is refused."
 msgstr "Das DDT-Konto {name} ist deaktiviert, daher wird eine Anmeldung abgelehnt."
 
 #: src/lib/serverMessages.ts
+msgctxt "netboot.helperFailed"
+msgid "The DDT Helper service could not do it: {reason}"
+msgstr "Der Dienst DDT Helper konnte es nicht ausführen: {reason}"
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.declarationEmpty"
 msgid "The declaration is empty."
 msgstr "Die Deklaration ist leer."
@@ -9090,6 +9194,10 @@ msgstr "die Beschreibung"
 msgctxt "common.descriptionLength"
 msgid "The description can have at most {max} characters."
 msgstr "Die Beschreibung darf höchstens {max} Zeichen haben."
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "The DHCP server has no scopes."
+msgstr "Der DHCP-Server hat keine Bereiche."
 
 #: src/lib/serverMessages.ts
 msgctxt "directory.unreachable"
@@ -9681,6 +9789,10 @@ msgstr "Die Person am Gerät kann auch dort antworten."
 msgid "The person at the machine can let the run go on there, too."
 msgstr "Die Person am Gerät kann die Ausführung auch dort fortsetzen."
 
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "The programs that hold the netboot ports on this computer. Where another program holds a port with DDT, Windows may hand the machines to it."
+msgstr "Die Programme, die auf diesem Computer die Ports für den Netzwerkstart belegen. Wo ein anderes Programm einen Port zusammen mit DDT belegt, kann Windows die Geräte an dieses übergeben."
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.oidcTest.reached"
 msgid "The provider answered as {issuer}. Register {redirectUri} as the redirect URI of DDT's client there."
@@ -9842,6 +9954,10 @@ msgstr "Der Zustand der Ausführung liegt hier nur im Arbeitsspeicher, daher end
 #: src/machines/MachinePage.tsx
 msgid "The runs of this machine could not be loaded."
 msgstr "Die Ausführungen dieses Geräts konnten nicht geladen werden."
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "The scope is not active."
+msgstr "Der Bereich ist nicht aktiv."
 
 #: src/boot/BuildCommand.tsx
 msgid "The script downloads the flagged drivers with an API token of an administrator. Make one under Account and security, and put it into DDT_API_TOKEN."
@@ -10190,6 +10306,10 @@ msgstr "die Variablen"
 msgid "The version and the licence texts could not be loaded."
 msgstr "Die Version und die Lizenztexte konnten nicht geladen werden."
 
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "The WDS boot menu offers DDT now, and gets each new boot image when it is built."
+msgstr "Das WDS-Startmenü bietet DDT jetzt an und erhält jedes neue Startimage, sobald es erstellt ist."
+
 #: src/lib/serverMessages.ts
 msgctxt "bootImage.noAdk"
 msgid "The Windows ADK with its Windows PE add-on is not installed on this server. Install it first."
@@ -10265,6 +10385,10 @@ msgstr "Es gibt bereits ein Konto namens {name}."
 msgid "There was no value."
 msgstr "Es gab keinen Wert."
 
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "These options decide what every machine in the scope loads when it netboots, so setting them needs your password again."
+msgstr "Diese Optionen bestimmen, was jedes Gerät im Bereich beim Netzwerkstart lädt, daher braucht das Setzen erneut Ihr Kennwort."
+
 #: src/settings/certificate/ServerNames.tsx
 #: src/settings/LoggingPanel.tsx
 #: src/settings/parts/SettingsSection.tsx
@@ -10339,6 +10463,10 @@ msgstr "Dieses Zertifikat stammt nicht aus dem Stammzertifikat von DDT, das Star
 msgctxt "settings.certificate.newRootUpload"
 msgid "This certificate does not come from DDT's root, which every boot image pins: build every boot image again with its root, and trust that root in the browsers that manage DDT."
 msgstr "Dieses Zertifikat stammt nicht vom Stammzertifikat von DDT, das jedes Startimage fest hinterlegt: Erstellen Sie jedes Startimage mit seinem Stammzertifikat neu, und vertrauen Sie diesem in den Browsern, die DDT verwalten."
+
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "This changes what every machine that netboots from this server loads, so it needs your password again."
+msgstr "Das ändert, was jedes Gerät lädt, das per Netzwerk von diesem Server startet, daher braucht es erneut Ihr Kennwort."
 
 #: src/lib/serverMessages.ts
 msgctxt "upload.beyondLength"
@@ -10715,6 +10843,18 @@ msgstr "Geben Sie {typedWord} ein, um fortzufahren"
 msgid "Type part of a group's name to see its distinguished name for the map."
 msgstr "Geben Sie einen Teil eines Gruppennamens ein, um ihren Distinguished Name für die Zuordnung zu sehen."
 
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "UDP 4011, PXE boot server"
+msgstr "UDP 4011, PXE-Startserver"
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "UDP 67, DHCP and ProxyDHCP"
+msgstr "UDP 67, DHCP und ProxyDHCP"
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "UDP 69, TFTP"
+msgstr "UDP 69, TFTP"
+
 #: src/sequences/builder/page/editHandlers.ts
 #: src/sequences/builder/page/UndoRedo.tsx
 msgid "Undo"
@@ -10885,6 +11025,14 @@ msgstr "Wiederherstellungscode verwenden"
 #: src/auth/TwoFactorFields.tsx
 msgid "Use an authenticator code"
 msgstr "Code der Authenticator-App verwenden"
+
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Use DDT in place of WDS"
+msgstr "DDT anstelle von WDS verwenden"
+
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "Use DDT in place of WDS?"
+msgstr "DDT anstelle von WDS verwenden?"
 
 #: src/settings/networkBoot/TargetMethod.tsx
 msgid "Use HTTP"
@@ -11114,6 +11262,14 @@ msgstr "Hat das vorherige Zertifikat erhalten; ihre nächste Anfrage erhält die
 msgid "Was served this certificate."
 msgstr "Hat dieses Zertifikat erhalten."
 
+#: src/audit/auditView.ts
+msgid "WDS started again"
+msgstr "WDS wieder gestartet"
+
+#: src/audit/auditView.ts
+msgid "WDS stopped for DDT"
+msgstr "WDS für DDT beendet"
+
 #: src/audit/AuditFilters.tsx
 #: src/audit/AuditTable.tsx
 msgid "What"
@@ -11187,6 +11343,10 @@ msgstr "Wo es gilt"
 msgid "Where new computer accounts go. Left empty, the domain's default."
 msgstr "Wohin neue Computerkonten kommen. Leer gelassen, der Standard der Domäne."
 
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Where ProxyDHCP does not reach the machines, such as across a router, the DHCP server sends them to DDT with these two options."
+msgstr "Wo ProxyDHCP die Geräte nicht erreicht, etwa über einen Router hinweg, schickt der DHCP-Server sie mit diesen beiden Optionen zu DDT."
+
 #: src/log/LogPanel.tsx
 msgid "Which lines"
 msgstr "Welche Zeilen"
@@ -11224,6 +11384,18 @@ msgstr "Installation des Windows ADK gestartet"
 #: src/boot/AdkState.tsx
 msgid "Windows ADK with the Windows PE add-on {version}"
 msgstr "Windows ADK mit dem Windows-PE-Add-On {version}"
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "Windows Deployment Services ({process}, process {id})"
+msgstr "Windows-Bereitstellungsdienste ({process}, Prozess {id})"
+
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Windows Deployment Services is installed on this computer and stopped, so DDT answers netboot here. Before WDS starts again, switch off ProxyDHCP and TFTP above."
+msgstr "Die Windows-Bereitstellungsdienste sind auf diesem Computer installiert und beendet, daher beantwortet DDT hier Netzwerkstarts. Schalten Sie oben ProxyDHCP und TFTP aus, bevor WDS wieder startet."
+
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Windows Deployment Services runs on this computer and holds UDP 69 and 4011, so machines that netboot reach WDS and not DDT. In its boot menu DDT sits next to MDT's LiteTouch and needs neither ProxyDHCP nor TFTP of its own."
+msgstr "Die Windows-Bereitstellungsdienste laufen auf diesem Computer und belegen UDP 69 und 4011, daher erreichen per Netzwerk startende Geräte WDS und nicht DDT. Im WDS-Startmenü steht DDT neben LiteTouch von MDT und braucht weder eigenes ProxyDHCP noch eigenes TFTP."
 
 #: src/images/images.ts
 msgid "Windows image"

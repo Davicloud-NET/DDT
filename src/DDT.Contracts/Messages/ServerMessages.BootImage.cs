@@ -37,6 +37,16 @@ public static partial class ServerMessages
         "bootImage.noSuchBuild",
         "The boot directory holds no such build.");
 
+    // Netboot next to this computer's DHCP server and WDS.
+
+    public static readonly MessageTemplate NetbootNoHelper = Define(
+        "netboot.noHelper",
+        "DDT cannot change this computer's DHCP server or WDS itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up.");
+
+    public static readonly MessageTemplate NetbootHelperFailed = Define("netboot.helperFailed", "The DDT Helper service could not do it: {reason}");
+
+    public static readonly MessageTemplate NetbootScopes = Define("netboot.scopes", "Choose the scopes to set, each by its address.");
+
     // The builder for another PC, and what it uploads.
 
     public static readonly MessageTemplate BootImageNoBuilder = Define(

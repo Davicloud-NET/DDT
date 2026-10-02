@@ -12,7 +12,12 @@ namespace DDT.Server.BootImage;
 
 // Takes the build a builder made on another PC: a zip of its Boot, EFI and x64 folders. What it holds is checked
 // before any of it is served, and it then becomes the current build as one built on the server does.
-public sealed class BootImageUploads(BootImageCatalog catalog, CurrentBootImageJob job, BootImagePushes pushes, TimeProvider timeProvider)
+public sealed class BootImageUploads(
+    BootImageCatalog catalog,
+    CurrentBootImageJob job,
+    BootImagePushes pushes,
+    IBootImageHelper helper,
+    TimeProvider timeProvider)
 {
     // A boot image is 300 to 600 MB
     public const long MaxBytes = 2L * 1024 * 1024 * 1024;
@@ -48,6 +53,7 @@ public sealed class BootImageUploads(BootImageCatalog catalog, CurrentBootImageJ
             if (refusal is null)
             {
                 job.Append($"The server serves this build, {name}, from now on.");
+                await RefreshWdsAsync(cancellationToken).ConfigureAwait(false);
             }
         }
         finally
@@ -63,6 +69,30 @@ public sealed class BootImageUploads(BootImageCatalog catalog, CurrentBootImageJ
         }
 
         return refusal is null ? (name, null) : (null, refusal);
+    }
+
+    // Where WDS offers DDT in its boot menu, the helper gives it the new build, as it does after a build of its own.
+    private async Task RefreshWdsAsync(CancellationToken cancellationToken)
+    {
+        if (!helper.Available)
+        {
+            return;
+        }
+
+        try
+        {
+            await foreach (HelperMessage message in helper.RunAsync(new HelperRequest { Kind = HelperRequest.WdsRefresh }, cancellationToken).ConfigureAwait(false))
+            {
+                if ((message.Line ?? message.Problem) is { } said)
+                {
+                    job.Append(said);
+                }
+            }
+        }
+        catch (Exception exception) when (exception is IOException or TimeoutException)
+        {
+            job.Append("The DDT Helper service did not answer, so Windows Deployment Services was not asked about its boot menu.");
+        }
     }
 
     private async Task<ServerMessage?> StoreAsync(Stream body, string name, CancellationToken cancellationToken)

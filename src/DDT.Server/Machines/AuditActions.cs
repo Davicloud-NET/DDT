@@ -69,6 +69,10 @@ public static class AuditActions
     public const string BootImageBuildChosen = "boot-image.build-chosen";
     public const string AdkInstallStarted = "boot-image.adk-install-started";
     public const string BootImageBuilderDownloaded = "boot-image.builder-downloaded";
+    public const string DhcpOptionsSet = "netboot.dhcp-options-set";
+    public const string WdsReplaced = "netboot.wds-replaced";
+    public const string WdsRestored = "netboot.wds-restored";
+    public const string WdsBootImageAdded = "netboot.wds-boot-image-added";
     public const string BootImageUploaded = "boot-image.uploaded";
     public const string ConsoleLogoUploaded = "console.logo.uploaded";
     public const string ConsoleLogoRemoved = "console.logo.removed";

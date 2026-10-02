@@ -721,6 +721,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "namedValue.tooMany",
     message: "Set at most {max} values here.",
   }),
+  "netboot.helperFailed": msg({
+    context: "netboot.helperFailed",
+    message: "The DDT Helper service could not do it: {reason}",
+  }),
+  "netboot.noHelper": msg({
+    context: "netboot.noHelper",
+    message: "DDT cannot change this computer's DHCP server or WDS itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up.",
+  }),
+  "netboot.scopes": msg({
+    context: "netboot.scopes",
+    message: "Choose the scopes to set, each by its address.",
+  }),
   "organizationalUnit.isComputers": msg({
     context: "organizationalUnit.isComputers",
     message: "The default Computers container is no organizational unit and cannot be named. Leave this empty to use it.",

@@ -554,6 +554,29 @@ service that holds each port, and offers what fits:
 - **A DHCP server on a gateway**, such as UniFi, pfSense or a FortiGate: options 66 and 67 there, as
   the README describes, or ProxyDHCP on the same segment.
 
+Done, on the Network boot page under "Next to DHCP and WDS" (`GET /api/netboot`):
+
+- **The ports.** On Windows the page names the processes that hold UDP 67, 69 and 4011, read from
+  the system's own table (src/DDT.Core/Windows/UdpPortOwners.cs), and says which of them is DDT,
+  Microsoft's DHCP server or WDS. Windows hides the DHCP server's state from the web server's
+  account, so the helper reports both services where there is one.
+- **Options 66 and 67.** The page always gives the two values and a PowerShell line for a Microsoft
+  DHCP server elsewhere. Where one runs on the same computer, the helper lists its scopes with what
+  they say now and sets both options for the scopes the administrator ticks.
+- **In place of WDS.** After asking, the helper stops WDS and keeps it from starting, and DDT's
+  listeners start again and take the ports. The page starts WDS again later.
+- **Beside WDS.** The helper puts the served `boot.wim` into the WDS boot menu as `DDT` with
+  `Import-WdsBootImage`. After every build and every upload from a builder it replaces that image,
+  and only where WDS had one from DDT.
+- Each change takes the password again, since it decides what every machine that netboots loads,
+  and is audited. The helper runs fixed PowerShell: what a request names reaches it in environment
+  variables, after the helper has checked each value itself.
+
+Tried on the test VM with the DHCP Server and WDS roles: the options arrived in the scope, WDS
+listed the image, stopped and started again. Left: a machine that netboots through the WDS boot
+menu into DDT, which takes a network with WDS answering; and the checklist's netboot step with the
+default route's interface chosen (section 5).
+
 ### 4.10 Windows images from an ISO, a folder or MDT
 
 - **An ISO.** The Images page takes a Windows ISO and reads `sources\install.wim` or `install.esd`
@@ -623,6 +646,20 @@ done, pushed over the hub like every other change:
 
 It can be dismissed, and the Server page keeps it.
 
+Done: `GET /api/server/checklist` says for six of the steps whether the server sees them done: the
+first password's file is gone, a network card answers netboot, the boot directory holds a build, the
+library holds an image, a task sequence exists, a machine has registered. The card
+(src/DDT.Web/src/setup) is on the Machines page and on the Server page for administrators, links
+each step to its page, and goes once all six are done. A step ticks itself from the hub's pushes
+for machines, images, sequences, the boot image and the network boot settings, without the list
+being read again. Trusting the root is a step without a mark, since the server cannot see a
+browser's trust. Dismissing is kept in the browser, so the card on the Machines page stays away
+there and the Server page still shows it. The starting sequence is the Install Windows template
+that exists already.
+
+Left: the netboot step does not choose the default route's interface for the administrator, who
+picks it on the Network boot page, or in setup, which offers it (section 3.1).
+
 ## 6. Not planned
 
 - **A boot image or Windows PE in a release.** As far as known, the ADK's licence does not allow
@@ -644,6 +681,9 @@ It can be dismissed, and the Server page keeps it.
 5. Netboot at the first start: the ports' owners, DHCP options, and DDT in place of or beside WDS.
 6. The checklist, the imports from an ISO, a folder and an MDT share, and the starting sequence.
 7. The quick start and the guide for MDT users.
+
+Steps 1 to 6 are built, with what each section lists as left. Step 7 and the measure below are
+open.
 
 The milestone is done when section 1's measure holds on a fresh Windows Server 2025 VM on the Hyper-V
 test host, timed from the command to a Windows 11 desktop, and on a fresh Ubuntu VM with the boot

@@ -91,6 +91,7 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(BootImageJobOutput))]
 [JsonSerializable(typeof(BuildBootImageRequest))]
 [JsonSerializable(typeof(UseBootImageBuildRequest))]
+[JsonSerializable(typeof(SetupChecklist))]
 [JsonSerializable(typeof(NetbootNeighbours))]
 [JsonSerializable(typeof(IReadOnlyList<DhcpScope>))]
 [JsonSerializable(typeof(SetDhcpOptionsRequest))]

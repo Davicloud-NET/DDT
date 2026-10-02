@@ -11,6 +11,7 @@ import { Page } from "@/ui/Page";
 import { PageHeader } from "@/ui/PageHeader";
 import { Skeleton } from "@/ui/Skeleton";
 import { Tab, TabList, TabPanel, Tabs } from "@/ui/Tabs";
+import { SetupChecklist } from "@/setup/SetupChecklist";
 
 import { AgentPanel } from "../AgentPanel";
 import { CertificatePanel } from "../CertificatePanel";
@@ -35,6 +36,7 @@ export function ServerSettings() {
   return (
     <Page className="max-w-[72rem]">
       <PageHeader title={<Trans>Server</Trans>} />
+      <SetupChecklist />
 
       {overview.data?.keyRingReadable === false ? (
         <Notice tone="fail" title={<Trans>This server saves no settings</Trans>}>

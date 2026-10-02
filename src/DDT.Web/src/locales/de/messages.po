@@ -1271,9 +1271,29 @@ msgstr "<0>{subject}</0> <1>{operator}</1>"
 msgid "<0>{subject}</0> <1>{operator}</1> {value}"
 msgstr "<0>{subject}</0> <1>{operator}</1> {value}"
 
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Add a Windows image</0>: from an ISO, a folder on the server, an MDT deployment share or an upload."
+msgstr "<0>Fügen Sie ein Windows-Image hinzu</0>: aus einer ISO, einem Ordner auf dem Server, einer MDT-Bereitstellungsfreigabe oder per Upload."
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Build the boot image</0> that machines netboot into."
+msgstr "<0>Erstellen Sie das Startimage</0>, in das Geräte per Netzwerk starten."
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Change the first password</0>, which the installer left in a file on the server."
+msgstr "<0>Ändern Sie das erste Kennwort</0>, das das Installationsprogramm in einer Datei auf dem Server hinterlassen hat."
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Choose the network card</0> DDT answers netboot on, and see who else answers on this server."
+msgstr "<0>Wählen Sie die Netzwerkkarte</0>, auf der DDT Netzwerkstarts beantwortet, und sehen Sie, wer auf diesem Server sonst noch antwortet."
+
 #: src/boot/BuildCommand.tsx
 msgid "<0>Download the root certificate</0> as ddt-root.pem. The agent trusts only the server certificates it signed."
 msgstr "<0>Laden Sie das Stammzertifikat herunter</0> und speichern Sie es als ddt-root.pem. Der Agent vertraut nur Serverzertifikaten, die es signiert hat."
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Make a task sequence</0> from the Install Windows template, which erases the disk, applies the image and sets up Windows."
+msgstr "<0>Erstellen Sie eine Tasksequenz</0> aus der Vorlage „Windows installieren“, die den Datenträger löscht, das Image anwendet und Windows einrichtet."
 
 #: src/tokens/MakeTokenForm.tsx
 msgid "1 to 365 days."
@@ -2639,6 +2659,10 @@ msgstr "Zurück zu DDT"
 msgid "Baseboard"
 msgstr "Mainboard"
 
+#: src/setup/SetupChecklist.tsx
+msgid "Before the first deployment"
+msgstr "Vor der ersten Bereitstellung"
+
 #: src/settings/directory/BindAccountGroup.tsx
 #: src/settings/directory/TestResult.tsx
 msgid "Bind account"
@@ -3602,6 +3626,10 @@ msgstr "SHA-256 des Datenträgers"
 msgid "Disks"
 msgstr "Datenträger"
 
+#: src/setup/SetupChecklist.tsx
+msgid "Dismiss"
+msgstr "Ausblenden"
+
 #: src/machines/facts.ts
 msgid "DNS suffix"
 msgstr "DNS-Suffix"
@@ -3653,6 +3681,7 @@ msgstr "Domänenbeitritt geprüft"
 #: src/runs/flow/nodeDetail.ts
 #: src/runs/runHistory.ts
 #: src/runs/runView.ts
+#: src/setup/ChecklistStep.tsx
 #: src/tokens/MakeTokenDialog.tsx
 #: src/users/PasswordDialog.tsx
 msgid "Done"
@@ -5821,6 +5850,10 @@ msgstr "Braucht jemanden"
 msgid "Needs your approval"
 msgstr "Wartet auf Ihre Freigabe"
 
+#: src/setup/SetupChecklist.tsx
+msgid "Netboot a machine. It shows on the Machines page as it registers."
+msgstr "Starten Sie ein Gerät per Netzwerk. Es erscheint auf der Seite Geräte, sobald es sich registriert."
+
 #: src/conditions/conditionSubjects.ts
 msgid "network"
 msgstr "Netzwerk"
@@ -6651,6 +6684,10 @@ msgstr "Nur wenn {summary}"
 #: src/sequences/steps/ApplyImageFields.tsx
 msgid "Only x64 images can be installed."
 msgstr "Nur x64-Images können installiert werden."
+
+#: src/setup/ChecklistStep.tsx
+msgid "Open"
+msgstr "Offen"
 
 #: src/machines/MachinePanel.tsx
 msgid "Open machine"
@@ -10781,6 +10818,10 @@ msgstr "TPM-Version"
 #: src/settings/directory/DirectoryTest.tsx
 msgid "Tries the values above as they are, before you save them. With a user name and password, DDT also signs that user in, without starting a session, and shows their groups and the role they would get. A wrong password counts towards the account's lockout."
 msgstr "Probiert die Werte oben so aus, wie sie sind, bevor Sie sie speichern. Mit Benutzername und Kennwort meldet DDT diesen Benutzer außerdem an, ohne eine Sitzung zu beginnen, und zeigt seine Gruppen und die Rolle, die er erhielte. Ein falsches Kennwort zählt zur Sperre des Kontos."
+
+#: src/setup/SetupChecklist.tsx
+msgid "Trust <0>DDT's root certificate</0> in the browsers that manage it, so they stop warning about this address."
+msgstr "Vertrauen Sie <0>dem Stammzertifikat von DDT</0> in den Browsern, die DDT verwalten, damit sie nicht mehr vor dieser Adresse warnen."
 
 #: src/app/RouteError.tsx
 msgid "Try again"

@@ -13,6 +13,7 @@ import { useLiveMarks } from "@/live/useLiveMarks";
 import { useLiveStatus } from "@/live/useLiveStatus";
 import { machinesQuery } from "@/machines/machines";
 import { useMachineActions } from "@/machines/useMachineActions";
+import { SetupChecklist } from "@/setup/SetupChecklist";
 import { Notice } from "@/ui/Notice";
 import { Page } from "@/ui/Page";
 
@@ -54,6 +55,7 @@ export function MachinesPage() {
   return (
     <Page>
       <MachineListHeader filter={filter} query={query} matching={matching} onChange={setSearch} />
+      <SetupChecklist dismissible />
 
       {machines.isError ? (
         <Notice tone="fail">

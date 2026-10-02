@@ -63,6 +63,7 @@ import { agentBinaryQuery, consoleBinaryQuery, type AgentBinaryView } from "@/se
 import { consoleLogoQuery, type ConsoleLogoView } from "@/settings/consoleLogo";
 import { serverCertificateQuery } from "@/server/serverCertificate";
 import { pxeInterfacesQuery, type PxeHostInterfaces } from "@/settings/networkBoot";
+import { checklistQuery, setChecklistItem } from "@/setup/checklist";
 import { removeTokensOf, upsertToken, type ApiTokenView } from "@/tokens/tokens";
 import {
   directoryQuery,
@@ -115,6 +116,7 @@ function machineEvents(queryClient: QueryClient) {
     machineChanged: (machine: MachineSummary) => {
       upsertMachine(queryClient, machine);
       renameMachineInRuns(queryClient, machine);
+      setChecklistItem(queryClient, "machine", true);
     },
     machinesRemoved: (event: MachinesRemoved) => {
       removeMachines(queryClient, event.machineIds);
@@ -131,6 +133,7 @@ function libraryEvents(queryClient: QueryClient) {
     imageChanged: (image: ImageSummary) => {
       upsertImage(queryClient, image);
       uploadFinished(queryClient);
+      setChecklistItem(queryClient, "image", true);
     },
     imagesRemoved: (event: ImagesRemoved) => {
       removeImages(queryClient, event.imageIds);
@@ -146,6 +149,11 @@ function libraryEvents(queryClient: QueryClient) {
     },
     sequenceChanged: (event: SequenceChanged) => {
       sequenceChanged(queryClient, event);
+
+      // A deleted sequence has no revision
+      if (event.revision !== null) {
+        setChecklistItem(queryClient, "sequence", true);
+      }
     },
     // Rules are few and reorder together, so the event carries the whole ordered list.
     rulesChanged: (rules: RuleView[]) => {
@@ -169,6 +177,7 @@ function libraryEvents(queryClient: QueryClient) {
     bootImageChanged: (view: BootImageView) => {
       queryClient.setQueryData(bootImageQuery.queryKey, view);
       putJob(queryClient, view.job);
+      setChecklistItem(queryClient, "bootImage", view.builds.length > 0);
     },
     bootImageJobOutput: (output: BootImageJobOutput) => {
       appendJobOutput(queryClient, output);
@@ -197,6 +206,11 @@ function administrationEvents(queryClient: QueryClient) {
     settingsChanged: (view: SettingsSectionView<unknown>) => {
       putSection(queryClient, view);
       invalidate(queryClient, settingsOverviewQuery.queryKey);
+
+      if (view.section === "pxe") {
+        const answering = (view.values as { interfaces?: unknown[] } | null)?.interfaces ?? [];
+        setChecklistItem(queryClient, "netboot", answering.length > 0);
+      }
 
       if (view.section === "ldap") {
         invalidate(queryClient, directoryQuery.queryKey);
@@ -275,5 +289,6 @@ export function reconnectKeys(): QueryKey[] {
     consoleBinaryQuery.queryKey,
     consoleLogoQuery.queryKey,
     serverCertificateQuery.queryKey,
+    checklistQuery.queryKey,
   ];
 }

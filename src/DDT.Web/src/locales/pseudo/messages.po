@@ -1271,8 +1271,28 @@ msgstr ""
 msgid "<0>{subject}</0> <1>{operator}</1> {value}"
 msgstr ""
 
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Add a Windows image</0>: from an ISO, a folder on the server, an MDT deployment share or an upload."
+msgstr ""
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Build the boot image</0> that machines netboot into."
+msgstr ""
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Change the first password</0>, which the installer left in a file on the server."
+msgstr ""
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Choose the network card</0> DDT answers netboot on, and see who else answers on this server."
+msgstr ""
+
 #: src/boot/BuildCommand.tsx
 msgid "<0>Download the root certificate</0> as ddt-root.pem. The agent trusts only the server certificates it signed."
+msgstr ""
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Make a task sequence</0> from the Install Windows template, which erases the disk, applies the image and sets up Windows."
 msgstr ""
 
 #: src/tokens/MakeTokenForm.tsx
@@ -2639,6 +2659,10 @@ msgstr ""
 msgid "Baseboard"
 msgstr ""
 
+#: src/setup/SetupChecklist.tsx
+msgid "Before the first deployment"
+msgstr ""
+
 #: src/settings/directory/BindAccountGroup.tsx
 #: src/settings/directory/TestResult.tsx
 msgid "Bind account"
@@ -3602,6 +3626,10 @@ msgstr ""
 msgid "Disks"
 msgstr ""
 
+#: src/setup/SetupChecklist.tsx
+msgid "Dismiss"
+msgstr ""
+
 #: src/machines/facts.ts
 msgid "DNS suffix"
 msgstr ""
@@ -3653,6 +3681,7 @@ msgstr ""
 #: src/runs/flow/nodeDetail.ts
 #: src/runs/runHistory.ts
 #: src/runs/runView.ts
+#: src/setup/ChecklistStep.tsx
 #: src/tokens/MakeTokenDialog.tsx
 #: src/users/PasswordDialog.tsx
 msgid "Done"
@@ -5821,6 +5850,10 @@ msgstr ""
 msgid "Needs your approval"
 msgstr ""
 
+#: src/setup/SetupChecklist.tsx
+msgid "Netboot a machine. It shows on the Machines page as it registers."
+msgstr ""
+
 #: src/conditions/conditionSubjects.ts
 msgid "network"
 msgstr ""
@@ -6650,6 +6683,10 @@ msgstr ""
 
 #: src/sequences/steps/ApplyImageFields.tsx
 msgid "Only x64 images can be installed."
+msgstr ""
+
+#: src/setup/ChecklistStep.tsx
+msgid "Open"
 msgstr ""
 
 #: src/machines/MachinePanel.tsx
@@ -10780,6 +10817,10 @@ msgstr ""
 
 #: src/settings/directory/DirectoryTest.tsx
 msgid "Tries the values above as they are, before you save them. With a user name and password, DDT also signs that user in, without starting a session, and shows their groups and the role they would get. A wrong password counts towards the account's lockout."
+msgstr ""
+
+#: src/setup/SetupChecklist.tsx
+msgid "Trust <0>DDT's root certificate</0> in the browsers that manage it, so they stop warning about this address."
 msgstr ""
 
 #: src/app/RouteError.tsx

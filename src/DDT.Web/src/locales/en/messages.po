@@ -1271,9 +1271,29 @@ msgstr "<0>{subject}</0> <1>{operator}</1>"
 msgid "<0>{subject}</0> <1>{operator}</1> {value}"
 msgstr "<0>{subject}</0> <1>{operator}</1> {value}"
 
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Add a Windows image</0>: from an ISO, a folder on the server, an MDT deployment share or an upload."
+msgstr "<0>Add a Windows image</0>: from an ISO, a folder on the server, an MDT deployment share or an upload."
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Build the boot image</0> that machines netboot into."
+msgstr "<0>Build the boot image</0> that machines netboot into."
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Change the first password</0>, which the installer left in a file on the server."
+msgstr "<0>Change the first password</0>, which the installer left in a file on the server."
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Choose the network card</0> DDT answers netboot on, and see who else answers on this server."
+msgstr "<0>Choose the network card</0> DDT answers netboot on, and see who else answers on this server."
+
 #: src/boot/BuildCommand.tsx
 msgid "<0>Download the root certificate</0> as ddt-root.pem. The agent trusts only the server certificates it signed."
 msgstr "<0>Download the root certificate</0> as ddt-root.pem. The agent trusts only the server certificates it signed."
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Make a task sequence</0> from the Install Windows template, which erases the disk, applies the image and sets up Windows."
+msgstr "<0>Make a task sequence</0> from the Install Windows template, which erases the disk, applies the image and sets up Windows."
 
 #: src/tokens/MakeTokenForm.tsx
 msgid "1 to 365 days."
@@ -2639,6 +2659,10 @@ msgstr "Back to DDT"
 msgid "Baseboard"
 msgstr "Baseboard"
 
+#: src/setup/SetupChecklist.tsx
+msgid "Before the first deployment"
+msgstr "Before the first deployment"
+
 #: src/settings/directory/BindAccountGroup.tsx
 #: src/settings/directory/TestResult.tsx
 msgid "Bind account"
@@ -3602,6 +3626,10 @@ msgstr "Disk SHA-256"
 msgid "Disks"
 msgstr "Disks"
 
+#: src/setup/SetupChecklist.tsx
+msgid "Dismiss"
+msgstr "Dismiss"
+
 #: src/machines/facts.ts
 msgid "DNS suffix"
 msgstr "DNS suffix"
@@ -3653,6 +3681,7 @@ msgstr "Domain join checked"
 #: src/runs/flow/nodeDetail.ts
 #: src/runs/runHistory.ts
 #: src/runs/runView.ts
+#: src/setup/ChecklistStep.tsx
 #: src/tokens/MakeTokenDialog.tsx
 #: src/users/PasswordDialog.tsx
 msgid "Done"
@@ -5821,6 +5850,10 @@ msgstr "Needs someone"
 msgid "Needs your approval"
 msgstr "Needs your approval"
 
+#: src/setup/SetupChecklist.tsx
+msgid "Netboot a machine. It shows on the Machines page as it registers."
+msgstr "Netboot a machine. It shows on the Machines page as it registers."
+
 #: src/conditions/conditionSubjects.ts
 msgid "network"
 msgstr "network"
@@ -6651,6 +6684,10 @@ msgstr "Only when {summary}"
 #: src/sequences/steps/ApplyImageFields.tsx
 msgid "Only x64 images can be installed."
 msgstr "Only x64 images can be installed."
+
+#: src/setup/ChecklistStep.tsx
+msgid "Open"
+msgstr "Open"
 
 #: src/machines/MachinePanel.tsx
 msgid "Open machine"
@@ -10781,6 +10818,10 @@ msgstr "TPM version"
 #: src/settings/directory/DirectoryTest.tsx
 msgid "Tries the values above as they are, before you save them. With a user name and password, DDT also signs that user in, without starting a session, and shows their groups and the role they would get. A wrong password counts towards the account's lockout."
 msgstr "Tries the values above as they are, before you save them. With a user name and password, DDT also signs that user in, without starting a session, and shows their groups and the role they would get. A wrong password counts towards the account's lockout."
+
+#: src/setup/SetupChecklist.tsx
+msgid "Trust <0>DDT's root certificate</0> in the browsers that manage it, so they stop warning about this address."
+msgstr "Trust <0>DDT's root certificate</0> in the browsers that manage it, so they stop warning about this address."
 
 #: src/app/RouteError.tsx
 msgid "Try again"

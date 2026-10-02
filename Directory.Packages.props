@@ -41,6 +41,7 @@
   <ItemGroup Label="Imaging">
     <PackageVersion Include="ManagedWimLib" Version="2.6.0" />
     <PackageVersion Include="ZstdSharp.Port" Version="0.8.8" />
+    <PackageVersion Include="DiscUtils.Udf" Version="0.16.13" />
   </ItemGroup>
 
   <ItemGroup Label="Console">

@@ -565,6 +565,38 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "image.withoutArchitecture",
     message: "{image} does not say which processor it is for, and DDT deploys only x64 Windows. Choose an x64 image.",
   }),
+  "import.busy": msg({
+    context: "import.busy",
+    message: "An import is running already. Wait for it to end.",
+  }),
+  "import.failed": msg({
+    context: "import.failed",
+    message: "The server could not add it. Its log says why.",
+  }),
+  "import.noSuchFile": msg({
+    context: "import.noSuchFile",
+    message: "{path} is no longer there.",
+  }),
+  "import.notAShare": msg({
+    context: "import.notAShare",
+    message: "{path} is no MDT deployment share in one of this server's import folders: a share has Control\\OperatingSystems.xml.",
+  }),
+  "import.notAllowed": msg({
+    context: "import.notAllowed",
+    message: "{path} is no WIM, ESD or ISO in one of this server's import folders.",
+  }),
+  "import.nothing": msg({
+    context: "import.nothing",
+    message: "Nothing was chosen to import.",
+  }),
+  "import.unreadable": msg({
+    context: "import.unreadable",
+    message: "The server could not read it: {reason}",
+  }),
+  "iso.noWindowsImage": msg({
+    context: "iso.noWindowsImage",
+    message: "This ISO holds no sources\\install.wim or install.esd, so it is no Windows installation medium.",
+  }),
   "mac.enterFull": msg({
     context: "mac.enterFull",
     message: "Enter a MAC address of 12 hex digits, such as 00:15:5D:01:02:03.",

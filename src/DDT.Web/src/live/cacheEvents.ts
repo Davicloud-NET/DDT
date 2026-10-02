@@ -15,6 +15,7 @@ import { appendAudit, auditKey, type AuditEntry } from "@/audit/audit";
 import { currentUserQuery } from "@/auth/auth";
 import { bootImageQuery, type BootImageView } from "@/boot/bootImage";
 import { appendJobOutput, putJob, type BootImageJobOutput } from "@/boot/bootImageJob";
+import { putImportStatus, type ImportStatus } from "@/images/import/imports";
 import {
   imagesQuery,
   removeImages,
@@ -204,6 +205,10 @@ function administrationEvents(queryClient: QueryClient) {
     // Administrators receive every pxe host's interfaces whenever a host applied the pxe section.
     pxeInterfacesChanged: (hosts: PxeHostInterfaces[]) => {
       queryClient.setQueryData(pxeInterfacesQuery.queryKey, hosts);
+    },
+    // Administrators receive how far an import from the server's disks is.
+    importChanged: (status: ImportStatus) => {
+      putImportStatus(queryClient, status);
     },
     // Administrators receive an uploaded agent.
     agentChanged: (agent: AgentBinaryView) => {

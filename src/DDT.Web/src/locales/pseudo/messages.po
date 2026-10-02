@@ -385,6 +385,10 @@ msgctxt "domain.organizationalUnitMissing"
 msgid "{domain} has no organizational unit {organizationalUnit}, or {user} may not read it. Correct the organizational unit of the Join the domain step, or the one on the Deployment defaults page when the step names none."
 msgstr ""
 
+#: src/images/import/MdtShareChoices.tsx
+msgid "{drivers, plural, one {# driver} other {# drivers}}"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.noImmutableId"
 msgid "{entry} has no {attribute}, so a sign-in is refused."
@@ -754,6 +758,10 @@ msgctxt "directory.inNoMappedGroup"
 msgid "{name} is in none of the groups the directory's group map on the Sign-in page gives a role, so a sign-in is refused."
 msgstr ""
 
+#: src/images/import/ImportProgress.tsx
+msgid "{name} is in the library now."
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "{name} is larger than {limit}, the most the server takes for the agent."
 msgstr ""
@@ -769,6 +777,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.lockedOut"
 msgid "{name} is locked out, so a sign-in is refused before the directory is asked."
+msgstr ""
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "{name} is no longer in the share."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -829,8 +841,16 @@ msgctxt "user.directoryPassword"
 msgid "{name} signs in with its directory password. Reset it in the directory."
 msgstr ""
 
+#: src/images/import/ImportProgress.tsx
+msgid "{name} was in the library already."
+msgstr ""
+
 #: src/uploads/useResumableUpload.ts
 msgid "{name} was not added. {reason}"
+msgstr ""
+
+#: src/images/import/ImportProgress.tsx
+msgid "{name} was not imported. {reason}"
 msgstr ""
 
 #: src/settings/agent/BinaryUpload.tsx
@@ -887,6 +907,21 @@ msgstr ""
 
 #: src/runs/flow/nodeDetail.ts
 msgid "{passes} passes, the last took {took}"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "import.noSuchFile"
+msgid "{path} is no longer there."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "import.notAShare"
+msgid "{path} is no MDT deployment share in one of this server's import folders: a share has Control\\OperatingSystems.xml."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "import.notAllowed"
+msgid "{path} is no WIM, ESD or ISO in one of this server's import folders."
 msgstr ""
 
 #: src/uploads/UploadProgress.tsx
@@ -1684,8 +1719,12 @@ msgctxt "role.aViewer"
 msgid "a Viewer"
 msgstr ""
 
+#: src/images/import/ImportPanel.tsx
+msgid "A WIM, ESD or ISO copied into <0>{own}</0> on the server shows here and is imported without an upload. Configuration names more folders, such as an MDT deployment share, in DDT:ImportFolders."
+msgstr ""
+
 #: src/images/ImageUploadPanel.tsx
-msgid "a WIM, ESD or disk image file"
+msgid "a WIM, ESD, ISO or disk image file"
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
@@ -2232,6 +2271,11 @@ msgctxt "sequence.ifOnlyTest"
 msgid "An IF decides by its test alone. Move this condition into the test."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "import.busy"
+msgid "An import is running already. Wait for it to end."
+msgstr ""
+
 #: src/packages/HardwareModelsField.tsx
 msgid "An Inject drivers step adds these drivers to machines whose model matches one of them. End a model with * to match every model that starts with it; leave the manufacturer empty for any."
 msgstr ""
@@ -2371,6 +2415,10 @@ msgstr ""
 
 #: src/app/UserMenu.tsx
 msgid "Appearance"
+msgstr ""
+
+#: src/images/import/MdtNotImported.tsx
+msgid "Applications: {applications}."
 msgstr ""
 
 #: src/settings/parts/ApplyStates.tsx
@@ -2699,6 +2747,7 @@ msgid "By default, a person who signs in at a netbooting machine authorizes it f
 msgstr ""
 
 #: src/account/AuthenticatorEnrollment.tsx
+#: src/images/import/MdtShareDialog.tsx
 #: src/inputs/InputsDialog.tsx
 #: src/machines/AssignDialog.tsx
 #: src/packages/PackageDialog.tsx
@@ -2956,6 +3005,10 @@ msgctxt "sequence.setVariableChoose"
 msgid "Choose the variable to set."
 msgstr ""
 
+#: src/images/import/ImportPanel.tsx
+msgid "Choose what to import"
+msgstr ""
+
 #: src/conditions/conditionSubjects.ts
 msgid "Choose what to test"
 msgstr ""
@@ -3159,6 +3212,10 @@ msgstr ""
 
 #: src/machines/MachinePanel.tsx
 msgid "Current run"
+msgstr ""
+
+#: src/images/import/MdtNotImported.tsx
+msgid "CustomSettings.ini, with the sections {sections}. Its settings become rules and deployment defaults in DDT."
 msgstr ""
 
 #: src/sequences/builder/canvas/NodeMenu.tsx
@@ -3576,6 +3633,10 @@ msgstr ""
 msgid "Drag onto a wire, or choose + on one. Arrow keys follow the flow."
 msgstr ""
 
+#: src/images/import/MdtShareChoices.tsx
+msgid "Driver groups, each as a driver package"
+msgstr ""
+
 #: src/packages/PackagesTable.tsx
 msgid "Driver packages"
 msgstr ""
@@ -3672,7 +3733,7 @@ msgid "Each section is saved on the page of what it configures, and applies with
 msgstr ""
 
 #: src/images/ImageUploadPanel.tsx
-msgid "Each x64 Windows image in a WIM or ESD file becomes an entry. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
+msgid "Each x64 Windows image in a WIM or ESD file becomes an entry, and a Windows ISO is read for the install.wim or install.esd in it. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
 msgstr ""
 
 #: src/images/ImageFacts.tsx
@@ -4227,6 +4288,10 @@ msgstr ""
 msgid "For {architecture} only, cannot be written"
 msgstr ""
 
+#: src/images/import/MdtShareChoices.tsx
+msgid "For {maker} {model}."
+msgstr ""
+
 #: src/sequences/builder/variables/AccountInputFields.tsx
 msgid "For a Join the domain step. Empty where it joins none."
 msgstr ""
@@ -4245,6 +4310,10 @@ msgstr ""
 
 #: src/packages/PackageDialog.tsx
 msgid "For network and storage drivers a machine needs before the agent runs, such as those of new laptops. They reach machines with the next boot image build; Boot, Boot image says when the build is older than the drivers."
+msgstr ""
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "For no model yet: set its models under Library, Drivers."
 msgstr ""
 
 #: src/settings/ApprovalPage.tsx
@@ -4582,6 +4651,23 @@ msgstr ""
 
 #: src/audit/auditView.ts
 msgid "Image uploaded"
+msgstr ""
+
+#: src/images/import/ImportPanel.tsx
+#: src/images/import/MdtShareDialog.tsx
+msgid "Import"
+msgstr ""
+
+#: src/images/import/MdtShareDialog.tsx
+msgid "Import from an MDT deployment share"
+msgstr ""
+
+#: src/images/import/ImportPanel.tsx
+msgid "Import from the server"
+msgstr ""
+
+#: src/audit/auditView.ts
+msgid "Import from the server started"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -5197,6 +5283,10 @@ msgstr ""
 msgid "Logo on the console"
 msgstr ""
 
+#: src/images/import/ImportPanel.tsx
+msgid "Look again"
+msgstr ""
+
 #: src/conditions/conditionSubjects.ts
 msgid "MAC"
 msgstr ""
@@ -5402,6 +5492,10 @@ msgstr ""
 
 #: src/rules/drawer/RuleCondition.tsx
 msgid "Matches no known machine now."
+msgstr ""
+
+#: src/images/import/ImportPanel.tsx
+msgid "MDT deployment share"
 msgstr ""
 
 #: src/conditions/conditionSubjects.ts
@@ -6166,6 +6260,10 @@ msgstr ""
 msgid "Not found in the directory"
 msgstr ""
 
+#: src/images/import/MdtNotImported.tsx
+msgid "Not imported yet"
+msgstr ""
+
 #: src/settings/networkBoot/ConfigurationGroup.tsx
 msgid "Not known"
 msgstr ""
@@ -6274,6 +6372,11 @@ msgstr ""
 
 #: src/sequences/builder/page/useFlowClipboard.ts
 msgid "Nothing to paste. Copy a step first."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "import.nothing"
+msgid "Nothing was chosen to import."
 msgstr ""
 
 #: src/settings/parts/SectionErrors.tsx
@@ -6488,6 +6591,10 @@ msgstr ""
 
 #: src/machines/MachinePanel.tsx
 msgid "Open machine"
+msgstr ""
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "Operating systems"
 msgstr ""
 
 #: src/settings/signIn/NewAccountsGroup.tsx
@@ -6942,6 +7049,10 @@ msgstr ""
 
 #: src/settings/directory/GroupsAndRolesGroup.tsx
 msgid "Read the account's groups, nested groups included"
+msgstr ""
+
+#: src/images/import/ImportProgress.tsx
+msgid "Reading {item}, {position} of {count}"
 msgstr ""
 
 #: src/log/LogStatusBar.tsx
@@ -8534,6 +8645,10 @@ msgstr ""
 msgid "Task sequences"
 msgstr ""
 
+#: src/images/import/MdtNotImported.tsx
+msgid "Task sequences: {sequences}. Build them again from a template."
+msgstr ""
+
 #: src/sequences/builder/variables/RenameField.tsx
 msgid "Templates use it as {placeholder}."
 msgstr ""
@@ -9849,8 +9964,18 @@ msgstr ""
 msgid "The server checks the zip and counts what is in it."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "import.failed"
+msgid "The server could not add it. Its log says why."
+msgstr ""
+
 #: src/settings/certificate/ProvisionalNotice.tsx
 msgid "The server could not be reached with the new certificate, so this browser probably does not trust it. At {deadline} DDT goes back to the certificate before."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "import.unreadable"
+msgid "The server could not read it: {reason}"
 msgstr ""
 
 #: src/lib/autosaveDecisions.ts
@@ -9918,6 +10043,14 @@ msgstr ""
 
 #: src/accounts/drawer/HostsEditor.tsx
 msgid "The servers a step may connect shares on with this account, such as files.corp.example. None, and it connects no share."
+msgstr ""
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "The share has no folder of Out-of-Box Drivers with drivers in it."
+msgstr ""
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "The share lists none."
 msgstr ""
 
 #: src/auth/useSignIn.ts
@@ -10272,6 +10405,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "upload.noQemuImg"
 msgid "This is a qcow2 image, and qemu-img is not installed on the server. Install qemu-img there and complete the upload again, or convert the file with qemu-img convert -O raw <file> disk.raw and upload disk.raw."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "iso.noWindowsImage"
+msgid "This ISO holds no sources\\install.wim or install.esd, so it is no Windows installation medium."
 msgstr ""
 
 #: src/lib/serverMessages.ts

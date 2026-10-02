@@ -571,6 +571,33 @@ service that holds each port, and offers what fits:
   and those follow once M7 and M9 give them a place. On a UNC path the server reads as its computer
   account, which the share has to allow.
 
+Done:
+
+- **An ISO.** An upload that is an ISO is read for `sources\install.wim` or `install.esd`, which
+  takes its place, and goes on as that WIM (src/DDT.Server/Images/IsoImages.cs). An ISO without one
+  is refused. Windows media are UDF, which DiscUtils reads; it is MIT, and
+  THIRD-PARTY-NOTICES names it.
+- **Folders.** The import folders are `import` in the store, which every server has, and what
+  `DDT:ImportFolders` names, in `ddt.ini` as `[DDT:ImportFolders]` with `0 = D:\DeploymentShare`.
+  The Images page lists the WIM, ESD and ISO files below them, up to four folders deep, and imports
+  one at a press. A path that is not below an import folder is refused, and so is one that leaves
+  it through a link.
+- **The import.** `POST /api/images/import` starts it and answers at once. One runs at a time. Each
+  file is copied next to the uploads and then goes the way of an upload whose bytes have arrived,
+  so the same checks decide and the same rows and audit entries result. The page follows it over
+  the hub (`importChanged`), with what became of each file. The source stays where it is.
+- **An MDT deployment share** is an import folder, or a folder right below one, with
+  `Control\OperatingSystems.xml`. The page shows its image files with the operating systems MDT
+  lists in each, and the folders of Out-of-Box Drivers that hold drivers, each of which becomes a
+  driver package named after its path. Where the path ends in a maker DDT knows by name and a
+  model, such as `Dell Inc.\Latitude 7440`, the package is for that model; otherwise it is for
+  none until someone sets it. The dialog names the applications, the task sequences and the
+  sections of `CustomSettings.ini`, which are not imported.
+
+Left: an import folder is named in configuration and not on a page, so an MDT shop edits `ddt.ini`
+once. A command at an elevated prompt would spare that, as `settings netboot-interface` does for
+the network card.
+
 ### 4.11 Documentation
 
 A quick start at the top of the README, a page long, and a guide for MDT users that maps what they

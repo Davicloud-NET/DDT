@@ -7,6 +7,7 @@ using DDT.Contracts.Audit;
 using DDT.Contracts.BootImage;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
+using DDT.Contracts.Import;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Packages;
 using DDT.Contracts.Rules;
@@ -238,6 +239,13 @@ public sealed partial class LiveNotifier(
         ArgumentNullException.ThrowIfNull(hosts);
 
         _ = PushToAdministratorsAsync(LiveEvents.PxeInterfacesChanged, hosts);
+    }
+
+    public void ImportChanged(ImportStatus status)
+    {
+        ArgumentNullException.ThrowIfNull(status);
+
+        _ = PushToAdministratorsAsync(LiveEvents.ImportChanged, status);
     }
 
     public void AgentChanged(AgentBinaryView agent)

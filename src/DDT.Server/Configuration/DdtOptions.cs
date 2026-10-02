@@ -17,5 +17,8 @@ public sealed class DdtOptions
 
     public bool RequireHttps { get; set; } = true;
 
+    // Folders on the server that images and MDT deployment shares are imported from, besides "import" in the store.
+    public string[] ImportFolders { get; set; } = [];
+
     public HttpsOptions Https { get; set; } = new();
 }

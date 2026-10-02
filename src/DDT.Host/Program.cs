@@ -209,6 +209,7 @@ api.MapGroup("/auth/2fa").MapTwoFactorEndpoints();
 api.MapGroup("/auth/external").MapExternalLoginEndpoints();
 api.MapGroup("/machines").MapMachineEndpoints();
 api.MapGroup("/images").MapImageEndpoints();
+api.MapGroup("/images/import").MapImageImportEndpoints();
 api.MapGroup("/deployments").MapDeploymentEndpoints();
 api.MapGroup("/sequences").MapSequenceEndpoints();
 api.MapGroup("/packages").MapPackageEndpoints();

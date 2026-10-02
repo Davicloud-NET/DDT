@@ -74,6 +74,9 @@ public static class LiveEvents
     // applied the pxe section and reported what it found. Goes to administrators.
     public const string PxeInterfacesChanged = "pxeInterfacesChanged";
 
+    // Carries an ImportStatus to administrators: how far an import from the server's disks is, and what it added.
+    public const string ImportChanged = "importChanged";
+
     // Carries the AgentBinaryView, the same as GET /api/settings/agent returns, when an agent was uploaded. Goes to
     // administrators.
     public const string AgentChanged = "agentChanged";

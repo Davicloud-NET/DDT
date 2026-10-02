@@ -385,6 +385,10 @@ msgctxt "domain.organizationalUnitMissing"
 msgid "{domain} has no organizational unit {organizationalUnit}, or {user} may not read it. Correct the organizational unit of the Join the domain step, or the one on the Deployment defaults page when the step names none."
 msgstr "{domain} hat keine Organisationseinheit {organizationalUnit}, oder {user} darf sie nicht lesen. Korrigieren Sie die Organisationseinheit des Schritts „Der Domäne beitreten“ oder die auf der Seite „Standardwerte der Bereitstellung“, wenn der Schritt keine nennt."
 
+#: src/images/import/MdtShareChoices.tsx
+msgid "{drivers, plural, one {# driver} other {# drivers}}"
+msgstr "{drivers, plural, one {# Treiber} other {# Treiber}}"
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.noImmutableId"
 msgid "{entry} has no {attribute}, so a sign-in is refused."
@@ -754,6 +758,10 @@ msgctxt "directory.inNoMappedGroup"
 msgid "{name} is in none of the groups the directory's group map on the Sign-in page gives a role, so a sign-in is refused."
 msgstr "{name} ist in keiner der Gruppen, denen die Gruppenzuordnung des Verzeichnisses auf der Seite „Anmeldung“ eine Rolle gibt, daher wird eine Anmeldung abgelehnt."
 
+#: src/images/import/ImportProgress.tsx
+msgid "{name} is in the library now."
+msgstr "{name} ist jetzt in der Bibliothek."
+
 #: src/settings/AgentPanel.tsx
 msgid "{name} is larger than {limit}, the most the server takes for the agent."
 msgstr "{name} ist größer als {limit}, das Höchste, was der Server als Agent annimmt."
@@ -770,6 +778,10 @@ msgstr "{name} ist größer als {limit}, das Höchste, was der Server als Logo a
 msgctxt "settings.ldapTest.lockedOut"
 msgid "{name} is locked out, so a sign-in is refused before the directory is asked."
 msgstr "{name} ist gesperrt, daher wird eine Anmeldung abgelehnt, bevor das Verzeichnis gefragt wird."
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "{name} is no longer in the share."
+msgstr "{name} ist nicht mehr in der Freigabe."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.notDirectoryAccount"
@@ -829,9 +841,17 @@ msgctxt "user.directoryPassword"
 msgid "{name} signs in with its directory password. Reset it in the directory."
 msgstr "{name} meldet sich mit seinem Verzeichniskennwort an. Setzen Sie es im Verzeichnis zurück."
 
+#: src/images/import/ImportProgress.tsx
+msgid "{name} was in the library already."
+msgstr "{name} war bereits in der Bibliothek."
+
 #: src/uploads/useResumableUpload.ts
 msgid "{name} was not added. {reason}"
 msgstr "{name} wurde nicht hinzugefügt. {reason}"
+
+#: src/images/import/ImportProgress.tsx
+msgid "{name} was not imported. {reason}"
+msgstr "{name} wurde nicht importiert. {reason}"
 
 #: src/settings/agent/BinaryUpload.tsx
 #: src/settings/logo/LogoChange.tsx
@@ -888,6 +908,21 @@ msgstr "{passes} Durchläufe"
 #: src/runs/flow/nodeDetail.ts
 msgid "{passes} passes, the last took {took}"
 msgstr "{passes} Durchläufe, der letzte dauerte {took}"
+
+#: src/lib/serverMessages.ts
+msgctxt "import.noSuchFile"
+msgid "{path} is no longer there."
+msgstr "{path} ist nicht mehr vorhanden."
+
+#: src/lib/serverMessages.ts
+msgctxt "import.notAShare"
+msgid "{path} is no MDT deployment share in one of this server's import folders: a share has Control\\OperatingSystems.xml."
+msgstr "{path} ist keine MDT-Bereitstellungsfreigabe in einem der Importordner dieses Servers: Eine Freigabe hat Control\\OperatingSystems.xml."
+
+#: src/lib/serverMessages.ts
+msgctxt "import.notAllowed"
+msgid "{path} is no WIM, ESD or ISO in one of this server's import folders."
+msgstr "{path} ist keine WIM-, ESD- oder ISO-Datei in einem der Importordner dieses Servers."
 
 #: src/uploads/UploadProgress.tsx
 msgid "{percent}% of {total} at {speed}/s, {took} so far"
@@ -1684,9 +1719,13 @@ msgctxt "role.aViewer"
 msgid "a Viewer"
 msgstr "ein Betrachter"
 
+#: src/images/import/ImportPanel.tsx
+msgid "A WIM, ESD or ISO copied into <0>{own}</0> on the server shows here and is imported without an upload. Configuration names more folders, such as an MDT deployment share, in DDT:ImportFolders."
+msgstr "Eine WIM-, ESD- oder ISO-Datei, die auf dem Server nach <0>{own}</0> kopiert wird, erscheint hier und wird ohne Upload importiert. Die Konfiguration nennt weitere Ordner, etwa eine MDT-Bereitstellungsfreigabe, in DDT:ImportFolders."
+
 #: src/images/ImageUploadPanel.tsx
-msgid "a WIM, ESD or disk image file"
-msgstr "eine WIM-, ESD- oder Datenträgerimage-Datei"
+msgid "a WIM, ESD, ISO or disk image file"
+msgstr "eine WIM-, ESD-, ISO- oder Datenträgerimage-Datei"
 
 #: src/settings/AgentPanel.tsx
 msgid "A Windows executable of at most 128 MB."
@@ -2232,6 +2271,11 @@ msgctxt "sequence.ifOnlyTest"
 msgid "An IF decides by its test alone. Move this condition into the test."
 msgstr "Ein IF entscheidet allein nach seiner Prüfung. Verschieben Sie diese Bedingung in die Prüfung."
 
+#: src/lib/serverMessages.ts
+msgctxt "import.busy"
+msgid "An import is running already. Wait for it to end."
+msgstr "Ein Import läuft bereits. Warten Sie, bis er beendet ist."
+
 #: src/packages/HardwareModelsField.tsx
 msgid "An Inject drivers step adds these drivers to machines whose model matches one of them. End a model with * to match every model that starts with it; leave the manufacturer empty for any."
 msgstr "Ein Schritt „Treiber einbinden“ fügt diese Treiber Geräten hinzu, deren Modell auf eines davon passt. Mit * am Ende passt ein Modell auf jedes, das so beginnt; ein leerer Hersteller passt auf jeden."
@@ -2372,6 +2416,10 @@ msgstr "API-Token"
 #: src/app/UserMenu.tsx
 msgid "Appearance"
 msgstr "Darstellung"
+
+#: src/images/import/MdtNotImported.tsx
+msgid "Applications: {applications}."
+msgstr "Anwendungen: {applications}."
 
 #: src/settings/parts/ApplyStates.tsx
 msgid "Applied"
@@ -2699,6 +2747,7 @@ msgid "By default, a person who signs in at a netbooting machine authorizes it f
 msgstr "Standardmäßig autorisiert eine Person, die sich an einem per Netzwerk startenden Gerät anmeldet, es für die gewählte Tasksequenz, und ein Operator kann ein wartendes Gerät im Web freigeben. Zero Touch überspringt beides in den hier aufgeführten Netzwerken."
 
 #: src/account/AuthenticatorEnrollment.tsx
+#: src/images/import/MdtShareDialog.tsx
 #: src/inputs/InputsDialog.tsx
 #: src/machines/AssignDialog.tsx
 #: src/packages/PackageDialog.tsx
@@ -2956,6 +3005,10 @@ msgctxt "sequence.setVariableChoose"
 msgid "Choose the variable to set."
 msgstr "Wählen Sie die Variable, die gesetzt wird."
 
+#: src/images/import/ImportPanel.tsx
+msgid "Choose what to import"
+msgstr "Auswählen, was importiert wird"
+
 #: src/conditions/conditionSubjects.ts
 msgid "Choose what to test"
 msgstr "Wählen Sie, was geprüft wird"
@@ -3160,6 +3213,10 @@ msgstr "Aktuelles Kennwort"
 #: src/machines/MachinePanel.tsx
 msgid "Current run"
 msgstr "Aktuelle Ausführung"
+
+#: src/images/import/MdtNotImported.tsx
+msgid "CustomSettings.ini, with the sections {sections}. Its settings become rules and deployment defaults in DDT."
+msgstr "CustomSettings.ini, mit den Abschnitten {sections}. Ihre Einstellungen werden in DDT zu Regeln und Bereitstellungsstandards."
 
 #: src/sequences/builder/canvas/NodeMenu.tsx
 msgid "Cut"
@@ -3576,6 +3633,10 @@ msgstr "Wird heruntergeladen und installiert, was einige Minuten dauert"
 msgid "Drag onto a wire, or choose + on one. Arrow keys follow the flow."
 msgstr "Auf eine Verbindung ziehen oder dort + wählen. Die Pfeiltasten folgen dem Ablauf."
 
+#: src/images/import/MdtShareChoices.tsx
+msgid "Driver groups, each as a driver package"
+msgstr "Treibergruppen, jede als ein Treiberpaket"
+
 #: src/packages/PackagesTable.tsx
 msgid "Driver packages"
 msgstr "Treiberpakete"
@@ -3672,8 +3733,8 @@ msgid "Each section is saved on the page of what it configures, and applies with
 msgstr "Jeder Abschnitt wird auf der Seite dessen gespeichert, was er konfiguriert, und gilt ohne Neustart: manche bei der nächsten Verwendung, andere, indem ihr Teil des laufenden Servers neu aufgebaut wird."
 
 #: src/images/ImageUploadPanel.tsx
-msgid "Each x64 Windows image in a WIM or ESD file becomes an entry. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
-msgstr "Jedes x64-Windows-Image in einer WIM- oder ESD-Datei wird ein Eintrag. Ein Datenträgerimage, etwa ein Linux-Cloud-Image, wird einer: roh, mit gzip, zstd oder xz komprimiert, oder qcow2. Wandeln Sie VHDX, VMDK oder VDI zuerst mit qemu-img in ein Rohformat um."
+msgid "Each x64 Windows image in a WIM or ESD file becomes an entry, and a Windows ISO is read for the install.wim or install.esd in it. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
+msgstr "Jedes x64-Windows-Image in einer WIM- oder ESD-Datei wird ein Eintrag, und aus einer Windows-ISO wird die darin enthaltene install.wim oder install.esd gelesen. Ein Datenträgerimage, etwa ein Linux-Cloud-Image, wird einer: roh, mit gzip, zstd oder xz komprimiert, oder qcow2. Wandeln Sie VHDX, VMDK oder VDI zuerst mit qemu-img in ein Rohformat um."
 
 #: src/images/ImageFacts.tsx
 msgid "Edition"
@@ -4227,6 +4288,10 @@ msgstr "Für"
 msgid "For {architecture} only, cannot be written"
 msgstr "Nur für {architecture}, kann nicht geschrieben werden"
 
+#: src/images/import/MdtShareChoices.tsx
+msgid "For {maker} {model}."
+msgstr "Für {maker} {model}."
+
 #: src/sequences/builder/variables/AccountInputFields.tsx
 msgid "For a Join the domain step. Empty where it joins none."
 msgstr "Für einen Schritt „Der Domäne beitreten“. Leer, wenn es keiner beitritt."
@@ -4246,6 +4311,10 @@ msgstr "Für einen Adapter, den kein Host gemeldet hat, etwa einen, der erst noc
 #: src/packages/PackageDialog.tsx
 msgid "For network and storage drivers a machine needs before the agent runs, such as those of new laptops. They reach machines with the next boot image build; Boot, Boot image says when the build is older than the drivers."
 msgstr "Für Netzwerk- und Speichertreiber, die ein Gerät braucht, bevor der Agent läuft, etwa die neuer Laptops. Sie erreichen die Geräte mit dem nächsten Build des Startimages; unter Boot, Startimage steht, wenn der Build älter als die Treiber ist."
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "For no model yet: set its models under Library, Drivers."
+msgstr "Noch für kein Modell: Legen Sie die Modelle unter Bibliothek, Treiber fest."
 
 #: src/settings/ApprovalPage.tsx
 msgid "For places that need two people: a sign-in at the machine then only records who is there, and an operator approves it on the web. Zero touch is off while this is on."
@@ -4583,6 +4652,23 @@ msgstr "Image gelöscht"
 #: src/audit/auditView.ts
 msgid "Image uploaded"
 msgstr "Image hochgeladen"
+
+#: src/images/import/ImportPanel.tsx
+#: src/images/import/MdtShareDialog.tsx
+msgid "Import"
+msgstr "Importieren"
+
+#: src/images/import/MdtShareDialog.tsx
+msgid "Import from an MDT deployment share"
+msgstr "Aus einer MDT-Bereitstellungsfreigabe importieren"
+
+#: src/images/import/ImportPanel.tsx
+msgid "Import from the server"
+msgstr "Vom Server importieren"
+
+#: src/audit/auditView.ts
+msgid "Import from the server started"
+msgstr "Import vom Server gestartet"
 
 #: src/lib/serverMessages.ts
 msgctxt "valueTemplate.filterNeedsCount"
@@ -5197,6 +5283,10 @@ msgstr "Logische Prozessoren"
 msgid "Logo on the console"
 msgstr "Logo auf der Konsole"
 
+#: src/images/import/ImportPanel.tsx
+msgid "Look again"
+msgstr "Erneut nachsehen"
+
 #: src/conditions/conditionSubjects.ts
 msgid "MAC"
 msgstr "MAC"
@@ -5403,6 +5493,10 @@ msgstr "Trifft auf Geräte zu, bei denen {condition}."
 #: src/rules/drawer/RuleCondition.tsx
 msgid "Matches no known machine now."
 msgstr "Trifft jetzt auf kein bekanntes Gerät zu."
+
+#: src/images/import/ImportPanel.tsx
+msgid "MDT deployment share"
+msgstr "MDT-Bereitstellungsfreigabe"
 
 #: src/conditions/conditionSubjects.ts
 msgid "memory"
@@ -6166,6 +6260,10 @@ msgstr "Nicht gefunden"
 msgid "Not found in the directory"
 msgstr "Nicht im Verzeichnis gefunden"
 
+#: src/images/import/MdtNotImported.tsx
+msgid "Not imported yet"
+msgstr "Noch nicht importiert"
+
 #: src/settings/networkBoot/ConfigurationGroup.tsx
 msgid "Not known"
 msgstr "Nicht bekannt"
@@ -6275,6 +6373,11 @@ msgstr "Noch nichts erfasst"
 #: src/sequences/builder/page/useFlowClipboard.ts
 msgid "Nothing to paste. Copy a step first."
 msgstr "Nichts zum Einfügen. Kopieren Sie zuerst einen Schritt."
+
+#: src/lib/serverMessages.ts
+msgctxt "import.nothing"
+msgid "Nothing was chosen to import."
+msgstr "Es wurde nichts zum Importieren ausgewählt."
 
 #: src/settings/parts/SectionErrors.tsx
 msgid "Nothing was saved."
@@ -6489,6 +6592,10 @@ msgstr "Nur x64-Images können installiert werden."
 #: src/machines/MachinePanel.tsx
 msgid "Open machine"
 msgstr "Gerät öffnen"
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "Operating systems"
+msgstr "Betriebssysteme"
 
 #: src/settings/signIn/NewAccountsGroup.tsx
 #: src/users/userView.ts
@@ -6943,6 +7050,10 @@ msgstr "Erreicht nichts"
 #: src/settings/directory/GroupsAndRolesGroup.tsx
 msgid "Read the account's groups, nested groups included"
 msgstr "Die Gruppen des Kontos lesen, verschachtelte Gruppen eingeschlossen"
+
+#: src/images/import/ImportProgress.tsx
+msgid "Reading {item}, {position} of {count}"
+msgstr "{item} wird gelesen, {position} von {count}"
 
 #: src/log/LogStatusBar.tsx
 msgid "Reading every {pollSeconds} s, because the live connection is down."
@@ -8534,6 +8645,10 @@ msgstr "Tasksequenz"
 msgid "Task sequences"
 msgstr "Tasksequenzen"
 
+#: src/images/import/MdtNotImported.tsx
+msgid "Task sequences: {sequences}. Build them again from a template."
+msgstr "Tasksequenzen: {sequences}. Erstellen Sie sie aus einer Vorlage neu."
+
 #: src/sequences/builder/variables/RenameField.tsx
 msgid "Templates use it as {placeholder}."
 msgstr "Vorlagen verwenden sie als {placeholder}."
@@ -9849,9 +9964,19 @@ msgstr "Der Server prüft die Datei, liest die Images darin und komprimiert ein 
 msgid "The server checks the zip and counts what is in it."
 msgstr "Der Server prüft die ZIP-Datei und zählt, was sie enthält."
 
+#: src/lib/serverMessages.ts
+msgctxt "import.failed"
+msgid "The server could not add it. Its log says why."
+msgstr "Der Server konnte es nicht hinzufügen. Sein Protokoll nennt den Grund."
+
 #: src/settings/certificate/ProvisionalNotice.tsx
 msgid "The server could not be reached with the new certificate, so this browser probably does not trust it. At {deadline} DDT goes back to the certificate before."
 msgstr "Der Server war mit dem neuen Zertifikat nicht erreichbar, daher vertraut dieser Browser ihm wahrscheinlich nicht. Um {deadline} kehrt DDT zum vorherigen Zertifikat zurück."
+
+#: src/lib/serverMessages.ts
+msgctxt "import.unreadable"
+msgid "The server could not read it: {reason}"
+msgstr "Der Server konnte es nicht lesen: {reason}"
 
 #: src/lib/autosaveDecisions.ts
 msgid "The server did not answer."
@@ -9919,6 +10044,14 @@ msgstr "Die Einstellungen des Servers konnten nicht gelesen werden."
 #: src/accounts/drawer/HostsEditor.tsx
 msgid "The servers a step may connect shares on with this account, such as files.corp.example. None, and it connects no share."
 msgstr "Die Server, auf denen ein Schritt mit diesem Konto Netzwerkfreigaben verbinden darf, etwa files.corp.example. Ohne Server verbindet es keine Netzwerkfreigabe."
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "The share has no folder of Out-of-Box Drivers with drivers in it."
+msgstr "Die Freigabe hat keinen Ordner unter Out-of-Box Drivers, der Treiber enthält."
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "The share lists none."
+msgstr "Die Freigabe führt keine auf."
 
 #: src/auth/useSignIn.ts
 msgid "The sign-in at the identity provider did not finish. Try again."
@@ -10273,6 +10406,11 @@ msgstr "Dies ist ein {format}-Datenträgerimage, das DDT nicht liest. Wandeln Si
 msgctxt "upload.noQemuImg"
 msgid "This is a qcow2 image, and qemu-img is not installed on the server. Install qemu-img there and complete the upload again, or convert the file with qemu-img convert -O raw <file> disk.raw and upload disk.raw."
 msgstr "Dies ist ein qcow2-Image, und qemu-img ist auf dem Server nicht installiert. Installieren Sie qemu-img dort und schließen Sie den Upload erneut ab, oder wandeln Sie die Datei mit qemu-img convert -O raw <file> disk.raw um und laden Sie disk.raw hoch."
+
+#: src/lib/serverMessages.ts
+msgctxt "iso.noWindowsImage"
+msgid "This ISO holds no sources\\install.wim or install.esd, so it is no Windows installation medium."
+msgstr "Diese ISO enthält weder sources\\install.wim noch install.esd und ist daher kein Windows-Installationsmedium."
 
 #: src/lib/serverMessages.ts
 msgctxt "deployment.alreadyHasRun"

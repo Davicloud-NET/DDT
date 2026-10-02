@@ -56,6 +56,7 @@ const actionLabels: Record<string, MessageDescriptor> = {
   "account.deleted": msg`Account for steps deleted`,
   "account.refused": msg`Account for steps not saved`,
   "image.uploaded": msg`Image uploaded`,
+  "image.import-started": msg`Import from the server started`,
   "image.deleted": msg`Image deleted`,
   "package.uploaded": msg`Package uploaded`,
   "package.changed": msg`Package changed`,

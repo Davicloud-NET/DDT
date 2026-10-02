@@ -124,6 +124,14 @@ under the BSD licence or the GNU General Public License, version 2; DDT uses it 
 licence in [licenses/zstd/LICENSE](licenses/zstd/LICENSE). The server compresses raw disk images
 with it.
 
+### DiscUtils
+
+`DiscUtils.Udf`, `DiscUtils.Iso9660`, `DiscUtils.Core` and `DiscUtils.Streams`, Copyright (c)
+2008-2011, Kenneth Bell and Copyright (c) 2014, Quamotion, under the MIT licence. Text:
+[licenses/discutils/LICENSE.txt](licenses/discutils/LICENSE.txt), taken from the DiscUtils
+repository at commit `59d7cadab839c6d8dfcf52f8be5efe6d2ced190f`, which version 0.16.13 was built
+from, because the packages carry none. The server reads a Windows image out of an ISO with them.
+
 ### SQLitePCLRaw and SQLite
 
 `SQLitePCLRaw.bundle_e_sqlite3`, `SQLitePCLRaw.core`, `SQLitePCLRaw.lib.e_sqlite3` and

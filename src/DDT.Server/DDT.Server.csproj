@@ -16,6 +16,7 @@
     <PackageReference Include="System.DirectoryServices.Protocols" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" />
     <PackageReference Include="ZstdSharp.Port" />
+    <PackageReference Include="DiscUtils.Udf" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

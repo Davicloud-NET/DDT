@@ -70,6 +70,9 @@ public sealed class ApiTokenTests(DdtApplication application) : IClassFixture<Dd
         connection.On<ApiTokenView>(liveEvent, token => received.Writer.TryWrite(token));
         await connection.StartAsync(TestContext.Current.CancellationToken);
 
+        // As in LiveListener: the hub answers a call only once the connection is in its groups
+        await connection.InvokeAsync("UnwatchMachine", Guid.Empty, TestContext.Current.CancellationToken);
+
         return connection;
     }
 

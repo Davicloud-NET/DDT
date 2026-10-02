@@ -611,6 +611,9 @@ machine that netboots next to it:
   the one gave the address and the other the boot file, and the machine started Windows PE. But
   after a restart of the server DDT bound the port first, and the DHCP Server served no one, with
   "unable to bind to UDP port number 67" in its log. That is why DDT leaves the port alone now.
+- **Option 60.** With that change the server came up again with the DHCP Server serving its card
+  and DDT on UDP 4011 and 69. Option 60 set through the page's API, the machine asked 4011, got its
+  boot file and started Windows PE. Taken off again, the DHCP server no longer had the option.
 - **Options 66 and 67.** Set from the page for the scope, with ProxyDHCP off, the machine starts
   Windows PE too.
 - **Beside WDS**, with DDT's ProxyDHCP and TFTP off. WDS answers, loads DDT's `boot.wim`, and the

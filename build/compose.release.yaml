@@ -23,7 +23,8 @@ services:
       # Every name and address DDT is reached by has to be in the certificate, because the agent
       # validates the hostname against the chain it pins.
       DDT__Https__SubjectAlternativeNames: ${DDT_HOSTNAMES:-}
-      Kestrel__Endpoints__Https__Url: https://0.0.0.0:${DDT_PORT:-8443}
+      # IPv6 too: Windows tries a name's IPv6 address first.
+      Kestrel__Endpoints__Https__Url: https://*:${DDT_PORT:-8443}
       # The database is the SQLite file ddt.db in the store. For PostgreSQL or SQL Server, set
       # ConnectionStrings__ddtdb, and DDT__Database for SQL Server, in compose.override.yaml.
       # Everything else is on the settings page. A key set here overrides and locks its field there,

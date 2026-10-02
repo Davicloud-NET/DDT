@@ -61,7 +61,7 @@ Two changes shorten this list in practice:
 - **Container defaults move into the Dockerfile.** They leave build/compose.yaml:19,28-30 and become
   ENV lines in the final stage of build/Dockerfile, next to `EXPOSE 8443` (Dockerfile:39):
   - DDT__StorePath=/var/lib/ddt
-  - Kestrel__Endpoints__Https__Url=https://0.0.0.0:8443
+  - Kestrel__Endpoints__Https__Url=https://*:8443
   - both certificate paths under /var/lib/ddt/certs
 
   These must not become defaults in code, for two reasons. Once any Kestrel endpoint is declared,

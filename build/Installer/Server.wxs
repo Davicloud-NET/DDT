@@ -36,6 +36,9 @@
                  Sequence="both"
                  Condition="NOT FIREWALLPROFILES" />
 
+    <!-- The helper's work folder, as HelperPaths names it. Set this early: RemoveFolderEx reads it before costing. -->
+    <SetProperty Id="HELPERWORKFOLDER" Value="[CommonAppDataFolder]DDT Helper" After="AppSearch" Sequence="execute" />
+
     <ComponentGroup Id="Server" Directory="INSTALLFOLDER">
       <!-- DDT.Host.exe comes from its own component below, which carries the service. -->
       <Files Include="!(bindpath.Payload)\**">
@@ -81,6 +84,8 @@
                               ResetPeriodInDays="1" />
         </ServiceInstall>
         <ServiceControl Id="Helper" Name="DDTHelper" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
+        <!-- With what a build that broke off left in it -->
+        <util:RemoveFolderEx Property="HELPERWORKFOLDER" On="uninstall" Condition="NOT UPGRADINGPRODUCTCODE" />
 
         <!-- The virtual account can't register an event source itself -->
         <util:EventSource Name="DDT"

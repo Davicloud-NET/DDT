@@ -323,6 +323,7 @@ export function bootImageView(overrides: Partial<BootImageView> = {}): BootImage
       available: true,
       serverUrl: "https://deploy01.contoso.local:8443",
       adk: { installed: true, version: "10.1.26100.9457", supported: true },
+      package: true,
     },
     job: null,
     builds: [{ name: "20261001-100000", builtUtc: "2026-10-01T10:00:00Z", current: true }],

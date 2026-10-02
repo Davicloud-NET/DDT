@@ -15,8 +15,9 @@ import { Page } from "@/ui/Page";
 import { PageHeader } from "@/ui/PageHeader";
 import { Panel } from "@/ui/Panel";
 
-import { bootImageQuery } from "./bootImage";
+import { bootImageQuery, type BootImageView } from "./bootImage";
 import { BuildCommand } from "./BuildCommand";
+import { BuilderPanel } from "./BuilderPanel";
 import { BuildPanel } from "./BuildPanel";
 import { BuildState } from "./BuildState";
 import { JobPanel } from "./JobPanel";
@@ -56,9 +57,9 @@ export function BootImagePage() {
             <LastBuild view={boot.data} now={now} />
             <WindowsPEDrivers view={boot.data} />
           </div>
-          {boot.data.builder.available ? (
-            <BuildPanel view={boot.data} />
-          ) : (
+          {boot.data.builder.available ? <BuildPanel view={boot.data} /> : null}
+          {offersBuilder(boot.data) ? <BuilderPanel /> : null}
+          {boot.data.builder.available || boot.data.builder.package ? null : (
             <BuildCommand view={boot.data} />
           )}
           {boot.data.job === null ? null : <JobPanel job={boot.data.job} now={now} />}
@@ -67,4 +68,11 @@ export function BootImagePage() {
       ) : null}
     </Page>
   );
+}
+
+// A server that builds on its own needs no builder for another PC.
+function offersBuilder(view: BootImageView): boolean {
+  const adk = view.builder.adk;
+
+  return view.builder.package && !(view.builder.available && adk?.installed && adk.supported);
 }

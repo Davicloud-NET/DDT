@@ -38,6 +38,9 @@ public static class ImageServiceCollectionExtensions
         services.AddSingleton<BootImageViews>();
         services.AddSingleton<BootImagePushes>();
         services.AddSingleton<BootImageJobs>();
+        services.AddSingleton<BuilderTokens>();
+        services.AddSingleton<BuilderPackage>();
+        services.AddSingleton<BootImageUploads>();
         services.AddHostedService<BootImageWatcher>();
 
         return services;

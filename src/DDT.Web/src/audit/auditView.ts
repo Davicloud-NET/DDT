@@ -63,6 +63,8 @@ const actionLabels: Record<string, MessageDescriptor> = {
   "boot-image.build-started": msg`Boot image build started`,
   "boot-image.build-chosen": msg`Boot image build chosen to serve`,
   "boot-image.adk-install-started": msg`Windows ADK install started`,
+  "boot-image.builder-downloaded": msg`Boot image builder downloaded`,
+  "boot-image.uploaded": msg`Boot image uploaded by a builder`,
   "user.created": msg`Account created`,
   "user.changed": msg`Account changed`,
   "user.disabled": msg`Account disabled`,

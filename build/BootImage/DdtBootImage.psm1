@@ -85,4 +85,4 @@ function New-DdtBootImage {
     Show-BootImageSummary -Destination $Destination -SkipPowerShell:$SkipPowerShell -SkipTrim:$SkipTrim
 }
 
-Export-ModuleMember -Function New-DdtBootImage -Verbose:$false
+Export-ModuleMember -Function New-DdtBootImage, Test-DdtBuilderToken, Send-DdtBootImage -Verbose:$false

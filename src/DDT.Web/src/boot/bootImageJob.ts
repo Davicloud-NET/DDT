@@ -6,10 +6,10 @@ import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { apiErrorFrom, apiFetch } from "@/lib/api";
 
-// A build of the boot image or an install of the ADK, which the DDT Helper service runs for the server. lines counts
-// all its output so far.
+// A build of the boot image or an install of the ADK, which the DDT Helper service runs for the server, or a build
+// that a builder on another PC uploads. lines counts all its output so far.
 export interface BootImageJob {
-  kind: "Build" | "InstallAdk";
+  kind: "Build" | "InstallAdk" | "Upload";
   state: "Running" | "Succeeded" | "Failed";
   startedUtc: string;
   finishedUtc: string | null;

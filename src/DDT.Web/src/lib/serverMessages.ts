@@ -49,9 +49,17 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "bootImage.noAdk",
     message: "The Windows ADK with its Windows PE add-on is not installed on this server. Install it first.",
   }),
+  "bootImage.noBuilder": msg({
+    context: "bootImage.noBuilder",
+    message: "This server came without the build script or the agent, so it has no builder to hand out. A release has both.",
+  }),
   "bootImage.noHelper": msg({
     context: "bootImage.noHelper",
     message: "This server cannot build the boot image itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up. On another server, build with Build-BootImage.ps1 on a Windows PC.",
+  }),
+  "bootImage.noRoot": msg({
+    context: "bootImage.noRoot",
+    message: "DDT has no root certificate of its own yet, which the boot image has to trust. Generate one under Server, Certificate.",
   }),
   "bootImage.noSuchBuild": msg({
     context: "bootImage.noSuchBuild",
@@ -60,6 +68,26 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "bootImage.oldAdk": msg({
     context: "bootImage.oldAdk",
     message: "The Windows PE add-on on this server is {version}, and the boot image needs {oldest} or later.",
+  }),
+  "bootImage.uploadBroken": msg({
+    context: "bootImage.uploadBroken",
+    message: "The upload is no boot image build: its zip, its boot.wim or its description cannot be read.",
+  }),
+  "bootImage.uploadMissingFile": msg({
+    context: "bootImage.uploadMissingFile",
+    message: "The upload is no boot image build: it has no {file}.",
+  }),
+  "bootImage.uploadStrayFile": msg({
+    context: "bootImage.uploadStrayFile",
+    message: "The upload is no boot image build: {file} is outside Boot, EFI and x64.",
+  }),
+  "bootImage.uploadToken": msg({
+    context: "bootImage.uploadToken",
+    message: "The builder's token is unknown, has expired or uploaded a boot image already. Download the builder again.",
+  }),
+  "bootImage.uploadTooLarge": msg({
+    context: "bootImage.uploadTooLarge",
+    message: "The boot image is larger than {max} MB.",
   }),
   "bootImage.windowSize": msg({
     context: "bootImage.windowSize",

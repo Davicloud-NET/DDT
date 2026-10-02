@@ -505,6 +505,25 @@ one:
 Tokens are an administrator's today (README, API tokens). The upload token is the first with a
 single purpose.
 
+Done:
+
+- `POST /api/boot-image/builder`, an administrator's after the password again, answers the zip:
+  the script, its module and the trim list as the release brought them, the agent, the console,
+  `ddt-root.pem`, the drivers flagged for Windows PE, unpacked, a `Build.cmd` that elevates itself,
+  and `builder.json` with the server's address and the token. The token is in that file and not in
+  `Build.cmd`, so nothing has to be quoted for cmd. The container image carries the script too.
+- Run in a folder with `builder.json`, `Build-BootImage.ps1` builds for that server with what the
+  folder holds, asks the server first whether the token still uploads, and sends the build as a zip
+  of its `Boot`, `EFI` and `x64` folders, trusting only the root it came with.
+- `PUT /api/boot-image` takes the token in `X-DDT-Builder-Token` and nothing else: it is no API
+  token, and no other call takes it. The server refuses a zip with a file outside the three
+  folders, without one of the files a build has, or whose `boot.wim` or description cannot be read,
+  and only then moves it into `bootuilds` and serves it. The page shows the upload as a job.
+- The token is good for a day and for one boot image that the server accepted. Whether it was used
+  is in the audit log, so every host of the server knows.
+- The page offers the builder where the server cannot build right now: without the helper, or
+  without a supported ADK.
+
 ### 4.9 Netboot at the first start
 
 What is served stays the administrator's choice: `DDT:Pxe:Interfaces` keeps no default

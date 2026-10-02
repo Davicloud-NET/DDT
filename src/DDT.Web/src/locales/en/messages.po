@@ -2622,6 +2622,18 @@ msgstr "Boot image build chosen to serve"
 msgid "Boot image build started"
 msgstr "Boot image build started"
 
+#: src/audit/auditView.ts
+msgid "Boot image builder downloaded"
+msgstr "Boot image builder downloaded"
+
+#: src/boot/JobPanel.tsx
+msgid "Boot image from a builder"
+msgstr "Boot image from a builder"
+
+#: src/audit/auditView.ts
+msgid "Boot image uploaded by a builder"
+msgstr "Boot image uploaded by a builder"
+
 #: src/boot/LastBuild.tsx
 msgid "Boot manager"
 msgstr "Boot manager"
@@ -2637,6 +2649,10 @@ msgstr "Build"
 #: src/boot/BuildCommand.tsx
 msgid "Build command"
 msgstr "Build command"
+
+#: src/boot/BuilderPanel.tsx
+msgid "Build on another PC"
+msgstr "Build on another PC"
 
 #: src/boot/BuildPanel.tsx
 msgid "Build on this server"
@@ -3055,6 +3071,10 @@ msgstr "Configuration values"
 msgid "Confirm and delete"
 msgstr "Confirm and delete"
 
+#: src/boot/BuilderPanel.tsx
+msgid "Confirm and download"
+msgstr "Confirm and download"
+
 #: src/settings/certificate/GenerateDialog.tsx
 msgid "Confirm and generate"
 msgstr "Confirm and generate"
@@ -3194,6 +3214,11 @@ msgstr "DDT could not reach its server. Check that the server is running and tha
 #: src/sequences/steps/WriteCloudInitSeedFields.tsx
 msgid "DDT fills in <0>{placeholders}</0> with the machine's values, and the name of any of the run's values, such as a variable of the sequence or a value a rule sets, with that value. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
 msgstr "DDT fills in <0>{placeholders}</0> with the machine's values, and the name of any of the run's values, such as a variable of the sequence or a value a rule sets, with that value. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.noRoot"
+msgid "DDT has no root certificate of its own yet, which the boot image has to trust. Generate one under Server, Certificate."
+msgstr "DDT has no root certificate of its own yet, which the boot image has to trust. Generate one under Server, Certificate."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.newRootGenerate"
@@ -3538,6 +3563,10 @@ msgstr "Done"
 #: src/runs/decisions.ts
 msgid "Done after {times} of at most {most} times"
 msgstr "Done after {times} of at most {most} times"
+
+#: src/boot/BuilderPanel.tsx
+msgid "Download the builder"
+msgstr "Download the builder"
 
 #: src/boot/JobPanel.tsx
 msgid "Downloading and installing, which takes a few minutes"
@@ -4772,6 +4801,10 @@ msgstr "It does not name {names}, which the server is reached by, so browsers an
 msgid "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
 msgstr "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
 
+#: src/boot/BuilderPanel.tsx
+msgid "It holds the server's agent, console and root certificate, and the drivers flagged for Windows PE."
+msgstr "It holds the server's agent, console and root certificate, and the drivers flagged for Windows PE."
+
 #: src/machines/approval.ts
 msgid "It is named {named}."
 msgstr "It is named {named}."
@@ -4808,6 +4841,10 @@ msgstr "It stays waiting until someone signs in at it."
 #: src/boot/StaleReasonText.tsx
 msgid "It trusts another root certificate than this server's. Machines that netboot it cannot reach the server."
 msgstr "It trusts another root certificate than this server's. Machines that netboot it cannot reach the server."
+
+#: src/boot/BuilderPanel.tsx
+msgid "It uploads one boot image, within a day. Download it again for the next build."
+msgstr "It uploads one boot image, within a day. Download it again for the next build."
 
 #: src/boot/keyboardLayouts.ts
 msgid "Italian"
@@ -6371,6 +6408,10 @@ msgstr "Only administrators change how people sign in. Your own password and sec
 msgid "Only administrators change task sequences. You can look at this one."
 msgstr "Only administrators change task sequences. You can look at this one."
 
+#: src/boot/BuilderPanel.tsx
+msgid "Only administrators download the builder."
+msgstr "Only administrators download the builder."
+
 #: src/users/UsersPage.tsx
 msgid "Only administrators manage accounts. Your own account is on the Account and security page in the account menu."
 msgstr "Only administrators manage accounts. Your own account is on the Account and security page in the account menu."
@@ -6865,6 +6906,10 @@ msgctxt "model.wildcardPrefix"
 msgid "Put at least {min} characters before {wildcard}, so it matches only one family of models."
 msgstr "Put at least {min} characters before {wildcard}, so it matches only one family of models."
 
+#: src/boot/BuilderPanel.tsx
+msgid "Putting the builder together"
+msgstr "Putting the builder together"
+
 #: src/account/AuthenticatorEnrollment.tsx
 msgid "QR code for your authenticator app"
 msgstr "QR code for your authenticator app"
@@ -6920,6 +6965,10 @@ msgstr "Ready to run"
 #: src/settings/server/SectionRow.tsx
 msgid "Rebuilds its part of the server on save"
 msgstr "Rebuilds its part of the server on save"
+
+#: src/boot/JobPanel.tsx
+msgid "Receiving and checking the boot image"
+msgstr "Receiving and checking the boot image"
 
 #: src/log/LogStatusBar.tsx
 msgid "Reconnecting. Lines sent meanwhile are read once the connection is back."
@@ -7525,6 +7574,10 @@ msgstr "Saved {savedWhen} by {savedBy}."
 #: src/settings/parts/SettingsSection.tsx
 msgid "Saved {savedWhen}."
 msgstr "Saved {savedWhen}."
+
+#: src/boot/BuilderPanel.tsx
+msgid "Saved as {builderFileName}. This page shows the boot image when the builder uploads it."
+msgstr "Saved as {builderFileName}. This page shows the boot image when the builder uploads it."
 
 #: src/sequences/SaveState.tsx
 msgid "Saving"
@@ -8730,6 +8783,15 @@ msgstr "The boot image has to be built again"
 msgid "The boot image has Windows PE's own drivers only. Flag a driver package under <0>Library, Drivers</0> when a machine cannot reach the network or see its disk in Windows PE."
 msgstr "The boot image has Windows PE's own drivers only. Flag a driver package under <0>Library, Drivers</0> when a machine cannot reach the network or see its disk in Windows PE."
 
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadTooLarge"
+msgid "The boot image is larger than {max} MB."
+msgstr "The boot image is larger than {max} MB."
+
+#: src/boot/BuilderPanel.tsx
+msgid "The boot image the builder makes runs as SYSTEM on every machine that netboots, so downloading it needs your password again."
+msgstr "The boot image the builder makes runs as SYSTEM on every machine that netboots, so downloading it needs your password again."
+
 #: src/settings/networkBoot/BootServerFields.tsx
 msgid "The boot server's name in the answer, in ASCII and at most 63 characters. Left empty, its address."
 msgstr "The boot server's name in the answer, in ASCII and at most 63 characters. Left empty, its address."
@@ -8737,6 +8799,15 @@ msgstr "The boot server's name in the answer, in ASCII and at most 63 characters
 #: src/ui/SecretValue.tsx
 msgid "The browser did not let DDT copy it. Select it and copy it yourself."
 msgstr "The browser did not let DDT copy it. Select it and copy it yourself."
+
+#: src/boot/BuilderPanel.tsx
+msgid "The builder is a zip for any Windows PC that has the Windows ADK with its Windows PE add-on. Unpack it there and run Build.cmd: it builds the boot image for this server and uploads it, and machines netboot the new image once it has arrived."
+msgstr "The builder is a zip for any Windows PC that has the Windows ADK with its Windows PE add-on. Unpack it there and run Build.cmd: it builds the boot image for this server and uploads it, and machines netboot the new image once it has arrived."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadToken"
+msgid "The builder's token is unknown, has expired or uploaded a boot image already. Download the builder again."
+msgstr "The builder's token is unknown, has expired or uploaded a boot image already. Download the builder again."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.keyMismatch"
@@ -9938,6 +10009,21 @@ msgstr "The upload could not be added to the library. Look at the server log, th
 msgid "The upload failed."
 msgstr "The upload failed."
 
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadStrayFile"
+msgid "The upload is no boot image build: {file} is outside Boot, EFI and x64."
+msgstr "The upload is no boot image build: {file} is outside Boot, EFI and x64."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadMissingFile"
+msgid "The upload is no boot image build: it has no {file}."
+msgstr "The upload is no boot image build: it has no {file}."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadBroken"
+msgid "The upload is no boot image build: its zip, its boot.wim or its description cannot be read."
+msgstr "The upload is no boot image build: its zip, its boot.wim or its description cannot be read."
+
 #: src/uploads/useResumableUpload.ts
 msgid "The upload of {name} stopped. Choose the file again to resume."
 msgstr "The upload of {name} stopped. Choose the file again to resume."
@@ -10272,6 +10358,11 @@ msgstr "This server came with agent {version}, which is newer than the uploaded 
 #: src/settings/ConsolePanel.tsx
 msgid "This server came with console {version}, which is newer than the uploaded one. Remove the upload, and machines show the server's own."
 msgstr "This server came with console {version}, which is newer than the uploaded one. Remove the upload, and machines show the server's own."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.noBuilder"
+msgid "This server came without the build script or the agent, so it has no builder to hand out. A release has both."
+msgstr "This server came without the build script or the agent, so it has no builder to hand out. A release has both."
 
 #: src/lib/serverMessages.ts
 msgctxt "bootImage.noHelper"

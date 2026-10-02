@@ -3,9 +3,10 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { act, screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { chooseOption, press, selectKey } from "@/test/aria";
+import { proof, typePassword } from "@/settings/serverTesting";
+import { chooseOption, nth, press, selectKey } from "@/test/aria";
 import { expectNoAxeViolations } from "@/test/axe";
 import { administrator, bootImageView, operator } from "@/test/builders";
 import { renderPage } from "@/test/renderPage";
@@ -123,6 +124,7 @@ describe("BootImagePage", () => {
           available: true,
           serverUrl: "https://deploy01.contoso.local:8443",
           adk: { installed: false, version: null, supported: false },
+          package: false,
         },
       }),
       {
@@ -149,7 +151,12 @@ describe("BootImagePage", () => {
   it("gives the command for a Windows PC when the server cannot build", async () => {
     await open(
       bootImageView({
-        builder: { available: false, serverUrl: "https://ddt.example:8443", adk: null },
+        builder: {
+          available: false,
+          serverUrl: "https://ddt.example:8443",
+          adk: null,
+          package: false,
+        },
       }),
     );
 
@@ -160,6 +167,59 @@ describe("BootImagePage", () => {
     expect(screen.queryByRole("heading", { name: "Builds on the server" })).not.toBeInTheDocument();
   });
 
+  it("hands out the builder for another PC after the password, where the server cannot build", async () => {
+    const saved: string[] = [];
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL: () => "blob:builder",
+      revokeObjectURL: vi.fn(),
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      saved.push(`${this.download} from ${this.href}`);
+    });
+
+    const { server } = await open(
+      bootImageView({
+        builder: {
+          available: false,
+          serverUrl: "https://ddt.example:8443",
+          adk: null,
+          package: true,
+        },
+        job: job({ kind: "Upload", state: "Succeeded", startedBy: "admin" }),
+      }),
+      {
+        "POST /api/settings/reauthenticate": () => proof("builder-proof"),
+        "POST /api/boot-image/builder": () => new Response("zip", { status: 200 }),
+        "GET /api/boot-image/job": { body: { job: job({ kind: "Upload" }), lines: [] } },
+      },
+    );
+
+    const panel = rowOf(
+      await screen.findByRole("heading", { name: "Build on another PC" }),
+      "section",
+    );
+    expect(screen.queryByLabelText("Build command")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Boot image from a builder" })).toBeInTheDocument();
+
+    press(within(panel).getByRole("button", { name: "Download the builder" }));
+    expect(server.count("POST /api/boot-image/builder")).toBe(0);
+    await typePassword();
+
+    expect(
+      await within(panel).findByText(/Saved as ddt-boot-image-builder\.zip/),
+    ).toBeInTheDocument();
+    expect(saved).toEqual(["ddt-boot-image-builder.zip from blob:builder"]);
+    expect(
+      nth(
+        server.requests.filter((request) => request.path === "/api/boot-image/builder"),
+        0,
+      ).headers.get("X-DDT-Reauthentication"),
+    ).toBe("builder-proof");
+  });
+
   it("says each reason the image has to be built again, and goes back to the build before", async () => {
     const stale = bootImageView({
       stale: true,
@@ -168,6 +228,7 @@ describe("BootImagePage", () => {
         available: true,
         serverUrl: "https://deploy02.contoso.local:8443",
         adk: { installed: true, version: "10.1.26100.9999", supported: true },
+        package: true,
       },
       builds: [
         { name: "20261001-100000", builtUtc: "2026-10-01T10:00:00Z", current: true },

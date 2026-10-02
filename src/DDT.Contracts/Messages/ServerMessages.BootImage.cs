@@ -36,4 +36,34 @@ public static partial class ServerMessages
     public static readonly MessageTemplate BootImageNoSuchBuild = Define(
         "bootImage.noSuchBuild",
         "The boot directory holds no such build.");
+
+    // The builder for another PC, and what it uploads.
+
+    public static readonly MessageTemplate BootImageNoBuilder = Define(
+        "bootImage.noBuilder",
+        "This server came without the build script or the agent, so it has no builder to hand out. A release has both.");
+
+    public static readonly MessageTemplate BootImageNoRoot = Define(
+        "bootImage.noRoot",
+        "DDT has no root certificate of its own yet, which the boot image has to trust. Generate one under Server, Certificate.");
+
+    public static readonly MessageTemplate BootImageUploadToken = Define(
+        "bootImage.uploadToken",
+        "The builder's token is unknown, has expired or uploaded a boot image already. Download the builder again.");
+
+    public static readonly MessageTemplate BootImageUploadTooLarge = Define(
+        "bootImage.uploadTooLarge",
+        "The boot image is larger than {max} MB.");
+
+    public static readonly MessageTemplate BootImageUploadMissingFile = Define(
+        "bootImage.uploadMissingFile",
+        "The upload is no boot image build: it has no {file}.");
+
+    public static readonly MessageTemplate BootImageUploadStrayFile = Define(
+        "bootImage.uploadStrayFile",
+        "The upload is no boot image build: {file} is outside Boot, EFI and x64.");
+
+    public static readonly MessageTemplate BootImageUploadBroken = Define(
+        "bootImage.uploadBroken",
+        "The upload is no boot image build: its zip, its boot.wim or its description cannot be read.");
 }

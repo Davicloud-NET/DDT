@@ -143,6 +143,9 @@ public sealed class BootImageCatalog(IOptions<DdtOptions> options, IConfiguratio
         }
     }
 
+    // What a folder with a build's Boot, EFI and x64 says about it. Null when it has no readable description.
+    public static BootImageBuild? ReadBuildIn(string root) => ReadBuild(ManifestIn(root));
+
     private static string ManifestIn(string root) => Path.Combine(root, "Boot", ManifestName);
 
     // The hash is computed again from the drivers the file lists, so it's computed the same way as the server's.

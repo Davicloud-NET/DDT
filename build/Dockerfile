@@ -41,6 +41,9 @@ FROM ${DOTNET_RUNTIME} AS final
 RUN apt-get update && apt-get install -y --no-install-recommends libldap2 qemu-utils xz-utils && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app ./
+# The build script, which the builder for a Windows PC hands out. Linux builds no boot image itself.
+COPY build/Build-BootImage.ps1 build/boot-image-trim.txt ./
+COPY build/BootImage/ ./BootImage/
 # The Windows agent and console of this release, which the server offers until others are uploaded. Only Windows
 # compiles them, so the release workflow puts them into artifacts/bundle. A build without them offers none.
 RUN --mount=type=bind,target=/context \

@@ -230,6 +230,22 @@ if ($release) {
     }
 }
 
+# A builder from the Boot image page builds for the server it came from, with what its folder holds
+$builder = if ($release) { $null } else { Get-BuilderDefault -Folder $PSScriptRoot }
+
+if ($builder) {
+    if (-not $Destination) { $Destination = $builder.Destination }
+    if (-not $WorkDirectory) { $WorkDirectory = $builder.WorkDirectory }
+    if (-not $AgentPath) { $AgentPath = $builder.AgentPath }
+    if (-not $ServerUrl) { $ServerUrl = $builder.ServerUrl }
+    if (-not $RootCertificatePath) { $RootCertificatePath = $builder.RootCertificatePath }
+    if (-not $ServerDriverPath -and -not $ApiToken) { $ServerDriverPath = $builder.ServerDriverPath }
+
+    if (-not $ConsolePath -and $builder.ConsolePackage) {
+        $ConsolePath = Expand-ReleaseConsole -Package $builder.ConsolePackage -WorkDirectory $WorkDirectory
+    }
+}
+
 # Defaults are set here instead of in param(), because Windows PowerShell leaves $PSScriptRoot empty
 # there when the script is started with powershell -File.
 if (-not $Destination) { $Destination = Join-Path $PSScriptRoot '..\artifacts\boot' }
@@ -258,8 +274,17 @@ $build = @{
     SkipTrim            = $SkipTrim
 }
 
+# Asked before the build, which takes minutes: a token that no longer uploads would waste it
+if ($builder) {
+    Test-DdtBuilderToken -ServerUrl $builder.ServerUrl -RootCertificatePath $builder.RootCertificatePath -Token $builder.UploadToken
+}
+
 # A module doesn't see the preferences set for this script, so the two that its commands use are passed along.
 New-DdtBootImage @build -WarningAction $WarningPreference -Verbose:($VerbosePreference -ne 'SilentlyContinue')
+
+if ($builder) {
+    Send-DdtBootImage -ServerUrl $builder.ServerUrl -RootCertificatePath $builder.RootCertificatePath -Token $builder.UploadToken -Folder $Destination
+}
 
 if ($servedBuild) {
     Set-CurrentBootBuild -BootDirectory $release.Destination -Build $servedBuild

@@ -4,7 +4,8 @@
 
 import { queryOptions } from "@tanstack/react-query";
 
-import { apiGet, apiPost } from "@/lib/api";
+import { apiErrorFrom, apiFetch, apiGet, apiPost } from "@/lib/api";
+import { reauthenticationToken } from "@/settings/settings";
 
 import type { BootImageJob } from "./bootImageJob";
 
@@ -40,11 +41,13 @@ export interface BootImageAdk {
 }
 
 // Whether the server builds the image itself, which takes the DDT Helper service of a Windows install. serverUrl is the
-// address a build puts into the image. adk is null on a server that is not Windows.
+// address a build puts into the image. adk is null on a server that is not Windows. package says whether it hands out
+// the builder for another PC, which takes the build script and agent a release comes with.
 export interface BootImageBuilder {
   available: boolean;
   serverUrl: string;
   adk: BootImageAdk | null;
+  package: boolean;
 }
 
 // A build in the boot directory. name is null for the files in the boot directory itself, as a build by hand leaves
@@ -90,6 +93,23 @@ export function installAdk(): Promise<void> {
 
 export function serveBuild(name: string | null): Promise<BootImageView> {
   return apiPost<BootImageView>("/api/boot-image/current", { name });
+}
+
+export const builderFileName = "ddt-boot-image-builder.zip";
+
+// The builder as a zip. It takes the password again, since what it builds runs as SYSTEM on every machine.
+export async function downloadBuilder(): Promise<Blob> {
+  const token = reauthenticationToken();
+  const response = await apiFetch("/api/boot-image/builder", {
+    method: "POST",
+    headers: token === null ? {} : { "X-DDT-Reauthentication": token },
+  });
+
+  if (!response.ok) {
+    throw await apiErrorFrom(response);
+  }
+
+  return response.blob();
 }
 
 // The Build-BootImage.ps1 command line for a Windows PC, when the server cannot build. An API token lets the script

@@ -71,11 +71,11 @@ function Read-ServerDriverFolder {
     }
 }
 
-# An HttpClient that sends the API token and trusts only the pinned root, like the agent.
+# An HttpClient that trusts only the pinned root, like the agent, and sends the API token if there is one.
 function Connect-DdtServer {
     param(
         [Parameter(Mandatory)][byte[]] $RootCertificate,
-        [Parameter(Mandatory)][string] $Token
+        [string] $Token
     )
 
     # Compiled rather than a script block, because the TLS handshake calls the check on a thread that has no

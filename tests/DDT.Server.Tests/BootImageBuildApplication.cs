@@ -5,6 +5,7 @@
 using DDT.Contracts.BootImage;
 using DDT.Server.BootImage;
 using DDT.Server.Certificates;
+using DDT.Server.Machines;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,9 @@ public sealed class BootImageBuildApplication : DdtApplication
 
     public BootImageAdk? Adk { get; set; } = new(true, "10.1.26100.9457", true);
 
+    // Where a release puts the build script, the agent and the console
+    public BundledReleases Bundled => new(Path.Combine(StorePath, "program"));
+
     public CertificateFiles Files => new(Path.Combine(StorePath, "certs", "ddt.pem"), Path.Combine(StorePath, "certs", "ddt-key.pem"));
 
     protected override void ConfigureTestHost(IWebHostBuilder builder)
@@ -32,6 +36,7 @@ public sealed class BootImageBuildApplication : DdtApplication
         {
             services.AddSingleton<IBootImageHelper>(Helper);
             services.AddSingleton(new InstalledAdk(() => Adk));
+            services.AddSingleton(Bundled);
         });
     }
 }

@@ -25,9 +25,40 @@ public static class DdtBootImageServer
 
         HttpClient client = new HttpClient(handler);
         client.Timeout = TimeSpan.FromMinutes(30);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // A builder has no API token. It sends its own with each request.
+        if (!string.IsNullOrEmpty(token))
+        {
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
 
         return client;
+    }
+
+    // A builder's request: its token, and for an upload the file as the body. Returns nothing when the server took it,
+    // and otherwise the status and what the server answered, which says why.
+    public static string Send(HttpClient client, string method, string url, string builderToken, string path)
+    {
+        using (HttpRequestMessage request = new HttpRequestMessage(new HttpMethod(method), url))
+        {
+            request.Headers.Add("X-DDT-Builder-Token", builderToken);
+
+            // PowerShell passes its $null as an empty string
+            if (!string.IsNullOrEmpty(path))
+            {
+                request.Content = new StreamContent(File.OpenRead(path));
+            }
+
+            using (HttpResponseMessage response = client.SendAsync(request).GetAwaiter().GetResult())
+            {
+                if (response.IsSuccessStatusCode)
+                {
+                    return string.Empty;
+                }
+
+                return (int)response.StatusCode + " " + response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            }
+        }
     }
 
     public static string GetString(HttpClient client, string url)

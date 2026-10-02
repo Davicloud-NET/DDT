@@ -6,4 +6,4 @@ namespace DDT.Contracts.BootImage;
 
 // Whether this server can build the boot image itself: a Windows server whose helper service answers. ServerUrl is the
 // address a build puts into the image for the agent. Adk is null where the server cannot tell, as on Linux.
-public sealed record BootImageBuilder(bool Available, string ServerUrl, BootImageAdk? Adk);
+public sealed record BootImageBuilder(bool Available, string ServerUrl, BootImageAdk? Adk, bool Package = false);

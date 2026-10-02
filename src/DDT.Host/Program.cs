@@ -225,6 +225,7 @@ api.MapGroup("/boot-image").MapBootImageEndpoints();
 api.MapGroup("/settings").MapSettingsEndpoints();
 
 app.MapGroup("/api/agents").MapAgentEndpoints().MapAgentDeploymentEndpoints();
+app.MapBootImageUpload();
 
 app.MapHub<LiveHub>("/hubs/live")
     .DisableCookieRedirect()

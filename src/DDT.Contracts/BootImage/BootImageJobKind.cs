@@ -8,4 +8,7 @@ public enum BootImageJobKind
 {
     Build,
     InstallAdk,
+
+    // A build that a builder made on another PC and sent here
+    Upload,
 }

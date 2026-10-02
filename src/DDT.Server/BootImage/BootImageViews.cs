@@ -57,7 +57,7 @@ public sealed class BootImageViews(
             build,
             reasons.Count > 0,
             reasons,
-            new BootImageBuilder(helper.Available, ServerUrl, installed),
+            new BootImageBuilder(helper.Available, ServerUrl, installed, services.GetRequiredService<BuilderPackage>().Available),
             jobs.Job,
             catalog.Builds());
     }

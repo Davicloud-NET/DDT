@@ -34,7 +34,7 @@ public static class BootImageEndpoints
         group.MapMethods("/drivers/{packageId:guid}/content", [HttpMethods.Get, HttpMethods.Head], ReadDriverAsync)
             .RequireAuthorization(DdtPolicies.Administrator);
 
-        return group.MapBootImageBuildEndpoints();
+        return group.MapBootImageBuildEndpoints().MapBootImageBuilderEndpoints();
     }
 
     private static async Task<Ok<BootImageView>> ReadAsync(DdtDbContext database, BootImageViews views, CancellationToken cancellationToken) =>

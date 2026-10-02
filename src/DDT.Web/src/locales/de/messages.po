@@ -2622,6 +2622,18 @@ msgstr "Startimage-Build zum Ausliefern gewählt"
 msgid "Boot image build started"
 msgstr "Startimage-Build gestartet"
 
+#: src/audit/auditView.ts
+msgid "Boot image builder downloaded"
+msgstr "Startimage-Builder heruntergeladen"
+
+#: src/boot/JobPanel.tsx
+msgid "Boot image from a builder"
+msgstr "Startimage von einem Builder"
+
+#: src/audit/auditView.ts
+msgid "Boot image uploaded by a builder"
+msgstr "Startimage von einem Builder hochgeladen"
+
 #: src/boot/LastBuild.tsx
 msgid "Boot manager"
 msgstr "Start-Manager"
@@ -2637,6 +2649,10 @@ msgstr "Build"
 #: src/boot/BuildCommand.tsx
 msgid "Build command"
 msgstr "Build-Befehl"
+
+#: src/boot/BuilderPanel.tsx
+msgid "Build on another PC"
+msgstr "Auf einem anderen PC erstellen"
 
 #: src/boot/BuildPanel.tsx
 msgid "Build on this server"
@@ -3055,6 +3071,10 @@ msgstr "Konfigurationswerte"
 msgid "Confirm and delete"
 msgstr "Bestätigen und löschen"
 
+#: src/boot/BuilderPanel.tsx
+msgid "Confirm and download"
+msgstr "Bestätigen und herunterladen"
+
 #: src/settings/certificate/GenerateDialog.tsx
 msgid "Confirm and generate"
 msgstr "Bestätigen und generieren"
@@ -3194,6 +3214,11 @@ msgstr "DDT erreicht seinen Server nicht. Prüfen Sie, ob der Server läuft und 
 #: src/sequences/steps/WriteCloudInitSeedFields.tsx
 msgid "DDT fills in <0>{placeholders}</0> with the machine's values, and the name of any of the run's values, such as a variable of the sequence or a value a rule sets, with that value. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
 msgstr "DDT setzt für <0>{placeholders}</0> die Werte des Geräts ein und für den Namen eines Werts der Ausführung, etwa einer Variable der Tasksequenz oder eines Werts, den eine Regel setzt, diesen Wert. Setzen Sie sie in doppelte Anführungszeichen, etwa <1>{example}</1>. Alles andere in doppelten geschweiften Klammern bleibt, wie es ist, für die eigenen Vorlagen von cloud-init."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.noRoot"
+msgid "DDT has no root certificate of its own yet, which the boot image has to trust. Generate one under Server, Certificate."
+msgstr "DDT hat noch kein eigenes Stammzertifikat, dem das Startimage vertrauen muss. Erzeugen Sie eines unter Server, Zertifikat."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.newRootGenerate"
@@ -3538,6 +3563,10 @@ msgstr "Fertig"
 #: src/runs/decisions.ts
 msgid "Done after {times} of at most {most} times"
 msgstr "Fertig nach {times} von höchstens {most} Malen"
+
+#: src/boot/BuilderPanel.tsx
+msgid "Download the builder"
+msgstr "Builder herunterladen"
 
 #: src/boot/JobPanel.tsx
 msgid "Downloading and installing, which takes a few minutes"
@@ -4772,6 +4801,10 @@ msgstr "Es nennt {names} nicht, obwohl der Server darüber erreicht wird, daher 
 msgid "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
 msgstr "Sie wird um {time} von selbst fortgesetzt, oder früher, wenn jemand sie hier oder am Gerät fortsetzt."
 
+#: src/boot/BuilderPanel.tsx
+msgid "It holds the server's agent, console and root certificate, and the drivers flagged for Windows PE."
+msgstr "Er enthält den Agent, die Konsole und das Stammzertifikat des Servers sowie die für Windows PE markierten Treiber."
+
 #: src/machines/approval.ts
 msgid "It is named {named}."
 msgstr "Es erhält den Namen {named}."
@@ -4808,6 +4841,10 @@ msgstr "Es wartet, bis sich jemand daran anmeldet."
 #: src/boot/StaleReasonText.tsx
 msgid "It trusts another root certificate than this server's. Machines that netboot it cannot reach the server."
 msgstr "Es vertraut einem anderen Stammzertifikat als dem dieses Servers. Geräte, die damit per Netzwerk starten, erreichen den Server nicht."
+
+#: src/boot/BuilderPanel.tsx
+msgid "It uploads one boot image, within a day. Download it again for the next build."
+msgstr "Er lädt ein Startimage hoch, innerhalb eines Tages. Laden Sie ihn für den nächsten Build erneut herunter."
 
 #: src/boot/keyboardLayouts.ts
 msgid "Italian"
@@ -6371,6 +6408,10 @@ msgstr "Nur Administratoren ändern, wie sich Personen anmelden. Ihr eigenes Ken
 msgid "Only administrators change task sequences. You can look at this one."
 msgstr "Nur Administratoren ändern Tasksequenzen. Sie können sich diese ansehen."
 
+#: src/boot/BuilderPanel.tsx
+msgid "Only administrators download the builder."
+msgstr "Nur Administratoren laden den Builder herunter."
+
 #: src/users/UsersPage.tsx
 msgid "Only administrators manage accounts. Your own account is on the Account and security page in the account menu."
 msgstr "Nur Administratoren verwalten Konten. Ihr eigenes Konto finden Sie auf der Seite Konto und Sicherheit im Kontomenü."
@@ -6865,6 +6906,10 @@ msgctxt "model.wildcardPrefix"
 msgid "Put at least {min} characters before {wildcard}, so it matches only one family of models."
 msgstr "Setzen Sie mindestens {min} Zeichen vor {wildcard}, damit es nur auf eine Modellfamilie passt."
 
+#: src/boot/BuilderPanel.tsx
+msgid "Putting the builder together"
+msgstr "Der Builder wird zusammengestellt"
+
 #: src/account/AuthenticatorEnrollment.tsx
 msgid "QR code for your authenticator app"
 msgstr "QR-Code für Ihre Authenticator-App"
@@ -6920,6 +6965,10 @@ msgstr "Ausführbar"
 #: src/settings/server/SectionRow.tsx
 msgid "Rebuilds its part of the server on save"
 msgstr "Baut beim Speichern seinen Teil des Servers neu auf"
+
+#: src/boot/JobPanel.tsx
+msgid "Receiving and checking the boot image"
+msgstr "Das Startimage wird empfangen und geprüft"
 
 #: src/log/LogStatusBar.tsx
 msgid "Reconnecting. Lines sent meanwhile are read once the connection is back."
@@ -7525,6 +7574,10 @@ msgstr "Gespeichert {savedWhen} von {savedBy}."
 #: src/settings/parts/SettingsSection.tsx
 msgid "Saved {savedWhen}."
 msgstr "Gespeichert {savedWhen}."
+
+#: src/boot/BuilderPanel.tsx
+msgid "Saved as {builderFileName}. This page shows the boot image when the builder uploads it."
+msgstr "Gespeichert als {builderFileName}. Diese Seite zeigt das Startimage, sobald der Builder es hochlädt."
 
 #: src/sequences/SaveState.tsx
 msgid "Saving"
@@ -8730,6 +8783,15 @@ msgstr "Das Startimage muss neu erstellt werden"
 msgid "The boot image has Windows PE's own drivers only. Flag a driver package under <0>Library, Drivers</0> when a machine cannot reach the network or see its disk in Windows PE."
 msgstr "Das Startimage enthält nur die eigenen Treiber von Windows PE. Markieren Sie ein Treiberpaket unter <0>Bibliothek, Treiber</0>, wenn ein Gerät in Windows PE das Netzwerk nicht erreicht oder seinen Datenträger nicht sieht."
 
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadTooLarge"
+msgid "The boot image is larger than {max} MB."
+msgstr "Das Startimage ist größer als {max} MB."
+
+#: src/boot/BuilderPanel.tsx
+msgid "The boot image the builder makes runs as SYSTEM on every machine that netboots, so downloading it needs your password again."
+msgstr "Das Startimage, das der Builder erstellt, läuft auf jedem per Netzwerk startenden Gerät als SYSTEM, daher braucht das Herunterladen erneut Ihr Kennwort."
+
 #: src/settings/networkBoot/BootServerFields.tsx
 msgid "The boot server's name in the answer, in ASCII and at most 63 characters. Left empty, its address."
 msgstr "Der Name des Bootservers in der Antwort, in ASCII und höchstens 63 Zeichen. Leer gelassen, seine Adresse."
@@ -8737,6 +8799,15 @@ msgstr "Der Name des Bootservers in der Antwort, in ASCII und höchstens 63 Zeic
 #: src/ui/SecretValue.tsx
 msgid "The browser did not let DDT copy it. Select it and copy it yourself."
 msgstr "Der Browser hat DDT das Kopieren nicht erlaubt. Markieren und kopieren Sie es selbst."
+
+#: src/boot/BuilderPanel.tsx
+msgid "The builder is a zip for any Windows PC that has the Windows ADK with its Windows PE add-on. Unpack it there and run Build.cmd: it builds the boot image for this server and uploads it, and machines netboot the new image once it has arrived."
+msgstr "Der Builder ist ein Zip für jeden Windows-PC, der das Windows ADK mit dem Windows-PE-Add-On hat. Entpacken Sie ihn dort und führen Sie Build.cmd aus: Er erstellt das Startimage für diesen Server und lädt es hoch, und Geräte starten per Netzwerk mit dem neuen Image, sobald es angekommen ist."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadToken"
+msgid "The builder's token is unknown, has expired or uploaded a boot image already. Download the builder again."
+msgstr "Das Token des Builders ist unbekannt, abgelaufen oder hat bereits ein Startimage hochgeladen. Laden Sie den Builder erneut herunter."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.keyMismatch"
@@ -9938,6 +10009,21 @@ msgstr "Der Upload konnte nicht in die Bibliothek aufgenommen werden. Sehen Sie 
 msgid "The upload failed."
 msgstr "Der Upload ist fehlgeschlagen."
 
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadStrayFile"
+msgid "The upload is no boot image build: {file} is outside Boot, EFI and x64."
+msgstr "Der Upload ist kein Startimage-Build: {file} liegt außerhalb von Boot, EFI und x64."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadMissingFile"
+msgid "The upload is no boot image build: it has no {file}."
+msgstr "Der Upload ist kein Startimage-Build: {file} fehlt."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadBroken"
+msgid "The upload is no boot image build: its zip, its boot.wim or its description cannot be read."
+msgstr "Der Upload ist kein Startimage-Build: Sein Zip, seine boot.wim oder seine Beschreibung lässt sich nicht lesen."
+
 #: src/uploads/useResumableUpload.ts
 msgid "The upload of {name} stopped. Choose the file again to resume."
 msgstr "Der Upload von {name} wurde gestoppt. Wählen Sie die Datei erneut, um fortzusetzen."
@@ -10272,6 +10358,11 @@ msgstr "Dieser Server wurde mit Agent {version} geliefert, der neuer ist als der
 #: src/settings/ConsolePanel.tsx
 msgid "This server came with console {version}, which is newer than the uploaded one. Remove the upload, and machines show the server's own."
 msgstr "Dieser Server wurde mit Konsole {version} geliefert, die neuer ist als die hochgeladene. Entfernen Sie die hochgeladene Konsole, damit Geräte die des Servers zeigen."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.noBuilder"
+msgid "This server came without the build script or the agent, so it has no builder to hand out. A release has both."
+msgstr "Dieser Server wurde ohne das Build-Skript oder den Agent geliefert und hat daher keinen Builder zum Herausgeben. Ein Release enthält beides."
 
 #: src/lib/serverMessages.ts
 msgctxt "bootImage.noHelper"

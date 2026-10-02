@@ -47,6 +47,30 @@ function Get-ReleaseDefault {
     }
 }
 
+# A builder from DDT's Boot image page has builder.json next to the script: the server to build for, and a token that
+# uploads the result once. It builds with what came in its folder. Null in any other folder.
+function Get-BuilderDefault {
+    param([Parameter(Mandatory)][string] $Folder)
+
+    $file = Join-Path $Folder 'builder.json'
+    if (-not (Test-Path -LiteralPath $file)) { return $null }
+
+    $builder = [IO.File]::ReadAllText($file) | ConvertFrom-Json
+    $console = Join-Path $Folder 'ddt-console.zip'
+    $drivers = Join-Path $Folder 'drivers'
+
+    [pscustomobject]@{
+        ServerUrl           = [string] $builder.serverUrl
+        UploadToken         = [string] $builder.uploadToken
+        AgentPath           = Join-Path $Folder 'ddt-agent.exe'
+        ConsolePackage      = if (Test-Path -LiteralPath $console) { $console } else { $null }
+        RootCertificatePath = Join-Path $Folder 'ddt-root.pem'
+        ServerDriverPath    = if (Test-Path -LiteralPath (Join-Path $drivers 'drivers.json')) { $drivers } else { $null }
+        Destination         = Join-Path $Folder 'boot'
+        WorkDirectory       = Join-Path $Folder 'work'
+    }
+}
+
 # Names the build the server serves, in the file "current" of its boot directory. Written next to it and renamed, so
 # the server never reads half a name; it may hold the file open for an instant.
 function Set-CurrentBootBuild {

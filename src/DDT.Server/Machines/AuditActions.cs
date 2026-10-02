@@ -67,6 +67,8 @@ public static class AuditActions
     public const string BootImageBuildStarted = "boot-image.build-started";
     public const string BootImageBuildChosen = "boot-image.build-chosen";
     public const string AdkInstallStarted = "boot-image.adk-install-started";
+    public const string BootImageBuilderDownloaded = "boot-image.builder-downloaded";
+    public const string BootImageUploaded = "boot-image.uploaded";
     public const string ConsoleLogoUploaded = "console.logo.uploaded";
     public const string ConsoleLogoRemoved = "console.logo.removed";
     public const string AdministratorCreated = "administrator.created";

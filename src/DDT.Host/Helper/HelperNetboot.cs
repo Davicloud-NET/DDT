@@ -6,7 +6,9 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
+using DDT.Core.Windows;
 using DDT.Pxe;
 using DDT.Server.BootImage;
 
@@ -25,7 +27,7 @@ public sealed partial class HelperNetboot(HelperPaths paths, Func<ProcessStartIn
     }
 
     public static bool Handles(string kind) =>
-        kind is HelperRequest.DhcpScopes or HelperRequest.DhcpOptions or HelperRequest.WdsReplace or HelperRequest.WdsRestore
+        kind is HelperRequest.Services or HelperRequest.DhcpScopes or HelperRequest.DhcpOptions or HelperRequest.WdsReplace or HelperRequest.WdsRestore
             or HelperRequest.WdsBootImage or HelperRequest.WdsRefresh;
 
     // Returns null when PowerShell ended well, or what stopped it.
@@ -39,6 +41,10 @@ public sealed partial class HelperNetboot(HelperPaths paths, Func<ProcessStartIn
 
         switch (request.Kind)
         {
+            case HelperRequest.Services:
+                line(JsonSerializer.Serialize(new HelperServices(State("DHCPServer"), State("WDSServer")), HelperJsonContext.Default.HelperServices));
+
+                return null;
             case HelperRequest.DhcpScopes:
                 script = NetbootScripts.DhcpScopes;
                 break;
@@ -78,6 +84,13 @@ public sealed partial class HelperNetboot(HelperPaths paths, Func<ProcessStartIn
         }
 
         return await PowerShellAsync(script, values, line, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static HelperServiceState State(string service)
+    {
+        (bool installed, bool running, int process) = WindowsServices.State(service);
+
+        return new HelperServiceState(installed, running, process);
     }
 
     private async Task<string?> PowerShellAsync(string script, Dictionary<string, string> values, Action<string> line, CancellationToken cancellationToken)

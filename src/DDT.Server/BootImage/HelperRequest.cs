@@ -12,6 +12,7 @@ public sealed record HelperRequest
     public const string InstallAdk = "adk";
 
     // Netboot next to this computer's DHCP server and WDS
+    public const string Services = "netboot-services";
     public const string DhcpScopes = "dhcp-scopes";
     public const string DhcpOptions = "dhcp-options";
     public const string WdsReplace = "wds-replace";

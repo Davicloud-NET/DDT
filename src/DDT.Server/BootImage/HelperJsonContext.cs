@@ -10,4 +10,5 @@ namespace DDT.Server.BootImage;
 [JsonSerializable(typeof(HelperRequest))]
 [JsonSerializable(typeof(HelperMessage))]
 [JsonSerializable(typeof(HelperDriverList))]
+[JsonSerializable(typeof(HelperServices))]
 public sealed partial class HelperJsonContext : JsonSerializerContext;

@@ -79,7 +79,7 @@ public sealed class NetbootTests : IDisposable
 
         using HttpResponseMessage done = await SendAsync(administrator, $"{Netboot}/wds/{route}", proof, null);
         Assert.Equal(HttpStatusCode.OK, done.StatusCode);
-        Assert.Equal(kind, Assert.Single(_application.Helper.Requests).Kind);
+        Assert.Single(_application.Helper.Requests, sent => sent.Kind == kind);
         Assert.Equal(1, await _application.QueryAsync(database =>
             database.AuditEvents.CountAsync(audit => audit.Action == action, TestContext.Current.CancellationToken)));
 

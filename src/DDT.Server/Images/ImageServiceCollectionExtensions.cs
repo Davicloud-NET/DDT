@@ -47,8 +47,8 @@ public static class ImageServiceCollectionExtensions
         services.AddSingleton<BuilderPackage>();
         services.AddSingleton<BootImageUploads>();
         services.AddHostedService<BootImageWatcher>();
-        services.AddSingleton<NetbootNeighbourhood>();
         services.AddSingleton<NetbootHelper>();
+        services.AddSingleton<NetbootNeighbourhood>();
 
         return services;
     }

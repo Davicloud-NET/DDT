@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Diagnostics;
+using System.Text.Json;
 using DDT.Contracts.Netboot;
 using DDT.Core.Windows;
 using DDT.Pxe;
@@ -13,7 +14,7 @@ namespace DDT.Server.Netboot;
 
 // Who else answers netboot on this computer. An MDT shop's server runs WDS, and often Microsoft's DHCP server, which
 // hold the ports DDT would answer on.
-public sealed class NetbootNeighbourhood(IBootImageHelper helper)
+public sealed class NetbootNeighbourhood(NetbootHelper helper)
 {
     public const string DhcpService = "DHCPServer";
     public const string WdsService = "WDSServer";
@@ -24,18 +25,48 @@ public sealed class NetbootNeighbourhood(IBootImageHelper helper)
     // What a DHCP server says in option 66: the name DDT's certificate carries
     public static string BootServer => ServerNames.DnsName();
 
-    public NetbootNeighbours Read()
+    public async Task<NetbootNeighbours> ReadAsync(CancellationToken cancellationToken)
     {
-        (bool Installed, bool Running, int ProcessId) dhcp = WindowsServices.State(DhcpService);
-        (bool Installed, bool Running, int ProcessId) wds = WindowsServices.State(WdsService);
+        HelperServices services = await ServicesAsync(cancellationToken).ConfigureAwait(false);
 
         return new NetbootNeighbours(
-            OperatingSystem.IsWindows() ? Ports(dhcp.ProcessId, wds.ProcessId) : null,
-            new NetbootService(dhcp.Installed, dhcp.Running),
-            new NetbootService(wds.Installed, wds.Running),
+            OperatingSystem.IsWindows() ? Ports(services.Dhcp.ProcessId, services.Wds.ProcessId) : null,
+            new NetbootService(services.Dhcp.Installed, services.Dhcp.Running),
+            new NetbootService(services.Wds.Installed, services.Wds.Running),
             helper.Available,
             BootServer,
             PxeSetup.DefaultBootFile);
+    }
+
+    // Windows hides a service such as the DHCP server from the web server's account, so the helper is asked where
+    // there is one. Without it, this account's own look has to do.
+    private async Task<HelperServices> ServicesAsync(CancellationToken cancellationToken)
+    {
+        if (helper.Available)
+        {
+            (IReadOnlyList<string> lines, string? problem) = await helper.RunAsync(new HelperRequest { Kind = HelperRequest.Services }, cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                if (problem is null && lines.Count > 0 && JsonSerializer.Deserialize(lines[^1], HelperJsonContext.Default.HelperServices) is { } seen)
+                {
+                    return seen;
+                }
+            }
+            catch (JsonException)
+            {
+                // An answer that is none: look from here instead
+            }
+        }
+
+        return new HelperServices(Own(DhcpService), Own(WdsService));
+    }
+
+    private static HelperServiceState Own(string service)
+    {
+        (bool installed, bool running, int process) = WindowsServices.State(service);
+
+        return new HelperServiceState(installed, running, process);
     }
 
     private static List<NetbootPort> Ports(int dhcp, int wds)

@@ -29,7 +29,9 @@ public static class NetbootEndpoints
     {
         ArgumentNullException.ThrowIfNull(group);
 
-        group.MapGet("/", (NetbootNeighbourhood neighbourhood) => TypedResults.Ok(neighbourhood.Read())).RequireAuthorization(DdtPolicies.Administrator);
+        group.MapGet("/", async (NetbootNeighbourhood neighbourhood, CancellationToken cancellationToken) =>
+                TypedResults.Ok(await neighbourhood.ReadAsync(cancellationToken).ConfigureAwait(false)))
+            .RequireAuthorization(DdtPolicies.Administrator);
         group.MapGet("/dhcp-scopes", ReadScopesAsync).RequireAuthorization(DdtPolicies.Administrator);
         group.MapPost("/dhcp-options", SetOptionsAsync).RequireAuthorization(DdtPolicies.Administrator);
         MapWds(group, "/wds/replace", HelperRequest.WdsReplace, AuditActions.WdsReplaced);
@@ -43,7 +45,7 @@ public static class NetbootEndpoints
     private static void MapWds(RouteGroupBuilder group, string route, string kind, string action) =>
         group.MapPost(route, async ([AsParameters] SettingsCaller caller, [AsParameters] NetbootServices services, CancellationToken cancellationToken) =>
                 await RunAsync(new HelperRequest { Kind = kind }, (action, null), caller, services, cancellationToken).ConfigureAwait(false)
-                    ?? TypedResults.Ok(services.Neighbourhood.Read()))
+                    ?? TypedResults.Ok(await services.Neighbourhood.ReadAsync(cancellationToken).ConfigureAwait(false)))
             .RequireAuthorization(DdtPolicies.Administrator);
 
     private static async Task<Results<Ok<IReadOnlyList<DhcpScope>>, ProblemHttpResult>> ReadScopesAsync(NetbootHelper helper, CancellationToken cancellationToken)

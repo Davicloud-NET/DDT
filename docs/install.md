@@ -138,6 +138,19 @@ keeps `.env`, and changes of one's own, such as a PostgreSQL connection string, 
 `compose.override.yaml`, which it never touches. CI runs it on the Linux runner against the image
 it just built.
 
+Tried on a fresh Ubuntu Server 26.04.1 VM, with Docker Engine from Docker's repository and the
+image built there from this source. Piped into `sudo sh` on a terminal, the script asked about ufw,
+opened the ports, and DDT answered 8 seconds later; run again, it kept the store and its root. The
+network card for netboot was chosen through the settings' API, since nothing chooses it on Linux
+yet (section 5). The builder zip, run on a Windows VM with the ADK, built and uploaded in 123
+seconds (section 4.8). A Windows 11 ISO copied into the volume's `import` folder was in the library
+10 seconds later, and a machine netbooted from the container, through ufw, and got its Windows 11.
+
+Found there and fixed: the container listened on IPv4 alone, `https://0.0.0.0`, while DDT's
+certificate names the host's IPv6 addresses as well. A Windows PC that looked the server's name up
+and got its IPv6 address was refused, the builder among them. The image and `compose.yaml` listen
+on `https://*` now.
+
 ### 3.3 Upgrading and removing
 
 The same command upgrades: `winget upgrade Davicloud.DDT`, the MSI again, or the script again, which
@@ -150,6 +163,11 @@ when the release notes say that Windows PE changed, and the Boot image page says
 Removing DDT keeps `%ProgramData%\DDT` unless the removal is asked to delete it: the store holds the
 root key, and a new root means building every boot image again. What setup fetched from Microsoft
 stays as well, as programs of their own in Apps and features.
+
+Tried on the Windows Server 2025 VM: `msiexec /x` with `REMOVESTORE=1` took 6 seconds and left no
+service, file, firewall rule, trusted root, registry key or event source. The helper's work folder,
+`%ProgramData%\DDT Helper`, stayed behind at first; the MSI removes it now, with what a build that
+broke off left in it.
 
 ## 4. What it takes
 
@@ -484,6 +502,13 @@ Done, the helper and the button:
 Left: the page does not say that a release changed Windows PE, since no release says so yet. The
 keyboard layout is chosen at each build and not a setting, so it has nothing to differ from.
 
+Tried on a fresh Windows Server 2025 VM, through the API the page uses: the ADK and its add-on
+installed in 85 seconds, and a build took 125 to 155 seconds. A driver package flagged for Windows
+PE made the served build out of date, and the next build had the driver in `boot.wim`'s driver
+store. A build that finished while a machine was still loading the one before, over TFTP with a
+window of 1, left that machine alone: it got the rest of the old `boot.wim` from the old folder
+and started.
+
 `Build-BootImage.ps1` stays the one implementation, so a build by hand on a PC gives the same image.
 Run next to an installed server without `-Destination`, it builds into `boot\builds` and marks its
 build current, as the button does.
@@ -573,9 +598,37 @@ Done, on the Network boot page under "Next to DHCP and WDS" (`GET /api/netboot`)
   variables, after the helper has checked each value itself.
 
 Tried on the test VM with the DHCP Server and WDS roles: the options arrived in the scope, WDS
-listed the image, stopped and started again. Left: a machine that netboots through the WDS boot
-menu into DDT, which takes a network with WDS answering; and the checklist's netboot step with the
-default route's interface chosen (section 5).
+listed the image, stopped and started again. Tried again on a fresh Windows Server 2025 VM with a
+machine that netboots next to it:
+
+- **Next to the DHCP server, nothing set.** The DHCP server and DDT's ProxyDHCP both hold UDP 67,
+  the one gives the address and the other the boot file, and the machine starts Windows PE. That
+  holds only while the DHCP server took the port first, see below.
+- **Options 66 and 67.** Set from the page for the scope, with ProxyDHCP off, the machine starts
+  Windows PE too.
+- **Beside WDS**, with DDT's ProxyDHCP and TFTP off. WDS answers, loads DDT's `boot.wim`, and the
+  agent reaches DDT. On that VM WDS's own `Boot\x64` folder had no `wdsmgfw.efi`, after
+  `wdsutil /Initialize-Server` had timed out next to the DHCP server. WDS did not take it from
+  DDT's image, with or without `\Windows\Boot\PXE` in it, and it had to be copied from
+  `System32\RemInst\boot\x64` by hand. A shop whose WDS already netboots has that file.
+
+Left: the checklist's netboot step with the default route's interface chosen (section 5).
+
+Found there and open: after a restart of that server DDT started before the DHCP Server and bound
+UDP 67 first, and the DHCP Server then served no one, with "unable to bind to UDP port number 67"
+in its log, until DDT was stopped and it was started again. It takes its address for itself alone,
+which works after DDT's bind to all addresses only the other way round. A restart of the DHCP
+Server while DDT runs would end the same way. So where the DHCP Server is installed on the same
+computer, DDT has to leave port 67 to it by itself, answer on 4011 alone, and have the DHCP server
+send option 60, `PXEClient`, which sends machines there, as WDS does it on a DHCP server.
+
+Hyper-V's Default Switch does not stand in for a network here. Its DHCP is Windows' connection
+sharing, and on the test host it answered no machine on the switch any more from the moment DDT,
+in a VM, sent its first ProxyDHCP offer, and stayed silent with DDT stopped. Connection sharing is
+known to switch its DHCP off when it sees another DHCP server, which fits; it was seen once and not
+tried again. DDT on the host itself shares the switch's address and never set that off. The test
+went on with the DHCP Server role in the server VM. The quick start has to warn of it (section
+4.11).
 
 ### 4.10 Windows images from an ISO, a folder or MDT
 
@@ -688,6 +741,22 @@ open.
 The milestone is done when section 1's measure holds on a fresh Windows Server 2025 VM on the Hyper-V
 test host, timed from the command to a Windows 11 desktop, and on a fresh Ubuntu VM with the boot
 image from the builder.
+
+Measured on the Windows Server 2025 VM, with the MSI from a folder instead of a download, every
+step started by a script through the API, and a second VM as the machine: 16 seconds for the
+command, 85 for the ADK, 2 minutes 16 for the boot image, 27 seconds for a Windows 11 ISO from the
+import folder and a second for the sequence, so 4 and a half minutes for the server. The machine
+took 17 seconds from power-on to DDT's console, 3 minutes for the run and 3 more for Windows'
+own setup, which then asks whom the PC is for: 6 minutes 12. Together under 11 minutes, of the 30.
+The administrator's own minutes, in the browser, are not in that.
+
+On the Ubuntu VM (section 3.2), with Docker there and the image built locally instead of pulled:
+8 seconds for the script, 123 for the builder on a Windows PC that has the ADK, 39 for the ISO over
+the network and its import, and 5 minutes 49 for the machine, so under 9 minutes.
+
+The same chain ran on a fresh Windows Server 2019 VM, the floor: the command in 13 seconds, the
+ADK in 130, the boot image in 135, and the machine netbooted from it and got its Windows 11. There
+the DHCP server was another computer, and DDT answered next to it as ProxyDHCP.
 
 ## 8. Open questions for the maintainer
 

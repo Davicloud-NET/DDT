@@ -585,6 +585,12 @@ Done, on the Network boot page under "Next to DHCP and WDS" (`GET /api/netboot`)
   the system's own table (src/DDT.Core/Windows/UdpPortOwners.cs), and says which of them is DDT,
   Microsoft's DHCP server or WDS. Windows hides the DHCP server's state from the web server's
   account, so the helper reports both services where there is one.
+- **A DHCP Server on the same computer keeps UDP 67.** It takes its address on that port for itself
+  alone, which fails once DDT holds the port for all addresses, and it then serves no one. So where
+  that service is installed and may start (src/DDT.Core/Windows/DhcpServerRole.cs), DDT does not
+  listen on 67 and answers on 4011 alone. The page says so, tells whether the DHCP server sends
+  option 60, `PXEClient`, which sends machines to 4011, as WDS has it on a DHCP server, and the
+  helper sets that option for the whole server or takes it off again.
 - **Options 66 and 67.** The page always gives the two values and a PowerShell line for a Microsoft
   DHCP server elsewhere. Where one runs on the same computer, the helper lists its scopes with what
   they say now and sets both options for the scopes the administrator ticks.
@@ -601,9 +607,10 @@ Tried on the test VM with the DHCP Server and WDS roles: the options arrived in 
 listed the image, stopped and started again. Tried again on a fresh Windows Server 2025 VM with a
 machine that netboots next to it:
 
-- **Next to the DHCP server, nothing set.** The DHCP server and DDT's ProxyDHCP both hold UDP 67,
-  the one gives the address and the other the boot file, and the machine starts Windows PE. That
-  holds only while the DHCP server took the port first, see below.
+- **Next to the DHCP server, nothing set.** The DHCP server and DDT's ProxyDHCP both held UDP 67,
+  the one gave the address and the other the boot file, and the machine started Windows PE. But
+  after a restart of the server DDT bound the port first, and the DHCP Server served no one, with
+  "unable to bind to UDP port number 67" in its log. That is why DDT leaves the port alone now.
 - **Options 66 and 67.** Set from the page for the scope, with ProxyDHCP off, the machine starts
   Windows PE too.
 - **Beside WDS**, with DDT's ProxyDHCP and TFTP off. WDS answers, loads DDT's `boot.wim`, and the
@@ -613,14 +620,6 @@ machine that netboots next to it:
   `System32\RemInst\boot\x64` by hand. A shop whose WDS already netboots has that file.
 
 Left: the checklist's netboot step with the default route's interface chosen (section 5).
-
-Found there and open: after a restart of that server DDT started before the DHCP Server and bound
-UDP 67 first, and the DHCP Server then served no one, with "unable to bind to UDP port number 67"
-in its log, until DDT was stopped and it was started again. It takes its address for itself alone,
-which works after DDT's bind to all addresses only the other way round. A restart of the DHCP
-Server while DDT runs would end the same way. So where the DHCP Server is installed on the same
-computer, DDT has to leave port 67 to it by itself, answer on 4011 alone, and have the DHCP server
-send option 60, `PXEClient`, which sends machines there, as WDS does it on a DHCP server.
 
 Hyper-V's Default Switch does not stand in for a network here. Its DHCP is Windows' connection
 sharing, and on the test host it answered no machine on the switch any more from the moment DDT,

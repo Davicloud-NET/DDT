@@ -31,6 +31,8 @@ function neighbours(overrides: Partial<NetbootNeighbours> = {}): NetbootNeighbou
     helper: true,
     bootServer: "deploy01.contoso.local",
     bootFile: "x64/bootmgfw.efi",
+    leavesDhcpPort: true,
+    dhcpSendsPxe: false,
     ...overrides,
   };
 }
@@ -83,6 +85,9 @@ describe("NeighboursGroup", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Nobody")).toBeInTheDocument();
     expect(screen.getByText("deploy01.contoso.local")).toBeInTheDocument();
+    // Next to a running WDS, option 60 is WDS's own
+    expect(screen.getByText(/DDT answers on port 4011 alone/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /option 60/ })).not.toBeInTheDocument();
 
     press(screen.getByRole("button", { name: "Set them on this DHCP server" }));
     const dialog = await screen.findByRole("dialog", {
@@ -108,6 +113,34 @@ describe("NeighboursGroup", () => {
     const sent = requests.filter((request) => request.path === "/api/netboot/dhcp-options");
     expect(sent.map((request) => request.body)).toEqual([{ scopes: ["10.0.100.0"] }]);
     expect(sent[0]?.headers["x-ddt-reauthentication"]).toBe("netboot-proof");
+  });
+
+  it("sets option 60 on the DHCP server of this computer after the password, and takes it off again", async () => {
+    const alone = { wds: { installed: false, running: false } };
+    const { requests } = open(neighbours(alone), {
+      "POST /api/netboot/dhcp-pxe": () => json(neighbours({ ...alone, dhcpSendsPxe: true })),
+    });
+
+    expect(
+      await screen.findByText(/find it there once the DHCP server sends option/),
+    ).toBeVisible();
+    press(screen.getByRole("button", { name: "Set option 60 on this DHCP server" }));
+    await passwordIfAsked();
+
+    expect(await screen.findByRole("button", { name: "Stop sending option 60" })).toBeVisible();
+    expect(screen.getByText(/which brings machines that netboot there/)).toBeVisible();
+
+    const sent = requests.filter((request) => request.path === "/api/netboot/dhcp-pxe");
+    expect(sent.map((request) => request.body)).toEqual([{ send: true }]);
+    expect(sent[0]?.headers["x-ddt-reauthentication"]).toBe("netboot-proof");
+
+    press(screen.getByRole("button", { name: "Stop sending option 60" }));
+    await waitFor(() => {
+      expect(requests.filter((request) => request.path === "/api/netboot/dhcp-pxe")).toHaveLength(
+        2,
+      );
+    });
+    expect(requests.at(-1)?.body).toEqual({ send: false });
   });
 
   it("puts DDT into the WDS boot menu, or stops WDS after asking and binds the ports again", async () => {
@@ -143,6 +176,8 @@ describe("NeighboursGroup", () => {
         dhcp: { installed: false, running: false },
         wds: { installed: false, running: false },
         helper: false,
+        leavesDhcpPort: false,
+        dhcpSendsPxe: null,
       }),
     );
 

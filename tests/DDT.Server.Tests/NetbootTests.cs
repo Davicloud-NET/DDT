@@ -67,6 +67,26 @@ public sealed class NetbootTests : IDisposable
     }
 
     [Theory]
+    [InlineData(true, HelperRequest.DhcpPxeOn, AuditActions.DhcpPxeOn)]
+    [InlineData(false, HelperRequest.DhcpPxeOff, AuditActions.DhcpPxeOff)]
+    public async Task TheHelperSetsOption60OnTheDhcpServerAfterThePassword(bool send, string kind, string action)
+    {
+        SignedInClient administrator = await _application.AdministratorAsync();
+        SetDhcpPxeRequest request = new(send);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await administrator.PostAsync($"{Netboot}/dhcp-pxe", request)).StatusCode);
+        Assert.DoesNotContain(_application.Helper.Requests, sent => sent.Kind == kind);
+
+        using HttpResponseMessage set = await SendAsync(administrator, $"{Netboot}/dhcp-pxe", await administrator.TokenAsync(), request);
+        NetbootNeighbours now = await RegisteredMachine.ReadAsync<NetbootNeighbours>(set);
+
+        Assert.True(now.Helper);
+        Assert.Single(_application.Helper.Requests, sent => sent.Kind == kind);
+        Assert.Equal(1, await _application.QueryAsync(database =>
+            database.AuditEvents.CountAsync(audit => audit.Action == action, TestContext.Current.CancellationToken)));
+    }
+
+    [Theory]
     [InlineData("replace", HelperRequest.WdsReplace, AuditActions.WdsReplaced)]
     [InlineData("restore", HelperRequest.WdsRestore, AuditActions.WdsRestored)]
     [InlineData("boot-image", HelperRequest.WdsBootImage, AuditActions.WdsBootImageAdded)]

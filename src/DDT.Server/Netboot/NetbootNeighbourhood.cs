@@ -35,7 +35,11 @@ public sealed class NetbootNeighbourhood(NetbootHelper helper)
             new NetbootService(services.Wds.Installed, services.Wds.Running),
             helper.Available,
             BootServer,
-            PxeSetup.DefaultBootFile);
+            PxeSetup.DefaultBootFile)
+        {
+            LeavesDhcpPort = DhcpServerRole.Installed(),
+            DhcpSendsPxe = services.DhcpPxe,
+        };
     }
 
     // Windows hides a service such as the DHCP server from the web server's account, so the helper is asked where

@@ -8,49 +8,33 @@ import { useState } from "react";
 import { Button } from "@/ui/Button";
 import { CopyButton } from "@/ui/CopyButton";
 import { Facts } from "@/ui/Facts";
-import { Notice } from "@/ui/Notice";
 
+import { DhcpHere } from "./DhcpHere";
 import { DhcpScopesDialog } from "./DhcpScopesDialog";
 import { dhcpCommand, type NetbootNeighbours } from "./neighbours";
 
-// Options 66 and 67 send machines to DDT from a DHCP server, in place of ProxyDHCP. For the Microsoft DHCP server on
-// this computer DDT sets them itself; for any other it gives the two values.
+// How a DHCP server sends machines to DDT where ProxyDHCP cannot. Microsoft's DHCP server on this computer does it
+// with option 60, and any DHCP server with options 66 and 67, which DDT sets itself on the one here.
 export function DhcpOptions({ neighbours }: { neighbours: NetbootNeighbours }) {
   const [choosing, setChoosing] = useState(false);
-  const here = neighbours.dhcp.running;
+  const here = neighbours.leavesDhcpPort;
 
   return (
     <>
-      {here ? (
-        <Notice
-          tone="attention"
-          actions={
-            neighbours.helper ? (
-              <Button
-                size="sm"
-                onPress={() => {
-                  setChoosing(true);
-                }}
-              >
-                <Trans>Set them on this DHCP server</Trans>
-              </Button>
-            ) : null
-          }
-        >
+      {here ? <DhcpHere neighbours={neighbours} /> : null}
+      <p className="type-small text-ink-2">
+        {here ? (
           <Trans>
-            Microsoft's DHCP server runs on this computer and answers on UDP 67, so ProxyDHCP
-            cannot. Its options 66 and 67 send machines to DDT instead, with ProxyDHCP switched off
-            above.
+            Options 66 and 67 do it too, with ProxyDHCP switched off above. They name one boot file
+            for every kind of machine.
           </Trans>
-        </Notice>
-      ) : (
-        <p className="type-small text-ink-2">
+        ) : (
           <Trans>
             Where ProxyDHCP does not reach the machines, such as across a router, the DHCP server
             sends them to DDT with these two options.
           </Trans>
-        </p>
-      )}
+        )}
+      </p>
       <Facts
         items={[
           {
@@ -61,7 +45,18 @@ export function DhcpOptions({ neighbours }: { neighbours: NetbootNeighbours }) {
           { label: <Trans>Option 67, boot file</Trans>, value: neighbours.bootFile, mono: true },
         ]}
       />
-      <div>
+      <div className="flex flex-wrap items-center gap-2">
+        {here && neighbours.helper ? (
+          <Button
+            size="sm"
+            variant="quiet"
+            onPress={() => {
+              setChoosing(true);
+            }}
+          >
+            <Trans>Set them on this DHCP server</Trans>
+          </Button>
+        ) : null}
         <CopyButton size="sm" variant="quiet" text={dhcpCommand(neighbours)}>
           <Trans>Copy the PowerShell line for a Microsoft DHCP server</Trans>
         </CopyButton>

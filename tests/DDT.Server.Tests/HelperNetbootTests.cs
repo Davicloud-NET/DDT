@@ -61,6 +61,21 @@ public sealed class HelperNetbootTests : IDisposable
         Assert.Empty(_started);
     }
 
+    [Theory]
+    [InlineData(HelperRequest.DhcpPxeOn, NetbootScripts.DhcpPxeOn)]
+    [InlineData(HelperRequest.DhcpPxeOff, NetbootScripts.DhcpPxeOff)]
+    public async Task Option60IsAFixedScriptThatTakesNothingFromTheRequest(string kind, string script)
+    {
+        HelperRequest request = new() { Kind = kind, BootServer = "deploy01'; calc", Scopes = ["10.0.100.0"] };
+
+        Assert.True(HelperNetboot.Handles(kind));
+        Assert.Null(await Netboot().RunAsync(request, _lines.Add, TestContext.Current.CancellationToken));
+
+        ProcessStartInfo started = Assert.Single(_started);
+        Assert.Contains(script, Script(started), StringComparison.Ordinal);
+        Assert.False(started.Environment.ContainsKey("DDT_BOOT_SERVER") || started.Environment.ContainsKey("DDT_SCOPES"));
+    }
+
     [Fact]
     public async Task WdsGetsTheBuildThatIsServedAndARefreshWithoutOneDoesNothing()
     {

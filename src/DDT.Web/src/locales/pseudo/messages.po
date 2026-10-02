@@ -3173,6 +3173,7 @@ msgstr ""
 msgid "Confirm and generate"
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
 #: src/settings/networkBoot/neighbours/WdsChoices.tsx
 msgid "Confirm and go on"
 msgstr ""
@@ -3550,6 +3551,14 @@ msgstr ""
 
 #: src/machines/facts.ts
 msgid "Device kind"
+msgstr ""
+
+#: src/audit/auditView.ts
+msgid "DHCP option 60 removed"
+msgstr ""
+
+#: src/audit/auditView.ts
+msgid "DHCP option 60 set"
 msgstr ""
 
 #: src/audit/auditView.ts
@@ -5597,8 +5606,12 @@ msgstr ""
 msgid "Microsoft's DHCP server ({process}, process {id})"
 msgstr ""
 
-#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
-msgid "Microsoft's DHCP server runs on this computer and answers on UDP 67, so ProxyDHCP cannot. Its options 66 and 67 send machines to DDT instead, with ProxyDHCP switched off above."
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT answers on port 4011 alone. Machines that netboot find it there once the DHCP server sends option 60, PXEClient."
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT answers on port 4011 alone. The DHCP server sends option 60, PXEClient, which brings machines that netboot there."
 msgstr ""
 
 #: src/machines/secureBoot.ts
@@ -6770,6 +6783,10 @@ msgstr ""
 
 #: src/machines/assign/assignText.ts
 msgid "Optional. Without a name, Windows picks one."
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Options 66 and 67 do it too, with ProxyDHCP switched off above. They name one boot file for every kind of machine."
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
@@ -8126,6 +8143,10 @@ msgstr ""
 msgid "Set on this machine"
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Set option 60 on this DHCP server"
+msgstr ""
+
 #: src/settings/networkBoot/neighbours/DhcpOptions.tsx
 msgid "Set them on this DHCP server"
 msgstr ""
@@ -8645,6 +8666,10 @@ msgstr ""
 
 #: src/ui/FlowNode.tsx
 msgid "Steps of {name}"
+msgstr ""
+
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Stop sending option 60"
 msgstr ""
 
 #: src/machines/actions/MachineKeys.tsx
@@ -10501,6 +10526,7 @@ msgctxt "settings.certificate.newRootUpload"
 msgid "This certificate does not come from DDT's root, which every boot image pins: build every boot image again with its root, and trust that root in the browsers that manage DDT."
 msgstr ""
 
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
 #: src/settings/networkBoot/neighbours/WdsChoices.tsx
 msgid "This changes what every machine that netboots from this server loads, so it needs your password again."
 msgstr ""

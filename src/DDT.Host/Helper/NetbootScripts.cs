@@ -40,6 +40,32 @@ public static class NetbootScripts
         }
         """;
 
+    // "on" or "off": whether the server sends option 60, PXEClient, to every scope
+    public const string DhcpPxeState = """
+        $ErrorActionPreference = 'Stop'
+        Import-Module DhcpServer
+        $option = Get-DhcpServerv4OptionValue -OptionId 60 -ErrorAction SilentlyContinue
+        if ($option -and "$($option.Value)" -eq 'PXEClient') { Write-Output 'on' } else { Write-Output 'off' }
+        """;
+
+    // A DHCP server knows option 60 only once it is defined, which WDS does the same way.
+    public const string DhcpPxeOn = """
+        $ErrorActionPreference = 'Stop'
+        Import-Module DhcpServer
+        if (-not (Get-DhcpServerv4OptionDefinition -OptionId 60 -ErrorAction SilentlyContinue)) {
+            Add-DhcpServerv4OptionDefinition -OptionId 60 -Name 'PXEClient' -Type String -Description 'Sends machines that netboot to the PXE server on this computer'
+        }
+        Set-DhcpServerv4OptionValue -OptionId 60 -Value 'PXEClient'
+        Write-Output 'The DHCP server sends option 60 now: machines that netboot ask this computer on UDP 4011.'
+        """;
+
+    public const string DhcpPxeOff = """
+        $ErrorActionPreference = 'Stop'
+        Import-Module DhcpServer
+        if (Get-DhcpServerv4OptionValue -OptionId 60 -ErrorAction SilentlyContinue) { Remove-DhcpServerv4OptionValue -OptionId 60 }
+        Write-Output 'The DHCP server no longer sends option 60.'
+        """;
+
     public const string WdsReplace = """
         $ErrorActionPreference = 'Stop'
         Stop-Service -Name WDSServer -Force

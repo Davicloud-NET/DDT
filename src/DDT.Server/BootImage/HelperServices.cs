@@ -5,5 +5,5 @@
 namespace DDT.Server.BootImage;
 
 // The helper's answer about the DHCP server and WDS of this computer. Windows hides the DHCP server's state from the
-// web server's account, and the helper, as SYSTEM, sees it.
-public sealed record HelperServices(HelperServiceState Dhcp, HelperServiceState Wds);
+// web server's account, and the helper, as SYSTEM, sees it. DhcpPxe says whether a running DHCP server sends option 60.
+public sealed record HelperServices(HelperServiceState Dhcp, HelperServiceState Wds, bool? DhcpPxe = null);

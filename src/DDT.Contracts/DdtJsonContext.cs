@@ -95,6 +95,7 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(NetbootNeighbours))]
 [JsonSerializable(typeof(IReadOnlyList<DhcpScope>))]
 [JsonSerializable(typeof(SetDhcpOptionsRequest))]
+[JsonSerializable(typeof(SetDhcpPxeRequest))]
 [JsonSerializable(typeof(ImportSources))]
 [JsonSerializable(typeof(ImportStatus))]
 [JsonSerializable(typeof(ImportFilesRequest))]

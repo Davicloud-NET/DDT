@@ -34,6 +34,10 @@ export interface NetbootNeighbours {
   helper: boolean;
   bootServer: string;
   bootFile: string;
+  // DDT leaves UDP 67 to the DHCP server of the server's computer and answers on 4011 alone.
+  leavesDhcpPort: boolean;
+  // Whether that DHCP server sends option 60, PXEClient, which sends machines to 4011. null where nobody could ask it.
+  dhcpSendsPxe: boolean | null;
 }
 
 // A scope of the Microsoft DHCP server on the server's computer, with the options 66 and 67 it has now.
@@ -78,6 +82,11 @@ async function change<T>(path: string, body?: unknown): Promise<T> {
 // Answers with the scopes as they are afterwards.
 export function setDhcpOptions(scopes: string[]): Promise<DhcpScope[]> {
   return change("/api/netboot/dhcp-options", { scopes });
+}
+
+// Option 60 on the DHCP server of the server's computer. Answers with the neighbours as they are afterwards.
+export function setDhcpPxe(send: boolean): Promise<NetbootNeighbours> {
+  return change("/api/netboot/dhcp-pxe", { send });
 }
 
 export type WdsChange = "replace" | "restore" | "boot-image";

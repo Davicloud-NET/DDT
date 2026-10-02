@@ -70,6 +70,8 @@ public static class AuditActions
     public const string AdkInstallStarted = "boot-image.adk-install-started";
     public const string BootImageBuilderDownloaded = "boot-image.builder-downloaded";
     public const string DhcpOptionsSet = "netboot.dhcp-options-set";
+    public const string DhcpPxeOn = "netboot.dhcp-pxe-on";
+    public const string DhcpPxeOff = "netboot.dhcp-pxe-off";
     public const string WdsReplaced = "netboot.wds-replaced";
     public const string WdsRestored = "netboot.wds-restored";
     public const string WdsBootImageAdded = "netboot.wds-boot-image-added";

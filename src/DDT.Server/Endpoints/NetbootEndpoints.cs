@@ -34,6 +34,7 @@ public static class NetbootEndpoints
             .RequireAuthorization(DdtPolicies.Administrator);
         group.MapGet("/dhcp-scopes", ReadScopesAsync).RequireAuthorization(DdtPolicies.Administrator);
         group.MapPost("/dhcp-options", SetOptionsAsync).RequireAuthorization(DdtPolicies.Administrator);
+        group.MapPost("/dhcp-pxe", SetPxeAsync).RequireAuthorization(DdtPolicies.Administrator);
         MapWds(group, "/wds/replace", HelperRequest.WdsReplace, AuditActions.WdsReplaced);
         MapWds(group, "/wds/restore", HelperRequest.WdsRestore, AuditActions.WdsRestored);
         MapWds(group, "/wds/boot-image", HelperRequest.WdsBootImage, AuditActions.WdsBootImageAdded);
@@ -93,6 +94,20 @@ public static class NetbootEndpoints
         (IReadOnlyList<DhcpScope> now, _) = await services.Helper.ScopesAsync(cancellationToken).ConfigureAwait(false);
 
         return TypedResults.Ok(now);
+    }
+
+    // Option 60 on this computer's DHCP server. Answers with the neighbours as they are afterwards.
+    private static async Task<IResult> SetPxeAsync(
+        SetDhcpPxeRequest request,
+        [AsParameters] SettingsCaller caller,
+        [AsParameters] NetbootServices services,
+        CancellationToken cancellationToken)
+    {
+        HelperRequest change = new() { Kind = request.Send ? HelperRequest.DhcpPxeOn : HelperRequest.DhcpPxeOff };
+        string action = request.Send ? AuditActions.DhcpPxeOn : AuditActions.DhcpPxeOff;
+
+        return await RunAsync(change, (action, null), caller, services, cancellationToken).ConfigureAwait(false)
+            ?? TypedResults.Ok(await services.Neighbourhood.ReadAsync(cancellationToken).ConfigureAwait(false));
     }
 
     // Returns null when the helper did it, with its audit row saved, or the refusal.

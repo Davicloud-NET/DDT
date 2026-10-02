@@ -15,7 +15,8 @@ using DDT.Server.BootImage;
 namespace DDT.Host.Helper;
 
 // What the helper does to this computer's DHCP server and WDS for the web server: it lists the DHCP scopes, sets
-// their options 66 and 67, stops WDS or starts it again, and puts DDT's boot image into the WDS boot menu.
+// their options 66 and 67 or the server's option 60, stops WDS or starts it again, and puts DDT's boot image into the
+// WDS boot menu.
 public sealed partial class HelperNetboot(HelperPaths paths, Func<ProcessStartInfo, Action<string>, CancellationToken, Task<int>> run)
 {
     private const int MaxScopes = 256;
@@ -27,8 +28,8 @@ public sealed partial class HelperNetboot(HelperPaths paths, Func<ProcessStartIn
     }
 
     public static bool Handles(string kind) =>
-        kind is HelperRequest.Services or HelperRequest.DhcpScopes or HelperRequest.DhcpOptions or HelperRequest.WdsReplace or HelperRequest.WdsRestore
-            or HelperRequest.WdsBootImage or HelperRequest.WdsRefresh;
+        kind is HelperRequest.Services or HelperRequest.DhcpScopes or HelperRequest.DhcpOptions or HelperRequest.DhcpPxeOn or HelperRequest.DhcpPxeOff
+            or HelperRequest.WdsReplace or HelperRequest.WdsRestore or HelperRequest.WdsBootImage or HelperRequest.WdsRefresh;
 
     // Returns null when PowerShell ended well, or what stopped it.
     public async Task<string?> RunAsync(HelperRequest request, Action<string> line, CancellationToken cancellationToken)
@@ -36,54 +37,74 @@ public sealed partial class HelperNetboot(HelperPaths paths, Func<ProcessStartIn
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(line);
 
-        Dictionary<string, string> values = [];
-        string script;
+        if (request.Kind == HelperRequest.Services)
+        {
+            HelperServiceState dhcp = State("DHCPServer");
+            bool? pxe = dhcp.Running ? await SendsPxeAsync(cancellationToken).ConfigureAwait(false) : null;
+            line(JsonSerializer.Serialize(new HelperServices(dhcp, State("WDSServer"), pxe), HelperJsonContext.Default.HelperServices));
 
+            return null;
+        }
+
+        Dictionary<string, string> values = [];
+        (string? script, string? problem) = Script(request, values);
+
+        return script is null ? problem : await PowerShellAsync(script, values, line, cancellationToken).ConfigureAwait(false);
+    }
+
+    // The fixed script for a request, with what it reads from its environment. Without one, why, or null when there is
+    // nothing to do.
+    private (string? Script, string? Problem) Script(HelperRequest request, Dictionary<string, string> values)
+    {
         switch (request.Kind)
         {
-            case HelperRequest.Services:
-                line(JsonSerializer.Serialize(new HelperServices(State("DHCPServer"), State("WDSServer")), HelperJsonContext.Default.HelperServices));
-
-                return null;
             case HelperRequest.DhcpScopes:
-                script = NetbootScripts.DhcpScopes;
-                break;
+                return (NetbootScripts.DhcpScopes, null);
+            case HelperRequest.DhcpPxeOn:
+                return (NetbootScripts.DhcpPxeOn, null);
+            case HelperRequest.DhcpPxeOff:
+                return (NetbootScripts.DhcpPxeOff, null);
+            case HelperRequest.WdsReplace:
+                return (NetbootScripts.WdsReplace, null);
+            case HelperRequest.WdsRestore:
+                return (NetbootScripts.WdsRestore, null);
             case HelperRequest.DhcpOptions:
                 if (OptionsProblem(request) is { } problem)
                 {
-                    return problem;
+                    return (null, problem);
                 }
 
-                script = NetbootScripts.DhcpOptions;
                 values["DDT_SCOPES"] = string.Join(',', request.Scopes);
                 values["DDT_BOOT_SERVER"] = request.BootServer ?? string.Empty;
                 values["DDT_BOOT_FILE"] = request.BootFile ?? string.Empty;
-                break;
-            case HelperRequest.WdsReplace:
-                script = NetbootScripts.WdsReplace;
-                break;
-            case HelperRequest.WdsRestore:
-                script = NetbootScripts.WdsRestore;
-                break;
+
+                return (NetbootScripts.DhcpOptions, null);
             case HelperRequest.WdsBootImage or HelperRequest.WdsRefresh:
                 // The build that is served, which the helper finds itself
                 string image = Path.Combine(BootBuilds.Serving(paths.BootDirectory), "Boot", "boot.wim");
 
                 if (!File.Exists(image))
                 {
-                    return request.Kind == HelperRequest.WdsRefresh ? null : "The server has no boot image yet. Build one first.";
+                    return (null, request.Kind == HelperRequest.WdsRefresh ? null : "The server has no boot image yet. Build one first.");
                 }
 
-                script = NetbootScripts.WdsBootImage;
                 values["DDT_WIM"] = image;
                 values["DDT_IMAGE_NAME"] = NetbootScripts.ImageName;
                 values["DDT_ONLY_REPLACE"] = request.Kind == HelperRequest.WdsRefresh ? "1" : "0";
-                break;
-            default:
-                return $"The helper does nothing called {request.Kind}.";
-        }
 
-        return await PowerShellAsync(script, values, line, cancellationToken).ConfigureAwait(false);
+                return (NetbootScripts.WdsBootImage, null);
+            default:
+                return (null, $"The helper does nothing called {request.Kind}.");
+        }
+    }
+
+    // Whether the DHCP server sends option 60 now. Null when it would not say.
+    private async Task<bool?> SendsPxeAsync(CancellationToken cancellationToken)
+    {
+        List<string> said = [];
+        string? problem = await PowerShellAsync(NetbootScripts.DhcpPxeState, [], said.Add, cancellationToken).ConfigureAwait(false);
+
+        return problem is null ? said.Contains("on") : null;
     }
 
     private static HelperServiceState State(string service)

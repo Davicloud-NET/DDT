@@ -3173,6 +3173,7 @@ msgstr "Bestätigen und herunterladen"
 msgid "Confirm and generate"
 msgstr "Bestätigen und generieren"
 
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
 #: src/settings/networkBoot/neighbours/WdsChoices.tsx
 msgid "Confirm and go on"
 msgstr "Bestätigen und fortfahren"
@@ -3551,6 +3552,14 @@ msgstr "Details für die Fehlersuche"
 #: src/machines/facts.ts
 msgid "Device kind"
 msgstr "Geräteart"
+
+#: src/audit/auditView.ts
+msgid "DHCP option 60 removed"
+msgstr "DHCP-Option 60 entfernt"
+
+#: src/audit/auditView.ts
+msgid "DHCP option 60 set"
+msgstr "DHCP-Option 60 gesetzt"
 
 #: src/audit/auditView.ts
 msgid "DHCP options 66 and 67 set"
@@ -5597,9 +5606,13 @@ msgstr "Startdateien von Microsoft"
 msgid "Microsoft's DHCP server ({process}, process {id})"
 msgstr "DHCP-Server von Microsoft ({process}, Prozess {id})"
 
-#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
-msgid "Microsoft's DHCP server runs on this computer and answers on UDP 67, so ProxyDHCP cannot. Its options 66 and 67 send machines to DDT instead, with ProxyDHCP switched off above."
-msgstr "Der DHCP-Server von Microsoft läuft auf diesem Computer und antwortet auf UDP 67, daher kann ProxyDHCP es nicht. Stattdessen schicken seine Optionen 66 und 67 die Geräte zu DDT, wobei ProxyDHCP oben ausgeschaltet wird."
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT answers on port 4011 alone. Machines that netboot find it there once the DHCP server sends option 60, PXEClient."
+msgstr "Der DHCP-Server von Microsoft auf diesem Computer braucht UDP 67 für sich allein, deshalb antwortet DDT nur auf Port 4011. Geräte, die per Netzwerk starten, finden DDT dort, sobald der DHCP-Server die Option 60, PXEClient, sendet."
+
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT answers on port 4011 alone. The DHCP server sends option 60, PXEClient, which brings machines that netboot there."
+msgstr "Der DHCP-Server von Microsoft auf diesem Computer braucht UDP 67 für sich allein, deshalb antwortet DDT nur auf Port 4011. Der DHCP-Server sendet die Option 60, PXEClient, die Geräte, die per Netzwerk starten, dorthin schickt."
 
 #: src/machines/secureBoot.ts
 msgid "Microsoft's third-party UEFI CA"
@@ -6771,6 +6784,10 @@ msgstr "Optional. Ohne Namen wählt das Image einen."
 #: src/machines/assign/assignText.ts
 msgid "Optional. Without a name, Windows picks one."
 msgstr "Optional. Ohne Namen wählt Windows einen."
+
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Options 66 and 67 do it too, with ProxyDHCP switched off above. They name one boot file for every kind of machine."
+msgstr "Die Optionen 66 und 67 leisten das ebenfalls, wenn ProxyDHCP oben ausgeschaltet ist. Sie nennen eine einzige Startdatei für jede Art von Gerät."
 
 #: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
 msgid "Options 66 and 67 on this DHCP server"
@@ -8126,6 +8143,10 @@ msgstr "In der Konfiguration als {key} ({variable}) gesetzt. Entfernen Sie es do
 msgid "Set on this machine"
 msgstr "Auf diesem Gerät festgelegt"
 
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Set option 60 on this DHCP server"
+msgstr "Option 60 auf diesem DHCP-Server setzen"
+
 #: src/settings/networkBoot/neighbours/DhcpOptions.tsx
 msgid "Set them on this DHCP server"
 msgstr "Auf diesem DHCP-Server setzen"
@@ -8646,6 +8667,10 @@ msgstr "Schritte dürfen sie ändern"
 #: src/ui/FlowNode.tsx
 msgid "Steps of {name}"
 msgstr "Schritte von {name}"
+
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Stop sending option 60"
+msgstr "Option 60 nicht mehr senden"
 
 #: src/machines/actions/MachineKeys.tsx
 #: src/machines/actions/MachineMenu.tsx
@@ -10501,6 +10526,7 @@ msgctxt "settings.certificate.newRootUpload"
 msgid "This certificate does not come from DDT's root, which every boot image pins: build every boot image again with its root, and trust that root in the browsers that manage DDT."
 msgstr "Dieses Zertifikat stammt nicht vom Stammzertifikat von DDT, das jedes Startimage fest hinterlegt: Erstellen Sie jedes Startimage mit seinem Stammzertifikat neu, und vertrauen Sie diesem in den Browsern, die DDT verwalten."
 
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
 #: src/settings/networkBoot/neighbours/WdsChoices.tsx
 msgid "This changes what every machine that netboots from this server loads, so it needs your password again."
 msgstr "Das ändert, was jedes Gerät lädt, das per Netzwerk von diesem Server startet, daher braucht es erneut Ihr Kennwort."

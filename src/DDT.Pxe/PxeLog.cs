@@ -39,6 +39,13 @@ internal static partial class PxeLog
     [LoggerMessage(EventId = 507, Level = LogLevel.Information, Message = "HTTP boot listening on port {Port}, serving {BootDirectory}")]
     public static partial void HttpBootListening(ILogger logger, int port, string bootDirectory);
 
+    [LoggerMessage(
+        EventId = 508,
+        Level = LogLevel.Warning,
+        Message = "Microsoft's DHCP Server is installed on this computer and needs UDP {Port} for itself, so ProxyDHCP does not listen there. " +
+            "Machines find DDT on UDP {BootServerPort} once the DHCP server sends option 60, PXEClient, or through its options 66 and 67")]
+    public static partial void DhcpPortLeft(ILogger logger, int port, int bootServerPort);
+
     [LoggerMessage(EventId = 520, Level = LogLevel.Warning, Message = "Netboot is not served: {Reason}")]
     public static partial void Stopped(ILogger logger, string reason);
 

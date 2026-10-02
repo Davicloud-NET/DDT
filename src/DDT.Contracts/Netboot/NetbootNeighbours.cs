@@ -12,4 +12,11 @@ public sealed record NetbootNeighbours(
     NetbootService Wds,
     bool Helper,
     string BootServer,
-    string BootFile);
+    string BootFile)
+{
+    // DDT leaves UDP 67 to the DHCP server of this computer and answers on 4011 alone.
+    public bool LeavesDhcpPort { get; init; }
+
+    // Whether that DHCP server sends option 60, PXEClient, which sends machines to 4011. Null where nobody could ask it.
+    public bool? DhcpSendsPxe { get; init; }
+}

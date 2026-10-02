@@ -15,6 +15,10 @@ public sealed record HelperRequest
     public const string Services = "netboot-services";
     public const string DhcpScopes = "dhcp-scopes";
     public const string DhcpOptions = "dhcp-options";
+
+    // Option 60, PXEClient, on that DHCP server: machines then ask this computer on UDP 4011
+    public const string DhcpPxeOn = "dhcp-pxe-on";
+    public const string DhcpPxeOff = "dhcp-pxe-off";
     public const string WdsReplace = "wds-replace";
     public const string WdsRestore = "wds-restore";
     public const string WdsBootImage = "wds-boot-image";

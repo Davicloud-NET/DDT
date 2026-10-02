@@ -66,6 +66,8 @@ const actionLabels: Record<string, MessageDescriptor> = {
   "boot-image.build-chosen": msg`Boot image build chosen to serve`,
   "boot-image.adk-install-started": msg`Windows ADK install started`,
   "netboot.dhcp-options-set": msg`DHCP options 66 and 67 set`,
+  "netboot.dhcp-pxe-on": msg`DHCP option 60 set`,
+  "netboot.dhcp-pxe-off": msg`DHCP option 60 removed`,
   "netboot.wds-replaced": msg`WDS stopped for DDT`,
   "netboot.wds-restored": msg`WDS started again`,
   "netboot.wds-boot-image-added": msg`DDT added to the WDS boot menu`,

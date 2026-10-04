@@ -255,6 +255,9 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
 
         ManualTimeProvider time = new();
         Task<int> running = RunAsync(server, new() { Time = time });
+
+        // The polls take no real time here, so setup could be over before the heartbeat's first beat has left.
+        await time.AdvanceUntilAsync(TimeSpan.Zero, () => server.RunReports.Count > 0 || running.IsCompleted);
         await time.AdvanceUntilAsync(WindowsPhaseLoop.SetupPollInterval, () => running.IsCompleted);
 
         Assert.Equal(AgentExitCodes.Deployed, await running);

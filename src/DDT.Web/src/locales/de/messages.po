@@ -5614,6 +5614,10 @@ msgstr "Der DHCP-Server von Microsoft auf diesem Computer braucht UDP 67 für si
 msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT answers on port 4011 alone. The DHCP server sends option 60, PXEClient, which brings machines that netboot there."
 msgstr "Der DHCP-Server von Microsoft auf diesem Computer braucht UDP 67 für sich allein, deshalb antwortet DDT nur auf Port 4011. Der DHCP-Server sendet die Option 60, PXEClient, die Geräte, die per Netzwerk starten, dorthin schickt."
 
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT does not listen there. While Windows Deployment Services runs, machines that netboot reach WDS, and DDT through its boot menu."
+msgstr "Der DHCP-Server von Microsoft auf diesem Computer braucht UDP 67 für sich allein, deshalb lauscht DDT dort nicht. Solange die Windows-Bereitstellungsdienste laufen, erreichen Geräte, die per Netzwerk starten, WDS und DDT über dessen Startmenü."
+
 #: src/machines/secureBoot.ts
 msgid "Microsoft's third-party UEFI CA"
 msgstr "Microsofts UEFI-CA für Drittanbieter"

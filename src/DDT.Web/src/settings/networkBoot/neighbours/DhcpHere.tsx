@@ -29,13 +29,13 @@ export function DhcpHere({ neighbours }: { neighbours: NetbootNeighbours }) {
   });
   const sends = neighbours.dhcpSendsPxe === true;
   // WDS on the same computer answers on 4011 itself, and option 60 is its own then
-  const canChange =
-    neighbours.helper && !neighbours.wds.running && typeof neighbours.dhcpSendsPxe === "boolean";
+  const wds = neighbours.wds.running;
+  const canChange = neighbours.helper && !wds && typeof neighbours.dhcpSendsPxe === "boolean";
 
   return (
     <>
       <Notice
-        tone={sends ? "info" : "attention"}
+        tone={sends || wds ? "info" : "attention"}
         actions={
           canChange ? (
             <Button
@@ -55,7 +55,13 @@ export function DhcpHere({ neighbours }: { neighbours: NetbootNeighbours }) {
           ) : null
         }
       >
-        {sends ? (
+        {wds ? (
+          <Trans>
+            Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT does not listen
+            there. While Windows Deployment Services runs, machines that netboot reach WDS, and DDT
+            through its boot menu.
+          </Trans>
+        ) : sends ? (
           <Trans>
             Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT answers on port
             4011 alone. The DHCP server sends option 60, PXEClient, which brings machines that

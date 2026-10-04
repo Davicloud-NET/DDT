@@ -121,6 +121,19 @@ const machines = [
   }),
 ];
 
+// A server that is set up, so the Machines page shows no checklist.
+const machinesAnswers = {
+  "GET /api/machines": machines,
+  "GET /api/server/checklist": {
+    password: true,
+    netboot: true,
+    bootImage: true,
+    image: true,
+    sequence: true,
+    machine: true,
+  },
+};
+
 // A run of a tree that waits at a pause, as the design canvas draws one: the IF took Then, the office's printer step
 // was skipped on a laptop, and the share test went round twice.
 const tree = treeRunView();
@@ -163,7 +176,7 @@ for (const scheme of ["light", "dark"] as const) {
     });
 
     test("machines", async ({ page }) => {
-      await show(page, "/machines", { "GET /api/machines": machines });
+      await show(page, "/machines", machinesAnswers);
       await expect(page.getByText("PC-042")).toBeVisible();
 
       await expect(page).toHaveScreenshot(`machines-${scheme}.png`);
@@ -380,7 +393,7 @@ test.describe("phone", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
   test("machines", async ({ page }) => {
-    await show(page, "/machines", { "GET /api/machines": machines });
+    await show(page, "/machines", machinesAnswers);
     await expect(page.getByText("PC-042")).toBeVisible();
 
     await expect(page).toHaveScreenshot("machines-phone.png");

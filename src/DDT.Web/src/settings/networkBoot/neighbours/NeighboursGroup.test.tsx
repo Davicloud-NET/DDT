@@ -86,7 +86,7 @@ describe("NeighboursGroup", () => {
     expect(screen.getByText("Nobody")).toBeInTheDocument();
     expect(screen.getByText("deploy01.contoso.local")).toBeInTheDocument();
     // Next to a running WDS, option 60 is WDS's own
-    expect(screen.getByText(/DDT answers on port 4011 alone/)).toBeInTheDocument();
+    expect(screen.getByText(/so DDT does not listen there/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /option 60/ })).not.toBeInTheDocument();
 
     press(screen.getByRole("button", { name: "Set them on this DHCP server" }));

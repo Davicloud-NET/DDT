@@ -49,6 +49,13 @@ Uses the web UI that's already in src/DDT.Host/wwwroot instead of building it ag
 Leaves the agent and the console out, which need the Visual C++ build tools and minutes to compile. Such a server
 offers no agent until one is uploaded. For checking that the installer builds, not for a release.
 
+.PARAMETER StageOnly
+Stops before the MSI is built, with all it will hold in artifacts\installer-work. A release signs the programs there
+and goes on with -Staged.
+
+.PARAMETER Staged
+Builds the MSI from what -StageOnly left. It zips the console again, since its program may be signed by now.
+
 .EXAMPLE
 .\build\Build-Installer.ps1
 #>
@@ -63,7 +70,11 @@ param(
 
     [switch] $SkipWeb,
 
-    [switch] $SkipAgent
+    [switch] $SkipAgent,
+
+    [switch] $StageOnly,
+
+    [switch] $Staged
 )
 
 Set-StrictMode -Version Latest
@@ -77,6 +88,12 @@ $Output = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPat
 $root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $work = Join-Path $root 'artifacts\installer-work'
 $payload = Join-Path $work 'payload'
+$agent = Join-Path $work 'agent'
+$console = Join-Path $work 'console'
+
+if ($StageOnly -and $Staged) {
+    throw '-StageOnly and -Staged are the two halves of one build. Pass one of them.'
+}
 
 function Invoke-Checked {
     param(
@@ -118,37 +135,59 @@ if ($major -gt 255 -or $minor -gt 255 -or $build -gt 65535) {
     throw "Windows Installer takes versions up to 255.255.65535, not $Version."
 }
 
-if (-not $SkipWeb) {
-    $web = Join-Path $root 'src\DDT.Web'
-    Invoke-Checked 'npm' @('ci', '--prefix', $web)
-    Invoke-Checked 'npm' @('run', 'build', '--prefix', $web)
+if ($Staged) {
+    if (-not (Test-Path -LiteralPath (Join-Path $payload 'DDT.Host.exe'))) {
+        throw "Nothing is staged in $payload. Run with -StageOnly first."
+    }
+
+    # The zip that Publish-Console.ps1 wrote holds the console as it was before it was signed.
+    if (Test-Path -LiteralPath $console) {
+        $package = Join-Path $payload 'ddt-console.zip'
+        if (Test-Path -LiteralPath $package) {
+            Remove-Item -LiteralPath $package -Force
+        }
+
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::CreateFromDirectory($console, $package, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+    }
+}
+else {
+    if (-not $SkipWeb) {
+        $web = Join-Path $root 'src\DDT.Web'
+        Invoke-Checked 'npm' @('ci', '--prefix', $web)
+        Invoke-Checked 'npm' @('run', 'build', '--prefix', $web)
+    }
+
+    # Leftovers would end up in the MSI.
+    foreach ($folder in $payload, $agent, $console) {
+        if (Test-Path -LiteralPath $folder) {
+            Remove-Item -LiteralPath $folder -Recurse -Force
+        }
+    }
+
+    Invoke-Checked 'dotnet' @(
+        'publish', (Join-Path $root 'src\DDT.Host\DDT.Host.csproj'),
+        '--configuration', 'Release',
+        '--runtime', 'win-x64',
+        '--self-contained',
+        "-p:Version=$(if ($PreRelease) { "$Version-pre" } else { $Version })",
+        '--output', $payload)
+
+    # What the server offers machines until others are uploaded, and what builds a boot image on the server itself.
+    if (-not $SkipAgent) {
+        & (Join-Path $PSScriptRoot 'Publish-Agent.ps1') -Output $agent -Version $Version
+        & (Join-Path $PSScriptRoot 'Publish-Console.ps1') -Output $console -Package (Join-Path $payload 'ddt-console.zip') -Version $Version
+        Copy-Item -LiteralPath (Join-Path $agent 'ddt-agent.exe') -Destination $payload
+    }
+
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Build-BootImage.ps1'), (Join-Path $PSScriptRoot 'boot-image-trim.txt') -Destination $payload
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'BootImage') -Destination $payload -Recurse
 }
 
-# Leftovers would end up in the MSI.
-if (Test-Path -LiteralPath $payload) {
-    Remove-Item -LiteralPath $payload -Recurse -Force
+if ($StageOnly) {
+    Write-Host "Staged version $Version in $work. -Staged builds the MSI from it."
+    return
 }
-
-Invoke-Checked 'dotnet' @(
-    'publish', (Join-Path $root 'src\DDT.Host\DDT.Host.csproj'),
-    '--configuration', 'Release',
-    '--runtime', 'win-x64',
-    '--self-contained',
-    "-p:Version=$(if ($PreRelease) { "$Version-pre" } else { $Version })",
-    '--output', $payload)
-
-# What the server offers machines until others are uploaded, and what builds a boot image on the server itself.
-if (-not $SkipAgent) {
-    $agent = Join-Path $work 'agent'
-    $console = Join-Path $work 'console'
-
-    & (Join-Path $PSScriptRoot 'Publish-Agent.ps1') -Output $agent -Version $Version
-    & (Join-Path $PSScriptRoot 'Publish-Console.ps1') -Output $console -Package (Join-Path $payload 'ddt-console.zip') -Version $Version
-    Copy-Item -LiteralPath (Join-Path $agent 'ddt-agent.exe') -Destination $payload
-}
-
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Build-BootImage.ps1'), (Join-Path $PSScriptRoot 'boot-image-trim.txt') -Destination $payload
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'BootImage') -Destination $payload -Recurse
 
 $licence = Join-Path $work 'License.rtf'
 $notice = [IO.File]::ReadAllText((Join-Path $root 'NOTICE'))

@@ -177,7 +177,7 @@ A workflow that a maintainer starts by hand:
 
 - A Windows job publishes the agent and the console with NativeAOT, as Publish-Agent.ps1 and
   Publish-Console.ps1 do, and the server self-contained for win-x64, so the host needs no .NET
-  runtime. It builds the MSI with WiX and signs what it can (section 8, question 4).
+  runtime. It builds the MSI with WiX, and the programs and the MSI are signed (Signing, below).
 - A Linux job builds the image with the agent and the console the Windows job published. NativeAOT
   does not compile for Windows on Linux, so build/Dockerfile takes them as files rather than building
   them. It pushes to `ghcr.io/davicloud-net/ddt` with the version and `latest`, x64 first, with a
@@ -209,6 +209,29 @@ branch would be newer than the next one from master, and Windows Installer would
 Each release's `install.ps1`, `install.sh` and `compose.yaml` name that release, so a copy installs
 the release it came with. `releases/latest/download/` skips pre-releases, so a pre-release is
 installed from its own address, `releases/download/v26.1.412/install.ps1`.
+
+**Signing.** A release signs `DDT.Host.exe`, the agent, the console and the MSI with the
+maintainer's certificate, through SSL.com's eSigner and its GitHub action. Whoever holds that
+account's secrets can sign anything in the maintainer's name, and the repository is public, so:
+
+- The secrets are secrets of the environment `signing` and of nothing else: `ES_USERNAME`,
+  `ES_PASSWORD`, `ES_TOTP_SECRET`, and `ES_CREDENTIAL_ID` where the account has more than one
+  certificate. The environment allows the branch `master` alone and has the maintainer as required
+  reviewer, so no pull request, fork or other branch reaches them, and each signing job waits for
+  an approval: two per release, one for the programs and one for the MSI that holds them.
+- Only the two signing jobs name the environment. They fetch the files, run SSL.com's action and
+  hand the files on. They check out nothing and build nothing, so no package that a build restores
+  runs in a job that has the secrets. `Build-Installer.ps1` builds in two halves for that:
+  `-StageOnly` up to the MSI, and `-Staged` for the MSI.
+- The jobs after check every signature with `build/Test-Signature.ps1`, timestamp included, before
+  the file goes into the MSI or the release. The sums and the winget manifest are written from the
+  signed MSI, and the image is pushed only after that.
+- A dry run signs nothing and needs no approval.
+
+This does not help against a build that is wrong to begin with: what the run built from master is
+what gets signed. Not signed: DDT's managed libraries next to `DDT.Host.exe`, the custom action
+library inside the MSI, and `install.ps1`. Not run yet: the signing jobs need the environment and a
+release from master.
 
 ### 4.2 The agent and the console come with the server
 
@@ -775,9 +798,9 @@ the DHCP server was another computer, and DDT answered next to it as ProxyDHCP.
 3. **The place in the roadmap.** Answered: M6.6. M7 was merged first, on 2026-09-28.
 4. **Code signing.** Answered 2026-10-04: the maintainer has a code signing certificate in his own
    name, with SSL.com's signing service, and signs the installers with it, and perhaps other parts
-   that run elevated. Left: the release workflow builds the MSI and writes `SHA256SUMS` and the
-   winget manifest from it without a signing step. Signing has to come before those, and the files
-   in the MSI have to be signed before it is packed. SSL.com has a GitHub action for its service.
+   that run elevated. The release workflow signs through SSL.com's GitHub action (section 4.1).
+   Left: the environment `signing` with its secrets, which the maintainer sets up, and the first
+   signed release, which is the first time the signing jobs run.
 5. **The ADK licence.** Confirmed 2026-10-04 from the licence of ADK 10.1.26100 (`Docs\Eula` in the
    kit's folder): only code marked as sample may be passed on, and its section 6 forbids
    publishing or distributing the software. So Windows PE stays out of every release. Open: the

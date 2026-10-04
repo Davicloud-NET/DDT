@@ -2,8 +2,18 @@ name: Release
 
 # Run by hand, from master. The version is Year.Major.Build, as build/Get-Version.ps1 counts it for the commit. The run
 # makes the tag and a GitHub release with DDT.msi, install.ps1, install.sh, compose.yaml and SHA256SUMS, and pushes the
-# image to ghcr.io/davicloud-net/ddt. Only Windows compiles the agent and console, so the image waits for the MSI job
-# and takes them from it. Nothing is published until the MSI and the image are both built.
+# image to ghcr.io/davicloud-net/ddt. Only Windows compiles the agent and console, so the image takes them from the
+# MSI job. Nothing is published until the MSI is signed and the image is built.
+#
+# Signing. A release signs DDT.Host.exe, the agent, the console and the MSI through SSL.com's eSigner. Whoever holds
+# that account's secrets can sign anything in the maintainer's name, so they are kept apart from everything else:
+# - They are secrets of the environment "signing" and of nothing else: ES_USERNAME, ES_PASSWORD, ES_TOTP_SECRET, and
+#   ES_CREDENTIAL_ID where the account has more than one certificate. The environment allows the branch master alone
+#   and has the maintainer as its required reviewer, so each signing job waits for an approval.
+# - Only the two signing jobs name the environment. They fetch the files, run SSL.com's action and hand the files on.
+#   They check out nothing and build nothing, so no package a build restores ever runs in a job that has the secrets.
+# - What is signed is what this run built from the commit it started on. The jobs after check every signature.
+# A dry run signs nothing and needs no approval.
 on:
   workflow_dispatch:
     inputs:
@@ -12,7 +22,7 @@ on:
         type: boolean
         default: false
       dry_run:
-        description: Dry run. Builds everything and publishes nothing. Works from any branch.
+        description: Dry run. Builds everything, signs nothing and publishes nothing. Works from any branch.
         type: boolean
         default: false
 
@@ -30,9 +40,11 @@ env:
   PRERELEASE: ${{ inputs.prerelease }}
   DRY_RUN: ${{ inputs.dry_run }}
 
+# A job that follows a skipped one is skipped too unless its condition says otherwise, and a dry run skips the signing
+# jobs. So every job after them names what it needs.
 jobs:
-  windows:
-    name: MSI
+  programs:
+    name: Programs
     runs-on: windows-2025
     timeout-minutes: 45
     outputs:
@@ -66,11 +78,146 @@ jobs:
           [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "version=$version`n")
           Write-Host "DDT $version"
 
-      - name: Build the MSI
+      # Everything the MSI holds, and no MSI yet
+      - name: Build the programs
         shell: powershell
         env:
           VERSION: ${{ steps.version.outputs.version }}
-        run: .\build\Build-Installer.ps1 -Version $env:VERSION -PreRelease:($env:PRERELEASE -eq 'true')
+        run: .\build\Build-Installer.ps1 -Version $env:VERSION -PreRelease:($env:PRERELEASE -eq 'true') -StageOnly
+
+      - name: Set the programs to sign apart
+        shell: powershell
+        run: |
+          $work = 'artifacts\installer-work'
+          $unsigned = (New-Item -ItemType Directory -Force -Path artifacts\unsigned).FullName
+          Copy-Item "$work\payload\DDT.Host.exe", "$work\payload\ddt-agent.exe", "$work\console\ddt-console.exe" $unsigned
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: staged
+          path: |
+            artifacts/installer-work/payload/
+            artifacts/installer-work/console/
+          if-no-files-found: error
+          retention-days: 1
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unsigned-programs
+          path: artifacts/unsigned/
+          if-no-files-found: error
+          retention-days: 1
+
+  # Holds the signing secrets. Keep it to fetching, signing and handing on: no checkout, no build, no script of ours.
+  sign-programs:
+    name: Sign the programs
+    needs: programs
+    if: ${{ !inputs.dry_run }}
+    runs-on: windows-2025
+    timeout-minutes: 15
+    environment: signing
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: unsigned-programs
+          path: unsigned
+
+      # With a Java it is told about, the action downloads none of its own.
+      - name: Check the secrets and find Java
+        shell: powershell
+        env:
+          COMPLETE: ${{ secrets.ES_USERNAME != '' && secrets.ES_PASSWORD != '' && secrets.ES_TOTP_SECRET != '' }}
+        run: |
+          if ($env:COMPLETE -ne 'true') { throw 'The environment "signing" lacks ES_USERNAME, ES_PASSWORD or ES_TOTP_SECRET.' }
+          $java = @($env:JAVA_HOME_17_X64, $env:JAVA_HOME_21_X64) | Where-Object { $_ } | Select-Object -First 1
+          if (-not $java) { throw 'The runner has no Java 17 or 21.' }
+          [IO.File]::AppendAllText($env:GITHUB_ENV, "JAVA_HOME=$java`nJAVA_VERSION=17`n")
+
+      - name: Sign DDT.Host.exe
+        uses: SSLcom/esigner-codesign@cf5f6c1d38ad10f47e3ed9aca873f429b1a8d85b # v1.3.2
+        with:
+          command: sign
+          username: ${{ secrets.ES_USERNAME }}
+          password: ${{ secrets.ES_PASSWORD }}
+          credential_id: ${{ secrets.ES_CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.ES_TOTP_SECRET }}
+          file_path: ${{ github.workspace }}\unsigned\DDT.Host.exe
+          output_path: ${{ github.workspace }}\signed
+          signing_method: v2
+
+      - name: Sign the agent
+        uses: SSLcom/esigner-codesign@cf5f6c1d38ad10f47e3ed9aca873f429b1a8d85b # v1.3.2
+        with:
+          command: sign
+          username: ${{ secrets.ES_USERNAME }}
+          password: ${{ secrets.ES_PASSWORD }}
+          credential_id: ${{ secrets.ES_CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.ES_TOTP_SECRET }}
+          file_path: ${{ github.workspace }}\unsigned\ddt-agent.exe
+          output_path: ${{ github.workspace }}\signed
+          signing_method: v2
+
+      - name: Sign the console
+        uses: SSLcom/esigner-codesign@cf5f6c1d38ad10f47e3ed9aca873f429b1a8d85b # v1.3.2
+        with:
+          command: sign
+          username: ${{ secrets.ES_USERNAME }}
+          password: ${{ secrets.ES_PASSWORD }}
+          credential_id: ${{ secrets.ES_CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.ES_TOTP_SECRET }}
+          file_path: ${{ github.workspace }}\unsigned\ddt-console.exe
+          output_path: ${{ github.workspace }}\signed
+          signing_method: v2
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: signed-programs
+          path: signed/
+          if-no-files-found: error
+          retention-days: 1
+
+  installer:
+    name: MSI
+    needs: [programs, sign-programs]
+    if: ${{ !cancelled() && needs.programs.result == 'success' && (inputs.dry_run || needs.sign-programs.result == 'success') }}
+    runs-on: windows-2025
+    timeout-minutes: 20
+    env:
+      VERSION: ${{ needs.programs.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: staged
+          path: artifacts/installer-work
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        if: ${{ !inputs.dry_run }}
+        with:
+          name: signed-programs
+          path: artifacts/signed
+
+      - name: Put the signed programs in
+        if: ${{ !inputs.dry_run }}
+        shell: powershell
+        run: |
+          $work = 'artifacts\installer-work'
+          $places = [ordered] @{ 'DDT.Host.exe' = "$work\payload"; 'ddt-agent.exe' = "$work\payload"; 'ddt-console.exe' = "$work\console" }
+          foreach ($name in $places.Keys) {
+            .\build\Test-Signature.ps1 "artifacts\signed\$name"
+            Copy-Item -LiteralPath "artifacts\signed\$name" -Destination $places[$name] -Force
+          }
+
+      - name: Build the MSI
+        shell: powershell
+        run: .\build\Build-Installer.ps1 -Version $env:VERSION -Staged
 
       # For the container image, which can't compile them on Linux
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -81,20 +228,89 @@ jobs:
             artifacts/installer-work/payload/ddt-console.zip
           if-no-files-found: error
 
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unsigned-msi
+          path: artifacts/installer/DDT.msi
+          if-no-files-found: error
+          retention-days: 1
+
+  # Holds the signing secrets, like sign-programs, and is kept as bare.
+  sign-installer:
+    name: Sign the MSI
+    needs: installer
+    if: ${{ !cancelled() && !inputs.dry_run && needs.installer.result == 'success' }}
+    runs-on: windows-2025
+    timeout-minutes: 15
+    environment: signing
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: unsigned-msi
+          path: unsigned
+
+      - name: Check the secrets and find Java
+        shell: powershell
+        env:
+          COMPLETE: ${{ secrets.ES_USERNAME != '' && secrets.ES_PASSWORD != '' && secrets.ES_TOTP_SECRET != '' }}
+        run: |
+          if ($env:COMPLETE -ne 'true') { throw 'The environment "signing" lacks ES_USERNAME, ES_PASSWORD or ES_TOTP_SECRET.' }
+          $java = @($env:JAVA_HOME_17_X64, $env:JAVA_HOME_21_X64) | Where-Object { $_ } | Select-Object -First 1
+          if (-not $java) { throw 'The runner has no Java 17 or 21.' }
+          [IO.File]::AppendAllText($env:GITHUB_ENV, "JAVA_HOME=$java`nJAVA_VERSION=17`n")
+
+      - name: Sign DDT.msi
+        uses: SSLcom/esigner-codesign@cf5f6c1d38ad10f47e3ed9aca873f429b1a8d85b # v1.3.2
+        with:
+          command: sign
+          username: ${{ secrets.ES_USERNAME }}
+          password: ${{ secrets.ES_PASSWORD }}
+          credential_id: ${{ secrets.ES_CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.ES_TOTP_SECRET }}
+          file_path: ${{ github.workspace }}\unsigned\DDT.msi
+          output_path: ${{ github.workspace }}\signed
+          signing_method: v2
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: signed-msi
+          path: signed/DDT.msi
+          if-no-files-found: error
+          retention-days: 1
+
+  files:
+    name: Release files
+    needs: [programs, installer, sign-installer]
+    if: ${{ !cancelled() && needs.installer.result == 'success' && (inputs.dry_run || needs.sign-installer.result == 'success') }}
+    runs-on: windows-2025
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ needs.programs.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ inputs.dry_run && 'unsigned-msi' || 'signed-msi' }}
+          path: artifacts/installer
+
+      - name: Check the MSI's signature
+        if: ${{ !inputs.dry_run }}
+        shell: powershell
+        run: .\build\Test-Signature.ps1 artifacts\installer\DDT.msi
+
       # winget takes no pre-releases
       - name: Write the winget manifests
         if: ${{ !inputs.prerelease }}
         shell: powershell
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
         run: .\build\New-WingetManifest.ps1 -Msi artifacts\installer\DDT.msi -Version $env:VERSION
 
       # Same names in every release, so releases/latest/download/install.ps1 always works. The install scripts and
       # compose.yaml name this release, so each copy installs the release it came with.
       - name: Collect the release files
         shell: powershell
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
         run: |
           $release = (New-Item -ItemType Directory -Force -Path artifacts\release).FullName
           $version = $env:VERSION
@@ -124,16 +340,18 @@ jobs:
           name: winget-manifests
           path: artifacts/winget/
 
+  # After the release files, so no image is pushed for an MSI that was never signed
   container:
     name: Container image
-    needs: windows
+    needs: [programs, files]
+    if: ${{ !cancelled() && needs.files.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
       packages: write
     env:
-      VERSION: ${{ needs.windows.outputs.version }}
+      VERSION: ${{ needs.programs.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -181,14 +399,14 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [windows, container]
-    if: ${{ !inputs.dry_run }}
+    needs: [programs, files, container]
+    if: ${{ !cancelled() && !inputs.dry_run && needs.files.result == 'success' && needs.container.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: write
     env:
-      VERSION: ${{ needs.windows.outputs.version }}
+      VERSION: ${{ needs.programs.outputs.version }}
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:

@@ -25,11 +25,69 @@ inside the freshly installed Windows, and reports every step live to your browse
 your coffee.
 
 > [!NOTE]
-> **There is no documentation yet.** Real documentation is on its way: a quick start and a guide
-> for MDT users arrive with the one-command installer in M6.6, everything else with M12. Until
-> then, this page is the tour. Need the nitty-gritty right now? The
+> **The documentation is still thin.** There is a quick start right below, and a guide for people
+> [coming from MDT](docs/coming-from-mdt.md). Everything else arrives with M12. Need the
+> nitty-gritty right now? The
 > [old README](https://github.com/Davicloud-NET/DDT/blob/b8f9f1a2a686a03ec450a5d0ff82b211d57a3ab3/README.md)
 > still lives in the history: 2,346 lines of very thorough, very robotic prose. You have been warned.
+
+## Quick start
+
+You need three things: a Windows Server (2019 or later; Windows 10 and 11 do the job too) or a
+Linux box with Docker, a Windows ISO, and a PC you don't mind erasing.
+
+**On Windows**, in an elevated PowerShell:
+
+```powershell
+irm https://github.com/Davicloud-NET/DDT/releases/latest/download/install.ps1 | iex
+```
+
+Not a fan of piping scripts into a shell? Fair enough. Grab `DDT.msi` from the
+[releases](https://github.com/Davicloud-NET/DDT/releases) and double-click it. Its setup asks for
+the port and the network card, and offers to fetch the Windows ADK while it is at it.
+
+**On Linux**, with Docker Engine and its compose plugin already installed:
+
+```bash
+curl -fsSL https://github.com/Davicloud-NET/DDT/releases/latest/download/install.sh | sudo sh
+```
+
+> [!IMPORTANT]
+> So far DDT only has pre-releases, and GitHub's `latest` skips those, so both lines answer with a
+> 404 for now. Take `install.ps1` or `install.sh` from the newest entry on the
+> [releases page](https://github.com/Davicloud-NET/DDT/releases) instead. Each copy installs the
+> release it came with.
+
+Either way you end up with an address, and with a file that holds the first password. Open the
+address, sign in as `admin`, and the Machines page hands you a to-do list:
+
+![The Machines page of a new server, with the list "Before the first deployment"](docs/images/first-start.png)
+
+Work through it from the top. Most of it is one click each:
+
+- **The network card.** The MSI's setup has asked already. After the PowerShell line, pick the card
+  your machines sit on under *Boot, Network boot*. Until you do, DDT answers no netboot at all,
+  which is on purpose.
+- **The boot image.** On Windows, *Boot, Boot image* builds it with one button, and installs the ADK
+  first if the server has none. A Linux server cannot run the ADK, so the same page gives you a zip
+  instead: unpack it on any Windows PC that has the ADK, run `Build.cmd`, and it uploads the result
+  by itself.
+- **A Windows image.** Drop an ISO onto *Library, OS images*. DDT digs the `install.wim` out of it.
+- **A task sequence.** *Deployment, Task sequences, New task sequence*, and start from
+  **Install Windows**.
+- **A machine.** Netboot it (F12 on most), sign in at its console with your DDT account and pick
+  the sequence.
+
+Then go and get that coffee. On the test VMs the whole trip, from the install command to a fresh
+Windows 11 asking whom it belongs to, took under eleven minutes.
+
+Two things that save an afternoon:
+
+- **Trying it in Hyper-V?** Keep the server VM off the Default Switch. That switch's built-in DHCP
+  went quiet for every VM on it once DDT answered a netboot from one of them. Give the lab a switch
+  and a DHCP server of its own; the server VM can run the DHCP role itself.
+- **Is MDT, WDS or a DHCP server already on that server?** DDT can live next to all three. The
+  [guide for MDT users](docs/coming-from-mdt.md) says how.
 
 ## What it does
 
@@ -53,10 +111,14 @@ your coffee.
   package or secret until it is authorized: by someone signing in at it, by an approval on the web,
   or by a zero-touch network you chose. Local accounts, LDAP and OpenID Connect, two-factor
   sign-in, roles and API tokens.
-- **Keeps the boot image lean.** About 305 MB, roughly a third smaller than a typical MDT
-  LiteTouchPE.
-- **Ships as one container.** The web UI, the API and the netboot services in one image, with
-  PostgreSQL next to it.
+- **Builds its own boot image.** On the server, with the server's address, its certificate and the
+  drivers you flagged, and it tells you when the image has gone stale. It stays lean, too: about
+  305 MB, roughly a third smaller than a typical MDT LiteTouchPE.
+- **Installs with one command.** An MSI and a Windows service on Windows Server, one container on
+  Linux. The database is a SQLite file until you point DDT at PostgreSQL or SQL Server.
+- **Gets along with what MDT left behind.** It sits in the WDS boot menu next to LiteTouch, keeps
+  out of the way of a DHCP server on the same machine, and takes the images and drivers out of a
+  deployment share.
 
 ## How DDT is built
 
@@ -84,8 +146,8 @@ Who helps with what:
 
 ## Where it's at
 
-DDT is young and has no release yet. It has deployed Windows and Linux to Hyper-V test machines and
-netbooted real hardware, but treat it as a preview for now.
+DDT is young, and what it publishes for now are pre-releases. It has deployed Windows and Linux to
+Hyper-V test machines and netbooted real hardware, but treat it as a preview.
 
 | | Milestone | |
 |---|---|---|
@@ -93,9 +155,9 @@ netbooted real hardware, but treat it as a preview for now.
 | M5 | Task sequences, in Windows PE and in the installed Windows | ✅ Done |
 | M6 | Linux raw disk images | ✅ Done |
 | M6.5 | The real UI: a new web UI, the graphical console, settings on web pages | ✅ Done |
-| M6.6 | Installing DDT with one command, on Windows Server and on Linux | 🔜 Next |
-| M7 | A node-based flow builder for task sequences | Planned |
-| M8 | Runs that carry on inside the installed Linux | Planned |
+| M6.6 | Installing DDT with one command, on Windows Server and on Linux | ✅ Done |
+| M7 | A node-based flow builder for task sequences | ✅ Done |
+| M8 | Runs that carry on inside the installed Linux | 🔜 Next |
 | M9 | Applications and Windows configuration | Planned |
 | M10 | Golden images and the machine lifecycle | Planned |
 | M11 | Beyond netboot and beyond a single site | Planned |
@@ -105,7 +167,8 @@ The [roadmap](docs/roadmap.md) has the details, and what is not planned at all.
 
 ## Building it yourself
 
-There is no installer yet (that is M6.6), so for now DDT is built from source. You will want:
+Running DDT no longer takes a compiler, see the quick start. This part is for working on it. You
+will want:
 
 - the .NET SDK 10.0.201 or a later 10.0 feature band, and Node.js 24 LTS;
 - Docker, for the container and for the PostgreSQL and SQL Server tests;

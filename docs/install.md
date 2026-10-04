@@ -686,6 +686,11 @@ Deployment Share to Build, selection profiles to the boot image flag on driver p
 boot image carries the server's URL, the Deployment Wizard to the console at the machine, and
 monitoring to the machine's page. The rest of the documentation stays M12.
 
+Done: the quick start is in the README, and the guide is [coming-from-mdt.md](coming-from-mdt.md).
+The guide also says how to try DDT next to MDT in the WDS boot menu, and what DDT does not do yet.
+Its pictures are in `docs/images`, taken from the web UI with sample data, and the console's from
+the test VM.
+
 ## 5. The checklist at the first start
 
 A card for administrators on the first page, whose items tick themselves when the server sees them
@@ -738,8 +743,8 @@ picks it on the Network boot page, or in setup, which offers it (section 3.1).
 6. The checklist, the imports from an ISO, a folder and an MDT share, and the starting sequence.
 7. The quick start and the guide for MDT users.
 
-Steps 1 to 6 are built, with what each section lists as left. Step 7 is open. The measure below
-holds as far as machines go, timed to the first question of Windows' own setup.
+All seven steps are built, with what each section lists as left. The measure below holds as far as
+machines go, timed to the first question of Windows' own setup.
 
 The milestone is done when section 1's measure holds on a fresh Windows Server 2025 VM on the Hyper-V
 test host, timed from the command to a Windows 11 desktop, and on a fresh Ubuntu VM with the boot

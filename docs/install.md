@@ -723,8 +723,8 @@ picks it on the Network boot page, or in setup, which offers it (section 3.1).
 
 ## 6. Not planned
 
-- **A boot image or Windows PE in a release.** As far as known, the ADK's licence does not allow
-  passing Windows PE on, so every path builds it on the shop's own machine (section 8, question 5).
+- **A boot image or Windows PE in a release.** The ADK's licence does not allow passing Windows PE
+  on, so every path builds it on the shop's own machine (section 8, question 5).
 - **Building the boot image on Linux with wimlib.** wimlib can add files to `boot.wim` but not the
   PowerShell components or drivers, which need DISM.
 - **Docker Desktop or WSL on Windows**, which do not deliver broadcasts to the container.
@@ -773,9 +773,15 @@ the DHCP server was another computer, and DDT answered next to it as ProxyDHCP.
 2. **The database on one server.** (a), (b) or (c) of section 4.4. Recommended: (a).
 3. **The place in the roadmap.** Written in as M6.6, before M7. The `m7` branch exists but has no
    commits yet.
-4. **Code signing.** An unsigned MSI and `DDT.Host.exe` meet SmartScreen. Which certificate, and
-   whether Azure Trusted Signing takes Davicloud e.U.?
-5. **The ADK licence.** Confirm that Windows PE cannot be shipped in a release.
+4. **Code signing.** Answered 2026-10-04: the maintainer has a code signing certificate in his own
+   name and signs the installers with it, and perhaps other parts that run elevated. Left: the
+   release workflow builds the MSI and writes `SHA256SUMS` and the winget manifest from it without
+   a signing step, so signing has to come before those, in the workflow or by hand.
+5. **The ADK licence.** Confirmed 2026-10-04 from the licence of ADK 10.1.26100 (`Docs\Eula` in the
+   kit's folder): only code marked as sample may be passed on, and its section 6 forbids
+   publishing or distributing the software. So Windows PE stays out of every release. Open: the
+   same licence allows Windows PE for installing and recovering Windows, and for no purpose it does
+   not name. Writing a Linux image from Windows PE (M6, and M8 after it) is not named.
 6. **An MSI.** Recommended over a script alone: winget installs a service through one, and MDT was one.
 7. **The port.** 8443, as the container uses, or 443 when it is free?
 8. **Certificates from AD CS.** Later, or part of this milestone?

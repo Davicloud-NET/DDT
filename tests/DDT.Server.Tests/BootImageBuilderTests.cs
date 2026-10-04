@@ -80,8 +80,9 @@ public sealed class BootImageBuilderTests : IDisposable
             TestContext.Current.CancellationToken);
         using ZipArchive zip = new(built, ZipArchiveMode.Read, leaveOpen: true);
 
+        // Sorted on both sides: the package's id is random, and so is whether it comes before the list
         Assert.Equal(
-            [$"drivers/{driver.PackageId:D}/net/e1d.inf", "drivers/drivers.json"],
+            new[] { $"drivers/{driver.PackageId:D}/net/e1d.inf", "drivers/drivers.json" }.Order(StringComparer.Ordinal),
             zip.Entries.Select(entry => entry.FullName).Where(name => name.StartsWith("drivers/", StringComparison.Ordinal)).Order(StringComparer.Ordinal));
         Assert.Contains(sha256, Text(zip, "drivers/drivers.json"), StringComparison.Ordinal);
     }

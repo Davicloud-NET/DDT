@@ -71,7 +71,8 @@ internal static class MdtShares
 
     private static void Driver(string share, string folder, string inf)
     {
-        string path = Directory.CreateDirectory(Path.Combine(share, "Out-of-Box Drivers", folder)).FullName;
+        // The lists name folders the Windows way; on Linux a backslash would be part of one folder's name
+        string path = Directory.CreateDirectory(Path.Combine(share, "Out-of-Box Drivers", folder.Replace('\\', Path.DirectorySeparatorChar))).FullName;
         File.WriteAllText(Path.Combine(path, inf), "[Version]\nSignature=\"$Windows NT$\"\n");
         File.WriteAllText(Path.Combine(path, Path.ChangeExtension(inf, ".sys")), "driver");
     }

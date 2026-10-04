@@ -58,6 +58,22 @@ public sealed class PxeHostTests : IDisposable
         Assert.Null(host.Applied);
     }
 
+    // Microsoft's DHCP Server cannot take its port once DDT holds it, so DDT answers on the boot server port alone.
+    [Fact]
+    public async Task ADhcpServerOnThisComputerKeepsTheDhcpPort()
+    {
+        _desired = Desired(1, tftp: false, dhcp: true);
+        using PxeHost host = new(Source(), TimeProvider.System, NullLoggerFactory.Instance, _binding with { DhcpServerHere = () => true });
+
+        await host.StartAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(Assert.Single(_results).Succeeded);
+        Assert.False(IsBound(_binding.DhcpPort));
+        Assert.True(IsBound(_binding.BootServerPort));
+
+        await host.StopAsync(TestContext.Current.CancellationToken);
+    }
+
     // Interfaces are found again at every apply. So a rescan, which only raises the version, picks up a changed
     // address.
     [Fact]
@@ -141,22 +157,20 @@ public sealed class PxeHostTests : IDisposable
         Directory.Delete(_boot, recursive: true);
     }
 
-    private PxeHost Host() => new(
-        new PxeHostSource(
-            () => _desired,
-            () => new CancellationChangeToken(_changed.Token),
-            result =>
-            {
-                lock (_results)
-                {
-                    _results.Add(result);
-                }
+    private PxeHost Host() => new(Source(), TimeProvider.System, NullLoggerFactory.Instance, _binding);
 
-                return Task.CompletedTask;
-            }),
-        TimeProvider.System,
-        NullLoggerFactory.Instance,
-        _binding);
+    private PxeHostSource Source() => new(
+        () => _desired,
+        () => new CancellationChangeToken(_changed.Token),
+        result =>
+        {
+            lock (_results)
+            {
+                _results.Add(result);
+            }
+
+            return Task.CompletedTask;
+        });
 
     private async Task ChangeAsync(PxeDesiredSetup desired, int results)
     {

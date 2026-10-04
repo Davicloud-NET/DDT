@@ -25,6 +25,7 @@ import { SearchField } from "@/ui/SearchField";
 import { useListSearch } from "@/ui/useListSearch";
 
 import { ImageFacts } from "./ImageFacts";
+import { ImportPanel } from "./import/ImportPanel";
 import { deleteImage, imagesQuery, type ImageSummary } from "./images";
 import { ImagesTable } from "./ImagesTable";
 import { ImageUploadPanel } from "./ImageUploadPanel";
@@ -71,6 +72,7 @@ export function ImagesPage() {
       </PageHeader>
 
       {canEdit ? <ImageUploadPanel /> : null}
+      {canEdit ? <ImportPanel /> : null}
 
       {images.isError ? (
         <Notice tone="fail">

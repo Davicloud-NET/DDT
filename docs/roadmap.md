@@ -141,6 +141,14 @@ is the most complete description.
 - **Custom input pages** in the graphical console in Windows PE, designed with the sequence, whose
   fields write to variables. They would build on M7's inputs and variables and M6.5's console. Not
   planned yet.
+- **Certificates from Active Directory Certificate Services.** DDT requests its server certificate
+  from the shop's own CA and renews it by itself, the whole way: browsers, agents and the boot
+  image all work with it, so nobody in the domain has to trust DDT's root. Until then IIS in front
+  of DDT serves the shop's certificate. Planned, in no milestone yet.
+- **A boot environment built on Linux**, beside Windows PE or in its place: small enough to come
+  with every release, so a server netboots machines without the ADK and without a build. Secure
+  Boot through a distribution's signed shim, GRUB and kernel, so DDT buys no certificate for it,
+  and the same graphical console. Not planned yet.
 
 ## Not planned
 

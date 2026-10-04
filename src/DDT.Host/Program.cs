@@ -5,6 +5,7 @@
 using System.Reflection;
 using DDT.Contracts;
 using DDT.Contracts.Agents;
+using DDT.Host.Helper;
 using DDT.Host.Logging;
 using DDT.Host.Startup;
 using DDT.Pxe;
@@ -21,6 +22,8 @@ using DDT.Server.Machines;
 using DDT.Server.Security;
 using DDT.Server.Sequences;
 using DDT.Server.Settings;
+using Microsoft.Extensions.Hosting.WindowsServices;
+using Microsoft.Extensions.Logging.EventLog;
 
 // The console verbs run next to a running server. They don't start a server themselves.
 if (SettingsConsole.Handles(args))
@@ -30,9 +33,76 @@ if (SettingsConsole.Handles(args))
     return;
 }
 
+if (SetupConsole.Handles(args))
+{
+    using StringWriter said = new();
+    using EchoWriter output = new(Console.Out, said);
+    Environment.ExitCode = SetupConsole.Run(args, output);
+
+    if (OperatingSystem.IsWindows())
+    {
+        SetupConsole.LogOutcome(args, said.ToString().Trim(), Environment.ExitCode);
+    }
+
+    return;
+}
+
+if (HelperService.Handles(args))
+{
+    if (!OperatingSystem.IsWindows())
+    {
+        Console.Error.WriteLine("The DDT Helper is a Windows service. On Linux the boot image comes from a Windows PC.");
+        Environment.ExitCode = 2;
+
+        return;
+    }
+
+    await HelperService.RunAsync();
+
+    return;
+}
+
+if (BackupConsole.Handles(args))
+{
+    Environment.ExitCode = BackupConsole.Run(args, Console.Out);
+
+    return;
+}
+
+bool service = WindowsServiceHelpers.IsWindowsService();
+
+// Services start in System32. wwwroot and relative paths resolve against the program folder instead.
+if (service)
+{
+    Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
+// Only the service reads ddt.ini, so tests and dotnet run on a machine with DDT installed don't pick it up.
+if (service)
+{
+    BootstrapFile.Add(builder.Configuration, BootstrapFile.DefaultPath);
+
+    // Registered by the MSI
+    builder.Services.Configure<EventLogSettings>(eventLog =>
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            eventLog.SourceName = "DDT";
+        }
+    });
+}
+
+builder.Services.AddWindowsService(windows => windows.ServiceName = "DDT");
+
 DdtOptions options = builder.Configuration.GetSection(DdtOptions.SectionName).Get<DdtOptions>() ?? new DdtOptions();
+
+// A service has no console. The event log only gets warnings, and the Server page offers these files for download.
+if (service)
+{
+    builder.Logging.AddProvider(new FileLoggerProvider(LogFiles.FolderIn(options.StorePath), TimeProvider.System));
+}
 IReadOnlySet<DeploymentRole> roles = DeploymentRoles.Parse(options.Roles);
 DdtConfigurationCheck.Validate(builder.Configuration, options, roles);
 
@@ -139,6 +209,7 @@ api.MapGroup("/auth/2fa").MapTwoFactorEndpoints();
 api.MapGroup("/auth/external").MapExternalLoginEndpoints();
 api.MapGroup("/machines").MapMachineEndpoints();
 api.MapGroup("/images").MapImageEndpoints();
+api.MapGroup("/images/import").MapImageImportEndpoints();
 api.MapGroup("/deployments").MapDeploymentEndpoints();
 api.MapGroup("/sequences").MapSequenceEndpoints();
 api.MapGroup("/packages").MapPackageEndpoints();
@@ -152,9 +223,11 @@ api.MapGroup("/directory").MapDirectoryEndpoints();
 api.MapGroup("/audit").MapAuditEndpoints();
 api.MapGroup("/tokens").MapApiTokenEndpoints();
 api.MapGroup("/boot-image").MapBootImageEndpoints();
+api.MapGroup("/netboot").MapNetbootEndpoints();
 api.MapGroup("/settings").MapSettingsEndpoints();
 
 app.MapGroup("/api/agents").MapAgentEndpoints().MapAgentDeploymentEndpoints();
+app.MapBootImageUpload();
 
 app.MapHub<LiveHub>("/hubs/live")
     .DisableCookieRedirect()

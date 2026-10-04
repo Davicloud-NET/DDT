@@ -5,13 +5,12 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
-using System.Text.RegularExpressions;
 
 namespace DDT.E2E;
 
 // DDT.Host built from this repository, on a free localhost port, with its store and SQLite database in directory.
 // It issues its certificate from its own root, which the agents pin.
-internal sealed partial class HostProcess : IAsyncDisposable
+internal sealed class HostProcess : IAsyncDisposable
 {
     private static readonly TimeSpan s_startTimeout = TimeSpan.FromMinutes(2);
 
@@ -33,7 +32,7 @@ internal sealed partial class HostProcess : IAsyncDisposable
 
     public string RootCertificatePath => Path.Combine(StorePath, "certs", "ddt-root.pem");
 
-    public string DatabasePath => Path.Combine(StorePath, "ddt-dev.db");
+    public string DatabasePath => Path.Combine(StorePath, "ddt.db");
 
     public string AdministratorPassword { get; private set; } = string.Empty;
 
@@ -118,8 +117,7 @@ internal sealed partial class HostProcess : IAsyncDisposable
         return start;
     }
 
-    // The host counts as started once it listens and has logged the first administrator's password. Returns that
-    // password.
+    // Started once it listens and has created the first administrator. Returns the password from first-admin.txt.
     private Task<string> WaitForStartAsync(CancellationToken cancellationToken) =>
         Eventually.GetAsync(
             new Expectation("The host's start", s_startTimeout, () => Output.Tail()),
@@ -131,9 +129,17 @@ internal sealed partial class HostProcess : IAsyncDisposable
                 }
 
                 string text = Output.Text;
-                Match password = AdministratorPasswordLine().Match(text);
 
-                return Task.FromResult(password.Success && text.Contains("Now listening on", StringComparison.Ordinal) ? password.Groups[1].Value : null);
+                if (!text.Contains("Created the first administrator admin.", StringComparison.Ordinal)
+                    || !text.Contains("Now listening on", StringComparison.Ordinal))
+                {
+                    return Task.FromResult<string?>(null);
+                }
+
+                string? password = File.ReadLines(Path.Combine(StorePath, "first-admin.txt"))
+                    .FirstOrDefault(line => line.StartsWith("Password: ", StringComparison.Ordinal))?["Password: ".Length..];
+
+                return Task.FromResult(password);
             },
             cancellationToken);
 
@@ -152,7 +158,4 @@ internal sealed partial class HostProcess : IAsyncDisposable
 
         return ((IPEndPoint)listener.LocalEndpoint).Port;
     }
-
-    [GeneratedRegex(@"User name admin, password (\S+?)\. ")]
-    private static partial Regex AdministratorPasswordLine();
 }

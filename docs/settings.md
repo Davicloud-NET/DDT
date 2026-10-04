@@ -33,6 +33,7 @@ The page shows these settings read-only in a Server panel (section 6).
 | Setting | Why it stays |
 |---|---|
 | ConnectionStrings:ddtdb | The settings store is in this database (DataServiceCollectionExtensions.cs:23-37). |
+| DDT:Database | Which database that is: Sqlite, PostgreSql or SqlServer. Unset, a connection string means PostgreSql and none means Sqlite. |
 | DDT:StorePath | Holds the key ring that decrypts stored secrets, and the SQLite file (DataServiceCollectionExtensions.cs:25-30, DdtAuthenticationExtensions.cs:42-44). |
 | DDT:Roles | Set per process, and decides what is registered before Build (Program.cs:28-29,64). One database value cannot describe two processes with different roles. |
 | DDT:RequireHttps | Sets the cookie names and Secure policy at composition (Program.cs:43-47, DdtAuthenticationExtensions.cs:79,84-86), and refuses to start without HTTPS (HttpsConfigurationCheck.cs:46-55). A change renames both cookies and signs everyone out. |
@@ -60,7 +61,7 @@ Two changes shorten this list in practice:
 - **Container defaults move into the Dockerfile.** They leave build/compose.yaml:19,28-30 and become
   ENV lines in the final stage of build/Dockerfile, next to `EXPOSE 8443` (Dockerfile:39):
   - DDT__StorePath=/var/lib/ddt
-  - Kestrel__Endpoints__Https__Url=https://0.0.0.0:8443
+  - Kestrel__Endpoints__Https__Url=https://*:8443
   - both certificate paths under /var/lib/ddt/certs
 
   These must not become defaults in code, for two reasons. Once any Kestrel endpoint is declared,
@@ -282,17 +283,28 @@ Certificate actions have these limits:
 
 | Key | Type | Default | Secret | Applies | Who |
 |---|---|---|---|---|---|
-| Agent binary (replaces DDT:Agent:BinaryPath) | upload of ddt-agent.exe | none: machines keep the boot image agent | | live: next netboot | Admin, re-auth |
-| Console (replaces DDT:Agent:ConsolePath) | upload of a zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll | none: machines keep the boot image console | | live: next netboot | Admin, re-auth |
+| Agent binary (replaces DDT:Agent:BinaryPath) | upload of ddt-agent.exe | the agent the server came with; without one, machines keep the boot image agent | | live: next netboot | Admin, re-auth to upload |
+| Console (replaces DDT:Agent:ConsolePath) | upload of a zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll | the console the server came with; without one, machines keep the boot image console | | live: next netboot | Admin, re-auth to upload |
 
-- The upload goes to the default path `<StorePath>/agent/ddt-agent.exe` (AgentReleaseStore.cs:19-21).
-  That file is hashed again whenever it changes (AgentReleaseStore.cs:12-13,34).
-- DDT:Agent:BinaryPath stays only as a configuration override for development (Start-DevHost.ps1:71).
-  While it is set, uploads answer 409.
+- The upload goes to the default path `<StorePath>/agent/ddt-agent.exe` (AgentReleaseStore.cs).
+  That file is hashed again whenever it changes.
+- A release puts `ddt-agent.exe` and `ddt-console.zip` next to DDT.Host (BundledReleases.cs). The
+  server offers the upload, and otherwise these, so a new server offers an agent of its own version
+  from its first start. The view names the source (`Uploaded`, `Bundled`, `Configuration`, `None`)
+  and the file version, which the server reads out of the executable (ExecutableVersion.cs), on
+  Linux as well.
+- `DELETE /api/settings/agent/binary` and `DELETE /api/settings/agent/console` remove an upload
+  again, audited as `agent.upload-removed` and `console.upload-removed`, without a fresh password:
+  it only takes machines back to what the server came with. While an upload is older than the
+  bundled file, the view says so in `newerBundledVersion`, and the page offers the removal.
+- DDT:Agent:BinaryPath stays only as a configuration override for development (Start-DevHost.ps1).
+  While it is set, uploads answer 409, and the bundled agent is not offered.
 - The console goes to `<StorePath>/agent/ddt-console.zip`, repacked with the three files at its root
   (ConsoleReleaseStore.cs, SettingsConsoleEndpoints.cs). DDT:Agent:ConsolePath is its development
   override, which Start-DevHost.ps1 points at the zip Publish-Console.ps1 writes; while it is set,
   uploads answer 409.
+- An upload or removal doesn't wait for a machine that downloads the old file: the old file steps
+  aside and goes when the download ends (FileReplacement.cs).
 
 ### Logging (section `logging`)
 
@@ -422,6 +434,7 @@ If running separate processes is not a goal, the file store is simpler (question
 - SQLite stays for development only. The new tables change the schema fingerprint, so development
   databases are recreated once (DatabaseInitializer.cs:55-63). After that, every schema change drops
   the page settings together with the file. Values held in configuration come back through the import.
+  Since M6.6 SQLite is migrated like the others and keeps its settings (install.md section 4.4).
 
 ### 5.2 Delivery to consumers
 
@@ -694,7 +707,12 @@ stated requirement.
 **What the encryption protects.**
 
 - It protects copies that hold only the database: a dump, or a database backup.
-- It does not protect the store volume, where the key ring is plain files.
+- It does not protect the store volume on Linux, where the key ring is plain files.
+- On Windows new keys are encrypted with DPAPI for the machine (DdtAuthenticationExtensions.cs), so a
+  copied store or its backup does not open on another computer. Any account on the server itself can
+  still decrypt them, which is what the store's ACL is for. The price: a store moved to another
+  server, or restored after Windows was installed again, has lost its key ring. Stored secrets have
+  to be entered again, and machines register again.
 - Keep key ring backups apart from database backups, and protect them like the volume. The key ring
   can also mint an administrator cookie (README "Security model").
 
@@ -820,7 +838,8 @@ problems.
 An override needs the container to be recreated. It is meant for when the page is unreachable.
 
 **Console commands.** These need no file edit and no restart. DDT.Host gets two verbs that run next to
-the running server, for example `docker exec ddt ./DDT.Host settings reset ldap`.
+the running server, for example `docker exec ddt ./DDT.Host settings reset ldap`, or on a Windows
+server `"%ProgramFiles%\DDT\DDT.Host.exe" settings reset ldap` from an elevated prompt.
 
 - `settings reset <section>` writes the code defaults and clears the section's secrets.
 - `settings create-admin` does one of two things, and prints a one-time password once:

@@ -12,6 +12,7 @@ import type { LoggingSettings } from "./logging/logLevels";
 import type { ProxySettings } from "./ProxiesPanel";
 import {
   expectAccessible,
+  hoursAgo,
   overview,
   passwordAgain,
   proof,
@@ -160,6 +161,35 @@ describe("ServerPage", () => {
       knownNetworks: ["10.0.1.0/24"],
     });
     expect(reads(requests, "/api/settings/proxies")).toBe(1);
+  });
+
+  it("lists the log files of a server that writes them, to download", async () => {
+    serveServer(
+      {
+        "GET /api/settings/logging": () => json(logging()),
+        "GET /api/server/logs": () =>
+          json([
+            { name: "ddt-20261001.log", size: 2048, writtenUtc: new Date().toISOString() },
+            { name: "ddt-20260930.log", size: 1_048_576, writtenUtc: hoursAgo(24) },
+          ]),
+      },
+      { tab: "logging" },
+    );
+
+    const today = await screen.findByRole("link", { name: "ddt-20261001.log" });
+    expect(today).toHaveAttribute("href", "/api/server/logs/ddt-20261001.log");
+    expect(today).toHaveAttribute("download", "ddt-20261001.log");
+    expect(screen.getByRole("link", { name: "ddt-20260930.log" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Log files" })).toBeInTheDocument();
+
+    await expectAccessible();
+  });
+
+  it("shows no log files where the server logs to its console", async () => {
+    serveServer({ "GET /api/settings/logging": () => json(logging()) }, { tab: "logging" });
+
+    await screen.findByRole("list", { name: "Log levels" });
+    expect(screen.queryByRole("heading", { name: "Log files" })).not.toBeInTheDocument();
   });
 
   it("shows the log levels with their defaults, and saves a category added at a level", async () => {

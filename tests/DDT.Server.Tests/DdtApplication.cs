@@ -219,7 +219,7 @@ public class DdtApplication : WebApplicationFactory<Program>
         {
             // Pooled SQLite connections keep the database file open after the host stops. Only this host's pool is
             // cleared: clearing every pool disposes connections other test classes are opening at that moment.
-            using (SqliteConnection database = new($"Data Source={Path.Combine(StorePath, "ddt-dev.db")}"))
+            using (SqliteConnection database = new($"Data Source={Path.Combine(StorePath, "ddt.db")}"))
             {
                 SqliteConnection.ClearPool(database);
             }

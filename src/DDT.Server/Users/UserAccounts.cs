@@ -274,7 +274,7 @@ internal sealed class UserAccounts(
 
             Audit(AuditActions.UserDeleted, user, actor, $"Deleted the {user.Source.ToString().ToLowerInvariant()} account {user.UserName}.");
 
-            if (NotSaved(await userManager.DeleteAsync(user).ConfigureAwait(false)) is { } failure)
+            if (NotSaved(await UserReferences.DeleteAsync(database, userManager, user, cancellationToken).ConfigureAwait(false)) is { } failure)
             {
                 return failure;
             }

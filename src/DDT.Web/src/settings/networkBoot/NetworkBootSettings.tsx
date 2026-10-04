@@ -19,6 +19,7 @@ import { useSettingsForm } from "../useSettingsForm";
 import { BootTargetsGroup } from "./BootTargetsGroup";
 import { ConfigurationGroup } from "./ConfigurationGroup";
 import { InterfacesGroup } from "./InterfacesGroup";
+import { NeighboursGroup } from "./neighbours/NeighboursGroup";
 import { SectionProblems } from "./SectionProblems";
 import { TransfersGroup } from "./TransfersGroup";
 
@@ -62,6 +63,7 @@ export function NetworkBootSettings() {
             hosts={hosts.data ?? []}
             configuration={configuration}
           />
+          <NeighboursGroup />
           <ConfigurationGroup configuration={configuration} />
           {form.dirty ? (
             <Notice tone="attention">

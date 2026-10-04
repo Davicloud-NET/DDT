@@ -71,7 +71,7 @@ public sealed class ImageUploadTests(DdtApplication application) : IClassFixture
     public async Task RefusesASessionForAnUnusableFile()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        long capacity = Store.Volume().TotalSize;
+        long capacity = Store.Volume().Total;
 
         Assert.Equal(HttpStatusCode.BadRequest, (await administrator.CreateUploadAsync("install.wim", 0)).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await administrator.CreateUploadAsync("install.wim", -5)).StatusCode);

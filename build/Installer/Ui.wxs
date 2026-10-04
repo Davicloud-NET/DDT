@@ -1,0 +1,191 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- WixUI_InstallDir's pages with DDT's own instead of the folder page. The server stays in Program Files. -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <Fragment>
+    <UI Id="WixUI_DDT">
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+      <Property Id="ARPNOMODIFY" Value="1" />
+
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FatalError" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <DialogRef Id="PrepareDlg" />
+      <DialogRef Id="ProgressDlg" />
+      <DialogRef Id="ResumeDlg" />
+      <DialogRef Id="UserExit" />
+
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999" />
+
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="LicenseAgreementDlg" Condition="NOT Installed" />
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Condition="Installed AND PATCH" />
+
+      <Publish Dialog="LicenseAgreementDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" />
+      <Publish Dialog="LicenseAgreementDlg" Control="Next" Event="NewDialog" Value="ServerDlg" Condition="LicenseAccepted = &quot;1&quot; AND NOT WIX_UPGRADE_DETECTED" />
+      <Publish Dialog="LicenseAgreementDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Condition="LicenseAccepted = &quot;1&quot; AND WIX_UPGRADE_DETECTED" />
+
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="ServerDlg" Order="1" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED AND NOT IISREADY AND NOT DEPENDENCIESPAGE" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="DependenciesDlg" Order="1" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED AND NOT IISREADY AND DEPENDENCIESPAGE" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="IisDlg" Order="1" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED AND IISREADY" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="LicenseAgreementDlg" Order="1" Condition="NOT Installed AND WIX_UPGRADE_DETECTED" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2" Condition="Installed AND NOT PATCH" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2" Condition="Installed AND PATCH" />
+
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg" />
+
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg" />
+    </UI>
+
+    <UIRef Id="WixUI_Common" />
+  </Fragment>
+
+  <Fragment>
+    <!-- "later" leaves PXE off until someone picks a card in DDT. -->
+    <Property Id="NETBOOTINTERFACE" Secure="yes" />
+    <Property Id="IISPROXY" Secure="yes" />
+
+    <UI>
+      <Dialog Id="ServerDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next">
+          <Publish Event="DoAction" Value="CheckPort" Order="1" />
+          <Publish Event="SpawnDialog" Value="PortDlg" Order="2" Condition="PORTINUSE OR PORTINVALID" />
+          <Publish Event="NewDialog" Value="DependenciesDlg" Order="3" Condition="NOT PORTINUSE AND NOT PORTINVALID AND DEPENDENCIESPAGE" />
+          <Publish Event="NewDialog" Value="VerifyReadyDlg" Order="4" Condition="NOT PORTINUSE AND NOT PORTINVALID AND NOT DEPENDENCIESPAGE AND NOT IISREADY" />
+          <Publish Event="NewDialog" Value="IisDlg" Order="5" Condition="NOT PORTINUSE AND NOT PORTINVALID AND NOT DEPENDENCIESPAGE AND IISREADY" />
+        </Control>
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
+          <Publish Event="NewDialog" Value="LicenseAgreementDlg" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
+        </Control>
+
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="Where browsers and agents reach DDT, and where machines netboot." />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Server" />
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="373" Height="0" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="373" Height="0" />
+
+        <Control Id="PortLabel" Type="Text" X="20" Y="60" Width="320" Height="12" Text="&amp;HTTPS port:" />
+        <Control Id="Port" Type="Edit" X="20" Y="74" Width="60" Height="18" Property="PORT" Integer="yes" />
+
+        <Control Id="InterfaceLabel" Type="Text" X="20" Y="104" Width="320" Height="12" Text="&amp;Answer netboot requests on:" />
+        <Control Id="Interface" Type="ComboBox" X="20" Y="118" Width="320" Height="16" Property="NETBOOTINTERFACE" ComboList="yes">
+          <ComboBox Property="NETBOOTINTERFACE">
+            <ListItem Value="later" Text="No network card yet, I'll pick one in DDT" />
+          </ComboBox>
+        </Control>
+        <Control Id="InterfaceNote" Type="Text" X="20" Y="140" Width="320" Height="30" Text="DDT answers PXE only on this card. Pick none if WDS or another PXE server answers on its network." />
+
+        <!-- BLOCKEDNETWORK from ListNetworkCards: the main network is on a profile the firewall rules skip -->
+        <Control Id="PublicNote" Type="Text" X="20" Y="174" Width="320" Height="24" Hidden="yes" ShowCondition="BLOCKEDNETWORK" Text="This server's network is public, so the firewall blocks DDT there. Make the network private in Windows, or:" />
+        <Control Id="Public" Type="CheckBox" X="20" Y="200" Width="320" Height="17" Hidden="yes" ShowCondition="BLOCKEDNETWORK" Property="FIREWALLPUBLIC" CheckBoxValue="1" Text="&amp;Allow DDT on public networks too" />
+      </Dialog>
+
+      <!-- DEPENDENCIESPAGE, ADKMISSING and IISMODULESMISSING from FindDependencies. Shown when something is missing. -->
+      <Dialog Id="DependenciesDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next">
+          <Publish Event="DoAction" Value="InstallIisModules" Order="1" Condition="IISMODULES AND IISMODULESMISSING" />
+          <Publish Event="SpawnDialog" Value="DependencyProblemDlg" Order="2" Condition="IISMODULES AND DEPENDENCYPROBLEM" />
+          <Publish Event="NewDialog" Value="IisDlg" Order="3" Condition="IISREADY AND NOT (IISMODULES AND DEPENDENCYPROBLEM)" />
+          <Publish Event="NewDialog" Value="VerifyReadyDlg" Order="4" Condition="NOT IISREADY AND NOT (IISMODULES AND DEPENDENCYPROBLEM)" />
+        </Control>
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
+          <Publish Event="NewDialog" Value="ServerDlg" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
+        </Control>
+
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="Microsoft software that DDT works with. Setup can get it for you." />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Dependencies" />
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="373" Height="0" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="373" Height="0" />
+
+        <Control Id="Adk" Type="CheckBox" X="20" Y="58" Width="330" Height="17" Hidden="yes" ShowCondition="ADKMISSING" Property="INSTALLADK" CheckBoxValue="1" Text="Windows &amp;ADK with its Windows PE add-on" />
+        <Control Id="AdkNote" Type="Text" X="32" Y="77" Width="318" Height="22" Hidden="yes" ShowCondition="ADKMISSING" NoPrefix="yes" Text="Builds the boot image that machines netboot into. About 4 GB. It installs in the background once setup is done, which takes a few minutes." />
+        <Control Id="AdkLink" Type="Hyperlink" X="32" Y="100" Width="120" Height="12" Hidden="yes" ShowCondition="ADKMISSING" Text="&lt;a href=&quot;https://learn.microsoft.com/windows-hardware/get-started/adk-install&quot;&gt;About the Windows ADK&lt;/a&gt;" />
+        <Control Id="AdkThere" Type="Text" X="20" Y="60" Width="330" Height="12" Hidden="yes" ShowCondition="NOT ADKMISSING" NoPrefix="yes" Text="The Windows ADK with its Windows PE add-on is installed." />
+
+        <!-- The modules' state changes on Next, so these hide again too -->
+        <Control Id="Modules" Type="CheckBox" X="20" Y="124" Width="330" Height="17" Hidden="yes" ShowCondition="IISMODULESMISSING" HideCondition="NOT IISMODULESMISSING" Property="IISMODULES" CheckBoxValue="1" Text="&amp;URL Rewrite and Application Request Routing for IIS" />
+        <Control Id="ModulesNote" Type="Text" X="32" Y="143" Width="318" Height="22" Hidden="yes" ShowCondition="IISMODULESMISSING" HideCondition="NOT IISMODULESMISSING" NoPrefix="yes" Text="For publishing DDT through IIS under a name and certificate of your own, which the next page sets up. They install when you click Next." />
+        <Control Id="RewriteLink" Type="Hyperlink" X="32" Y="166" Width="72" Height="12" Hidden="yes" ShowCondition="IISMODULESMISSING" HideCondition="NOT IISMODULESMISSING" Text="&lt;a href=&quot;https://www.iis.net/downloads/microsoft/url-rewrite&quot;&gt;About URL Rewrite&lt;/a&gt;" />
+        <Control Id="ArrLink" Type="Hyperlink" X="108" Y="166" Width="150" Height="12" Hidden="yes" ShowCondition="IISMODULESMISSING" HideCondition="NOT IISMODULESMISSING" Text="&lt;a href=&quot;https://www.iis.net/downloads/microsoft/application-request-routing&quot;&gt;About Application Request Routing&lt;/a&gt;" />
+        <Control Id="ModulesThere" Type="Text" X="20" Y="126" Width="330" Height="12" Hidden="yes" ShowCondition="IISREADY" HideCondition="NOT IISREADY" NoPrefix="yes" Text="URL Rewrite and Application Request Routing for IIS are installed." />
+
+        <Control Id="Terms" Type="Text" X="20" Y="198" Width="330" Height="26" NoPrefix="yes" Text="Setup downloads what's ticked from Microsoft and installs it without asking again. Ticking a box accepts Microsoft's licence terms for it." />
+      </Dialog>
+
+      <Dialog Id="DependencyProblemDlg" Width="300" Height="110" Title="[ProductName] Setup">
+        <Control Id="OK" Type="PushButton" X="122" Y="82" Width="56" Height="17" Default="yes" Cancel="yes" Text="OK">
+          <Publish Event="EndDialog" Value="Return" />
+        </Control>
+        <Control Id="Text" Type="Text" X="48" Y="15" Width="234" Height="60" NoPrefix="yes" Text="[DEPENDENCYPROBLEM] Untick the box to go on without the IIS modules." />
+        <Control Id="Icon" Type="Icon" X="15" Y="15" Width="24" Height="24" FixedSize="yes" IconSize="32" Text="WixUI_Ico_Exclam" />
+      </Dialog>
+
+      <!-- IISREADY from FindIis: IIS with URL Rewrite and ARR. Unticked, the host name goes, so nothing runs. -->
+      <Dialog Id="IisDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next">
+          <Publish Event="SpawnDialog" Value="IisMissingDlg" Order="1" Condition="IISPROXY AND (NOT IISHOSTNAME OR NOT IISCERTIFICATE OR IISCERTIFICATE = &quot;none&quot;)" />
+          <Publish Property="IISHOSTNAME" Value="{}" Order="2" Condition="NOT IISPROXY" />
+          <Publish Event="NewDialog" Value="VerifyReadyDlg" Order="3" Condition="NOT IISPROXY OR (IISHOSTNAME AND IISCERTIFICATE AND IISCERTIFICATE &lt;&gt; &quot;none&quot;)" />
+        </Control>
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
+          <Publish Event="NewDialog" Value="ServerDlg" Condition="NOT DEPENDENCIESPAGE" />
+          <Publish Event="NewDialog" Value="DependenciesDlg" Condition="DEPENDENCIESPAGE" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
+        </Control>
+
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="IIS can serve DDT's pages under a name and certificate of your own." />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}IIS" />
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="373" Height="0" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="373" Height="0" />
+
+        <Control Id="Publish" Type="CheckBox" X="20" Y="58" Width="320" Height="17" Property="IISPROXY" CheckBoxValue="1" Text="&amp;Publish DDT through IIS" />
+        <Control Id="HostLabel" Type="Text" X="20" Y="84" Width="320" Height="12" Text="&amp;Host name, with a DNS record that points here:" />
+        <Control Id="Host" Type="Edit" X="20" Y="98" Width="200" Height="18" Property="IISHOSTNAME" Text="{253}" DisableCondition="NOT IISPROXY" EnableCondition="IISPROXY" />
+        <Control Id="CertificateLabel" Type="Text" X="20" Y="124" Width="320" Height="12" Text="&amp;Certificate for that name, from this computer's store:" />
+        <!-- FindIis adds the certificates. The table needs a row at build time. -->
+        <Control Id="Certificate" Type="ComboBox" X="20" Y="138" Width="320" Height="16" Property="IISCERTIFICATE" ComboList="yes" DisableCondition="NOT IISPROXY" EnableCondition="IISPROXY">
+          <ComboBox Property="IISCERTIFICATE">
+            <ListItem Value="none" Text="Pick a certificate" />
+          </ComboBox>
+        </Control>
+        <Control Id="Note" Type="Text" X="20" Y="164" Width="320" Height="54" Text="IIS forwards to DDT on port [PORT]. Agents keep that port and DDT's own certificate. Give DDT a name of its own, such as ddt.contoso.com, so the other sites here keep theirs." />
+      </Dialog>
+
+      <Dialog Id="IisMissingDlg" Width="260" Height="85" Title="[ProductName] Setup">
+        <Control Id="OK" Type="PushButton" X="102" Y="57" Width="56" Height="17" Default="yes" Cancel="yes" Text="OK">
+          <Publish Event="EndDialog" Value="Return" />
+        </Control>
+        <Control Id="Text" Type="Text" X="48" Y="15" Width="194" Height="36" Text="Enter a host name and pick a certificate, or untick IIS." />
+        <Control Id="Icon" Type="Icon" X="15" Y="15" Width="24" Height="24" FixedSize="yes" IconSize="32" Text="WixUI_Ico_Exclam" />
+      </Dialog>
+
+      <Dialog Id="PortDlg" Width="260" Height="85" Title="[ProductName] Setup">
+        <Control Id="OK" Type="PushButton" X="102" Y="57" Width="56" Height="17" Default="yes" Cancel="yes" Text="OK">
+          <Publish Event="EndDialog" Value="Return" />
+        </Control>
+        <Control Id="Text" Type="Text" X="48" Y="15" Width="194" Height="36" Text="Port [PORT] is in use by another program, or isn't a port. Pick another one." />
+        <Control Id="Icon" Type="Icon" X="15" Y="15" Width="24" Height="24" FixedSize="yes" IconSize="32" Text="WixUI_Ico_Exclam" />
+      </Dialog>
+    </UI>
+  </Fragment>
+
+</Wix>

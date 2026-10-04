@@ -8,6 +8,8 @@ using DDT.Contracts.About;
 using DDT.Contracts.Accounts;
 using DDT.Contracts.Audit;
 using DDT.Contracts.BootImage;
+using DDT.Contracts.Import;
+using DDT.Contracts.Netboot;
 using DDT.Contracts.Authentication;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
@@ -85,6 +87,21 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(CreateApiTokenRequest))]
 [JsonSerializable(typeof(CreatedApiToken))]
 [JsonSerializable(typeof(BootImageView))]
+[JsonSerializable(typeof(BootImageJobLog))]
+[JsonSerializable(typeof(BootImageJobOutput))]
+[JsonSerializable(typeof(BuildBootImageRequest))]
+[JsonSerializable(typeof(UseBootImageBuildRequest))]
+[JsonSerializable(typeof(SetupChecklist))]
+[JsonSerializable(typeof(NetbootNeighbours))]
+[JsonSerializable(typeof(IReadOnlyList<DhcpScope>))]
+[JsonSerializable(typeof(SetDhcpOptionsRequest))]
+[JsonSerializable(typeof(SetDhcpPxeRequest))]
+[JsonSerializable(typeof(ImportSources))]
+[JsonSerializable(typeof(ImportStatus))]
+[JsonSerializable(typeof(ImportFilesRequest))]
+[JsonSerializable(typeof(InspectMdtShareRequest))]
+[JsonSerializable(typeof(ImportMdtShareRequest))]
+[JsonSerializable(typeof(MdtShareView))]
 [JsonSerializable(typeof(UserView))]
 [JsonSerializable(typeof(IReadOnlyList<UserView>))]
 [JsonSerializable(typeof(CreateUserRequest))]
@@ -125,6 +142,7 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(OidcTestResult))]
 [JsonSerializable(typeof(IReadOnlyList<PxeHostInterfaces>))]
 [JsonSerializable(typeof(AgentBinaryView))]
+[JsonSerializable(typeof(IReadOnlyList<LogFileView>))]
 [JsonSerializable(typeof(ConsoleLogoView))]
 [JsonSerializable(typeof(SettingsSectionView<CertificateSettings>))]
 [JsonSerializable(typeof(SettingsSectionUpdate<CertificateSettings>))]

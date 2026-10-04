@@ -13,7 +13,7 @@ import { describeResult } from "./imageView";
 
 const imageKinds = ["Image"] as const;
 
-// Takes WIM, ESD and disk image files. The images in the server's answer are added to the list.
+// Takes WIM, ESD, ISO and disk image files. The images in the server's answer are added to the list.
 export function ImageUploadPanel() {
   const queryClient = useQueryClient();
 
@@ -21,13 +21,14 @@ export function ImageUploadPanel() {
     <UploadPanel<ImageSummary[]>
       kind="Image"
       kinds={imageKinds}
-      what={<Trans>a WIM, ESD or disk image file</Trans>}
-      accept={[".wim", ".esd", ".img", ".raw", ".gz", ".xz", ".zst", ".qcow2"]}
+      what={<Trans>a WIM, ESD, ISO or disk image file</Trans>}
+      accept={[".wim", ".esd", ".iso", ".img", ".raw", ".gz", ".xz", ".zst", ".qcow2"]}
       hint={
         <Trans>
-          Each x64 Windows image in a WIM or ESD file becomes an entry. A disk image, such as a
-          Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert
-          VHDX, VMDK or VDI to raw with qemu-img first.
+          Each x64 Windows image in a WIM or ESD file becomes an entry, and a Windows ISO is read
+          for the install.wim or install.esd in it. A disk image, such as a Linux cloud image,
+          becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to
+          raw with qemu-img first.
         </Trans>
       }
       verifyingHint={

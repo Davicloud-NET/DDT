@@ -16,7 +16,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Data;
 
-public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
+// One model for every database. Each provider has a context of its own below it, because EF Core keeps a context's
+// migrations and snapshot per type. Services ask for this one.
+public abstract class DdtDbContext(DbContextOptions options)
     : IdentityDbContext<DdtUser, DdtRole, Guid>(options)
 {
     public const string Schema = "ddt";
@@ -82,6 +84,6 @@ public sealed class DdtDbContext(DbContextOptions<DdtDbContext> options)
         builder.ApplyConfiguration(new ApiTokenConfiguration());
         builder.ApplyConfiguration(new SettingsSectionConfiguration());
         builder.ApplyConfiguration(new SettingsHostStateConfiguration());
-        builder.ApplyConfiguration(new AuditEventConfiguration(Database.IsSqlite()));
+        builder.ApplyConfiguration(new AuditEventConfiguration());
     }
 }

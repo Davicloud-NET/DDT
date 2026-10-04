@@ -67,8 +67,8 @@ irm https://github.com/Davicloud-NET/DDT/releases/latest/download/install.ps1 | 
 The MSI does only what has to be in place before the web UI can serve, which is what configuration
 keeps today (settings.md section 2):
 
-1. It checks for 64-bit Windows Server 2022 or later (section 8, question 9), or Windows 11 for a
-   lab, and for an elevated prompt.
+1. It checks for 64-bit Windows Server 2019 or Windows 10 1809 or later, build 17763 (section 8,
+   question 9), and for an elevated prompt.
 2. It puts the server in `%ProgramFiles%\DDT` and the store in `%ProgramData%\DDT`.
 3. It writes the bootstrap file of section 4.3: the store, the roles `web,pxe`, the HTTPS endpoint on
    8443, the two certificate paths, and the database of section 4.4.
@@ -77,7 +77,9 @@ keeps today (settings.md section 2):
    alone (section 4.3). It registers the `DDT Helper` service of section 4.7 as well.
 5. It adds inbound firewall rules for `DDT.Host.exe` alone, for the Domain and Private profiles:
    TCP 8443 and 8080, UDP 67, 4011 and 69, and the ports of TFTP transfers, which a rule for the
-   program covers without naming them.
+   program covers without naming them. When the server's own network is public, setup says so and
+   offers to cover public networks too (`FIREWALLPUBLIC=1`, `-AllowPublicNetworks`); `install.ps1`
+   warns. Upgrades keep the profiles.
 6. It starts the service and waits until `/api/about` answers.
 7. It prints the address by the computer's DNS name, the root's SHA-256, and where the first password
    is (section 4.5).
@@ -85,6 +87,24 @@ keeps today (settings.md section 2):
 Everything else is a setting or an action, so it happens on the checklist in the web UI (section 5).
 An unattended install passes the port, the store and the database to the MSI as properties, and
 `install.ps1` passes its own parameters on.
+
+**What setup fetches.** Where something is missing, setup shows a Dependencies page with a box for
+each: the Windows ADK with its Windows PE add-on (section 4.7), ticked, and URL Rewrite with
+Application Request Routing where IIS is installed without them (section 4.6). Setup downloads what
+is ticked from Microsoft and installs it quietly, which accepts Microsoft's licence terms, and the
+page says so; DDT ships none of it. Each download has to match the SHA-256 the release names.
+Windows runs one installer at a time, and all of these are installers, so none can run inside DDT's
+own:
+
+- The IIS modules install when the page's Next is clicked, before DDT, so the IIS page can follow.
+  Windows Installer asks for elevation itself and names Microsoft as the publisher. Unattended,
+  `install.ps1 -InstallIisModules` does the same before it starts the MSI; the MSI alone cannot.
+- The ADK installs once DDT's install is done, in the background: `INSTALLADK=1` starts
+  `DDT.Host setup adk`, which waits for Windows Installer, and the Application event log says how it
+  went. `install.ps1 -InstallAdk` runs the same verb itself and shows what it says.
+
+A server without internet access installs as before, and the ADK's failure is in the event log.
+Installing IIS itself is left to the administrator: it is a server role.
 
 ### 3.2 Linux
 
@@ -95,18 +115,41 @@ curl -fsSL https://github.com/Davicloud-NET/DDT/releases/latest/download/install
 1. It checks for Docker Engine with the compose plugin, and without it stops and says how to install
    them. It installs nothing of its own accord.
 2. It writes `/opt/ddt/compose.yaml`, the one from the release with the image pinned to its version,
-   and `/opt/ddt/.env` with a generated database password, `DDT_ROLES=web,pxe` and `DDT_HOSTNAMES`
-   from `hostname -f`.
+   and `/opt/ddt/.env` with `DDT_ROLES=web,pxe`, `DDT_PORT` and `DDT_HOSTNAMES` from `hostname -f`.
 3. Where ufw or firewalld is active, it asks, then opens the same ports as 3.1.
 4. It runs `docker compose up -d` and waits until `/api/about` answers.
-5. It prints the address, the root's SHA-256 and the first password (section 4.5).
+5. It prints the address, the root's SHA-256 and the command that shows the first password
+   (section 4.5).
 
-With the database of section 4.4 answered as recommended, the container needs no database service,
-and the whole install is also one line without the script:
+The database is the SQLite file in the store volume (section 4.4), so the container needs no
+database service, and the whole install is also one line without the script:
 
 ```bash
 docker run -d --name ddt --network host --restart unless-stopped -e DDT__Roles=web,pxe -v ddt:/var/lib/ddt ghcr.io/davicloud-net/ddt
 ```
+
+Done: build/install.sh and build/compose.release.yaml, which the release workflow publishes as
+`install.sh` and `compose.yaml`, the latter naming the release's image. The script takes
+`--version`, `--port`, `--names`, `--firewall yes|no` and `--directory`, as in
+`... | sudo sh -s -- --port 443`. Piped into `sh` it asks about the firewall on the terminal, and
+without one it leaves the firewall alone and says which ports to open. It checks `compose.yaml`
+against the release's `SHA256SUMS`. An upgrade is the script again: it replaces `compose.yaml` and
+keeps `.env`, and changes of one's own, such as a PostgreSQL connection string, go into
+`compose.override.yaml`, which it never touches. CI runs it on the Linux runner against the image
+it just built.
+
+Tried on a fresh Ubuntu Server 26.04.1 VM, with Docker Engine from Docker's repository and the
+image built there from this source. Piped into `sudo sh` on a terminal, the script asked about ufw,
+opened the ports, and DDT answered 8 seconds later; run again, it kept the store and its root. The
+network card for netboot was chosen through the settings' API, since nothing chooses it on Linux
+yet (section 5). The builder zip, run on a Windows VM with the ADK, built and uploaded in 123
+seconds (section 4.8). A Windows 11 ISO copied into the volume's `import` folder was in the library
+10 seconds later, and a machine netbooted from the container, through ufw, and got its Windows 11.
+
+Found there and fixed: the container listened on IPv4 alone, `https://0.0.0.0`, while DDT's
+certificate names the host's IPv6 addresses as well. A Windows PC that looked the server's name up
+and got its IPv6 address was refused, the builder among them. The image and `compose.yaml` listen
+on `https://*` now.
 
 ### 3.3 Upgrading and removing
 
@@ -118,13 +161,19 @@ when the release notes say that Windows PE changed, and the Boot image page says
 4.7).
 
 Removing DDT keeps `%ProgramData%\DDT` unless the removal is asked to delete it: the store holds the
-root key, and a new root means building every boot image again.
+root key, and a new root means building every boot image again. What setup fetched from Microsoft
+stays as well, as programs of their own in Apps and features.
+
+Tried on the Windows Server 2025 VM: `msiexec /x` with `REMOVESTORE=1` took 6 seconds and left no
+service, file, firewall rule, trusted root, registry key or event source. The helper's work folder,
+`%ProgramData%\DDT Helper`, stayed behind at first; the MSI removes it now, with what a build that
+broke off left in it.
 
 ## 4. What it takes
 
 ### 4.1 Releases
 
-A workflow on every tag `v*`:
+A workflow that a maintainer starts by hand:
 
 - A Windows job publishes the agent and the console with NativeAOT, as Publish-Agent.ps1 and
   Publish-Console.ps1 do, and the server self-contained for win-x64, so the host needs no .NET
@@ -136,8 +185,30 @@ A workflow on every tag `v*`:
 - The release carries the MSI, a zip of the same files, `install.ps1`, `install.sh`, `compose.yaml`
   and `SHA256SUMS`, and a winget manifest goes to winget-pkgs.
 
-The version comes from the tag into the assemblies' informational version, which the About page
-already reads (src/DDT.Host/Program.cs:84). Versions start at 0.x.
+**Versions.** Decided 2026-10-02: a version is Year.Major.Build, as 26.1.412.
+
+- Year is the year's last two digits and Major counts the releases with new features in that year,
+  starting at 1 each January. Both are in `Directory.Build.props` and raised by hand. Windows
+  Installer compares exactly three numbers and takes at most 255.255.65535, so the year cannot be
+  2026.
+- Build is the number of commits up to the one built. Nobody types it: `Directory.Build.targets`
+  counts it for a plain `dotnet build`, and `build/Get-Version.ps1` prints the whole version. Without
+  git, as in a container build, Build is 0 unless the version is passed in.
+- The server, the agent, the console, the MSI, the winget manifest and the image's tag carry the
+  same version. The About page reads the server's (src/DDT.Host/Program.cs:155).
+- A pre-release has no number of its own, because the MSI takes none. GitHub marks it, the About
+  page shows `26.1.412-pre`, the image's `latest` stays where it is, and winget gets nothing.
+
+**Cutting a release.** The Release workflow is run by hand from master, with a box for a
+pre-release and one for a dry run, which builds everything from any branch and publishes nothing.
+It counts the version, refuses one that is released already, builds the MSI and the image, and only
+then makes the tag `v26.1.412` and the GitHub release. Releases come from master alone: a branch
+that is squashed into master has more commits than master gets from it, so a release from the
+branch would be newer than the next one from master, and Windows Installer would not upgrade to it.
+
+Each release's `install.ps1`, `install.sh` and `compose.yaml` name that release, so a copy installs
+the release it came with. `releases/latest/download/` skips pre-releases, so a pre-release is
+installed from its own address, `releases/download/v26.1.412/install.ps1`.
 
 ### 4.2 The agent and the console come with the server
 
@@ -152,6 +223,12 @@ says which it offers, and once an upgrade brings an agent newer than the uploade
 too and offers to drop the upload. `Build-BootImage.ps1` takes the bundled agent and console when
 it runs from a release and `-AgentPath` is not given.
 
+Done: `Build-Installer.ps1` compiles the agent and the console with the server's version and puts
+them into the MSI, with `Build-BootImage.ps1` and its module; the release workflow hands both to the
+container image, since only Windows compiles them. The server reads the version out of each
+executable to tell which is newer. Run from the server's folder, `Build-BootImage.ps1` also names
+the server by its DNS name and port, trusts its root and writes into its boot directory.
+
 ### 4.3 The server as a service
 
 **Hosting.** DDT.Host builds its host with `WebApplication.CreateBuilder(args)` and runs it with
@@ -164,15 +241,17 @@ directory today, where `UseStaticFiles` and the fallback to `index.html` look fo
 (Program.cs:120-121,161). The `legal` folder already comes from `AppContext.BaseDirectory`
 (Program.cs:85).
 
-**The bootstrap file.** The service and the console verbs read `%ProgramData%\DDT\ddt.json` on
+**The bootstrap file.** The service and the console verbs read `%ProgramData%\DDT\ddt.ini` on
 Windows, after `appsettings.json` and before environment variables and the command line, so both
-still override it. It is what ENV lines are in the image (build/Dockerfile:44-47): the defaults of an
-install, not of the code, for the reasons settings.md section 2 gives. So the store's code default
-stays `/var/lib/ddt` (src/DDT.Server/Configuration/DdtOptions.cs:13) and the file names
-`%ProgramData%\DDT`. It holds only keys of settings.md section 2: a key of a page field there would
-lock that field (README, Configuration wins, and locks). `DDT.Host settings create-admin`, which
-SettingsConsole.cs:16 runs with `docker exec` today, then finds the same database on Windows from any
-elevated prompt.
+still override it. It's an INI file because Windows Installer writes those itself, with rollback,
+where JSON would need a custom action; .NET reads it with `AddIniFile`. The MSI only writes keys
+that are missing, so an upgrade keeps what an administrator changed. It is what ENV lines are in the
+image (build/Dockerfile:44-47): the defaults of an install, not of the code, for the reasons
+settings.md section 2 gives. So the store's code default stays `/var/lib/ddt`
+(src/DDT.Server/Configuration/DdtOptions.cs:13) and the file names `%ProgramData%\DDT`. It holds
+only keys of settings.md section 2: a key of a page field there would lock that field (README,
+Configuration wins, and locks). `DDT.Host settings create-admin`, which SettingsConsole.cs:16 runs
+with `docker exec` today, then finds the same database on Windows from any elevated prompt.
 
 **What differs on Windows.** The server's tests run on Windows in CI (.github/workflows/ci.yml:25-55),
 and the PXE sockets and the key files have Windows code of their own (src/DDT.Pxe/PxeSocket.cs:15-31,
@@ -183,44 +262,57 @@ and the PXE sockets and the key files have Windows code of their own (src/DDT.Px
   mint an administrator's cookie and every machine token. Below `%ProgramData%` the Users group
   inherits read access, to the database and the images as well. The installer gives the store to
   SYSTEM, Administrators and `NT SERVICE\DDT` alone, and the key ring is encrypted with DPAPI for the
-  machine as well, which a copied store does not open elsewhere.
+  machine as well, which a copied store does not open elsewhere. Done. For the machine and not an
+  account, because the service, setup as SYSTEM and an administrator's recovery verb share the ring.
+  So a store moved to another server loses its secrets (settings.md, What the encryption protects).
 - **Key files belong to whoever wrote them first.** The ACL of a PEM key names the account that made
   it (PemFiles.cs:48-66). A key made by an administrator's `dotnet run` is unreadable to the
   service, and the error then speaks of restoring a backup
   (src/DDT.Server/Certificates/ServerCertificates.cs:285-292). The installer lets the service make
-  them, and the error names the account that can read the file.
+  them, and the error names the account that can read the file. Done: a key DDT may not read says
+  which account DDT runs as and that it needs read access, not to restore a backup.
 - **Relative paths.** A relative store or boot directory resolves against the current directory
   (for example src/DDT.Server/Images/ImageStore.cs:18,20, src/DDT.Pxe/PxeSetup.cs:61-62), which is
   System32 for a service. The bootstrap file names absolute paths, and DDT resolves relative ones
-  against the program's folder.
+  against the program's folder. Done: as a service DDT makes the program's folder its current one.
 - **Files in use cannot be replaced.** Linux renames over a file that is being read; Windows refuses.
-  TFTP holds boot files open (src/DDT.Pxe/TftpTransfer.cs:86), HTTP boot and the agent download serve
-  them with `PhysicalFile`, and the agent upload and the console's logo rename over theirs
-  (src/DDT.Server/Endpoints/SettingsEndpoints.cs:534-576,
-  src/DDT.Server/Machines/ConsoleLogoStore.cs:67,75). So an upload during a machine's download fails,
-  and so does copying a boot image in while a machine netboots. Each of them gets a new file of its
-  own and the server switches to it, as image objects are already stored by their hash; the old file
-  goes when nothing reads it. Section 4.7 builds on this.
+  TFTP held boot files open, HTTP boot and the agent download served them with `PhysicalFile`, and
+  the agent upload and the console's logo renamed over theirs. So an upload during a machine's
+  download failed, and so did copying a boot image in while a machine netboots. Done, without new
+  file names: every reader opens its file so that it may be deleted (`FileShare.Delete`), and a
+  writer that cannot rename over the file moves the old one aside under another name first, which
+  Windows allows then; the old file goes when its last reader closes it
+  (src/DDT.Server/Machines/FileReplacement.cs, `Copy-BootFile` in build/BootImage/Private/Publish.ps1).
+  A boot image copied in by hand with Explorer still waits for a netboot to finish. Section 4.7
+  builds on this.
 - **Free space.** `DriveInfo` measures the store's volume on Linux, but only a drive root on Windows,
   and throws for a UNC path (ImageStore.cs:39-40), which fails every upload with a 500. On Windows the
-  server asks `GetDiskFreeSpaceEx` for the store's folder.
+  server asks `GetDiskFreeSpaceEx` for the store's folder. Done (src/DDT.Core/Disks/VolumeSpace.cs).
 - **Time zones on Windows Server 2019.** A time zone is checked through ICU
-  (src/DDT.Core/Unattend/WindowsTimeZones.cs:11-16). Windows Server 2022 and 2025 carry ICU; 2019 does
-  not, so .NET falls back to NLS there and every time zone is refused. Either DDT carries its own ICU,
-  which .NET supports, or it needs 2022 (section 8, question 9).
+  (src/DDT.Core/Unattend/WindowsTimeZones.cs:11-16). Windows carries ICU since Windows 10 1703,
+  Server 2019 included, as `icuuc.dll` and `icuin.dll`, and .NET 7 and later loads those. Tried on
+  Server 2019, whose ICU is version 61: the deployment settings take `W. Europe Standard Time` and
+  refuse a name that is no Windows time zone.
 - **Converting disk images.** The only programs the server starts are `qemu-img` and `xz`, for qcow2
   and `.xz` uploads, found on the PATH (src/DDT.Server/Images/ConversionTools.cs:15-16,95-107). A
-  missing one already refuses the upload with a message and keeps it. The Windows install carries
-  both, or the page says which to install; this only concerns Linux images.
+  missing one already refuses the upload with a message that says which to install, and keeps the
+  upload. On Windows DDT also looks where QEMU's installer puts `qemu-img`. The install carries
+  neither; this only concerns Linux images.
 - **Logs.** Without a console, Information and below go nowhere, and warnings go to the Application
   event log: there is no file sink. The Windows install writes a rolling log file in the store, which
   the Server page offers to download. The first password leaves the log entirely (section 4.5).
+  Done: as a service DDT writes `logs/ddt-<date>.log` in the store, a file a day, a new one above
+  20 MB, the newest 20 kept (src/DDT.Host/Logging/FileLoggerProvider.cs). The Log levels settings
+  apply to it, and the Logging tab lists the files (`GET /api/server/logs`, administrators only).
 - **The advice for a failed bind.** It says to grant `NET_BIND_SERVICE`
   (src/DDT.Contracts/Messages/ServerMessages.cs:1808-1814). Windows has no privileged ports: there,
-  access denied means that WDS or the DHCP server holds the port, which section 4.9 names.
+  access denied means that WDS or the DHCP server holds the port, which section 4.9 names. Done: on
+  Windows the message says that another service holds the port for itself, usually WDS or the DHCP
+  server.
 - **The recovery commands** are documented as `docker exec` (src/DDT.Host/Startup/SettingsConsole.cs:16).
   Without the bootstrap file, `DDT.Host.exe settings reset` on Windows would open a SQLite file of its
-  own and reset the wrong database; with it, it finds the service's.
+  own and reset the wrong database; with it, it finds the service's. Done, and settings.md names
+  both forms.
 
 ### 4.4 The database on one server
 
@@ -244,6 +336,56 @@ production store (DatabaseInitializer.cs:119). So one command needs a database s
 With (a), PostgreSQL stays for installs that want it, and the compose file keeps it as an option. An
 install does not move between the two; an export and import can come later.
 
+**SQL Server** too, for shops that run it already (ConfigMgr, WSUS, MDT's database). Needs:
+
+- `NO ACTION` on the foreign keys SQL Server calls multiple cascade paths (the user references on
+  `Machine`, `ApiToken`, `Deployment`), with the code clearing them before a user is deleted;
+- a filter on the unique `DdtUser.DirectoryObjectId` index, which allows one NULL otherwise;
+- a binary collation on hash and token columns, since the default one ignores case;
+- `sp_getapplock` around the migration at start, like PostgreSQL's lock;
+- tests against a SQL Server container in CI.
+
+**One migration per provider.** At the end of 4.4 the migrations are reset: one initial migration
+each for SQLite, PostgreSQL and SQL Server.
+
+Done, with (a):
+
+- **Which database.** `DDT:Database` is `Sqlite`, `PostgreSql` or `SqlServer`. Unset, a connection
+  string means PostgreSQL, as before, and none means SQLite. The installer takes
+  `DATABASEPROVIDER` next to `CONNECTIONSTRING`, and `install.ps1` `-DatabaseProvider` next to
+  `-Database`. The Server page names the database in use.
+- **One model, three sets of migrations.** EF Core keeps a context's migrations per type, so each
+  database has a context of its own below `DdtDbContext` (src/DDT.Server/Data), with its first
+  migration in src/DDT.Server/Migrations. A new one is added three times:
+  `dotnet ef migrations add <Name> --context SqliteDdtDbContext --output-dir Migrations/Sqlite --project src/DDT.Server --startup-project src/DDT.Server`,
+  and the same for `PostgreSqlDdtDbContext` and `SqlServerDdtDbContext`. A test fails while one of
+  the three lacks a migration for a model change.
+- **SQLite.** The file is `ddt.db` in the store, migrated at start. EF Core creates it with the
+  write-ahead log, and a writer waits up to 30 seconds for another. `DDT.Host backup <file>` copies
+  it with `VACUUM INTO` next to the running server. A file from the last build before the
+  migrations, `ddt-dev.db` with that build's fingerprint, is renamed and goes on with what it holds;
+  one from an older build is refused, as before.
+- **PostgreSQL.** The twelve migrations became one, which creates the same tables. A database at
+  the last of the twelve has its history rewritten at the next start; one that stopped earlier is
+  refused and says so.
+- **SQL Server.** Its model differs in two places. Every text column has the collation
+  `Latin1_General_100_BIN2`, so text is compared exactly as on the other two, not only hashes and
+  tokens. And the thirteen references that name a user are not cleared by the database, which
+  refuses `SET NULL` where two paths lead from a user to a table: DDT clears them in the
+  transaction that deletes the user (src/DDT.Server/Data/UserReferences.cs). The directory id's
+  unique index has its filter, and EF Core's own lock (`sp_getapplock`) serializes migrations.
+- **What ships for SQL Server.** `Microsoft.Data.SqlClient` brings two native libraries under
+  Microsoft licences that are not free software licences. Its network library for Windows ships
+  with the MSI: Microsoft allows passing it on inside an application, and NOTICE grants an
+  additional permission under GPL section 7 for combining DDT with it, so those who pass DDT on
+  may keep it in (section 8, question 10). The Entra ID broker stays out for now: nothing needs it
+  for Windows or SQL sign-in. Should brokered Entra ID sign-in to the database be wanted later, it
+  takes a permission of its own in NOTICE and its licence text, like the network library. The
+  container has neither: on Linux the client uses its managed networking.
+- **Tests.** The tests that ran on PostgreSQL run on both servers. SQL Server comes from
+  `DDT_TEST_SQLSERVER`, a connection string without a database, then from LocalDB on Windows, then
+  from a container.
+
 ### 4.5 The first administrator
 
 Today the password is logged once (IdentityBootstrap.cs:116-117). In a container `docker logs` shows
@@ -258,14 +400,32 @@ The first administrator), and `settings create-admin` stays the way back in.
 
 ### 4.6 Names and trust
 
-**Names.** The certificate names `localhost`, the short host name and the addresses
-(src/DDT.Server/Certificates/ServerNames.cs:19,39). It names the DNS name as well, such as
-`deploy01.contoso.local`, which the installers print and the boot image uses: Windows PE resolves a
-short name only if DHCP hands it the right suffix.
+**Names.** The certificate names `localhost`, the short host name and the addresses, loopback
+included, for a browser or IIS on the server itself (src/DDT.Server/Certificates/ServerNames.cs). It
+names the DNS name as well, such as `deploy01.contoso.local`, which the installers print and the
+boot image uses: Windows PE resolves a short name only if DHCP hands it the right suffix. The DNS
+name is the host name with the computer's domain, where that makes a host name; a certificate from
+DDT's root that lacks it is issued again at the next start, as for any missing name.
 
 **Trusting the root.** The checklist (section 5) links `ddt-root.pem` with its SHA-256 and a Group
 Policy recipe for the computers of those who manage DDT, and nowhere else, as the security model
 asks: the root has no name constraints (README, Security model).
+
+**IIS in front.** Where IIS has URL Rewrite and ARR, or setup just added them (section 3.1), setup
+offers a page for an IIS site of DDT's own:
+a host name with its own DNS record and a certificate from the machine store (`IISHOSTNAME`,
+`IISCERTIFICATE`; `install.ps1 -IisHostName -IisCertificate`). `DDT.Host setup iis` makes the site,
+binds the certificate by SNI and forwards to Kestrel with `X-Forwarded-Proto`;
+`settings trust-local-proxy` lists loopback as a proxy. Browsers get the shop's certificate, and IIS
+Manager's automatic rebind follows AD CS renewals. Agents keep DDT's port and root. Uninstall removes
+the site, and only a site in DDT's own folder.
+
+ARR's proxy switch and `preserveHostHeader` exist only for the whole server, and DDT needs both:
+without the host name it takes itself for `localhost:8443`. So `setup iis` sets them only where
+ARR's proxy was off. Where ARR already proxies without the host name, it stops and names the
+command, instead of changing how the other sites are proxied. They stay set after an uninstall.
+Live updates use WebSockets where IIS has that feature, and server-sent events otherwise. Tried
+on Windows Server 2025 with IIS 10, URL Rewrite 2.1 and ARR 3.0.
 
 **A certificate from the shop's own CA.** Many MDT shops run AD CS, whose root every domain member
 trusts already. A certificate of one's own works today, but DDT does not renew it (README, A
@@ -310,7 +470,49 @@ quietly with the deployment tools and Windows PE only. The release names a teste
 newest: winget offers the ADK 10.1.28000.1 with the add-on 10.1.26100.2454, which do not match, and
 2Pint recommends against 10.1.28000.1 for adding drivers.
 
+Done, ahead of the page: `DDT.Host setup adk` installs the pair 10.1.26100.9457 that way
+(src/DDT.Host/Startup/AdkSetup.cs), with each setup checked against its SHA-256, and setup and
+`install.ps1` offer it (section 3.1). It adds a missing add-on only to the ADK of the same version.
+An elevated prompt runs it by hand, after an upgrade for instance, which shows no Dependencies page.
+
+Done, the helper and the button:
+
+- `DDT.Host helper` is the `DDTHelper` service (src/DDT.Host/Helper), which the MSI registers next
+  to `DDT`. Its pipe `DDT.Helper` lets `NT SERVICE\DDT` read and write, refuses the network, and
+  takes one request at a time as a line of JSON: `build` or `adk`. A build's name, address, keyboard
+  layout and TFTP window are checked again in the helper, and the address is put together again
+  from its parts, so nothing from the request reaches PowerShell's command line as it came.
+- The helper works in `%ProgramData%\DDT Helper`, which only SYSTEM and administrators can open. It
+  unpacks the flagged driver packages there from the store, each checked against the SHA-256 in its
+  name, runs the script, and copies the result into `boot\builds\<name>`. The image carries the
+  agent and console the release came with, not an uploaded one, which machines get at netboot
+  anyway (section 4.2).
+- A build's name is its start in UTC, `20261001-100000`. The file `boot\current` names the build
+  that TFTP and HTTP boot serve (src/DDT.Pxe/BootBuilds.cs); without it they serve the boot
+  directory itself, as before, so a build copied there by hand keeps working and shows in the list
+  as one more build to serve. After a build the server keeps it and the one served before it, and
+  removes the rest.
+- `POST /api/boot-image/build`, `/adk` and `/current` are an administrator's, and each is audited.
+  `GET /api/boot-image` names why a build is due (`drivers`, `serverAddress`, `root`, `adk`), the
+  ADK, the builds and the job; `GET /api/boot-image/job` has the job's output, and the hub pushes
+  it as `bootImageJobOutput`. The job is kept in memory, so a restart of the server forgets its
+  output, and the build it left says the rest.
+- The page offers the keyboard layout and PowerShell, starting from what the served build has. The
+  TFTP window is in the API alone.
+
+Left: the page does not say that a release changed Windows PE, since no release says so yet. The
+keyboard layout is chosen at each build and not a setting, so it has nothing to differ from.
+
+Tried on a fresh Windows Server 2025 VM, through the API the page uses: the ADK and its add-on
+installed in 85 seconds, and a build took 125 to 155 seconds. A driver package flagged for Windows
+PE made the served build out of date, and the next build had the driver in `boot.wim`'s driver
+store. A build that finished while a machine was still loading the one before, over TFTP with a
+window of 1, left that machine alone: it got the rest of the old `boot.wim` from the old folder
+and started.
+
 `Build-BootImage.ps1` stays the one implementation, so a build by hand on a PC gives the same image.
+Run next to an installed server without `-Destination`, it builds into `boot\builds` and marks its
+build current, as the button does.
 
 ### 4.8 The boot image from another PC
 
@@ -329,6 +531,25 @@ one:
 Tokens are an administrator's today (README, API tokens). The upload token is the first with a
 single purpose.
 
+Done:
+
+- `POST /api/boot-image/builder`, an administrator's after the password again, answers the zip:
+  the script, its module and the trim list as the release brought them, the agent, the console,
+  `ddt-root.pem`, the drivers flagged for Windows PE, unpacked, a `Build.cmd` that elevates itself,
+  and `builder.json` with the server's address and the token. The token is in that file and not in
+  `Build.cmd`, so nothing has to be quoted for cmd. The container image carries the script too.
+- Run in a folder with `builder.json`, `Build-BootImage.ps1` builds for that server with what the
+  folder holds, asks the server first whether the token still uploads, and sends the build as a zip
+  of its `Boot`, `EFI` and `x64` folders, trusting only the root it came with.
+- `PUT /api/boot-image` takes the token in `X-DDT-Builder-Token` and nothing else: it is no API
+  token, and no other call takes it. The server refuses a zip with a file outside the three
+  folders, without one of the files a build has, or whose `boot.wim` or description cannot be read,
+  and only then moves it into `bootuilds` and serves it. The page shows the upload as a job.
+- The token is good for a day and for one boot image that the server accepted. Whether it was used
+  is in the audit log, so every host of the server knows.
+- The page offers the builder where the server cannot build right now: without the helper, or
+  without a supported ADK.
+
 ### 4.9 Netboot at the first start
 
 What is served stays the administrator's choice: `DDT:Pxe:Interfaces` keeps no default
@@ -337,7 +558,8 @@ chosen, from the list `GET /api/settings/pxe/interfaces` gives today.
 
 **A default boot target.** With ProxyDHCP on and no boot target, DDT answers nothing and only warns
 (PxeHost.cs:299). Without a configured one, `X64Uefi` boots `x64/bootmgfw.efi` over TFTP, the 2011
-boot manager that is already the default.
+boot manager that is already the default. Done: with ProxyDHCP and TFTP on and no boot target
+configured, that is the one target (src/DDT.Pxe/PxeSetup.cs), and the Network boot page says so.
 
 **Who else holds the ports.** On Windows the Microsoft DHCP server holds UDP 67, and WDS holds 69,
 4011 and, where it answers PXE itself, 67. A bind can succeed on Windows while another process takes
@@ -358,6 +580,59 @@ service that holds each port, and offers what fits:
 - **A DHCP server on a gateway**, such as UniFi, pfSense or a FortiGate: options 66 and 67 there, as
   the README describes, or ProxyDHCP on the same segment.
 
+Done, on the Network boot page under "Next to DHCP and WDS" (`GET /api/netboot`):
+
+- **The ports.** On Windows the page names the processes that hold UDP 67, 69 and 4011, read from
+  the system's own table (src/DDT.Core/Windows/UdpPortOwners.cs), and says which of them is DDT,
+  Microsoft's DHCP server or WDS. Windows hides the DHCP server's state from the web server's
+  account, so the helper reports both services where there is one.
+- **A DHCP Server on the same computer keeps UDP 67.** It takes its address on that port for itself
+  alone, which fails once DDT holds the port for all addresses, and it then serves no one. So where
+  that service is installed and may start (src/DDT.Core/Windows/DhcpServerRole.cs), DDT does not
+  listen on 67 and answers on 4011 alone. The page says so, tells whether the DHCP server sends
+  option 60, `PXEClient`, which sends machines to 4011, as WDS has it on a DHCP server, and the
+  helper sets that option for the whole server or takes it off again.
+- **Options 66 and 67.** The page always gives the two values and a PowerShell line for a Microsoft
+  DHCP server elsewhere. Where one runs on the same computer, the helper lists its scopes with what
+  they say now and sets both options for the scopes the administrator ticks.
+- **In place of WDS.** After asking, the helper stops WDS and keeps it from starting, and DDT's
+  listeners start again and take the ports. The page starts WDS again later.
+- **Beside WDS.** The helper puts the served `boot.wim` into the WDS boot menu as `DDT` with
+  `Import-WdsBootImage`. After every build and every upload from a builder it replaces that image,
+  and only where WDS had one from DDT.
+- Each change takes the password again, since it decides what every machine that netboots loads,
+  and is audited. The helper runs fixed PowerShell: what a request names reaches it in environment
+  variables, after the helper has checked each value itself.
+
+Tried on the test VM with the DHCP Server and WDS roles: the options arrived in the scope, WDS
+listed the image, stopped and started again. Tried again on a fresh Windows Server 2025 VM with a
+machine that netboots next to it:
+
+- **Next to the DHCP server, nothing set.** The DHCP server and DDT's ProxyDHCP both held UDP 67,
+  the one gave the address and the other the boot file, and the machine started Windows PE. But
+  after a restart of the server DDT bound the port first, and the DHCP Server served no one, with
+  "unable to bind to UDP port number 67" in its log. That is why DDT leaves the port alone now.
+- **Option 60.** With that change the server came up again with the DHCP Server serving its card
+  and DDT on UDP 4011 and 69. Option 60 set through the page's API, the machine asked 4011, got its
+  boot file and started Windows PE. Taken off again, the DHCP server no longer had the option.
+- **Options 66 and 67.** Set from the page for the scope, with ProxyDHCP off, the machine starts
+  Windows PE too.
+- **Beside WDS**, with DDT's ProxyDHCP and TFTP off. WDS answers, loads DDT's `boot.wim`, and the
+  agent reaches DDT. On that VM WDS's own `Boot\x64` folder had no `wdsmgfw.efi`, after
+  `wdsutil /Initialize-Server` had timed out next to the DHCP server. WDS did not take it from
+  DDT's image, with or without `\Windows\Boot\PXE` in it, and it had to be copied from
+  `System32\RemInst\boot\x64` by hand. A shop whose WDS already netboots has that file.
+
+Left: the checklist's netboot step with the default route's interface chosen (section 5).
+
+Hyper-V's Default Switch does not stand in for a network here. Its DHCP is Windows' connection
+sharing, and on the test host it answered no machine on the switch any more from the moment DDT,
+in a VM, sent its first ProxyDHCP offer, and stayed silent with DDT stopped. Connection sharing is
+known to switch its DHCP off when it sees another DHCP server, which fits; it was seen once and not
+tried again. DDT on the host itself shares the switch's address and never set that off. The test
+went on with the DHCP Server role in the server VM. The quick start has to warn of it (section
+4.11).
+
 ### 4.10 Windows images from an ISO, a folder or MDT
 
 - **An ISO.** The Images page takes a Windows ISO and reads `sources\install.wim` or `install.esd`
@@ -375,6 +650,33 @@ service that holds each port, and offers what fits:
   and those follow once M7 and M9 give them a place. On a UNC path the server reads as its computer
   account, which the share has to allow.
 
+Done:
+
+- **An ISO.** An upload that is an ISO is read for `sources\install.wim` or `install.esd`, which
+  takes its place, and goes on as that WIM (src/DDT.Server/Images/IsoImages.cs). An ISO without one
+  is refused. Windows media are UDF, which DiscUtils reads; it is MIT, and
+  THIRD-PARTY-NOTICES names it.
+- **Folders.** The import folders are `import` in the store, which every server has, and what
+  `DDT:ImportFolders` names, in `ddt.ini` as `[DDT:ImportFolders]` with `0 = D:\DeploymentShare`.
+  The Images page lists the WIM, ESD and ISO files below them, up to four folders deep, and imports
+  one at a press. A path that is not below an import folder is refused, and so is one that leaves
+  it through a link.
+- **The import.** `POST /api/images/import` starts it and answers at once. One runs at a time. Each
+  file is copied next to the uploads and then goes the way of an upload whose bytes have arrived,
+  so the same checks decide and the same rows and audit entries result. The page follows it over
+  the hub (`importChanged`), with what became of each file. The source stays where it is.
+- **An MDT deployment share** is an import folder, or a folder right below one, with
+  `Control\OperatingSystems.xml`. The page shows its image files with the operating systems MDT
+  lists in each, and the folders of Out-of-Box Drivers that hold drivers, each of which becomes a
+  driver package named after its path. Where the path ends in a maker DDT knows by name and a
+  model, such as `Dell Inc.\Latitude 7440`, the package is for that model; otherwise it is for
+  none until someone sets it. The dialog names the applications, the task sequences and the
+  sections of `CustomSettings.ini`, which are not imported.
+
+Left: an import folder is named in configuration and not on a page, so an MDT shop edits `ddt.ini`
+once. A command at an elevated prompt would spare that, as `settings netboot-interface` does for
+the network card.
+
 ### 4.11 Documentation
 
 A quick start at the top of the README, a page long, and a guide for MDT users that maps what they
@@ -383,6 +685,11 @@ Deployment Share to Build, selection profiles to the boot image flag on driver p
 `CustomSettings.ini` to rules and the deployment defaults, `Bootstrap.ini` to nothing because the
 boot image carries the server's URL, the Deployment Wizard to the console at the machine, and
 monitoring to the machine's page. The rest of the documentation stays M12.
+
+Done: the quick start is in the README, and the guide is [coming-from-mdt.md](coming-from-mdt.md).
+The guide also says how to try DDT next to MDT in the WDS boot menu, and what DDT does not do yet.
+Its pictures are in `docs/images`, taken from the web UI with sample data, and the console's from
+the test VM.
 
 ## 5. The checklist at the first start
 
@@ -400,10 +707,24 @@ done, pushed over the hub like every other change:
 
 It can be dismissed, and the Server page keeps it.
 
+Done: `GET /api/server/checklist` says for six of the steps whether the server sees them done: the
+first password's file is gone, a network card answers netboot, the boot directory holds a build, the
+library holds an image, a task sequence exists, a machine has registered. The card
+(src/DDT.Web/src/setup) is on the Machines page and on the Server page for administrators, links
+each step to its page, and goes once all six are done. A step ticks itself from the hub's pushes
+for machines, images, sequences, the boot image and the network boot settings, without the list
+being read again. Trusting the root is a step without a mark, since the server cannot see a
+browser's trust. Dismissing is kept in the browser, so the card on the Machines page stays away
+there and the Server page still shows it. The starting sequence is the Install Windows template
+that exists already.
+
+Left: the netboot step does not choose the default route's interface for the administrator, who
+picks it on the Network boot page, or in setup, which offers it (section 3.1).
+
 ## 6. Not planned
 
-- **A boot image or Windows PE in a release.** As far as known, the ADK's licence does not allow
-  passing Windows PE on, so every path builds it on the shop's own machine (section 8, question 5).
+- **A boot image or Windows PE in a release.** The ADK's licence does not allow passing Windows PE
+  on, so every path builds it on the shop's own machine (section 8, question 5).
 - **Building the boot image on Linux with wimlib.** wimlib can add files to `boot.wim` but not the
   PowerShell components or drivers, which need DISM.
 - **Docker Desktop or WSL on Windows**, which do not deliver broadcasts to the container.
@@ -422,23 +743,56 @@ It can be dismissed, and the Server page keeps it.
 6. The checklist, the imports from an ISO, a folder and an MDT share, and the starting sequence.
 7. The quick start and the guide for MDT users.
 
+All seven steps are built, with what each section lists as left. The measure below holds as far as
+machines go, timed to the first question of Windows' own setup.
+
 The milestone is done when section 1's measure holds on a fresh Windows Server 2025 VM on the Hyper-V
 test host, timed from the command to a Windows 11 desktop, and on a fresh Ubuntu VM with the boot
 image from the builder.
 
+Measured on the Windows Server 2025 VM, with the MSI from a folder instead of a download, every
+step started by a script through the API, and a second VM as the machine: 16 seconds for the
+command, 85 for the ADK, 2 minutes 16 for the boot image, 27 seconds for a Windows 11 ISO from the
+import folder and a second for the sequence, so 4 and a half minutes for the server. The machine
+took 17 seconds from power-on to DDT's console, 3 minutes for the run and 3 more for Windows'
+own setup, which then asks whom the PC is for: 6 minutes 12. Together under 11 minutes, of the 30.
+The administrator's own minutes, in the browser, are not in that.
+
+On the Ubuntu VM (section 3.2), with Docker there and the image built locally instead of pulled:
+8 seconds for the script, 123 for the builder on a Windows PC that has the ADK, 39 for the ISO over
+the network and its import, and 5 minutes 49 for the machine, so under 9 minutes.
+
+The same chain ran on a fresh Windows Server 2019 VM, the floor: the command in 13 seconds, the
+ADK in 130, the boot image in 135, and the machine netbooted from it and got its Windows 11. There
+the DHCP server was another computer, and DDT answered next to it as ProxyDHCP.
+
 ## 8. Open questions for the maintainer
 
-1. **Windows Server as a production host.** This reverses the rule that production is the Linux
-   container with host networking. Recommended: yes, and first, because that is where MDT shops are.
-2. **The database on one server.** (a), (b) or (c) of section 4.4. Recommended: (a).
-3. **The place in the roadmap.** Written in as M6.6, before M7. The `m7` branch exists but has no
-   commits yet.
-4. **Code signing.** An unsigned MSI and `DDT.Host.exe` meet SmartScreen. Which certificate, and
-   whether Azure Trusted Signing takes Davicloud e.U.?
-5. **The ADK licence.** Confirm that Windows PE cannot be shipped in a release.
-6. **An MSI.** Recommended over a script alone: winget installs a service through one, and MDT was one.
-7. **The port.** 8443, as the container uses, or 443 when it is free?
-8. **Certificates from AD CS.** Later, or part of this milestone?
-9. **Windows Server versions.** Written as 2022 and later, because Windows Server 2019 has no ICU
-   and DDT's time zone check needs it (section 4.3). DDT could carry its own ICU to add 2019, which
-   many MDT servers still run.
+1. **Windows Server as a production host.** Answered: yes, and first. Section 3.1 is built, and the
+   measure of section 7 was taken there.
+2. **The database on one server.** Answered 2026-09-29: (a) of section 4.4, SQLite, with SQL Server
+   beside PostgreSQL for a shop that wants a database server.
+3. **The place in the roadmap.** Answered: M6.6. M7 was merged first, on 2026-09-28.
+4. **Code signing.** Answered 2026-10-04: the maintainer has a code signing certificate in his own
+   name, with SSL.com's signing service, and signs the installers with it, and perhaps other parts
+   that run elevated. Left: the release workflow builds the MSI and writes `SHA256SUMS` and the
+   winget manifest from it without a signing step. Signing has to come before those, and the files
+   in the MSI have to be signed before it is packed. SSL.com has a GitHub action for its service.
+5. **The ADK licence.** Confirmed 2026-10-04 from the licence of ADK 10.1.26100 (`Docs\Eula` in the
+   kit's folder): only code marked as sample may be passed on, and its section 6 forbids
+   publishing or distributing the software. So Windows PE stays out of every release. Open: the
+   same licence allows Windows PE for installing and recovering Windows, and for no purpose it does
+   not name. Writing a Linux image from Windows PE (M6, and M8 after it) is not named. The
+   maintainer weighs a boot environment without Windows PE for that (roadmap, Ideas for later).
+6. **An MSI.** Answered 2026-09-29: an MSI, built with WiX, and since 2026-09-30 without a
+   `setup.exe` around it.
+7. **The port.** Answered 2026-10-04: 8443 on every server. It collides with nothing a server
+   usually runs, and a reverse proxy finds DDT on the same port everywhere. 443 stays a parameter.
+8. **Certificates from AD CS.** Answered 2026-10-04: later, and in full then. It is in the roadmap
+   under Ideas for later.
+9. **Windows Server versions.** Answered 2026-09-29: Server 2019 and Windows 10 1809 and later, build
+   17763, which the MSI and `install.ps1` check. The whole chain and the time zone check ran on
+   Server 2019 (sections 4.3 and 7).
+10. **SQL Server's native network library.** Answered 2026-10-01: it ships with the MSI, with an
+    additional permission in NOTICE. Microsoft documents the client's managed networking on Windows
+    as meant for testing, though it worked on the test VM, Windows authentication included.

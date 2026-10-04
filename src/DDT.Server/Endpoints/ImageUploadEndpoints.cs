@@ -63,7 +63,7 @@ public static class ImageUploadEndpoints
             return ServerProblems.Validation("kind", ServerMessages.UploadKind.With());
         }
 
-        if (request.Length <= 0 || request.Length > store.Volume().TotalSize)
+        if (request.Length <= 0 || request.Length > store.Volume().Total)
         {
             return ServerProblems.Validation("length", ServerMessages.UploadLength.With());
         }

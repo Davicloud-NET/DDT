@@ -29,7 +29,14 @@ internal sealed class CertificateRoot(CertificateFiles files)
                 return root;
             }
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or CryptographicException)
+        catch (UnauthorizedAccessException exception)
+        {
+            throw new InvalidOperationException(
+                $"DDT's root certificate {files.RootPath} cannot be used with its key {files.RootKeyPath}: {exception.Message} " +
+                RunningAccount.AccessAdvice,
+                exception);
+        }
+        catch (Exception exception) when (exception is IOException or CryptographicException)
         {
             // A new root would break every boot image, so DDT never makes one over an existing root on its own.
             throw new InvalidOperationException(

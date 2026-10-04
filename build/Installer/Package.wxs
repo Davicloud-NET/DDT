@@ -1,0 +1,81 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The DDT Deployment server for Windows. Setup mainly installs the firewall rules and the system service -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <Package Name="DDT Deployment Server"
+           Manufacturer="Davicloud"
+           Version="$(Version)"
+           UpgradeCode="6ED34445-0465-4599-BDE3-C991D89201BF"
+           Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of the DDT Deployment Server is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Windows Installer reports Windows 8.1 to msiexec, so the build comes from the registry. 17763 is version 1809. -->
+    <Property Id="WINDOWSBUILD">
+      <RegistrySearch Id="WindowsBuild"
+                      Root="HKLM"
+                      Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+                      Name="CurrentBuildNumber"
+                      Type="raw" />
+    </Property>
+    <Launch Condition="Installed OR WINDOWSBUILD &gt;= 17763"
+            Message="The DDT Deployment Server needs Windows Server 2019 or later, or Windows 10 version 1809 or later." />
+
+    <Icon Id="DDT.ico" SourceFile="$(sys.SOURCEFILEDIR)..\..\src\DDT.Design\brand\ddt-logo.ico" />
+    <Property Id="ARPPRODUCTICON" Value="DDT.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Davicloud-NET/DDT" />
+
+    <WixVariable Id="WixUILicenseRtf" Value="$(LicenseRtf)" />
+    <UIRef Id="WixUI_DDT" />
+
+    <!-- The last page offers opening DDT to the install todo list -->
+    <SetProperty Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"
+                 Value="Open DDT in the browser"
+                 After="FindRelatedProducts"
+                 Sequence="ui"
+                 Condition="NOT WIX_UPGRADE_DETECTED" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <!-- After CostFinalize, which resolves STOREFOLDER. -->
+    <SetProperty Id="WIXUI_EXITDIALOGOPTIONALTEXT"
+                 Value="First sign-in: user admin, password in [STOREFOLDER]first-admin.txt."
+                 After="CostFinalize"
+                 Sequence="ui"
+                 Condition="NOT WIX_UPGRADE_DETECTED" />
+    <!-- After the install, which started the ADK's -->
+    <SetProperty Id="WIXUI_EXITDIALOGOPTIONALTEXT"
+                 Action="SayAdkInstalls"
+                 Value="[WIXUI_EXITDIALOGOPTIONALTEXT] The Windows ADK is installing in the background now, which takes a few minutes. The Application event log says when it's done."
+                 After="ExecuteAction"
+                 Sequence="ui"
+                 Condition="INSTALLADK = 1 AND NOT Installed" />
+    <CustomAction Id="OpenDdt"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixUnelevatedShellExec"
+                  Execute="immediate"
+                  Return="ignore" />
+    <UI>
+      <!-- Set on Finish, so a port changed on ServerDlg counts -->
+      <Publish Dialog="ExitDialog"
+               Control="Finish"
+               Property="WixUnelevatedShellExecTarget"
+               Value="https://localhost:[PORT]/"
+               Order="1" />
+      <Publish Dialog="ExitDialog"
+               Control="Finish"
+               Event="DoAction"
+               Value="OpenDdt"
+               Order="2"
+               Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT AND NOT Installed" />
+    </UI>
+
+    <Feature Id="Server">
+      <ComponentGroupRef Id="Server" />
+      <ComponentGroupRef Id="Store" />
+    </Feature>
+  </Package>
+
+</Wix>

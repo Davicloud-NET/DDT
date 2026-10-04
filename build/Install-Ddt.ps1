@@ -1,0 +1,312 @@
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+#Requires -Version 5.1
+
+<#
+.SYNOPSIS
+Installs the DDT server on Windows from a release.
+
+.DESCRIPTION
+Downloads DDT.msi, checks it against the release's SHA256SUMS, installs it quietly and waits for the DDT service to
+listen. Then it prints the address, the SHA-256 of DDT's root and where the first password is. Each release carries
+this script as install.ps1.
+
+In an elevated PowerShell:
+
+  irm https://github.com/Davicloud-NET/DDT/releases/latest/download/install.ps1 | iex
+
+With settings:
+
+  & ([scriptblock]::Create((irm https://github.com/Davicloud-NET/DDT/releases/latest/download/install.ps1))) -Port 443
+
+.PARAMETER Port
+The HTTPS port, on a new install. 8443 by default.
+
+.PARAMETER StoreFolder
+Where the store goes, on a new install. %ProgramData%\DDT by default.
+
+.PARAMETER NetbootInterface
+The network card that answers netboot, by name, such as Ethernet. Unset, PXE stays off until someone picks one in DDT.
+
+.PARAMETER Database
+A connection string for PostgreSQL or SQL Server. Without one, DDT keeps its database in SQLite in the store.
+
+.PARAMETER DatabaseProvider
+SqlServer when -Database names a SQL Server. PostgreSql is the default.
+
+.PARAMETER AllowPublicNetworks
+Lets the firewall rules cover public networks too, not only domain and private ones.
+
+.PARAMETER IisHostName
+Publishes DDT through IIS under this name, such as ddt.contoso.com, on a new install. Needs IIS with URL Rewrite and
+ARR, which -InstallIisModules adds, and -IisCertificate.
+
+.PARAMETER IisCertificate
+The thumbprint of the certificate IIS serves for -IisHostName, from the computer's store.
+
+.PARAMETER InstallIisModules
+Gets URL Rewrite and Application Request Routing from Microsoft and installs them first, where IIS lacks them. That
+accepts Microsoft's licence terms for them.
+
+.PARAMETER InstallAdk
+Gets the Windows ADK and its Windows PE add-on from Microsoft and installs them, for building boot images on this
+server: about 4 GB and a few minutes. That accepts Microsoft's licence terms for them.
+
+.PARAMETER Version
+A release, as 26.1.412, instead of the latest one. A pre-release is installed this way, because latest skips it.
+
+.PARAMETER Source
+A folder or URL with DDT.msi and SHA256SUMS, instead of a release. For testing a build.
+#>
+[CmdletBinding()]
+param(
+    [ValidateRange(1, 65535)]
+    [int] $Port = 8443,
+
+    [string] $StoreFolder,
+
+    [string] $NetbootInterface,
+
+    [string] $Database,
+
+    [ValidateSet('PostgreSql', 'SqlServer')]
+    [string] $DatabaseProvider,
+
+    [switch] $AllowPublicNetworks,
+
+    [string] $IisHostName,
+
+    [string] $IisCertificate,
+
+    [switch] $InstallIisModules,
+
+    [switch] $InstallAdk,
+
+    [ValidatePattern('^\d{1,3}\.\d{1,3}\.\d{1,5}$')]
+    [string] $Version,
+
+    [string] $Source
+)
+
+# A child scope: through irm | iex, strict mode and preferences would stay in the caller's shell.
+& {
+    param([int] $Port, [string] $StoreFolder, [string] $NetbootInterface, [string] $Database, [string] $DatabaseProvider, [bool] $AllowPublicNetworks,
+        [string] $IisHostName, [string] $IisCertificate, [bool] $InstallIisModules, [bool] $InstallAdk, [string] $Version,
+        [string] $Source)
+
+    Set-StrictMode -Version Latest
+    $ErrorActionPreference = 'Stop'
+    $ProgressPreference = 'SilentlyContinue'
+
+    $principal = New-Object Security.Principal.WindowsPrincipal ([Security.Principal.WindowsIdentity]::GetCurrent())
+    if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        throw 'Installing DDT needs an elevated PowerShell. Open one with Run as administrator and try again.'
+    }
+
+    $build = [int] (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuildNumber
+    if ($build -lt 17763) {
+        throw 'DDT needs Windows Server 2019 or later, or Windows 10 version 1809 or later.'
+    }
+
+    # GitHub only speaks TLS 1.2 and later, which Windows PowerShell doesn't always offer by default.
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+
+    # The release this copy came with, which the release workflow fills in. So a copy installs its own release, a
+    # pre-release too, which latest skips.
+    $released = ''
+    if (-not $Version) { $Version = $released }
+
+    $release = if ($Source) {
+        $Source.TrimEnd('/', '\')
+    }
+    elseif ($Version) {
+        "https://github.com/Davicloud-NET/DDT/releases/download/v$Version"
+    }
+    else {
+        'https://github.com/Davicloud-NET/DDT/releases/latest/download'
+    }
+
+    $work = Join-Path ([IO.Path]::GetTempPath()) ('ddt-install-' + [Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $work | Out-Null
+    $msi = Join-Path $work 'DDT.msi'
+    $log = Join-Path $work 'DDT.msi.log'
+    $sumsFile = Join-Path $work 'SHA256SUMS'
+
+    Write-Host "Getting DDT.msi from $release"
+    if ($release -match '^https?://') {
+        Invoke-WebRequest -UseBasicParsing -Uri "$release/DDT.msi" -OutFile $msi
+        Invoke-WebRequest -UseBasicParsing -Uri "$release/SHA256SUMS" -OutFile $sumsFile
+    }
+    else {
+        Copy-Item -LiteralPath (Join-Path $release 'DDT.msi') -Destination $msi
+        Copy-Item -LiteralPath (Join-Path $release 'SHA256SUMS') -Destination $sumsFile
+    }
+
+    $sums = [IO.File]::ReadAllText($sumsFile)
+    $expected = ($sums -split "`n" | Where-Object { $_ -match '^\s*([0-9a-fA-F]{64})\s+\*?DDT\.msi\s*$' } | Select-Object -First 1)
+    if (-not $expected) {
+        throw "The release's SHA256SUMS names no DDT.msi."
+    }
+
+    if ((Get-FileHash -LiteralPath $msi -Algorithm SHA256).Hash -ne ($expected -split '\s+')[0].Trim().ToUpperInvariant()) {
+        throw "DDT.msi doesn't match the release's SHA256SUMS. Nothing was installed."
+    }
+
+    # Before DDT, whose setup checks for them. Dependencies.cs of the setup pages names the same files and hashes.
+    if ($InstallIisModules) {
+        if (-not (Test-Path 'HKLM:\SOFTWARE\Microsoft\InetStp')) {
+            throw '-InstallIisModules needs IIS. Add it first, with Install-WindowsFeature Web-Server, Web-WebSockets.'
+        }
+
+        $modules = @(
+            @{
+                Name = 'URL Rewrite'
+                File = 'rewrite_amd64_en-US.msi'
+                Uri  = 'https://download.microsoft.com/download/1/2/8/128E2E22-C1B9-44A4-BE2A-5859ED1D4592/rewrite_amd64_en-US.msi'
+                Hash = '37342FF2F585F263F34F48E9DE59EB1051D61015A8E967DBDE4075716230A32A'
+            }
+            @{
+                Name = 'Application Request Routing'
+                File = 'requestRouter_amd64.msi'
+                Uri  = 'https://download.microsoft.com/download/e/9/8/e9849d6a-020e-47e4-9fd0-a023e99b54eb/requestRouter_amd64.msi'
+                Hash = 'FB61FDB7101795A34D5129CB37EEE43AB675C7ED76BA3A3B23B039D8C90C2A4B'
+            }
+        )
+
+        foreach ($module in $modules) {
+            $registered = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\IIS Extensions\$($module.Name)" -ErrorAction SilentlyContinue
+            if ($registered -and $registered.PSObject.Properties['Install'] -and $registered.Install -eq 1) { continue }
+
+            Write-Host "Installing $($module.Name) for IIS, from Microsoft"
+            $file = Join-Path $work $module.File
+            Invoke-WebRequest -UseBasicParsing -Uri $module.Uri -OutFile $file
+            if ((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne $module.Hash) {
+                throw "$($module.File) from Microsoft isn't the file this script was made for. Nothing was installed from it."
+            }
+
+            $added = Start-Process -FilePath msiexec.exe -ArgumentList @('/i', "`"$file`"", '/qn', '/norestart') -Wait -PassThru
+            if ($added.ExitCode -notin 0, 3010) {
+                throw "$($module.Name) didn't install: Windows Installer ended with exit code $($added.ExitCode)."
+            }
+        }
+    }
+
+    $arguments = @('/i', "`"$msi`"", '/qn', '/norestart', '/l*v', "`"$log`"", "PORT=$Port")
+    if ($StoreFolder) { $arguments += "STOREFOLDER=`"$($StoreFolder.TrimEnd('\'))`"" }
+    if ($NetbootInterface) { $arguments += "NETBOOTINTERFACE=`"$NetbootInterface`"" }
+    if ($DatabaseProvider -and -not $Database) { throw '-DatabaseProvider goes with -Database.' }
+    if ($Database) { $arguments += "CONNECTIONSTRING=`"$Database`"" }
+    if ($DatabaseProvider) { $arguments += "DATABASEPROVIDER=$DatabaseProvider" }
+    if ($AllowPublicNetworks) { $arguments += 'FIREWALLPUBLIC=1' }
+    if ([bool] $IisHostName -ne [bool] $IisCertificate) { throw '-IisHostName and -IisCertificate go together.' }
+    if ($IisHostName) { $arguments += "IISHOSTNAME=`"$IisHostName`"", "IISCERTIFICATE=$($IisCertificate -replace '\s', '')" }
+
+    Write-Host 'Installing DDT'
+    $started = Get-Date
+    $installed = Start-Process -FilePath msiexec.exe -ArgumentList $arguments -Wait -PassThru
+    if ($installed.ExitCode -notin 0, 3010) {
+        # Setup's own errors, such as a port in use, are in the log as "Product: ... -- message"
+        $reason = ''
+        foreach ($line in Get-Content -LiteralPath $log -ErrorAction SilentlyContinue) {
+            if ($line -match 'Product: .+? -- (.+)$' -and $Matches[1] -notmatch '^Installation (failed|completed)') {
+                $reason = $Matches[1].Trim()
+                break
+            }
+        }
+
+        # A setup verb's own reason. By XPath, and its text from Properties: a rollback unregisters the DDT source.
+        try {
+            $since = $started.ToUniversalTime().ToString('o')
+            $verb = Get-WinEvent -LogName Application -MaxEvents 20 -ErrorAction Stop -FilterXPath "*[System[Provider[@Name='DDT'] and Level=2 and TimeCreated[@SystemTime>='$since']]]" |
+                Where-Object { $_.Properties.Count -gt 0 -and "$($_.Properties[0].Value)" -match '^DDT\.Host .+ failed: ' } |
+                Select-Object -First 1
+            if ($verb) { $reason = "$($verb.Properties[0].Value)" }
+        }
+        catch {
+            Write-Verbose "No reason from a setup verb: $_"
+        }
+
+        throw "Windows Installer failed with exit code $($installed.ExitCode). $reason Its log is $log."
+    }
+
+    # An upgrade keeps what ddt.ini already says, so the port and the store come from there.
+    $settings = @{}
+    $section = ''
+    $bootstrap = Join-Path $env:ProgramData 'DDT\ddt.ini'
+    foreach ($line in [IO.File]::ReadAllLines($bootstrap)) {
+        if ($line -match '^\s*\[(.+)\]\s*$') { $section = $Matches[1] }
+        elseif ($line -match '^\s*([^=;]+?)\s*=\s*(.*)$') { $settings["${section}:$($Matches[1])"] = $Matches[2].Trim() }
+    }
+
+    $listening = if ($settings['Kestrel:Endpoints:Https:Url'] -match ':(\d+)/?$') { [int] $Matches[1] } else { $Port }
+    $store = if ($settings['DDT:StorePath']) { $settings['DDT:StorePath'] } else { Join-Path $env:ProgramData 'DDT' }
+
+    Write-Host "Waiting for DDT to listen on port $listening"
+    $deadline = (Get-Date).AddMinutes(2)
+    while (-not (Get-NetTCPConnection -LocalPort $listening -State Listen -ErrorAction SilentlyContinue)) {
+        # The service restarts after a crash, so only the event log shows one
+        $crash = Get-WinEvent -FilterHashtable @{ LogName = 'Application'; ProviderName = '.NET Runtime'; Level = 2; StartTime = $started } -ErrorAction SilentlyContinue |
+            Where-Object { $_.Message -match 'DDT\.Host\.exe' } |
+            Select-Object -First 1
+        if ($crash -and $crash.Message -match 'Exception Info: (.+)') {
+            throw "DDT stopped while starting: $($Matches[1].Trim()) The Application event log has the rest."
+        }
+
+        if ((Get-Date) -gt $deadline) {
+            throw "The DDT service isn't listening on port $listening after two minutes. See the Application event log."
+        }
+
+        Start-Sleep -Seconds 2
+    }
+
+    # The DNS name, as DDT's certificate has it (ServerNames.DnsName)
+    $name = [Net.Dns]::GetHostName()
+    $domain = [Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().DomainName.Trim('.')
+    if ($domain -and $name -notmatch '\.' -and [Uri]::CheckHostName("$name.$domain") -eq 'Dns') { $name = "$name.$domain" }
+    Write-Host ''
+    Write-Host "DDT runs at https://${name}:$listening/"
+    if ($IisHostName) { Write-Host "Browsers can use https://$IisHostName/ through IIS." }
+
+    $root = Join-Path $store 'certs\ddt-root.pem'
+    if (Test-Path -LiteralPath $root) {
+        $base64 = ([IO.File]::ReadAllText($root) -replace '-----[^-]+-----', '' -replace '\s', '')
+        $certificate = New-Object Security.Cryptography.X509Certificates.X509Certificate2 (, [Convert]::FromBase64String($base64))
+        $fingerprint = (Get-FileHash -InputStream (New-Object IO.MemoryStream (, $certificate.RawData)) -Algorithm SHA256).Hash
+        Write-Host "Its root's SHA-256: $fingerprint"
+    }
+
+    $password = Join-Path $store 'first-admin.txt'
+    if (Test-Path -LiteralPath $password) {
+        Write-Host "Sign in as admin. The password is in $password."
+    }
+
+    # Networks with a gateway, and the netboot card. Hyper-V's switches are public too, but don't matter.
+    $rule = Get-NetFirewallRule -DisplayName 'DDT Server (TCP)' -ErrorAction SilentlyContinue
+    $covered = if ($rule) { [int] $rule.Profile } else { 0 }
+    $main = @(Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway } | ForEach-Object { $_.InterfaceAlias }) + @($NetbootInterface)
+    $bits = @{ DomainAuthenticated = 1; Private = 2; Public = 4 }
+    if ($covered -ne 0) {
+        foreach ($network in Get-NetConnectionProfile | Where-Object { $_.InterfaceAlias -in $main }) {
+            if (-not ($covered -band $bits["$($network.NetworkCategory)"])) {
+                Write-Warning ("$($network.InterfaceAlias) is on a $("$($network.NetworkCategory)".ToLowerInvariant()) network, so the firewall blocks DDT there. " +
+                    "Make it private with Set-NetConnectionProfile -InterfaceAlias '$($network.InterfaceAlias)' -NetworkCategory Private, " +
+                    'or install with -AllowPublicNetworks.')
+            }
+        }
+    }
+
+    # Last, and itself, not by INSTALLADK=1: that way it shows here how the ADK's setup went.
+    if ($InstallAdk) {
+        Write-Host ''
+        Write-Host 'Installing the Windows ADK and its Windows PE add-on, from Microsoft'
+        $programs = if ($env:ProgramW6432) { $env:ProgramW6432 } else { $env:ProgramFiles }
+        & (Join-Path $programs 'DDT\DDT.Host.exe') setup adk
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning 'DDT runs, but without the Windows ADK it builds no boot image. DDT.Host setup adk tries again.'
+        }
+    }
+
+    Remove-Item -LiteralPath $work -Recurse -Force
+} -Port $Port -StoreFolder $StoreFolder -NetbootInterface $NetbootInterface -Database $Database -DatabaseProvider $DatabaseProvider -AllowPublicNetworks $AllowPublicNetworks -IisHostName $IisHostName -IisCertificate $IisCertificate -InstallIisModules $InstallIisModules -InstallAdk $InstallAdk -Version $Version -Source $Source

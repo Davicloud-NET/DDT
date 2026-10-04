@@ -335,7 +335,7 @@ describe("ImagesPage", () => {
       await screen.findByText("No images yet");
       expect(
         screen.getByRole("region", { name: "Upload" }).querySelector('input[type="file"]'),
-      ).toHaveAttribute("accept", ".wim,.esd,.img,.raw,.gz,.xz,.zst,.qcow2");
+      ).toHaveAttribute("accept", ".wim,.esd,.iso,.img,.raw,.gz,.xz,.zst,.qcow2");
       selectFile(bootWim());
 
       const progress = await screen.findByRole("progressbar", { name: "Checking boot.wim" });

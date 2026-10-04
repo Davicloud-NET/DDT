@@ -252,5 +252,5 @@ resharper_identifier_typo_highlighting = suggestion
 resharper_unused_member_local_highlighting = suggestion
 
 # EF Core generates migration files that do not follow the house style and must not be reformatted.
-[**/Migrations/*.cs]
+[**/Migrations/**.cs]
 generated_code = true

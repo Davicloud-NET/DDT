@@ -8,17 +8,21 @@ import { apiErrorFrom, apiFetch, apiGet } from "@/lib/api";
 
 import { reauthenticationToken } from "./settings";
 
-// None: machines keep the agent or console of their boot image. Uploaded: uploaded on this page. Configuration:
-// DDT:Agent:BinaryPath or DDT:Agent:ConsolePath names the file, and the page can't replace it.
-export type AgentBinarySource = "None" | "Uploaded" | "Configuration";
+// None: machines keep the agent or console of their boot image. Uploaded: uploaded on this page. Bundled: the one the
+// server came with, offered while nothing is uploaded. Configuration: DDT:Agent:BinaryPath or DDT:Agent:ConsolePath
+// names the file, and the page can't replace it.
+export type AgentBinarySource = "None" | "Uploaded" | "Bundled" | "Configuration";
 
-// The agent that netbooting machines switch to. The values are null when there's none.
+// The agent that netbooting machines switch to. The values are null when there's none. version is the file's version
+// where it has one. newerBundledVersion is set while an upload is offered and the server came with a newer one.
 export interface AgentBinaryView {
   sha256: string | null;
   size: number | null;
   uploadedUtc: string | null;
   uploadedBy: string | null;
   source: AgentBinarySource;
+  version: string | null;
+  newerBundledVersion: string | null;
 }
 
 // The server takes an agent of at most this size, and a console of at most this size zipped and unpacked.
@@ -47,6 +51,25 @@ export function uploadAgent(file: File): Promise<AgentBinaryView> {
 // Sends the zip of the folder Publish-Console.ps1 writes, the same way.
 export function uploadConsole(file: File): Promise<AgentBinaryView> {
   return upload("/api/settings/agent/console", file, "application/zip");
+}
+
+// Takes machines back to the agent the server came with, or their boot image's. The answer is the new view.
+export function removeAgentUpload(): Promise<AgentBinaryView> {
+  return removeUpload("/api/settings/agent/binary");
+}
+
+export function removeConsoleUpload(): Promise<AgentBinaryView> {
+  return removeUpload("/api/settings/agent/console");
+}
+
+async function removeUpload(path: string): Promise<AgentBinaryView> {
+  const response = await apiFetch(path, { method: "DELETE" });
+
+  if (!response.ok) {
+    throw await apiErrorFrom(response);
+  }
+
+  return (await response.json()) as AgentBinaryView;
 }
 
 async function upload(path: string, file: File, contentType: string): Promise<AgentBinaryView> {

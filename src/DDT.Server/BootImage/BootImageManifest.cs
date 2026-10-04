@@ -19,4 +19,12 @@ internal sealed class BootImageManifest
     public string? BootManager { get; set; }
 
     public string? AgentVersion { get; set; }
+
+    public string? ServerUrl { get; set; }
+
+    public string? RootSha256 { get; set; }
+
+    public string? KeyboardLayout { get; set; }
+
+    public bool? PowerShell { get; set; }
 }

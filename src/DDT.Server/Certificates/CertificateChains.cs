@@ -29,7 +29,7 @@ internal static class CertificateChains
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or CryptographicException or ArgumentException)
         {
-            problem = exception.Message;
+            problem = exception is UnauthorizedAccessException ? $"{exception.Message} {RunningAccount.AccessAdvice}" : exception.Message;
 
             return null;
         }

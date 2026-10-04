@@ -163,6 +163,30 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate WimNoX64Image = Define("wim.noX64Image", "This WIM holds no x64 Windows image.");
 
+    public static readonly MessageTemplate IsoNoWindowsImage = Define(
+        "iso.noWindowsImage",
+        "This ISO holds no sources\\install.wim or install.esd, so it is no Windows installation medium.");
+
+    // Imports from the server's own disks.
+
+    public static readonly MessageTemplate ImportNotAllowed = Define(
+        "import.notAllowed",
+        "{path} is no WIM, ESD or ISO in one of this server's import folders.");
+
+    public static readonly MessageTemplate ImportNoSuchFile = Define("import.noSuchFile", "{path} is no longer there.");
+
+    public static readonly MessageTemplate ImportNotAShare = Define(
+        "import.notAShare",
+        "{path} is no MDT deployment share in one of this server's import folders: a share has Control\\OperatingSystems.xml.");
+
+    public static readonly MessageTemplate ImportNothing = Define("import.nothing", "Nothing was chosen to import.");
+
+    public static readonly MessageTemplate ImportBusy = Define("import.busy", "An import is running already. Wait for it to end.");
+
+    public static readonly MessageTemplate ImportFailed = Define("import.failed", "The server could not add it. Its log says why.");
+
+    public static readonly MessageTemplate ImportUnreadable = Define("import.unreadable", "The server could not read it: {reason}");
+
     public static readonly MessageTemplate GptNoTable = Define(
         "gpt.noTable",
         "The file has no GUID partition table, so it is not a UEFI disk image. Upload a disk image such as a distribution's cloud image.");

@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup Label="Hosting">
+    <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.10.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.19.1" />
@@ -29,6 +30,8 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Identity.Client.NativeInterop" Version="0.20.6" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageVersion Include="System.DirectoryServices.Protocols" Version="10.0.12" />
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.12" />
@@ -38,6 +41,7 @@
   <ItemGroup Label="Imaging">
     <PackageVersion Include="ManagedWimLib" Version="2.6.0" />
     <PackageVersion Include="ZstdSharp.Port" Version="0.8.8" />
+    <PackageVersion Include="DiscUtils.Udf" Version="0.16.13" />
   </ItemGroup>
 
   <ItemGroup Label="Console">
@@ -52,6 +56,14 @@
     <PackageVersion Include="Avalonia.BuildServices" Version="11.3.2" />
   </ItemGroup>
 
+  <ItemGroup Label="Installer">
+    <PackageVersion Include="WixToolset.Dtf.CustomAction" Version="7.0.0" />
+    <PackageVersion Include="WixToolset.Dtf.WindowsInstaller" Version="7.0.0" />
+    <PackageVersion Include="WixToolset.Firewall.wixext" Version="7.0.0" />
+    <PackageVersion Include="WixToolset.UI.wixext" Version="7.0.0" />
+    <PackageVersion Include="WixToolset.Util.wixext" Version="7.0.0" />
+  </ItemGroup>
+
   <ItemGroup Label="Analysis">
     <!-- Build-time only: MA0048 and MA0051, see .editorconfig. Every other rule is off (MeziantouAnalysisMode). -->
     <PackageVersion Include="Meziantou.Analyzer" Version="3.0.290" />
@@ -64,6 +76,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.12" />
     <!-- The version EF Core's design-time package brings, for CodeShapeTests. -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.15.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
   </ItemGroup>

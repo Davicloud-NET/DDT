@@ -30,6 +30,13 @@ stack, and nothing can be added to the image after that. -SkipTrim keeps everyth
 Either way, boot.wim is exported at the end, which drops what servicing and the trim left behind in
 it. The script then prints its size in megabytes of 1,048,576 bytes.
 
+An installed server has this script in its program folder, next to the agent and the console it came
+with. Run from there without -AgentPath, it takes both, names the server by its DNS name and port
+and trusts its root from the store. Without -Destination it writes a build of its own below builds
+in the server's boot directory, boot in the store, and makes it the one the server serves; the build
+before stays, and the Boot image page can go back to it. Each of these parameters still overrides
+its default. The Build button on that page runs this script the same way.
+
 The output layout, relative to -Destination. DDT:Pxe:BootDirectory on the server must hold the same layout.
 
   x64/bootmgfw.efi      boot manager signed by Microsoft Windows Production PCA 2011 (the default)
@@ -118,6 +125,11 @@ prompt.
 .PARAMETER DriverPath
 A folder of drivers to add to boot.wim. DISM adds every .inf below it, with the files each names.
 
+.PARAMETER ServerDriverPath
+A folder of driver packages that DDT unpacked itself, one subfolder per package named by its id, with
+drivers.json naming them as GET /api/boot-image does. The Build button passes it, so its build needs
+no API token. Not together with -ApiToken.
+
 .PARAMETER ApiToken
 An administrator's API token, ddt_ followed by 43 letters and digits. Create one on the Account
 page or with POST /api/tokens. With -ServerUrl and -RootCertificatePath, the script uses it to
@@ -180,6 +192,8 @@ param(
 
     [string] $ApiToken,
 
+    [string] $ServerDriverPath,
+
     [switch] $SkipPowerShell,
 
     [string] $TrimListPath,
@@ -189,6 +203,48 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# Next to an installed server, the build takes what the release brought and what the installer set up.
+. (Join-Path $PSScriptRoot 'BootImage\Private\Release.ps1')
+$release = Get-ReleaseDefault -Folder $PSScriptRoot
+
+# A build of its own below the server's boot directory, which the server then serves
+$servedBuild = $null
+
+if ($release) {
+    if (-not $Destination) {
+        $servedBuild = [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss', [Globalization.CultureInfo]::InvariantCulture)
+        $Destination = Join-Path (Join-Path $release.Destination 'builds') $servedBuild
+    }
+
+    if (-not $WorkDirectory) { $WorkDirectory = $release.WorkDirectory }
+
+    if (-not $AgentPath -and $release.AgentPath) {
+        $AgentPath = $release.AgentPath
+        if (-not $ServerUrl) { $ServerUrl = $release.ServerUrl }
+        if (-not $RootCertificatePath -and $release.RootCertificatePath) { $RootCertificatePath = $release.RootCertificatePath }
+
+        if (-not $ConsolePath -and $release.ConsolePackage) {
+            $ConsolePath = Expand-ReleaseConsole -Package $release.ConsolePackage -WorkDirectory $WorkDirectory
+        }
+    }
+}
+
+# A builder from the Boot image page builds for the server it came from, with what its folder holds
+$builder = if ($release) { $null } else { Get-BuilderDefault -Folder $PSScriptRoot }
+
+if ($builder) {
+    if (-not $Destination) { $Destination = $builder.Destination }
+    if (-not $WorkDirectory) { $WorkDirectory = $builder.WorkDirectory }
+    if (-not $AgentPath) { $AgentPath = $builder.AgentPath }
+    if (-not $ServerUrl) { $ServerUrl = $builder.ServerUrl }
+    if (-not $RootCertificatePath) { $RootCertificatePath = $builder.RootCertificatePath }
+    if (-not $ServerDriverPath -and -not $ApiToken) { $ServerDriverPath = $builder.ServerDriverPath }
+
+    if (-not $ConsolePath -and $builder.ConsolePackage) {
+        $ConsolePath = Expand-ReleaseConsole -Package $builder.ConsolePackage -WorkDirectory $WorkDirectory
+    }
+}
 
 # Defaults are set here instead of in param(), because Windows PowerShell leaves $PSScriptRoot empty
 # there when the script is started with powershell -File.
@@ -212,10 +268,25 @@ $build = @{
     ExtraPath           = $ExtraPath
     DriverPath          = $DriverPath
     ApiToken            = $ApiToken
+    ServerDriverPath    = $ServerDriverPath
     SkipPowerShell      = $SkipPowerShell
     TrimListPath        = $TrimListPath
     SkipTrim            = $SkipTrim
 }
 
+# Asked before the build, which takes minutes: a token that no longer uploads would waste it
+if ($builder) {
+    Test-DdtBuilderToken -ServerUrl $builder.ServerUrl -RootCertificatePath $builder.RootCertificatePath -Token $builder.UploadToken
+}
+
 # A module doesn't see the preferences set for this script, so the two that its commands use are passed along.
 New-DdtBootImage @build -WarningAction $WarningPreference -Verbose:($VerbosePreference -ne 'SilentlyContinue')
+
+if ($builder) {
+    Send-DdtBootImage -ServerUrl $builder.ServerUrl -RootCertificatePath $builder.RootCertificatePath -Token $builder.UploadToken -Folder $Destination
+}
+
+if ($servedBuild) {
+    Set-CurrentBootBuild -BootDirectory $release.Destination -Build $servedBuild
+    Write-Host "The server serves this build, $servedBuild, from now on."
+}

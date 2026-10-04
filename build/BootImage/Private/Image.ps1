@@ -17,6 +17,7 @@ function Update-BootWim {
     $dism = $Workspace.Dism
     $mount = $Workspace.MountDirectory
 
+    Write-Host 'Mounting boot.wim'
     Invoke-Native $dism /Mount-Image "/ImageFile:$($Workspace.ImageFile)" /Index:1 "/MountDir:$mount" | Out-Null
     $committed = $false
     try {
@@ -42,6 +43,7 @@ function Update-BootWim {
         # Makes the added packages permanent and removes the component versions they replaced. Microsoft documents
         # this step for a serviced Windows PE image.
         if ($Package.Count -gt 0) {
+            Write-Host 'Cleaning up the added components'
             $scratch = New-Item -ItemType Directory -Force -Path $Workspace.ScratchDirectory
             Invoke-Native $dism "/Image:$mount" /Cleanup-Image /StartComponentCleanup /ResetBase "/ScratchDir:$($scratch.FullName)" | Out-Null
         }
@@ -49,6 +51,7 @@ function Update-BootWim {
         # Runs last, because it removes the servicing stack that DISM used above.
         if ($TrimListPath) { Remove-TrimmedFile -MountDirectory $mount -ListPath $TrimListPath }
 
+        Write-Host 'Saving boot.wim'
         Invoke-Native $dism /Unmount-Image "/MountDir:$mount" /Commit | Out-Null
         $committed = $true
     }
@@ -104,6 +107,7 @@ function Install-DdtAgent {
         [Parameter(Mandatory)] $Agent
     )
 
+    Write-Host "Adding the agent for $($Agent.ServerUrl)"
     $folder = Join-Path $MountDirectory 'DDT'
     New-Item -ItemType Directory -Force -Path $folder | Out-Null
     Copy-Item -LiteralPath $Agent.Path -Destination (Join-Path $folder 'ddt-agent.exe')
@@ -170,6 +174,7 @@ function Export-BootWim {
 
     $wim = $Workspace.ImageFile
     $exported = Join-Path $Workspace.Directory 'boot-exported.wim'
+    Write-Host 'Compressing boot.wim'
     Invoke-Native $Workspace.Dism /Export-Image "/SourceImageFile:$wim" /SourceIndex:1 "/DestinationImageFile:$exported" /Compress:max /Bootable | Out-Null
     Move-Item -LiteralPath $exported -Destination $wim -Force
 }

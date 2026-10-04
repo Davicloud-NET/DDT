@@ -1,0 +1,143 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The store and ddt.ini, the bootstrap file. Both stay when DDT is removed, unless the removal says REMOVESTORE=1 -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <!-- SYSTEM, Administrators, and NT SERVICE\DDT by SID (sc.exe showsid DDT) -->
+  <?define StoreSddl = "O:BAG:SYD:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1301bf;;;S-1-5-80-3900190193-1676066139-1408604818-3639308905-1210195763)" ?>
+
+  <Fragment>
+    <!-- ddt.ini always in DATAFOLDER. STOREFOLDER=D:\DDT\ moves the store, e.g. to a data disk. -->
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="DATAFOLDER" Name="DDT" />
+      <Directory Id="STOREFOLDER" Name="DDT" />
+    </StandardDirectory>
+
+    <Property Id="STOREFOLDER" Secure="yes" />
+    <Property Id="PORT" Value="8443" Secure="yes" />
+    <!-- A database server's connection string. Not DATABASE: msiexec sets that to the package path. -->
+    <Property Id="CONNECTIONSTRING" Secure="yes" Hidden="yes" />
+    <!-- PostgreSql or SqlServer. Unset, a connection string means PostgreSql. -->
+    <Property Id="DATABASEPROVIDER" Secure="yes" />
+    <Property Id="REMOVESTORE" Secure="yes" />
+
+    <Property Id="REMEMBEREDSTOREFOLDER" Secure="yes">
+      <RegistrySearch Id="RememberedStoreFolder"
+                      Root="HKLM"
+                      Key="SOFTWARE\Davicloud\DDT"
+                      Name="StoreFolder"
+                      Type="raw" />
+    </Property>
+    <!-- An upgrade keeps a store that was moved -->
+    <SetProperty Id="STOREFOLDER"
+                 Value="[REMEMBEREDSTOREFOLDER]"
+                 After="AppSearch"
+                 Sequence="both"
+                 Condition="NOT STOREFOLDER AND REMEMBEREDSTOREFOLDER" />
+    <Property Id="REMEMBEREDDATAFOLDER" Secure="yes">
+      <RegistrySearch Id="RememberedDataFolder"
+                      Root="HKLM"
+                      Key="SOFTWARE\Davicloud\DDT"
+                      Name="DataFolder"
+                      Type="raw" />
+    </Property>
+
+    <ComponentGroup Id="Store">
+      <!-- The keys are those the container sets in its Dockerfile, plus the roles. -->
+      <Component Id="DataFolder" Directory="DATAFOLDER" Guid="C4C6BE86-2E44-4F2D-9F31-C828F8C94380" Permanent="yes">
+        <CreateFolder>
+          <PermissionEx Sddl="$(StoreSddl)" />
+        </CreateFolder>
+        <IniFile Id="StorePath"
+                 Action="createLine"
+                 Directory="DATAFOLDER"
+                 Name="ddt.ini"
+                 Section="DDT"
+                 Key="StorePath"
+                 Value="[STOREFOLDER]" />
+        <IniFile Id="Roles"
+                 Action="createLine"
+                 Directory="DATAFOLDER"
+                 Name="ddt.ini"
+                 Section="DDT"
+                 Key="Roles"
+                 Value="web,pxe" />
+        <IniFile Id="Url"
+                 Action="createLine"
+                 Directory="DATAFOLDER"
+                 Name="ddt.ini"
+                 Section="Kestrel:Endpoints:Https"
+                 Key="Url"
+                 Value="https://*:[PORT]" />
+        <IniFile Id="CertificatePath"
+                 Action="createLine"
+                 Directory="DATAFOLDER"
+                 Name="ddt.ini"
+                 Section="Kestrel:Certificates:Default"
+                 Key="Path"
+                 Value="[STOREFOLDER]certs\ddt.pem" />
+        <IniFile Id="CertificateKeyPath"
+                 Action="createLine"
+                 Directory="DATAFOLDER"
+                 Name="ddt.ini"
+                 Section="Kestrel:Certificates:Default"
+                 Key="KeyPath"
+                 Value="[STOREFOLDER]certs\ddt-key.pem" />
+      </Component>
+
+      <Component Id="StoreFolder" Directory="STOREFOLDER" Guid="FE34ED14-2F5C-4C31-B3A2-37C2D3240351" Permanent="yes">
+        <CreateFolder>
+          <PermissionEx Sddl="$(StoreSddl)" />
+        </CreateFolder>
+      </Component>
+
+      <Component Id="Database"
+                 Directory="DATAFOLDER"
+                 Guid="E41B6F57-ED65-49CE-ADB0-A2CB9DF92991"
+                 Permanent="yes"
+                 Condition="CONNECTIONSTRING">
+        <CreateFolder />
+        <IniFile Id="Database"
+                 Action="createLine"
+                 Directory="DATAFOLDER"
+                 Name="ddt.ini"
+                 Section="ConnectionStrings"
+                 Key="ddtdb"
+                 Value="[CONNECTIONSTRING]" />
+      </Component>
+
+      <Component Id="DatabaseProvider"
+                 Directory="DATAFOLDER"
+                 Guid="2C5900F5-F1AE-489D-9C1E-F2F5998B31FF"
+                 Permanent="yes"
+                 Condition="DATABASEPROVIDER">
+        <CreateFolder />
+        <IniFile Id="DatabaseProvider"
+                 Action="createLine"
+                 Directory="DATAFOLDER"
+                 Name="ddt.ini"
+                 Section="DDT"
+                 Key="Database"
+                 Value="[DATABASEPROVIDER]" />
+      </Component>
+
+      <Component Id="StoreRemoval" Directory="DATAFOLDER">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Davicloud\DDT">
+          <RegistryValue Name="StoreFolder" Type="string" Value="[STOREFOLDER]" KeyPath="yes" />
+          <RegistryValue Name="DataFolder" Type="string" Value="[DATAFOLDER]" />
+          <RegistryValue Name="FirewallProfiles" Type="string" Value="[FIREWALLPROFILES]" />
+        </RegistryKey>
+        <util:RemoveFolderEx Property="REMEMBEREDSTOREFOLDER"
+                             On="uninstall"
+                             Condition="REMOVESTORE = 1 AND NOT UPGRADINGPRODUCTCODE" />
+        <util:RemoveFolderEx Property="REMEMBEREDDATAFOLDER"
+                             On="uninstall"
+                             Condition="REMOVESTORE = 1 AND NOT UPGRADINGPRODUCTCODE" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+</Wix>

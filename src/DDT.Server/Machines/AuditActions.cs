@@ -34,6 +34,7 @@ public static class AuditActions
     public const string SequenceChanged = "sequence.changed";
     public const string SequenceDeleted = "sequence.deleted";
     public const string PackageUploaded = "package.uploaded";
+    public const string ImportStarted = "image.import-started";
     public const string PackageChanged = "package.changed";
     public const string PackageDeleted = "package.deleted";
     public const string RuleCreated = "rule.created";
@@ -62,6 +63,19 @@ public static class AuditActions
     public const string SettingsApplyFailed = "settings.apply-failed";
     public const string AgentUploaded = "agent.uploaded";
     public const string ConsoleUploaded = "console.uploaded";
+    public const string AgentUploadRemoved = "agent.upload-removed";
+    public const string ConsoleUploadRemoved = "console.upload-removed";
+    public const string BootImageBuildStarted = "boot-image.build-started";
+    public const string BootImageBuildChosen = "boot-image.build-chosen";
+    public const string AdkInstallStarted = "boot-image.adk-install-started";
+    public const string BootImageBuilderDownloaded = "boot-image.builder-downloaded";
+    public const string DhcpOptionsSet = "netboot.dhcp-options-set";
+    public const string DhcpPxeOn = "netboot.dhcp-pxe-on";
+    public const string DhcpPxeOff = "netboot.dhcp-pxe-off";
+    public const string WdsReplaced = "netboot.wds-replaced";
+    public const string WdsRestored = "netboot.wds-restored";
+    public const string WdsBootImageAdded = "netboot.wds-boot-image-added";
+    public const string BootImageUploaded = "boot-image.uploaded";
     public const string ConsoleLogoUploaded = "console.logo.uploaded";
     public const string ConsoleLogoRemoved = "console.logo.removed";
     public const string AdministratorCreated = "administrator.created";

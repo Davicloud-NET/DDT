@@ -6,7 +6,7 @@ import { t } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 
 import { BinaryPanel } from "./agent/BinaryPanel";
-import { agentBinaryQuery, maxAgentBytes, uploadAgent } from "./agentBinary";
+import { agentBinaryQuery, maxAgentBytes, removeAgentUpload, uploadAgent } from "./agentBinary";
 
 // The agent that netbooting machines switch to. At each boot, the boot image's agent downloads it if it differs and
 // runs it instead, so an upload doesn't need a new boot image. It runs as SYSTEM everywhere, so an upload needs the
@@ -19,6 +19,7 @@ export function AgentPanel() {
       binary={{
         query: agentBinaryQuery,
         upload: uploadAgent,
+        remove: removeAgentUpload,
         maxBytes: maxAgentBytes,
         accept: [".exe"],
         configurationKey: "DDT:Agent:BinaryPath",
@@ -27,6 +28,7 @@ export function AgentPanel() {
         runsLabel: <Trans>Machines run</Trans>,
         runs: {
           Uploaded: <Trans>The agent uploaded here</Trans>,
+          Bundled: <Trans>The agent this server came with, since none was uploaded</Trans>,
           Configuration: <Trans>The file DDT:Agent:BinaryPath names in configuration</Trans>,
           None: <Trans>The agent in their boot image, since none was uploaded</Trans>,
         },
@@ -78,6 +80,25 @@ export function AgentPanel() {
             password again.
           </Trans>
         ),
+        newer: (version) => (
+          <Trans>
+            This server came with agent {version}, which is newer than the uploaded one. Remove the
+            upload, and machines run the server's own.
+          </Trans>
+        ),
+        removeLabel: <Trans>Remove the uploaded agent</Trans>,
+        removeTitle: <Trans>Remove the uploaded agent?</Trans>,
+        removeBody: (
+          <Trans>
+            Machines that netboot from now on run the agent this server came with. If it came with
+            none, they run the agent in their boot image.
+          </Trans>
+        ),
+        removing: <Trans>Removing the uploaded agent</Trans>,
+        removed: (
+          <Trans>Removed. Machines that netboot from now on no longer get that agent.</Trans>
+        ),
+        notRemoved: (reason) => <Trans>The uploaded agent was not removed. {reason}</Trans>,
       }}
     />
   );

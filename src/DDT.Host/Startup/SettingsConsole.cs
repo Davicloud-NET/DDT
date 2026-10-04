@@ -13,7 +13,7 @@ namespace DDT.Host.Startup;
 
 // Recovery for problems the settings page can't fix, such as a section that locks everyone out. It only needs the
 // database and the key ring, so it can run next to the running servers, for example with
-// docker exec ddt ./DDT.Host settings reset ldap.
+// docker exec ddt ./DDT.Host settings reset ldap, or DDT.Host.exe settings reset ldap on a Windows server.
 public static class SettingsConsole
 {
     private const string AdministratorUserName = "admin";
@@ -61,11 +61,18 @@ public static class SettingsConsole
 
                 return 0;
 
+            case ["settings", "netboot-interface", string name]:
+                return await WriteAsync(settings, output, services => NetbootInterface.SetAsync(services, name)).ConfigureAwait(false);
+
+            case ["settings", "trust-local-proxy"]:
+                return await WriteAsync(settings, output, LocalProxy.TrustAsync).ConfigureAwait(false);
+
             default:
                 await output.WriteLineAsync(
                     "Usage: DDT.Host settings reset <section>, where section is one of " +
                     $"{string.Join(", ", SettingsDefinitions.All.Select(definition => definition.Name))}; " +
-                    "or DDT.Host settings create-admin [user name].").ConfigureAwait(false);
+                    "DDT.Host settings create-admin [user name]; DDT.Host settings netboot-interface <name>; " +
+                    "or DDT.Host settings trust-local-proxy.").ConfigureAwait(false);
 
                 return 2;
         }
@@ -79,6 +86,11 @@ public static class SettingsConsole
         if (settings is not null)
         {
             builder.Configuration.AddInMemoryCollection(settings);
+        }
+        else
+        {
+            // Finds the service's store and database on Windows.
+            BootstrapFile.Add(builder.Configuration, BootstrapFile.DefaultPath);
         }
 
         DdtOptions options = builder.Configuration.GetSection(DdtOptions.SectionName).Get<DdtOptions>() ?? new DdtOptions();
@@ -96,6 +108,17 @@ public static class SettingsConsole
         }
 
         return app;
+    }
+
+    private static async Task<int> WriteAsync(
+        IEnumerable<KeyValuePair<string, string?>>? settings,
+        TextWriter output,
+        Func<IServiceProvider, Task<string>> verb)
+    {
+        await using WebApplication app = await StartAsync(settings).ConfigureAwait(false);
+        await output.WriteLineAsync(await verb(app.Services).ConfigureAwait(false)).ConfigureAwait(false);
+
+        return 0;
     }
 
     private static async Task ResetAsync(WebApplication app, SettingsSectionDefinition definition)

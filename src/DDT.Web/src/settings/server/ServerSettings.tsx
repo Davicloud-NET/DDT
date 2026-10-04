@@ -11,10 +11,12 @@ import { Page } from "@/ui/Page";
 import { PageHeader } from "@/ui/PageHeader";
 import { Skeleton } from "@/ui/Skeleton";
 import { Tab, TabList, TabPanel, Tabs } from "@/ui/Tabs";
+import { SetupChecklist } from "@/setup/SetupChecklist";
 
 import { AgentPanel } from "../AgentPanel";
 import { CertificatePanel } from "../CertificatePanel";
 import { ConsolePanel } from "../ConsolePanel";
+import { LogFiles } from "../logging/LogFiles";
 import { LoggingPanel } from "../LoggingPanel";
 import { ProxiesPanel } from "../ProxiesPanel";
 import { serverSearch, type ServerTab } from "../serverSearch";
@@ -34,6 +36,7 @@ export function ServerSettings() {
   return (
     <Page className="max-w-[72rem]">
       <PageHeader title={<Trans>Server</Trans>} />
+      <SetupChecklist />
 
       {overview.data?.keyRingReadable === false ? (
         <Notice tone="fail" title={<Trans>This server saves no settings</Trans>}>
@@ -96,6 +99,7 @@ export function ServerSettings() {
         </TabPanel>
         <TabPanel id="logging" className="flex flex-col gap-4">
           <LoggingPanel />
+          <LogFiles />
         </TabPanel>
       </Tabs>
     </Page>

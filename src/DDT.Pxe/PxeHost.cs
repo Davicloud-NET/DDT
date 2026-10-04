@@ -242,13 +242,22 @@ public sealed class PxeHost : IHostedService, IDisposable
     {
         ProxyDhcpHandler handler = new(setup.ProxyDhcp, setup.Interfaces);
 
-        ProxyDhcpListener dhcp = new(
-            ProxyDhcpListenPort.Dhcp,
-            new IPEndPoint(_binding.Address, _binding.DhcpPort),
-            handler,
-            setup.Interfaces,
-            _loggerFactory.CreateLogger<ProxyDhcpListener>());
-        Bind(dhcp, "ProxyDHCP", "proxyDhcp", _binding.DhcpPort);
+        // Microsoft's DHCP Server takes its address on this port for itself alone. That fails once DDT holds the port,
+        // and the DHCP server then serves no one.
+        if (_binding.DhcpServerHere())
+        {
+            PxeLog.DhcpPortLeft(_logger, _binding.DhcpPort, _binding.BootServerPort);
+        }
+        else
+        {
+            ProxyDhcpListener dhcp = new(
+                ProxyDhcpListenPort.Dhcp,
+                new IPEndPoint(_binding.Address, _binding.DhcpPort),
+                handler,
+                setup.Interfaces,
+                _loggerFactory.CreateLogger<ProxyDhcpListener>());
+            Bind(dhcp, "ProxyDHCP", "proxyDhcp", _binding.DhcpPort);
+        }
 
         ProxyDhcpListener bootServer = new(
             ProxyDhcpListenPort.PxeBootServer,
@@ -297,8 +306,15 @@ public sealed class PxeHost : IHostedService, IDisposable
         }
         catch (SocketException exception)
         {
+            string advice = exception.SocketErrorCode switch
+            {
+                SocketError.AccessDenied => OperatingSystem.IsWindows() ? "heldOnWindows" : "privilegedPort",
+                SocketError.AddressAlreadyInUse => "inUse",
+                _ => "other",
+            };
+
             throw new PxeBindException(
-                ServerMessages.SettingsApplyPxeBindFailed.With("port", port, "protocol", kind, "error", exception.SocketErrorCode),
+                ServerMessages.SettingsApplyPxeBindFailed.With("port", port, "protocol", kind, "error", exception.SocketErrorCode, "advice", advice),
                 exception);
         }
 
@@ -321,7 +337,7 @@ public sealed class PxeHost : IHostedService, IDisposable
             // A missing boot manager is the commonest cause of "DHCP works, nothing boots".
             if (target.Method == BootMethod.Tftp && target.ServerAddress is null && !setup.Files.TryResolve(target.BootFile, out _))
             {
-                PxeLog.BootFileMissing(_logger, target.Architecture, target.BootFile, setup.Files.Root);
+                PxeLog.BootFileMissing(_logger, target.Architecture, target.BootFile, setup.Files.Serving);
             }
         }
     }

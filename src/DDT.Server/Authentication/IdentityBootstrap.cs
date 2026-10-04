@@ -12,10 +12,11 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Authentication;
 
-// A fresh deployment has no UI to create the first account in, so this creates one and logs its password once. The
+// A fresh deployment has no UI to create the first account in, so this creates one, password in first-admin.txt. The
 // password never comes from configuration, because such an environment variable tends to stay set long after.
 public sealed partial class IdentityBootstrap(
     IServiceScopeFactory scopeFactory,
+    FirstAdministratorFile firstAdministrator,
     ILogger<IdentityBootstrap> logger) : IHostedService
 {
     private const string AdministratorUserName = "admin";
@@ -44,6 +45,7 @@ public sealed partial class IdentityBootstrap(
 
         if (await database.Users.AnyAsync(cancellationToken).ConfigureAwait(false))
         {
+            await firstAdministrator.DeleteIfChangedAsync(users).ConfigureAwait(false);
             return;
         }
 
@@ -103,10 +105,14 @@ public sealed partial class IdentityBootstrap(
             CreatedUtc = DateTimeOffset.UtcNow,
         };
 
+        // Written first: an administrator whose password never reached the file would need settings create-admin.
+        firstAdministrator.Write(AdministratorUserName, password);
+
         IdentityResult created = await users.CreateAsync(administrator, password).ConfigureAwait(false);
 
         if (!created.Succeeded)
         {
+            firstAdministrator.Delete();
             LogBootstrapFailed(string.Join("; ", created.Errors.Select(error => error.Description)));
             return;
         }
@@ -118,18 +124,19 @@ public sealed partial class IdentityBootstrap(
             // Without its role, the account can't administer anything. While it exists, no later start would create one
             // that can.
             IdentityResult deleted = await users.DeleteAsync(administrator).ConfigureAwait(false);
+            firstAdministrator.Delete();
             LogBootstrapFailed(string.Join("; ", granted.Errors.Concat(deleted.Errors).Select(error => error.Description)));
             return;
         }
 
-        LogAdministratorCreated(AdministratorUserName, password);
+        LogAdministratorCreated(AdministratorUserName, firstAdministrator.Path);
     }
 
     [LoggerMessage(
         EventId = 300,
         Level = LogLevel.Warning,
-        Message = "Created the first administrator. User name {UserName}, password {Password}. This is printed once: sign in and change it.")]
-    private partial void LogAdministratorCreated(string userName, string password);
+        Message = "Created the first administrator {UserName}. The password is in {Path}: sign in and change it.")]
+    private partial void LogAdministratorCreated(string userName, string path);
 
     [LoggerMessage(EventId = 301, Level = LogLevel.Error, Message = "Could not create the first administrator: {Errors}")]
     private partial void LogBootstrapFailed(string errors);

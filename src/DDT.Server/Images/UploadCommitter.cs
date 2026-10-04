@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Images;
+using DDT.Contracts.Messages;
 using DDT.Server.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -59,8 +60,43 @@ public sealed class UploadCommitter(
             return await packages.CommitAsync(database, upload, actor, cancellationToken).ConfigureAwait(false);
         }
 
+        // A Windows ISO is taken for the image in it
+        if (await IsoImages.IsIsoAsync(part, cancellationToken).ConfigureAwait(false)
+            && !await UnpackIsoAsync(database, upload, cancellationToken).ConfigureAwait(false))
+        {
+            return await refusals.RefuseAsync(database, upload, ServerMessages.IsoNoWindowsImage.With(), cancellationToken).ConfigureAwait(false);
+        }
+
         return await LibraryFiles.IsWimAsync(part, cancellationToken).ConfigureAwait(false)
             ? await wims.CommitAsync(database, upload, actor, cancellationToken).ConfigureAwait(false)
             : await raws.CommitAsync(database, upload, actor, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Puts the ISO's install image in place of the ISO, so the upload goes on as that WIM. Returns false for an ISO
+    // without one. The copy is written next to the part file, where the sweeper finds what a stop left.
+    private async Task<bool> UnpackIsoAsync(DdtDbContext database, ImageUpload upload, CancellationToken cancellationToken)
+    {
+        string part = store.PartPath(upload.Id);
+        string image = store.RawPath(upload.Id);
+
+        try
+        {
+            if (!await IsoImages.ExtractInstallImageAsync(part, image, null, cancellationToken).ConfigureAwait(false))
+            {
+                return false;
+            }
+
+            File.Move(image, part, overwrite: true);
+            upload.Length = new FileInfo(part).Length;
+            upload.Offset = upload.Length;
+            upload.UpdatedUtc = timeProvider.GetUtcNow();
+            await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            return true;
+        }
+        finally
+        {
+            File.Delete(image);
+        }
     }
 }

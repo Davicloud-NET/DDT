@@ -31,7 +31,9 @@ public sealed class SourceHeaderTests
         [".psm1"] = ("# ", ""),
         [".psd1"] = ("# ", ""),
         [".py"] = ("# ", ""),
+        [".sh"] = ("# ", ""),
         [".axaml"] = ("<!-- ", " -->"),
+        [".wxs"] = ("<!-- ", " -->"),
     };
 
     private static readonly string[] s_sourceFolders = ["src", "tests", "build"];
@@ -48,6 +50,7 @@ public sealed class SourceHeaderTests
         List<string> files = [.. s_sourceFolders.SelectMany(folder => SourceFiles(new DirectoryInfo(Path.Combine(root, folder))))];
 
         Assert.Contains(Path.Combine(root, "build", "Publish-Agent.ps1"), files);
+        Assert.Contains(Path.Combine(root, "build", "install.sh"), files);
         Assert.Contains(Path.Combine(root, "src", "DDT.Web", "src", "main.tsx"), files);
         Assert.Contains(Path.Combine(root, "src", "DDT.Web", "src", "styles", "app.css"), files);
         Assert.Contains(Path.Combine(root, "src", "DDT.MachineConsole", "Views", "MainWindow.axaml"), files);
@@ -86,8 +89,20 @@ public sealed class SourceHeaderTests
     private static async Task<bool> StartsWithHeaderAsync(string path, (string Prefix, string Suffix) comment, CancellationToken cancellationToken)
     {
         using StreamReader reader = new(path);
+        string? first = await reader.ReadLineAsync(cancellationToken);
 
-        foreach (string line in s_headerLines)
+        // A script's interpreter line has to come first
+        if (first?.StartsWith("#!", StringComparison.Ordinal) == true)
+        {
+            first = await reader.ReadLineAsync(cancellationToken);
+        }
+
+        if (first != comment.Prefix + s_headerLines[0] + comment.Suffix)
+        {
+            return false;
+        }
+
+        foreach (string line in s_headerLines.Skip(1))
         {
             if (await reader.ReadLineAsync(cancellationToken) != comment.Prefix + line + comment.Suffix)
             {

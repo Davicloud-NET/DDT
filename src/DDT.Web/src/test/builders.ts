@@ -4,6 +4,7 @@
 
 import type { AccountView } from "@/accounts/accounts";
 import type { CurrentUser } from "@/auth/auth";
+import type { BootImageView } from "@/boot/bootImage";
 import type {
   DeploymentOptionsView,
   DeploymentStepView,
@@ -295,6 +296,37 @@ export function logLine(id: number, overrides: Partial<MachineLogEntry> = {}): M
     agentTimestampUtc: time,
     deploymentId: "d1",
     stepId: null,
+    ...overrides,
+  };
+}
+
+// A Windows server that builds the boot image itself, serving one build that fits it.
+export function bootImageView(overrides: Partial<BootImageView> = {}): BootImageView {
+  return {
+    drivers: [],
+    driverSetHash: null,
+    build: {
+      builtUtc: "2026-10-01T10:00:00Z",
+      driverSetHash: null,
+      drivers: [],
+      adkVersion: "10.1.26100.9457",
+      bootManager: "10.0.26100.9457",
+      agentVersion: "0.2.8",
+      serverUrl: "https://deploy01.contoso.local:8443",
+      rootSha256: "A".repeat(64),
+      keyboardLayout: "0407:00000407",
+      powerShell: true,
+    },
+    stale: false,
+    staleReasons: [],
+    builder: {
+      available: true,
+      serverUrl: "https://deploy01.contoso.local:8443",
+      adk: { installed: true, version: "10.1.26100.9457", supported: true },
+      package: true,
+    },
+    job: null,
+    builds: [{ name: "20261001-100000", builtUtc: "2026-10-01T10:00:00Z", current: true }],
     ...overrides,
   };
 }

@@ -385,6 +385,10 @@ msgctxt "domain.organizationalUnitMissing"
 msgid "{domain} has no organizational unit {organizationalUnit}, or {user} may not read it. Correct the organizational unit of the Join the domain step, or the one on the Deployment defaults page when the step names none."
 msgstr "{domain} has no organizational unit {organizationalUnit}, or {user} may not read it. Correct the organizational unit of the Join the domain step, or the one on the Deployment defaults page when the step names none."
 
+#: src/images/import/MdtShareChoices.tsx
+msgid "{drivers, plural, one {# driver} other {# drivers}}"
+msgstr "{drivers, plural, one {# driver} other {# drivers}}"
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.noImmutableId"
 msgid "{entry} has no {attribute}, so a sign-in is refused."
@@ -754,6 +758,10 @@ msgctxt "directory.inNoMappedGroup"
 msgid "{name} is in none of the groups the directory's group map on the Sign-in page gives a role, so a sign-in is refused."
 msgstr "{name} is in none of the groups the directory's group map on the Sign-in page gives a role, so a sign-in is refused."
 
+#: src/images/import/ImportProgress.tsx
+msgid "{name} is in the library now."
+msgstr "{name} is in the library now."
+
 #: src/settings/AgentPanel.tsx
 msgid "{name} is larger than {limit}, the most the server takes for the agent."
 msgstr "{name} is larger than {limit}, the most the server takes for the agent."
@@ -770,6 +778,10 @@ msgstr "{name} is larger than {limit}, the most the server takes for the logo."
 msgctxt "settings.ldapTest.lockedOut"
 msgid "{name} is locked out, so a sign-in is refused before the directory is asked."
 msgstr "{name} is locked out, so a sign-in is refused before the directory is asked."
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "{name} is no longer in the share."
+msgstr "{name} is no longer in the share."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.notDirectoryAccount"
@@ -829,9 +841,17 @@ msgctxt "user.directoryPassword"
 msgid "{name} signs in with its directory password. Reset it in the directory."
 msgstr "{name} signs in with its directory password. Reset it in the directory."
 
+#: src/images/import/ImportProgress.tsx
+msgid "{name} was in the library already."
+msgstr "{name} was in the library already."
+
 #: src/uploads/useResumableUpload.ts
 msgid "{name} was not added. {reason}"
 msgstr "{name} was not added. {reason}"
+
+#: src/images/import/ImportProgress.tsx
+msgid "{name} was not imported. {reason}"
+msgstr "{name} was not imported. {reason}"
 
 #: src/settings/agent/BinaryUpload.tsx
 #: src/settings/logo/LogoChange.tsx
@@ -889,6 +909,21 @@ msgstr "{passes} passes"
 msgid "{passes} passes, the last took {took}"
 msgstr "{passes} passes, the last took {took}"
 
+#: src/lib/serverMessages.ts
+msgctxt "import.noSuchFile"
+msgid "{path} is no longer there."
+msgstr "{path} is no longer there."
+
+#: src/lib/serverMessages.ts
+msgctxt "import.notAShare"
+msgid "{path} is no MDT deployment share in one of this server's import folders: a share has Control\\OperatingSystems.xml."
+msgstr "{path} is no MDT deployment share in one of this server's import folders: a share has Control\\OperatingSystems.xml."
+
+#: src/lib/serverMessages.ts
+msgctxt "import.notAllowed"
+msgid "{path} is no WIM, ESD or ISO in one of this server's import folders."
+msgstr "{path} is no WIM, ESD or ISO in one of this server's import folders."
+
 #: src/uploads/UploadProgress.tsx
 msgid "{percent}% of {total} at {speed}/s, {took} so far"
 msgstr "{percent}% of {total} at {speed}/s, {took} so far"
@@ -939,6 +974,10 @@ msgstr "{problems, plural, one {# problem} other {# problems}}"
 #: src/rules/drawer/SequenceChoice.tsx
 msgid "{problems}, cannot run"
 msgstr "{problems}, cannot run"
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "{process} (process {id})"
+msgstr "{process} (process {id})"
 
 #: src/lib/serverMessages.ts
 msgctxt "directory.lockedOut"
@@ -1232,9 +1271,29 @@ msgstr "<0>{subject}</0> <1>{operator}</1>"
 msgid "<0>{subject}</0> <1>{operator}</1> {value}"
 msgstr "<0>{subject}</0> <1>{operator}</1> {value}"
 
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Add a Windows image</0>: from an ISO, a folder on the server, an MDT deployment share or an upload."
+msgstr "<0>Add a Windows image</0>: from an ISO, a folder on the server, an MDT deployment share or an upload."
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Build the boot image</0> that machines netboot into."
+msgstr "<0>Build the boot image</0> that machines netboot into."
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Change the first password</0>, which the installer left in a file on the server."
+msgstr "<0>Change the first password</0>, which the installer left in a file on the server."
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Choose the network card</0> DDT answers netboot on, and see who else answers on this server."
+msgstr "<0>Choose the network card</0> DDT answers netboot on, and see who else answers on this server."
+
 #: src/boot/BuildCommand.tsx
 msgid "<0>Download the root certificate</0> as ddt-root.pem. The agent trusts only the server certificates it signed."
 msgstr "<0>Download the root certificate</0> as ddt-root.pem. The agent trusts only the server certificates it signed."
+
+#: src/setup/SetupChecklist.tsx
+msgid "<0>Make a task sequence</0> from the Install Windows template, which erases the disk, applies the image and sets up Windows."
+msgstr "<0>Make a task sequence</0> from the Install Windows template, which erases the disk, applies the image and sets up Windows."
 
 #: src/tokens/MakeTokenForm.tsx
 msgid "1 to 365 days."
@@ -1271,6 +1330,19 @@ msgstr "64-bit UEFI PCs, over TFTP"
 #: src/sequences/steps/WriteCloudInitSeedFields.tsx
 msgid "A #cloud-config document, or a script that starts with #!."
 msgstr "A #cloud-config document, or a script that starts with #!."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.busy"
+msgid "A build or an install of the ADK is running already. Wait for it to end."
+msgstr "A build or an install of the ADK is running already. Wait for it to end."
+
+#: src/boot/AdkState.tsx
+msgid "A build takes Microsoft's Windows ADK with its Windows PE add-on, and this server has none."
+msgstr "A build takes Microsoft's Windows ADK with its Windows PE add-on, and this server has none."
+
+#: src/boot/BuildPanel.tsx
+msgid "A build takes the address {address}, the server's root certificate, its agent and the drivers flagged for Windows PE. Machines netboot the new image once it is done, and the build before it stays to go back to."
+msgstr "A build takes the address {address}, the server's root certificate, its agent and the drivers flagged for Windows PE. Machines netboot the new image once it is done, and the build before it stays to go back to."
 
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "A change applies to runs that start after it. A Write the answer file step can set its own time zone, language and keyboard, and a Join the domain step its own organizational unit."
@@ -1428,6 +1500,10 @@ msgstr "A pause can go on by itself after 1 to {max} minutes."
 #: src/settings/logo/LogoChange.tsx
 msgid "A PNG of at most 512 KB and 2048 by 2048 pixels."
 msgstr "A PNG of at most 512 KB and 2048 by 2048 pixels."
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "a process that has ended"
+msgstr "a process that has ended"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.repeatTimes"
@@ -1671,9 +1747,13 @@ msgctxt "role.aViewer"
 msgid "a Viewer"
 msgstr "a Viewer"
 
+#: src/images/import/ImportPanel.tsx
+msgid "A WIM, ESD or ISO copied into <0>{own}</0> on the server shows here and is imported without an upload. Configuration names more folders, such as an MDT deployment share, in DDT:ImportFolders."
+msgstr "A WIM, ESD or ISO copied into <0>{own}</0> on the server shows here and is imported without an upload. Configuration names more folders, such as an MDT deployment share, in DDT:ImportFolders."
+
 #: src/images/ImageUploadPanel.tsx
-msgid "a WIM, ESD or disk image file"
-msgstr "a WIM, ESD or disk image file"
+msgid "a WIM, ESD, ISO or disk image file"
+msgstr "a WIM, ESD, ISO or disk image file"
 
 #: src/settings/AgentPanel.tsx
 msgid "A Windows executable of at most 128 MB."
@@ -1964,6 +2044,10 @@ msgstr "Add an input"
 msgid "Add boot target"
 msgstr "Add boot target"
 
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Add DDT to the WDS boot menu"
+msgstr "Add DDT to the WDS boot menu"
+
 #: src/settings/directory/GroupsAndRolesGroup.tsx
 msgid "Add group"
 msgstr "Add group"
@@ -2219,6 +2303,11 @@ msgctxt "sequence.ifOnlyTest"
 msgid "An IF decides by its test alone. Move this condition into the test."
 msgstr "An IF decides by its test alone. Move this condition into the test."
 
+#: src/lib/serverMessages.ts
+msgctxt "import.busy"
+msgid "An import is running already. Wait for it to end."
+msgstr "An import is running already. Wait for it to end."
+
 #: src/packages/HardwareModelsField.tsx
 msgid "An Inject drivers step adds these drivers to machines whose model matches one of them. End a model with * to match every model that starts with it; leave the manufacturer empty for any."
 msgstr "An Inject drivers step adds these drivers to machines whose model matches one of them. End a model with * to match every model that starts with it; leave the manufacturer empty for any."
@@ -2360,6 +2449,10 @@ msgstr "API tokens"
 msgid "Appearance"
 msgstr "Appearance"
 
+#: src/images/import/MdtNotImported.tsx
+msgid "Applications: {applications}."
+msgstr "Applications: {applications}."
+
 #: src/settings/parts/ApplyStates.tsx
 msgid "Applied"
 msgstr "Applied"
@@ -2423,6 +2516,10 @@ msgstr "Approving {label} also runs {name} on it, which {ruleInside} chose."
 #: src/settings/networkBoot/AddBootTarget.tsx
 msgid "Architecture"
 msgstr "Architecture"
+
+#: src/settings/logging/LogFiles.tsx
+msgid "As a Windows service the server writes its log into the logs folder of its store, a file a day, and keeps the newest 20. The levels above decide what goes into them."
+msgstr "As a Windows service the server writes its log into the logs folder of its store, a file a day, and keeps the newest 20. The levels above decide what goes into them."
 
 #: src/sequences/builder/variables/InputAskSettings.tsx
 msgid "Asked"
@@ -2562,6 +2659,10 @@ msgstr "Back to DDT"
 msgid "Baseboard"
 msgstr "Baseboard"
 
+#: src/setup/SetupChecklist.tsx
+msgid "Before the first deployment"
+msgstr "Before the first deployment"
+
 #: src/settings/directory/BindAccountGroup.tsx
 #: src/settings/directory/TestResult.tsx
 msgid "Bind account"
@@ -2592,9 +2693,30 @@ msgid "Boot file"
 msgstr "Boot file"
 
 #: src/app/navigation.ts
+#: src/audit/auditView.ts
 #: src/boot/BootImagePage.tsx
 msgid "Boot image"
 msgstr "Boot image"
+
+#: src/audit/auditView.ts
+msgid "Boot image build chosen to serve"
+msgstr "Boot image build chosen to serve"
+
+#: src/audit/auditView.ts
+msgid "Boot image build started"
+msgstr "Boot image build started"
+
+#: src/audit/auditView.ts
+msgid "Boot image builder downloaded"
+msgstr "Boot image builder downloaded"
+
+#: src/boot/JobPanel.tsx
+msgid "Boot image from a builder"
+msgstr "Boot image from a builder"
+
+#: src/audit/auditView.ts
+msgid "Boot image uploaded by a builder"
+msgstr "Boot image uploaded by a builder"
 
 #: src/boot/LastBuild.tsx
 msgid "Boot manager"
@@ -2604,17 +2726,49 @@ msgstr "Boot manager"
 msgid "Boot targets"
 msgstr "Boot targets"
 
+#: src/boot/JobPanel.tsx
+msgid "Build"
+msgstr "Build"
+
 #: src/boot/BuildCommand.tsx
 msgid "Build command"
 msgstr "Build command"
+
+#: src/boot/BuilderPanel.tsx
+msgid "Build on another PC"
+msgstr "Build on another PC"
+
+#: src/boot/BuildPanel.tsx
+msgid "Build on this server"
+msgstr "Build on this server"
+
+#: src/boot/BuildPanel.tsx
+msgid "Build the boot image"
+msgstr "Build the boot image"
 
 #: src/boot/BuildCommand.tsx
 msgid "Building it again"
 msgstr "Building it again"
 
+#: src/boot/JobPanel.tsx
+msgid "Building the boot image, which takes several minutes"
+msgstr "Building the boot image, which takes several minutes"
+
+#: src/boot/StoredBuilds.tsx
+msgid "Builds on the server"
+msgstr "Builds on the server"
+
 #: src/boot/LastBuild.tsx
 msgid "Built"
 msgstr "Built"
+
+#: src/boot/StoredBuilds.tsx
+msgid "Built {when}"
+msgstr "Built {when}"
+
+#: src/boot/StoredBuilds.tsx
+msgid "Built at a time not recorded"
+msgstr "Built at a time not recorded"
 
 #: src/settings/signIn/ProviderGroup.tsx
 msgid "Button text"
@@ -2629,6 +2783,7 @@ msgid "By default, a person who signs in at a netbooting machine authorizes it f
 msgstr "By default, a person who signs in at a netbooting machine authorizes it for the sequence they choose, and an operator can approve a waiting machine on the web. Zero touch skips both on the networks listed here."
 
 #: src/account/AuthenticatorEnrollment.tsx
+#: src/images/import/MdtShareDialog.tsx
 #: src/inputs/InputsDialog.tsx
 #: src/machines/AssignDialog.tsx
 #: src/packages/PackageDialog.tsx
@@ -2882,9 +3037,18 @@ msgid "Choose the raw disk image to write."
 msgstr "Choose the raw disk image to write."
 
 #: src/lib/serverMessages.ts
+msgctxt "netboot.scopes"
+msgid "Choose the scopes to set, each by its address."
+msgstr "Choose the scopes to set, each by its address."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.setVariableChoose"
 msgid "Choose the variable to set."
 msgstr "Choose the variable to set."
+
+#: src/images/import/ImportPanel.tsx
+msgid "Choose what to import"
+msgstr "Choose what to import"
 
 #: src/conditions/conditionSubjects.ts
 msgid "Choose what to test"
@@ -3001,13 +3165,26 @@ msgstr "Configuration values"
 msgid "Confirm and delete"
 msgstr "Confirm and delete"
 
+#: src/boot/BuilderPanel.tsx
+msgid "Confirm and download"
+msgstr "Confirm and download"
+
 #: src/settings/certificate/GenerateDialog.tsx
 msgid "Confirm and generate"
 msgstr "Confirm and generate"
 
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "Confirm and go on"
+msgstr "Confirm and go on"
+
 #: src/settings/parts/ReauthDialog.tsx
 msgid "Confirm and save"
 msgstr "Confirm and save"
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Confirm and set"
+msgstr "Confirm and set"
 
 #: src/settings/agent/BinaryUpload.tsx
 #: src/settings/certificate/UploadDialog.tsx
@@ -3044,6 +3221,10 @@ msgstr "Copied"
 msgid "Copied {title}."
 msgstr "Copied {title}."
 
+#: src/boot/StoredBuilds.tsx
+msgid "Copied into the boot directory by hand"
+msgstr "Copied into the boot directory by hand"
+
 #: src/account/RecoveryCodesDialog.tsx
 #: src/sequences/builder/canvas/NodeMenu.tsx
 #: src/ui/SecretValue.tsx
@@ -3058,6 +3239,10 @@ msgstr "Copy command"
 #: src/settings/agent/CurrentBinary.tsx
 msgid "Copy SHA-256"
 msgstr "Copy SHA-256"
+
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Copy the PowerShell line for a Microsoft DHCP server"
+msgstr "Copy the PowerShell line for a Microsoft DHCP server"
 
 #: src/tokens/MakeTokenDialog.tsx
 msgid "Copy the token {tokenName}"
@@ -3083,6 +3268,10 @@ msgstr "Current password"
 msgid "Current run"
 msgstr "Current run"
 
+#: src/images/import/MdtNotImported.tsx
+msgid "CustomSettings.ini, with the sections {sections}. Its settings become rules and deployment defaults in DDT."
+msgstr "CustomSettings.ini, with the sections {sections}. Its settings become rules and deployment defaults in DDT."
+
 #: src/sequences/builder/canvas/NodeMenu.tsx
 msgid "Cut"
 msgstr "Cut"
@@ -3090,6 +3279,14 @@ msgstr "Cut"
 #: src/sequences/builder/page/commandHandlers.ts
 msgid "Cut {title}."
 msgstr "Cut {title}."
+
+#: src/boot/keyboardLayouts.ts
+msgid "Czech"
+msgstr "Czech"
+
+#: src/boot/keyboardLayouts.ts
+msgid "Danish"
+msgstr "Danish"
 
 #: src/app/UserMenu.tsx
 msgid "Dark"
@@ -3099,9 +3296,18 @@ msgstr "Dark"
 msgid "DDT"
 msgstr "DDT"
 
+#: src/audit/auditView.ts
+msgid "DDT added to the WDS boot menu"
+msgstr "DDT added to the WDS boot menu"
+
 #: src/settings/networkBoot/NetworkBootSettings.tsx
 msgid "DDT answers netboot only on the interfaces listed here. ProxyDHCP tells each machine which boot file to load, and TFTP or HTTP serves it from the boot directory."
 msgstr "DDT answers netboot only on the interfaces listed here. ProxyDHCP tells each machine which boot file to load, and TFTP or HTTP serves it from the boot directory."
+
+#: src/lib/serverMessages.ts
+msgctxt "netboot.noHelper"
+msgid "DDT cannot change this computer's DHCP server or WDS itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up."
+msgstr "DDT cannot change this computer's DHCP server or WDS itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up."
 
 #: src/lib/serverMessages.ts
 msgctxt "rule.conditionUnreadable"
@@ -3118,8 +3324,8 @@ msgstr "DDT connects these shares with their accounts before the step runs and d
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.apply.pxeBindFailed"
-msgid "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {error, select, AccessDenied {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} AddressAlreadyInUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}"
-msgstr "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {error, select, AccessDenied {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} AddressAlreadyInUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}"
+msgid "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}"
+msgstr "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}"
 
 #: src/app/RouteError.tsx
 msgid "DDT could not reach its server. Check that the server is running and that this computer can reach it, then try again."
@@ -3128,6 +3334,11 @@ msgstr "DDT could not reach its server. Check that the server is running and tha
 #: src/sequences/steps/WriteCloudInitSeedFields.tsx
 msgid "DDT fills in <0>{placeholders}</0> with the machine's values, and the name of any of the run's values, such as a variable of the sequence or a value a rule sets, with that value. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
 msgstr "DDT fills in <0>{placeholders}</0> with the machine's values, and the name of any of the run's values, such as a variable of the sequence or a value a rule sets, with that value. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.noRoot"
+msgid "DDT has no root certificate of its own yet, which the boot image has to trust. Generate one under Server, Certificate."
+msgstr "DDT has no root certificate of its own yet, which the boot image has to trust. Generate one under Server, Certificate."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.newRootGenerate"
@@ -3177,6 +3388,10 @@ msgstr "DDT shows this password only now. At the next sign-in, {name} has to set
 #: src/tokens/TokenSecret.tsx
 msgid "DDT shows this token only now and keeps nothing but a hash of it. If it is lost, revoke it and make a new one."
 msgstr "DDT shows this token only now and keeps nothing but a hash of it. If it is lost, revoke it and make a new one."
+
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "DDT stops Windows Deployment Services and keeps it from starting with Windows, then answers netboot itself. MDT's LiteTouch no longer netboots from this server. WDS stays installed, and this page starts it again."
+msgstr "DDT stops Windows Deployment Services and keeps it from starting with Windows, then answers netboot itself. MDT's LiteTouch no longer netboots from this server. WDS stays installed, and this page starts it again."
 
 #: src/settings/networkBoot/TransfersGroup.tsx
 msgid "DDT tells a netbooting machine its boot file, while the site's own DHCP server keeps handing out the addresses. Turn it off where every site's DHCP server names DDT and the boot file itself; DDT then listens on neither UDP 67 nor 4011."
@@ -3338,6 +3553,18 @@ msgstr "Details for finding a fault"
 msgid "Device kind"
 msgstr "Device kind"
 
+#: src/audit/auditView.ts
+msgid "DHCP option 60 removed"
+msgstr "DHCP option 60 removed"
+
+#: src/audit/auditView.ts
+msgid "DHCP option 60 set"
+msgstr "DHCP option 60 set"
+
+#: src/audit/auditView.ts
+msgid "DHCP options 66 and 67 set"
+msgstr "DHCP options 66 and 67 set"
+
 #: src/machines/facts.ts
 msgid "DHCP server"
 msgstr "DHCP server"
@@ -3408,6 +3635,10 @@ msgstr "Disk SHA-256"
 msgid "Disks"
 msgstr "Disks"
 
+#: src/setup/SetupChecklist.tsx
+msgid "Dismiss"
+msgstr "Dismiss"
+
 #: src/machines/facts.ts
 msgid "DNS suffix"
 msgstr "DNS suffix"
@@ -3452,12 +3683,14 @@ msgstr "Domain join"
 msgid "Domain join checked"
 msgstr "Domain join checked"
 
+#: src/boot/JobPanel.tsx
 #: src/machines/list/runDetail.ts
 #: src/machines/MachinePanel.tsx
 #: src/machines/machineView.ts
 #: src/runs/flow/nodeDetail.ts
 #: src/runs/runHistory.ts
 #: src/runs/runView.ts
+#: src/setup/ChecklistStep.tsx
 #: src/tokens/MakeTokenDialog.tsx
 #: src/users/PasswordDialog.tsx
 msgid "Done"
@@ -3472,9 +3705,21 @@ msgstr "Done"
 msgid "Done after {times} of at most {most} times"
 msgstr "Done after {times} of at most {most} times"
 
+#: src/boot/BuilderPanel.tsx
+msgid "Download the builder"
+msgstr "Download the builder"
+
+#: src/boot/JobPanel.tsx
+msgid "Downloading and installing, which takes a few minutes"
+msgstr "Downloading and installing, which takes a few minutes"
+
 #: src/sequences/builder/Palette.tsx
 msgid "Drag onto a wire, or choose + on one. Arrow keys follow the flow."
 msgstr "Drag onto a wire, or choose + on one. Arrow keys follow the flow."
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "Driver groups, each as a driver package"
+msgstr "Driver groups, each as a driver package"
 
 #: src/packages/PackagesTable.tsx
 msgid "Driver packages"
@@ -3494,9 +3739,9 @@ msgstr "Driver packages matched to the model"
 msgid "Drivers"
 msgstr "Drivers"
 
-#: src/boot/BootImagePage.tsx
-msgid "Drivers are flagged for Windows PE, but no boot image built with this version of the build script is in the boot directory. Build it again to add them."
-msgstr "Drivers are flagged for Windows PE, but no boot image built with this version of the build script is in the boot directory. Build it again to add them."
+#: src/boot/StaleReasonText.tsx
+msgid "Drivers are flagged for Windows PE, but no boot image built with this version of the build script is in the boot directory."
+msgstr "Drivers are flagged for Windows PE, but no boot image built with this version of the build script is in the boot directory."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.driversBeforeImage"
@@ -3551,6 +3796,14 @@ msgstr "Duplicate"
 msgid "Duplicated {title}."
 msgstr "Duplicated {title}."
 
+#: src/boot/keyboardLayouts.ts
+msgid "Dutch (Belgium)"
+msgstr "Dutch (Belgium)"
+
+#: src/boot/keyboardLayouts.ts
+msgid "Dutch (United States International)"
+msgstr "Dutch (United States International)"
+
 #: src/account/RecoveryCodesDialog.tsx
 msgid "Each code signs you in once if you lose the authenticator. Keep them somewhere safe: they are shown only now, and new ones replace these."
 msgstr "Each code signs you in once if you lose the authenticator. Keep them somewhere safe: they are shown only now, and new ones replace these."
@@ -3564,8 +3817,8 @@ msgid "Each section is saved on the page of what it configures, and applies with
 msgstr "Each section is saved on the page of what it configures, and applies without a restart: some at their next use, others by rebuilding their part of the running server."
 
 #: src/images/ImageUploadPanel.tsx
-msgid "Each x64 Windows image in a WIM or ESD file becomes an entry. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
-msgstr "Each x64 Windows image in a WIM or ESD file becomes an entry. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
+msgid "Each x64 Windows image in a WIM or ESD file becomes an entry, and a Windows ISO is read for the install.wim or install.esd in it. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
+msgstr "Each x64 Windows image in a WIM or ESD file becomes an entry, and a Windows ISO is read for the install.wim or install.esd in it. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
 
 #: src/images/ImageFacts.tsx
 msgid "Edition"
@@ -3619,6 +3872,14 @@ msgstr "Encryption"
 #: src/sequences/steps.ts
 msgid "ends with"
 msgstr "ends with"
+
+#: src/boot/keyboardLayouts.ts
+msgid "English (United Kingdom)"
+msgstr "English (United Kingdom)"
+
+#: src/boot/keyboardLayouts.ts
+msgid "English (United States)"
+msgstr "English (United States)"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.inputChoices"
@@ -3937,6 +4198,7 @@ msgstr "Expires"
 msgid "Fail when no driver package matches the model"
 msgstr "Fail when no driver package matches the model"
 
+#: src/boot/JobPanel.tsx
 #: src/machines/list/runDetail.ts
 #: src/machines/MachinePanel.tsx
 #: src/machines/machineView.ts
@@ -4076,6 +4338,10 @@ msgstr "Finds the user who signs in. It must contain {USER_TOKEN}, which DDT rep
 msgid "Finishing"
 msgstr "Finishing"
 
+#: src/boot/keyboardLayouts.ts
+msgid "Finnish"
+msgstr "Finnish"
+
 #: src/ui/ZoomControls.tsx
 msgid "Fit"
 msgstr "Fit"
@@ -4106,6 +4372,10 @@ msgstr "For"
 msgid "For {architecture} only, cannot be written"
 msgstr "For {architecture} only, cannot be written"
 
+#: src/images/import/MdtShareChoices.tsx
+msgid "For {maker} {model}."
+msgstr "For {maker} {model}."
+
 #: src/sequences/builder/variables/AccountInputFields.tsx
 msgid "For a Join the domain step. Empty where it joins none."
 msgstr "For a Join the domain step. Empty where it joins none."
@@ -4126,6 +4396,10 @@ msgstr "For an adapter no host reported, such as one still to come. An IPv4 addr
 msgid "For network and storage drivers a machine needs before the agent runs, such as those of new laptops. They reach machines with the next boot image build; Boot, Boot image says when the build is older than the drivers."
 msgstr "For network and storage drivers a machine needs before the agent runs, such as those of new laptops. They reach machines with the next boot image build; Boot, Boot image says when the build is older than the drivers."
 
+#: src/images/import/MdtShareChoices.tsx
+msgid "For no model yet: set its models under Library, Drivers."
+msgstr "For no model yet: set its models under Library, Drivers."
+
 #: src/settings/ApprovalPage.tsx
 msgid "For places that need two people: a sign-in at the machine then only records who is there, and an operator approves it on the web. Zero touch is off while this is on."
 msgstr "For places that need two people: a sign-in at the machine then only records who is there, and an operator approves it on the web. Zero touch is off while this is on."
@@ -4133,6 +4407,10 @@ msgstr "For places that need two people: a sign-in at the machine then only reco
 #: src/packages/HardwareModelsField.tsx
 msgid "For these hardware models"
 msgstr "For these hardware models"
+
+#: src/boot/BuildPanel.tsx
+msgid "For typing at a machine in Windows PE"
+msgstr "For typing at a machine in Windows PE"
 
 #: src/sequences/builder/nodeDetail.ts
 msgid "For Windows setup at its first start"
@@ -4145,6 +4423,18 @@ msgstr "Format"
 #: src/settings/directory/TestResult.tsx
 msgid "Found"
 msgstr "Found"
+
+#: src/boot/keyboardLayouts.ts
+msgid "French"
+msgstr "French"
+
+#: src/boot/keyboardLayouts.ts
+msgid "French (Belgium)"
+msgstr "French (Belgium)"
+
+#: src/boot/keyboardLayouts.ts
+msgid "French (Switzerland)"
+msgstr "French (Switzerland)"
 
 #: src/machines/facts.ts
 msgid "Friendly model"
@@ -4226,6 +4516,14 @@ msgstr "Generate a new certificate?"
 #: src/settings/certificate/ServedCertificate.tsx
 msgid "Generate certificate"
 msgstr "Generate certificate"
+
+#: src/boot/keyboardLayouts.ts
+msgid "German"
+msgstr "German"
+
+#: src/boot/keyboardLayouts.ts
+msgid "German (Switzerland)"
+msgstr "German (Switzerland)"
 
 #: src/users/ConfirmUserAction.tsx
 msgid "Give {name} a new password?"
@@ -4406,6 +4704,10 @@ msgstr "How the conditions combine"
 msgid "HTTP boot port"
 msgstr "HTTP boot port"
 
+#: src/boot/keyboardLayouts.ts
+msgid "Hungarian"
+msgstr "Hungarian"
+
 #: src/account/RecoveryCodesDialog.tsx
 msgid "I have saved them"
 msgstr "I have saved them"
@@ -4434,6 +4736,23 @@ msgstr "Image deleted"
 #: src/audit/auditView.ts
 msgid "Image uploaded"
 msgstr "Image uploaded"
+
+#: src/images/import/ImportPanel.tsx
+#: src/images/import/MdtShareDialog.tsx
+msgid "Import"
+msgstr "Import"
+
+#: src/images/import/MdtShareDialog.tsx
+msgid "Import from an MDT deployment share"
+msgstr "Import from an MDT deployment share"
+
+#: src/images/import/ImportPanel.tsx
+msgid "Import from the server"
+msgstr "Import from the server"
+
+#: src/audit/auditView.ts
+msgid "Import from the server started"
+msgstr "Import from the server started"
 
 #: src/lib/serverMessages.ts
 msgctxt "valueTemplate.filterNeedsCount"
@@ -4473,6 +4792,10 @@ msgstr "In Windows PE, a script with a package runs only after the disk is parti
 msgid "In Windows, after the image is applied. A script in Windows PE runs as the system."
 msgstr "In Windows, after the image is applied. A script in Windows PE runs as the system."
 
+#: src/boot/LastBuild.tsx
+msgid "Included"
+msgstr "Included"
+
 #: src/lib/serverMessages.ts
 msgctxt "identity.passwordMismatch"
 msgid "Incorrect password."
@@ -4502,6 +4825,10 @@ msgstr "Input, asked on the web or at the machine"
 msgid "Inspector"
 msgstr "Inspector"
 
+#: src/boot/AdkState.tsx
+msgid "Install"
+msgstr "Install"
+
 #: src/settings/certificate/NewRootDialog.tsx
 msgid "Install a certificate from another root?"
 msgstr "Install a certificate from another root?"
@@ -4514,6 +4841,18 @@ msgstr "Install it anyway"
 msgctxt "template.installLinux"
 msgid "Install Linux"
 msgstr "Install Linux"
+
+#: src/boot/JobPanel.tsx
+msgid "Install of the Windows ADK"
+msgstr "Install of the Windows ADK"
+
+#: src/boot/AdkState.tsx
+msgid "Install the Windows ADK"
+msgstr "Install the Windows ADK"
+
+#: src/boot/AdkState.tsx
+msgid "Install the Windows ADK?"
+msgstr "Install the Windows ADK?"
 
 #: src/lib/serverMessages.ts
 msgctxt "template.installWindows"
@@ -4607,6 +4946,10 @@ msgstr "Issuer"
 msgid "It asks for {list}."
 msgstr "It asks for {list}."
 
+#: src/boot/StaleReasonText.tsx
+msgid "It came from the Windows ADK {builtWith}, and the server now has {installed}."
+msgstr "It came from the Windows ADK {builtWith}, and the server now has {installed}."
+
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "It can join machines here."
 msgstr "It can join machines here."
@@ -4628,6 +4971,10 @@ msgstr "It does not name {names}, which the server is reached by, so browsers an
 msgid "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
 msgstr "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
 
+#: src/boot/BuilderPanel.tsx
+msgid "It holds the server's agent, console and root certificate, and the drivers flagged for Windows PE."
+msgstr "It holds the server's agent, console and root certificate, and the drivers flagged for Windows PE."
+
 #: src/machines/approval.ts
 msgid "It is named {named}."
 msgstr "It is named {named}."
@@ -4640,6 +4987,10 @@ msgstr "It is valid from {from} to {until}, not now."
 #: src/inputs/inputs.ts
 msgid "It joins the domain {domain}."
 msgstr "It joins the domain {domain}."
+
+#: src/boot/StaleReasonText.tsx
+msgid "It names the server {address}, a name or port the server no longer has. Machines that netboot it cannot reach the server."
+msgstr "It names the server {address}, a name or port the server no longer has. Machines that netboot it cannot reach the server."
 
 #: src/lib/autosaveDecisions.ts
 msgid "It no longer exists on the server, so nothing more is saved."
@@ -4656,6 +5007,18 @@ msgstr "It stays waiting until someone signs in at it or it netboots from a zero
 #: src/machines/assign/assignText.ts
 msgid "It stays waiting until someone signs in at it."
 msgstr "It stays waiting until someone signs in at it."
+
+#: src/boot/StaleReasonText.tsx
+msgid "It trusts another root certificate than this server's. Machines that netboot it cannot reach the server."
+msgstr "It trusts another root certificate than this server's. Machines that netboot it cannot reach the server."
+
+#: src/boot/BuilderPanel.tsx
+msgid "It uploads one boot image, within a day. Download it again for the next build."
+msgstr "It uploads one boot image, within a day. Download it again for the next build."
+
+#: src/boot/keyboardLayouts.ts
+msgid "Italian"
+msgstr "Italian"
 
 #: src/runs/decisions.ts
 msgid "Iteration {times} of at most {most}"
@@ -4745,6 +5108,11 @@ msgstr "Key"
 msgid "Keyboard"
 msgstr "Keyboard"
 
+#: src/boot/BuildPanel.tsx
+#: src/boot/LastBuild.tsx
+msgid "Keyboard layout"
+msgstr "Keyboard layout"
+
 #: src/settings/signIn/ClaimRolesGroup.tsx
 msgid "Keycloak and Authentik send group names or paths, Entra ID the object IDs of the groups."
 msgstr "Keycloak and Authentik send group names or paths, Entra ID the object IDs of the groups."
@@ -4781,10 +5149,6 @@ msgstr "Laptop"
 #: src/settings/networkBoot/TransfersGroup.tsx
 msgid "Largest TFTP window"
 msgstr "Largest TFTP window"
-
-#: src/boot/LastBuild.tsx
-msgid "Last build"
-msgstr "Last build"
 
 #: src/machines/facts.ts
 msgid "Last exit code"
@@ -4858,6 +5222,10 @@ msgstr "Leaving this page stops the upload of {file} at {percent}%. The server k
 #: src/users/ChangeUserForm.tsx
 msgid "Left empty, DDT shows the user name."
 msgstr "Left empty, DDT shows the user name."
+
+#: src/boot/LastBuild.tsx
+msgid "Left out"
+msgstr "Left out"
 
 #: src/ui/NumberField.tsx
 msgid "Less"
@@ -4969,6 +5337,10 @@ msgstr "Lockout is not enabled for this user."
 msgid "Log"
 msgstr "Log"
 
+#: src/settings/logging/LogFiles.tsx
+msgid "Log files"
+msgstr "Log files"
+
 #: src/settings/logging/LevelRows.tsx
 #: src/settings/LoggingPanel.tsx
 msgid "Log levels"
@@ -4994,6 +5366,10 @@ msgstr "Logical processors"
 #: src/settings/ConsoleLogoPanel.tsx
 msgid "Logo on the console"
 msgstr "Logo on the console"
+
+#: src/images/import/ImportPanel.tsx
+msgid "Look again"
+msgstr "Look again"
 
 #: src/conditions/conditionSubjects.ts
 msgid "MAC"
@@ -5127,6 +5503,18 @@ msgstr "Machines take it at their next netboot: the agent downloads it and shows
 msgid "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
 msgstr "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
 
+#: src/boot/StoredBuilds.tsx
+msgid "Machines that netboot from now on get this build. A machine that is netbooting right now finishes with the build it started."
+msgstr "Machines that netboot from now on get this build. A machine that is netbooting right now finishes with the build it started."
+
+#: src/settings/AgentPanel.tsx
+msgid "Machines that netboot from now on run the agent this server came with. If it came with none, they run the agent in their boot image."
+msgstr "Machines that netboot from now on run the agent this server came with. If it came with none, they run the agent in their boot image."
+
+#: src/settings/ConsolePanel.tsx
+msgid "Machines that netboot from now on show the console this server came with. If it came with none, they show the console in their boot image."
+msgstr "Machines that netboot from now on show the console this server came with. If it came with none, they show the console in their boot image."
+
 #: src/conditions/conditions.ts
 msgid "Machines where {condition} go along Then."
 msgstr "Machines where {condition} go along Then."
@@ -5190,6 +5578,10 @@ msgstr "Matches machines where {condition}."
 msgid "Matches no known machine now."
 msgstr "Matches no known machine now."
 
+#: src/images/import/ImportPanel.tsx
+msgid "MDT deployment share"
+msgstr "MDT deployment share"
+
 #: src/conditions/conditionSubjects.ts
 msgid "memory"
 msgstr "memory"
@@ -5209,6 +5601,22 @@ msgstr "Microsoft 2011 CA. The default, which most machines trust."
 #: src/images/ImageSecureBoot.tsx
 msgid "Microsoft's boot files"
 msgstr "Microsoft's boot files"
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "Microsoft's DHCP server ({process}, process {id})"
+msgstr "Microsoft's DHCP server ({process}, process {id})"
+
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT answers on port 4011 alone. Machines that netboot find it there once the DHCP server sends option 60, PXEClient."
+msgstr "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT answers on port 4011 alone. Machines that netboot find it there once the DHCP server sends option 60, PXEClient."
+
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT answers on port 4011 alone. The DHCP server sends option 60, PXEClient, which brings machines that netboot there."
+msgstr "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT answers on port 4011 alone. The DHCP server sends option 60, PXEClient, which brings machines that netboot there."
+
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT does not listen there. While Windows Deployment Services runs, machines that netboot reach WDS, and DDT through its boot menu."
+msgstr "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT does not listen there. While Windows Deployment Services runs, machines that netboot reach WDS, and DDT through its boot menu."
 
 #: src/machines/secureBoot.ts
 msgid "Microsoft's third-party UEFI CA"
@@ -5324,6 +5732,11 @@ msgstr "Must be ASCII and at most {max} characters."
 msgctxt "settings.atLeastOne"
 msgid "Must be at least 1."
 msgstr "Must be at least 1."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.windowSize"
+msgid "Must be between 1 and {max}."
+msgstr "Must be between 1 and {max}."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.pxe.windowSizeRange"
@@ -5454,11 +5867,16 @@ msgstr "Needs someone"
 msgid "Needs your approval"
 msgstr "Needs your approval"
 
+#: src/setup/SetupChecklist.tsx
+msgid "Netboot a machine. It shows on the Machines page as it registers."
+msgstr "Netboot a machine. It shows on the Machines page as it registers."
+
 #: src/conditions/conditionSubjects.ts
 msgid "network"
 msgstr "network"
 
 #: src/app/navigation.ts
+#: src/audit/auditView.ts
 #: src/settings/networkBoot/NetworkBootSettings.tsx
 #: src/settings/NetworkBootPage.tsx
 #: src/settings/server/SectionLink.tsx
@@ -5533,6 +5951,10 @@ msgstr "New task sequence"
 msgid "New value"
 msgstr "New value"
 
+#: src/settings/networkBoot/neighbours/NeighboursGroup.tsx
+msgid "Next to DHCP and WDS"
+msgstr "Next to DHCP and WDS"
+
 #: src/conditions/builder/ValueEditor.tsx
 #: src/conditions/conditions.ts
 msgid "no"
@@ -5564,6 +5986,10 @@ msgstr "No accounts yet"
 #: src/settings/networkBoot/BootTargetsGroup.tsx
 msgid "No boot target yet, so ProxyDHCP answers no machine."
 msgstr "No boot target yet, so ProxyDHCP answers no machine."
+
+#: src/settings/networkBoot/BootTargetsGroup.tsx
+msgid "No boot target yet, so x64 UEFI machines get x64/bootmgfw.efi over TFTP, where a boot image build puts the boot manager. Other machines get no answer."
+msgstr "No boot target yet, so x64 UEFI machines get x64/bootmgfw.efi over TFTP, where a boot image build puts the boot manager. Other machines get no answer."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.nothingToConfirm"
@@ -5867,6 +6293,10 @@ msgstr "No values."
 msgid "No variable of this sequence may be set by steps yet. Declare one on the Variables tab."
 msgstr "No variable of this sequence may be set by steps yet. Declare one on the Variables tab."
 
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "Nobody"
+msgstr "Nobody"
+
 #: src/tokens/AllTokens.tsx
 msgid "Nobody has made an API token. Scripts that call DDT use one each, made on the Account and security page of the account they act for."
 msgstr "Nobody has made an API token. Scripts that call DDT use one each, made on the Account and security page of the account they act for."
@@ -5912,6 +6342,10 @@ msgstr "None. DDT connects the shares listed here before the step runs."
 msgid "None. Nothing keeps this sequence from running."
 msgstr "None. Nothing keeps this sequence from running."
 
+#: src/boot/keyboardLayouts.ts
+msgid "Norwegian"
+msgstr "Norwegian"
+
 #: src/conditions/conditions.ts
 msgid "not ({either})"
 msgstr "not ({either})"
@@ -5938,6 +6372,10 @@ msgstr "Not found"
 #: src/users/directory/DirectoryOn.tsx
 msgid "Not found in the directory"
 msgstr "Not found in the directory"
+
+#: src/images/import/MdtNotImported.tsx
+msgid "Not imported yet"
+msgstr "Not imported yet"
 
 #: src/settings/networkBoot/ConfigurationGroup.tsx
 msgid "Not known"
@@ -6048,6 +6486,11 @@ msgstr "Nothing recorded yet"
 #: src/sequences/builder/page/useFlowClipboard.ts
 msgid "Nothing to paste. Copy a step first."
 msgstr "Nothing to paste. Copy a step first."
+
+#: src/lib/serverMessages.ts
+msgctxt "import.nothing"
+msgid "Nothing was chosen to import."
+msgstr "Nothing was chosen to import."
 
 #: src/settings/parts/SectionErrors.tsx
 msgid "Nothing was saved."
@@ -6169,6 +6612,10 @@ msgctxt "sequence.sharesOnlyOnSteps"
 msgid "Only a step connects shares, for as long as it runs. Give them to the steps inside that need them."
 msgstr "Only a step connects shares, for as long as it runs. Give them to the steps inside that need them."
 
+#: src/boot/BuildPanel.tsx
+msgid "Only administrators build the boot image."
+msgstr "Only administrators build the boot image."
+
 #: src/settings/SignInSettingsPage.tsx
 msgid "Only administrators change how people sign in. Your own password and second factor are on the Account and security page in the account menu."
 msgstr "Only administrators change how people sign in. Your own password and second factor are on the Account and security page in the account menu."
@@ -6176,6 +6623,10 @@ msgstr "Only administrators change how people sign in. Your own password and sec
 #: src/sequences/builder/page/BuilderNotices.tsx
 msgid "Only administrators change task sequences. You can look at this one."
 msgstr "Only administrators change task sequences. You can look at this one."
+
+#: src/boot/BuilderPanel.tsx
+msgid "Only administrators download the builder."
+msgstr "Only administrators download the builder."
 
 #: src/users/UsersPage.tsx
 msgid "Only administrators manage accounts. Your own account is on the Account and security page in the account menu."
@@ -6251,9 +6702,17 @@ msgstr "Only when {summary}"
 msgid "Only x64 images can be installed."
 msgstr "Only x64 images can be installed."
 
+#: src/setup/ChecklistStep.tsx
+msgid "Open"
+msgstr "Open"
+
 #: src/machines/MachinePanel.tsx
 msgid "Open machine"
 msgstr "Open machine"
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "Operating systems"
+msgstr "Operating systems"
 
 #: src/settings/signIn/NewAccountsGroup.tsx
 #: src/users/userView.ts
@@ -6273,6 +6732,14 @@ msgstr "Operators can read the deployment passwords by deploying a machine they 
 msgctxt "identity.concurrencyFailure"
 msgid "Optimistic concurrency failure, object has been modified."
 msgstr "Optimistic concurrency failure, object has been modified."
+
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Option 66, boot server"
+msgstr "Option 66, boot server"
+
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Option 67, boot file"
+msgstr "Option 67, boot file"
 
 #: src/users/AddUserForm.tsx
 msgid "Optional."
@@ -6322,6 +6789,14 @@ msgstr "Optional. Without a name, the image picks one."
 msgid "Optional. Without a name, Windows picks one."
 msgstr "Optional. Without a name, Windows picks one."
 
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Options 66 and 67 do it too, with ProxyDHCP switched off above. They name one boot file for every kind of machine."
+msgstr "Options 66 and 67 do it too, with ProxyDHCP switched off above. They name one boot file for every kind of machine."
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Options 66 and 67 on this DHCP server"
+msgstr "Options 66 and 67 on this DHCP server"
+
 #: src/auth/SignInPage.tsx
 msgid "or"
 msgstr "or"
@@ -6367,6 +6842,10 @@ msgstr "Outline"
 #: src/sequences/builder/page/BuilderOutline.tsx
 msgid "Outline of {name}"
 msgstr "Outline of {name}"
+
+#: src/boot/JobOutput.tsx
+msgid "Output"
+msgstr "Output"
 
 #: src/settings/server/ServerSettings.tsx
 msgid "Overview"
@@ -6572,9 +7051,25 @@ msgstr "Pipable WIM files are not supported. Export the image into a regular WIM
 msgid "PNG, {width} by {height} pixels"
 msgstr "PNG, {width} by {height} pixels"
 
+#: src/boot/keyboardLayouts.ts
+msgid "Polish (Programmers)"
+msgstr "Polish (Programmers)"
+
 #: src/settings/directory/PortField.tsx
 msgid "Port"
 msgstr "Port"
+
+#: src/boot/keyboardLayouts.ts
+msgid "Portuguese"
+msgstr "Portuguese"
+
+#: src/boot/keyboardLayouts.ts
+msgid "Portuguese (Brazil)"
+msgstr "Portuguese (Brazil)"
+
+#: src/boot/LastBuild.tsx
+msgid "PowerShell"
+msgstr "PowerShell"
 
 #: src/deployments/deployments.ts
 msgid "Preparing"
@@ -6651,6 +7146,10 @@ msgctxt "model.wildcardPrefix"
 msgid "Put at least {min} characters before {wildcard}, so it matches only one family of models."
 msgstr "Put at least {min} characters before {wildcard}, so it matches only one family of models."
 
+#: src/boot/BuilderPanel.tsx
+msgid "Putting the builder together"
+msgstr "Putting the builder together"
+
 #: src/account/AuthenticatorEnrollment.tsx
 msgid "QR code for your authenticator app"
 msgstr "QR code for your authenticator app"
@@ -6685,6 +7184,10 @@ msgstr "Reaches nothing"
 msgid "Read the account's groups, nested groups included"
 msgstr "Read the account's groups, nested groups included"
 
+#: src/images/import/ImportProgress.tsx
+msgid "Reading {item}, {position} of {count}"
+msgstr "Reading {item}, {position} of {count}"
+
 #: src/log/LogStatusBar.tsx
 msgid "Reading every {pollSeconds} s, because the live connection is down."
 msgstr "Reading every {pollSeconds} s, because the live connection is down."
@@ -6706,6 +7209,10 @@ msgstr "Ready to run"
 #: src/settings/server/SectionRow.tsx
 msgid "Rebuilds its part of the server on save"
 msgstr "Rebuilds its part of the server on save"
+
+#: src/boot/JobPanel.tsx
+msgid "Receiving and checking the boot image"
+msgstr "Receiving and checking the boot image"
 
 #: src/log/LogStatusBar.tsx
 msgid "Reconnecting. Lines sent meanwhile are read once the connection is back."
@@ -6830,6 +7337,22 @@ msgstr "Remove the logo"
 msgid "Remove the logo?"
 msgstr "Remove the logo?"
 
+#: src/settings/AgentPanel.tsx
+msgid "Remove the uploaded agent"
+msgstr "Remove the uploaded agent"
+
+#: src/settings/AgentPanel.tsx
+msgid "Remove the uploaded agent?"
+msgstr "Remove the uploaded agent?"
+
+#: src/settings/ConsolePanel.tsx
+msgid "Remove the uploaded console"
+msgstr "Remove the uploaded console"
+
+#: src/settings/ConsolePanel.tsx
+msgid "Remove the uploaded console?"
+msgstr "Remove the uploaded console?"
+
 #: src/conditions/builder/GroupRows.tsx
 msgid "Remove this group"
 msgstr "Remove this group"
@@ -6846,6 +7369,14 @@ msgstr "Removed {title}."
 msgid "Removed. Machines show no logo when they next register."
 msgstr "Removed. Machines show no logo when they next register."
 
+#: src/settings/AgentPanel.tsx
+msgid "Removed. Machines that netboot from now on no longer get that agent."
+msgstr "Removed. Machines that netboot from now on no longer get that agent."
+
+#: src/settings/ConsolePanel.tsx
+msgid "Removed. Machines that netboot from now on no longer get that console."
+msgstr "Removed. Machines that netboot from now on no longer get that console."
+
 #: src/deployments/deployments.ts
 msgid "Removing the agent from Windows"
 msgstr "Removing the agent from Windows"
@@ -6853,6 +7384,14 @@ msgstr "Removing the agent from Windows"
 #: src/settings/logo/LogoChange.tsx
 msgid "Removing the logo"
 msgstr "Removing the logo"
+
+#: src/settings/AgentPanel.tsx
+msgid "Removing the uploaded agent"
+msgstr "Removing the uploaded agent"
+
+#: src/settings/ConsolePanel.tsx
+msgid "Removing the uploaded console"
+msgstr "Removing the uploaded console"
 
 #: src/sequences/builder/variables/RenameField.tsx
 msgid "Rename everywhere"
@@ -7132,10 +7671,6 @@ msgstr "Run started"
 msgid "Run stopped"
 msgstr "Run stopped"
 
-#: src/boot/BuildCommand.tsx
-msgid "Run this in an elevated PowerShell on a Windows machine with the Windows ADK, from a copy of DDT's repository. It writes boot.wim and the boot files into the destination, which the boot directory has to hold; machines netboot with the new image at once."
-msgstr "Run this in an elevated PowerShell on a Windows machine with the Windows ADK, from a copy of DDT's repository. It writes boot.wim and the boot files into the destination, which the boot directory has to hold; machines netboot with the new image at once."
-
 #: src/audit/auditView.ts
 msgid "Run token refused"
 msgstr "Run token refused"
@@ -7144,6 +7679,7 @@ msgstr "Run token refused"
 msgid "Run went on"
 msgstr "Run went on"
 
+#: src/boot/JobPanel.tsx
 #: src/runs/flow/nodeDetail.ts
 #: src/runs/panel/RunActivity.tsx
 #: src/runs/runHistory.ts
@@ -7282,6 +7818,10 @@ msgstr "Saved {savedWhen} by {savedBy}."
 #: src/settings/parts/SettingsSection.tsx
 msgid "Saved {savedWhen}."
 msgstr "Saved {savedWhen}."
+
+#: src/boot/BuilderPanel.tsx
+msgid "Saved as {builderFileName}. This page shows the boot image when the builder uploads it."
+msgstr "Saved as {builderFileName}. This page shows the boot image when the builder uploads it."
 
 #: src/sequences/SaveState.tsx
 msgid "Saving"
@@ -7424,6 +7964,10 @@ msgctxt "settings.ldapTest.sendValues"
 msgid "Send the values to test."
 msgstr "Send the values to test."
 
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Sends machines to {server} for {file} now."
+msgstr "Sends machines to {server} for {file} now."
+
 #: src/machines/list/MachineTable.tsx
 #: src/runs/history/RunHistoryTable.tsx
 #: src/sequences/builder/Inspector.tsx
@@ -7472,6 +8016,22 @@ msgstr "Serial number"
 msgid "Serve boot files over TFTP"
 msgstr "Serve boot files over TFTP"
 
+#: src/boot/StoredBuilds.tsx
+msgid "Serve this build"
+msgstr "Serve this build"
+
+#: src/boot/StoredBuilds.tsx
+msgid "Serve this build?"
+msgstr "Serve this build?"
+
+#: src/boot/StoredBuilds.tsx
+msgid "Served"
+msgstr "Served"
+
+#: src/boot/LastBuild.tsx
+msgid "Served build"
+msgstr "Served build"
+
 #: src/settings/certificate/ServedCertificate.tsx
 msgid "Served certificate"
 msgstr "Served certificate"
@@ -7490,6 +8050,7 @@ msgstr "Server"
 msgid "Server {number}"
 msgstr "Server {number}"
 
+#: src/boot/LastBuild.tsx
 #: src/settings/networkBoot/BootServerFields.tsx
 msgid "Server address"
 msgstr "Server address"
@@ -7565,6 +8126,10 @@ msgstr "Set by the step {name}"
 msgid "Set by the step {stepName}"
 msgstr "Set by the step {stepName}"
 
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Set for the chosen scopes"
+msgstr "Set for the chosen scopes"
+
 #: src/settings/networkBoot/ConfigurationGroup.tsx
 #: src/settings/server/ConfigurationPanel.tsx
 msgid "Set in configuration"
@@ -7581,6 +8146,14 @@ msgstr "Set in configuration as {key} ({variable}). Remove it there to change it
 #: src/values/values.ts
 msgid "Set on this machine"
 msgstr "Set on this machine"
+
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Set option 60 on this DHCP server"
+msgstr "Set option 60 on this DHCP server"
+
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Set them on this DHCP server"
+msgstr "Set them on this DHCP server"
 
 #: src/account/AuthenticatorPanel.tsx
 msgid "Set up an authenticator"
@@ -7605,6 +8178,10 @@ msgstr "Sets {name}"
 #: src/sequences/steps/SetVariableFields.tsx
 msgid "Sets a variable of this sequence while the run goes on. Steps after it, templates and conditions read the new value."
 msgstr "Sets a variable of this sequence while the run goes on. Steps after it, templates and conditions read the new value."
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "Sets neither option yet."
+msgstr "Sets neither option yet."
 
 #: src/roles/drawer/RoleFields.tsx
 #: src/rules/drawer/RuleFields.tsx
@@ -7897,6 +8474,10 @@ msgstr "Something went wrong while loading this page. Try again; if it keeps fai
 msgid "Source code"
 msgstr "Source code"
 
+#: src/boot/keyboardLayouts.ts
+msgid "Spanish"
+msgstr "Spanish"
+
 #: src/lib/serverMessages.ts
 msgctxt "wim.split"
 msgid "Split WIM files (.swm) are not supported. Export the image into a single WIM first."
@@ -7914,6 +8495,10 @@ msgstr "Start from a template, such as Install Windows: it partitions the disk, 
 msgid "Start of the stored log. The server keeps the newest {storedLimit} lines of each machine."
 msgstr "Start of the stored log. The server keeps the newest {storedLimit} lines of each machine."
 
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Start WDS again"
+msgstr "Start WDS again"
+
 #: src/runs/history/RunHistoryTable.tsx
 msgid "Started"
 msgstr "Started"
@@ -7921,6 +8506,10 @@ msgstr "Started"
 #: src/runs/panel/runLine.ts
 msgid "started {started}"
 msgstr "started {started}"
+
+#: src/boot/JobPanel.tsx
+msgid "Started {when} by {startedBy}"
+msgstr "Started {when} by {startedBy}"
 
 #: src/machines/list/runDetail.ts
 #: src/machines/MachinePanel.tsx
@@ -8083,6 +8672,10 @@ msgstr "Steps may change it"
 msgid "Steps of {name}"
 msgstr "Steps of {name}"
 
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+msgid "Stop sending option 60"
+msgstr "Stop sending option 60"
+
 #: src/machines/actions/MachineKeys.tsx
 #: src/machines/actions/MachineMenu.tsx
 #: src/machines/actions/StopConfirm.tsx
@@ -8104,6 +8697,10 @@ msgstr "Stop upload"
 #: src/uploads/LeaveUploadDialog.tsx
 msgid "Stop upload and leave"
 msgstr "Stop upload and leave"
+
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "Stop WDS"
+msgstr "Stop WDS"
 
 #: src/machines/list/runDetail.ts
 #: src/machines/MachinePanel.tsx
@@ -8160,6 +8757,10 @@ msgstr "Such as de-DE."
 msgid "Such as OU=Workstations,DC=example,DC=com. Empty takes the default from the Deployment defaults page."
 msgstr "Such as OU=Workstations,DC=example,DC=com. Empty takes the default from the Deployment defaults page."
 
+#: src/boot/keyboardLayouts.ts
+msgid "Swedish"
+msgstr "Swedish"
+
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "SYSTEM"
 msgstr "SYSTEM"
@@ -8189,6 +8790,11 @@ msgstr "Tablet"
 msgid "Take {roleName} out"
 msgstr "Take {roleName} out"
 
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.keyboardLayout"
+msgid "Takes an input locale and a keyboard layout, such as 0407:00000407 for German."
+msgstr "Takes an input locale and a keyboard layout, such as 0407:00000407 for German."
+
 #: src/machines/assign/SequencePicker.tsx
 #: src/rules/RuleTestOutcome.tsx
 #: src/sequences/list/SequenceTable.tsx
@@ -8203,6 +8809,10 @@ msgstr "Task sequence"
 #: src/sequences/SequenceEditorPage.tsx
 msgid "Task sequences"
 msgstr "Task sequences"
+
+#: src/images/import/MdtNotImported.tsx
+msgid "Task sequences: {sequences}. Build them again from a template."
+msgstr "Task sequences: {sequences}. Build them again from a template."
 
 #: src/sequences/builder/variables/RenameField.tsx
 msgid "Templates use it as {placeholder}."
@@ -8381,6 +8991,10 @@ msgid "The agent started the run"
 msgstr "The agent started the run"
 
 #: src/settings/AgentPanel.tsx
+msgid "The agent this server came with, since none was uploaded"
+msgstr "The agent this server came with, since none was uploaded"
+
+#: src/settings/AgentPanel.tsx
 msgid "The agent uploaded here"
 msgstr "The agent uploaded here"
 
@@ -8432,13 +9046,31 @@ msgstr "The bind password and every password typed at sign-in cross the network 
 msgid "The boot directory holds no record of a build. A build with the current script writes ddt-boot-image.json next to boot.wim, which DDT reads here."
 msgstr "The boot directory holds no record of a build. A build with the current script writes ddt-boot-image.json next to boot.wim, which DDT reads here."
 
-#: src/boot/BootImagePage.tsx
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.noSuchBuild"
+msgid "The boot directory holds no such build."
+msgstr "The boot directory holds no such build."
+
+#: src/boot/BuildState.tsx
 msgid "The boot image has every driver flagged for Windows PE."
 msgstr "The boot image has every driver flagged for Windows PE."
+
+#: src/boot/BuildState.tsx
+msgid "The boot image has to be built again"
+msgstr "The boot image has to be built again"
 
 #: src/boot/WindowsPEDrivers.tsx
 msgid "The boot image has Windows PE's own drivers only. Flag a driver package under <0>Library, Drivers</0> when a machine cannot reach the network or see its disk in Windows PE."
 msgstr "The boot image has Windows PE's own drivers only. Flag a driver package under <0>Library, Drivers</0> when a machine cannot reach the network or see its disk in Windows PE."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadTooLarge"
+msgid "The boot image is larger than {max} MB."
+msgstr "The boot image is larger than {max} MB."
+
+#: src/boot/BuilderPanel.tsx
+msgid "The boot image the builder makes runs as SYSTEM on every machine that netboots, so downloading it needs your password again."
+msgstr "The boot image the builder makes runs as SYSTEM on every machine that netboots, so downloading it needs your password again."
 
 #: src/settings/networkBoot/BootServerFields.tsx
 msgid "The boot server's name in the answer, in ASCII and at most 63 characters. Left empty, its address."
@@ -8447,6 +9079,15 @@ msgstr "The boot server's name in the answer, in ASCII and at most 63 characters
 #: src/ui/SecretValue.tsx
 msgid "The browser did not let DDT copy it. Select it and copy it yourself."
 msgstr "The browser did not let DDT copy it. Select it and copy it yourself."
+
+#: src/boot/BuilderPanel.tsx
+msgid "The builder is a zip for any Windows PC that has the Windows ADK with its Windows PE add-on. Unpack it there and run Build.cmd: it builds the boot image for this server and uploads it, and machines netboot the new image once it has arrived."
+msgstr "The builder is a zip for any Windows PC that has the Windows ADK with its Windows PE add-on. Unpack it there and run Build.cmd: it builds the boot image for this server and uploads it, and machines netboot the new image once it has arrived."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadToken"
+msgid "The builder's token is unknown, has expired or uploaded a boot image already. Download the builder again."
+msgstr "The builder's token is unknown, has expired or uploaded a boot image already. Download the builder again."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.keyMismatch"
@@ -8532,6 +9173,10 @@ msgid "The console runs as SYSTEM on every machine that netboots, so uploading i
 msgstr "The console runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
 
 #: src/settings/ConsolePanel.tsx
+msgid "The console this server came with, since none was uploaded"
+msgstr "The console this server came with, since none was uploaded"
+
+#: src/settings/ConsolePanel.tsx
 msgid "The console uploaded here"
 msgstr "The console uploaded here"
 
@@ -8560,6 +9205,11 @@ msgstr "The cursor is not one this server handed out. Start again from the first
 msgctxt "directory.accountDisabled"
 msgid "The DDT account {name} is disabled, so a sign-in is refused."
 msgstr "The DDT account {name} is disabled, so a sign-in is refused."
+
+#: src/lib/serverMessages.ts
+msgctxt "netboot.helperFailed"
+msgid "The DDT Helper service could not do it: {reason}"
+msgstr "The DDT Helper service could not do it: {reason}"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.declarationEmpty"
@@ -8610,6 +9260,10 @@ msgstr "the description"
 msgctxt "common.descriptionLength"
 msgid "The description can have at most {max} characters."
 msgstr "The description can have at most {max} characters."
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "The DHCP server has no scopes."
+msgstr "The DHCP server has no scopes."
 
 #: src/lib/serverMessages.ts
 msgctxt "directory.unreachable"
@@ -8675,9 +9329,9 @@ msgctxt "gpt.fourKilobyteSectors"
 msgid "The disk image is made for disks with 4 KiB sectors. DDT writes images for disks with 512-byte sectors, which is what distributions publish."
 msgstr "The disk image is made for disks with 4 KiB sectors. DDT writes images for disks with 512-byte sectors, which is what distributions publish."
 
-#: src/boot/BootImagePage.tsx
-msgid "The drivers flagged for Windows PE have changed since the boot image was built. Build it again so that machines netboot with them."
-msgstr "The drivers flagged for Windows PE have changed since the boot image was built. Build it again so that machines netboot with them."
+#: src/boot/StaleReasonText.tsx
+msgid "The drivers flagged for Windows PE have changed since it was built."
+msgstr "The drivers flagged for Windows PE have changed since it was built."
 
 #: src/lib/serverMessages.ts
 msgctxt "audit.rangeEnd"
@@ -9146,6 +9800,10 @@ msgstr "the order of the steps"
 msgid "The organizational unit changed since, so check again."
 msgstr "The organizational unit changed since, so check again."
 
+#: src/boot/JobOutput.tsx
+msgid "The output went on for {missing} more lines, which the server did not keep."
+msgstr "The output went on for {missing} more lines, which the server did not keep."
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.packageGone"
 msgid "The package is no longer in the library. Choose another package, or none."
@@ -9196,6 +9854,10 @@ msgstr "The person at the machine can answer there, too."
 #: src/machines/waiting/WaitingText.tsx
 msgid "The person at the machine can let the run go on there, too."
 msgstr "The person at the machine can let the run go on there, too."
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "The programs that hold the netboot ports on this computer. Where another program holds a port with DDT, Windows may hand the machines to it."
+msgstr "The programs that hold the netboot ports on this computer. Where another program holds a port with DDT, Windows may hand the machines to it."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.oidcTest.reached"
@@ -9359,6 +10021,10 @@ msgstr "The run's state is kept only in memory here, so the run ends if the mach
 msgid "The runs of this machine could not be loaded."
 msgstr "The runs of this machine could not be loaded."
 
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "The scope is not active."
+msgstr "The scope is not active."
+
 #: src/boot/BuildCommand.tsx
 msgid "The script downloads the flagged drivers with an API token of an administrator. Make one under Account and security, and put it into DDT_API_TOKEN."
 msgstr "The script downloads the flagged drivers with an API token of an administrator. Make one under Account and security, and put it into DDT_API_TOKEN."
@@ -9457,8 +10123,8 @@ msgid "The sequence's default"
 msgstr "The sequence's default"
 
 #: src/boot/BuildCommand.tsx
-msgid "The server address is this page's. Use the name machines reach the server by, if it is another."
-msgstr "The server address is this page's. Use the name machines reach the server by, if it is another."
+msgid "The server address is the server's name and port, as its certificate has them. Use another name machines reach the server by, if the certificate has it too."
+msgstr "The server address is the server's name and port, as its certificate has them. Use another name machines reach the server by, if the certificate has it too."
 
 #: src/lib/api.ts
 msgid "The server answered with status {status}."
@@ -9480,9 +10146,19 @@ msgstr "The server checks the file, reads the images in it and compresses a disk
 msgid "The server checks the zip and counts what is in it."
 msgstr "The server checks the zip and counts what is in it."
 
+#: src/lib/serverMessages.ts
+msgctxt "import.failed"
+msgid "The server could not add it. Its log says why."
+msgstr "The server could not add it. Its log says why."
+
 #: src/settings/certificate/ProvisionalNotice.tsx
 msgid "The server could not be reached with the new certificate, so this browser probably does not trust it. At {deadline} DDT goes back to the certificate before."
 msgstr "The server could not be reached with the new certificate, so this browser probably does not trust it. At {deadline} DDT goes back to the certificate before."
+
+#: src/lib/serverMessages.ts
+msgctxt "import.unreadable"
+msgid "The server could not read it: {reason}"
+msgstr "The server could not read it: {reason}"
 
 #: src/lib/autosaveDecisions.ts
 msgid "The server did not answer."
@@ -9500,6 +10176,10 @@ msgstr "The server does not answer"
 msgid "The server does not answer. The upload goes on when it does."
 msgstr "The server does not answer. The upload goes on when it does."
 
+#: src/boot/AdkState.tsx
+msgid "The server downloads the Windows ADK and its Windows PE add-on from Microsoft, about 4 GB, and installs the deployment tools and Windows PE. That takes a few minutes, and this page shows how it goes."
+msgstr "The server downloads the Windows ADK and its Windows PE add-on from Microsoft, about 4 GB, and installs the deployment tools and Windows PE. That takes a few minutes, and this page shows how it goes."
+
 #: src/packages/PackageUploadPanel.tsx
 msgid "The server goes on checking {file} after you leave and adds it to the library when it finishes. If it refuses the file, you do not see why."
 msgstr "The server goes on checking {file} after you leave and adds it to the library when it finishes. If it refuses the file, you do not see why."
@@ -9512,6 +10192,10 @@ msgstr "The server goes on checking {file} after you leave and adds its images t
 msgctxt "upload.offsetMismatch"
 msgid "The server holds a different part of this file. Continue from the offset in the Upload-Offset header."
 msgstr "The server holds a different part of this file. Continue from the offset in the Upload-Offset header."
+
+#: src/boot/AdkState.tsx
+msgid "The server installs them without asking again. Installing accepts Microsoft's licence terms for both."
+msgstr "The server installs them without asking again. Installing accepts Microsoft's licence terms for both."
 
 #: src/lib/serverMessages.ts
 msgctxt "upload.serverStopping"
@@ -9531,6 +10215,10 @@ msgstr "The server needs these before it can serve this page, so they stay in it
 msgid "The server refuses while a machine is assigned or runs a sequence that uses it."
 msgstr "The server refuses while a machine is assigned or runs a sequence that uses it."
 
+#: src/boot/BuildPanel.tsx
+msgid "The server's own"
+msgstr "The server's own"
+
 #: src/settings/server/ServerSettings.tsx
 msgid "The server's settings could not be read."
 msgstr "The server's settings could not be read."
@@ -9538,6 +10226,14 @@ msgstr "The server's settings could not be read."
 #: src/accounts/drawer/HostsEditor.tsx
 msgid "The servers a step may connect shares on with this account, such as files.corp.example. None, and it connects no share."
 msgstr "The servers a step may connect shares on with this account, such as files.corp.example. None, and it connects no share."
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "The share has no folder of Out-of-Box Drivers with drivers in it."
+msgstr "The share has no folder of Out-of-Box Drivers with drivers in it."
+
+#: src/images/import/MdtShareChoices.tsx
+msgid "The share lists none."
+msgstr "The share lists none."
 
 #: src/auth/useSignIn.ts
 msgid "The sign-in at the identity provider did not finish. Try again."
@@ -9628,9 +10324,32 @@ msgstr "The upload could not be added to the library. Look at the server log, th
 msgid "The upload failed."
 msgstr "The upload failed."
 
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadStrayFile"
+msgid "The upload is no boot image build: {file} is outside Boot, EFI and x64."
+msgstr "The upload is no boot image build: {file} is outside Boot, EFI and x64."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadMissingFile"
+msgid "The upload is no boot image build: it has no {file}."
+msgstr "The upload is no boot image build: it has no {file}."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.uploadBroken"
+msgid "The upload is no boot image build: its zip, its boot.wim or its description cannot be read."
+msgstr "The upload is no boot image build: its zip, its boot.wim or its description cannot be read."
+
 #: src/uploads/useResumableUpload.ts
 msgid "The upload of {name} stopped. Choose the file again to resume."
 msgstr "The upload of {name} stopped. Choose the file again to resume."
+
+#: src/settings/AgentPanel.tsx
+msgid "The uploaded agent was not removed. {reason}"
+msgstr "The uploaded agent was not removed. {reason}"
+
+#: src/settings/ConsolePanel.tsx
+msgid "The uploaded console was not removed. {reason}"
+msgstr "The uploaded console was not removed. {reason}"
 
 #: src/sequences/builder/variables/InputDefault.tsx
 msgid "The value of a choice; several separated by semicolons."
@@ -9652,6 +10371,24 @@ msgstr "the variables"
 #: src/about/AboutPage.tsx
 msgid "The version and the licence texts could not be loaded."
 msgstr "The version and the licence texts could not be loaded."
+
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "The WDS boot menu offers DDT now, and gets each new boot image when it is built."
+msgstr "The WDS boot menu offers DDT now, and gets each new boot image when it is built."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.noAdk"
+msgid "The Windows ADK with its Windows PE add-on is not installed on this server. Install it first."
+msgstr "The Windows ADK with its Windows PE add-on is not installed on this server. Install it first."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.oldAdk"
+msgid "The Windows PE add-on on this server is {version}, and the boot image needs {oldest} or later."
+msgstr "The Windows PE add-on on this server is {version}, and the boot image needs {oldest} or later."
+
+#: src/boot/AdkState.tsx
+msgid "The Windows PE add-on on this server is {version}, which is older than the boot image needs. Remove it and the Windows ADK under Windows's installed apps, then install them from here."
+msgstr "The Windows PE add-on on this server is {version}, which is older than the boot image needs. Remove it and the Windows ADK under Windows's installed apps, then install them from here."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.machines.networkHoldsProxy"
@@ -9713,6 +10450,10 @@ msgstr "There is an account named {name} already."
 #: src/runs/decisions.ts
 msgid "There was no value."
 msgstr "There was no value."
+
+#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
+msgid "These options decide what every machine in the scope loads when it netboots, so setting them needs your password again."
+msgstr "These options decide what every machine in the scope loads when it netboots, so setting them needs your password again."
 
 #: src/settings/certificate/ServerNames.tsx
 #: src/settings/LoggingPanel.tsx
@@ -9789,6 +10530,11 @@ msgctxt "settings.certificate.newRootUpload"
 msgid "This certificate does not come from DDT's root, which every boot image pins: build every boot image again with its root, and trust that root in the browsers that manage DDT."
 msgstr "This certificate does not come from DDT's root, which every boot image pins: build every boot image again with its root, and trust that root in the browsers that manage DDT."
 
+#: src/settings/networkBoot/neighbours/DhcpHere.tsx
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "This changes what every machine that netboots from this server loads, so it needs your password again."
+msgstr "This changes what every machine that netboots from this server loads, so it needs your password again."
+
 #: src/lib/serverMessages.ts
 msgctxt "upload.beyondLength"
 msgid "This chunk ends past the end of the file. Upload the file this session was created for."
@@ -9855,6 +10601,11 @@ msgstr "This is a {format} disk image, which DDT does not read. Convert it with 
 msgctxt "upload.noQemuImg"
 msgid "This is a qcow2 image, and qemu-img is not installed on the server. Install qemu-img there and complete the upload again, or convert the file with qemu-img convert -O raw <file> disk.raw and upload disk.raw."
 msgstr "This is a qcow2 image, and qemu-img is not installed on the server. Install qemu-img there and complete the upload again, or convert the file with qemu-img convert -O raw <file> disk.raw and upload disk.raw."
+
+#: src/lib/serverMessages.ts
+msgctxt "iso.noWindowsImage"
+msgid "This ISO holds no sources\\install.wim or install.esd, so it is no Windows installation medium."
+msgstr "This ISO holds no sources\\install.wim or install.esd, so it is no Windows installation medium."
 
 #: src/lib/serverMessages.ts
 msgctxt "deployment.alreadyHasRun"
@@ -9932,6 +10683,28 @@ msgstr "This sequence was deleted"
 #: src/sequences/useSequenceEditor.ts
 msgid "This sequence was deleted, so nothing more is saved."
 msgstr "This sequence was deleted, so nothing more is saved."
+
+#: src/settings/AgentPanel.tsx
+msgid "This server came with agent {version}, which is newer than the uploaded one. Remove the upload, and machines run the server's own."
+msgstr "This server came with agent {version}, which is newer than the uploaded one. Remove the upload, and machines run the server's own."
+
+#: src/settings/ConsolePanel.tsx
+msgid "This server came with console {version}, which is newer than the uploaded one. Remove the upload, and machines show the server's own."
+msgstr "This server came with console {version}, which is newer than the uploaded one. Remove the upload, and machines show the server's own."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.noBuilder"
+msgid "This server came without the build script or the agent, so it has no builder to hand out. A release has both."
+msgstr "This server came without the build script or the agent, so it has no builder to hand out. A release has both."
+
+#: src/lib/serverMessages.ts
+msgctxt "bootImage.noHelper"
+msgid "This server cannot build the boot image itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up. On another server, build with Build-BootImage.ps1 on a Windows PC."
+msgstr "This server cannot build the boot image itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up. On another server, build with Build-BootImage.ps1 on a Windows PC."
+
+#: src/boot/BuildCommand.tsx
+msgid "This server cannot build the image itself, which takes the DDT Helper service that DDT's installer for Windows sets up. Run this in an elevated PowerShell on a Windows PC with the Windows ADK, from a copy of DDT's repository. It writes boot.wim and the boot files into the destination, which the boot directory has to hold; machines netboot with the new image at once."
+msgstr "This server cannot build the image itself, which takes the DDT Helper service that DDT's installer for Windows sets up. Run this in an elevated PowerShell on a Windows PC with the Windows ADK, from a copy of DDT's repository. It writes boot.wim and the boot files into the destination, which the boot directory has to hold; machines netboot with the new image at once."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.keyRingUnreadable"
@@ -10076,6 +10849,10 @@ msgstr "TPM version"
 msgid "Tries the values above as they are, before you save them. With a user name and password, DDT also signs that user in, without starting a session, and shows their groups and the role they would get. A wrong password counts towards the account's lockout."
 msgstr "Tries the values above as they are, before you save them. With a user name and password, DDT also signs that user in, without starting a session, and shows their groups and the role they would get. A wrong password counts towards the account's lockout."
 
+#: src/setup/SetupChecklist.tsx
+msgid "Trust <0>DDT's root certificate</0> in the browsers that manage it, so they stop warning about this address."
+msgstr "Trust <0>DDT's root certificate</0> in the browsers that manage it, so they stop warning about this address."
+
 #: src/app/RouteError.tsx
 msgid "Try again"
 msgstr "Try again"
@@ -10083,6 +10860,10 @@ msgstr "Try again"
 #: src/sequences/SaveState.tsx
 msgid "Try now"
 msgstr "Try now"
+
+#: src/boot/keyboardLayouts.ts
+msgid "Turkish Q"
+msgstr "Turkish Q"
 
 #: src/settings/networkBoot/TransfersGroup.tsx
 msgid "Turn it off only when another TFTP server serves them. Every TFTP boot target then needs that server's address."
@@ -10132,6 +10913,18 @@ msgstr "Type {typedWord} to go on"
 #: src/users/directory/MappedGroupSearch.tsx
 msgid "Type part of a group's name to see its distinguished name for the map."
 msgstr "Type part of a group's name to see its distinguished name for the map."
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "UDP 4011, PXE boot server"
+msgstr "UDP 4011, PXE boot server"
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "UDP 67, DHCP and ProxyDHCP"
+msgstr "UDP 67, DHCP and ProxyDHCP"
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "UDP 69, TFTP"
+msgstr "UDP 69, TFTP"
 
 #: src/sequences/builder/page/editHandlers.ts
 #: src/sequences/builder/page/UndoRedo.tsx
@@ -10304,6 +11097,14 @@ msgstr "Use a recovery code"
 msgid "Use an authenticator code"
 msgstr "Use an authenticator code"
 
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Use DDT in place of WDS"
+msgstr "Use DDT in place of WDS"
+
+#: src/settings/networkBoot/neighbours/WdsChoices.tsx
+msgid "Use DDT in place of WDS?"
+msgstr "Use DDT in place of WDS?"
+
 #: src/settings/networkBoot/TargetMethod.tsx
 msgid "Use HTTP"
 msgstr "Use HTTP"
@@ -10452,6 +11253,7 @@ msgid "Variables and inputs of this sequence"
 msgstr "Variables and inputs of this sequence"
 
 #: src/images/ImageFacts.tsx
+#: src/settings/agent/CurrentBinary.tsx
 msgid "Version"
 msgstr "Version"
 
@@ -10531,6 +11333,14 @@ msgstr "Was served the certificate before; its next request gets this one."
 msgid "Was served this certificate."
 msgstr "Was served this certificate."
 
+#: src/audit/auditView.ts
+msgid "WDS started again"
+msgstr "WDS started again"
+
+#: src/audit/auditView.ts
+msgid "WDS stopped for DDT"
+msgstr "WDS stopped for DDT"
+
 #: src/audit/AuditFilters.tsx
 #: src/audit/AuditTable.tsx
 msgid "What"
@@ -10604,6 +11414,10 @@ msgstr "Where it applies"
 msgid "Where new computer accounts go. Left empty, the domain's default."
 msgstr "Where new computer accounts go. Left empty, the domain's default."
 
+#: src/settings/networkBoot/neighbours/DhcpOptions.tsx
+msgid "Where ProxyDHCP does not reach the machines, such as across a router, the DHCP server sends them to DDT with these two options."
+msgstr "Where ProxyDHCP does not reach the machines, such as across a router, the DHCP server sends them to DDT with these two options."
+
 #: src/log/LogPanel.tsx
 msgid "Which lines"
 msgstr "Which lines"
@@ -10633,6 +11447,26 @@ msgstr "Whole numbers, separated by commas."
 #: src/sequences/steps.ts
 msgid "Windows"
 msgstr "Windows"
+
+#: src/audit/auditView.ts
+msgid "Windows ADK install started"
+msgstr "Windows ADK install started"
+
+#: src/boot/AdkState.tsx
+msgid "Windows ADK with the Windows PE add-on {version}"
+msgstr "Windows ADK with the Windows PE add-on {version}"
+
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "Windows Deployment Services ({process}, process {id})"
+msgstr "Windows Deployment Services ({process}, process {id})"
+
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Windows Deployment Services is installed on this computer and stopped, so DDT answers netboot here. Before WDS starts again, switch off ProxyDHCP and TFTP above."
+msgstr "Windows Deployment Services is installed on this computer and stopped, so DDT answers netboot here. Before WDS starts again, switch off ProxyDHCP and TFTP above."
+
+#: src/settings/networkBoot/neighbours/WdsState.tsx
+msgid "Windows Deployment Services runs on this computer and holds UDP 69 and 4011, so machines that netboot reach WDS and not DDT. In its boot menu DDT sits next to MDT's LiteTouch and needs neither ProxyDHCP nor TFTP of its own."
+msgstr "Windows Deployment Services runs on this computer and holds UDP 69 and 4011, so machines that netboot reach WDS and not DDT. In its boot menu DDT sits next to MDT's LiteTouch and needs neither ProxyDHCP nor TFTP of its own."
 
 #: src/images/images.ts
 msgid "Windows image"
@@ -10684,6 +11518,10 @@ msgstr "With a stored account"
 #: src/accounts/drawer/AccountFields.tsx
 msgid "With its domain, as DOMAIN\\user or user@corp.example."
 msgstr "With its domain, as DOMAIN\\user or user@corp.example."
+
+#: src/boot/BuildPanel.tsx
+msgid "With PowerShell, for steps that run a script in Windows PE"
+msgstr "With PowerShell, for steps that run a script in Windows PE"
 
 #: src/sequences/builder/nodeDetail.ts
 msgid "With the join account of the deployment defaults"

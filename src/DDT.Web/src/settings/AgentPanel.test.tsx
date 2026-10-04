@@ -164,6 +164,67 @@ describe("AgentPanel", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("shows the agent the server came with, its version, and nothing to remove", async () => {
+    serveServer(
+      {
+        "GET /api/settings/agent": () =>
+          json(agentView({ sha256, size: 11_534_336, source: "Bundled", version: "0.4.0" })),
+      },
+      { tab: "agent" },
+    );
+
+    expect(
+      await screen.findByText("The agent this server came with, since none was uploaded"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("0.4.0")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Remove the uploaded agent" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("says that the server's own agent is newer, and removes the upload without reading it again", async () => {
+    const { requests } = serveServer(
+      {
+        "GET /api/settings/agent": () =>
+          json(
+            agentView({
+              sha256,
+              size: 11_534_336,
+              uploadedUtc: new Date().toISOString(),
+              uploadedBy: "admin",
+              source: "Uploaded",
+              version: "0.3.5",
+              newerBundledVersion: "0.4.0",
+            }),
+          ),
+        "DELETE /api/settings/agent/binary": () =>
+          json(agentView({ sha256, size: 11_534_336, source: "Bundled", version: "0.4.0" })),
+      },
+      { tab: "agent" },
+    );
+
+    expect(
+      await screen.findByText(
+        "This server came with agent 0.4.0, which is newer than the uploaded one. Remove the upload, and machines run the server's own.",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove the uploaded agent" }));
+    const confirm = await screen.findByRole("dialog", { name: "Remove the uploaded agent?" });
+    fireEvent.click(within(confirm).getByRole("button", { name: "Remove the uploaded agent" }));
+
+    expect(
+      await screen.findByText("The agent this server came with, since none was uploaded"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Removed. Machines that netboot from now on no longer get that agent."),
+    ).toBeInTheDocument();
+    expect(sent(requests, "DELETE", "/api/settings/agent/binary")).toHaveLength(1);
+    expect(reads(requests, "/api/settings/agent")).toBe(1);
+
+    await expectAccessible();
+  });
+
   it("refuses an empty file without sending it", async () => {
     const { requests } = serveServer(
       { "GET /api/settings/agent": () => json(agentView()) },

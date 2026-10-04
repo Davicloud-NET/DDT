@@ -5,4 +5,13 @@
 namespace DDT.Contracts.Settings;
 
 // The agent that netbooting machines switch to. The values are null when there's none. An upload returns it too.
-public sealed record AgentBinaryView(string? Sha256, long? Size, DateTimeOffset? UploadedUtc, string? UploadedBy, AgentBinarySource Source);
+// Version is the file version, where the file has one. NewerBundledVersion is set while an upload is offered and the
+// server came with a newer one, which removing the upload brings back.
+public sealed record AgentBinaryView(
+    string? Sha256,
+    long? Size,
+    DateTimeOffset? UploadedUtc,
+    string? UploadedBy,
+    AgentBinarySource Source,
+    string? Version = null,
+    string? NewerBundledVersion = null);

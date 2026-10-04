@@ -120,6 +120,40 @@ public sealed class PxeSetupTests
     }
 
     [Fact]
+    public void WithoutABootTargetX64UefiMachinesGetTheBootManagerOverTftp()
+    {
+        PxeSetup setup = PxeSetup.Create(new PxeOptions(), Loopback.Map());
+
+        BootTarget target = Assert.Single(setup.ProxyDhcp.BootTargets).Value;
+        Assert.Equal(ClientArchitecture.X64Uefi, target.Architecture);
+        Assert.Equal(BootMethod.Tftp, target.Method);
+        Assert.Equal("x64/bootmgfw.efi", target.BootFile);
+        Assert.Null(target.ServerAddress);
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void TheDefaultBootTargetNeedsProxyDhcpAndTftp(bool proxyDhcp, bool tftp)
+    {
+        PxeOptions options = new() { EnableProxyDhcp = proxyDhcp, EnableTftp = tftp };
+
+        Assert.Empty(PxeSetup.FindProblems(options));
+        Assert.Empty(PxeSetup.Create(options, Loopback.Map()).ProxyDhcp.BootTargets);
+    }
+
+    [Fact]
+    public void AConfiguredBootTargetLeavesTheDefaultOut()
+    {
+        PxeOptions options = new()
+        {
+            BootTargets = { ["X64UefiHttp"] = new BootTargetOptions { Method = "Http", BootFile = "http://192.0.2.10:8080/boot/x64/bootmgfw.efi" } },
+        };
+
+        Assert.Equal([ClientArchitecture.X64UefiHttp], PxeSetup.Create(options, Loopback.Map()).ProxyDhcp.BootTargets.Keys);
+    }
+
+    [Fact]
     public void ReportsEveryFailureAtOnce()
     {
         PxeOptions options = new()

@@ -34,8 +34,8 @@ public static class SettingsConsoleLogoEndpoints
     private static async Task<Ok<ConsoleLogoView>> ReadAsync(ConsoleLogos logos, CancellationToken cancellationToken) =>
         TypedResults.Ok(await logos.ViewAsync(cancellationToken).ConfigureAwait(false));
 
-    private static Results<PhysicalFileHttpResult, NotFound> ReadImage(ConsoleLogoStore logos) =>
-        File.Exists(logos.Path) ? TypedResults.PhysicalFile(logos.Path, "image/png") : TypedResults.NotFound();
+    private static Results<FileStreamHttpResult, NotFound> ReadImage(ConsoleLogoStore logos) =>
+        logos.Open() is { } logo ? TypedResults.File(logo, "image/png") : TypedResults.NotFound();
 
     private static async Task<IResult> UploadAsync(HttpContext context, ConsoleLogos logos, CancellationToken cancellationToken)
     {

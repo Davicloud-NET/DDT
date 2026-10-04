@@ -18,6 +18,7 @@ public static class MachineServiceCollectionExtensions
 
         services.AddOptions<AgentReleaseOptions>().BindConfiguration(AgentReleaseOptions.SectionName);
         services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton(new BundledReleases(AppContext.BaseDirectory));
         services.AddSingleton<AgentReleaseStore>();
         services.AddSingleton<ConsoleReleaseStore>();
         services.AddSingleton<ConsoleLogoStore>();

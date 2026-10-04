@@ -6,8 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace DDT.Pxe;
 
-// Resolves the name a client asks for to a file in the boot directory, or refuses. TFTP and HTTP boot share it, so
-// neither serves what the other refuses. Each segment must match an entry in the directory, so "..", an 8.3 name, a
+// Resolves the name a client asks for to a file of the build that is served, or refuses. TFTP and HTTP boot share it,
+// so neither serves what the other refuses. Each segment must match an entry in the directory, so "..", an 8.3 name, a
 // stream or a device name can never alias a file or leave the root.
 public sealed class BootFileResolver
 {
@@ -22,7 +22,11 @@ public sealed class BootFileResolver
         _root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(bootDirectory));
     }
 
+    // The boot directory
     public string Root => _root;
+
+    // The folder of the current build, or the boot directory itself where it holds the files
+    public string Serving => BootBuilds.Serving(_root);
 
     public bool TryResolve(string requested, [NotNullWhen(true)] out FileInfo? file)
     {
@@ -39,7 +43,7 @@ public sealed class BootFileResolver
 
         try
         {
-            DirectoryInfo directory = new(_root);
+            DirectoryInfo directory = new(Serving);
 
             if (!directory.Exists)
             {

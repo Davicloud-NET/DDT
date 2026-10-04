@@ -33,6 +33,9 @@ public static class LiveEvents
     // Carries a BootImageView whenever the drivers flagged for the boot image or the build in the boot directory change.
     public const string BootImageChanged = "bootImageChanged";
 
+    // Carries a BootImageJobOutput: the lines a build or an ADK install wrote since the last push.
+    public const string BootImageJobOutput = "bootImageJobOutput";
+
     // Carries every rule, top first, the same as GET /api/rules returns. Rules are few, and one change can move
     // several, rename a sequence they choose, or change what they test or how many machines they match.
     public const string RulesChanged = "rulesChanged";
@@ -70,6 +73,9 @@ public static class LiveEvents
     // Carries every PXE host's candidate interfaces, the same as GET /api/settings/pxe/interfaces returns, when a host
     // applied the pxe section and reported what it found. Goes to administrators.
     public const string PxeInterfacesChanged = "pxeInterfacesChanged";
+
+    // Carries an ImportStatus to administrators: how far an import from the server's disks is, and what it added.
+    public const string ImportChanged = "importChanged";
 
     // Carries the AgentBinaryView, the same as GET /api/settings/agent returns, when an agent was uploaded. Goes to
     // administrators.

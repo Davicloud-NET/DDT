@@ -30,6 +30,10 @@ closure, grouped here by the project they come from.
 `/app/legal` holds LICENSE, NOTICE, this file and `licenses/`. The server serves them without
 sign-in at `/api/about/legal/<path>`, for example `/api/about/legal/LICENSE`.
 
+A release's `/app` also holds `ddt-agent.exe` and `ddt-console.zip`, which the server hands to the
+machines it deploys. They're described in their own sections below, and their licence texts are in
+the same `legal` folder.
+
 ### Microsoft libraries
 
 MIT licence, text in [licenses/dotnet/LICENSE.TXT](licenses/dotnet/LICENSE.TXT). The packages give
@@ -41,14 +45,25 @@ Contributors, with the same permission text.
   [licenses/aspnetcore/THIRD-PARTY-NOTICES.TXT](licenses/aspnetcore/THIRD-PARTY-NOTICES.TXT),
   the notices file both packages carry, taken from version 10.0.12.
 - .NET runtime libraries: `System.DirectoryServices.Protocols`,
-  `System.Security.Cryptography.Pkcs`, `Microsoft.Bcl.Cryptography` and
-  `Microsoft.Extensions.DependencyModel`. The code by others in them is listed in
+  `System.Security.Cryptography.Pkcs`, `Microsoft.Bcl.Cryptography`,
+  `Microsoft.Extensions.DependencyModel`, `Microsoft.Extensions.Hosting.WindowsServices` and
+  `System.ServiceProcess.ServiceController`. The code by others in them is listed in
   [licenses/dotnet/THIRD-PARTY-NOTICES.TXT](licenses/dotnet/THIRD-PARTY-NOTICES.TXT), the
-  notices file of the .NET runtime, which all four packages carry. For
+  notices file of the .NET runtime, which all six packages carry. For
   `System.DirectoryServices.Protocols` it includes the notice for ldap4net.
 - Entity Framework Core: `Microsoft.EntityFrameworkCore`,
   `Microsoft.EntityFrameworkCore.Abstractions`, `Microsoft.EntityFrameworkCore.Relational`,
-  `Microsoft.EntityFrameworkCore.Sqlite.Core` and `Microsoft.Data.Sqlite.Core`.
+  `Microsoft.EntityFrameworkCore.Sqlite.Core`, `Microsoft.Data.Sqlite.Core` and
+  `Microsoft.EntityFrameworkCore.SqlServer`.
+- The SQL Server client: `Microsoft.Data.SqlClient` and `Microsoft.SqlServer.Server`; the libraries
+  it signs in to Microsoft Entra ID with, `Azure.Core`, `Azure.Identity`, `System.ClientModel`,
+  `Microsoft.Identity.Client`, `Microsoft.Identity.Client.Broker` and
+  `Microsoft.Identity.Client.Extensions.Msal`; and the .NET runtime libraries it brings,
+  `Microsoft.Bcl.AsyncInterfaces`, `System.Configuration.ConfigurationManager`,
+  `System.Memory.Data` and `System.Security.Cryptography.ProtectedData`. The client's network
+  library for Windows has a section of its own below. The Entra ID broker's native library
+  (`Microsoft.Identity.Client.NativeInterop`) is under a Microsoft licence that is not a free
+  software licence, and DDT does not ship it.
 - .NET extensions: `Microsoft.Extensions.AmbientMetadata.Application`,
   `Microsoft.Extensions.Compliance.Abstractions`,
   `Microsoft.Extensions.DependencyInjection.AutoActivation`,
@@ -61,6 +76,17 @@ Contributors, with the same permission text.
   `Microsoft.IdentityModel.Logging`, `Microsoft.IdentityModel.Protocols`,
   `Microsoft.IdentityModel.Protocols.OpenIdConnect`, `Microsoft.IdentityModel.Tokens` and
   `System.IdentityModel.Tokens.Jwt`.
+
+### Microsoft.Data.SqlClient.SNI
+
+On Windows the server carries `Microsoft.Data.SqlClient.SNI.dll`, from the package
+`Microsoft.Data.SqlClient.SNI.runtime` 6.0.2, Copyright Microsoft Corporation. The SQL Server
+client loads it to reach SQL Server, and only where SQL Server is the database. Microsoft
+publishes it in object code only, under the Microsoft Software License Terms in
+[licenses/sqlclient-sni/LICENSE.txt](licenses/sqlclient-sni/LICENSE.txt), which allow passing it on
+inside an application and not on its own. It is not free software and not under the GPL: NOTICE
+grants an additional permission under section 7 for combining DDT with it. The container image does
+not carry it, because on Linux the client uses its own managed networking.
 
 ### Npgsql
 
@@ -97,6 +123,14 @@ port of Zstandard 1.5.7 to C#, Copyright (c) Meta Platforms, Inc. and affiliates
 under the BSD licence or the GNU General Public License, version 2; DDT uses it under the BSD
 licence in [licenses/zstd/LICENSE](licenses/zstd/LICENSE). The server compresses raw disk images
 with it.
+
+### DiscUtils
+
+`DiscUtils.Udf`, `DiscUtils.Iso9660`, `DiscUtils.Core` and `DiscUtils.Streams`, Copyright (c)
+2008-2011, Kenneth Bell and Copyright (c) 2014, Quamotion, under the MIT licence. Text:
+[licenses/discutils/LICENSE.txt](licenses/discutils/LICENSE.txt), taken from the DiscUtils
+repository at commit `59d7cadab839c6d8dfcf52f8be5efe6d2ced190f`, which version 0.16.13 was built
+from, because the packages carry none. The server reads a Windows image out of an ISO with them.
 
 ### SQLitePCLRaw and SQLite
 
@@ -322,3 +356,30 @@ source comes from Ubuntu (`apt-get source <package>`, or https://launchpad.net/u
 Microsoft (https://github.com/dotnet/dotnet, with the image definition at
 https://github.com/dotnet/dotnet-docker). Distributing the image distributes these packages too,
 under their own licences.
+
+## The Windows installer, `DDT.msi`
+
+`build/Build-Installer.ps1` publishes the server self-contained for win-x64 and packs it into
+`DDT.msi` with the WiX Toolset. The MSI installs the same server as `/app`, with its `legal`
+folder, so everything listed for the server and the web UI bundle applies to it too. It installs the
+agent and the console next to it as well, and `Build-BootImage.ps1` with its module, which are
+DDT's own.
+
+Because it's self-contained, it also carries the .NET runtime and the ASP.NET Core shared framework,
+which the container gets from its base image instead. Both are under the MIT licence in
+[licenses/dotnet/LICENSE.TXT](licenses/dotnet/LICENSE.TXT). The code by others in them is listed in
+[licenses/dotnet/THIRD-PARTY-NOTICES.TXT](licenses/dotnet/THIRD-PARTY-NOTICES.TXT) and
+[licenses/aspnetcore/THIRD-PARTY-NOTICES.TXT](licenses/aspnetcore/THIRD-PARTY-NOTICES.TXT).
+
+The MSI also holds parts of the WiX Toolset 7.0.0, Copyright (c) .NET Foundation and contributors,
+under the Microsoft Reciprocal License in [licenses/wix/LICENSE.TXT](licenses/wix/LICENSE.TXT): the
+custom actions of its Util, Firewall and UI extensions, which Windows Installer runs during setup,
+and the dialogs and pictures of its setup UI. They're programs of their own, not part of DDT, and
+the MSI doesn't install them. Their source is at https://github.com/wixtoolset/wix, tag `v7.0.0`.
+DDT's own setup checks, from `build/Installer/CustomActions`, carry WiX's
+`WixToolset.Dtf.WindowsInstaller` in the same way.
+
+Setup can also fetch Microsoft's Windows ADK with its Windows PE add-on, and URL Rewrite and
+Application Request Routing for IIS, when the administrator ticks them or asks `install.ps1` for
+them. Neither the MSI nor a release carries any of these. They come from Microsoft's own download
+servers onto the server being set up, under Microsoft's licence terms.

@@ -15,6 +15,7 @@ import { Panel } from "@/ui/Panel";
 import type { AgentBinaryView } from "../agentBinary";
 
 import type { Binary } from "./binary";
+import { UploadRemoval } from "./UploadRemoval";
 
 export function CurrentBinary({ binary, view }: { binary: Binary; view: AgentBinaryView }) {
   const now = useNow(60_000);
@@ -35,6 +36,9 @@ export function CurrentBinary({ binary, view }: { binary: Binary; view: AgentBin
       <Facts
         items={[
           { label: binary.runsLabel, value: binary.runs[view.source] },
+          ...(view.version === null
+            ? []
+            : [{ label: <Trans>Version</Trans>, value: view.version }]),
           ...(sha256 === null ? [] : [{ label: binary.hashLabel, value: sha256, mono: true }]),
           ...(view.size === null
             ? []
@@ -62,6 +66,7 @@ export function CurrentBinary({ binary, view }: { binary: Binary; view: AgentBin
           </Trans>
         </p>
       )}
+      <UploadRemoval binary={binary} view={view} />
     </Panel>
   );
 }

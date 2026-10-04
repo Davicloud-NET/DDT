@@ -183,6 +183,8 @@ export function agentView(overrides: Partial<AgentBinaryView> = {}): AgentBinary
     uploadedUtc: null,
     uploadedBy: null,
     source: "None",
+    version: null,
+    newerBundledVersion: null,
     ...overrides,
   };
 }
@@ -200,6 +202,7 @@ export function serveServer(
     handlers: {
       "GET /api/settings": () => json(overview()),
       "GET /api/settings/agent/console": () => json(agentView()),
+      "GET /api/server/logs": () => json([]),
       ...handlers,
     },
   });

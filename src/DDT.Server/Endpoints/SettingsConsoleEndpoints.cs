@@ -25,12 +25,22 @@ public static class SettingsConsoleEndpoints
 
         group.MapGet("/agent/console", ReadConsoleAsync).RequireAuthorization(DdtPolicies.Administrator);
         group.MapPut("/agent/console", UploadConsoleAsync).RequireAuthorization(DdtPolicies.Administrator);
+        group.MapDelete("/agent/console", RemoveConsoleAsync).RequireAuthorization(DdtPolicies.Administrator);
 
         return group;
     }
 
     private static async Task<Ok<AgentBinaryView>> ReadConsoleAsync(ReleaseUploads uploads, CancellationToken cancellationToken) =>
         TypedResults.Ok(await uploads.ConsoleAsync(cancellationToken).ConfigureAwait(false));
+
+    // 404 when no console was uploaded.
+    private static async Task<Results<Ok<AgentBinaryView>, NotFound>> RemoveConsoleAsync(
+        [AsParameters] SettingsCaller caller,
+        ReleaseUploads uploads,
+        CancellationToken cancellationToken) =>
+        await uploads.RemoveConsoleAsync(caller.Actor, cancellationToken).ConfigureAwait(false) is { } view
+            ? TypedResults.Ok(view)
+            : TypedResults.NotFound();
 
     private static async Task<IResult> UploadConsoleAsync(
         [AsParameters] SettingsCaller caller,

@@ -25,12 +25,23 @@ public static class SettingsAgentEndpoints
 
         group.MapGet("/agent", ReadAgentAsync).RequireAuthorization(DdtPolicies.Administrator);
         group.MapPut("/agent/binary", UploadAgentAsync).RequireAuthorization(DdtPolicies.Administrator);
+        group.MapDelete("/agent/binary", RemoveAgentAsync).RequireAuthorization(DdtPolicies.Administrator);
 
         return group;
     }
 
     private static async Task<Ok<AgentBinaryView>> ReadAgentAsync(ReleaseUploads uploads, CancellationToken cancellationToken) =>
         TypedResults.Ok(await uploads.AgentAsync(cancellationToken).ConfigureAwait(false));
+
+    // No fresh proof of identity: it only takes machines back to the agent the server came with, or their boot image's.
+    // 404 when no agent was uploaded.
+    private static async Task<Results<Ok<AgentBinaryView>, NotFound>> RemoveAgentAsync(
+        [AsParameters] SettingsCaller caller,
+        ReleaseUploads uploads,
+        CancellationToken cancellationToken) =>
+        await uploads.RemoveAgentAsync(caller.Actor, cancellationToken).ConfigureAwait(false) is { } view
+            ? TypedResults.Ok(view)
+            : TypedResults.NotFound();
 
     private static async Task<IResult> UploadAgentAsync(
         [AsParameters] SettingsCaller caller,

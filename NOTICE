@@ -29,16 +29,31 @@ are part of the licence of this material, and anyone who conveys it must pass th
    Appropriate Legal Notices that it is modified, by whom and when.
 
 
-Additional permission under section 7 of the GNU General Public License, version 3
+Additional permissions under section 7 of the GNU General Public License, version 3
 
-DDT's console at the machine, ddt-console.exe, is built from src/DDT.MachineConsole and
-src/DDT.ConsoleProtocol with Avalonia, which contains code under the Microsoft Public License. For
-that console:
+1. Avalonia. DDT's console at the machine, ddt-console.exe, is built from src/DDT.MachineConsole
+   and src/DDT.ConsoleProtocol with Avalonia, which contains code under the Microsoft Public
+   License. For that console:
 
-If you modify this Program, or any covered work, by linking or combining it with Avalonia (or a
-modified version of that library), containing parts covered by the terms of the Microsoft Public
-License, the licensors of this Program grant you additional permission to convey the resulting
-work.
+   If you modify this Program, or any covered work, by linking or combining it with Avalonia (or a
+   modified version of that library), containing parts covered by the terms of the Microsoft Public
+   License, the licensors of this Program grant you additional permission to convey the resulting
+   work.
 
-As section 7 provides, anyone who conveys a copy of this material may remove this permission from
+2. Microsoft.Data.SqlClient.SNI. The DDT server can keep its database on Microsoft SQL Server. On
+   Windows it reaches SQL Server through Microsoft's network library Microsoft.Data.SqlClient.SNI.dll,
+   which Microsoft publishes in object code only, under the Microsoft Software License Terms in
+   licenses/sqlclient-sni/LICENSE.txt. For that library:
+
+   If you modify this Program, or any covered work, by linking or combining it with
+   Microsoft.Data.SqlClient.SNI.dll (or another version of that library that Microsoft publishes),
+   which is covered by the Microsoft Software License Terms named above, the licensors of this
+   Program grant you additional permission to convey the resulting work. The Corresponding Source
+   of such a work need not include source code for that library.
+
+   The library is not part of DDT and is not licensed under the GNU General Public License. Its
+   use and distribution stay subject to Microsoft's terms, which anyone who conveys it with DDT
+   must comply with and pass on.
+
+As section 7 provides, anyone who conveys a copy of this material may remove these permissions from
 that copy.

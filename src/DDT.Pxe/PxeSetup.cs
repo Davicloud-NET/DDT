@@ -20,6 +20,9 @@ namespace DDT.Pxe;
 // sitting silently at a blank screen is refused here, by name, before a socket is bound.
 public sealed class PxeSetup
 {
+    // The boot manager signed by the Microsoft 2011 CA, which a boot image build puts there
+    public const string DefaultBootFile = "x64/bootmgfw.efi";
+
     private const int MaxServerHostNameLength = 63;
     private const int MaxBootFileLength = 255;
     private const int MaxWindowSize = 64;
@@ -142,16 +145,7 @@ public sealed class PxeSetup
         PxeOptions options,
         List<SettingProblem> problems)
     {
-        Dictionary<ClientArchitecture, BootTarget> targets = [];
-
-        foreach ((string key, BootTargetOptions target) in options.BootTargets)
-        {
-            if (TryReadTarget(key, target, problems) is { } parsed)
-            {
-                targets[parsed.Architecture] = parsed;
-            }
-        }
-
+        Dictionary<ClientArchitecture, BootTarget> targets = ReadTargets(options, problems);
         ImmutableArray<IPAddress>.Builder relays = ImmutableArray.CreateBuilder<IPAddress>();
 
         foreach (string relay in options.AuthorisedRelayAgents.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -195,6 +189,32 @@ public sealed class PxeSetup
         }
 
         return (targets, relays.ToImmutable());
+    }
+
+    private static Dictionary<ClientArchitecture, BootTarget> ReadTargets(PxeOptions options, List<SettingProblem> problems)
+    {
+        Dictionary<ClientArchitecture, BootTarget> targets = [];
+
+        foreach ((string key, BootTargetOptions target) in options.BootTargets)
+        {
+            if (TryReadTarget(key, target, problems) is { } parsed)
+            {
+                targets[parsed.Architecture] = parsed;
+            }
+        }
+
+        // A new server boots machines without a visit to the settings. Without TFTP, nothing here would serve the file.
+        if (options.BootTargets.Count == 0 && options.EnableProxyDhcp && options.EnableTftp)
+        {
+            targets[ClientArchitecture.X64Uefi] = new BootTarget
+            {
+                Architecture = ClientArchitecture.X64Uefi,
+                Method = BootMethod.Tftp,
+                BootFile = DefaultBootFile,
+            };
+        }
+
+        return targets;
     }
 
     private static BootTarget? TryReadTarget(string key, BootTargetOptions target, List<SettingProblem> problems)

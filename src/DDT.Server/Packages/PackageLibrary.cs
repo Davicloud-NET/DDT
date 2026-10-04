@@ -22,7 +22,7 @@ namespace DDT.Server.Packages;
 internal sealed class PackageLibrary(
     DdtDbContext database,
     ImageStore store,
-    BootImageCatalog bootImage,
+    BootImageViews bootImage,
     LiveNotifier live,
     TimeProvider timeProvider)
 {

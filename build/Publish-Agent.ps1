@@ -17,7 +17,12 @@ This needs the Visual C++ build tools. Pass the result to Build-BootImage.ps1 wi
 #>
 [CmdletBinding()]
 param(
-    [string] $Output
+    [string] $Output,
+
+    # As 26.1.412. Without it, the build counts the version itself, as Get-Version.ps1 does. A release gives the agent
+    # and console the server's version, so the server can tell which is newer.
+    [ValidatePattern('^(\d{1,3}\.\d{1,3}\.\d{1,5})?$')]
+    [string] $Version
 )
 
 Set-StrictMode -Version Latest
@@ -37,7 +42,10 @@ if (Test-Path -LiteralPath (Join-Path $installer 'vswhere.exe')) {
     $env:PATH = "$installer;$env:PATH"
 }
 
-& dotnet publish $project --configuration Release --output $Output
+$arguments = @('publish', $project, '--configuration', 'Release', '--output', $Output)
+if ($Version) { $arguments += "-p:Version=$Version" }
+
+& dotnet @arguments
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed with exit code $LASTEXITCODE."
 }

@@ -5,6 +5,7 @@
 using System.Data.Common;
 using DDT.Contracts.Settings;
 using DDT.Pxe;
+using DDT.Server.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
@@ -103,26 +104,33 @@ public static class ServerSettings
     {
         const string Key = "ConnectionStrings:ddtdb";
         string? connection = configuration[Key];
+        DatabaseProvider provider = DatabaseProviders.Choose(configuration["DDT:Database"], connection);
 
-        if (string.IsNullOrWhiteSpace(connection))
+        if (provider == DatabaseProvider.Sqlite)
         {
-            return new ServerSetting(Key, "SQLite in DDT:StorePath, for development only", false, null, true);
+            return new ServerSetting(Key, $"SQLite, {SqliteStore.FileName} in DDT:StorePath", false, null, true);
         }
+
+        string name = provider == DatabaseProvider.SqlServer ? "SQL Server" : "PostgreSQL";
+        string? source = ConfigurationSources.Describe(configuration, Key);
 
         try
         {
             DbConnectionStringBuilder builder = new() { ConnectionString = connection };
-            string host = builder.TryGetValue("Host", out object? h) ? $"{h}" : builder.TryGetValue("Server", out object? s) ? $"{s}" : "?";
-            string port = builder.TryGetValue("Port", out object? p) ? $":{p}" : string.Empty;
-            string database = builder.TryGetValue("Database", out object? d) ? $"{d}" : "?";
+            string host = Part(builder, "Host", "Server", "Data Source") ?? "?";
+            string port = Part(builder, "Port") is { } number ? $":{number}" : string.Empty;
+            string database = Part(builder, "Database", "Initial Catalog") ?? "?";
 
-            return new ServerSetting(Key, $"PostgreSQL, host {host}{port}, database {database}", true, ConfigurationSources.Describe(configuration, Key), true);
+            return new ServerSetting(Key, $"{name}, host {host}{port}, database {database}", true, source, true);
         }
         catch (ArgumentException)
         {
-            return new ServerSetting(Key, "PostgreSQL", true, ConfigurationSources.Describe(configuration, Key), true);
+            return new ServerSetting(Key, name, true, source, true);
         }
     }
+
+    private static string? Part(DbConnectionStringBuilder builder, params string[] keys) =>
+        keys.Select(key => builder.TryGetValue(key, out object? value) ? $"{value}" : null).FirstOrDefault(value => value is not null);
 
     private static bool IsSecret(string key)
     {

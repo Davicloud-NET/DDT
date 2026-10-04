@@ -11,13 +11,15 @@ import { Facts } from "@/ui/Facts";
 import { Panel } from "@/ui/Panel";
 
 import type { BootImageView } from "./bootImage";
+import { keyboardLayoutName } from "./keyboardLayouts";
 
+// The build machines netboot: what it has in it, and what it was built for.
 export function LastBuild({ view, now }: { view: BootImageView; now: number }) {
   const build = view.build;
   const unknown = t`Not recorded`;
 
   return (
-    <Panel title={<Trans>Last build</Trans>}>
+    <Panel title={<Trans>Served build</Trans>}>
       {build === null ? (
         <p className="text-ink-2">
           <Trans>
@@ -40,6 +42,17 @@ export function LastBuild({ view, now }: { view: BootImageView; now: number }) {
             { label: <Trans>ADK</Trans>, value: build.adkVersion ?? unknown },
             { label: <Trans>Boot manager</Trans>, value: build.bootManager ?? unknown },
             { label: <Trans>Agent</Trans>, value: build.agentVersion ?? unknown },
+            { label: <Trans>Server address</Trans>, value: build.serverUrl ?? unknown },
+            {
+              label: <Trans>Keyboard layout</Trans>,
+              value:
+                build.keyboardLayout === null ? unknown : keyboardLayoutName(build.keyboardLayout),
+            },
+            {
+              label: <Trans>PowerShell</Trans>,
+              value:
+                build.powerShell === null ? unknown : build.powerShell ? t`Included` : t`Left out`,
+            },
           ]}
         />
       )}

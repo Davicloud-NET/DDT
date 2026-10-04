@@ -37,6 +37,62 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "audit.rangeEnd",
     message: "The end of the range must come after its start.",
   }),
+  "bootImage.busy": msg({
+    context: "bootImage.busy",
+    message: "A build or an install of the ADK is running already. Wait for it to end.",
+  }),
+  "bootImage.keyboardLayout": msg({
+    context: "bootImage.keyboardLayout",
+    message: "Takes an input locale and a keyboard layout, such as 0407:00000407 for German.",
+  }),
+  "bootImage.noAdk": msg({
+    context: "bootImage.noAdk",
+    message: "The Windows ADK with its Windows PE add-on is not installed on this server. Install it first.",
+  }),
+  "bootImage.noBuilder": msg({
+    context: "bootImage.noBuilder",
+    message: "This server came without the build script or the agent, so it has no builder to hand out. A release has both.",
+  }),
+  "bootImage.noHelper": msg({
+    context: "bootImage.noHelper",
+    message: "This server cannot build the boot image itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up. On another server, build with Build-BootImage.ps1 on a Windows PC.",
+  }),
+  "bootImage.noRoot": msg({
+    context: "bootImage.noRoot",
+    message: "DDT has no root certificate of its own yet, which the boot image has to trust. Generate one under Server, Certificate.",
+  }),
+  "bootImage.noSuchBuild": msg({
+    context: "bootImage.noSuchBuild",
+    message: "The boot directory holds no such build.",
+  }),
+  "bootImage.oldAdk": msg({
+    context: "bootImage.oldAdk",
+    message: "The Windows PE add-on on this server is {version}, and the boot image needs {oldest} or later.",
+  }),
+  "bootImage.uploadBroken": msg({
+    context: "bootImage.uploadBroken",
+    message: "The upload is no boot image build: its zip, its boot.wim or its description cannot be read.",
+  }),
+  "bootImage.uploadMissingFile": msg({
+    context: "bootImage.uploadMissingFile",
+    message: "The upload is no boot image build: it has no {file}.",
+  }),
+  "bootImage.uploadStrayFile": msg({
+    context: "bootImage.uploadStrayFile",
+    message: "The upload is no boot image build: {file} is outside Boot, EFI and x64.",
+  }),
+  "bootImage.uploadToken": msg({
+    context: "bootImage.uploadToken",
+    message: "The builder's token is unknown, has expired or uploaded a boot image already. Download the builder again.",
+  }),
+  "bootImage.uploadTooLarge": msg({
+    context: "bootImage.uploadTooLarge",
+    message: "The boot image is larger than {max} MB.",
+  }),
+  "bootImage.windowSize": msg({
+    context: "bootImage.windowSize",
+    message: "Must be between 1 and {max}.",
+  }),
   "common.descriptionLength": msg({
     context: "common.descriptionLength",
     message: "The description can have at most {max} characters.",
@@ -509,6 +565,38 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "image.withoutArchitecture",
     message: "{image} does not say which processor it is for, and DDT deploys only x64 Windows. Choose an x64 image.",
   }),
+  "import.busy": msg({
+    context: "import.busy",
+    message: "An import is running already. Wait for it to end.",
+  }),
+  "import.failed": msg({
+    context: "import.failed",
+    message: "The server could not add it. Its log says why.",
+  }),
+  "import.noSuchFile": msg({
+    context: "import.noSuchFile",
+    message: "{path} is no longer there.",
+  }),
+  "import.notAShare": msg({
+    context: "import.notAShare",
+    message: "{path} is no MDT deployment share in one of this server's import folders: a share has Control\\OperatingSystems.xml.",
+  }),
+  "import.notAllowed": msg({
+    context: "import.notAllowed",
+    message: "{path} is no WIM, ESD or ISO in one of this server's import folders.",
+  }),
+  "import.nothing": msg({
+    context: "import.nothing",
+    message: "Nothing was chosen to import.",
+  }),
+  "import.unreadable": msg({
+    context: "import.unreadable",
+    message: "The server could not read it: {reason}",
+  }),
+  "iso.noWindowsImage": msg({
+    context: "iso.noWindowsImage",
+    message: "This ISO holds no sources\\install.wim or install.esd, so it is no Windows installation medium.",
+  }),
   "mac.enterFull": msg({
     context: "mac.enterFull",
     message: "Enter a MAC address of 12 hex digits, such as 00:15:5D:01:02:03.",
@@ -632,6 +720,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "namedValue.tooMany": msg({
     context: "namedValue.tooMany",
     message: "Set at most {max} values here.",
+  }),
+  "netboot.helperFailed": msg({
+    context: "netboot.helperFailed",
+    message: "The DDT Helper service could not do it: {reason}",
+  }),
+  "netboot.noHelper": msg({
+    context: "netboot.noHelper",
+    message: "DDT cannot change this computer's DHCP server or WDS itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up.",
+  }),
+  "netboot.scopes": msg({
+    context: "netboot.scopes",
+    message: "Choose the scopes to set, each by its address.",
   }),
   "organizationalUnit.isComputers": msg({
     context: "organizationalUnit.isComputers",
@@ -1431,7 +1531,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "settings.apply.pxeBindFailed": msg({
     context: "settings.apply.pxeBindFailed",
-    message: "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {error, select, AccessDenied {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} AddressAlreadyInUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}",
+    message: "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}",
   }),
   "settings.apply.pxeClosed": msg({
     context: "settings.apply.pxeClosed",

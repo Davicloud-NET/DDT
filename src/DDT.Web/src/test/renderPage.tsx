@@ -23,6 +23,7 @@ import { AccountsPage } from "@/accounts/AccountsPage";
 import { CommandPalette } from "@/app/CommandPalette";
 import { RootLayout } from "@/app/RootLayout";
 import type { CurrentUser } from "@/auth/auth";
+import { BootImagePage } from "@/boot/BootImagePage";
 import { ImagesPage } from "@/images/ImagesPage";
 import { LiveContext } from "@/live/LiveContext";
 import { MachinePage } from "@/machines/MachinePage";
@@ -112,6 +113,7 @@ function testRouter(path: string, hub: TestHub | null, palette: boolean) {
         page("/library/images", ImagesPage),
         page("/library/drivers", DriversPage),
         page("/library/files", FilesPage),
+        page("/boot/image", BootImagePage),
         page("/account", AccountPage),
         stub("/about", "About DDT"),
         stub("/deployment/sequences", "Task sequences"),

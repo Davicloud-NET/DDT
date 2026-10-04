@@ -14,6 +14,8 @@ import {
 import { appendAudit, auditKey, type AuditEntry } from "@/audit/audit";
 import { currentUserQuery } from "@/auth/auth";
 import { bootImageQuery, type BootImageView } from "@/boot/bootImage";
+import { appendJobOutput, putJob, type BootImageJobOutput } from "@/boot/bootImageJob";
+import { putImportStatus, type ImportStatus } from "@/images/import/imports";
 import {
   imagesQuery,
   removeImages,
@@ -61,6 +63,7 @@ import { agentBinaryQuery, consoleBinaryQuery, type AgentBinaryView } from "@/se
 import { consoleLogoQuery, type ConsoleLogoView } from "@/settings/consoleLogo";
 import { serverCertificateQuery } from "@/server/serverCertificate";
 import { pxeInterfacesQuery, type PxeHostInterfaces } from "@/settings/networkBoot";
+import { checklistQuery, setChecklistItem } from "@/setup/checklist";
 import { removeTokensOf, upsertToken, type ApiTokenView } from "@/tokens/tokens";
 import {
   directoryQuery,
@@ -113,6 +116,7 @@ function machineEvents(queryClient: QueryClient) {
     machineChanged: (machine: MachineSummary) => {
       upsertMachine(queryClient, machine);
       renameMachineInRuns(queryClient, machine);
+      setChecklistItem(queryClient, "machine", true);
     },
     machinesRemoved: (event: MachinesRemoved) => {
       removeMachines(queryClient, event.machineIds);
@@ -129,6 +133,7 @@ function libraryEvents(queryClient: QueryClient) {
     imageChanged: (image: ImageSummary) => {
       upsertImage(queryClient, image);
       uploadFinished(queryClient);
+      setChecklistItem(queryClient, "image", true);
     },
     imagesRemoved: (event: ImagesRemoved) => {
       removeImages(queryClient, event.imageIds);
@@ -144,6 +149,11 @@ function libraryEvents(queryClient: QueryClient) {
     },
     sequenceChanged: (event: SequenceChanged) => {
       sequenceChanged(queryClient, event);
+
+      // A deleted sequence has no revision
+      if (event.revision !== null) {
+        setChecklistItem(queryClient, "sequence", true);
+      }
     },
     // Rules are few and reorder together, so the event carries the whole ordered list.
     rulesChanged: (rules: RuleView[]) => {
@@ -163,8 +173,14 @@ function libraryEvents(queryClient: QueryClient) {
     accountsRemoved: (event: AccountsRemoved) => {
       removeAccounts(queryClient, event.accountIds);
     },
+    // The view carries the state of a build or ADK install. What the job writes comes in batches of its own.
     bootImageChanged: (view: BootImageView) => {
       queryClient.setQueryData(bootImageQuery.queryKey, view);
+      putJob(queryClient, view.job);
+      setChecklistItem(queryClient, "bootImage", view.builds.length > 0);
+    },
+    bootImageJobOutput: (output: BootImageJobOutput) => {
+      appendJobOutput(queryClient, output);
     },
   };
 }
@@ -191,6 +207,11 @@ function administrationEvents(queryClient: QueryClient) {
       putSection(queryClient, view);
       invalidate(queryClient, settingsOverviewQuery.queryKey);
 
+      if (view.section === "pxe") {
+        const answering = (view.values as { interfaces?: unknown[] } | null)?.interfaces ?? [];
+        setChecklistItem(queryClient, "netboot", answering.length > 0);
+      }
+
       if (view.section === "ldap") {
         invalidate(queryClient, directoryQuery.queryKey);
       }
@@ -198,6 +219,10 @@ function administrationEvents(queryClient: QueryClient) {
     // Administrators receive every pxe host's interfaces whenever a host applied the pxe section.
     pxeInterfacesChanged: (hosts: PxeHostInterfaces[]) => {
       queryClient.setQueryData(pxeInterfacesQuery.queryKey, hosts);
+    },
+    // Administrators receive how far an import from the server's disks is.
+    importChanged: (status: ImportStatus) => {
+      putImportStatus(queryClient, status);
     },
     // Administrators receive an uploaded agent.
     agentChanged: (agent: AgentBinaryView) => {
@@ -264,5 +289,6 @@ export function reconnectKeys(): QueryKey[] {
     consoleBinaryQuery.queryKey,
     consoleLogoQuery.queryKey,
     serverCertificateQuery.queryKey,
+    checklistQuery.queryKey,
   ];
 }

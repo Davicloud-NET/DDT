@@ -90,6 +90,43 @@ public sealed class SettingsConsoleTests
         Assert.StartsWith("Usage: DDT.Host settings reset <section>", output.ToString(), StringComparison.Ordinal);
     }
 
+    // What setup's netboot settings are
+    [Fact]
+    public async Task NetbootInterfaceSetsTheInterfacesOnlyWhileThereAreNone()
+    {
+        using DdtApplication application = new();
+        SignedInClient administrator = await application.AdministratorAsync();
+        StringWriter first = new();
+        StringWriter second = new();
+
+        Assert.Equal(0, await SettingsConsole.RunAsync(["settings", "netboot-interface", "Ethernet"], first, Store(application)));
+        Assert.Equal(0, await SettingsConsole.RunAsync(["settings", "netboot-interface", "Wi-Fi"], second, Store(application)));
+
+        await application.RefreshSettingsAsync();
+        SettingsSectionView<PxeSettings> view = await administrator.SectionAsync<PxeSettings>(SettingsSectionNames.Pxe);
+        Assert.Equal(["Ethernet"], view.Values.Interfaces);
+        Assert.StartsWith("PXE serves Ethernet now.", first.ToString(), StringComparison.Ordinal);
+        Assert.StartsWith("PXE already serves Ethernet", second.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TrustLocalProxyAddsLoopbackOnceAndKeepsTheOtherProxies()
+    {
+        using DdtApplication application = new();
+        SignedInClient administrator = await application.AdministratorAsync();
+        StringWriter first = new();
+        StringWriter second = new();
+
+        Assert.Equal(0, await SettingsConsole.RunAsync(["settings", "trust-local-proxy"], first, Store(application)));
+        Assert.Equal(0, await SettingsConsole.RunAsync(["settings", "trust-local-proxy"], second, Store(application)));
+
+        Assert.StartsWith("DDT trusts a proxy on this server now", first.ToString(), StringComparison.Ordinal);
+        Assert.StartsWith("DDT trusts a proxy on this server already", second.ToString(), StringComparison.Ordinal);
+        await application.RefreshSettingsAsync();
+        SettingsSectionView<ProxySettings> view = await administrator.SectionAsync<ProxySettings>(SettingsSectionNames.Proxies);
+        Assert.Equal(["127.0.0.1", "::1"], view.Values.KnownProxies);
+    }
+
     private static Dictionary<string, string?> Store(DdtApplication application) => new()
     {
         ["DDT:StorePath"] = application.StorePath,

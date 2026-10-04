@@ -216,6 +216,7 @@ public static class AuthEndpoints
         ChangePasswordRequest request,
         ClaimsPrincipal principal,
         [AsParameters] SignInServices services,
+        FirstAdministratorFile firstAdministrator,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -262,6 +263,7 @@ public static class AuthEndpoints
             }
         }
 
+        await firstAdministrator.DeleteIfChangedAsync(userManager).ConfigureAwait(false);
         await signInManager.RefreshSignInAsync(user).ConfigureAwait(false);
         await activity.ChangedAsync(user, cancellationToken).ConfigureAwait(false);
 

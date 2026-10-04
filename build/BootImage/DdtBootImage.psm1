@@ -32,6 +32,7 @@ function New-DdtBootImage {
         [string] $ExtraPath,
         [string] $DriverPath,
         [string] $ApiToken,
+        [string] $ServerDriverPath,
         [switch] $SkipPowerShell,
         [string] $TrimListPath,
         [switch] $SkipTrim
@@ -55,9 +56,13 @@ function New-DdtBootImage {
     $downloads = "$WorkDirectory-drivers"
     Remove-BuildFolder -Path $downloads
     $serverDrivers = $null
+    if ($ApiToken -and $ServerDriverPath) { throw '-ApiToken and -ServerDriverPath both bring the server''s drivers. Pass one of them.' }
     if ($ApiToken) {
         $serverDrivers = Save-ServerDriver -ServerUrl $ServerUrl -RootCertificate $build.RootCertificateBytes `
             -Token $ApiToken -Folder $downloads
+    }
+    elseif ($ServerDriverPath) {
+        $serverDrivers = Read-ServerDriverFolder -Path $ServerDriverPath
     }
 
     $workspace = New-WinPEWorkspace -Adk $adk -WorkDirectory $WorkDirectory
@@ -67,14 +72,17 @@ function New-DdtBootImage {
         -Agent $build.Agent -ExtraPath $build.ExtraPath -TrimListPath $build.TrimListPath
     Export-BootWim -Workspace $workspace
 
+    Write-Host "Writing the boot files to $Destination"
     $bcd = Join-Path $WorkDirectory 'BCD'
     New-BootBcd -Path $bcd -TftpBlockSize $TftpBlockSize -TftpWindowSize $TftpWindowSize
     Publish-BootFile -Workspace $workspace -BcdPath $bcd -Destination $Destination
     Write-BootManifest -Path (Join-Path $Destination 'Boot\ddt-boot-image.json') -ServerDriver $serverDrivers `
-        -BootManager $workspace.BootManager2011 -AgentPath $AgentPath
+        -BootManager $workspace.BootManager2011 -AgentPath $AgentPath -ServerUrl $ServerUrl `
+        -RootCertificate $build.RootCertificateBytes -KeyboardLayout $(if ($build.Agent) { $build.Agent.KeyboardLayout }) `
+        -PowerShell:(-not $SkipPowerShell)
 
     Remove-BuildFolder -Path $downloads
     Show-BootImageSummary -Destination $Destination -SkipPowerShell:$SkipPowerShell -SkipTrim:$SkipTrim
 }
 
-Export-ModuleMember -Function New-DdtBootImage -Verbose:$false
+Export-ModuleMember -Function New-DdtBootImage, Test-DdtBuilderToken, Send-DdtBootImage -Verbose:$false

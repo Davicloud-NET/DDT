@@ -81,7 +81,8 @@ internal sealed class TftpTransfer
 
         try
         {
-            using SafeFileHandle handle = File.OpenHandle(_file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            // FileShare.Delete: a new boot image can move this one aside while it's being sent. Windows refuses otherwise.
+            using SafeFileHandle handle = File.OpenHandle(_file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
 
             long fileLength = RandomAccess.GetLength(handle);
             TftpReadSession session = new(_request, fileLength, _limits, _timeProvider);

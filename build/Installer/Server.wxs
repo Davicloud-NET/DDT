@@ -1,0 +1,237 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The published server in Program Files, and DDT.Host.exe as the DDT service with its firewall rules -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:fw="http://wixtoolset.org/schemas/v4/wxs/firewall"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Fragment>
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="DDT" />
+    </StandardDirectory>
+
+    <!-- Which network profiles the firewall rules cover: 1 is Domain, 2 Private and 4 Public. 3, or what the last install used. -->
+    <Property Id="FIREWALLPROFILES" Secure="yes" />
+    <!-- Adds Public. ServerDlg's checkbox. -->
+    <Property Id="FIREWALLPUBLIC" Secure="yes" />
+    <Property Id="REMEMBEREDFIREWALLPROFILES" Secure="yes">
+      <RegistrySearch Id="RememberedFirewallProfiles"
+                      Root="HKLM"
+                      Key="SOFTWARE\Davicloud\DDT"
+                      Name="FirewallProfiles"
+                      Type="raw" />
+    </Property>
+    <SetProperty Id="FIREWALLPROFILES"
+                 Action="RememberFirewallProfiles"
+                 Value="[REMEMBEREDFIREWALLPROFILES]"
+                 After="AppSearch"
+                 Sequence="both"
+                 Condition="NOT FIREWALLPROFILES AND REMEMBEREDFIREWALLPROFILES" />
+    <SetProperty Id="FIREWALLPROFILES"
+                 Action="DefaultFirewallProfiles"
+                 Value="3"
+                 After="RememberFirewallProfiles"
+                 Sequence="both"
+                 Condition="NOT FIREWALLPROFILES" />
+
+    <!-- The helper's work folder, as HelperPaths names it. Set this early: RemoveFolderEx reads it before costing. -->
+    <SetProperty Id="HELPERWORKFOLDER" Value="[CommonAppDataFolder]DDT Helper" After="AppSearch" Sequence="execute" />
+
+    <ComponentGroup Id="Server" Directory="INSTALLFOLDER">
+      <!-- DDT.Host.exe comes from its own component below, which carries the service. -->
+      <Files Include="!(bindpath.Payload)\**">
+        <Exclude Files="!(bindpath.Payload)\DDT.Host.exe" />
+      </Files>
+
+      <Component Id="Host">
+        <File Id="DDTHostExe" Source="!(bindpath.Payload)\DDT.Host.exe" KeyPath="yes" />
+
+        <!-- NT SERVICE\DDT is a virtual account -->
+        <ServiceInstall Name="DDT"
+                        DisplayName="DDT Deployment Server"
+                        Description="Serves the DDT web UI and API together with the netbooting functionality."
+                        Type="ownProcess"
+                        Start="auto"
+                        ErrorControl="normal"
+                        Account="NT SERVICE\DDT"
+                        Vital="yes">
+          <!-- Windows Installer's own failure actions don't work as documented (warning WIX1149). -->
+          <util:ServiceConfig FirstFailureActionType="restart"
+                              SecondFailureActionType="restart"
+                              ThirdFailureActionType="restart"
+                              RestartServiceDelayInSeconds="60"
+                              ResetPeriodInDays="1" />
+        </ServiceInstall>
+        <ServiceControl Name="DDT" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
+
+        <!-- The same program as SYSTEM, for what needs an administrator: building boot images, installing the ADK.
+             It listens on a named pipe that only NT SERVICE\DDT may open. -->
+        <ServiceInstall Id="Helper"
+                        Name="DDTHelper"
+                        DisplayName="DDT Helper"
+                        Description="Builds boot images and installs the Windows ADK for the DDT Deployment Server, which runs without administrator rights."
+                        Type="ownProcess"
+                        Start="auto"
+                        ErrorControl="normal"
+                        Arguments="helper"
+                        Vital="yes">
+          <util:ServiceConfig FirstFailureActionType="restart"
+                              SecondFailureActionType="restart"
+                              ThirdFailureActionType="restart"
+                              RestartServiceDelayInSeconds="60"
+                              ResetPeriodInDays="1" />
+        </ServiceInstall>
+        <ServiceControl Id="Helper" Name="DDTHelper" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
+        <!-- With what a build that broke off left in it -->
+        <util:RemoveFolderEx Property="HELPERWORKFOLDER" On="uninstall" Condition="NOT UPGRADINGPRODUCTCODE" />
+
+        <!-- The virtual account can't register an event source itself -->
+        <util:EventSource Name="DDT"
+                          Log="Application"
+                          EventMessageFile="[INSTALLFOLDER]System.Diagnostics.EventLog.Messages.dll" />
+
+        <!-- For the program rather than for ports, because TFTP answers each transfer from a port of its own -->
+        <fw:FirewallException Id="HostTcp"
+                              Name="DDT Server (TCP)"
+                              Description="HTTPS for browsers and agents, and HTTP boot."
+                              File="DDTHostExe"
+                              Protocol="tcp"
+                              Scope="any"
+                              Profile="[FIREWALLPROFILES]" />
+        <fw:FirewallException Id="HostUdp"
+                              Name="DDT Server (UDP)"
+                              Description="ProxyDHCP and TFTP, for machines that netboot."
+                              File="DDTHostExe"
+                              Protocol="udp"
+                              Scope="any"
+                              Profile="[FIREWALLPROFILES]" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Quiet exec, since an EXE action opens a console window. Its command line is the property named like the action. -->
+    <!-- As SYSTEM, after the service made its root. Failing only costs a browser warning. -->
+    <SetProperty Id="TrustRoot"
+                 Value="&quot;[#DDTHostExe]&quot; setup trust-root"
+                 Before="TrustRoot"
+                 Sequence="execute" />
+    <CustomAction Id="TrustRoot"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+    <!-- A first install that fails leaves no trusted root -->
+    <SetProperty Id="RollbackTrustRoot"
+                 Value="&quot;[#DDTHostExe]&quot; setup untrust-root"
+                 Before="RollbackTrustRoot"
+                 Sequence="execute" />
+    <CustomAction Id="RollbackTrustRoot"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
+                  Execute="rollback"
+                  Impersonate="no"
+                  Return="ignore" />
+    <SetProperty Id="UntrustRoot"
+                 Value="&quot;[#DDTHostExe]&quot; setup untrust-root"
+                 Before="UntrustRoot"
+                 Sequence="execute" />
+    <CustomAction Id="UntrustRoot"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+    <!-- ServerDlg's card, as a setting. Only on a new install.. someone's own choice stays. -->
+    <SetProperty Id="SetNetbootInterface"
+                 Value="&quot;[#DDTHostExe]&quot; settings netboot-interface &quot;[NETBOOTINTERFACE]&quot;"
+                 Before="SetNetbootInterface"
+                 Sequence="execute" />
+    <CustomAction Id="SetNetbootInterface"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+    <!-- IisDlg: IIS ARR going to DDT-->
+    <Property Id="IISHOSTNAME" Secure="yes" />
+    <Property Id="IISCERTIFICATE" Secure="yes" />
+    <SetProperty Id="TrustLocalProxy"
+                 Value="&quot;[#DDTHostExe]&quot; settings trust-local-proxy"
+                 Before="TrustLocalProxy"
+                 Sequence="execute" />
+    <CustomAction Id="TrustLocalProxy"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+    <SetProperty Id="PublishToIis"
+                 Value="&quot;[#DDTHostExe]&quot; setup iis &quot;[IISHOSTNAME]&quot; [IISCERTIFICATE]"
+                 Before="PublishToIis"
+                 Sequence="execute" />
+    <CustomAction Id="PublishToIis"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check" />
+    <SetProperty Id="RollbackIis"
+                 Value="&quot;[#DDTHostExe]&quot; setup remove-iis"
+                 Before="RollbackIis"
+                 Sequence="execute" />
+    <CustomAction Id="RollbackIis"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
+                  Execute="rollback"
+                  Impersonate="no"
+                  Return="ignore" />
+    <SetProperty Id="RemoveIis"
+                 Value="&quot;[#DDTHostExe]&quot; setup remove-iis"
+                 Before="RemoveIis"
+                 Sequence="execute" />
+    <CustomAction Id="RemoveIis"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+    <!-- DependenciesDlg's box. Microsoft's setups are installers themselves, so they run once this one is done. -->
+    <Property Id="INSTALLADK" Secure="yes" />
+    <SetProperty Id="InstallAdk"
+                 Value="&quot;[#DDTHostExe]&quot; setup adk background"
+                 Before="InstallAdk"
+                 Sequence="execute" />
+    <CustomAction Id="InstallAdk"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="TrustRoot" After="StartServices" Condition="NOT REMOVE" />
+      <Custom Action="RollbackTrustRoot" Before="TrustRoot" Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
+      <Custom Action="TrustLocalProxy"
+              Before="StartServices"
+              Condition="IISHOSTNAME AND IISCERTIFICATE AND NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
+      <Custom Action="RollbackIis"
+              After="TrustRoot"
+              Condition="IISHOSTNAME AND IISCERTIFICATE AND NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
+      <Custom Action="PublishToIis"
+              After="RollbackIis"
+              Condition="IISHOSTNAME AND IISCERTIFICATE AND NOT Installed AND NOT WIX_UPGRADE_DETECTED" />
+      <!-- Only DDT's own site: remove-iis checks the site's folder -->
+      <Custom Action="RemoveIis" Before="RemoveFiles" Condition="REMOVE ~= &quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+      <!-- Before the service starts, or both create the schema at once -->
+      <Custom Action="SetNetbootInterface"
+              Before="StartServices"
+              Condition="NOT Installed AND NOT WIX_UPGRADE_DETECTED AND NETBOOTINTERFACE AND NETBOOTINTERFACE &lt;&gt; &quot;later&quot;" />
+      <Custom Action="UntrustRoot" Before="RemoveFiles" Condition="REMOVE ~= &quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+      <!-- Last, so nothing can roll back under it -->
+      <Custom Action="InstallAdk" Before="InstallFinalize" Condition="INSTALLADK = 1 AND NOT REMOVE" />
+    </InstallExecuteSequence>
+  </Fragment>
+
+</Wix>

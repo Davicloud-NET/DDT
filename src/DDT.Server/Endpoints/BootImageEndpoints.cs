@@ -34,11 +34,11 @@ public static class BootImageEndpoints
         group.MapMethods("/drivers/{packageId:guid}/content", [HttpMethods.Get, HttpMethods.Head], ReadDriverAsync)
             .RequireAuthorization(DdtPolicies.Administrator);
 
-        return group;
+        return group.MapBootImageBuildEndpoints().MapBootImageBuilderEndpoints();
     }
 
-    private static async Task<Ok<BootImageView>> ReadAsync(DdtDbContext database, BootImageCatalog catalog, CancellationToken cancellationToken) =>
-        TypedResults.Ok(await catalog.ViewAsync(database, cancellationToken).ConfigureAwait(false));
+    private static async Task<Ok<BootImageView>> ReadAsync(DdtDbContext database, BootImageViews views, CancellationToken cancellationToken) =>
+        TypedResults.Ok(await views.ViewAsync(database, cancellationToken).ConfigureAwait(false));
 
     // Serves the zip the same way the agent downloads a run's files. It's tagged with its hash, so a resumed download
     // never splices two files together.

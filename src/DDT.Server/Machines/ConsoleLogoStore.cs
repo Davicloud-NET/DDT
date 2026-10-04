@@ -41,7 +41,14 @@ public sealed class ConsoleLogoStore(IOptions<DdtOptions> ddt)
             }
         }
 
-        byte[] content = await File.ReadAllBytesAsync(file.FullName, cancellationToken).ConfigureAwait(false);
+        byte[] content;
+
+        await using (FileStream stream = FileReplacement.OpenRead(file.FullName))
+        {
+            content = new byte[stream.Length];
+            await stream.ReadExactlyAsync(content, cancellationToken).ConfigureAwait(false);
+        }
+
         ConsoleLogoFile? logo = Describe(content);
 
         lock (_lock)
@@ -50,6 +57,19 @@ public sealed class ConsoleLogoStore(IOptions<DdtOptions> ddt)
         }
 
         return logo;
+    }
+
+    // Null when there's no logo. Opened so that an upload can replace or remove it during a download.
+    public FileStream? Open()
+    {
+        try
+        {
+            return FileReplacement.OpenRead(Path);
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return null;
+        }
     }
 
     // Written next to the logo it replaces and renamed over it, so an agent never downloads half of one.
@@ -63,7 +83,7 @@ public sealed class ConsoleLogoStore(IOptions<DdtOptions> ddt)
         try
         {
             await File.WriteAllBytesAsync(temporary, png, cancellationToken).ConfigureAwait(false);
-            File.Move(temporary, path, overwrite: true);
+            FileReplacement.Replace(temporary, path);
         }
         finally
         {
@@ -71,7 +91,7 @@ public sealed class ConsoleLogoStore(IOptions<DdtOptions> ddt)
         }
     }
 
-    public void Delete() => File.Delete(Path);
+    public void Delete() => FileReplacement.Delete(Path);
 
     // Null unless the bytes are a PNG: the signature, IHDR first with at least one pixel, whole chunks, and IEND last.
     // Only the structure is checked. The console's decoder reads the pixels.

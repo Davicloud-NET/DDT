@@ -8,53 +8,54 @@ using DDT.Server.Data;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Settings;
 
-// The agent and console builds that netbooting machines get. The settings page shows and replaces them. Who uploaded
-// one and when comes from the audit row of its latest upload.
+// The agent and console builds that netbooting machines get. The settings page shows them, replaces them and removes
+// an upload again. Who uploaded one and when comes from the audit row of its latest upload.
 internal sealed class ReleaseUploads(
     AgentReleaseStore releases,
     ConsoleReleaseStore consoles,
-    IOptions<AgentReleaseOptions> options,
     DdtDbContext database,
     TimeProvider timeProvider,
     LiveNotifier live)
 {
-    // True when configuration names its own file. An upload wouldn't replace that file.
-    public bool AgentConfigured => !string.IsNullOrWhiteSpace(options.Value.BinaryPath);
+    public bool AgentConfigured => releases.Configured;
 
-    public bool ConsoleConfigured => !string.IsNullOrWhiteSpace(options.Value.ConsolePath);
+    public bool ConsoleConfigured => consoles.Configured;
 
     public async Task<AgentBinaryView> AgentAsync(CancellationToken cancellationToken)
     {
-        AgentRelease? release = await releases.CurrentAsync(cancellationToken).ConfigureAwait(false);
-        AuditEvent? upload = AgentConfigured || release is null
-            ? null
-            : await LatestAsync(AuditActions.AgentUploaded, cancellationToken).ConfigureAwait(false);
+        StoredAgent? offered = await releases.OfferedAsync(cancellationToken).ConfigureAwait(false);
+        bool uploaded = offered?.Source == AgentBinarySource.Uploaded;
+        StoredAgent? bundled = uploaded ? await releases.BundledAsync(cancellationToken).ConfigureAwait(false) : null;
+        AuditEvent? upload = uploaded ? await LatestAsync(AuditActions.AgentUploaded, cancellationToken).ConfigureAwait(false) : null;
 
         return new AgentBinaryView(
-            release?.Sha256,
-            release?.Size,
+            offered?.Release.Sha256,
+            offered?.Release.Size,
             upload?.OccurredUtc,
             upload?.ActorName,
-            AgentConfigured ? AgentBinarySource.Configuration : release is null ? AgentBinarySource.None : AgentBinarySource.Uploaded);
+            offered?.Source ?? (AgentConfigured ? AgentBinarySource.Configuration : AgentBinarySource.None),
+            Text(offered?.Version),
+            Text(Newer(bundled?.Version, offered?.Version)));
     }
 
     public async Task<AgentBinaryView> ConsoleAsync(CancellationToken cancellationToken)
     {
-        ConsoleRelease? release = await consoles.CurrentAsync(cancellationToken).ConfigureAwait(false);
-        AuditEvent? upload = ConsoleConfigured || release is null
-            ? null
-            : await LatestAsync(AuditActions.ConsoleUploaded, cancellationToken).ConfigureAwait(false);
+        StoredConsole? offered = await consoles.OfferedAsync(cancellationToken).ConfigureAwait(false);
+        bool uploaded = offered?.Source == AgentBinarySource.Uploaded;
+        StoredConsole? bundled = uploaded ? await consoles.BundledAsync(cancellationToken).ConfigureAwait(false) : null;
+        AuditEvent? upload = uploaded ? await LatestAsync(AuditActions.ConsoleUploaded, cancellationToken).ConfigureAwait(false) : null;
 
         return new AgentBinaryView(
-            release?.Files[0].Sha256,
-            release?.Files.Sum(file => file.Size),
+            offered?.Release.Files[0].Sha256,
+            offered?.Release.Files.Sum(file => file.Size),
             upload?.OccurredUtc,
             upload?.ActorName,
-            ConsoleConfigured ? AgentBinarySource.Configuration : release is null ? AgentBinarySource.None : AgentBinarySource.Uploaded);
+            offered?.Source ?? (ConsoleConfigured ? AgentBinarySource.Configuration : AgentBinarySource.None),
+            Text(offered?.Version),
+            Text(Newer(bundled?.Version, offered?.Version)));
     }
 
     // The returned view is what GET /api/settings/agent reads from now on. Other administrators' pages get it from the
@@ -68,14 +69,14 @@ internal sealed class ReleaseUploads(
             return (status, null);
         }
 
-        AuditEvent audit = await AuditAsync(
+        await AuditAsync(
             AuditActions.AgentUploaded,
             release.Sha256,
             actor,
             $"Uploaded the agent with SHA-256 {release.Sha256}, {release.Size} bytes. Netbooting machines run it from their next boot.",
             cancellationToken).ConfigureAwait(false);
 
-        AgentBinaryView uploaded = new(release.Sha256, release.Size, audit.OccurredUtc, audit.ActorName, AgentBinarySource.Uploaded);
+        AgentBinaryView uploaded = await AgentAsync(cancellationToken).ConfigureAwait(false);
         live.AgentChanged(uploaded);
 
         return (status, uploaded);
@@ -92,18 +93,71 @@ internal sealed class ReleaseUploads(
 
         string sha256 = release.Files[0].Sha256;
         long size = release.Files.Sum(file => file.Size);
-        AuditEvent audit = await AuditAsync(
+        await AuditAsync(
             AuditActions.ConsoleUploaded,
             sha256,
             actor,
             $"Uploaded the console with ddt-console.exe of SHA-256 {sha256}, {size} bytes in all. Netbooting machines show it from their next boot.",
             cancellationToken).ConfigureAwait(false);
 
-        AgentBinaryView uploaded = new(sha256, size, audit.OccurredUtc, audit.ActorName, AgentBinarySource.Uploaded);
+        AgentBinaryView uploaded = await ConsoleAsync(cancellationToken).ConfigureAwait(false);
         live.ConsoleChanged(uploaded);
 
         return (status, uploaded);
     }
+
+    // Null when no agent was uploaded. Machines then get the one the server came with, or keep their boot image's.
+    public async Task<AgentBinaryView?> RemoveAgentAsync(Actor actor, CancellationToken cancellationToken)
+    {
+        StoredAgent? offered = await releases.OfferedAsync(cancellationToken).ConfigureAwait(false);
+
+        if (offered?.Source != AgentBinarySource.Uploaded || !releases.RemoveUpload())
+        {
+            return null;
+        }
+
+        await AuditAsync(
+            AuditActions.AgentUploadRemoved,
+            offered.Release.Sha256,
+            actor,
+            $"Removed the uploaded agent with SHA-256 {offered.Release.Sha256}. From their next boot, netbooting machines run the agent the server came with, or their boot image's.",
+            cancellationToken).ConfigureAwait(false);
+
+        AgentBinaryView now = await AgentAsync(cancellationToken).ConfigureAwait(false);
+        live.AgentChanged(now);
+
+        return now;
+    }
+
+    public async Task<AgentBinaryView?> RemoveConsoleAsync(Actor actor, CancellationToken cancellationToken)
+    {
+        StoredConsole? offered = await consoles.OfferedAsync(cancellationToken).ConfigureAwait(false);
+
+        if (offered?.Source != AgentBinarySource.Uploaded || !consoles.RemoveUpload())
+        {
+            return null;
+        }
+
+        string sha256 = offered.Release.Files[0].Sha256;
+        await AuditAsync(
+            AuditActions.ConsoleUploadRemoved,
+            sha256,
+            actor,
+            $"Removed the uploaded console with ddt-console.exe of SHA-256 {sha256}. From their next boot, netbooting machines show the console the server came with, or their boot image's.",
+            cancellationToken).ConfigureAwait(false);
+
+        AgentBinaryView now = await ConsoleAsync(cancellationToken).ConfigureAwait(false);
+        live.ConsoleChanged(now);
+
+        return now;
+    }
+
+    // Three parts, as a release is numbered
+    private static string? Text(Version? version) => version?.ToString(3);
+
+    // The bundled version if it's the newer one. Null when either file carries no version.
+    private static Version? Newer(Version? bundled, Version? offered) =>
+        bundled is not null && offered is not null && bundled > offered ? bundled : null;
 
     private Task<AuditEvent?> LatestAsync(string action, CancellationToken cancellationToken) =>
         database.AuditEvents
@@ -112,13 +166,9 @@ internal sealed class ReleaseUploads(
             .OrderByDescending(audit => audit.Id)
             .FirstOrDefaultAsync(cancellationToken);
 
-    private async Task<AuditEvent> AuditAsync(string action, string sha256, Actor actor, string detail, CancellationToken cancellationToken)
+    private async Task AuditAsync(string action, string sha256, Actor actor, string detail, CancellationToken cancellationToken)
     {
-        AuditEvent audit = AuditEvents.Create(action, sha256, actor, timeProvider.GetUtcNow(), detail);
-
-        database.AuditEvents.Add(audit);
+        database.AuditEvents.Add(AuditEvents.Create(action, sha256, actor, timeProvider.GetUtcNow(), detail));
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-        return audit;
     }
 }

@@ -768,23 +768,28 @@ the DHCP server was another computer, and DDT answered next to it as ProxyDHCP.
 
 ## 8. Open questions for the maintainer
 
-1. **Windows Server as a production host.** This reverses the rule that production is the Linux
-   container with host networking. Recommended: yes, and first, because that is where MDT shops are.
-2. **The database on one server.** (a), (b) or (c) of section 4.4. Recommended: (a).
-3. **The place in the roadmap.** Written in as M6.6, before M7. The `m7` branch exists but has no
-   commits yet.
+1. **Windows Server as a production host.** Answered: yes, and first. Section 3.1 is built, and the
+   measure of section 7 was taken there.
+2. **The database on one server.** Answered 2026-09-29: (a) of section 4.4, SQLite, with SQL Server
+   beside PostgreSQL for a shop that wants a database server.
+3. **The place in the roadmap.** Answered: M6.6. M7 was merged first, on 2026-09-28.
 4. **Code signing.** Answered 2026-10-04: the maintainer has a code signing certificate in his own
-   name and signs the installers with it, and perhaps other parts that run elevated. Left: the
-   release workflow builds the MSI and writes `SHA256SUMS` and the winget manifest from it without
-   a signing step, so signing has to come before those, in the workflow or by hand.
+   name, with SSL.com's signing service, and signs the installers with it, and perhaps other parts
+   that run elevated. Left: the release workflow builds the MSI and writes `SHA256SUMS` and the
+   winget manifest from it without a signing step. Signing has to come before those, and the files
+   in the MSI have to be signed before it is packed. SSL.com has a GitHub action for its service.
 5. **The ADK licence.** Confirmed 2026-10-04 from the licence of ADK 10.1.26100 (`Docs\Eula` in the
    kit's folder): only code marked as sample may be passed on, and its section 6 forbids
    publishing or distributing the software. So Windows PE stays out of every release. Open: the
    same licence allows Windows PE for installing and recovering Windows, and for no purpose it does
-   not name. Writing a Linux image from Windows PE (M6, and M8 after it) is not named.
-6. **An MSI.** Recommended over a script alone: winget installs a service through one, and MDT was one.
-7. **The port.** 8443, as the container uses, or 443 when it is free?
-8. **Certificates from AD CS.** Later, or part of this milestone?
+   not name. Writing a Linux image from Windows PE (M6, and M8 after it) is not named. The
+   maintainer weighs a boot environment without Windows PE for that (roadmap, Ideas for later).
+6. **An MSI.** Answered 2026-09-29: an MSI, built with WiX, and since 2026-09-30 without a
+   `setup.exe` around it.
+7. **The port.** Answered 2026-10-04: 8443 on every server. It collides with nothing a server
+   usually runs, and a reverse proxy finds DDT on the same port everywhere. 443 stays a parameter.
+8. **Certificates from AD CS.** Answered 2026-10-04: later, and in full then. It is in the roadmap
+   under Ideas for later.
 9. **Windows Server versions.** Answered 2026-09-29: Server 2019 and Windows 10 1809 and later, build
    17763, which the MSI and `install.ps1` check. The whole chain and the time zone check ran on
    Server 2019 (sections 4.3 and 7).

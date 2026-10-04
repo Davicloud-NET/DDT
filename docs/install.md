@@ -210,6 +210,11 @@ Each release's `install.ps1`, `install.sh` and `compose.yaml` name that release,
 the release it came with. `releases/latest/download/` skips pre-releases, so a pre-release is
 installed from its own address, `releases/download/v26.1.412/install.ps1`.
 
+**The release's text.** It starts with `build/release-notes.md`, which gives the two install lines
+with the release's own address, so a pre-release has them too. GitHub's list of the pull requests
+merged since the last release follows, with package updates in a group of their own
+(`.github/release.yml`). Words about a particular release are added on GitHub once it is out.
+
 **Signing.** A release signs `DDT.Host.exe`, the agent, the console and the MSI with the
 maintainer's certificate, through SSL.com's eSigner and its GitHub action. Whoever holds that
 account's secrets can sign anything in the maintainer's name, and the repository is public, so:

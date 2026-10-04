@@ -1,0 +1,12 @@
+# How GitHub lists the merged pull requests under a release's text: package updates in a group of their own.
+changelog:
+  categories:
+    - title: What changed
+      labels:
+        - "*"
+      exclude:
+        labels:
+          - dependencies
+    - title: Package updates
+      labels:
+        - dependencies

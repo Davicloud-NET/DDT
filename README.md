@@ -53,10 +53,10 @@ curl -fsSL https://github.com/Davicloud-NET/DDT/releases/latest/download/install
 ```
 
 > [!IMPORTANT]
-> So far DDT only has pre-releases, and GitHub's `latest` skips those, so both lines answer with a
-> 404 for now. Take `install.ps1` or `install.sh` from the newest entry on the
-> [releases page](https://github.com/Davicloud-NET/DDT/releases) instead. Each copy installs the
-> release it came with.
+> DDT's releases are pre-releases for now, and GitHub's `latest` skips those, so both lines answer
+> with a 404 until the first full release. Take `install.ps1` or `install.sh` from the newest entry
+> on the [releases page](https://github.com/Davicloud-NET/DDT/releases) instead. Each copy installs
+> the release it came with.
 
 Either way you end up with an address, and with a file that holds the first password. Open the
 address, sign in as `admin`, and the Machines page hands you a to-do list:

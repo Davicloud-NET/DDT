@@ -290,8 +290,9 @@ and the PXE sockets and the key files have Windows code of their own (src/DDT.Px
   server asks `GetDiskFreeSpaceEx` for the store's folder. Done (src/DDT.Core/Disks/VolumeSpace.cs).
 - **Time zones on Windows Server 2019.** A time zone is checked through ICU
   (src/DDT.Core/Unattend/WindowsTimeZones.cs:11-16). Windows carries ICU since Windows 10 1703,
-  Server 2019 included, as `icuuc.dll` and `icuin.dll`, and .NET 7 and later loads those. Not yet
-  tried on 2019; if it falls back to NLS there, every time zone is refused and DDT carries its own ICU.
+  Server 2019 included, as `icuuc.dll` and `icuin.dll`, and .NET 7 and later loads those. Tried on
+  Server 2019, whose ICU is version 61: the deployment settings take `W. Europe Standard Time` and
+  refuse a name that is no Windows time zone.
 - **Converting disk images.** The only programs the server starts are `qemu-img` and `xz`, for qcow2
   and `.xz` uploads, found on the PATH (src/DDT.Server/Images/ConversionTools.cs:15-16,95-107). A
   missing one already refuses the upload with a message that says which to install, and keeps the
@@ -737,8 +738,8 @@ picks it on the Network boot page, or in setup, which offers it (section 3.1).
 6. The checklist, the imports from an ISO, a folder and an MDT share, and the starting sequence.
 7. The quick start and the guide for MDT users.
 
-Steps 1 to 6 are built, with what each section lists as left. Step 7 and the measure below are
-open.
+Steps 1 to 6 are built, with what each section lists as left. Step 7 is open. The measure below
+holds as far as machines go, timed to the first question of Windows' own setup.
 
 The milestone is done when section 1's measure holds on a fresh Windows Server 2025 VM on the Hyper-V
 test host, timed from the command to a Windows 11 desktop, and on a fresh Ubuntu VM with the boot
@@ -774,8 +775,8 @@ the DHCP server was another computer, and DDT answered next to it as ProxyDHCP.
 7. **The port.** 8443, as the container uses, or 443 when it is free?
 8. **Certificates from AD CS.** Later, or part of this milestone?
 9. **Windows Server versions.** Answered 2026-09-29: Server 2019 and Windows 10 1809 and later, build
-   17763, which the MSI and `install.ps1` check. The time zone check on 2019 still needs a try
-   (section 4.3).
+   17763, which the MSI and `install.ps1` check. The whole chain and the time zone check ran on
+   Server 2019 (sections 4.3 and 7).
 10. **SQL Server's native network library.** Answered 2026-10-01: it ships with the MSI, with an
     additional permission in NOTICE. Microsoft documents the client's managed networking on Windows
     as meant for testing, though it worked on the test VM, Windows authentication included.

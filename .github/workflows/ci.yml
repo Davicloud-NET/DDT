@@ -17,6 +17,7 @@ concurrency:
 
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  ASPIRE_CLI_TELEMETRY_OPTOUT: "1"
   DOTNET_NOLOGO: "1"
   NUGET_XMLDOC_MODE: skip
 
@@ -40,17 +41,33 @@ jobs:
           key: nuget-${{ github.job }}-${{ hashFiles('global.json', 'Directory.Packages.props', '**/*.csproj', '.config/dotnet-tools.json') }}
           restore-keys: nuget-${{ github.job }}-
 
+      # DDT.AppHost's build fetches Aspire's CLI and bundle where they are missing, once, and fails when that does not
+      # work the first time. Fetched here they are tried again, and the build finds them in place.
+      - name: Get Aspire's bundle
+        shell: pwsh
+        run: ./build/Get-AspireBundle.ps1
+
       - name: Build
         run: dotnet build DDT.slnx
 
       - name: Check the C# formatting
         run: dotnet format whitespace DDT.slnx --verify-no-changes --no-restore
 
+      # Now and then the analyzer fails with a NullReferenceException of its own, which the next run does not repeat.
       - name: Check the PowerShell scripts
         run: |
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
           Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Force
-          $findings = @(Invoke-ScriptAnalyzer -Path build -Recurse -Settings build/PSScriptAnalyzerSettings.psd1)
+          for ($attempt = 1; ; $attempt++) {
+            try {
+              $findings = @(Invoke-ScriptAnalyzer -Path build -Recurse -Settings build/PSScriptAnalyzerSettings.psd1 -ErrorAction Stop)
+              break
+            }
+            catch {
+              if ($attempt -ge 3 -or $_.Exception.GetBaseException() -isnot [System.NullReferenceException]) { throw }
+              Write-Host "PSScriptAnalyzer failed on its own. Trying again."
+            }
+          }
           $findings | Format-Table RuleName, Severity, ScriptName, Line, Message -AutoSize -Wrap
           if ($findings.Count -gt 0) { throw "PSScriptAnalyzer found $($findings.Count) problems in build/." }
 
@@ -86,6 +103,12 @@ jobs:
           path: ~/.nuget/packages
           key: nuget-${{ github.job }}-${{ hashFiles('global.json', 'Directory.Packages.props', '**/*.csproj', '.config/dotnet-tools.json') }}
           restore-keys: nuget-${{ github.job }}-
+
+      # DDT.AppHost's build fetches Aspire's CLI and bundle where they are missing, once, and fails when that does not
+      # work the first time. Fetched here they are tried again, and the build finds them in place.
+      - name: Get Aspire's bundle
+        shell: pwsh
+        run: ./build/Get-AspireBundle.ps1
 
       # The agent and the console target Windows and are tested in the Windows job. They build here as well, because
       # the test of THIRD-PARTY-NOTICES.md reads what their restore resolved.

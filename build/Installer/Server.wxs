@@ -110,65 +110,102 @@
       </Component>
     </ComponentGroup>
 
+    <!-- Quiet exec, since an EXE action opens a console window. Its command line is the property named like the action. -->
     <!-- As SYSTEM, after the service made its root. Failing only costs a browser warning. -->
+    <SetProperty Id="TrustRoot"
+                 Value="&quot;[#DDTHostExe]&quot; setup trust-root"
+                 Before="TrustRoot"
+                 Sequence="execute" />
     <CustomAction Id="TrustRoot"
-                  FileRef="DDTHostExe"
-                  ExeCommand="setup trust-root"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
                   Execute="deferred"
                   Impersonate="no"
                   Return="ignore" />
     <!-- A first install that fails leaves no trusted root -->
+    <SetProperty Id="RollbackTrustRoot"
+                 Value="&quot;[#DDTHostExe]&quot; setup untrust-root"
+                 Before="RollbackTrustRoot"
+                 Sequence="execute" />
     <CustomAction Id="RollbackTrustRoot"
-                  FileRef="DDTHostExe"
-                  ExeCommand="setup untrust-root"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
                   Execute="rollback"
                   Impersonate="no"
                   Return="ignore" />
+    <SetProperty Id="UntrustRoot"
+                 Value="&quot;[#DDTHostExe]&quot; setup untrust-root"
+                 Before="UntrustRoot"
+                 Sequence="execute" />
     <CustomAction Id="UntrustRoot"
-                  FileRef="DDTHostExe"
-                  ExeCommand="setup untrust-root"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
                   Execute="deferred"
                   Impersonate="no"
                   Return="ignore" />
     <!-- ServerDlg's card, as a setting. Only on a new install.. someone's own choice stays. -->
+    <SetProperty Id="SetNetbootInterface"
+                 Value="&quot;[#DDTHostExe]&quot; settings netboot-interface &quot;[NETBOOTINTERFACE]&quot;"
+                 Before="SetNetbootInterface"
+                 Sequence="execute" />
     <CustomAction Id="SetNetbootInterface"
-                  FileRef="DDTHostExe"
-                  ExeCommand="settings netboot-interface &quot;[NETBOOTINTERFACE]&quot;"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
                   Execute="deferred"
                   Impersonate="no"
                   Return="ignore" />
     <!-- IisDlg: IIS ARR going to DDT-->
     <Property Id="IISHOSTNAME" Secure="yes" />
     <Property Id="IISCERTIFICATE" Secure="yes" />
+    <SetProperty Id="TrustLocalProxy"
+                 Value="&quot;[#DDTHostExe]&quot; settings trust-local-proxy"
+                 Before="TrustLocalProxy"
+                 Sequence="execute" />
     <CustomAction Id="TrustLocalProxy"
-                  FileRef="DDTHostExe"
-                  ExeCommand="settings trust-local-proxy"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
                   Execute="deferred"
                   Impersonate="no"
                   Return="ignore" />
+    <SetProperty Id="PublishToIis"
+                 Value="&quot;[#DDTHostExe]&quot; setup iis &quot;[IISHOSTNAME]&quot; [IISCERTIFICATE]"
+                 Before="PublishToIis"
+                 Sequence="execute" />
     <CustomAction Id="PublishToIis"
-                  FileRef="DDTHostExe"
-                  ExeCommand="setup iis &quot;[IISHOSTNAME]&quot; [IISCERTIFICATE]"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
                   Execute="deferred"
                   Impersonate="no"
                   Return="check" />
+    <SetProperty Id="RollbackIis"
+                 Value="&quot;[#DDTHostExe]&quot; setup remove-iis"
+                 Before="RollbackIis"
+                 Sequence="execute" />
     <CustomAction Id="RollbackIis"
-                  FileRef="DDTHostExe"
-                  ExeCommand="setup remove-iis"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
                   Execute="rollback"
                   Impersonate="no"
                   Return="ignore" />
+    <SetProperty Id="RemoveIis"
+                 Value="&quot;[#DDTHostExe]&quot; setup remove-iis"
+                 Before="RemoveIis"
+                 Sequence="execute" />
     <CustomAction Id="RemoveIis"
-                  FileRef="DDTHostExe"
-                  ExeCommand="setup remove-iis"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
                   Execute="deferred"
                   Impersonate="no"
                   Return="ignore" />
     <!-- DependenciesDlg's box. Microsoft's setups are installers themselves, so they run once this one is done. -->
     <Property Id="INSTALLADK" Secure="yes" />
+    <SetProperty Id="InstallAdk"
+                 Value="&quot;[#DDTHostExe]&quot; setup adk background"
+                 Before="InstallAdk"
+                 Sequence="execute" />
     <CustomAction Id="InstallAdk"
-                  FileRef="DDTHostExe"
-                  ExeCommand="setup adk background"
+                  BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)"
+                  DllEntry="WixQuietExec"
                   Execute="deferred"
                   Impersonate="no"
                   Return="ignore" />

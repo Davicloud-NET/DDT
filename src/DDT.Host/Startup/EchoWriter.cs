@@ -17,4 +17,11 @@ internal sealed class EchoWriter(TextWriter console, TextWriter kept) : TextWrit
         console.Write(value);
         kept.Write(value);
     }
+
+    // In one piece: WiX's quiet exec takes a first write of a single byte for UTF-16
+    public override void Write(string? value)
+    {
+        console.Write(value);
+        kept.Write(value);
+    }
 }

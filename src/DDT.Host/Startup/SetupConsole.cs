@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Security.Cryptography.X509Certificates;
+using DDT.Core.Windows;
 using DDT.Server.Certificates;
 
 namespace DDT.Host.Startup;
@@ -137,10 +138,15 @@ public static class SetupConsole
         return Report(problem, output);
     }
 
-    // For the MSI: its verbs get a console window on the desktop, and this one outlives setup. So it starts again
-    // without one and returns.
+    // For the MSI, whose quiet exec waits for a verb and reads its output to the end. This one outlives setup, so it
+    // starts again without those pipes and returns.
     private static int StartAdkInBackground(TextWriter output)
     {
+        if (!StandardHandles.KeepFromChildren())
+        {
+            return Report("DDT.Host setup adk wasn't started, because setup would have waited for it. Run it yourself.", output);
+        }
+
         ProcessStartInfo start = new(Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "DDT.Host.exe"))
         {
             CreateNoWindow = true,

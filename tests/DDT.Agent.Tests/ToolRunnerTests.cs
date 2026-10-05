@@ -99,10 +99,13 @@ public sealed class ToolRunnerTests
     }
 
     // outer.cmd starts inner.cmd, which holds held.txt open for half a minute unless it was stopped with outer.cmd.
+    // The timeout runs on the test's clock, which moves once both scripts run. On a busy computer cmd.exe can take
+    // longer to start than any real timeout short enough for a test.
     [Fact]
     public async Task StopsTheToolAndEverythingItStartedAtTheTimeout()
     {
-        (ToolRunner tools, ScriptedAgentServer server, AgentLog log) = Create();
+        ManualTimeProvider time = new();
+        (ToolRunner tools, ScriptedAgentServer server, AgentLog log) = Create(time);
         string directory = Directory.CreateTempSubdirectory("ddt-tool-").FullName;
         string held = Path.Combine(directory, "held.txt");
         await File.WriteAllTextAsync(
@@ -116,11 +119,18 @@ public sealed class ToolRunnerTests
 
         try
         {
-            DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => tools.RunForExitCodeAsync(
+            Task<int> running = tools.RunForExitCodeAsync(
                 s_cmd,
                 ["/d", "/c", Path.Combine(directory, "outer.cmd")],
-                new ToolRunOptions(Timeout: TimeSpan.FromMilliseconds(500)),
-                TestContext.Current.CancellationToken));
+                new ToolRunOptions(Timeout: TimeSpan.FromMinutes(5)),
+                TestContext.Current.CancellationToken);
+
+            // The command line, and what outer.cmd printed
+            bool started = await EventuallyAsync(() => File.Exists(held) && log.QueuedLines >= 2, TimeSpan.FromSeconds(30));
+            Assert.True(started, "outer.cmd and inner.cmd did not both start.");
+
+            await time.AdvanceUntilAsync(TimeSpan.FromMinutes(5), () => running.IsCompleted);
+            DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => running);
 
             Assert.StartsWith("cmd.exe was still running after ", exception.Message, StringComparison.Ordinal);
             Assert.EndsWith(", so it was stopped with every process it started.", exception.Message, StringComparison.Ordinal);
@@ -159,11 +169,29 @@ public sealed class ToolRunnerTests
             stop.Token));
     }
 
-    private static (ToolRunner Tools, ScriptedAgentServer Server, AgentLog Log) Create()
+    private static (ToolRunner Tools, ScriptedAgentServer Server, AgentLog Log) Create(TimeProvider? time = null)
     {
         AgentLog log = new(new ImmediateTimeProvider(), TextWriter.Null);
 
-        return (new ToolRunner(log, TimeProvider.System), new ScriptedAgentServer(), log);
+        return (new ToolRunner(log, time ?? TimeProvider.System), new ScriptedAgentServer(), log);
+    }
+
+    // In real time, because the scripts start as fast as the computer lets them.
+    private static async Task<bool> EventuallyAsync(Func<bool> condition, TimeSpan wait)
+    {
+        long started = Stopwatch.GetTimestamp();
+
+        while (!condition())
+        {
+            if (Stopwatch.GetElapsedTime(started) >= wait)
+            {
+                return false;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(20), TestContext.Current.CancellationToken);
+        }
+
+        return true;
     }
 
     // True once the file opens exclusively for this process, or doesn't exist. A process that never started leaves no

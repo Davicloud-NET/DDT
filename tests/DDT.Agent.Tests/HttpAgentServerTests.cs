@@ -23,7 +23,10 @@ public sealed class HttpAgentServerTests
     private static readonly Guid s_runId = Guid.Parse("0197a3c0-0000-7000-8000-00000000000b");
     private static readonly Guid s_stepId = Guid.Parse("0197a3c0-0000-7000-8000-00000000000c");
 
+    // Only for the tests of the timeout itself. A request that is answered must not race it on a busy computer.
     private static readonly TimeSpan s_requestTimeout = TimeSpan.FromMilliseconds(200);
+
+    private static readonly TimeSpan s_answeredInTime = TimeSpan.FromSeconds(30);
 
     // The server's download queue, as the agent sees it: an answer that only starts after a while.
     private static readonly TimeSpan s_queueWait = TimeSpan.FromSeconds(1);
@@ -157,7 +160,7 @@ public sealed class HttpAgentServerTests
         listener.Start();
 
         Task<string> serving = AnswerAsync(listener, "HTTP/1.1 200 OK\r\nContent-Length: 5368709120\r\n", new byte[4096], cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
 
         long? length = await server.HeadRunFileAsync(s_machineId, "session", s_runId, "ab12", cancellationToken);
         await serving;
@@ -178,7 +181,7 @@ public sealed class HttpAgentServerTests
             $"HTTP/1.1 404 Not Found\r\nContent-Type: application/problem+json\r\nContent-Length: {problem.Length}\r\n",
             problem,
             cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
 
         AgentRequestException exception = await Assert.ThrowsAsync<AgentRequestException>(
             () => server.HeadRunFileAsync(s_machineId, "session", s_runId, "ab12", cancellationToken));
@@ -201,7 +204,7 @@ public sealed class HttpAgentServerTests
             $"HTTP/1.1 409 Conflict\r\nContent-Type: application/problem+json\r\nContent-Length: {problem.Length}\r\n",
             problem,
             cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
 
         AgentRequestException exception = await Assert.ThrowsAsync<AgentRequestException>(
             () => server.PickSequenceAsync(s_machineId, "session", new AgentRunRequest(s_stepId, 0, null), cancellationToken));
@@ -223,7 +226,7 @@ public sealed class HttpAgentServerTests
         listener.Start();
 
         Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
 
         IReadOnlyList<AgentSequenceChoice> choices = await server.GetSequencesAsync(s_machineId, "session", cancellationToken);
 
@@ -253,7 +256,7 @@ public sealed class HttpAgentServerTests
         listener.Start();
 
         Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
 
         AgentRun started = await server.PickSequenceAsync(s_machineId, "session", new AgentRunRequest(s_stepId, 1, "PC-042", AllowSecureBootMismatch: true), cancellationToken);
 
@@ -274,7 +277,7 @@ public sealed class HttpAgentServerTests
         listener.Start();
 
         Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
 
         AgentRunReportResult result = await server.ReportRunAsync(
             s_machineId,
@@ -310,7 +313,7 @@ public sealed class HttpAgentServerTests
             $"HTTP/1.1 206 Partial Content\r\nContent-Range: bytes 1000-1499/1500\r\nContent-Length: {rest.Length}\r\n",
             rest,
             cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
 
         AgentImageStream file = await server.OpenRunFileAsync(s_machineId, "session", new RunFileRange(s_runId, "ab12", 1000), cancellationToken);
 
@@ -342,7 +345,7 @@ public sealed class HttpAgentServerTests
             "HTTP/1.1 206 Partial Content\r\nContent-Range: bytes 0-0/5368709120\r\nContent-Length: 1\r\n",
             [0x50],
             cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
 
         long? length = await server.HeadRunFileAsync(s_machineId, "session", s_runId, "ab12", cancellationToken);
 
@@ -365,7 +368,7 @@ public sealed class HttpAgentServerTests
             $"HTTP/1.1 200 OK\r\nContent-Type: text/xml; charset=utf-8\r\nCache-Control: no-store\r\nContent-Length: {body.Length}\r\n",
             body,
             cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
 
         string unattend = await server.GetRunUnattendAsync(s_machineId, "session", s_runId, s_stepId, cancellationToken);
 
@@ -388,7 +391,7 @@ public sealed class HttpAgentServerTests
         listener.Start();
 
         Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
 
         AgentJoinDomainCredentials credentials = await server.GetRunJoinCredentialsAsync(s_machineId, "session", s_runId, s_stepId, cancellationToken);
 
@@ -411,7 +414,7 @@ public sealed class HttpAgentServerTests
         listener.Start();
 
         Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
 
         AgentStepAccounts accounts = await server.GetRunStepAccountsAsync(s_machineId, "session", s_runId, s_stepId, cancellationToken);
 
@@ -437,7 +440,7 @@ public sealed class HttpAgentServerTests
         listener.Start();
 
         Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
 
         AgentAnswersResult result = await server.AnswerRunInputsAsync(
             s_machineId,
@@ -470,7 +473,7 @@ public sealed class HttpAgentServerTests
             $"HTTP/1.1 400 Bad Request\r\nContent-Type: application/problem+json\r\nContent-Length: {problem.Length}\r\n",
             problem,
             cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
 
         AgentRequestException exception = await Assert.ThrowsAsync<AgentRequestException>(
             () => server.PickSequenceAsync(s_machineId, "session", new AgentRunRequest(s_stepId, 0, null), cancellationToken));

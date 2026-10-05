@@ -18,12 +18,11 @@ public sealed class FileLoggerProviderTests : IDisposable
     [Fact]
     public void AnEntryNamesItsTimeLevelCategoryAndEventAndCarriesTheException()
     {
-        using (FileLoggerProvider provider = new(_folder, _clock))
-        {
-            ILogger logger = provider.CreateLogger("DDT.Pxe.PxeHost");
-            logger.Log(LogLevel.Warning, new EventId(500), "Answering PXE on Ethernet", null, (state, _) => state);
-            logger.Log(LogLevel.Error, new EventId(7), "It broke", new InvalidOperationException("the reason"), (state, _) => state);
-        }
+        FileLoggerProvider provider = new(_folder, _clock);
+        ILogger logger = provider.CreateLogger("DDT.Pxe.PxeHost");
+        logger.Log(LogLevel.Warning, new EventId(500), "Answering PXE on Ethernet", null, (state, _) => state);
+        logger.Log(LogLevel.Error, new EventId(7), "It broke", new InvalidOperationException("the reason"), (state, _) => state);
+        Close(provider);
 
         string[] lines = File.ReadAllLines(Assert.Single(Files()));
         string time = _clock.GetLocalNow().ToString("yyyy-MM-dd HH:mm:ss.fff zzz", CultureInfo.InvariantCulture);
@@ -38,13 +37,12 @@ public sealed class FileLoggerProviderTests : IDisposable
     {
         string first = Day();
 
-        using (FileLoggerProvider provider = new(_folder, _clock))
-        {
-            ILogger logger = provider.CreateLogger("DDT");
-            logger.LogInformation("today");
-            _clock.Advance(TimeSpan.FromDays(1));
-            logger.LogInformation("tomorrow");
-        }
+        FileLoggerProvider provider = new(_folder, _clock);
+        ILogger logger = provider.CreateLogger("DDT");
+        logger.LogInformation("today");
+        _clock.Advance(TimeSpan.FromDays(1));
+        logger.LogInformation("tomorrow");
+        Close(provider);
 
         Assert.Equal([$"ddt-{first}.log", $"ddt-{Day()}.log"], Names());
         Assert.Contains("today", File.ReadAllText(Path.Combine(_folder, $"ddt-{first}.log")), StringComparison.Ordinal);
@@ -57,10 +55,9 @@ public sealed class FileLoggerProviderTests : IDisposable
         Directory.CreateDirectory(_folder);
         File.WriteAllBytes(Path.Combine(_folder, $"ddt-{Day()}.log"), new byte[100]);
 
-        using (FileLoggerProvider provider = new(_folder, _clock, maxFileBytes: 100))
-        {
-            provider.CreateLogger("DDT").LogInformation("over the limit");
-        }
+        FileLoggerProvider provider = new(_folder, _clock, maxFileBytes: 100);
+        provider.CreateLogger("DDT").LogInformation("over the limit");
+        Close(provider);
 
         Assert.Equal([$"ddt-{Day()}-1.log", $"ddt-{Day()}.log"], Names());
         Assert.Contains("over the limit", File.ReadAllText(Path.Combine(_folder, $"ddt-{Day()}-1.log")), StringComparison.Ordinal);
@@ -79,10 +76,9 @@ public sealed class FileLoggerProviderTests : IDisposable
             File.SetLastWriteTimeUtc(old, written.AddDays(day));
         }
 
-        using (FileLoggerProvider provider = new(_folder, _clock))
-        {
-            provider.CreateLogger("DDT").LogInformation("new");
-        }
+        FileLoggerProvider provider = new(_folder, _clock);
+        provider.CreateLogger("DDT").LogInformation("new");
+        Close(provider);
 
         string[] names = Names();
         Assert.Equal(FileLoggerProvider.MaxFiles, names.Length);
@@ -97,6 +93,13 @@ public sealed class FileLoggerProviderTests : IDisposable
         {
             Directory.Delete(_folder, recursive: true);
         }
+    }
+
+    // Dispose gives the writer five seconds, which a busy computer can use up. The files are read once it is done.
+    private static void Close(FileLoggerProvider provider)
+    {
+        provider.Dispose();
+        Assert.True(provider.Completion.Wait(TimeSpan.FromMinutes(2), TestContext.Current.CancellationToken), "The log's writer did not finish.");
     }
 
     private string Day() => _clock.GetLocalNow().ToString("yyyyMMdd", CultureInfo.InvariantCulture);

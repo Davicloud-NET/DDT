@@ -47,6 +47,9 @@ public sealed class FileLoggerProvider : ILoggerProvider
         _writer.Wait(TimeSpan.FromSeconds(5));
     }
 
+    // Ends once everything queued is written, however long Dispose waited for it
+    public Task Completion => _writer;
+
     internal DateTimeOffset Now => _timeProvider.GetLocalNow();
 
     internal void Write(DateTimeOffset written, string text) => _entries.Writer.TryWrite((written, text));

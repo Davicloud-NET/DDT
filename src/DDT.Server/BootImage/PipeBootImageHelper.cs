@@ -12,11 +12,12 @@ namespace DDT.Server.BootImage;
 
 // Talks to the helper over its named pipe, which only the DDT service's account may open. One request a connection:
 // a line of JSON there, lines of JSON back.
-public sealed class PipeBootImageHelper(string pipeName) : IBootImageHelper
+public sealed class PipeBootImageHelper(string pipeName, TimeSpan? connectTimeout = null) : IBootImageHelper
 {
     public const string PipeName = "DDT.Helper";
 
-    private static readonly TimeSpan s_connectTimeout = TimeSpan.FromSeconds(5);
+    // The helper runs on this computer, so it answers at once or is not there
+    private readonly TimeSpan _connectTimeout = connectTimeout ?? TimeSpan.FromSeconds(5);
 
     public PipeBootImageHelper()
         : this(PipeName)
@@ -54,7 +55,7 @@ public sealed class PipeBootImageHelper(string pipeName) : IBootImageHelper
 
         await using (pipe.ConfigureAwait(false))
         {
-            await pipe.ConnectAsync(s_connectTimeout, cancellationToken).ConfigureAwait(false);
+            await pipe.ConnectAsync(_connectTimeout, cancellationToken).ConfigureAwait(false);
 
             byte[] line = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request, HelperJsonContext.Default.HelperRequest) + "\n");
             await pipe.WriteAsync(line, cancellationToken).ConfigureAwait(false);

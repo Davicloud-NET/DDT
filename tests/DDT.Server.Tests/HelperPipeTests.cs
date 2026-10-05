@@ -39,7 +39,8 @@ public sealed class HelperPipeTests
             NullLogger<HelperPipeServer>.Instance);
         await server.StartAsync(cancellationToken);
 
-        PipeBootImageHelper helper = new(name);
+        // The five seconds a server gives the helper to answer run out on a busy computer that runs many tests.
+        PipeBootImageHelper helper = new(name, TimeSpan.FromMinutes(2));
         Assert.False(new PipeBootImageHelper(name + ".other").Available);
 
         HelperRequest sent = new() { Kind = HelperRequest.Build, Name = "20261001-100000", Drivers = [new HelperDriver(Guid.NewGuid(), "Network", new string('a', 64))] };

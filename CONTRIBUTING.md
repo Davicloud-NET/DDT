@@ -86,6 +86,22 @@ on Windows stay as they are:
 git archive HEAD | docker run -i --rm mcr.microsoft.com/dotnet/sdk:10.0-noble bash -c "mkdir /src && cd /src && tar -x && dotnet build DDT.slnx -p:EnableWindowsTargeting=true && dotnet test --project tests/DDT.Server.Tests"
 ```
 
+### Tests that only fail in CI
+
+A test that gives something a fixed time to happen, or that races a task in the background, passes
+on your PC and fails now and then on a busy CI runner. Running the tests again does not find it.
+This does, because it runs many tests at once on one or two CPU cores, several times, and lists
+the tests that failed:
+
+```powershell
+dotnet build DDT.slnx
+.\build\Test-Squeezed.ps1 -Cores 1 -AtOnce 64
+```
+
+Run it after writing a test that waits for something. The cure is nearly always the same: let the
+test wait for the thing itself, such as a report that arrived or a file that exists, with a limit
+no busy computer reaches, or put the time under test on the test's own clock.
+
 ### What the tests hold you to
 
 Several rules are enforced by tests rather than by review. When one of these tests fails, this is

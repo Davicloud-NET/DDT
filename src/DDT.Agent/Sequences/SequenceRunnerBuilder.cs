@@ -31,7 +31,7 @@ public sealed class SequenceRunnerBuilder
 
     public required IDomainJoiner Joiner { get; init; }
 
-    public required WindowsHandOver HandOver { get; init; }
+    public required IHandOver HandOver { get; init; }
 
     public required AgentLog Log { get; init; }
 

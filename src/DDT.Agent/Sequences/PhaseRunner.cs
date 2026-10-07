@@ -12,11 +12,11 @@ using DDT.Core.Sequences;
 namespace DDT.Agent.Sequences;
 
 // Runs the steps of the current phase with the engine while the heartbeat beats. It ends the phase as the engine's
-// outcome says: restarting, handing over to the installed Windows, finished or failed.
+// outcome says: restarting, handing over to the installed system, finished or failed.
 internal sealed class PhaseRunner(
     Func<SequenceRun, IStepRunner> steps,
     RunInputsWait inputs,
-    WindowsHandOver handOver,
+    IHandOver handOver,
     RunBootOrder bootOrder,
     RunEnding ending,
     AgentLog log)
@@ -43,7 +43,7 @@ internal sealed class PhaseRunner(
         {
             await TakeValuesAsync(run, stepping.Token).ConfigureAwait(false);
 
-            SequenceRunResult result = run.State.Phase == SequencePhase.Windows && !run.InInstalledSystem
+            SequenceRunResult result = RunPhases.IsInstalled(run.State.Phase) && !run.InInstalledSystem
                 ? await HandOverAgainAsync(run).ConfigureAwait(false)
                 : await engine.RunAsync(run.State, run.Machine, stepping.Token).ConfigureAwait(false);
             run.State = result.State;
@@ -115,7 +115,7 @@ internal sealed class PhaseRunner(
         {
             [RunVariables.WindowsPEReturns] = returns.ToString(CultureInfo.InvariantCulture),
         };
-        state = state with { Phase = SequencePhase.WindowsPE, Variables = variables };
+        state = state with { Phase = run.Phase, Variables = variables };
         await run.Store.SaveAsync(state, CancellationToken.None).ConfigureAwait(false);
 
         return new SequenceRunResult(SequenceOutcome.PhaseChangeRequired, state, null);
@@ -141,12 +141,7 @@ internal sealed class PhaseRunner(
                 throw new DeploymentStepException(SequenceRunner.WindowsPEAfterWindowsMessage);
             case SequenceOutcome.PhaseChangeRequired:
                 run.Heartbeat.Activity = RunActivity.HandingOver;
-                SequenceState handedOver = run.State;
-                await bootOrder.MakeBootableAsync(
-                    run,
-                    run.Session.RequireVolumes(),
-                    () => handOver.StageAsync(run.Session, run.Store, handedOver, cancellationToken),
-                    cancellationToken).ConfigureAwait(false);
+                await handOver.HandOverAsync(run, bootOrder, cancellationToken).ConfigureAwait(false);
                 break;
             case SequenceOutcome.RebootRequired:
                 run.Heartbeat.Activity = RunActivity.Restarting;

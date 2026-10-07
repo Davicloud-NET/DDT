@@ -43,7 +43,7 @@ internal sealed class PhaseRunner(
         {
             await TakeValuesAsync(run, stepping.Token).ConfigureAwait(false);
 
-            SequenceRunResult result = run.State.Phase == SequencePhase.Windows && !run.InWindows
+            SequenceRunResult result = run.State.Phase == SequencePhase.Windows && !run.InInstalledSystem
                 ? await HandOverAgainAsync(run).ConfigureAwait(false)
                 : await engine.RunAsync(run.State, run.Machine, stepping.Token).ConfigureAwait(false);
             run.State = result.State;
@@ -126,18 +126,18 @@ internal sealed class PhaseRunner(
     {
         switch (outcome)
         {
-            case SequenceOutcome.Completed when !run.InWindows && IsSet(run.State, RunVariables.WindowsApplied):
+            case SequenceOutcome.Completed when !run.InInstalledSystem && IsSet(run.State, RunVariables.WindowsApplied):
                 run.Heartbeat.Activity = RunActivity.Finishing;
                 await bootOrder.MakeBootableAsync(run, run.Session.RequireVolumes(), null, cancellationToken).ConfigureAwait(false);
                 break;
-            case SequenceOutcome.Completed when !run.InWindows && IsSet(run.State, RunVariables.RawImageWritten):
+            case SequenceOutcome.Completed when !run.InInstalledSystem && IsSet(run.State, RunVariables.RawImageWritten):
                 run.Heartbeat.Activity = RunActivity.Finishing;
                 await bootOrder.PutRawImageFirstAsync(run, cancellationToken).ConfigureAwait(false);
                 break;
             case SequenceOutcome.Completed:
                 run.Heartbeat.Activity = RunActivity.Finishing;
                 break;
-            case SequenceOutcome.PhaseChangeRequired when run.InWindows:
+            case SequenceOutcome.PhaseChangeRequired when run.InInstalledSystem:
                 throw new DeploymentStepException(SequenceRunner.WindowsPEAfterWindowsMessage);
             case SequenceOutcome.PhaseChangeRequired:
                 run.Heartbeat.Activity = RunActivity.HandingOver;
@@ -198,7 +198,7 @@ internal sealed class PhaseRunner(
         {
             SequenceOutcome.Completed => await ending.FinishAsync(run, cancellationToken).ConfigureAwait(false),
             SequenceOutcome.RebootRequired => await ending.RestartAsync(run, run.SamePhase, cancellationToken).ConfigureAwait(false),
-            SequenceOutcome.PhaseChangeRequired => await ending.RestartAsync(run, RestartInto.Windows, cancellationToken).ConfigureAwait(false),
+            SequenceOutcome.PhaseChangeRequired => await ending.RestartAsync(run, RestartInto.InstalledSystem, cancellationToken).ConfigureAwait(false),
             SequenceOutcome.Stopped => new RunResult(RunOutcome.Stopped),
             _ => await ending.FailAsync(run, error ?? "The run failed.", cancellationToken).ConfigureAwait(false),
         };

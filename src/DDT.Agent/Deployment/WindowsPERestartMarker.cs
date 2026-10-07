@@ -13,10 +13,14 @@ public sealed class WindowsPERestartMarker(string directory, AgentLog log, bool 
 {
     public const string FileName = "restart-due";
 
+    // The words in the file. An agent of another version reads them too, so they stay.
+    private const string InstalledSystemWord = "Windows";
+    private const string BootEnvironmentWord = "WindowsPE";
+
     public string FilePath => Path.Combine(directory, FileName);
 
-    // Where the due restart leads, or null when none is due. Anything but Windows leads back into Windows PE, which
-    // then decides with the server.
+    // Where the due restart leads, or null when none is due. Anything but the installed system's word leads back into
+    // the boot environment, which then decides with the server.
     public RestartInto? Due
     {
         get
@@ -28,7 +32,7 @@ public sealed class WindowsPERestartMarker(string directory, AgentLog log, bool 
 
             try
             {
-                return File.ReadAllText(FilePath).Trim() == nameof(RestartInto.Windows) ? RestartInto.Windows : RestartInto.WindowsPE;
+                return File.ReadAllText(FilePath).Trim() == InstalledSystemWord ? RestartInto.InstalledSystem : RestartInto.BootEnvironment;
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
@@ -52,7 +56,7 @@ public sealed class WindowsPERestartMarker(string directory, AgentLog log, bool 
         try
         {
             Directory.CreateDirectory(directory);
-            File.WriteAllText(FilePath, into == RestartInto.Windows ? nameof(RestartInto.Windows) : nameof(RestartInto.WindowsPE));
+            File.WriteAllText(FilePath, into == RestartInto.InstalledSystem ? InstalledSystemWord : BootEnvironmentWord);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

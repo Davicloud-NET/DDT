@@ -5,6 +5,7 @@
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
+using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Tests;
 
@@ -126,7 +127,7 @@ internal static class TestAgents
 
         return new(
             server,
-            new AgentMachine(machine.Identity ?? new DryRunMachineIdentityReader(1), tools, new LocalRunLocator([tools.Volumes.Windows]), Version),
+            new AgentMachine(machine.Identity ?? new DryRunMachineIdentityReader(1), tools, new LocalRunLocator([tools.Volumes.Windows]), Version, AgentEnvironment.WindowsPE),
             status,
             machine.Runner ?? Runner(server, tools, log, time, new TestRunnerOptions { Status = status }),
             log,

@@ -355,7 +355,7 @@ public sealed class AgentRunLoopTests : IDisposable
 
         Assert.Equal(AgentExitCodes.Stopped, stopped);
         Assert.Equal(["list", "list", "prepare", "partition 0"], _tools.Calls);
-        Assert.Equal(RestartInto.WindowsPE, RestartDue());
+        Assert.Equal(RestartInto.BootEnvironment, RestartDue());
 
         // It neither registers nor runs a step, and every start restarts until a restart empties the RAM disk.
         ScriptedAgentServer again = new();
@@ -387,8 +387,8 @@ public sealed class AgentRunLoopTests : IDisposable
     // However the restart became due, a start that finds it restarts the same way and says so once. It goes back into
     // WinPE from the boot entry this start came from, or into the installed Windows by the boot order the run left.
     [Theory]
-    [InlineData(RestartInto.WindowsPE)]
-    [InlineData(RestartInto.Windows)]
+    [InlineData(RestartInto.BootEnvironment)]
+    [InlineData(RestartInto.InstalledSystem)]
     public async Task ARestartStillDueComesBeforeTheRegistration(RestartInto into)
     {
         FakeUefiVariables firmware = new();
@@ -408,12 +408,12 @@ public sealed class AgentRunLoopTests : IDisposable
         Assert.Equal(AgentExitCodes.Restarting, exitCode);
         Assert.Empty(server.Calls);
         Assert.Empty(_tools.Calls);
-        string[] bootNext = into == RestartInto.WindowsPE ? ["BootNext"] : [];
+        string[] bootNext = into == RestartInto.BootEnvironment ? ["BootNext"] : [];
         Assert.Equal(bootNext, firmware.Writes);
         Assert.Equal([RecordingToolRunner.CommandLine(Path.Combine(Environment.SystemDirectory, "wpeutil.exe"), "reboot")], tools.Calls);
         Assert.Equal(
             [
-                into == RestartInto.WindowsPE
+                into == RestartInto.BootEnvironment
                     ? "The machine was to restart into Windows PE for the run but has not restarted since. Restarting it now."
                     : "The machine was to start the installed Windows but has not restarted since. Restarting it now.",
             ],
@@ -432,7 +432,7 @@ public sealed class AgentRunLoopTests : IDisposable
         ImmediateTimeProvider time = new();
         StringWriter console = new();
         AgentLog log = new(time, console);
-        TestAgents.RestartMarker(_tools, log).Set(RestartInto.WindowsPE);
+        TestAgents.RestartMarker(_tools, log).Set(RestartInto.BootEnvironment);
         ScriptedAgentServer server = new();
         SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, new() { ToolRunner = tools, Rebooter = new WindowsPERebooter(tools, firmware, log) });
         await server.Stop.CancelAsync();
@@ -444,7 +444,7 @@ public sealed class AgentRunLoopTests : IDisposable
         Assert.Empty(firmware.Writes);
         Assert.Empty(tools.Calls);
         Assert.Empty(Problems(console));
-        Assert.Equal(RestartInto.WindowsPE, RestartDue());
+        Assert.Equal(RestartInto.BootEnvironment, RestartDue());
     }
 
     // wpeutil failed, and the agent was started again by hand: the restart is still due, wherever it leads.
@@ -469,7 +469,7 @@ public sealed class AgentRunLoopTests : IDisposable
             .RunAsync(server.Stop.Token);
 
         Assert.Equal(AgentExitCodes.Restarting, first);
-        Assert.Equal(handOver ? RestartInto.Windows : RestartInto.WindowsPE, RestartDue());
+        Assert.Equal(handOver ? RestartInto.InstalledSystem : RestartInto.BootEnvironment, RestartDue());
         _tools.FailAt = null;
         int callsBefore = _tools.Calls.Count;
         ScriptedAgentServer again = new();

@@ -25,7 +25,7 @@ public sealed class SequenceRunnerTests : SequenceRunnerTestBase
 
         Assert.Equal(new RunResult(RunOutcome.Finished), result);
         Assert.Equal(["list", "prepare", "partition 0", "apply 1", "bcd", "firmware after the answer file", "reboot"], _tools.Calls);
-        Assert.Equal(RestartInto.Windows, RestartDue());
+        Assert.Equal(RestartInto.InstalledSystem, RestartDue());
         Assert.True(_tools.ImageWasThereToApply);
         Assert.False(Directory.Exists(Path.Combine(Windows, "DDT")));
         Assert.Equal([$"head-file {_image.Sha256} session-0", "run-report Running session-0"], server.Calls.Take(2));

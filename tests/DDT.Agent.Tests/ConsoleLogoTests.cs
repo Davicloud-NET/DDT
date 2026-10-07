@@ -111,7 +111,7 @@ public sealed class ConsoleLogoTests : IDisposable
         AgentLog log = new(_time, TextWriter.Null);
         AgentLoop loop = new(
             server,
-            new AgentMachine(new DryRunMachineIdentityReader(1), tools, new LocalRunLocator([tools.Volumes.Windows]), TestAgents.Version),
+            new AgentMachine(new DryRunMachineIdentityReader(1), tools, new LocalRunLocator([tools.Volumes.Windows]), TestAgents.Version, AgentEnvironment.WindowsPE),
             status,
             TestAgents.Runner(server, tools, log, _time, new() { Status = status }),
             log,

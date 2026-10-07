@@ -30,14 +30,14 @@ public sealed class WindowsPERestartMarkerTests : IDisposable
 
         Assert.Null(marker.Due);
 
-        marker.Set(RestartInto.WindowsPE);
+        marker.Set(RestartInto.BootEnvironment);
 
         // Another agent in the same WinPE, like one started by hand, finds it.
-        Assert.Equal(RestartInto.WindowsPE, new WindowsPERestartMarker(_directory, Log(), dryRun: false).Due);
+        Assert.Equal(RestartInto.BootEnvironment, new WindowsPERestartMarker(_directory, Log(), dryRun: false).Due);
 
-        marker.Set(RestartInto.Windows);
+        marker.Set(RestartInto.InstalledSystem);
 
-        Assert.Equal(RestartInto.Windows, marker.Due);
+        Assert.Equal(RestartInto.InstalledSystem, marker.Due);
 
         marker.Clear();
 
@@ -54,7 +54,7 @@ public sealed class WindowsPERestartMarkerTests : IDisposable
         Directory.CreateDirectory(_directory);
         await File.WriteAllTextAsync(marker.FilePath, "Wind", TestContext.Current.CancellationToken);
 
-        Assert.Equal(RestartInto.WindowsPE, marker.Due);
+        Assert.Equal(RestartInto.BootEnvironment, marker.Due);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public sealed class WindowsPERestartMarkerTests : IDisposable
         {
             WindowsPERestartMarker marker = new(_directory, Log(), dryRun: false);
 
-            marker.Set(RestartInto.WindowsPE);
+            marker.Set(RestartInto.BootEnvironment);
 
             Assert.Null(marker.Due);
             Assert.Contains("WARN  The restart could not be recorded", _console.ToString(), StringComparison.Ordinal);
@@ -84,7 +84,7 @@ public sealed class WindowsPERestartMarkerTests : IDisposable
     {
         WindowsPERestartMarker marker = new(_directory, Log(), dryRun: true);
 
-        marker.Set(RestartInto.WindowsPE);
+        marker.Set(RestartInto.BootEnvironment);
 
         Assert.Null(marker.Due);
         Assert.False(Directory.Exists(_directory));

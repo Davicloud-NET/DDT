@@ -210,7 +210,7 @@ public sealed class ConsoleStatus
         Change(state => state with
         {
             Stage = ConsoleStage.Restarting,
-            Restart = new ConsoleRestart(reason, into == RestartInto.WindowsPE ? RestartTarget.WindowsPE : RestartTarget.InstalledSystem),
+            Restart = new ConsoleRestart(reason, into == RestartInto.BootEnvironment ? RestartTarget.WindowsPE : RestartTarget.InstalledSystem),
         });
 
     // The machine should have restarted but couldn't. The agent stops, and someone has to restart the machine.

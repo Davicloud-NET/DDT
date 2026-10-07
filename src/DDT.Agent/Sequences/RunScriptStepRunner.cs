@@ -230,7 +230,7 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
     {
         Dictionary<string, string> environment = new(StringComparer.OrdinalIgnoreCase)
         {
-            ["DDT_PHASE"] = context.Phase == SequencePhase.Windows ? nameof(SequencePhase.Windows) : nameof(SequencePhase.WindowsPE),
+            ["DDT_PHASE"] = context.Phase.ToString(),
             ["DDT_RUN_ID"] = context.RunId.ToString("D"),
             ["DDT_STEP_ID"] = step.Id.ToString("D"),
         };

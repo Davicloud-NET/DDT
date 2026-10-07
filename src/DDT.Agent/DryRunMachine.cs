@@ -6,6 +6,7 @@ using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Agent.WindowsPhase;
+using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
 
 namespace DDT.Agent;
@@ -45,7 +46,8 @@ public sealed class DryRunMachine(
     {
         DryRunDiskPartitioner disks = new(options.Root, log);
         SequenceRunner runner = Runner(server, disks, new DryRunToolRunner(log), new DryRunRebooter(log), SequencePhase.WindowsPE);
-        AgentLoop loop = new(server, new AgentMachine(Identity(), disks, new LocalRunLocator([Windows]), options.AgentVersion), status, runner, log, timeProvider);
+        AgentMachine machine = new(Identity(), disks, new LocalRunLocator([Windows]), options.AgentVersion, AgentEnvironment.WindowsPE);
+        AgentLoop loop = new(server, machine, status, runner, log, timeProvider);
 
         return loop.RunAsync(cancellationToken);
     }

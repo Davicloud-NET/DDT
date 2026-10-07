@@ -52,8 +52,13 @@ public sealed class SequenceRunner
         _log = log;
     }
 
-    public Task<RunResult> RunAsync(RunRequest request, CancellationToken cancellationToken) =>
-        RunAsync(SequencePhase.WindowsPE, _ending.RecordWindowsPERestart, request, cancellationToken);
+    public Task<RunResult> RunAsync(RunRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(request.Run);
+
+        return RunAsync(RunPhases.BootOf(request.Run.Sequence), _ending.RecordWindowsPERestart, request, cancellationToken);
+    }
 
     // If WinPE recorded a pending restart, it happens first at the next start. Returns how it ended, or null if none
     // was due.
@@ -80,7 +85,7 @@ public sealed class SequenceRunner
             ?? await _phases.RunAsync(run, cancellationToken).ConfigureAwait(false);
 
         // In Windows the agent's removal deletes the dry run's root.
-        if (_options.DryRun && phase == SequencePhase.WindowsPE && result.Outcome is RunOutcome.Finished or RunOutcome.Failed)
+        if (_options.DryRun && !RunPhases.IsInstalled(phase) && result.Outcome is RunOutcome.Finished or RunOutcome.Failed)
         {
             Leftovers.Delete(_options.WorkDirectory, _log);
         }

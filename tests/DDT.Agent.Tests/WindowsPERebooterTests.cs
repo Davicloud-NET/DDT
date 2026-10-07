@@ -33,7 +33,7 @@ public sealed class WindowsPERebooterTests
         _variables.Values["BootCurrent"] = [0x03, 0x00];
         _variables.Values["Boot0003"] = [0x01];
 
-        await Rebooter().RebootAsync(RestartInto.WindowsPE, TestContext.Current.CancellationToken);
+        await Rebooter().RebootAsync(RestartInto.BootEnvironment, TestContext.Current.CancellationToken);
 
         Assert.Equal(["BootNext"], _variables.Writes);
         Assert.Equal([0x03, 0x00], _variables.Values["BootNext"]);
@@ -47,7 +47,7 @@ public sealed class WindowsPERebooterTests
     {
         _variables.Values["BootCurrent"] = [0x0A, 0x00];
 
-        await Rebooter().RebootAsync(RestartInto.WindowsPE, TestContext.Current.CancellationToken);
+        await Rebooter().RebootAsync(RestartInto.BootEnvironment, TestContext.Current.CancellationToken);
 
         Assert.Empty(_variables.Writes);
         Assert.Equal([s_wpeutil], _tools.Calls);
@@ -59,7 +59,7 @@ public sealed class WindowsPERebooterTests
     [Fact]
     public async Task RestartsPlainlyWhenTheFirmwareDoesNotSayWhereThisStartCameFrom()
     {
-        await Rebooter().RebootAsync(RestartInto.WindowsPE, TestContext.Current.CancellationToken);
+        await Rebooter().RebootAsync(RestartInto.BootEnvironment, TestContext.Current.CancellationToken);
 
         Assert.Empty(_variables.Writes);
         Assert.Equal([s_wpeutil], _tools.Calls);
@@ -71,7 +71,7 @@ public sealed class WindowsPERebooterTests
     {
         _variables.Failure = new DeploymentStepException("This machine did not start in UEFI mode, so its firmware variables cannot be read.");
 
-        await Rebooter().RebootAsync(RestartInto.WindowsPE, TestContext.Current.CancellationToken);
+        await Rebooter().RebootAsync(RestartInto.BootEnvironment, TestContext.Current.CancellationToken);
 
         Assert.Equal([s_wpeutil], _tools.Calls);
         Assert.Contains(
@@ -85,15 +85,15 @@ public sealed class WindowsPERebooterTests
         _variables.Values["BootCurrent"] = [0x03, 0x00];
         _variables.Values["Boot0003"] = [0x01];
 
-        await Rebooter().RebootAsync(RestartInto.Windows, TestContext.Current.CancellationToken);
+        await Rebooter().RebootAsync(RestartInto.InstalledSystem, TestContext.Current.CancellationToken);
 
         Assert.Empty(_variables.Writes);
         Assert.Equal([s_wpeutil], _tools.Calls);
     }
 
     [Theory]
-    [InlineData(RestartInto.WindowsPE, "BootNext would be set to BootCurrent")]
-    [InlineData(RestartInto.Windows, "In Windows PE, wpeutil reboot would run now.")]
+    [InlineData(RestartInto.BootEnvironment, "BootNext would be set to BootCurrent")]
+    [InlineData(RestartInto.InstalledSystem, "In Windows PE, wpeutil reboot would run now.")]
     public async Task ADryRunOnlySaysWhatWouldHappen(RestartInto into, string said)
     {
         await new DryRunRebooter(_log).RebootAsync(into, TestContext.Current.CancellationToken);

@@ -19,7 +19,7 @@ internal sealed class WindowsRestart(IRebooter rebooter, IRestartMarker marker, 
     {
         try
         {
-            await rebooter.RebootAsync(RestartInto.Windows, cancellationToken).ConfigureAwait(false);
+            await rebooter.RebootAsync(RestartInto.InstalledSystem, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -58,7 +58,7 @@ internal sealed class WindowsRestart(IRebooter rebooter, IRestartMarker marker, 
 
         try
         {
-            await rebooter.RebootAsync(RestartInto.Windows, cancellationToken).ConfigureAwait(false);
+            await rebooter.RebootAsync(RestartInto.InstalledSystem, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

@@ -8,7 +8,7 @@ public sealed class DryRunRebooter(AgentLog log) : IRebooter
 {
     public Task RebootAsync(RestartInto into, CancellationToken cancellationToken)
     {
-        log.Information(into == RestartInto.WindowsPE
+        log.Information(into == RestartInto.BootEnvironment
             ? "Dry run: this computer is not restarted. In Windows PE, BootNext would be set to BootCurrent, so the machine starts " +
                 "from the network again, and wpeutil reboot would run now."
             : "Dry run: this computer is not restarted. In Windows PE, wpeutil reboot would run now.");

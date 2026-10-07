@@ -24,7 +24,7 @@ internal sealed class RunEnding(
     private const int MaxFinalFlushFailures = 3;
 
     // Recorded as soon as the engine asks for a restart. The state already has that step as done.
-    public void RecordWindowsPERestart() => restartMarker.Set(RestartInto.WindowsPE);
+    public void RecordWindowsPERestart() => restartMarker.Set(RestartInto.BootEnvironment);
 
     // If WinPE recorded a restart that never happened, because the agent was stopped or wpeutil failed, it happens
     // first. Returns null when none is due. A start that is already stopped leaves it due.
@@ -40,7 +40,7 @@ internal sealed class RunEnding(
             return RunOutcome.Stopped;
         }
 
-        log.Warning(into == RestartInto.WindowsPE
+        log.Warning(into == RestartInto.BootEnvironment
             ? "The machine was to restart into Windows PE for the run but has not restarted since. Restarting it now."
             : "The machine was to start the installed Windows but has not restarted since. Restarting it now.");
 
@@ -55,13 +55,13 @@ internal sealed class RunEnding(
     // the server has it.
     public async Task<RunResult> FinishAsync(SequenceRun run, CancellationToken cancellationToken)
     {
-        log.Information(run.InWindows ? "The run is done. Sending the last log lines." : "The run is done. Sending the last log lines, then restarting.");
+        log.Information(run.InInstalledSystem ? "The run is done. Sending the last log lines." : "The run is done. Sending the last log lines, then restarting.");
         status?.RunFinished();
 
         AgentRunReport done = run.Heartbeat.Snapshot(DeploymentState.Done);
         await EndRunAsync(run, run.Store.Files, done).ConfigureAwait(false);
 
-        if (!run.InWindows && run.Session.RunDirectory is { } directory)
+        if (!run.InInstalledSystem && run.Session.RunDirectory is { } directory)
         {
             Leftovers.Delete(directory, log);
         }
@@ -73,13 +73,13 @@ internal sealed class RunEnding(
 
         Reported(run, run.Store.Files);
 
-        if (run.InWindows)
+        if (run.InInstalledSystem)
         {
             return new RunResult(RunOutcome.Finished);
         }
 
         return await RebootAsync(
-            RestartInto.Windows,
+            RestartInto.InstalledSystem,
             RestartReason.RunDone,
             RunOutcome.Finished,
             "Restart it by hand; the run is done.",
@@ -90,9 +90,9 @@ internal sealed class RunEnding(
     // run and use its answer file. So for a hand-over, a refused token keeps it from starting.
     public async Task<RunResult> RestartAsync(SequenceRun run, RestartInto into, CancellationToken cancellationToken)
     {
-        bool handingOver = !run.InWindows && into == RestartInto.Windows;
+        bool handingOver = !run.InInstalledSystem && into == RestartInto.InstalledSystem;
         run.Heartbeat.Activity = RunActivity.Restarting;
-        log.Information(run.InWindows
+        log.Information(run.InInstalledSystem
             ? "Windows restarts, and the run goes on after the restart."
             : handingOver
                 ? "The machine restarts into the installed Windows, where the agent goes on with the run."
@@ -227,7 +227,7 @@ internal sealed class RunEnding(
             return;
         }
 
-        if (run.InWindows)
+        if (run.InInstalledSystem)
         {
             try
             {
@@ -275,7 +275,7 @@ internal sealed class RunEnding(
             // The server stores Done before it answers, so a lost answer makes the retry look like this.
             log.Warning("The server no longer accepts this machine's token. It most likely recorded the run as done already.");
         }
-        catch (DeploymentStepException exception) when (run.InWindows && exception.InnerException is { } cause && !ServerCallRules.IsRefusal(cause))
+        catch (DeploymentStepException exception) when (run.InInstalledSystem && exception.InnerException is { } cause && !ServerCallRules.IsRefusal(cause))
         {
             log.Warning($"The server could not be told that the run is done ({LogText.OneLine(exception)}). It is told once it can be reached.");
 
@@ -284,7 +284,7 @@ internal sealed class RunEnding(
         catch (Exception exception)
         {
             log.Warning($"The server could not be told that the run is done ({LogText.OneLine(exception)}). " +
-                (run.InWindows ? "The agent removes itself anyway." : "The machine restarts anyway."));
+                (run.InInstalledSystem ? "The agent removes itself anyway." : "The machine restarts anyway."));
         }
 
         return null;
@@ -293,7 +293,7 @@ internal sealed class RunEnding(
     // The server has the run's last report, or will never take it.
     private static void Reported(SequenceRun run, RunFiles? files)
     {
-        if (run.InWindows)
+        if (run.InInstalledSystem)
         {
             files?.Discard();
         }
@@ -308,7 +308,7 @@ internal sealed class RunEnding(
             LocalRun.DeleteAnswerFile(run.State, volumes.Windows, log);
         }
 
-        if (!run.InWindows)
+        if (!run.InInstalledSystem)
         {
             restartMarker.Clear();
         }

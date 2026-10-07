@@ -4,10 +4,10 @@
 
 namespace DDT.Agent.Deployment;
 
-// Where a restart should lead. Either back into WinPE from the network, for the next step of a run whose state waits
-// on disk, or into the Windows on the disk.
+// Where a restart should lead. Either back into the boot environment from the network, for the next step of a run
+// whose state waits on disk, or into the system on the disk.
 public enum RestartInto
 {
-    WindowsPE,
-    Windows,
+    BootEnvironment,
+    InstalledSystem,
 }

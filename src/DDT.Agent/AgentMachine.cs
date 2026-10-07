@@ -4,8 +4,14 @@
 
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
+using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
 // This agent and the machine it runs on, as the loop sees them. A dry run and the tests fake the machine.
-public sealed record AgentMachine(IMachineIdentityReader Identity, IDiskPartitioner Disks, LocalRunLocator Runs, string AgentVersion);
+public sealed record AgentMachine(
+    IMachineIdentityReader Identity,
+    IDiskPartitioner Disks,
+    LocalRunLocator Runs,
+    string AgentVersion,
+    AgentEnvironment Environment);

@@ -50,7 +50,7 @@ public sealed class SequenceRunnerHandOverTests : SequenceRunnerTestBase
 
         // Windows setup still needs the answer file.
         Assert.True(File.Exists(UnattendFile.PathIn(Windows)));
-        Assert.Equal(RestartInto.Windows, RestartDue());
+        Assert.Equal(RestartInto.InstalledSystem, RestartDue());
 
         AgentRunReport last = server.RunReports[^1];
         Assert.Equal((DeploymentState.Running, SequencePhase.Windows, RunActivity.Restarting), (last.State, last.Phase, last.Activity));

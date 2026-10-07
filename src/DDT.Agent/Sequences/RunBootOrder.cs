@@ -27,7 +27,7 @@ internal sealed class RunBootOrder(IBcdWriter bcdWriter, WindowsPERestartMarker 
         await bcdWriter.WriteAsync(volumes, cancellationToken).ConfigureAwait(false);
         run.WindowsFirst = true;
         await bcdWriter.PutWindowsFirstAsync(volumes, cancellationToken).ConfigureAwait(false);
-        restartMarker.Set(RestartInto.Windows);
+        restartMarker.Set(RestartInto.InstalledSystem);
     }
 
     // A raw disk image starts from its fallback loader, under a boot entry named after the image. An image without an
@@ -53,7 +53,7 @@ internal sealed class RunBootOrder(IBcdWriter bcdWriter, WindowsPERestartMarker 
             description,
             RunVariables.ErasedSystemPartitionIdsOf(state.Variables),
             cancellationToken).ConfigureAwait(false);
-        restartMarker.Set(RestartInto.Windows);
+        restartMarker.Set(RestartInto.InstalledSystem);
     }
 
     // With the boot order restored, a restart starts from the network, so no restart into the installed system is due.

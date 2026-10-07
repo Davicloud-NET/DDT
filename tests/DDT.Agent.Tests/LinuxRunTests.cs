@@ -80,7 +80,7 @@ public sealed class LinuxRunTests : IDisposable
         Assert.Equal(
             ["list", "clean 0", $"firmware noble-test {FirmwareBootEntry.FallbackLoaderPath} on partition {TestRawImage.EspNumber}", "reboot"],
             _tools.Calls);
-        Assert.Equal(RestartInto.Windows, TestAgents.RestartMarker(_tools, new AgentLog(new ImmediateTimeProvider(), TextWriter.Null)).Due);
+        Assert.Equal(RestartInto.InstalledSystem, TestAgents.RestartMarker(_tools, new AgentLog(new ImmediateTimeProvider(), TextWriter.Null)).Due);
         Assert.Equal((DeploymentState.Done, RunActivity.Finishing), (server.RunReports[^1].State, server.RunReports[^1].Activity));
         Assert.Equal([StepState.Done, StepState.Done], server.RunReports[^1].Steps.Select(step => step.State));
 

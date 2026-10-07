@@ -167,7 +167,7 @@ internal sealed class FakeDeploymentTools
     // A reboot into Windows is journaled as a plain reboot, the same as before task sequences.
     public Task RebootAsync(RestartInto into, CancellationToken cancellationToken)
     {
-        Record("reboot", into == RestartInto.WindowsPE ? " into Windows PE" : string.Empty);
+        Record("reboot", into == RestartInto.BootEnvironment ? " into Windows PE" : string.Empty);
 
         return Task.CompletedTask;
     }

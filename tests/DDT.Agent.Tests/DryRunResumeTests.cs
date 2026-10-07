@@ -110,7 +110,7 @@ public sealed class DryRunResumeTests : IDisposable
 
         SequenceRunResult first = await Engine(firstSession, firstStore, firstDisk, firstLog)
             .RunAsync(SequenceStates.Start(s_runId, s_definition), s_machine, cancellationToken);
-        await new DryRunRebooter(firstLog).RebootAsync(RestartInto.WindowsPE, cancellationToken);
+        await new DryRunRebooter(firstLog).RebootAsync(RestartInto.BootEnvironment, cancellationToken);
 
         Assert.Equal(SequenceOutcome.RebootRequired, first.Outcome);
         Assert.Equal(3, first.State.NextIndex);
@@ -290,7 +290,7 @@ public sealed class DryRunResumeTests : IDisposable
     private AgentLoop Agent(AgentLog log) =>
         new(
             _server,
-            new AgentMachine(new DryRunMachineIdentityReader(1), new DryRunDiskPartitioner(_root, log), new LocalRunLocator([Path.Combine(_root, "W")]), TestAgents.Version),
+            new AgentMachine(new DryRunMachineIdentityReader(1), new DryRunDiskPartitioner(_root, log), new LocalRunLocator([Path.Combine(_root, "W")]), TestAgents.Version, AgentEnvironment.WindowsPE),
             TestAgents.Status(new ScriptedSignInPrompt { IsAvailable = false }, log),
             Runner(log),
             log,

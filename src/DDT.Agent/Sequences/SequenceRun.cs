@@ -13,7 +13,7 @@ internal sealed class SequenceRun
 {
     public required RunRequest Request { get; init; }
 
-    // Where the run continues: in WinPE, or in the installed Windows.
+    // Where the run continues: in the boot environment, or in the installed system.
     public required SequencePhase Phase { get; init; }
 
     // Called as soon as a restart back into the current phase is due, before the server hears about it.
@@ -34,10 +34,10 @@ internal sealed class SequenceRun
 
     public LocalRun? Resumed => Request.Resumed;
 
-    public bool InWindows => Phase == SequencePhase.Windows;
+    public bool InInstalledSystem => RunPhases.IsInstalled(Phase);
 
     // A restart the run asks for leads back into the current phase.
-    public RestartInto SamePhase => InWindows ? RestartInto.Windows : RestartInto.WindowsPE;
+    public RestartInto SamePhase => InInstalledSystem ? RestartInto.InstalledSystem : RestartInto.BootEnvironment;
 
     // Only a fresh run waits for its inputs. A run that continues after a restart already got its values.
     public bool WaitsForInputs => Resumed is null && Session.Run.PendingInputs is { Count: > 0 };

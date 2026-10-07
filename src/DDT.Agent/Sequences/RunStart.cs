@@ -101,7 +101,7 @@ internal sealed class RunStart(
     // runs from the run's Windows volume, and its steps need no other volume.
     private async Task ResumeAsync(SequenceRun run, LocalRun resumed, CancellationToken cancellationToken)
     {
-        if (run.InWindows)
+        if (run.InInstalledSystem)
         {
             run.Session.RunningWindows = resumed.WindowsRoot;
         }

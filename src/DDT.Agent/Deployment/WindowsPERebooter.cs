@@ -18,7 +18,7 @@ public sealed class WindowsPERebooter(IToolRunner tools, IUefiVariables variable
 
     public async Task RebootAsync(RestartInto into, CancellationToken cancellationToken)
     {
-        if (into == RestartInto.WindowsPE)
+        if (into == RestartInto.BootEnvironment)
         {
             StartNextFromThisEntry();
         }

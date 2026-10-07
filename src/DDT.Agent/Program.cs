@@ -8,6 +8,7 @@ using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Agent.WindowsPhase;
+using DDT.Contracts.Agents;
 
 // The service control manager gives a service 30 seconds to connect, so nothing comes before this.
 if (args.Contains(WindowsServiceHost.Argument))
@@ -160,7 +161,7 @@ SequenceRunner runner = new SequenceRunnerBuilder
 }.Build();
 AgentLoop loop = new(
     server,
-    new AgentMachine(new HardwareMachineIdentityReader(), disks, new LocalRunLocator(LocalRunLocator.FixedDrives()), version),
+    new AgentMachine(new HardwareMachineIdentityReader(), disks, new LocalRunLocator(LocalRunLocator.FixedDrives()), version, AgentEnvironment.WindowsPE),
     status,
     runner,
     log,

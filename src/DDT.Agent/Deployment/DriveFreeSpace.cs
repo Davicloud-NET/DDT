@@ -7,5 +7,12 @@ namespace DDT.Agent.Deployment;
 // The free space of the drive a path is on, as Windows counts it for the agent's account.
 public sealed class DriveFreeSpace : IFreeSpace
 {
-    public long AvailableBytes(string path) => new DriveInfo(Path.GetPathRoot(Path.GetFullPath(path))!).AvailableFreeSpace;
+    public long AvailableBytes(string path)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+
+        string root = Path.GetPathRoot(Path.GetFullPath(path)) ?? throw new ArgumentException($"{path} is on no drive.", nameof(path));
+
+        return new DriveInfo(root).AvailableFreeSpace;
+    }
 }

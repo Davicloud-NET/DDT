@@ -7,8 +7,7 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.InstalledPhase;
 
-// DDT's session and the console in it, where the machine shows the run while the service continues it. A dry run has
-// neither, and without an answer file to sign in with there's no session.
+// DDT's session and the console in it, where the machine shows the run. A dry run has neither.
 internal sealed class InstalledPhaseConsole(IDeploySession? session, ConsoleStatus? status, ConsoleLogo? logo)
 {
     public ConsoleStatus? Status => status;

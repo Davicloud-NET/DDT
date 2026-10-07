@@ -8,10 +8,7 @@ using DDT.Contracts.Deployments;
 
 namespace DDT.Agent.InstalledPhase;
 
-// The agent's service in the installed system, in Windows the DdtSequence service. It continues the run the hand-over
-// left in its run directory while the server still has it running, and removes the agent once the run is over. How the
-// run ended stays on disk with the run token until the server has it, so a stop or an unreachable server only delays
-// the report.
+// The agent's service in the installed system. Goes on with the handed-over run, then removes the agent.
 public sealed class InstalledPhaseLoop
 {
     public static readonly TimeSpan SetupPollInterval = TimeSpan.FromSeconds(15);

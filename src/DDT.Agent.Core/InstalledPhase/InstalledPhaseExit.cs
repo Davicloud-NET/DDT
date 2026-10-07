@@ -7,8 +7,7 @@ using DDT.Contracts.Deployments;
 
 namespace DDT.Agent.InstalledPhase;
 
-// How the service ends: it waits for the system to restart, or removes the agent once the run is over. DDT's session
-// ends first, and nothing may stop the removal halfway.
+// Ends the service: waits for the restart, or removes the agent once the run is over.
 internal sealed class InstalledPhaseExit(
     IAgentRemoval removal,
     InstalledPhaseRestart restart,

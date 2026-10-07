@@ -9,8 +9,7 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.InstalledPhase;
 
-// The service's calls to the server: the registration with the run token, the question whether the run continues, and
-// the run's last report. The network may still be coming up while the system starts, so each call retries.
+// The service's calls to the server. Each retries, because the network may still be coming up.
 internal sealed class InstalledPhaseCalls(
     IAgentServer server,
     IMachineIdentityReader identityReader,

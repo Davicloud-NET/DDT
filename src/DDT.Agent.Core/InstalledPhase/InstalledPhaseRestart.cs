@@ -7,9 +7,7 @@ using DDT.Agent.Sequences;
 
 namespace DDT.Agent.InstalledPhase;
 
-// The restarts of the installed system a run asks for. The marker keeps a restart due from the moment the run knows
-// about it until it happens. So if the service starts again before the restart happened, it restarts the system
-// instead of continuing.
+// The restarts a run asks for in the installed system. The marker keeps one due until it happens.
 internal sealed class InstalledPhaseRestart(
     IRebooter rebooter,
     IRestartMarker marker,

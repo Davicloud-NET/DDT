@@ -8,9 +8,7 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.InstalledPhase;
 
-// The system's own setup comes before the run's next step, however long someone takes at Windows' out-of-box
-// experience. A step that ran during setup would be cut off by its restarts. The heartbeat keeps the run's page up to
-// date meanwhile.
+// Waits for the system's own setup, whose restarts would cut a step off.
 internal sealed class InstalledPhaseSetupWait(
     InstalledPhaseProfile profile,
     RunHeartbeatFactory heartbeats,

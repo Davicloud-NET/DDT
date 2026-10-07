@@ -6,6 +6,7 @@ using System.Net;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Rules;
@@ -40,9 +41,10 @@ public sealed class MachineArrivals(
         DeploymentState? before = active?.State;
         Continuation continuation = machine is null ? Continuation.None : Continues(registration, machine, active);
 
-        // The service in Windows only ever continues a run. Starting over would make the machine Pending, and an
-        // approval would then hand WinPE steps to a running Windows. So the service changes nothing and removes itself.
-        if (registration.Environment == AgentEnvironment.Windows && !continuation.Resumes && continuation.Continued is null)
+        // The service in an installed system only ever continues a run. Starting over would make the machine Pending,
+        // and an approval would then hand boot steps to a running Windows. So the service changes nothing and removes
+        // itself.
+        if (!SequenceKinds.IsBoot(SequenceKinds.Phase(registration.Environment)) && !continuation.Resumes && continuation.Continued is null)
         {
             RegistrationLog.NothingToContinue(logger, machine?.Id, address ?? "unknown");
 

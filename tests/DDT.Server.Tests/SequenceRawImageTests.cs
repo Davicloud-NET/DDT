@@ -46,6 +46,7 @@ public sealed class SequenceRawImageTests(DdtApplication application) : IClassFi
         Assert.True(summary.ErasesDisk);
         Assert.True(summary.NeedsComputerName);
         Assert.False(summary.ContinuesInWindows);
+        Assert.Equal(SequenceKind.Linux, summary.Kind);
         Assert.Equal(image.Name, summary.RawImageName);
         Assert.Equal(ImageBootCapability.SecureBootOk, summary.RawImageBootCapability);
     }

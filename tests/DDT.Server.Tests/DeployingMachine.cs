@@ -41,35 +41,47 @@ public sealed class DeployingMachine : IDisposable
     public static AgentDisk Disk(int number, string model = "Msft Virtual Disk", long sizeBytes = 64L * 1024 * 1024 * 1024) =>
         new(number, model, sizeBytes, "SCSI", 0);
 
-    public static async Task<DeployingMachine> RegisterAsync(
+    public static Task<DeployingMachine> RegisterAsync(
         DdtApplication application,
         IReadOnlyList<AgentDisk>? disks = null,
         bool? secureBootEnabled = null,
         int? sequenceVersion = null,
-        UefiCa? trustedUefiCas = null)
-    {
-        ArgumentNullException.ThrowIfNull(application);
-
-        AgentClient agent = new(application.CreateDefaultClient(), TestRemoteAddress.Unique());
-        AgentRegistration registration = AgentClient.Registration(
-            Guid.NewGuid().ToString("D"),
-            "02" + Convert.ToHexString(Guid.NewGuid().ToByteArray(), 0, 5)) with
+        UefiCa? trustedUefiCas = null) =>
+        RegisterAsync(application, registration => registration with
         {
             Disks = disks,
             SecureBootEnabled = secureBootEnabled,
             TrustedUefiCas = trustedUefiCas,
-        };
+            SequenceVersion = sequenceVersion ?? registration.SequenceVersion,
+        });
 
-        if (sequenceVersion is { } version)
-        {
-            registration = registration with { SequenceVersion = version };
-        }
+    // A machine whose agent registers as change makes it, such as from the Linux boot environment.
+    public static async Task<DeployingMachine> RegisterAsync(DdtApplication application, Func<AgentRegistration, AgentRegistration> change)
+    {
+        ArgumentNullException.ThrowIfNull(application);
+        ArgumentNullException.ThrowIfNull(change);
+
+        AgentClient agent = new(application.CreateDefaultClient(), TestRemoteAddress.Unique());
+        AgentRegistration registration = change(AgentClient.Registration(
+            Guid.NewGuid().ToString("D"),
+            "02" + Convert.ToHexString(Guid.NewGuid().ToByteArray(), 0, 5)));
 
         AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
             await agent.RegisterAsync(registration));
 
         return new DeployingMachine(agent, registration, registered);
     }
+
+    // A registration from the Linux boot environment, which starts the sequences that write a raw disk image, with one
+    // disk.
+    public static Func<AgentRegistration, AgentRegistration> LinuxBoot(bool? secureBootEnabled = null, UefiCa? trustedUefiCas = null) =>
+        registration => registration with
+        {
+            Environment = AgentEnvironment.LinuxBoot,
+            Disks = [Disk(0)],
+            SecureBootEnabled = secureBootEnabled,
+            TrustedUefiCas = trustedUefiCas,
+        };
 
     // A machine an operator signed in at. It's approved and may choose a sequence at the machine.
     public static async Task<DeployingMachine> SignedInAsync(
@@ -81,13 +93,22 @@ public sealed class DeployingMachine : IDisposable
     {
         DeployingMachine machine = await RegisterAsync(application, disks, secureBootEnabled: secureBootEnabled, sequenceVersion: sequenceVersion);
 
+        return await machine.SignInAsync(userName);
+    }
+
+    // A machine an operator signed in at, whose agent registered as change makes it.
+    public static async Task<DeployingMachine> SignedInAsync(DdtApplication application, string userName, Func<AgentRegistration, AgentRegistration> change) =>
+        await (await RegisterAsync(application, change)).SignInAsync(userName);
+
+    private async Task<DeployingMachine> SignInAsync(string userName)
+    {
         AgentSignInResult signedIn = await RegisteredMachine.ReadAsync<AgentSignInResult>(
-            await machine.Agent.SignInAsync(machine.Id, machine.Token, new AgentSignInRequest(userName, DdtApplication.Password, null)));
+            await Agent.SignInAsync(Id, Token, new AgentSignInRequest(userName, DdtApplication.Password, null)));
 
         Assert.Equal(AgentSignInStatus.Succeeded, signedIn.Status);
-        await machine.NextAsync();
+        await NextAsync();
 
-        return machine;
+        return this;
     }
 
     // A machine approved on the web. Nobody signed in at it, so only a web assignment gives it a run.

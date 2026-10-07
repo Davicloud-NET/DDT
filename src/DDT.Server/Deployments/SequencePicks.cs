@@ -76,6 +76,16 @@ public sealed class SequencePicks(
     // Refuses a pick if the sequence changed after the agent showed its list, so the list no longer fits.
     private static DeploymentDecision? Refusal(Machine machine, AgentRunRequest request, CheckedSequence sequence)
     {
+        // Before the agent's version, since a newer agent in this boot environment would not run it either.
+        if (!PhaseRules.Starts(machine.AgentEnvironment, sequence.Definition))
+        {
+            AgentEnvironment needed = SequenceKinds.BootEnvironment(SequenceKinds.Of(sequence.Definition));
+
+            return DeploymentDecision.Conflict(
+                $"{sequence.Sequence.Name} runs in {PhaseRules.Name(needed)}, and this machine started {PhaseRules.Name(machine.AgentEnvironment)}. " +
+                "Choose one of the sequences the machine lists.");
+        }
+
         if (sequence.Definition.RequiredVersion() > machine.SequenceVersion)
         {
             return DeploymentDecision.Conflict(

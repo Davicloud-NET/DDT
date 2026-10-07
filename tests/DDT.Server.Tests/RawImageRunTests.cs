@@ -54,7 +54,7 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
     public async Task HandsTheAgentTheCompressedDiskWithWhatItHolds()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        using DeployingMachine machine = await DeployingMachine.RegisterAsync(application, [DeployingMachine.Disk(0)]);
+        using DeployingMachine machine = await DeployingMachine.RegisterAsync(application, DeployingMachine.LinuxBoot());
         Image image = await DiskImageAsync();
         SequenceView sequence = await LinuxAsync(image);
 
@@ -75,14 +75,17 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
         Assert.Equal(image.SizeBytes, (await file.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken)).Length);
     }
 
-    [Fact]
-    public async Task AnAgentOlderThanRawDisksGetsNoSuchRun()
+    // Windows PE wrote raw disk images until version 4. Its agents of version 3 and older never get such a run again.
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    public async Task AnAgentFromBeforeTheLinuxBootEnvironmentGetsNoSuchRun(int sequenceVersion)
     {
         SignedInClient administrator = await application.AdministratorAsync();
         using AgentClient agent = new(application.CreateDefaultClient(), TestRemoteAddress.Unique());
         AgentRegistration older = AgentClient.Registration(Guid.NewGuid().ToString("D"), RuleRequests.RandomMac()) with
         {
-            SequenceVersion = 1,
+            SequenceVersion = sequenceVersion,
             Disks = [DeployingMachine.Disk(0)],
         };
         AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await agent.RegisterAsync(older));
@@ -94,15 +97,18 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
         Assert.Null(next.Run);
     }
 
-    [Fact]
-    public async Task AnAgentOlderThanRawDisksIsNotOfferedSuchASequenceAtTheMachine()
+    // The agent's version is not what keeps the sequence from it, so the refusal names the boot environment.
+    [Theory]
+    [InlineData(1)]
+    [InlineData(SequenceDefinition.CurrentVersion)]
+    public async Task WindowsPEIsNotOfferedSuchASequenceAtTheMachine(int sequenceVersion)
     {
         string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
         using DeployingMachine machine = await DeployingMachine.SignedInAsync(
             application,
             operatorName,
             [DeployingMachine.Disk(0)],
-            sequenceVersion: 1);
+            sequenceVersion: sequenceVersion);
         SequenceView sequence = await LinuxAsync(await DiskImageAsync());
 
         IReadOnlyList<AgentSequenceChoice> choices =
@@ -111,15 +117,17 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
 
         Assert.DoesNotContain(choices, choice => choice.Id == sequence.Id);
         Assert.Equal(HttpStatusCode.Conflict, picked.StatusCode);
-        ProblemDetails? refusal = await picked.Content.ReadFromJsonAsync<ProblemDetails>(TestJson.Options, TestContext.Current.CancellationToken);
-        Assert.StartsWith($"{sequence.Name} needs a newer agent than this machine runs.", refusal?.Title, StringComparison.Ordinal);
+        Assert.Equal(
+            $"{sequence.Name} runs in the Linux boot environment, and this machine started Windows PE. Choose one of the sequences the machine lists.",
+            await TestDatabase.TitleAsync(picked));
+        Assert.Null((await application.MachineAsync(machine.Id)).ActiveDeploymentId);
     }
 
     [Fact]
     public async Task CountsTheDiskAndTheSeedButNotTheDownloadAtTheMachine()
     {
         string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
-        using DeployingMachine machine = await DeployingMachine.SignedInAsync(application, operatorName, [DeployingMachine.Disk(0)]);
+        using DeployingMachine machine = await DeployingMachine.SignedInAsync(application, operatorName, DeployingMachine.LinuxBoot());
         Image image = await DiskImageAsync(ImageBootCapability.NotSigned);
         SequenceView sequence = await LinuxAsync(image);
 
@@ -138,8 +146,8 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
     public async Task AskedForTheOverrideOnlyWhereTheMachineSaysSecureBootIsOn()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        using DeployingMachine on = await DeployingMachine.RegisterAsync(application, [DeployingMachine.Disk(0)], secureBootEnabled: true);
-        using DeployingMachine unknown = await DeployingMachine.RegisterAsync(application, [DeployingMachine.Disk(0)]);
+        using DeployingMachine on = await DeployingMachine.RegisterAsync(application, DeployingMachine.LinuxBoot(secureBootEnabled: true));
+        using DeployingMachine unknown = await DeployingMachine.RegisterAsync(application, DeployingMachine.LinuxBoot());
         Image image = await DiskImageAsync(ImageBootCapability.NotSigned);
         SequenceView sequence = await LinuxAsync(image);
 
@@ -171,14 +179,10 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
         SignedInClient administrator = await application.AdministratorAsync();
         using DeployingMachine only2011 = await DeployingMachine.RegisterAsync(
             application,
-            [DeployingMachine.Disk(0)],
-            secureBootEnabled: true,
-            trustedUefiCas: UefiCa.Microsoft2011);
+            DeployingMachine.LinuxBoot(secureBootEnabled: true, trustedUefiCas: UefiCa.Microsoft2011));
         using DeployingMachine both = await DeployingMachine.RegisterAsync(
             application,
-            [DeployingMachine.Disk(0)],
-            secureBootEnabled: true,
-            trustedUefiCas: UefiCa.Microsoft2011 | UefiCa.Microsoft2023);
+            DeployingMachine.LinuxBoot(secureBootEnabled: true, trustedUefiCas: UefiCa.Microsoft2011 | UefiCa.Microsoft2023));
         Image image = await DiskImageAsync(signedUnder: UefiCa.Microsoft2023);
         SequenceView sequence = await LinuxAsync(image);
 
@@ -204,7 +208,7 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
     public async Task KeepsNoOverrideForAnImageThatStartsWithSecureBootOn()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        using DeployingMachine machine = await DeployingMachine.RegisterAsync(application, [DeployingMachine.Disk(0)], secureBootEnabled: true);
+        using DeployingMachine machine = await DeployingMachine.RegisterAsync(application, DeployingMachine.LinuxBoot(secureBootEnabled: true));
         SequenceView sequence = await LinuxAsync(await DiskImageAsync());
 
         DeploymentSummary run = (await RegisteredMachine.ReadAsync<MachineSummary>(
@@ -217,7 +221,7 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
     public async Task TheTechnicianAllowsTheImageAtTheMachine()
     {
         string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
-        using DeployingMachine machine = await DeployingMachine.SignedInAsync(application, operatorName, [DeployingMachine.Disk(0)], secureBootEnabled: true);
+        using DeployingMachine machine = await DeployingMachine.SignedInAsync(application, operatorName, DeployingMachine.LinuxBoot(secureBootEnabled: true));
         Image image = await DiskImageAsync(ImageBootCapability.Unknown);
         SequenceView sequence = await LinuxAsync(image);
 
@@ -240,7 +244,7 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
     public async Task AnApprovalOfARulesSequenceCarriesTheOverride()
     {
         SignedInClient administrator = await application.AdministratorAsync();
-        using DeployingMachine machine = await DeployingMachine.RegisterAsync(application, [DeployingMachine.Disk(0)], secureBootEnabled: true);
+        using DeployingMachine machine = await DeployingMachine.RegisterAsync(application, DeployingMachine.LinuxBoot(secureBootEnabled: true));
         Image image = await DiskImageAsync(ImageBootCapability.NotSigned);
         SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.Definition(
             new WriteRawImageStep { Id = Guid.NewGuid(), Name = "Write the disk", ImageId = image.Id }));

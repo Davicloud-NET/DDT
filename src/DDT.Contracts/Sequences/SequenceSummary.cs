@@ -7,7 +7,8 @@ using DDT.Contracts.Images;
 namespace DDT.Contracts.Sequences;
 
 // A sequence with ProblemCount above zero is kept as a draft and can't run. The other members let a dialog say what
-// running it does without loading the whole document, including the raw disk image it writes, if any.
+// running it does without loading the whole document, including the raw disk image it writes, if any. Kind says which
+// boot environment starts it.
 public sealed record SequenceSummary(
     Guid Id,
     string Name,
@@ -23,4 +24,5 @@ public sealed record SequenceSummary(
     string? UpdatedBy,
     string? RawImageName = null,
     ImageBootCapability? RawImageBootCapability = null,
-    UefiCa? RawImageSignedUnder = null);
+    UefiCa? RawImageSignedUnder = null,
+    SequenceKind Kind = SequenceKind.Windows);

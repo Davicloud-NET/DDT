@@ -56,19 +56,24 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
     }
 
     // Null for an agent too old for the run's sequence, which would throw on a step kind it doesn't know. Also null for
-    // the service in Windows, which only ever continues a running run.
+    // an assigned run in any environment but the boot environment its kind starts in. So the service in Windows only
+    // ever continues a running run, and Windows PE never starts a Linux sequence.
     public async Task<AgentRun?> HandOverAsync(Machine machine, Deployment run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
         ArgumentNullException.ThrowIfNull(run);
 
-        if (run.State is not (DeploymentState.Assigned or DeploymentState.Running)
-            || (machine.AgentEnvironment == AgentEnvironment.Windows && run.State == DeploymentState.Assigned))
+        if (run.State is not (DeploymentState.Assigned or DeploymentState.Running))
         {
             return null;
         }
 
         AgentRun handed = await AgentRunAsync(machine, run, cancellationToken).ConfigureAwait(false);
+
+        if (run.State == DeploymentState.Assigned && !PhaseRules.Starts(machine.AgentEnvironment, handed.Sequence))
+        {
+            return null;
+        }
 
         return machine.SequenceVersion >= handed.Sequence.Version ? handed : null;
     }

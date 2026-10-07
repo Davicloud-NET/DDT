@@ -47,7 +47,7 @@ public sealed class SequenceChoices(
                 || await users.IsInRoleAsync(user, DdtRoleNames.Administrator).ConfigureAwait(false));
     }
 
-    // Only the sequences that can run, on this agent too, each with what it needs.
+    // Only the sequences that can run, on this agent and in the boot environment it started, each with what it needs.
     public async Task<IReadOnlyList<AgentSequenceChoice>> ChoicesAsync(Machine machine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -55,7 +55,7 @@ public sealed class SequenceChoices(
         List<TaskSequence> sequences = await database.TaskSequences.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
         SequenceReferences references = await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false);
         SequenceResolution resolution = await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false);
-        Guid? suggested = Suggested(resolution, references);
+        Guid? suggested = Suggested(machine, resolution, references);
         DeploymentOptions deployment = settings.Current.Deployment;
         List<AgentSequenceChoice> choices = [];
 
@@ -63,7 +63,7 @@ public sealed class SequenceChoices(
         {
             SequenceDefinition definition = SequenceDocuments.Read(sequence.Definition);
 
-            if (definition.RequiredVersion() > machine.SequenceVersion || SequenceChecks.Check(definition, references).Problems.Count > 0)
+            if (!Offered(machine, definition) || SequenceChecks.Check(definition, references).Problems.Count > 0)
             {
                 continue;
             }
@@ -77,14 +77,24 @@ public sealed class SequenceChoices(
         return choices;
     }
 
-    // The sequence the rules choose for the machine, offered first at the console. Only one that can run.
+    // The sequence the rules choose for the machine, offered first at the console. Only one that can run there.
     public async Task<Guid?> SuggestedAsync(Machine machine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
         SequenceReferences references = await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Suggested(await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false), references);
+        return Suggested(machine, await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false), references);
+    }
+
+    // Whether the machine lists the sequence: its agent runs the version, and it started the boot environment the
+    // sequence's kind starts in. A sequence of the other kind is left out until a machine can change its environment.
+    public static bool Offered(Machine machine, SequenceDefinition definition)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(definition);
+
+        return definition.RequiredVersion() <= machine.SequenceVersion && PhaseRules.Starts(machine.AgentEnvironment, definition);
     }
 
     private static AgentSequenceChoice Choice(
@@ -119,9 +129,17 @@ public sealed class SequenceChoices(
             needsName && RunValues.NamesMachine(preview) ? preview.Effective[MachineVariableNames.ComputerName] : null);
     }
 
-    private static Guid? Suggested(SequenceResolution resolution, SequenceReferences references) =>
-        resolution is { Rule: not null, Sequence: { } sequence }
-            && SequenceChecks.Check(SequenceDocuments.Read(sequence.Definition), references).Problems.Count == 0
-                ? sequence.Id
-                : null;
+    private static Guid? Suggested(Machine machine, SequenceResolution resolution, SequenceReferences references)
+    {
+        if (resolution is not { Rule: not null, Sequence: { } sequence })
+        {
+            return null;
+        }
+
+        SequenceDefinition definition = SequenceDocuments.Read(sequence.Definition);
+
+        return PhaseRules.Starts(machine.AgentEnvironment, definition) && SequenceChecks.Check(definition, references).Problems.Count == 0
+            ? sequence.Id
+            : null;
+    }
 }

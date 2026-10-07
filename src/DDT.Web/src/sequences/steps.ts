@@ -10,6 +10,7 @@ import type {
   ContainerKind,
   ContainerStep,
   ScriptInterpreter,
+  SequenceKind,
   SequencePhase,
   SequenceStep,
   StepKind,
@@ -185,8 +186,13 @@ export function newUntil(): ConditionNode {
   return { kind: "test", variable: "LastStepFailed", operator: "Equals", value: "false" };
 }
 
-// A new step with the server's defaults, named after its kind.
-export function newStep(kind: StepKind, id: string): SequenceStep {
+// A new step with the server's defaults, named after its kind. A script starts as the sequence's kind runs it: a
+// shell script in the Linux boot environment, which cannot restart, or cmd in Windows PE.
+export function newStep(
+  kind: StepKind,
+  id: string,
+  sequence: SequenceKind = "Windows",
+): SequenceStep {
   const common = {
     id,
     name: i18n._(kindLabels[kind]),
@@ -222,13 +228,13 @@ export function newStep(kind: StepKind, id: string): SequenceStep {
       return {
         ...common,
         kind,
-        phase: "WindowsPE",
-        interpreter: "Cmd",
+        phase: sequence === "Linux" ? "LinuxBoot" : "WindowsPE",
+        interpreter: sequence === "Linux" ? "Shell" : "Cmd",
         script: "",
         packageId: null,
         timeoutMinutes: 60,
         successExitCodes: [0],
-        rebootExitCodes: [3010],
+        rebootExitCodes: sequence === "Linux" ? [] : [3010],
       };
     case "reboot":
       return { ...common, kind };

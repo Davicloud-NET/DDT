@@ -25,6 +25,7 @@ const linux: SequenceSummary = {
   rawImageName: "noble",
   rawImageBootCapability: "NotSigned",
   rawImageSignedUnder: null,
+  kind: "Windows",
 };
 
 describe("secureBootRisk", () => {
@@ -53,6 +54,7 @@ describe("secureBootRisk", () => {
       ...linux,
       rawImageBootCapability: "Unknown",
       rawImageSignedUnder: null,
+      kind: "Windows",
     });
 
     expect(risk?.required).toBe(false);

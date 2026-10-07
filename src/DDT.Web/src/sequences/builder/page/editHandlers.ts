@@ -11,6 +11,7 @@ import { afterRemoval } from "../../flow/flowKeyboard";
 import { nodeTitle } from "../../flow/flowLabels";
 import { bodiesOf, type Slot, type TreeIndex } from "../../flow/flowTree";
 import type { SequenceEdit } from "../../sequenceEdits";
+import { sequenceKind } from "../../sequenceKinds";
 import type { ContainerKind, StepKind } from "../../sequences";
 import type { SequenceEditorState } from "../../useSequenceEditor";
 import { addLabel } from "../nodeKinds";
@@ -35,7 +36,7 @@ export function editHandlers({ editor, index, selection, announce }: EditContext
   };
 
   const add = (slot: Slot, kind: StepKind) => {
-    const insert = insertNode(slot, kind);
+    const insert = insertNode(slot, kind, sequenceKind(editor.draft.steps));
     const [node] = insert.nodes;
 
     edit(insert);

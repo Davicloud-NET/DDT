@@ -6,6 +6,7 @@ import { serverText } from "@/lib/serverText";
 
 import { conditionOf, type ConditionField } from "./flow/conditionTree";
 import { walk } from "./flow/flowTree";
+import { bootPhase, sequenceKind } from "./sequenceKinds";
 import type {
   NodePhase,
   SequencePhase,
@@ -272,7 +273,7 @@ export function nodePhasesOf(
   }
 
   const phases = new Map<string, SequencePhase[]>();
-  let previous: SequencePhase[] = ["WindowsPE"];
+  let previous: SequencePhase[] = [bootPhase(sequenceKind(steps))];
 
   for (const { node } of walk(steps)) {
     const own = known.get(node.id) ?? previous.slice(-1);

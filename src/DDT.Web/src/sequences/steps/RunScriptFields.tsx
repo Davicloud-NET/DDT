@@ -9,39 +9,58 @@ import { AccountSetting } from "../builder/AccountSetting";
 import { ChoiceSetting } from "../fields/ChoiceSetting";
 import type { Choice } from "../fields/fieldBase";
 import { TextSetting } from "../fields/TextSetting";
+import { kindOfPhase, scriptInterpreters, scriptPhases } from "../sequenceKinds";
 import type { RunScriptStep, ScriptInterpreter, SequencePhase } from "../sequences";
-import { interpreterLabel, interpreters } from "../steps";
+import { interpreterLabel } from "../steps";
 import type { KindFieldsProps } from "./kindFields";
+import { ScriptIntro } from "./ScriptIntro";
 import { ScriptPackageSetting } from "./ScriptPackageSetting";
 import { ScriptResultFields } from "./ScriptResultFields";
 
+// Where a script runs, as the choice names it.
+function phaseChoice(phase: SequencePhase): string {
+  switch (phase) {
+    case "WindowsPE":
+      return t`Windows PE, before the hand-over`;
+    case "Windows":
+      return t`Windows, after the hand-over`;
+    case "LinuxBoot":
+      return t`Linux boot environment`;
+  }
+}
+
+// What the sequence's kind offers, and the step's own value while it is another, so it shows next to its problem.
+function withOwn<T>(offered: readonly T[], own: T): T[] {
+  return offered.includes(own) ? [...offered] : [own, ...offered];
+}
+
 export function RunScriptFields({
   step,
+  sequence,
   findings,
   catalog,
   onChange,
 }: KindFieldsProps<RunScriptStep>) {
-  const phases: Choice[] = [
-    { id: "WindowsPE", label: t`Windows PE, before the hand-over` },
-    { id: "Windows", label: t`Windows, after the hand-over` },
-  ];
+  const phases: Choice[] = withOwn(scriptPhases(sequence), step.phase).map((phase) => ({
+    id: phase,
+    label: phaseChoice(phase),
+  }));
+  const interpreters: Choice[] = withOwn(scriptInterpreters(sequence), step.interpreter).map(
+    (interpreter) => ({ id: interpreter, label: interpreterLabel(interpreter) }),
+  );
+  const root = step.phase === "LinuxBoot" ? t`root` : t`SYSTEM`;
+
+  // A phase of the other kind takes the interpreter that kind runs. The script has to be rewritten for it anyway.
+  const changePhase = (phase: SequencePhase) => {
+    const [first] = scriptInterpreters(kindOfPhase(phase));
+    const fits = scriptInterpreters(kindOfPhase(phase)).includes(step.interpreter);
+
+    onChange(fits || first === undefined ? { phase } : { phase, interpreter: first });
+  };
 
   return (
     <>
-      <p className="text-ink-2 sm:col-span-2">
-        {(step.runAs ?? null) === null ? (
-          <Trans>
-            Runs as SYSTEM on the machine. Everyone who can sign in to DDT can read the script, so
-            it must hold no passwords.
-          </Trans>
-        ) : (
-          <Trans>
-            Runs as the account chosen below, which DDT signs in with; the script never sees its
-            password. Everyone who can sign in to DDT can read the script, so it must hold no
-            passwords.
-          </Trans>
-        )}
-      </p>
+      <ScriptIntro step={step} />
       <ChoiceSetting
         label={<Trans>Runs in</Trans>}
         field="phase"
@@ -49,7 +68,7 @@ export function RunScriptFields({
         value={step.phase}
         choices={phases}
         onChange={(phase) => {
-          onChange({ phase: phase as SequencePhase });
+          changePhase(phase as SequencePhase);
         }}
       />
       {step.phase === "Windows" || (step.runAs ?? null) !== null ? (
@@ -59,10 +78,15 @@ export function RunScriptFields({
           findings={findings}
           className="sm:col-span-2"
           use="runAs"
-          noneLabel={t`SYSTEM`}
+          noneLabel={root}
           hint={
             step.phase === "Windows" ? (
               <Trans>An account in the installed Windows, signed in for the script alone.</Trans>
+            ) : step.phase === "LinuxBoot" ? (
+              <Trans>
+                Only a script in Windows runs as an account; in the Linux boot environment it runs
+                as root.
+              </Trans>
             ) : (
               <Trans>
                 Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM.
@@ -80,10 +104,7 @@ export function RunScriptFields({
         field="interpreter"
         findings={findings}
         value={step.interpreter}
-        choices={interpreters.map((interpreter) => ({
-          id: interpreter,
-          label: interpreterLabel(interpreter),
-        }))}
+        choices={interpreters}
         onChange={(interpreter) => {
           onChange({ interpreter: interpreter as ScriptInterpreter });
         }}
@@ -96,12 +117,30 @@ export function RunScriptFields({
         mono
         multiline
         rows={12}
+        {...(step.interpreter === "Shell"
+          ? {
+              hint: (
+                <Trans>
+                  Started with /bin/sh, or with the interpreter its first line names, such as
+                  #!/bin/bash.
+                </Trans>
+              ),
+            }
+          : {})}
         value={step.script}
         onChange={(script) => {
           onChange({ script });
         }}
       />
-      <ScriptPackageSetting step={step} findings={findings} catalog={catalog} onChange={onChange} />
+      {step.phase !== "LinuxBoot" || step.packageId !== null ? (
+        <ScriptPackageSetting
+          step={step}
+          sequence={sequence}
+          findings={findings}
+          catalog={catalog}
+          onChange={onChange}
+        />
+      ) : null}
       <ScriptResultFields step={step} findings={findings} onChange={onChange} />
     </>
   );

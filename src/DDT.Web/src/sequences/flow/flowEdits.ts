@@ -7,6 +7,7 @@ import type {
   ContainerKind,
   ContainerStep,
   InputDeclaration,
+  SequenceKind,
   SequenceStep,
   StepKind,
   VariableDeclaration,
@@ -67,9 +68,13 @@ export type FlowEdit =
   | { type: "removeInput"; name: string }
   | { type: "moveInput"; name: string; to: number };
 
-// A new node of the kind at the slot. Its id is nodes[0].id.
-export function insertNode(slot: Slot, kind: StepKind): Extract<FlowEdit, { type: "insertNodes" }> {
-  return { type: "insertNodes", slot, nodes: [newStep(kind, crypto.randomUUID())] };
+// A new node of the kind at the slot, as a sequence of that kind starts it. Its id is nodes[0].id.
+export function insertNode(
+  slot: Slot,
+  kind: StepKind,
+  sequence: SequenceKind = "Windows",
+): Extract<FlowEdit, { type: "insertNodes" }> {
+  return { type: "insertNodes", slot, nodes: [newStep(kind, crypto.randomUUID(), sequence)] };
 }
 
 // Copies of nodes, such as those on the clipboard, with new ids for them and everything inside them.

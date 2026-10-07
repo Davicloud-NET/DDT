@@ -64,6 +64,7 @@ function sequence(overrides: Partial<SequenceSummary>): SequenceSummary {
     rawImageName: null,
     rawImageBootCapability: null,
     rawImageSignedUnder: null,
+    kind: "Windows",
     ...overrides,
   };
 }

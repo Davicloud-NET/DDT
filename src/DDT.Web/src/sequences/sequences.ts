@@ -16,6 +16,10 @@ export type SequencePhase = "WindowsPE" | "Windows" | "LinuxBoot";
 // Shell (version 4) runs in the Linux phases only.
 export type ScriptInterpreter = "Cmd" | "PowerShell" | "Shell";
 
+// What a sequence installs. A sequence that writes a raw disk image is a Linux sequence, which starts in the Linux
+// boot environment. Every other one starts in Windows PE.
+export type SequenceKind = "Windows" | "Linux";
+
 export type StepState = "Pending" | "Running" | "Done" | "Skipped" | "Failed";
 
 // The account a step uses. It's exactly one of a stored account or an Account input the sequence declares, whose
@@ -263,6 +267,7 @@ export interface SequenceSummary {
   rawImageName: string | null;
   rawImageBootCapability: ImageBootCapability | null;
   rawImageSignedUnder: string | null;
+  kind: SequenceKind;
 }
 
 // SequenceDefinition.CurrentVersion: the highest version this page knows, and the one it writes. The server stores

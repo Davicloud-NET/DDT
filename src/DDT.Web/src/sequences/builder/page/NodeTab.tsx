@@ -6,6 +6,7 @@ import { Trans } from "@lingui/react/macro";
 
 import { placeLabel } from "../../flow/flowLabels";
 import { stepFindings } from "../../problems";
+import { bootPhase, sequenceKind } from "../../sequenceKinds";
 import { NodeInspector } from "../NodeInspector";
 import type { FlowBuilderModel } from "./useFlowBuilder";
 
@@ -25,11 +26,14 @@ export function NodeTab({ model }: { model: FlowBuilderModel }) {
     );
   }
 
+  const sequence = sequenceKind(editor.draft.steps);
+
   return (
     <NodeInspector
       node={selected.node}
       place={placeLabel(index, selected)}
-      phases={editor.phases.get(selected.node.id) ?? ["WindowsPE"]}
+      sequence={sequence}
+      phases={editor.phases.get(selected.node.id) ?? [bootPhase(sequence)]}
       findings={stepFindings(editor.findings, selected.node.id)}
       catalog={editor.catalog}
       onEdit={edits.edit}

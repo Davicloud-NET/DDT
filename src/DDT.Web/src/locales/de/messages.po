@@ -4782,6 +4782,10 @@ msgstr "Im installierten Windows"
 msgid "In the installed Windows, after the hand-over"
 msgstr "Im installierten Windows, nach der Übergabe"
 
+#: src/runs/panel/RunRail.tsx
+msgid "In the Linux boot environment"
+msgstr "In der Linux-Startumgebung"
+
 #: src/runs/flow/HandoverLine.tsx
 #: src/runs/panel/RunRail.tsx
 #: src/sequences/builder/canvas/CanvasBackdrop.tsx
@@ -5276,7 +5280,9 @@ msgstr "Hell"
 msgid "Linked to {provider}"
 msgstr "Verknüpft mit {provider}"
 
+#: src/conditions/conditionSubjects.ts
 #: src/sequences/steps.ts
+#: src/sequences/steps/RunScriptFields.tsx
 msgid "Linux boot environment"
 msgstr "Linux-Startumgebung"
 
@@ -6613,6 +6619,10 @@ msgid "Only a rejected machine, or a waiting machine that was never approved and
 msgstr "Nur ein abgelehntes Gerät oder ein wartendes Gerät, das nie freigegeben wurde und keine zugewiesene Ausführung hat, kann entfernt werden."
 
 #: src/sequences/steps/RunScriptFields.tsx
+msgid "Only a script in Windows runs as an account; in the Linux boot environment it runs as root."
+msgstr "Nur ein Skript in Windows läuft als Konto; in der Linux-Startumgebung läuft es als root."
+
+#: src/sequences/steps/RunScriptFields.tsx
 msgid "Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM."
 msgstr "Nur ein Skript in Windows läuft als Konto; in Windows PE läuft es als SYSTEM."
 
@@ -7589,6 +7599,10 @@ msgstr "Rolle eines neuen Kontos"
 msgid "Role that {key} gives"
 msgstr "Rolle, die {key} gibt"
 
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "root"
+msgstr "root"
+
 #: src/settings/certificate/CertificateFacts.tsx
 msgid "Root SHA-256"
 msgstr "SHA-256 des Stammzertifikats"
@@ -7723,11 +7737,15 @@ msgstr "Läuft seit {start} in {phase}, seit {took}."
 msgid "Runs"
 msgstr "Ausführungen"
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptIntro.tsx
+msgid "Runs as root in the Linux boot environment, before the disk image starts. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
+msgstr "Läuft als root in der Linux-Startumgebung, bevor das Datenträgerimage startet. Jeder, der sich bei DDT anmelden kann, kann das Skript lesen, daher darf es keine Kennwörter enthalten."
+
+#: src/sequences/steps/ScriptIntro.tsx
 msgid "Runs as SYSTEM on the machine. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
 msgstr "Läuft als SYSTEM auf dem Gerät. Jeder, der sich bei DDT anmelden kann, kann das Skript lesen, daher darf es keine Kennwörter enthalten."
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptIntro.tsx
 msgid "Runs as the account chosen below, which DDT signs in with; the script never sees its password. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
 msgstr "Läuft als das unten gewählte Konto, mit dem DDT sich anmeldet; das Skript sieht sein Kennwort nie. Alle, die sich bei DDT anmelden können, können das Skript lesen, daher darf es keine Kennwörter enthalten."
 
@@ -8519,6 +8537,10 @@ msgstr "gestartet {started}"
 #: src/boot/JobPanel.tsx
 msgid "Started {when} by {startedBy}"
 msgstr "Gestartet {when} von {startedBy}"
+
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "Started with /bin/sh, or with the interpreter its first line names, such as #!/bin/bash."
+msgstr "Wird mit /bin/sh gestartet oder mit dem Interpreter, den die erste Zeile nennt, etwa #!/bin/bash."
 
 #: src/machines/list/runDetail.ts
 #: src/machines/MachinePanel.tsx
@@ -11348,6 +11370,10 @@ msgid "Waits until someone lets the run go on"
 msgstr "Wartet, bis jemand die Ausführung fortsetzt"
 
 #: src/sequences/steps/PauseFields.tsx
+msgid "Waits until someone lets the run go on, at the machine or on its page. A restart in the Linux boot environment ends the run instead."
+msgstr "Wartet, bis jemand die Ausführung am Gerät oder auf seiner Seite fortsetzt. Ein Neustart in der Linux-Startumgebung beendet die Ausführung stattdessen."
+
+#: src/sequences/steps/PauseFields.tsx
 msgid "Waits until someone lets the run go on, at the machine or on its page. A restart in Windows PE before the disk is partitioned ends the run instead."
 msgstr "Wartet, bis jemand die Ausführung am Gerät oder auf seiner Seite fortsetzt. Ein Neustart in Windows PE, bevor der Datenträger partitioniert ist, beendet die Ausführung stattdessen."
 
@@ -11472,6 +11498,10 @@ msgstr "Wer"
 #: src/log/LogPanel.tsx
 msgid "Whole machine"
 msgstr "Ganzes Gerät"
+
+#: src/sequences/steps/ScriptResultFields.tsx
+msgid "Whole numbers from 0 to 255, separated by commas."
+msgstr "Ganze Zahlen von 0 bis 255, durch Kommas getrennt."
 
 #: src/sequences/steps/ScriptResultFields.tsx
 msgid "Whole numbers, separated by commas."

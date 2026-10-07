@@ -4,6 +4,7 @@
 
 import { flowEdits, type FlowEdit, type NodePatch } from "./flow/flowEdits";
 import type { SequenceDraft } from "./sequenceDraft";
+import { sequenceKind } from "./sequenceKinds";
 import type { StepCondition } from "./sequenceConditions";
 import type { SequenceStep, StepKind } from "./sequences";
 import { newCondition, newStep } from "./steps";
@@ -162,11 +163,17 @@ export function sequenceEdits(draft: SequenceDraft, edit: SequenceEdit): Sequenc
     case "describe":
       return { ...draft, description: edit.description };
     case "addStep":
-      return inserted(draft, draft.steps.length, newStep(edit.kind, edit.id));
+      return inserted(
+        draft,
+        draft.steps.length,
+        newStep(edit.kind, edit.id, sequenceKind(draft.steps)),
+      );
     case "insertStepAfter": {
       const index = draft.steps.findIndex((step) => step.id === edit.afterId);
 
-      return index < 0 ? draft : inserted(draft, index + 1, newStep(edit.kind, edit.id));
+      return index < 0
+        ? draft
+        : inserted(draft, index + 1, newStep(edit.kind, edit.id, sequenceKind(draft.steps)));
     }
     case "removeStep":
       return { ...draft, steps: draft.steps.filter((step) => step.id !== edit.id) };

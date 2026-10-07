@@ -4782,6 +4782,10 @@ msgstr ""
 msgid "In the installed Windows, after the hand-over"
 msgstr ""
 
+#: src/runs/panel/RunRail.tsx
+msgid "In the Linux boot environment"
+msgstr ""
+
 #: src/runs/flow/HandoverLine.tsx
 #: src/runs/panel/RunRail.tsx
 #: src/sequences/builder/canvas/CanvasBackdrop.tsx
@@ -5276,7 +5280,9 @@ msgstr ""
 msgid "Linked to {provider}"
 msgstr ""
 
+#: src/conditions/conditionSubjects.ts
 #: src/sequences/steps.ts
+#: src/sequences/steps/RunScriptFields.tsx
 msgid "Linux boot environment"
 msgstr ""
 
@@ -6613,6 +6619,10 @@ msgid "Only a rejected machine, or a waiting machine that was never approved and
 msgstr ""
 
 #: src/sequences/steps/RunScriptFields.tsx
+msgid "Only a script in Windows runs as an account; in the Linux boot environment it runs as root."
+msgstr ""
+
+#: src/sequences/steps/RunScriptFields.tsx
 msgid "Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM."
 msgstr ""
 
@@ -7589,6 +7599,10 @@ msgstr ""
 msgid "Role that {key} gives"
 msgstr ""
 
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "root"
+msgstr ""
+
 #: src/settings/certificate/CertificateFacts.tsx
 msgid "Root SHA-256"
 msgstr ""
@@ -7723,11 +7737,15 @@ msgstr ""
 msgid "Runs"
 msgstr ""
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptIntro.tsx
+msgid "Runs as root in the Linux boot environment, before the disk image starts. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
+msgstr ""
+
+#: src/sequences/steps/ScriptIntro.tsx
 msgid "Runs as SYSTEM on the machine. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
 msgstr ""
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptIntro.tsx
 msgid "Runs as the account chosen below, which DDT signs in with; the script never sees its password. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
 msgstr ""
 
@@ -8518,6 +8536,10 @@ msgstr ""
 
 #: src/boot/JobPanel.tsx
 msgid "Started {when} by {startedBy}"
+msgstr ""
+
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "Started with /bin/sh, or with the interpreter its first line names, such as #!/bin/bash."
 msgstr ""
 
 #: src/machines/list/runDetail.ts
@@ -11348,6 +11370,10 @@ msgid "Waits until someone lets the run go on"
 msgstr ""
 
 #: src/sequences/steps/PauseFields.tsx
+msgid "Waits until someone lets the run go on, at the machine or on its page. A restart in the Linux boot environment ends the run instead."
+msgstr ""
+
+#: src/sequences/steps/PauseFields.tsx
 msgid "Waits until someone lets the run go on, at the machine or on its page. A restart in Windows PE before the disk is partitioned ends the run instead."
 msgstr ""
 
@@ -11471,6 +11497,10 @@ msgstr ""
 
 #: src/log/LogPanel.tsx
 msgid "Whole machine"
+msgstr ""
+
+#: src/sequences/steps/ScriptResultFields.tsx
+msgid "Whole numbers from 0 to 255, separated by commas."
 msgstr ""
 
 #: src/sequences/steps/ScriptResultFields.tsx

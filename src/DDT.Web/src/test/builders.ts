@@ -105,6 +105,7 @@ export function sequenceSummary(overrides: Partial<SequenceSummary> = {}): Seque
     rawImageName: null,
     rawImageBootCapability: null,
     rawImageSignedUnder: null,
+    kind: "Windows",
     ...overrides,
   };
 }

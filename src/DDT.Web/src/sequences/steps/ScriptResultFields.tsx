@@ -9,7 +9,8 @@ import { NumberSetting } from "../fields/NumberSetting";
 import type { RunScriptStep } from "../sequences";
 import type { KindFieldsProps } from "./kindFields";
 
-// The timeout and the exit codes, which decide how a script's step ends.
+// The timeout and the exit codes, which decide how a script's step ends. The Linux boot environment cannot restart
+// for a script, so there the restart codes only show while the step still has some, to remove them.
 export function ScriptResultFields({
   step,
   findings,
@@ -32,22 +33,30 @@ export function ScriptResultFields({
         label={<Trans>Exit codes that mean success</Trans>}
         field="successExitCodes"
         findings={findings}
-        hint={<Trans>Whole numbers, separated by commas.</Trans>}
+        hint={
+          step.interpreter === "Shell" ? (
+            <Trans>Whole numbers from 0 to 255, separated by commas.</Trans>
+          ) : (
+            <Trans>Whole numbers, separated by commas.</Trans>
+          )
+        }
         value={step.successExitCodes}
         onChange={(successExitCodes) => {
           onChange({ successExitCodes });
         }}
       />
-      <CodesSetting
-        label={<Trans>Exit codes that ask for a restart</Trans>}
-        field="rebootExitCodes"
-        findings={findings}
-        hint={<Trans>The machine restarts and the sequence goes on with the next step.</Trans>}
-        value={step.rebootExitCodes}
-        onChange={(rebootExitCodes) => {
-          onChange({ rebootExitCodes });
-        }}
-      />
+      {step.phase !== "LinuxBoot" || step.rebootExitCodes.length > 0 ? (
+        <CodesSetting
+          label={<Trans>Exit codes that ask for a restart</Trans>}
+          field="rebootExitCodes"
+          findings={findings}
+          hint={<Trans>The machine restarts and the sequence goes on with the next step.</Trans>}
+          value={step.rebootExitCodes}
+          onChange={(rebootExitCodes) => {
+            onChange({ rebootExitCodes });
+          }}
+        />
+      ) : null}
     </>
   );
 }

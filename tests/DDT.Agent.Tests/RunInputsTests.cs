@@ -91,7 +91,7 @@ public sealed class RunInputsTests : IDisposable
         AgentRun run = TestRuns.Run([TestRuns.Script(1) with { RebootExitCodes = [] }]);
         Assert.Null(run.Values);
 
-        RunResult result = await TestAgents.Runner(server, _tools, log, time, new() { ToolRunner = _toolRunner, Status = TestAgents.Status(new ScriptedMachineConsole()) })
+        RunResult result = await WindowsTestAgents.Runner(server, _tools, log, time, new() { ToolRunner = _toolRunner, Status = TestAgents.Status(new ScriptedMachineConsole()) })
             .RunAsync(new RunRequest(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), new DryRunMachineIdentityReader(1).Read()), server.Stop.Token);
 
         Assert.Equal(RunOutcome.Finished, result.Outcome);
@@ -165,7 +165,7 @@ public sealed class RunInputsTests : IDisposable
             ],
         };
         AgentRun run = TestRuns.Run(definition.Steps) with { Sequence = definition, PendingInputs = [s_office] };
-        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, new() { ToolRunner = _toolRunner, Status = status });
+        SequenceRunner runner = WindowsTestAgents.Runner(server, _tools, log, time, new() { ToolRunner = _toolRunner, Status = status });
 
         return runner.RunAsync(new RunRequest(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), new DryRunMachineIdentityReader(1).Read()), server.Stop.Token);
     }

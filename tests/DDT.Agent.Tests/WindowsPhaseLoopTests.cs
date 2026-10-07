@@ -101,8 +101,9 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
                 return new AgentRunReportResult("session-d", "resume-d", null);
             });
         AgentLog log = Log();
+        FakeRestartDeleter deleter = new(_tools);
 
-        int exitCode = await RunAsync(server, new() { Log = log, Removal = new AgentRemoval(Windows, _toolRunner, _tools, log) });
+        int exitCode = await RunAsync(server, new() { Log = log, Removal = new AgentRemoval(Windows, _toolRunner, deleter, log) });
 
         Assert.Equal(AgentExitCodes.Deployed, exitCode);
         Assert.Equal(
@@ -118,7 +119,7 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
             ],
             _tools.Calls);
 
-        _tools.DeleteMarkedAsWindowsStarts();
+        deleter.DeleteMarkedAsWindowsStarts();
 
         Assert.False(Directory.Exists(Path.Combine(Windows, "DDT")));
     }

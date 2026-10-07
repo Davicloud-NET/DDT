@@ -7,7 +7,7 @@ using DDT.Agent.Sequences;
 namespace DDT.Agent.Tests;
 
 // The machine TestAgents.Loop runs on: the fakes, the log and the clock. Without Identity it is the dry run's machine 1,
-// and without Runner it gets a dry run's runner.
+// and without Runner it gets the runner of the loop's own helper.
 internal sealed record TestMachine(FakeDeploymentTools Tools, AgentLog Log, TimeProvider Time)
 {
     public IMachineIdentityReader? Identity { get; init; }

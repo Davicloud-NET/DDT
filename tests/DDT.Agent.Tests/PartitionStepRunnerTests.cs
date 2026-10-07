@@ -22,7 +22,7 @@ public sealed class PartitionStepRunnerTests : IDisposable
         RecoveryPartitionMegabytes = 2048,
     };
 
-    private readonly StepRunnerFixture _run = new([s_step]);
+    private readonly WindowsStepRunnerFixture _run = new([s_step]);
 
     public void Dispose() => _run.Dispose();
 
@@ -98,7 +98,7 @@ public sealed class PartitionStepRunnerTests : IDisposable
     [Fact]
     public async Task FromHereOnTheRunsStateAndTokenAreOnTheDisk()
     {
-        SequenceState running = SequenceStates.Start(StepRunnerFixture.RunId, _run.Session.Run.Sequence) with
+        SequenceState running = SequenceStates.Start(WindowsStepRunnerFixture.RunId, _run.Session.Run.Sequence) with
         {
             Steps = [new StepRunState(s_step.Id, StepState.Running, null)],
         };
@@ -109,7 +109,7 @@ public sealed class PartitionStepRunnerTests : IDisposable
         RunFiles files = RunFiles.In(_run.Tools.Volumes.Windows, _run.Log);
         Assert.Equal(files.StatePath, _run.Store.Files?.StatePath);
         Assert.Equal(StepState.Running, (await files.LoadStateAsync(TestContext.Current.CancellationToken))?.Steps[0].State);
-        Assert.Equal(StepRunnerFixture.RunToken, await files.LoadTokenAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(WindowsStepRunnerFixture.RunToken, await files.LoadTokenAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]

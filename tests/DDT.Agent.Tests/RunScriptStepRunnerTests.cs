@@ -44,7 +44,7 @@ public sealed class RunScriptStepRunnerTests
     [Fact]
     public async Task RunsACmdScriptFromTheAgentsDirectoryBeforeTheDiskIsPartitioned()
     {
-        using StepRunnerFixture run = new([s_cmd]);
+        using WindowsStepRunnerFixture run = new([s_cmd]);
         string scripts = Path.Combine(run.WorkDirectory, "scripts");
         string file = Path.Combine(scripts, $"{s_cmd.Id:D}.cmd");
 
@@ -59,7 +59,7 @@ public sealed class RunScriptStepRunnerTests
             new Dictionary<string, string>
             {
                 ["DDT_PHASE"] = "WindowsPE",
-                ["DDT_RUN_ID"] = StepRunnerFixture.RunId.ToString("D"),
+                ["DDT_RUN_ID"] = WindowsStepRunnerFixture.RunId.ToString("D"),
                 ["DDT_STEP_ID"] = s_cmd.Id.ToString("D"),
             },
             options.Environment);
@@ -68,7 +68,7 @@ public sealed class RunScriptStepRunnerTests
     [Fact]
     public async Task WritesACmdScriptInUtf8AfterALineThatSwitchesCmdToUtf8()
     {
-        using StepRunnerFixture run = new([s_cmd]);
+        using WindowsStepRunnerFixture run = new([s_cmd]);
 
         await run.RunScript.RunAsync(s_cmd, run.Context(), TestContext.Current.CancellationToken);
 
@@ -79,7 +79,7 @@ public sealed class RunScriptStepRunnerTests
     [Fact]
     public async Task RunsAPowerShellScriptWithAByteOrderMarkOnThePartitionedDiskFromACmdFileThatSwitchesToUtf8()
     {
-        using StepRunnerFixture run = new([s_powerShell]);
+        using WindowsStepRunnerFixture run = new([s_powerShell]);
         TargetVolumes volumes = run.Partitioned();
         string scripts = Path.Combine(volumes.Windows, "DDT", "scripts");
         string file = Path.Combine(scripts, $"{s_powerShell.Id:D}.ps1");
@@ -102,7 +102,7 @@ public sealed class RunScriptStepRunnerTests
     public async Task InWindowsTheScriptGetsNoWindowsPELetter()
     {
         RunScriptStep step = s_powerShell with { Phase = SequencePhase.Windows };
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         run.Partitioned();
 
         await run.RunScript.RunAsync(step, run.Context(SequencePhase.Windows), TestContext.Current.CancellationToken);
@@ -118,7 +118,7 @@ public sealed class RunScriptStepRunnerTests
     [InlineData(5, StepOutcome.Failed)]
     public async Task TheExitCodeDecides(int exitCode, StepOutcome outcome)
     {
-        using StepRunnerFixture run = new([s_cmd]);
+        using WindowsStepRunnerFixture run = new([s_cmd]);
         run.ToolRunner.AnswerExitCode = (_, _, _) => exitCode;
 
         StepResult result = await run.RunScript.RunAsync(s_cmd, run.Context(), TestContext.Current.CancellationToken);
@@ -140,7 +140,7 @@ public sealed class RunScriptStepRunnerTests
     [Fact]
     public async Task GivesTheScriptTheRunsValuesAndVariables()
     {
-        using StepRunnerFixture run = new([s_cmd]);
+        using WindowsStepRunnerFixture run = new([s_cmd]);
         StepContext context = run.Context(
             variables: new Dictionary<string, string>
             {
@@ -166,7 +166,7 @@ public sealed class RunScriptStepRunnerTests
     [Fact]
     public async Task TakesTheVariablesTheSequenceLetsStepsSet()
     {
-        using StepRunnerFixture run = new([s_cmd], variables: s_variables);
+        using WindowsStepRunnerFixture run = new([s_cmd], variables: s_variables);
         string? file = null;
         run.ToolRunner.AnswerExitCode = (_, _, options) =>
         {
@@ -196,7 +196,7 @@ public sealed class RunScriptStepRunnerTests
     [InlineData(3010, true)]
     public async Task TakesVariablesOnlyFromAScriptThatWorked(int exitCode, bool taken)
     {
-        using StepRunnerFixture run = new([s_cmd], variables: s_variables);
+        using WindowsStepRunnerFixture run = new([s_cmd], variables: s_variables);
         run.ToolRunner.AnswerExitCode = (_, _, options) =>
         {
             File.WriteAllText(options.Environment![RunScriptStepRunner.VariablesOut], "Floor=4\n");
@@ -214,7 +214,7 @@ public sealed class RunScriptStepRunnerTests
     [Fact]
     public async Task ReadsNoMoreThanTheLinesAVariablesFileMayHold()
     {
-        using StepRunnerFixture run = new([s_cmd], variables: s_variables);
+        using WindowsStepRunnerFixture run = new([s_cmd], variables: s_variables);
         run.ToolRunner.AnswerExitCode = (_, _, options) =>
         {
             File.WriteAllLines(
@@ -240,7 +240,7 @@ public sealed class RunScriptStepRunnerTests
     public async Task ARealScriptSetsVariables(ScriptInterpreter interpreter, string script)
     {
         RunScriptStep step = s_cmd with { Interpreter = interpreter, Script = script };
-        using StepRunnerFixture run = new([step], variables: s_variables);
+        using WindowsStepRunnerFixture run = new([step], variables: s_variables);
         RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), new WindowsScriptLauncher(), run.Downloads, run.Session, run.Log, run.WorkDirectory);
 
         StepResult result = await runner.RunAsync(
@@ -257,7 +257,7 @@ public sealed class RunScriptStepRunnerTests
     {
         RunScriptStep step = s_cmd with { PackageId = s_packageId, Script = "call setup.cmd" };
         TestZip package = new(("setup.cmd", "echo installing"));
-        using StepRunnerFixture run = new([step], packages: [new AgentRunPackage(step.Id, "Office", package.Sha256, package.Content.Length)]);
+        using WindowsStepRunnerFixture run = new([step], packages: [new AgentRunPackage(step.Id, "Office", package.Sha256, package.Content.Length)]);
         TargetVolumes volumes = run.Partitioned();
         run.Server.ServeFile(package.Sha256, package.Content);
         string unpacked = Path.Combine(volumes.Windows, "DDT", "packages", step.Id.ToString("D"));
@@ -282,7 +282,7 @@ public sealed class RunScriptStepRunnerTests
     public async Task APackageBeforeThePartitionFailsWithoutRunningTheScript()
     {
         RunScriptStep step = s_cmd with { PackageId = s_packageId };
-        using StepRunnerFixture run = new([step], packages: [new AgentRunPackage(step.Id, "Office", new string('0', 64), 10)]);
+        using WindowsStepRunnerFixture run = new([step], packages: [new AgentRunPackage(step.Id, "Office", new string('0', 64), 10)]);
 
         DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(
             () => run.RunScript.RunAsync(step, run.Context(), TestContext.Current.CancellationToken));
@@ -296,7 +296,7 @@ public sealed class RunScriptStepRunnerTests
     public async Task RunsARealCmdScriptAndLogsWhatItPrints()
     {
         RunScriptStep step = s_cmd with { Script = "echo Grüße aus dem Skript\r\nexit /b 3010" };
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), new WindowsScriptLauncher(), run.Downloads, run.Session, run.Log, run.WorkDirectory);
 
         StepResult result = await runner.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
@@ -309,7 +309,7 @@ public sealed class RunScriptStepRunnerTests
     [Fact]
     public async Task LogsWhatTheRealTreePrintsWithItsUmlauts()
     {
-        using StepRunnerFixture run = new([s_cmd]);
+        using WindowsStepRunnerFixture run = new([s_cmd]);
         string folder = Path.Combine(run.WorkDirectory, "tree", "für");
         Directory.CreateDirectory(folder);
         RunScriptStep step = s_cmd with { Script = $"tree \"{Path.GetDirectoryName(folder)}\"" };
@@ -341,7 +341,7 @@ public sealed class RunScriptStepRunnerTests
                 "[Console]::Error.WriteLine('Fehler: öß')\nexit 7",
             SuccessExitCodes = [7],
         };
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), new WindowsScriptLauncher(), run.Downloads, run.Session, run.Log, run.WorkDirectory);
 
         StepResult result = await runner.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);

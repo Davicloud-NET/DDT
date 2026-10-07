@@ -18,9 +18,12 @@ public sealed class AgentRemovalTests : IDisposable
     private readonly FakeDeploymentTools _tools = new();
     private readonly RecordingToolRunner _toolRunner = new();
     private readonly StringWriter _console = new();
+    private readonly FakeRestartDeleter _deleter;
 
     public AgentRemovalTests()
     {
+        _deleter = new FakeRestartDeleter(_tools);
+
         // Records what was left of the run when a tool ran, which shows what the service control manager's deletion
         // found.
         _toolRunner.Answer = (fileName, arguments) =>
@@ -72,7 +75,7 @@ public sealed class AgentRemovalTests : IDisposable
         Assert.StartsWith(Environment.SystemDirectory, AgentRemoval.ScPath, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("WARN", _console.ToString(), StringComparison.Ordinal);
 
-        _tools.DeleteMarkedAsWindowsStarts();
+        _deleter.DeleteMarkedAsWindowsStarts();
 
         Assert.False(Directory.Exists(DdtDirectory));
         Assert.True(Directory.Exists(Windows));
@@ -170,7 +173,7 @@ public sealed class AgentRemovalTests : IDisposable
             ],
             _tools.Calls);
 
-        _tools.DeleteMarkedAsWindowsStarts();
+        _deleter.DeleteMarkedAsWindowsStarts();
 
         Assert.False(Directory.Exists(DdtDirectory));
     }
@@ -237,7 +240,7 @@ public sealed class AgentRemovalTests : IDisposable
     }
 
     private Task RemoveAsync() =>
-        new AgentRemoval(Windows, _toolRunner, _tools, new AgentLog(new ImmediateTimeProvider(), _console))
+        new AgentRemoval(Windows, _toolRunner, _deleter, new AgentLog(new ImmediateTimeProvider(), _console))
             .RemoveAsync(TestContext.Current.CancellationToken);
 
     // Starts a process in directory that runs until it's ended. It has started by the time this returns.

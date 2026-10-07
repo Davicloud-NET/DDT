@@ -25,7 +25,7 @@ public sealed class InjectDriversStepRunnerTests
     [Fact]
     public async Task AddsEachPackageToTheOfflineWindowsWithDism()
     {
-        using StepRunnerFixture run = Run(_network, _storage);
+        using WindowsStepRunnerFixture run = Run(_network, _storage);
         TargetVolumes volumes = run.Partitioned();
         string directory = Path.Combine(volumes.Windows, "DDT");
         string drivers = Path.Combine(directory, "packages", s_step.Id.ToString("D"));
@@ -57,7 +57,7 @@ public sealed class InjectDriversStepRunnerTests
     [InlineData(true)]
     public async Task WithoutAPackageForTheModelNoDriversAreAdded(bool requireMatch)
     {
-        using StepRunnerFixture run = Run();
+        using WindowsStepRunnerFixture run = Run();
         run.Partitioned();
 
         StepResult result = await run.InjectDrivers.RunAsync(s_step with { RequireMatch = requireMatch }, run.Context(), TestContext.Current.CancellationToken);
@@ -79,7 +79,7 @@ public sealed class InjectDriversStepRunnerTests
     public async Task APackageThatWouldWriteOutsideItsDirectoryAddsNothing()
     {
         TestZip evil = new(("../../../Windows/System32/evil.inf", "[Version]"));
-        using StepRunnerFixture run = Run(evil);
+        using WindowsStepRunnerFixture run = Run(evil);
         TargetVolumes volumes = run.Partitioned();
 
         DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(
@@ -93,7 +93,7 @@ public sealed class InjectDriversStepRunnerTests
     [Fact]
     public async Task AFailedDismFailsTheStepAndCleansUp()
     {
-        using StepRunnerFixture run = Run(_network);
+        using WindowsStepRunnerFixture run = Run(_network);
         TargetVolumes volumes = run.Partitioned();
         run.ToolRunner.Answer = (_, _) => throw new DeploymentStepException("dism.exe failed with exit code 0x00000002. Its output is in the machine log.");
 
@@ -117,9 +117,9 @@ public sealed class InjectDriversStepRunnerTests
             $"/LogPath:{Path.Combine(directory, "logs", $"dism-{s_step.Id:D}.log")}");
     }
 
-    private static StepRunnerFixture Run(params TestZip[] packages)
+    private static WindowsStepRunnerFixture Run(params TestZip[] packages)
     {
-        StepRunnerFixture run = new(
+        WindowsStepRunnerFixture run = new(
             [s_step],
             packages: [.. packages.Select((package, index) => new AgentRunPackage(s_step.Id, index == 0 ? "Latitude drivers" : "Storage drivers", package.Sha256, package.Content.Length))]);
 

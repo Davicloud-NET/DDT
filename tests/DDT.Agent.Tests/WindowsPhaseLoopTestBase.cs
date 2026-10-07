@@ -79,12 +79,12 @@ public abstract class WindowsPhaseLoopTestBase : IDisposable
         options ??= new ServiceRunOptions();
         TimeProvider time = options.Time ?? new ImmediateTimeProvider();
         AgentLog log = options.Log ?? new AgentLog(time, TextWriter.Null);
-        SequenceRunner runner = TestAgents.Runner(
+        SequenceRunner runner = WindowsTestAgents.Runner(
             server,
             _tools,
             log,
             time,
-            new() { ToolRunner = _toolRunner, SystemDirectory = TestAgents.SystemDirectory(_tools), DryRun = false, Status = options.Status });
+            new() { ToolRunner = _toolRunner, SystemDirectory = WindowsTestAgents.SystemDirectory(_tools), DryRun = false, Status = options.Status });
 
         InstalledPhaseLoop loop = new InstalledPhaseLoopBuilder
         {

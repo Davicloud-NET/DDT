@@ -15,7 +15,7 @@ public sealed class JoinDomainStepRunnerTests : IDisposable
 {
     private const string Domain = "corp.example.test";
 
-    private readonly StepRunnerFixture _run = new([TestRuns.Join]);
+    private readonly WindowsStepRunnerFixture _run = new([TestRuns.Join]);
 
     public void Dispose() => _run.Dispose();
 

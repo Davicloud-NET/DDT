@@ -26,7 +26,7 @@ public abstract class SequenceRunnerTestBase : IDisposable
 
     protected SequenceRunnerTestBase()
     {
-        _system = TestAgents.SystemDirectory(_tools);
+        _system = WindowsTestAgents.SystemDirectory(_tools);
 
         // reg.exe goes into the disk's journal, and the installed Windows uses its first control set.
         _toolRunner.Answer = (fileName, arguments) =>
@@ -91,7 +91,7 @@ public abstract class SequenceRunnerTestBase : IDisposable
         options ??= new SequenceRunOptions();
         TimeProvider time = options.Time ?? new ImmediateTimeProvider();
         _tokens = new DeploymentTokens("session-0", "resume-0", options.RunToken);
-        SequenceRunner runner = TestAgents.Runner(
+        SequenceRunner runner = WindowsTestAgents.Runner(
             server,
             _tools,
             options.Log ?? new AgentLog(time, TextWriter.Null),

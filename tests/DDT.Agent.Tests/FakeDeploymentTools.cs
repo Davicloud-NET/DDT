@@ -4,7 +4,6 @@
 
 using DDT.Agent.Deployment;
 using DDT.Agent.InstalledPhase;
-using DDT.Agent.WindowsPhase;
 using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Tests;
@@ -13,13 +12,12 @@ namespace DDT.Agent.Tests;
 // restart marker and the agent's removal. Every call goes into one journal, so a test can check their order. The
 // volumes are directories in a temporary folder that Dispose removes.
 internal sealed class FakeDeploymentTools
-    : IDisks, IDiskPartitioner, IImageApplier, IBcdWriter, IBootOrder, IRebooter, ISetupProbe, IDomainJoiner, IRestartMarker, IAgentRemoval, IRestartDeleter, IDisposable
+    : IDisks, IDiskPartitioner, IImageApplier, IBcdWriter, IBootOrder, IRebooter, ISetupProbe, IDomainJoiner, IRestartMarker, IAgentRemoval, IDisposable
 {
     private readonly Lock _lock = new();
     private readonly List<string> _calls = [];
     private readonly Queue<string> _setupPending = new();
     private readonly Queue<int> _joinAnswers = new();
-    private readonly List<string> _deletedAtRestart = [];
     private AgentJoinDomainCredentials? _joinedWith;
 
     public FakeDeploymentTools(params LocalDisk[] disks)
@@ -289,41 +287,6 @@ internal sealed class FakeDeploymentTools
         Record("remove");
 
         return Task.CompletedTask;
-    }
-
-    // In the journal relative to the Windows volume.
-    public void DeleteAtRestart(string path)
-    {
-        lock (_lock)
-        {
-            _deletedAtRestart.Add(path);
-        }
-
-        Record("delete at restart", $" {Path.GetRelativePath(Volumes.Windows, path)}");
-    }
-
-    // Deletes what was marked, in order, like Windows does when it starts. A directory goes only once it's empty.
-    public void DeleteMarkedAsWindowsStarts()
-    {
-        List<string> marked;
-
-        lock (_lock)
-        {
-            marked = [.. _deletedAtRestart];
-            _deletedAtRestart.Clear();
-        }
-
-        foreach (string path in marked)
-        {
-            if (File.Exists(path))
-            {
-                File.Delete(path);
-            }
-            else if (Directory.Exists(path) && !Directory.EnumerateFileSystemEntries(path).Any())
-            {
-                Directory.Delete(path);
-            }
-        }
     }
 
     // Another fake's call, such as a tool run, in the same journal, so a test can check the order of both.

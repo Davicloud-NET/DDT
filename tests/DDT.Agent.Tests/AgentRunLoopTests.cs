@@ -84,7 +84,7 @@ public sealed class AgentRunLoopTests : IDisposable
         ScriptedAgentServer server = new ScriptedAgentServer().OnRegister(_ => Registered(MachineState.Rejected) with { Token = null });
         ImmediateTimeProvider time = new();
 
-        await TestAgents.Loop(
+        await WindowsTestAgents.Loop(
             server,
             new ScriptedSignInPrompt { IsAvailable = false },
             new(_tools, new AgentLog(time, TextWriter.Null), time) { Identity = new DryRunMachineIdentityReader(1, secureBootEnabled: true, trustedUefiCas: UefiCa.Microsoft2011) }).RunAsync(server.Stop.Token);
@@ -174,7 +174,7 @@ public sealed class AgentRunLoopTests : IDisposable
             .OnSequences(() => [s_choice]);
 
         ImmediateTimeProvider time = new();
-        await TestAgents.Loop(server, prompt, new(_tools, new AgentLog(time, console), time)).RunAsync(server.Stop.Token);
+        await WindowsTestAgents.Loop(server, prompt, new(_tools, new AgentLog(time, console), time)).RunAsync(server.Stop.Token);
 
         Assert.Equal([new AgentRunRequest(inventory.Id, null, null)], server.RunRequests);
         AgentRunReport report = Assert.Single(server.RunReports);
@@ -362,7 +362,7 @@ public sealed class AgentRunLoopTests : IDisposable
         ImmediateTimeProvider time = new();
         StringWriter console = new();
 
-        int restarting = await TestAgents.Loop(again, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, new AgentLog(time, console), time))
+        int restarting = await WindowsTestAgents.Loop(again, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, new AgentLog(time, console), time))
             .RunAsync(again.Stop.Token);
 
         Assert.Equal(AgentExitCodes.Restarting, restarting);
@@ -400,9 +400,9 @@ public sealed class AgentRunLoopTests : IDisposable
         AgentLog log = new(time, console);
         TestAgents.RestartMarker(_tools, log).Set(into);
         ScriptedAgentServer server = new();
-        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, new() { ToolRunner = tools, Rebooter = new WindowsPERebooter(tools, firmware, log) });
+        SequenceRunner runner = WindowsTestAgents.Runner(server, _tools, log, time, new() { ToolRunner = tools, Rebooter = new WindowsPERebooter(tools, firmware, log) });
 
-        int exitCode = await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, log, time) { Runner = runner })
+        int exitCode = await WindowsTestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, log, time) { Runner = runner })
             .RunAsync(server.Stop.Token);
 
         Assert.Equal(AgentExitCodes.Restarting, exitCode);
@@ -434,10 +434,10 @@ public sealed class AgentRunLoopTests : IDisposable
         AgentLog log = new(time, console);
         TestAgents.RestartMarker(_tools, log).Set(RestartInto.BootEnvironment);
         ScriptedAgentServer server = new();
-        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, new() { ToolRunner = tools, Rebooter = new WindowsPERebooter(tools, firmware, log) });
+        SequenceRunner runner = WindowsTestAgents.Runner(server, _tools, log, time, new() { ToolRunner = tools, Rebooter = new WindowsPERebooter(tools, firmware, log) });
         await server.Stop.CancelAsync();
 
-        int exitCode = await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, log, time) { Runner = runner })
+        int exitCode = await WindowsTestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, log, time) { Runner = runner })
             .RunAsync(server.Stop.Token);
 
         Assert.Equal(AgentExitCodes.Stopped, exitCode);
@@ -464,8 +464,8 @@ public sealed class AgentRunLoopTests : IDisposable
         _tools.FailAt = "reboot";
 
         // A dry run's hand-over, which needs no SYSTEM hive to register the service in.
-        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, new() { DryRunHandOver = true });
-        int first = await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, log, time) { Runner = runner })
+        SequenceRunner runner = WindowsTestAgents.Runner(server, _tools, log, time, new() { DryRunHandOver = true });
+        int first = await WindowsTestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, log, time) { Runner = runner })
             .RunAsync(server.Stop.Token);
 
         Assert.Equal(AgentExitCodes.Restarting, first);
@@ -509,8 +509,8 @@ public sealed class AgentRunLoopTests : IDisposable
         AgentLog log = new(time, TextWriter.Null);
 
         // A dry run's hand-over, which needs no SYSTEM hive to register the service in.
-        SequenceRunner runner = TestAgents.Runner(server, _tools, log, time, new() { DryRunHandOver = true });
-        int exitCode = await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, log, time) { Runner = runner })
+        SequenceRunner runner = WindowsTestAgents.Runner(server, _tools, log, time, new() { DryRunHandOver = true });
+        int exitCode = await WindowsTestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, log, time) { Runner = runner })
             .RunAsync(server.Stop.Token);
 
         Assert.Equal(AgentExitCodes.Restarting, exitCode);
@@ -530,7 +530,7 @@ public sealed class AgentRunLoopTests : IDisposable
             .OnNext(_ => Next(MachineState.Approved, "session-2") with { Deployment = deployment });
 
         ImmediateTimeProvider time = new();
-        await TestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, new AgentLog(time, console), time))
+        await WindowsTestAgents.Loop(server, new ScriptedSignInPrompt { IsAvailable = false }, new(_tools, new AgentLog(time, console), time))
             .RunAsync(server.Stop.Token);
 
         Assert.Single(console.ToString().Split(Environment.NewLine), line => line.Contains("no longer runs", StringComparison.Ordinal));
@@ -574,6 +574,6 @@ public sealed class AgentRunLoopTests : IDisposable
     {
         ImmediateTimeProvider time = new();
 
-        return TestAgents.Loop(server, prompt, new(_tools, new AgentLog(time, TextWriter.Null), time));
+        return WindowsTestAgents.Loop(server, prompt, new(_tools, new AgentLog(time, TextWriter.Null), time));
     }
 }

@@ -17,7 +17,7 @@ public sealed class AgentStepRunnerTests
     [Fact]
     public async Task ARestartStepAsksForTheRestart()
     {
-        using StepRunnerFixture run = new([s_reboot]);
+        using WindowsStepRunnerFixture run = new([s_reboot]);
 
         StepResult result = await run.Steps.RunAsync(s_reboot, run.Context(), TestContext.Current.CancellationToken);
 
@@ -28,7 +28,7 @@ public sealed class AgentStepRunnerTests
     public async Task JoiningTheDomainFailsInWindowsPE()
     {
         JoinDomainStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000a7"), Name = "Join" };
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
 
         StepResult result = await run.Steps.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
 
@@ -38,7 +38,7 @@ public sealed class AgentStepRunnerTests
     [Fact]
     public async Task EveryLineOfAStepNamesTheStep()
     {
-        using StepRunnerFixture run = new([s_reboot]);
+        using WindowsStepRunnerFixture run = new([s_reboot]);
         run.Log.Information("Before the step.");
 
         await run.Steps.RunAsync(s_reboot, run.Context(), TestContext.Current.CancellationToken);
@@ -59,7 +59,7 @@ public sealed class AgentStepRunnerTests
     public async Task AStepThatThrowsFailsWithItsMessage()
     {
         PartitionStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000a8"), Name = "Partition" };
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         run.Session.Disk = null;
 
         StepResult result = await run.Steps.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
@@ -75,7 +75,7 @@ public sealed class AgentStepRunnerTests
     public async Task ARefusedTokenEndsTheRunAndReachesTheEngine()
     {
         WriteUnattendStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000aa"), Name = "Answer file" };
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         run.Partitioned();
         AgentTokenRejectedException refused = new();
         run.Server.OnRunUnattend(_ => throw refused);
@@ -94,7 +94,7 @@ public sealed class AgentStepRunnerTests
             Name = "Wait",
             Script = "ping -n 30 127.0.0.1",
         };
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         using CancellationTokenSource stop = new();
         run.ToolRunner.AnswerExitCode = (_, _, _) =>
         {

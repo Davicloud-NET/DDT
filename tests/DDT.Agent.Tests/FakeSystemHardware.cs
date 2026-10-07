@@ -14,11 +14,11 @@ internal sealed class FakeSystemHardware : ISystemHardware
 
     public Func<ulong?> Usable { get; set; } = () => null;
 
-    public Func<byte[]?> Cores { get; set; } = () => null;
+    public Func<ProcessorCount?> Cores { get; set; } = () => null;
 
     public ulong? InstalledMemoryKilobytes() => Installed();
 
     public ulong? UsableMemoryBytes() => Usable();
 
-    public ProcessorCount? ProcessorCores() => Cores() is { } records ? ProcessorCoreRecords.Count(records) : null;
+    public ProcessorCount? ProcessorCores() => Cores();
 }

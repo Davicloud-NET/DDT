@@ -16,9 +16,9 @@ internal static class TestAgents
     public static AgentConfiguration Configuration { get; } =
         new("https://ddt.example:8443/", "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n", null);
 
-    // Everything on the disk is under tools.Root: the volumes, WinPE's own directory X, and System32 with WinPE's
-    // tools. Like in a dry run, unless options say otherwise, the run's directory stays open to the account the tests
-    // run as. The restart marker is a real file, though.
+    // A runner with the parts every system has. Its steps are TestStepRunners', it checks nothing of a system before a
+    // run, and its hand-over only goes into the tools' journal. Everything on the disk is under tools.Root. The restart
+    // marker is a real file, though.
     public static SequenceRunner Runner(
         IAgentServer server,
         FakeDeploymentTools tools,
@@ -29,9 +29,7 @@ internal static class TestAgents
         ArgumentNullException.ThrowIfNull(tools);
 
         options ??= new TestRunnerOptions();
-        IToolRunner toolRunner = options.ToolRunner ?? new RecordingToolRunner();
         IRawDisks rawDisks = options.RawDisks ?? new MemoryRawDisks();
-        SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun);
 
         return new SequenceRunnerBuilder
         {
@@ -39,31 +37,19 @@ internal static class TestAgents
             Disks = tools,
             Partitioner = tools,
             RawDisks = rawDisks,
-            FreeSpace = new DriveFreeSpace(),
-            PreflightChecks = [new BootImageToolsCheck(options.SystemDirectory ?? SystemDirectory(tools)), new ImageApplierCheck(tools)],
-            StepRunners = new WindowsStepRunners
-            {
-                Server = server,
-                Disks = tools,
-                Partitioner = tools,
-                RawDisks = rawDisks,
-                Applier = tools,
-                Tools = toolRunner,
-                Joiner = options.Joiner ?? tools,
-                Log = log,
-                TimeProvider = timeProvider,
-                Options = runnerOptions,
-            },
+            FreeSpace = new FakeFreeSpace(),
+            PreflightChecks = [],
+            StepRunners = new TestStepRunners(tools, rawDisks, log, timeProvider),
             BcdWriter = options.BcdWriter ?? tools,
             BootOrder = tools,
             Rebooter = options.Rebooter ?? tools,
             RestartMarker = RestartMarker(tools, log),
-            HandOver = HandOver(tools, toolRunner, log, options.DryRunHandOver, options.ConsoleDirectory),
+            HandOver = new FakeHandOver(tools),
             Log = log,
             TimeProvider = timeProvider,
-            Options = runnerOptions,
+            Options = new(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun),
             Status = options.Status,
-            AccountTools = options.DryRun ? WindowsAccountTools.DryRun(log) : WindowsAccountTools.Create(log),
+            AccountTools = new AccountTools(new NoShareConnector(), new DryRunAccountLogons(log)),
         }.Build();
     }
 
@@ -80,47 +66,6 @@ internal static class TestAgents
         ArgumentNullException.ThrowIfNull(tools);
 
         return new FileRestartMarker(Path.Combine(tools.Root, "RAM disk"), log, dryRun: false);
-    }
-
-    // Stages AgentSource(tools) with Configuration, and the console in consoleDirectory.
-    public static WindowsHandOver HandOver(
-        FakeDeploymentTools tools,
-        IToolRunner toolRunner,
-        AgentLog log,
-        bool dryRun = false,
-        string? consoleDirectory = null) =>
-        new(
-            new OfflineServiceRegistration(toolRunner, log, dryRun),
-            AgentSource(tools),
-            Configuration,
-            log,
-            dryRun,
-            consoleDirectory is null ? null : () => consoleDirectory);
-
-    // The running agent, under the name the self-update may have given it.
-    public static string AgentSource(FakeDeploymentTools tools)
-    {
-        ArgumentNullException.ThrowIfNull(tools);
-
-        string agent = Path.Combine(tools.Root, "Agent", "ddt-agent-5a5a.exe");
-        Directory.CreateDirectory(Path.GetDirectoryName(agent)!);
-        File.WriteAllBytes(agent, [0x4D, 0x5A, 0x90, 0x00]);
-
-        return agent;
-    }
-
-    // Holds the tools a sequence may need that Windows PE does not always have.
-    public static string SystemDirectory(FakeDeploymentTools tools)
-    {
-        ArgumentNullException.ThrowIfNull(tools);
-
-        string system = Path.Combine(tools.Root, "System32");
-        string powerShell = WindowsScriptLauncher.PowerShellIn(system);
-        Directory.CreateDirectory(Path.GetDirectoryName(powerShell)!);
-        File.WriteAllText(powerShell, string.Empty);
-        File.WriteAllText(InjectDriversStepRunner.DismIn(system), string.Empty);
-
-        return system;
     }
 
     // With the text console, asking through prompt.

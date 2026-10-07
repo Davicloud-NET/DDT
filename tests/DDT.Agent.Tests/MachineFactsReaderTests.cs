@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Buffers.Binary;
 using System.ComponentModel;
 using System.Text;
 using DDT.Agent.Deployment;
@@ -37,27 +36,11 @@ public sealed class MachineFactsReaderTests
 
     private static byte[] AcpiIds(params string[] signatures) => Encoding.ASCII.GetBytes(string.Concat(signatures));
 
-    // Four cores with two logical processors each, as GetLogicalProcessorInformationEx lays them out.
-    private static byte[] FourCores()
-    {
-        byte[] records = new byte[4 * 48];
-
-        for (int core = 0; core < 4; core++)
-        {
-            Span<byte> record = records.AsSpan(core * 48, 48);
-            BinaryPrimitives.WriteUInt32LittleEndian(record[4..], 48);
-            BinaryPrimitives.WriteUInt16LittleEndian(record[30..], 1);
-            BinaryPrimitives.WriteUInt64LittleEndian(record[32..], 0b11UL << (core * 2));
-        }
-
-        return records;
-    }
-
     [Fact]
     public void ReadsEveryFact()
     {
         _hardware.Installed = () => 16UL * 1024 * 1024;
-        _hardware.Cores = FourCores;
+        _hardware.Cores = () => new ProcessorCount(4, 8);
         _firmware.Lists[IFirmwareTables.AcpiProvider] = AcpiIds("FACP", "APIC", "TPM2");
         _uefi.Values["SecureBoot"] = [1];
 
@@ -174,11 +157,6 @@ public sealed class MachineFactsReaderTests
     public void LeavesTheProcessorCountsUnknownWhenWindowsCannotTell()
     {
         MachineFacts facts = Read();
-
-        Assert.Equal((null, null), (facts.ProcessorCores, facts.LogicalProcessors));
-
-        _hardware.Cores = () => [1, 2, 3];
-        facts = Read();
 
         Assert.Equal((null, null), (facts.ProcessorCores, facts.LogicalProcessors));
     }

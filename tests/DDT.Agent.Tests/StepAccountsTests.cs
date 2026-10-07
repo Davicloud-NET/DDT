@@ -32,7 +32,7 @@ public sealed class StepAccountsTests
     public async Task ConnectsTheSharesBeforeTheStepAndDisconnectsThemAfter()
     {
         RunScriptStep step = Script(SequencePhase.WindowsPE, [Share]);
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         run.Server.OnRunStepAccounts(_ => new AgentStepAccounts(null, [s_drivers]));
         IReadOnlyList<string>? whileRunning = null;
         run.ToolRunner.AnswerExitCode = (_, _, _) =>
@@ -62,7 +62,7 @@ public sealed class StepAccountsTests
     public async Task TheScriptLearnsWhereItsSharesAreWhenTheSystemGivesThemPlaces()
     {
         RunScriptStep step = Script(SequencePhase.WindowsPE, [Share]);
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         run.Server.OnRunStepAccounts(_ => new AgentStepAccounts(null, [s_drivers]));
         run.Accounts.Shares.LocalPaths = ["/run/ddt/shares/1"];
 
@@ -75,7 +75,7 @@ public sealed class StepAccountsTests
     public async Task DisconnectsTheSharesWhenTheStepFails()
     {
         RunScriptStep step = Script(SequencePhase.WindowsPE, [Share]);
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         run.Server.OnRunStepAccounts(_ => new AgentStepAccounts(null, [s_drivers]));
         run.ToolRunner.AnswerExitCode = (_, _, _) => 5;
 
@@ -90,7 +90,7 @@ public sealed class StepAccountsTests
     public async Task DisconnectsTheSharesWhenTheStepThrows()
     {
         RunScriptStep step = Script(SequencePhase.WindowsPE, [Share]);
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         run.Server.OnRunStepAccounts(_ => new AgentStepAccounts(null, [s_drivers]));
         run.ToolRunner.AnswerExitCode = (_, _, _) => throw new DeploymentStepException("The script blew up.");
 
@@ -105,7 +105,7 @@ public sealed class StepAccountsTests
     public async Task AShareThatCannotConnectFailsTheStepWithACleanMessageAndRunsNoScript()
     {
         RunScriptStep step = Script(SequencePhase.WindowsPE, [Share]);
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         run.Server.OnRunStepAccounts(_ => new AgentStepAccounts(null, [s_drivers]));
         run.Accounts.Shares.FailPath = s_drivers.Path;
         run.Accounts.Shares.Failure = new DeploymentStepException($"{s_drivers.Path} could not be connected (error 5): Access is denied.");
@@ -123,7 +123,7 @@ public sealed class StepAccountsTests
     {
         AccountReference reference = new(Guid.NewGuid(), null);
         RunScriptStep step = Script(SequencePhase.Windows, runAs: reference);
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         run.Partitioned();
         AgentAccount account = new(@"CORP\installer", RunAsPassword);
         run.Server.OnRunStepAccounts(_ => new AgentStepAccounts(account, []));
@@ -146,7 +146,7 @@ public sealed class StepAccountsTests
     public async Task RunsAsTheAgentWhenNoAccountIsGiven()
     {
         RunScriptStep step = Script(SequencePhase.WindowsPE);
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         bool hadAccount = true;
         run.ToolRunner.AnswerExitCode = (_, _, options) =>
         {
@@ -168,7 +168,7 @@ public sealed class StepAccountsTests
     public async Task RunAsIsRefusedInWindowsPEBeforeAnyAccountIsFetched()
     {
         RunScriptStep step = Script(SequencePhase.WindowsPE, runAs: new AccountReference(Guid.NewGuid(), null));
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
 
         StepResult result = await run.Steps.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
 
@@ -182,7 +182,7 @@ public sealed class StepAccountsTests
     {
         AccountReference reference = new(Guid.NewGuid(), null);
         RunScriptStep step = Script(SequencePhase.Windows, [Share], reference);
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         run.Partitioned();
         AgentAccount account = new(@"CORP\installer", RunAsPassword);
         AgentStepAccounts accounts = new(account, [s_drivers]);
@@ -206,7 +206,7 @@ public sealed class StepAccountsTests
     {
         AccountReference reference = new(Guid.NewGuid(), null);
         RunScriptStep step = Script(SequencePhase.Windows, [Share], reference);
-        using StepRunnerFixture run = new([step]);
+        using WindowsStepRunnerFixture run = new([step]);
         run.Partitioned();
         StringWriter console = new();
         AgentLog log = new(run.Time, console);

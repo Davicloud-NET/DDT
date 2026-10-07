@@ -171,7 +171,7 @@ public sealed class SequenceRunnerTests : SequenceRunnerTestBase
         // The work directory is X:\DDT in Windows PE, where the agent itself is.
         _toolRunner.AnswerExitCode = (_, _, _) => exitCode;
         ScriptedAgentServer server = new();
-        SequenceRunner runner = TestAgents.Runner(server, _tools, Log(), new ImmediateTimeProvider(), new() { ToolRunner = _toolRunner, SystemDirectory = _system, DryRun = false });
+        SequenceRunner runner = WindowsTestAgents.Runner(server, _tools, Log(), new ImmediateTimeProvider(), new() { ToolRunner = _toolRunner, SystemDirectory = _system, DryRun = false });
 
         RunResult result = await runner.RunAsync(new RunRequest(s_machineId, TestRuns.Run([TestRuns.Script(1) with { RebootExitCodes = [] }]), null, null, _tokens, s_identity), server.Stop.Token);
 

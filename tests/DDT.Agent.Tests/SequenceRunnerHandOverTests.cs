@@ -37,7 +37,7 @@ public sealed class SequenceRunnerHandOverTests : SequenceRunnerTestBase
 
         string agent = Path.Combine(Windows, "DDT", WindowsHandOver.AgentDirectory);
         Assert.Equal(
-            await File.ReadAllBytesAsync(TestAgents.AgentSource(_tools), cancellationToken),
+            await File.ReadAllBytesAsync(WindowsTestAgents.AgentSource(_tools), cancellationToken),
             await File.ReadAllBytesAsync(Path.Combine(agent, "ddt-agent.exe"), cancellationToken));
         Assert.Equal(
             """{"serverUrl":"https://ddt.example:8443/","rootCertificate":"-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n"}""",

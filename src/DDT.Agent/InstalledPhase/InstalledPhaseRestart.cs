@@ -5,11 +5,18 @@
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 
-namespace DDT.Agent.WindowsPhase;
+namespace DDT.Agent.InstalledPhase;
 
-// The Windows restarts a run asks for. The marker keeps a restart due from the moment the run knows about it until it
-// happens. So if the service starts again before the restart happened, it restarts Windows instead of continuing.
-internal sealed class WindowsRestart(IRebooter rebooter, IRestartMarker marker, AgentLog log, TimeProvider timeProvider, bool dryRun)
+// The restarts of the installed system a run asks for. The marker keeps a restart due from the moment the run knows
+// about it until it happens. So if the service starts again before the restart happened, it restarts the system
+// instead of continuing.
+internal sealed class InstalledPhaseRestart(
+    IRebooter rebooter,
+    IRestartMarker marker,
+    IInstalledPhaseTexts texts,
+    AgentLog log,
+    TimeProvider timeProvider,
+    bool dryRun)
 {
     public bool IsDue => marker.IsSet;
 
@@ -23,7 +30,7 @@ internal sealed class WindowsRestart(IRebooter rebooter, IRestartMarker marker, 
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            log.Error($"Windows could not restart itself ({LogText.OneLine(exception)}). Restart it by hand; the run goes on after the restart.");
+            log.Error(texts.CannotRestart(LogText.OneLine(exception)));
         }
     }
 
@@ -40,8 +47,8 @@ internal sealed class WindowsRestart(IRebooter rebooter, IRestartMarker marker, 
         {
             while (true)
             {
-                await Task.Delay(WindowsPhaseLoop.RestartTimeout, timeProvider, cancellationToken).ConfigureAwait(false);
-                log.Warning($"Windows has not restarted {WindowsPhaseLoop.RestartTimeout.TotalMinutes:0} minutes after the run asked it to. Asking again.");
+                await Task.Delay(InstalledPhaseLoop.RestartTimeout, timeProvider, cancellationToken).ConfigureAwait(false);
+                log.Warning(texts.NotRestarted(InstalledPhaseLoop.RestartTimeout));
                 await RestartAsync(cancellationToken).ConfigureAwait(false);
             }
         }
@@ -54,7 +61,7 @@ internal sealed class WindowsRestart(IRebooter rebooter, IRestartMarker marker, 
     // Called after the agent removed itself. Windows deletes the files still in use as it starts.
     public async Task RestartOnceMoreAsync(CancellationToken cancellationToken)
     {
-        log.Information("Windows restarts once more, which deletes what is left of the agent.");
+        log.Information(texts.RestartsOnceMore);
 
         try
         {
@@ -65,7 +72,7 @@ internal sealed class WindowsRestart(IRebooter rebooter, IRestartMarker marker, 
         }
         catch (Exception exception)
         {
-            log.Warning($"Windows could not restart itself ({LogText.OneLine(exception)}). What is left of the agent goes when Windows next starts.");
+            log.Warning(texts.CannotRestartOnceMore(LogText.OneLine(exception)));
         }
     }
 }

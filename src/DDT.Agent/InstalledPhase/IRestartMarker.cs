@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-namespace DDT.Agent.WindowsPhase;
+namespace DDT.Agent.InstalledPhase;
 
-// Whether a restart of Windows that the run asked for is still due. Only that restart clears it.
+// Whether a restart of the installed system that the run asked for is still due. Only that restart clears it.
 public interface IRestartMarker
 {
     bool IsSet { get; }

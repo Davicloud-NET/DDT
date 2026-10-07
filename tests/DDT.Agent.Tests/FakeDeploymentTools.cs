@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Agent.Deployment;
+using DDT.Agent.InstalledPhase;
 using DDT.Agent.WindowsPhase;
 using DDT.Contracts.Agents;
 
@@ -12,7 +13,7 @@ namespace DDT.Agent.Tests;
 // restart marker and the agent's removal. Every call goes into one journal, so a test can check their order. The
 // volumes are directories in a temporary folder that Dispose removes.
 internal sealed class FakeDeploymentTools
-    : IDisks, IDiskPartitioner, IImageApplier, IBcdWriter, IBootOrder, IRebooter, IWindowsSetupProbe, IDomainJoiner, IRestartMarker, IAgentRemoval, IRestartDeleter, IDisposable
+    : IDisks, IDiskPartitioner, IImageApplier, IBcdWriter, IBootOrder, IRebooter, ISetupProbe, IDomainJoiner, IRestartMarker, IAgentRemoval, IRestartDeleter, IDisposable
 {
     private readonly Lock _lock = new();
     private readonly List<string> _calls = [];

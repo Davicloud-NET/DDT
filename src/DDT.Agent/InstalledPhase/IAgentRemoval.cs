@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-namespace DDT.Agent.WindowsPhase;
+namespace DDT.Agent.InstalledPhase;
 
 public interface IAgentRemoval
 {
-    // Removes the agent from the installed Windows once its run is over there.
+    // Removes the agent from the installed system once its run is over there.
     Task RemoveAsync(CancellationToken cancellationToken);
 }

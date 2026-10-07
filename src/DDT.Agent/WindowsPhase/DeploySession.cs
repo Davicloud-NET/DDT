@@ -4,6 +4,7 @@
 
 using System.Security.Principal;
 using DDT.Agent.Deployment;
+using DDT.Agent.InstalledPhase;
 using DDT.Agent.Sequences;
 using DDT.ConsoleProtocol;
 

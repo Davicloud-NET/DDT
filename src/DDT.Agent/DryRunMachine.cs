@@ -4,6 +4,7 @@
 
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
+using DDT.Agent.InstalledPhase;
 using DDT.Agent.Sequences;
 using DDT.Agent.WindowsPhase;
 using DDT.Contracts.Agents;
@@ -72,19 +73,19 @@ public sealed class DryRunMachine(
             DryRunToolRunner tools = new(log);
             WindowsRebooter rebooter = new(tools);
 
-            WindowsPhaseLoop loop = new WindowsPhaseLoopBuilder
+            InstalledPhaseLoop loop = new InstalledPhaseLoopBuilder
             {
                 Server = windowsServer,
                 IdentityReader = Identity(),
                 Runner = Runner(windowsServer, new DryRunDiskPartitioner(options.Root, log), tools, rebooter, SequencePhase.Windows),
-                Setup = new DryRunSetupProbe(log),
+                Profile = WindowsPhaseProfile.With(new DryRunSetupProbe(log)),
                 Rebooter = rebooter,
                 RestartMarker = new DryRunRestartMarker(log),
                 Removal = new DryRunAgentRemoval(new AgentRemoval(Windows, tools, new DryRunRestartDeleter(log), log), options.Root, log),
                 Log = log,
                 TimeProvider = timeProvider,
                 HeartbeatInterval = options.HeartbeatInterval,
-                WindowsRoot = Windows,
+                Root = Windows,
                 AgentVersion = options.AgentVersion,
                 DryRun = true,
             }.Build();

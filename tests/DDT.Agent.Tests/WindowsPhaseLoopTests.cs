@@ -4,6 +4,7 @@
 
 using System.Net;
 using DDT.Agent.Consoles;
+using DDT.Agent.InstalledPhase;
 using DDT.ConsoleProtocol;
 using DDT.Agent.Sequences;
 using DDT.Agent.WindowsPhase;
@@ -258,7 +259,7 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
 
         // The polls take no real time here, so setup could be over before the heartbeat's first beat has left.
         await time.AdvanceUntilAsync(TimeSpan.Zero, () => server.RunReports.Count > 0 || running.IsCompleted);
-        await time.AdvanceUntilAsync(WindowsPhaseLoop.SetupPollInterval, () => running.IsCompleted);
+        await time.AdvanceUntilAsync(InstalledPhaseLoop.SetupPollInterval, () => running.IsCompleted);
 
         Assert.Equal(AgentExitCodes.Deployed, await running);
         Assert.Equal(
@@ -292,7 +293,7 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
 
         ManualTimeProvider time = new();
         Task<int> running = RunAsync(server, new() { Time = time, Status = status });
-        await time.AdvanceUntilAsync(WindowsPhaseLoop.SetupPollInterval, () => running.IsCompleted);
+        await time.AdvanceUntilAsync(InstalledPhaseLoop.SetupPollInterval, () => running.IsCompleted);
 
         Assert.Equal(AgentExitCodes.Deployed, await running);
         ConsoleState waiting = shown.First(state => state.Run is not null);
@@ -315,7 +316,7 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
         ManualTimeProvider time = new();
         StringWriter console = new();
         Task<int> running = RunAsync(server, new() { Time = time, Log = new AgentLog(time, console) });
-        await time.AdvanceUntilAsync(WindowsPhaseLoop.SetupPollInterval, () => running.IsCompleted);
+        await time.AdvanceUntilAsync(InstalledPhaseLoop.SetupPollInterval, () => running.IsCompleted);
 
         Assert.Equal(AgentExitCodes.Deployed, await running);
         string warning = Assert.Single(console.ToString().Split(Environment.NewLine), line => line.Contains("WARN", StringComparison.Ordinal));

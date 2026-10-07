@@ -178,7 +178,7 @@ public sealed class WindowsPhaseLoopReportTests : WindowsPhaseLoopTestBase
         Assert.Equal(["remove"], _tools.Calls);
         Assert.Empty(_toolRunner.Calls);
         AgentRunReport failed = Assert.Single(server.RunReports);
-        Assert.Equal((DeploymentState.Failed, WindowsPhaseLoop.FinalReportLostMessage), (failed.State, failed.Error));
+        Assert.Equal((DeploymentState.Failed, WindowsPhaseTexts.FinalReportLostMessage), (failed.State, failed.Error));
         Assert.False(File.Exists(RunFiles.In(Windows, Log()).TokenPath));
     }
 

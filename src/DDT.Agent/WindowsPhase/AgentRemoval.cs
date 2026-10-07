@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Agent.Deployment;
+using DDT.Agent.InstalledPhase;
 using DDT.Agent.Sequences;
 
 namespace DDT.Agent.WindowsPhase;

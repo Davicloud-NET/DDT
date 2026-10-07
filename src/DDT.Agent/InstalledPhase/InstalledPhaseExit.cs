@@ -5,11 +5,16 @@
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 
-namespace DDT.Agent.WindowsPhase;
+namespace DDT.Agent.InstalledPhase;
 
-// How the service ends: it waits for Windows to restart, or removes the agent once the run is over. DDT's session ends
-// first, and nothing may stop the removal halfway.
-internal sealed class AgentExit(IAgentRemoval removal, WindowsRestart restart, WindowsPhaseConsole console, AgentLog log)
+// How the service ends: it waits for the system to restart, or removes the agent once the run is over. DDT's session
+// ends first, and nothing may stop the removal halfway.
+internal sealed class InstalledPhaseExit(
+    IAgentRemoval removal,
+    InstalledPhaseRestart restart,
+    InstalledPhaseConsole console,
+    InstalledPhaseProfile profile,
+    AgentLog log)
 {
     // The state already says the step before the restart is done, so nothing may continue before the restart. Returns
     // null when none is due.
@@ -20,7 +25,7 @@ internal sealed class AgentExit(IAgentRemoval removal, WindowsRestart restart, W
             return null;
         }
 
-        log.Warning("Windows was to restart for the run but has not restarted since. Restarting it now.");
+        log.Warning(profile.Texts.RestartWasDue);
         await restart.RestartAsync(cancellationToken).ConfigureAwait(false);
 
         return await restart.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -32,7 +37,7 @@ internal sealed class AgentExit(IAgentRemoval removal, WindowsRestart restart, W
 
     public Task<int> WaitForRestartAsync(CancellationToken cancellationToken) => restart.WaitAsync(cancellationToken);
 
-    // Called after the server has the run's last report. Windows restarts once more after a finished run.
+    // Called after the server has the run's last report.
     public Task<int> EndAsync(AgentRunReport report, CancellationToken cancellationToken) =>
         report.State == DeploymentState.Done
             ? RemoveAndRestartAsync(cancellationToken)
@@ -54,8 +59,9 @@ internal sealed class AgentExit(IAgentRemoval removal, WindowsRestart restart, W
         return exitCode;
     }
 
-    // The agent and the log it holds open are only deleted when Windows next starts. A service that starts once more
-    // after that finds no run and only removes itself, so this restart never leads to another.
+    // In Windows the agent and the log it holds open are only deleted when Windows next starts, so it restarts once
+    // more. A service that starts once more after that finds no run and only removes itself, so this restart never
+    // leads to another.
     public async Task<int> RemoveAndRestartAsync(CancellationToken cancellationToken)
     {
         if (!await console.EndAsync(signOut: true, cancellationToken).ConfigureAwait(false))
@@ -67,9 +73,14 @@ internal sealed class AgentExit(IAgentRemoval removal, WindowsRestart restart, W
 
         await removal.RemoveAsync(CancellationToken.None).ConfigureAwait(false);
 
+        if (!profile.RestartsAfterRemoval)
+        {
+            return AgentExitCodes.Deployed;
+        }
+
         if (cancellationToken.IsCancellationRequested)
         {
-            log.Information("The agent was stopped. What is left of it goes when Windows next starts.");
+            log.Information(profile.Texts.StoppedAfterRemoval);
 
             return AgentExitCodes.Deployed;
         }

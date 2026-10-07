@@ -4,8 +4,8 @@
 
 using DDT.Agent.Deployment;
 
-namespace DDT.Agent.WindowsPhase;
+namespace DDT.Agent.InstalledPhase;
 
 // What the service gets from a registration while the server still has the run going: the machine, its tokens, and the
 // identity it registered with, which the run's conditions read.
-internal sealed record WindowsRunContact(Guid MachineId, DeploymentTokens Tokens, MachineIdentity Identity);
+internal sealed record InstalledPhaseContact(Guid MachineId, DeploymentTokens Tokens, MachineIdentity Identity);

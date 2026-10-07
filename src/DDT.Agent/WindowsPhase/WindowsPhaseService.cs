@@ -6,6 +6,7 @@ using System.Text;
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Facts;
+using DDT.Agent.InstalledPhase;
 using DDT.Agent.Sequences;
 using Microsoft.Win32;
 
@@ -75,7 +76,7 @@ public static class WindowsPhaseService
                 TimeProvider.System,
                 (sid, pipeName) => console.Start(() => SessionMachineConsole.CreatePipe(pipeName, sid)));
 
-            WindowsPhaseLoop loop = Loop(parts, Runner(parts, staged, status), session, status);
+            InstalledPhaseLoop loop = Loop(parts, Runner(parts, staged, status), session, status);
 
             // The control manager only needs to know whether the service failed.
             return await loop.RunAsync(cancellationToken).ConfigureAwait(false) switch
@@ -130,20 +131,20 @@ public static class WindowsPhaseService
         }.Build();
     }
 
-    private static WindowsPhaseLoop Loop(ServiceParts parts, SequenceRunner runner, DeploySession session, ConsoleStatus status) =>
-        new WindowsPhaseLoopBuilder
+    private static InstalledPhaseLoop Loop(ServiceParts parts, SequenceRunner runner, DeploySession session, ConsoleStatus status) =>
+        new InstalledPhaseLoopBuilder
         {
             Server = parts.Server,
             IdentityReader = new HardwareMachineIdentityReader(new FirmwareTables(), new SystemHardware(), new UefiVariables(), new WindowsSecureBoot()),
             Runner = runner,
-            Setup = new RegistrySetupProbe(),
+            Profile = WindowsPhaseProfile.With(new RegistrySetupProbe()),
             Rebooter = parts.Rebooter,
             RestartMarker = new VolatileRestartMarker(parts.Log),
             Removal = new AgentRemoval(parts.WindowsRoot, parts.Tools, new MoveFileRestartDeleter(parts.Log), parts.Log),
             Log = parts.Log,
             TimeProvider = TimeProvider.System,
             HeartbeatInterval = RunHeartbeat.DefaultInterval,
-            WindowsRoot = parts.WindowsRoot,
+            Root = parts.WindowsRoot,
             AgentVersion = parts.Version,
             DryRun = false,
             Session = session,

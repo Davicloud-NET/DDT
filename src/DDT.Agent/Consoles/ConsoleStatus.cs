@@ -159,8 +159,8 @@ public sealed class ConsoleStatus
         });
     }
 
-    // In the installed Windows, before the run continues. Windows setup hasn't finished yet.
-    public void WaitingForSetup(AgentRun run, SequenceState sequenceState)
+    // In the installed system, before the run continues. Its setup hasn't finished yet, which activity says.
+    public void WaitingForSetup(AgentRun run, SequenceState sequenceState, RunActivity activity)
     {
         ArgumentNullException.ThrowIfNull(run);
         ArgumentNullException.ThrowIfNull(sequenceState);
@@ -168,7 +168,7 @@ public sealed class ConsoleStatus
         Change(state => state with
         {
             Stage = ConsoleStage.Running,
-            Run = new ConsoleRun(run.Id, run.SequenceName, Steps(sequenceState), null, null, ConsoleActivity.WaitingForWindowsSetup),
+            Run = new ConsoleRun(run.Id, run.SequenceName, Steps(sequenceState), null, null, ConsoleValues.ToConsole(activity)),
             Restart = null,
             Problem = null,
         });

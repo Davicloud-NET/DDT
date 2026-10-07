@@ -64,16 +64,16 @@ public sealed class SequenceRunner
     // was due.
     public Task<RunOutcome?> RestartIfDueAsync(CancellationToken cancellationToken) => _ending.RestartIfDueAsync(cancellationToken);
 
-    // request.Resumed is the run as the hand-over left it in the running Windows. The run ends with its Done report and
-    // no restart, because the agent still has to remove itself. recordRestart keeps a due restart in case the service
-    // stops or dies before it happens.
-    public Task<RunResult> GoOnInWindowsAsync(RunRequest request, Action recordRestart, CancellationToken cancellationToken)
+    // request.Resumed is the run as the hand-over left it in the running system, whose phase is phase. The run ends with
+    // its Done report and no restart, because the agent still has to remove itself. recordRestart keeps a due restart
+    // in case the service stops or dies before it happens.
+    public Task<RunResult> GoOnInInstalledSystemAsync(RunRequest request, SequencePhase phase, Action recordRestart, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(request.Resumed);
         ArgumentNullException.ThrowIfNull(recordRestart);
 
-        return RunAsync(SequencePhase.Windows, recordRestart, request, cancellationToken);
+        return RunAsync(phase, recordRestart, request, cancellationToken);
     }
 
     private async Task<RunResult> RunAsync(SequencePhase phase, Action recordRestart, RunRequest request, CancellationToken cancellationToken)

@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Security;
+using DDT.Agent.InstalledPhase;
 using Microsoft.Win32;
 
 namespace DDT.Agent.WindowsPhase;
@@ -14,7 +15,7 @@ public sealed class RegistrySetupProbe(
     RegistryKey root,
     Func<IEnumerable<string>>? signedIn = null,
     Func<bool>? setupUserExists = null,
-    TimeProvider? timeProvider = null) : IWindowsSetupProbe
+    TimeProvider? timeProvider = null) : ISetupProbe
 {
     public const string Complete = "IMAGE_STATE_COMPLETE";
 

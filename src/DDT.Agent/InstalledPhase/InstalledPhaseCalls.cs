@@ -7,21 +7,21 @@ using DDT.Agent.Deployment;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
 
-namespace DDT.Agent.WindowsPhase;
+namespace DDT.Agent.InstalledPhase;
 
 // The service's calls to the server: the registration with the run token, the question whether the run continues, and
-// the run's last report. The network may still be coming up while Windows starts, so each call retries.
-internal sealed class WindowsRunCalls(
+// the run's last report. The network may still be coming up while the system starts, so each call retries.
+internal sealed class InstalledPhaseCalls(
     IAgentServer server,
     IMachineIdentityReader identityReader,
-    WindowsPhaseConsole console,
-    WindowsPhaseOptions options,
+    InstalledPhaseConsole console,
+    InstalledPhaseOptions options,
     AgentLog log,
     TimeProvider timeProvider)
 {
     // Every attempt but the first waits a little first. Returns null when the server no longer has the run going on
     // this machine.
-    public async Task<WindowsRunContact?> RegisterAsync(string? runToken, Guid runId, int attempt, CancellationToken cancellationToken)
+    public async Task<InstalledPhaseContact?> RegisterAsync(string? runToken, Guid runId, int attempt, CancellationToken cancellationToken)
     {
         if (attempt > 0)
         {
@@ -37,11 +37,11 @@ internal sealed class WindowsRunCalls(
 
         await console.RegisteredAsync(registration, cancellationToken).ConfigureAwait(false);
 
-        return new WindowsRunContact(registration.MachineId, new DeploymentTokens(token, resumeToken, registration.RunToken ?? runToken), identity);
+        return new InstalledPhaseContact(registration.MachineId, new DeploymentTokens(token, resumeToken, registration.RunToken ?? runToken), identity);
     }
 
     // Returns null when the server couldn't be asked. The next registration sorts that out.
-    public async Task<AgentNextResult?> AskAsync(WindowsRunContact contact, CancellationToken cancellationToken)
+    public async Task<AgentNextResult?> AskAsync(InstalledPhaseContact contact, CancellationToken cancellationToken)
     {
         try
         {
@@ -59,7 +59,7 @@ internal sealed class WindowsRunCalls(
     }
 
     // True once the server has the report, or refused it.
-    public async Task<bool> ReportAsync(WindowsRunContact contact, Guid runId, AgentRunReport report, CancellationToken cancellationToken)
+    public async Task<bool> ReportAsync(InstalledPhaseContact contact, Guid runId, AgentRunReport report, CancellationToken cancellationToken)
     {
         try
         {
@@ -126,7 +126,7 @@ internal sealed class WindowsRunCalls(
         options.AgentVersion,
         RunToken: runToken,
         SequenceVersion: SequenceDefinition.CurrentVersion,
-        Environment: AgentEnvironment.Windows,
+        Environment: options.Profile.Environment,
         SecureBootEnabled: identity.SecureBootEnabled,
         TrustedUefiCas: identity.TrustedUefiCas,
         ChassisType: identity.ChassisType,

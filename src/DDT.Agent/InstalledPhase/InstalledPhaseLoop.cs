@@ -5,39 +5,36 @@
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
-using DDT.Contracts.Sequences;
 
-namespace DDT.Agent.WindowsPhase;
+namespace DDT.Agent.InstalledPhase;
 
-// The DdtSequence service in the installed Windows. It continues the run the hand-over left in its DDT directory while
-// the server still has it running, and removes the agent once the run is over. How the run ended stays on disk with
-// the run token until the server has it, so a stop or an unreachable server only delays the report.
-public sealed class WindowsPhaseLoop
+// The agent's service in the installed system, in Windows the DdtSequence service. It continues the run the hand-over
+// left in its run directory while the server still has it running, and removes the agent once the run is over. How the
+// run ended stays on disk with the run token until the server has it, so a stop or an unreachable server only delays
+// the report.
+public sealed class InstalledPhaseLoop
 {
-    public const string StateGoneMessage = "The run's state in the installed Windows is gone, so the run cannot go on there.";
-
-    public const string FinalReportLostMessage = "The run ended in the installed Windows, but how it ended cannot be read from the disk there.";
-
     public static readonly TimeSpan SetupPollInterval = TimeSpan.FromSeconds(15);
     public static readonly TimeSpan SetupWarningInterval = TimeSpan.FromMinutes(30);
 
     // How long a restart may take to stop the service before it is asked for again.
     public static readonly TimeSpan RestartTimeout = TimeSpan.FromMinutes(5);
 
-    private readonly WindowsRunCalls _calls;
+    private readonly InstalledPhaseCalls _calls;
     private readonly SequenceRunner _runner;
-    private readonly WindowsSetupWait _setup;
-    private readonly AgentExit _exit;
-    private readonly WindowsPhaseOptions _options;
+    private readonly InstalledPhaseSetupWait _setup;
+    private readonly InstalledPhaseExit _exit;
+    private readonly InstalledPhaseOptions _options;
+    private readonly InstalledPhaseProfile _profile;
     private readonly AgentLog _log;
 
-    // Internal, like its parts. WindowsPhaseLoopBuilder puts it together.
-    internal WindowsPhaseLoop(
-        WindowsRunCalls calls,
+    // Internal, like its parts. InstalledPhaseLoopBuilder puts it together.
+    internal InstalledPhaseLoop(
+        InstalledPhaseCalls calls,
         SequenceRunner runner,
-        WindowsSetupWait setup,
-        AgentExit exit,
-        WindowsPhaseOptions options,
+        InstalledPhaseSetupWait setup,
+        InstalledPhaseExit exit,
+        InstalledPhaseOptions options,
         AgentLog log)
     {
         _calls = calls;
@@ -45,6 +42,7 @@ public sealed class WindowsPhaseLoop
         _setup = setup;
         _exit = exit;
         _options = options;
+        _profile = options.Profile;
         _log = log;
     }
 
@@ -64,20 +62,20 @@ public sealed class WindowsPhaseLoop
 
     private async Task<int> GoOnAsync(CancellationToken cancellationToken)
     {
-        _log.Information($"DDT agent {_options.AgentVersion}, the {OfflineServiceRegistration.ServiceName} service of the installed Windows.");
+        _log.Information(_profile.Texts.Started(_options.AgentVersion));
 
-        if (await LocalRun.LoadAsync(_options.WindowsRoot, _log, cancellationToken).ConfigureAwait(false) is not { } local)
+        if (await LocalRun.LoadAsync(_options.Root, _log, cancellationToken).ConfigureAwait(false) is not { } local)
         {
-            _log.Warning($"There is no run to go on with in {RunFiles.StatePathIn(_options.WindowsRoot)}.");
+            _log.Warning($"There is no run to go on with in {RunFiles.StatePathIn(_options.Root)}.");
 
             return await _exit.RemoveAsync(AgentExitCodes.Stopped, signOut: true, cancellationToken).ConfigureAwait(false);
         }
 
-        // The hand-over only saves the Windows phase once this service is registered, before Windows can start. So
-        // without it, WinPE hands the run over again.
-        if (local.State.Phase != SequencePhase.Windows)
+        // The hand-over only saves the installed phase once this service is registered, before the system can start. So
+        // without it, the boot environment hands the run over again.
+        if (local.State.Phase != _profile.Phase)
         {
-            _log.Warning($"Run {local.State.RunId} still goes on in Windows PE, which hands it over again. The agent leaves it alone.");
+            _log.Warning(_profile.Texts.StillInBootEnvironment(local.State.RunId));
 
             return AgentExitCodes.Stopped;
         }
@@ -127,7 +125,7 @@ public sealed class WindowsPhaseLoop
             return await RunIsOverAsync(runId, cancellationToken).ConfigureAwait(false);
         }
 
-        LocalRun? local = await LocalRun.LoadAsync(_options.WindowsRoot, _log, cancellationToken).ConfigureAwait(false);
+        LocalRun? local = await LocalRun.LoadAsync(_options.Root, _log, cancellationToken).ConfigureAwait(false);
 
         if (local is null || local.State.RunId != runId)
         {
@@ -147,7 +145,11 @@ public sealed class WindowsPhaseLoop
         }
 
         RunResult result = await _runner
-            .GoOnInWindowsAsync(new RunRequest(contact.MachineId, run, local, null, contact.Tokens, contact.Identity), _exit.RecordRestart, cancellationToken)
+            .GoOnInInstalledSystemAsync(
+                new RunRequest(contact.MachineId, run, local, null, contact.Tokens, contact.Identity),
+                _profile.Phase,
+                _exit.RecordRestart,
+                cancellationToken)
             .ConfigureAwait(false);
         next.RunToken = contact.Tokens.RunToken ?? next.RunToken;
         next.Unsent = result.UnsentReport;
@@ -157,14 +159,14 @@ public sealed class WindowsPhaseLoop
 
     // All the server can still learn about the run is why it ended here. Returns null when the report didn't get
     // through.
-    private async Task<int?> ReportLostStateAsync(WindowsRunContact contact, Guid runId, AgentRunReport? unsent, CancellationToken cancellationToken)
+    private async Task<int?> ReportLostStateAsync(InstalledPhaseContact contact, Guid runId, AgentRunReport? unsent, CancellationToken cancellationToken)
     {
         if (unsent is null)
         {
-            _log.Error(StateGoneMessage);
+            _log.Error(_profile.Texts.StateGone);
         }
 
-        AgentRunReport lastReport = unsent ?? FailedRunReport.Of(SequencePhase.Windows, StateGoneMessage);
+        AgentRunReport lastReport = unsent ?? FailedRunReport.Of(_profile.Phase, _profile.Texts.StateGone);
 
         if (!await _calls.ReportAsync(contact, runId, lastReport, cancellationToken).ConfigureAwait(false))
         {
@@ -177,7 +179,7 @@ public sealed class WindowsPhaseLoop
     // The run is over here, and only the server doesn't know yet how it ended. Returns null when the report didn't get
     // through.
     private async Task<int?> SendFinalReportAsync(
-        WindowsRunContact contact,
+        InstalledPhaseContact contact,
         Guid runId,
         LocalRun local,
         AgentRunReport final,
@@ -214,7 +216,7 @@ public sealed class WindowsPhaseLoop
         }
 
         return await local.Files.LoadFinalReportAsync(cancellationToken).ConfigureAwait(false)
-            ?? FailedRunReport.Of(SequencePhase.Windows, FinalReportLostMessage);
+            ?? FailedRunReport.Of(_profile.Phase, _profile.Texts.FinalReportLost);
     }
 
     // Deletes the run's state and answer file first, token first, whatever is still there.
@@ -222,7 +224,7 @@ public sealed class WindowsPhaseLoop
     {
         _log.Information($"The server no longer runs run {runId} on this machine.");
 
-        if (await LocalRun.LoadAsync(_options.WindowsRoot, _log, cancellationToken).ConfigureAwait(false) is { } local)
+        if (await LocalRun.LoadAsync(_options.Root, _log, cancellationToken).ConfigureAwait(false) is { } local)
         {
             local.Discard(_log);
         }

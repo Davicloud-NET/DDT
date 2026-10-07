@@ -100,7 +100,7 @@ public sealed class DeployingMachine : IDisposable
     public static async Task<DeployingMachine> SignedInAsync(DdtApplication application, string userName, Func<AgentRegistration, AgentRegistration> change) =>
         await (await RegisterAsync(application, change)).SignInAsync(userName);
 
-    private async Task<DeployingMachine> SignInAsync(string userName)
+    public async Task<DeployingMachine> SignInAsync(string userName)
     {
         AgentSignInResult signedIn = await RegisteredMachine.ReadAsync<AgentSignInResult>(
             await Agent.SignInAsync(Id, Token, new AgentSignInRequest(userName, DdtApplication.Password, null)));
@@ -166,6 +166,22 @@ public sealed class DeployingMachine : IDisposable
     {
         AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
             await (from ?? Agent).RegisterAsync(Registration));
+
+        if (registered.Token is not null)
+        {
+            Token = registered.Token;
+            ResumeToken = registered.ResumeToken!;
+        }
+
+        return registered;
+    }
+
+    // Registers from the boot environment the machine restarted into, with the resume token its agent took along. Without
+    // it when carried is false, as after a firmware that lost it.
+    public async Task<AgentRegistrationResult> RestartIntoAsync(AgentEnvironment environment, bool carried = true)
+    {
+        AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await Agent.RegisterAsync(
+            Registration with { Environment = environment, ResumeToken = carried ? ResumeToken : null }));
 
         if (registered.Token is not null)
         {

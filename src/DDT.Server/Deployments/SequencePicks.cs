@@ -20,6 +20,7 @@ public sealed class SequencePicks(
     NewRuns newRuns,
     SequenceChoices choices,
     SequenceResolver resolver,
+    BootEnvironments environments,
     TimeProvider timeProvider)
 {
     public async Task<DeploymentDecision> PickAsync(
@@ -52,6 +53,11 @@ public sealed class SequencePicks(
             return DeploymentDecision.Conflict(problem);
         }
 
+        if (OtherEnvironment(machine, checkedSequence) is { } restartFirst)
+        {
+            return restartFirst;
+        }
+
         if (Refusal(machine, request, checkedSequence) is { } refusal)
         {
             return refusal;
@@ -73,19 +79,27 @@ public sealed class SequencePicks(
         return await CreateAsync(run, resolution, request.DiskNumber, cancellationToken).ConfigureAwait(false);
     }
 
+    // A run is only made where it starts. The machine restarts into the other boot environment first and picks there,
+    // so nothing but its approval, its sign-in and the pick crosses the restart. Checked before the agent's version,
+    // since a newer agent in this boot environment would not run the sequence either.
+    private DeploymentDecision? OtherEnvironment(Machine machine, CheckedSequence sequence)
+    {
+        if (PhaseRules.Starts(machine.AgentEnvironment, sequence.Definition))
+        {
+            return null;
+        }
+
+        AgentEnvironment needed = PhaseRules.StartsIn(sequence.Definition);
+        string where = $"{sequence.Sequence.Name} runs in {PhaseRules.Name(needed)}, and this machine started {PhaseRules.Name(machine.AgentEnvironment)}.";
+
+        return DeploymentDecision.Conflict(environments.ReachableFrom(machine) == needed
+            ? $"{where} The machine restarts into {PhaseRules.Name(needed)} first. Choose the sequence again, and it does."
+            : $"{where} Choose one of the sequences the machine lists.");
+    }
+
     // Refuses a pick if the sequence changed after the agent showed its list, so the list no longer fits.
     private static DeploymentDecision? Refusal(Machine machine, AgentRunRequest request, CheckedSequence sequence)
     {
-        // Before the agent's version, since a newer agent in this boot environment would not run it either.
-        if (!PhaseRules.Starts(machine.AgentEnvironment, sequence.Definition))
-        {
-            AgentEnvironment needed = SequenceKinds.BootEnvironment(SequenceKinds.Of(sequence.Definition));
-
-            return DeploymentDecision.Conflict(
-                $"{sequence.Sequence.Name} runs in {PhaseRules.Name(needed)}, and this machine started {PhaseRules.Name(machine.AgentEnvironment)}. " +
-                "Choose one of the sequences the machine lists.");
-        }
-
         if (sequence.Definition.RequiredVersion() > machine.SequenceVersion)
         {
             return DeploymentDecision.Conflict(

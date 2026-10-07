@@ -28,7 +28,10 @@ internal sealed class MachinePolls(
     {
         ArgumentNullException.ThrowIfNull(machine);
 
-        if (LastSeen.Record(machine, now, address) && !await SaveSeenAsync(machine, user, cancellationToken).ConfigureAwait(false))
+        // Both are tried. A machine that still polls long after it was asked to restart did not get there.
+        bool changed = LastSeen.Record(machine, now, address) | PendingSwitch.Expire(machine, now);
+
+        if (changed && !await SaveSeenAsync(machine, user, cancellationToken).ConfigureAwait(false))
         {
             return null;
         }
@@ -52,7 +55,8 @@ internal sealed class MachinePolls(
             AssignedName: authorized ? machine.AssignedName : null,
             Run: run,
             CanPickSequence: canPick,
-            SuggestedSequenceId: canPick ? await choices.SuggestedAsync(machine, cancellationToken).ConfigureAwait(false) : null);
+            SuggestedSequenceId: canPick ? await choices.SuggestedAsync(machine, cancellationToken).ConfigureAwait(false) : null,
+            RestartInto: active is null || run is not null ? null : await queries.RestartIntoAsync(machine, active, cancellationToken).ConfigureAwait(false));
     }
 
     // Returns false if the save lost to an approval, a rejection, an assignment or a registration, and the machine

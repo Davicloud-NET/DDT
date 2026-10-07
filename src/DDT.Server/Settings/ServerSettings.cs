@@ -35,6 +35,7 @@ public static class ServerSettings
         "Kestrel:Certificates:Default:Password",
         "DDT:Agent:BinaryPath",
         "DDT:Agent:ConsolePath",
+        "DDT:LinuxBoot:Path",
         "ASPNETCORE_URLS",
         "Urls",
         "ASPNETCORE_HTTP_PORTS",

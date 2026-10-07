@@ -8,6 +8,7 @@ using DDT.Server.Authentication;
 using DDT.Server.Configuration;
 using DDT.Server.Deployments;
 using DDT.Server.Ldap;
+using DDT.Server.LinuxBoot;
 using DDT.Server.Machines;
 using DDT.Server.Security;
 using DDT.Server.Settings;
@@ -20,7 +21,7 @@ public static class DdtConfigurationCheck
 {
     // Listed by hand, because binding DdtOptions with ErrorOnUnknownConfiguration would refuse every section.
     private static readonly string[] s_rootKeys =
-        ["Roles", "StorePath", "Database", "RequireHttps", "Https", "ImportFolders", "Deployment", "Machines", "Ldap", "Oidc", "ForwardedHeaders", "Pxe", "Agent"];
+        ["Roles", "StorePath", "Database", "RequireHttps", "Https", "ImportFolders", "Deployment", "Machines", "Ldap", "Oidc", "ForwardedHeaders", "Pxe", "Agent", "LinuxBoot"];
 
     public static void Validate(IConfiguration configuration, DdtOptions options, IReadOnlySet<DeploymentRole> roles)
     {
@@ -90,6 +91,7 @@ public static class DdtConfigurationCheck
 
         _ = Read(configuration, HttpsOptions.SectionName, problems, (section, binder) => section.Get<HttpsOptions>(binder));
         _ = Read(configuration, AgentReleaseOptions.SectionName, problems, (section, binder) => section.Get<AgentReleaseOptions>(binder));
+        _ = Read(configuration, LinuxBootOptions.SectionName, problems, (section, binder) => section.Get<LinuxBootOptions>(binder));
 
         _ = Read(configuration, LdapOptions.SectionName, problems, (section, binder) => section.Get<LdapOptions>(binder) ?? new());
         _ = Read(configuration, OidcOptions.SectionName, problems, (section, binder) => section.Get<OidcOptions>(binder) ?? new());

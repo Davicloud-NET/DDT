@@ -28,6 +28,7 @@ public sealed class DdtConfigurationCheckTests
     [InlineData("DDT:Pxe:Interface", "eth0")]
     [InlineData("DDT:Pxe:BootTargets:X64Uefi:BootFiel", "x64/bootmgfw.efi")]
     [InlineData("DDT:Agent:BinaryPth", "/srv/ddt-agent.exe")]
+    [InlineData("DDT:LinuxBoot:Pth", "/srv/linux-boot")]
     public void AMisspelledKeyStopsTheServer(string key, string value)
     {
         using SettingsApplication application = new((key, value));
@@ -51,7 +52,9 @@ public sealed class DdtConfigurationCheckTests
             ("DDT:Oidc:GroupRoleMap:/ddt/admins", "Administrator"),
             ("DDT:Oidc:GroupRoleMap:2f5c3a0e-8a9e-4c5e-9b1a-1c2d3e4f5a6b", "operator"),
             ("DDT:Pxe:BootTargets:X64Uefi:Method", "Tftp"),
-            ("DDT:Pxe:BootTargets:X64Uefi:BootFile", "x64/bootmgfw.efi"));
+            ("DDT:Pxe:BootTargets:X64Uefi:BootFile", "x64/bootmgfw.efi"),
+            ("DDT:Agent:BinaryPath", "/srv/ddt-agent.exe"),
+            ("DDT:linuxboot:path", "/srv/linux-boot"));
 
         Assert.Empty(DdtConfigurationCheck.FindProblems(configuration, s_store, s_webAndPxe));
     }

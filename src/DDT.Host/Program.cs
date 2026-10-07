@@ -226,7 +226,7 @@ api.MapGroup("/boot-image").MapBootImageEndpoints();
 api.MapGroup("/netboot").MapNetbootEndpoints();
 api.MapGroup("/settings").MapSettingsEndpoints();
 
-app.MapGroup("/api/agents").MapAgentEndpoints().MapAgentDeploymentEndpoints();
+app.MapGroup("/api/agents").MapAgentEndpoints().MapAgentDeploymentEndpoints().MapAgentEnvironmentEndpoints();
 app.MapBootImageUpload();
 
 app.MapHub<LiveHub>("/hubs/live")

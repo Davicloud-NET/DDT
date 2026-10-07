@@ -1,0 +1,64 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+using DDT.Contracts.Agents;
+using DDT.Server.BootImage;
+using DDT.Server.Deployments;
+using DDT.Server.LinuxBoot;
+
+namespace DDT.Server.Machines;
+
+// The boot environments this server has files for, and whether a machine can get from one into the other.
+public sealed class BootEnvironments(BootImageCatalog bootImage, LinuxBootEnvironment linuxBoot)
+{
+    private static readonly AgentEnvironment[] s_boot = [AgentEnvironment.WindowsPE, AgentEnvironment.LinuxBoot];
+
+    // Windows PE once a boot image is built, and the Linux boot environment when the server came with it.
+    public bool Exists(AgentEnvironment environment) => environment switch
+    {
+        AgentEnvironment.WindowsPE => bootImage.Builds().Count > 0,
+        AgentEnvironment.LinuxBoot => linuxBoot.Available,
+        _ => false,
+    };
+
+    public IReadOnlyList<AgentEnvironment> Existing() => [.. s_boot.Where(Exists)];
+
+    // The other boot environment, when the machine's agent can restart into it and this server can start it.
+    public AgentEnvironment? ReachableFrom(Machine machine)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+
+        return machine.SequenceVersion >= PhaseRules.SwitchVersion && PhaseRules.Other(machine.AgentEnvironment) is { } other && Exists(other)
+            ? other
+            : null;
+    }
+
+    // Why the machine cannot restart into the environment, for the technician at it. Null when it can.
+    public string? Unreachable(Machine machine, AgentEnvironment environment)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+
+        if (environment == machine.AgentEnvironment)
+        {
+            return $"This machine already started {PhaseRules.Name(environment)}.";
+        }
+
+        if (PhaseRules.Other(machine.AgentEnvironment) != environment)
+        {
+            return $"A machine restarts into Windows PE or the Linux boot environment, not from {PhaseRules.Name(machine.AgentEnvironment)} into {PhaseRules.Name(environment)}.";
+        }
+
+        if (machine.SequenceVersion < PhaseRules.SwitchVersion)
+        {
+            return "This machine's agent is too old to change the boot environment. Start the machine from the network again, so it gets the server's agent.";
+        }
+
+        return Exists(environment) ? null : Missing(environment);
+    }
+
+    // What an administrator does to get the environment.
+    public static string Missing(AgentEnvironment environment) => environment == AgentEnvironment.LinuxBoot
+        ? $"This server has no Linux boot environment to start. A release of DDT brings it in the folder {LinuxBootEnvironment.FolderName} next to the server."
+        : "This server has no boot image to start Windows PE from. An administrator builds one on the Boot image page.";
+}

@@ -47,7 +47,8 @@ public static class DeploymentEndpoints
             : ServerProblems.Validation("before", ServerMessages.DeploymentHistoryCursor.With());
 
     // Three booleans and the time, from one snapshot, and nothing else from the settings, because Viewers read this.
-    private static Ok<DeploymentOptionsView> ReadOptions(DdtSettings settings, TimeProvider timeProvider)
+    // The boot environments are the server's files, not a setting.
+    private static Ok<DeploymentOptionsView> ReadOptions(DdtSettings settings, BootEnvironments environments, TimeProvider timeProvider)
     {
         SettingsSnapshot snapshot = settings.Current;
 
@@ -55,7 +56,8 @@ public static class DeploymentEndpoints
             !string.IsNullOrWhiteSpace(snapshot.Deployment.Domain.Name),
             snapshot.Machines.RequireWebApproval,
             snapshot.Machines.ZeroTouchEnabled,
-            timeProvider.GetUtcNow()));
+            timeProvider.GetUtcNow(),
+            environments.Existing()));
     }
 
     private static async Task<Ok<DomainJoinCheckView>> CheckDomainJoinAsync(

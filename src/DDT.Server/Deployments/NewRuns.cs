@@ -196,6 +196,9 @@ public sealed class NewRuns(
         machine.ActiveDeploymentId = deployment.Id;
         machine.LastDeploymentId = deployment.Id;
 
+        // From here on the run says where the machine starts, and what was picked before a restart is picked or not.
+        PendingSwitch.Forget(machine);
+
         return deployment;
     }
 }

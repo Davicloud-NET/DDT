@@ -3,6 +3,8 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Server.Accounts;
+using DDT.Server.LinuxBoot;
+using DDT.Server.Machines;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -16,6 +18,9 @@ public static class DeploymentServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.TryAddSingleton(TimeProvider.System);
+        services.AddOptions<LinuxBootOptions>().BindConfiguration(LinuxBootOptions.SectionName);
+        services.AddSingleton<LinuxBootEnvironment>();
+        services.AddSingleton<BootEnvironments>();
         services.AddSingleton<UnattendRenderer>();
         services.AddScoped<RunQueries>();
         services.AddScoped<SequenceChoices>();

@@ -12,6 +12,9 @@ public static class AuditActions
     public const string MachineApproved = "machine.approved";
     public const string MachineRejected = "machine.rejected";
     public const string MachineRemoved = "machine.removed";
+
+    // A machine said that it restarts into the other boot environment.
+    public const string MachineEnvironmentRequested = "machine.environment-requested";
     public const string ImageUploaded = "image.uploaded";
     public const string ImageDeleted = "image.deleted";
     public const string DeploymentAssigned = "deployment.assigned";

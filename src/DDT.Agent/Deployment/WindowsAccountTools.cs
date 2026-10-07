@@ -8,4 +8,7 @@ namespace DDT.Agent.Deployment;
 public static class WindowsAccountTools
 {
     public static AccountTools Create(AgentLog log) => new(new ShareConnector(new WNetConnections(), log), new WindowsAccountLogons(log));
+
+    // A dry run connects no share and signs nobody in.
+    public static AccountTools DryRun(AgentLog log) => new(new DryRunShareConnector(log), new DryRunAccountLogons(log));
 }

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-public sealed class ProcessorCountTests
+public sealed class ProcessorCoreRecordsTests
 {
     private const uint RelationProcessorCore = 0;
     private const uint RelationCache = 2;
@@ -37,7 +37,7 @@ public sealed class ProcessorCountTests
     {
         byte[] records = [.. Core(0b11), .. Core(0b1100), .. Core(0b110000), .. Core(0b11000000)];
 
-        Assert.Equal(new ProcessorCount(4, 8), ProcessorCount.From(records));
+        Assert.Equal(new ProcessorCount(4, 8), ProcessorCoreRecords.Count(records));
     }
 
     // Efficiency cores of a hybrid processor have one logical processor each.
@@ -46,7 +46,7 @@ public sealed class ProcessorCountTests
     {
         byte[] records = [.. Core(0b11), .. Core(0b100), .. Core(0b1000)];
 
-        Assert.Equal(new ProcessorCount(3, 4), ProcessorCount.From(records));
+        Assert.Equal(new ProcessorCount(3, 4), ProcessorCoreRecords.Count(records));
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class ProcessorCountTests
     {
         byte[] records = [.. Core(0b11, group: 0), .. Core(0b11, group: 1), .. Record(RelationProcessorCore, 0, 0b1, 0b1)];
 
-        Assert.Equal(new ProcessorCount(3, 6), ProcessorCount.From(records));
+        Assert.Equal(new ProcessorCount(3, 6), ProcessorCoreRecords.Count(records));
     }
 
     [Fact]
@@ -62,14 +62,14 @@ public sealed class ProcessorCountTests
     {
         byte[] records = [.. Record(RelationCache, 0, 0b1111), .. Core(0b11)];
 
-        Assert.Equal(new ProcessorCount(1, 2), ProcessorCount.From(records));
+        Assert.Equal(new ProcessorCount(1, 2), ProcessorCoreRecords.Count(records));
     }
 
     [Fact]
     public void CountsNothingWithoutCores()
     {
-        Assert.Null(ProcessorCount.From([]));
-        Assert.Null(ProcessorCount.From(Record(RelationCache, 0, 0b1)));
+        Assert.Null(ProcessorCoreRecords.Count([]));
+        Assert.Null(ProcessorCoreRecords.Count(Record(RelationCache, 0, 0b1)));
     }
 
     [Fact]
@@ -79,18 +79,18 @@ public sealed class ProcessorCountTests
 
         byte[] noSize = [.. core];
         BinaryPrimitives.WriteUInt32LittleEndian(noSize.AsSpan(4), 0);
-        Assert.Null(ProcessorCount.From(noSize));
+        Assert.Null(ProcessorCoreRecords.Count(noSize));
 
         byte[] pastTheEnd = [.. core];
         BinaryPrimitives.WriteUInt32LittleEndian(pastTheEnd.AsSpan(4), 64);
-        Assert.Null(ProcessorCount.From(pastTheEnd));
+        Assert.Null(ProcessorCoreRecords.Count(pastTheEnd));
 
         byte[] tooManyGroups = [.. core];
         BinaryPrimitives.WriteUInt16LittleEndian(tooManyGroups.AsSpan(30), 2);
-        Assert.Null(ProcessorCount.From(tooManyGroups));
+        Assert.Null(ProcessorCoreRecords.Count(tooManyGroups));
 
         byte[] tooShort = [.. core[..24]];
         BinaryPrimitives.WriteUInt32LittleEndian(tooShort.AsSpan(4), 24);
-        Assert.Null(ProcessorCount.From(tooShort));
+        Assert.Null(ProcessorCoreRecords.Count(tooShort));
     }
 }

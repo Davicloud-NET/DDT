@@ -212,7 +212,7 @@ public sealed class StepAccountsTests
         AgentLog log = new(run.Time, console);
         run.Server.OnRunStepAccounts(_ => new AgentStepAccounts(new AgentAccount(@"CORP\installer", RunAsPassword), [s_drivers]));
 
-        StepAccounts dryRun = new(run.Server, run.Session, _ => Task.CompletedTask, AccountTools.DryRun(log), log, run.Time);
+        StepAccounts dryRun = new(run.Server, run.Session, _ => Task.CompletedTask, WindowsAccountTools.DryRun(log), log, run.Time);
         RunScriptStepRunner runner = new(new DryRunToolRunner(log), new WindowsScriptLauncher(), run.Downloads, run.Session, log, run.WorkDirectory);
 
         StepResult result = await dryRun.RunAsync(

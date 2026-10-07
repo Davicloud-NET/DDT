@@ -142,7 +142,7 @@ public sealed class DryRunMachine(
             TimeProvider = timeProvider,
             Options = runnerOptions,
             Status = inWindows ? null : status,
-            AccountTools = AccountTools.DryRun(log),
+            AccountTools = WindowsAccountTools.DryRun(log),
         }.Build();
     }
 }

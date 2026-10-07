@@ -20,5 +20,5 @@ internal sealed class FakeSystemHardware : ISystemHardware
 
     public ulong? UsableMemoryBytes() => Usable();
 
-    public ProcessorCount? ProcessorCores() => Cores() is { } records ? ProcessorCount.From(records) : null;
+    public ProcessorCount? ProcessorCores() => Cores() is { } records ? ProcessorCoreRecords.Count(records) : null;
 }

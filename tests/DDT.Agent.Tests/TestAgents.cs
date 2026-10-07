@@ -63,7 +63,7 @@ internal static class TestAgents
             TimeProvider = timeProvider,
             Options = runnerOptions,
             Status = options.Status,
-            AccountTools = options.DryRun ? AccountTools.DryRun(log) : WindowsAccountTools.Create(log),
+            AccountTools = options.DryRun ? WindowsAccountTools.DryRun(log) : WindowsAccountTools.Create(log),
         }.Build();
     }
 

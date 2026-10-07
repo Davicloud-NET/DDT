@@ -8,6 +8,12 @@ namespace DDT.Agent.Facts;
 // with EnumSystemFirmwareTables and GetSystemFirmwareTable. Providers and table ids are the DWORDs those take.
 public interface IFirmwareTables
 {
+    // 'RSMB': the SMBIOS structure table.
+    const uint RawSmbiosProvider = 0x52534D42;
+
+    // 'ACPI': the ACPI tables, each under its four letter signature.
+    const uint AcpiProvider = 0x41435049;
+
     // The provider's table ids, four bytes each. Null when they can't be listed. For ACPI these are the tables'
     // signatures with their letters in order, such as "TPM2".
     byte[]? List(uint provider);

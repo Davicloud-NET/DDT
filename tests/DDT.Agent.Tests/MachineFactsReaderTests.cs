@@ -58,7 +58,7 @@ public sealed class MachineFactsReaderTests
     {
         _hardware.Installed = () => 16UL * 1024 * 1024;
         _hardware.Cores = FourCores;
-        _firmware.Lists[FirmwareTables.AcpiProvider] = AcpiIds("FACP", "APIC", "TPM2");
+        _firmware.Lists[IFirmwareTables.AcpiProvider] = AcpiIds("FACP", "APIC", "TPM2");
         _uefi.Values["SecureBoot"] = [1];
 
         MachineFacts facts = Read(s_lenovo, s_network);
@@ -130,7 +130,7 @@ public sealed class MachineFactsReaderTests
     [InlineData("FACP APIC SSDT", false, null)]
     public void FindsTheTpmInTheAcpiTables(string tables, bool present, string? version)
     {
-        _firmware.Lists[FirmwareTables.AcpiProvider] = AcpiIds(tables.Split(' '));
+        _firmware.Lists[IFirmwareTables.AcpiProvider] = AcpiIds(tables.Split(' '));
 
         MachineFacts facts = Read();
 

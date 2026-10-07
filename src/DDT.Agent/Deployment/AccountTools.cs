@@ -6,7 +6,4 @@ namespace DDT.Agent.Deployment;
 
 // What a run's steps use their accounts for: shares in both phases, and signing in for a script that runs as an
 // account. Only the installed Windows asks for the sign-in.
-public sealed record AccountTools(IShareConnector Shares, IAccountLogons Logons)
-{
-    public static AccountTools DryRun(AgentLog log) => new(new DryRunShareConnector(log), new DryRunAccountLogons(log));
-}
+public sealed record AccountTools(IShareConnector Shares, IAccountLogons Logons);

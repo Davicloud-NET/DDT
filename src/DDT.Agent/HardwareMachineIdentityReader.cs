@@ -37,7 +37,7 @@ public sealed class HardwareMachineIdentityReader(
     }
 
     private SmbiosSystemInformation? ReadSmbios() =>
-        firmware.Read(FirmwareTables.RawSmbiosProvider, 0) is { } raw ? SmbiosParser.TryReadSystemInformation(raw) : null;
+        firmware.Read(IFirmwareTables.RawSmbiosProvider, 0) is { } raw ? SmbiosParser.TryReadSystemInformation(raw) : null;
 
     // The primary MAC is the adapter with the default route. That's the one the server sees and the machine PXE booted
     // from. Adapters without a link still count, because a technician recognises the machine by them.

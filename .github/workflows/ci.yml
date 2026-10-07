@@ -110,17 +110,18 @@ jobs:
         shell: pwsh
         run: ./build/Get-AspireBundle.ps1
 
-      # The agent and the console target Windows and are tested in the Windows job. They build here as well, because
-      # the test of THIRD-PARTY-NOTICES.md reads what their restore resolved.
+      # The agent's Windows executable and the console target Windows and are tested in the Windows job. They build
+      # here as well, because the test of THIRD-PARTY-NOTICES.md reads what their restore resolved.
       - name: Build
         run: dotnet build DDT.slnx -p:EnableWindowsTargeting=true
 
       # The server runs on Linux in its container, so its tests run here too. Some run only here: the PostgreSQL
-      # tests, which start PostgreSQL in Docker, and the one of an administrator's intermediate certificate.
+      # tests, which start PostgreSQL in Docker, and the one of an administrator's intermediate certificate. The
+      # agent's library, DDT.Agent.Core, is the agent on every system, so its tests run here as well.
       - name: Test
         run: |
           status=0
-          for project in DDT.Core.Tests DDT.Protocols.Tests DDT.Pxe.Tests DDT.Server.Tests; do
+          for project in DDT.Agent.Core.Tests DDT.Core.Tests DDT.Protocols.Tests DDT.Pxe.Tests DDT.Server.Tests; do
             dotnet test --project "tests/$project" --no-build || status=1
           done
           exit $status

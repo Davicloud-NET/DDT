@@ -34,7 +34,8 @@ public sealed class ThirdPartyNoticesTests
 
         List<string> shipped = [];
         shipped.AddRange(await NuGetPackagesAsync(Path.Combine(root, "src", "DDT.Host", "obj", "project.assets.json"), cancellationToken));
-        shipped.AddRange(await NuGetPackagesAsync(Path.Combine(root, "src", "DDT.Agent", "obj", "project.assets.json"), cancellationToken));
+        List<string> agent = await NuGetPackagesAsync(Path.Combine(root, "src", "DDT.Agent", "obj", "project.assets.json"), cancellationToken);
+        shipped.AddRange(agent);
         shipped.AddRange(await NuGetPackagesAsync(
             Path.Combine(root, "src", "DDT.MachineConsole", "obj", "project.assets.json"),
             cancellationToken,
@@ -42,6 +43,9 @@ public sealed class ThirdPartyNoticesTests
         shipped.AddRange((await WebBundlePackagesAsync(root, cancellationToken)).Select(package => package.Name));
 
         Assert.Contains("ManagedWimLib", shipped);
+
+        // DDT.Agent.Core references it, so the agent's restore has to list what its library brings.
+        Assert.Contains("ZstdSharp.Port", agent);
         Assert.Contains("SkiaSharp.NativeAssets.Win32", shipped);
         Assert.Contains("react", shipped);
         Assert.Contains("vite", shipped);

@@ -124,13 +124,20 @@ public sealed partial class DryRunLab : IAsyncLifetime
 
     // dryRunId continues with an earlier agent's machine and disk. With slowDownloads, the agent reaches the host
     // through SlowRelay.
-    internal AgentProcess StartAgent(int? dryRunId = null, bool slowDownloads = false, bool secureBoot = false)
+    internal AgentProcess StartAgent(int? dryRunId = null, bool slowDownloads = false, bool secureBoot = false) =>
+        Start(dryRunId, slowDownloads, secureBoot, null);
+
+    // A machine that started the Linux boot environment, which runs the sequences that write a raw disk image.
+    internal AgentProcess StartLinuxBootAgent(bool secureBoot = false) => Start(null, false, secureBoot, AgentEnvironment.LinuxBoot);
+
+    private AgentProcess Start(int? dryRunId, bool slowDownloads, bool secureBoot, AgentEnvironment? environment)
     {
         int id = dryRunId ?? NewDryRunId();
         string log = Path.Combine(_directory, $"agent-{id}-{Environment.TickCount64}.log");
         Uri server = slowDownloads ? _relay!.Url : Host.Url;
+        AgentStartInfo start = new(_agentPath!, server, Host.RootCertificatePath, id, log) { SecureBoot = secureBoot, Environment = environment };
 
-        return AgentProcess.Start(new AgentStartInfo(_agentPath!, server, Host.RootCertificatePath, id, log) { SecureBoot = secureBoot });
+        return AgentProcess.Start(start);
     }
 
     internal Task<SequenceView> CreateSequenceAsync(string name, IReadOnlyList<SequenceStep> steps, CancellationToken cancellationToken) =>

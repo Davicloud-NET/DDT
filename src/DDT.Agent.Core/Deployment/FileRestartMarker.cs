@@ -15,6 +15,10 @@ public sealed class FileRestartMarker(string directory, AgentLog log, bool dryRu
     private const string InstalledSystemWord = "Windows";
     private const string BootEnvironmentWord = "WindowsPE";
 
+    // What a dry run says in place of recording the restart. WinPE's words unless the composition gives its own.
+    public string DryRunNote { get; init; } =
+        $@"in Windows PE the due restart would be recorded in X:\DDT\{FileName}, on the RAM disk that the restart clears";
+
     public string FilePath => Path.Combine(directory, FileName);
 
     // Where the due restart leads, or null when none is due. Anything but the installed system's word leads back into
@@ -46,7 +50,7 @@ public sealed class FileRestartMarker(string directory, AgentLog log, bool dryRu
         // A dry run starts its agent over for every restart, so the restarts it asks for always happen.
         if (dryRun)
         {
-            log.Information($@"Dry run: in Windows PE the due restart would be recorded in X:\DDT\{FileName}, on the RAM disk that the restart clears.");
+            log.Information($"Dry run: {DryRunNote}.");
 
             return;
         }

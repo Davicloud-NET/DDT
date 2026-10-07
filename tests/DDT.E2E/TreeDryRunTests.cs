@@ -46,7 +46,9 @@ public sealed class TreeDryRunTests(DryRunLab lab)
             cancellationToken);
         TreeSequence tree = new(lab, account);
         SequenceView sequence = await lab.CreateSequenceAsync("Tree", tree.Definition, cancellationToken);
-        Assert.Equal(SequenceDefinition.CurrentVersion, sequence.Definition.Version);
+
+        // A tree that installs Windows needs version 3, and nothing of the Linux boot environment's version 4.
+        Assert.Equal(3, sequence.Definition.Version);
 
         await using AgentProcess agent = lab.StartAgent();
         (Guid machineId, Guid runId) = await AuthorizeAsync(agent, sequence, null, cancellationToken);
@@ -150,7 +152,7 @@ public sealed class TreeDryRunTests(DryRunLab lab)
     }
 
     // For a run assigned without a name, a raw disk image's cloud-init seed names the machine with a rule's computer
-    // name pattern.
+    // name pattern. The machine started the Linux boot environment, which writes such images.
     [Fact(Timeout = 600_000)]
     public async Task ARawDiskImagesSeedNamesTheMachineAsARulesPatternDoes()
     {
@@ -174,7 +176,7 @@ public sealed class TreeDryRunTests(DryRunLab lab)
 
         try
         {
-            await using AgentProcess agent = lab.StartAgent();
+            await using AgentProcess agent = lab.StartLinuxBootAgent();
             (_, Guid runId) = await AuthorizeAsync(agent, sequence, null, cancellationToken);
 
             Assert.Equal(Deployed, await agent.WaitForExitAsync(s_runTimeout, cancellationToken));

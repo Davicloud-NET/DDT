@@ -23,8 +23,10 @@ internal sealed class RunPreflight(
         AgentRun run = session.Run;
         CheckSequence(run);
         RunInventory inventory = InventoryOf(run);
-        CheckSecureBoot(session, inventory.RawImages);
+
+        // Before Secure Boot, so a run for another boot environment is told that, not how its image is signed.
         CheckPlatform(inventory.Steps, afterDiskChoice: false);
+        CheckSecureBoot(session, inventory.RawImages);
 
         if (inventory.Steps.Any(step => step.ErasesDisk))
         {

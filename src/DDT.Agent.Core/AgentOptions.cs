@@ -7,6 +7,8 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
+using DDT.Contracts.Agents;
+using DDT.Contracts.Sequences;
 
 namespace DDT.Agent;
 
@@ -26,11 +28,16 @@ public sealed record AgentOptions(
 
     public const string Usage =
         "Usage: ddt-agent [--config <agent.json>] [--server <https url>] [--root-certificate <pem file>] " +
-        "[--no-update] [--console <ddt-console.exe>] [--dry-run [--dry-run-id <number>] [--dry-run-secure-boot]], " +
-        "or ddt-agent --licenses";
+        "[--no-update] [--console <ddt-console.exe>] [--dry-run [--dry-run-id <number>] [--dry-run-secure-boot] " +
+        "[--dry-run-environment <WindowsPE|LinuxBoot>]], or ddt-agent --licenses";
+
+    public const string DryRunEnvironmentArgument = "--dry-run-environment";
 
     // The fake machine of a dry run says that Secure Boot is on.
     public bool DryRunSecureBoot { get; init; }
+
+    // The boot environment the fake machine of a dry run started. Null is the one this agent is built for.
+    public AgentEnvironment? DryRunEnvironment { get; init; }
 
     // Starts this console instead of the ddt-console.exe beside the agent, even in a dry run or with input redirected.
     public string? ConsolePath { get; init; }
@@ -44,6 +51,7 @@ public sealed record AgentOptions(
         Arguments parsed = new();
 
         if (!TryParseArguments(args, parsed, out error)
+            || !parsed.TryCheckDryRun(out error)
             || !TryApplyConfigFile(parsed, out error)
             || !TryReadServerUrl(parsed.Server, out Uri? serverUrl, out error)
             || !TryLoadRoot(parsed.RootPem, out X509Certificate2? root, out error))
@@ -54,6 +62,7 @@ public sealed record AgentOptions(
         options = new AgentOptions(serverUrl, root, parsed.DryRun, parsed.DryRunId, parsed.NoUpdate, parsed.KeyboardLayout)
         {
             DryRunSecureBoot = parsed.DryRunSecureBoot,
+            DryRunEnvironment = parsed.DryRunEnvironment,
             ConsolePath = parsed.ConsolePath,
         };
 
@@ -116,12 +125,23 @@ public sealed record AgentOptions(
                 parsed.DryRunId = id;
 
                 return true;
+            case DryRunEnvironmentArgument when BootEnvironment(value) is { } environment:
+                parsed.DryRunEnvironment = environment;
+
+                return true;
             default:
                 error = $"Unknown or invalid argument {argument}. {Usage}";
 
                 return false;
         }
     }
+
+    // A run starts in a boot environment, so the installed Windows is none a dry run can start.
+    private static AgentEnvironment? BootEnvironment(string name) =>
+        Enum.GetValues<AgentEnvironment>()
+            .Where(environment => SequenceKinds.IsBoot(SequenceKinds.Phase(environment)))
+            .Cast<AgentEnvironment?>()
+            .FirstOrDefault(environment => string.Equals(environment.ToString(), name, StringComparison.OrdinalIgnoreCase));
 
     // Only the default agent.json may be missing. A file named on the command line must exist.
     private static bool TryApplyConfigFile(Arguments parsed, out string error)
@@ -236,6 +256,16 @@ public sealed record AgentOptions(
         public bool NoUpdate { get; private set; }
 
         public int DryRunId { get; set; } = 1;
+
+        public AgentEnvironment? DryRunEnvironment { get; set; }
+
+        // The environment only says what a dry run's machine started.
+        public bool TryCheckDryRun(out string error)
+        {
+            error = DryRunEnvironment is null || DryRun ? string.Empty : $"{DryRunEnvironmentArgument} goes with --dry-run. {Usage}";
+
+            return error.Length == 0;
+        }
 
         // False for an argument that takes a value.
         public bool TrySetFlag(string argument)

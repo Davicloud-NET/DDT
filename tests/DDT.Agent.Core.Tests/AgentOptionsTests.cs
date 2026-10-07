@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Agents;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -24,6 +25,38 @@ public sealed class AgentOptionsTests
 
         Assert.False(plain!.DryRunSecureBoot);
         Assert.True(secure!.DryRunSecureBoot);
+    }
+
+    // Without the argument, the agent's own start-up takes the boot environment it is built for.
+    [Fact]
+    public void LetsADryRunStartTheBootEnvironmentItNames()
+    {
+        string[] dryRun = ["--server", "https://ddt.example:7152", "--dry-run"];
+
+        Assert.True(AgentOptions.TryParse(dryRun, out AgentOptions? plain, out string error), error);
+        Assert.True(AgentOptions.TryParse([.. dryRun, "--dry-run-environment", "LinuxBoot"], out AgentOptions? linux, out error), error);
+        Assert.True(AgentOptions.TryParse(["--dry-run-environment", "windowspe", .. dryRun], out AgentOptions? windowsPE, out error), error);
+
+        Assert.Null(plain!.DryRunEnvironment);
+        Assert.Equal(AgentEnvironment.LinuxBoot, linux!.DryRunEnvironment);
+        Assert.Equal(AgentEnvironment.WindowsPE, windowsPE!.DryRunEnvironment);
+    }
+
+    [Fact]
+    public void TurnsDownADryRunEnvironmentThatIsNoBootEnvironmentOrComesWithoutADryRun()
+    {
+        string[] dryRun = ["--server", "https://ddt.example:7152", "--dry-run"];
+
+        // A run starts in a boot environment, never in the installed Windows.
+        Assert.False(AgentOptions.TryParse([.. dryRun, "--dry-run-environment", "Windows"], out _, out string installed));
+        Assert.False(AgentOptions.TryParse([.. dryRun, "--dry-run-environment", "2"], out _, out string number));
+        Assert.False(AgentOptions.TryParse(["--server", "https://ddt.example:7152", "--dry-run-environment", "LinuxBoot"], out _, out string alone));
+
+        Assert.StartsWith("Unknown or invalid argument --dry-run-environment.", installed, StringComparison.Ordinal);
+        Assert.StartsWith("Unknown or invalid argument --dry-run-environment.", number, StringComparison.Ordinal);
+        Assert.StartsWith("--dry-run-environment goes with --dry-run.", alone, StringComparison.Ordinal);
+        Assert.EndsWith(AgentOptions.Usage, alone, StringComparison.Ordinal);
+        Assert.Contains("[--dry-run-environment <WindowsPE|LinuxBoot>]", AgentOptions.Usage, StringComparison.Ordinal);
     }
 
     [Fact]

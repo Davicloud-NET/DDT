@@ -303,7 +303,6 @@ public sealed class DryRunResumeTests : IDisposable
         DryRunDiskPartitioner disks = new(_root, log);
         DryRunBcdWriter bcdWriter = new(log);
         DryRunImageApplier applier = new(log);
-        FileRawDisks rawDisks = new(_root, log);
         SequenceRunnerOptions options = new(Timeout.InfiniteTimeSpan, _root, DryRun: true);
 
         return new SequenceRunnerBuilder
@@ -311,15 +310,17 @@ public sealed class DryRunResumeTests : IDisposable
             Server = _server,
             Disks = disks,
             Partitioner = disks,
-            RawDisks = rawDisks,
             FreeSpace = new DriveFreeSpace(),
-            PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
+            PreflightChecks =
+            [
+                new BootEnvironmentCheck(AgentEnvironment.WindowsPE),
+                new BootImageToolsCheck(Environment.SystemDirectory),
+                new ImageApplierCheck(applier),
+            ],
             StepRunners = new WindowsStepRunners
             {
                 Server = _server,
-                Disks = disks,
                 Partitioner = disks,
-                RawDisks = rawDisks,
                 Applier = applier,
                 Tools = tools,
                 Joiner = new DryRunDomainJoiner(log),
@@ -359,8 +360,6 @@ public sealed class DryRunResumeTests : IDisposable
                 new WriteUnattendStepRunner(_server, session, _ => Task.CompletedTask, log, _time),
                 new JoinDomainStepRunner(new DryRunDomainJoiner(log), _server, session, _ => Task.CompletedTask, log, _time),
                 new RunScriptStepRunner(tools, new WindowsScriptLauncher(), downloads, session, log, _root),
-                new WriteRawImageStepRunner(disk, new FileRawDisks(_root, log), downloads, session, log),
-                new WriteCloudInitSeedStepRunner(new FileRawDisks(_root, log), session, log, _time),
             ],
             new StepAccounts(_server, session, _ => Task.CompletedTask, WindowsAccountTools.DryRun(log), log, _time),
             _ => { },

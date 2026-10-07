@@ -36,5 +36,5 @@ internal sealed class WindowsStepRunnerFixture(
     public StepAccounts StepAccounts => new(Server, Session, ReportRunningAsync, Accounts.Tools, Log, Time);
 
     public AgentStepRunner Steps =>
-        new([Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, WriteRawImage, WriteCloudInitSeed], StepAccounts, TokenRejections.Add, Log, Time);
+        new([Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript], StepAccounts, TokenRejections.Add, Log, Time);
 }

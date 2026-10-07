@@ -50,6 +50,7 @@ internal sealed class AgentProcess : IAsyncDisposable
             "--root-certificate",
             agent.RootCertificatePath,
             .. agent.SecureBoot ? (string[])["--dry-run-secure-boot"] : [],
+            .. agent.Environment is { } environment ? (string[])["--dry-run-environment", environment.ToString()] : [],
         ];
         ProcessStartInfo start = new(agent.AgentPath, arguments)
         {

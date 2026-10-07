@@ -18,7 +18,8 @@ public sealed class SequenceRunnerBuilder
     // Finds a resumed run's volumes again. Null on a platform whose runs have none.
     public IDiskPartitioner? Partitioner { get; init; }
 
-    public required IRawDisks RawDisks { get; init; }
+    // Opens the disk a raw disk image goes to. Null on a platform that writes none.
+    public IRawDisks? RawDisks { get; init; }
 
     public required IFreeSpace FreeSpace { get; init; }
 

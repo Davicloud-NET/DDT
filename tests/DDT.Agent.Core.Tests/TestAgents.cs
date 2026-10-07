@@ -16,9 +16,9 @@ internal static class TestAgents
     public static AgentConfiguration Configuration { get; } =
         new("https://ddt.example:8443/", "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n", null);
 
-    // A runner with the parts every system has. Its steps are TestStepRunners', it checks nothing of a system before a
-    // run, and its hand-over only goes into the tools' journal. Everything on the disk is under tools.Root. The restart
-    // marker is a real file, though.
+    // A runner with the parts every system has. Its steps are the Linux boot environment's, which need nothing of one
+    // system. Unless the options name an environment, it checks nothing of a system before a run. Its hand-over only
+    // goes into the tools' journal. Everything on the disk is under tools.Root. The restart marker is a real file.
     public static SequenceRunner Runner(
         IAgentServer server,
         FakeDeploymentTools tools,
@@ -30,6 +30,7 @@ internal static class TestAgents
 
         options ??= new TestRunnerOptions();
         IRawDisks rawDisks = options.RawDisks ?? new MemoryRawDisks();
+        SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun);
 
         return new SequenceRunnerBuilder
         {
@@ -38,8 +39,17 @@ internal static class TestAgents
             Partitioner = tools,
             RawDisks = rawDisks,
             FreeSpace = new FakeFreeSpace(),
-            PreflightChecks = [],
-            StepRunners = new TestStepRunners(tools, rawDisks, log, timeProvider),
+            PreflightChecks = options.Environment is { } environment ? [new BootEnvironmentCheck(environment)] : [],
+            StepRunners = new LinuxBootStepRunners
+            {
+                Disks = tools,
+                RawDisks = rawDisks,
+                Tools = options.ToolRunner ?? new RecordingToolRunner(),
+                Scripts = new ShellScriptLauncher(dryRun: true),
+                Log = log,
+                TimeProvider = timeProvider,
+                Options = runnerOptions,
+            },
             BcdWriter = options.BcdWriter ?? tools,
             BootOrder = tools,
             Rebooter = options.Rebooter ?? tools,
@@ -47,7 +57,7 @@ internal static class TestAgents
             HandOver = new FakeHandOver(tools),
             Log = log,
             TimeProvider = timeProvider,
-            Options = new(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun),
+            Options = runnerOptions,
             Status = options.Status,
             AccountTools = new AccountTools(new NoShareConnector(), new DryRunAccountLogons(log)),
         }.Build();

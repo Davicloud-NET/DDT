@@ -15,7 +15,8 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// A run that writes a raw disk image and its cloud-init seed, from preflight to the restart into the image.
+// A run that writes a raw disk image and its cloud-init seed in the Linux boot environment, from preflight to the
+// restart into the image.
 public sealed class LinuxRunTests : IDisposable
 {
     private static readonly Guid s_machineId = Guid.Parse("0193a4b2-0000-7000-8000-000000000001");
@@ -35,7 +36,18 @@ public sealed class LinuxRunTests : IDisposable
         UserData = "#cloud-config\n",
     };
 
+    private static readonly RunScriptStep s_script = new()
+    {
+        Id = Guid.Parse("0193a4b2-0000-7000-8000-00000000e003"),
+        Name = "Before the disk",
+        Phase = SequencePhase.LinuxBoot,
+        Interpreter = ScriptInterpreter.Shell,
+        Script = "echo \"$DDT_PHASE\"",
+        RebootExitCodes = [],
+    };
+
     private readonly FakeDeploymentTools _tools = new();
+    private readonly RecordingToolRunner _toolRunner = new();
     private readonly MemoryRawDisks _disks = new();
     private readonly TestRawImage _image = new();
 
@@ -56,15 +68,18 @@ public sealed class LinuxRunTests : IDisposable
             "LINUX-01",
             allowed);
 
+    // The runner of an agent that started in environment, the Linux boot environment unless a test says otherwise.
     private async Task<(RunResult Result, ScriptedAgentServer Server, string Console)> RunAsync(
         AgentRun run,
         bool? secureBootEnabled = true,
-        ScriptedAgentServer? server = null)
+        ScriptedAgentServer? server = null,
+        AgentEnvironment environment = AgentEnvironment.LinuxBoot)
     {
         server ??= _image.Serve(new ScriptedAgentServer());
         ImmediateTimeProvider time = new();
         StringWriter console = new();
-        SequenceRunner runner = TestAgents.Runner(server, _tools, new AgentLog(time, console), time, new() { RawDisks = _disks });
+        TestRunnerOptions options = new() { RawDisks = _disks, Environment = environment, ToolRunner = _toolRunner };
+        SequenceRunner runner = TestAgents.Runner(server, _tools, new AgentLog(time, console), time, options);
 
         RunResult result = await runner.RunAsync(new RunRequest(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), Identity(secureBootEnabled)), server.Stop.Token);
 
@@ -83,11 +98,81 @@ public sealed class LinuxRunTests : IDisposable
         Assert.Equal(RestartInto.InstalledSystem, TestAgents.RestartMarker(_tools, new AgentLog(new ImmediateTimeProvider(), TextWriter.Null)).Due);
         Assert.Equal((DeploymentState.Done, RunActivity.Finishing), (server.RunReports[^1].State, server.RunReports[^1].Activity));
         Assert.Equal([StepState.Done, StepState.Done], server.RunReports[^1].Steps.Select(step => step.State));
+        Assert.All(server.RunReports, report => Assert.Equal(SequencePhase.LinuxBoot, report.Phase));
 
         // Nothing of the run is kept on the disk it wrote, because the image is the disk.
         MemoryRawDisk disk = _disks.Disks[0];
         GptLayout layout = GptLayout.Read(disk.ReadAt(0, RawDiskWriter.HeadBytes));
         Assert.Equal(["EFI", "root", CloudInitSeed.Label], layout.Partitions.Select(partition => partition.Name));
+    }
+
+    // The script runs through the shell from the agent's own directory, since the boot environment has no partition.
+    [Fact]
+    public async Task RunsAShellScriptInTheLinuxBootEnvironmentBeforeTheImage()
+    {
+        (RunResult result, ScriptedAgentServer server, _) = await RunAsync(Run(steps: [s_script, s_write, s_seed]));
+
+        string file = Path.Combine(_tools.Root, "X", "scripts", $"{s_script.Id:D}.sh");
+        Assert.Equal(new RunResult(RunOutcome.Finished), result);
+        Assert.Equal([RecordingToolRunner.CommandLine(ShellScriptLauncher.DefaultShell, file)], _toolRunner.Calls);
+        Assert.Equal("LinuxBoot", _toolRunner.Options[0].Environment?["DDT_PHASE"]);
+        Assert.Equal([StepState.Done, StepState.Done, StepState.Done], server.RunReports[^1].Steps.Select(step => step.State));
+    }
+
+    // The other kind's boot environment refuses the run with a sentence that names the right one, whatever else is
+    // wrong with it there.
+    [Theory]
+    [InlineData(ImageBootCapability.SecureBootOk)]
+    [InlineData(ImageBootCapability.NotSigned)]
+    public async Task WindowsPERefusesTheRunBeforeTheDiskIsTouched(ImageBootCapability capability)
+    {
+        (RunResult result, ScriptedAgentServer server, string console) = await RunAsync(Run(capability), environment: AgentEnvironment.WindowsPE);
+
+        Assert.Equal(RunOutcome.Failed, result.Outcome);
+        Assert.Empty(_tools.Calls);
+        Assert.Empty(_disks.Disks);
+        Assert.Equal(
+            "This sequence writes a raw disk image, which only the Linux boot environment does, and this machine started Windows PE. " +
+            "Nothing was erased.",
+            server.RunReports[^1].Error);
+        Assert.Equal((DeploymentState.Failed, SequencePhase.LinuxBoot), (server.RunReports[^1].State, server.RunReports[^1].Phase));
+        Assert.Contains("The run cannot start: This sequence writes a raw disk image", console, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TheLinuxBootEnvironmentRefusesASequenceThatInstallsWindows()
+    {
+        AgentRun windows = Run(steps: [TestRuns.Partition]) with { Images = [] };
+
+        (RunResult result, ScriptedAgentServer server, _) = await RunAsync(windows);
+
+        Assert.Equal(RunOutcome.Failed, result.Outcome);
+        Assert.Empty(_tools.Calls);
+        Assert.Equal(BootEnvironmentCheck.Message(SequenceKind.Windows, AgentEnvironment.LinuxBoot), server.RunReports[^1].Error);
+    }
+
+    // A run assigned before the sequence was rewritten for the shell, and one whose script asks for what the boot
+    // environment cannot do. The validator's sentence says what to change, and nothing is erased.
+    [Fact]
+    public async Task RefusesWhatTheValidatorRefusesBeforeTheDiskIsTouched()
+    {
+        RunScriptStep forWindowsPE = s_script with { Phase = SequencePhase.WindowsPE, Interpreter = ScriptInterpreter.Cmd };
+        RunScriptStep restarting = s_script with { RebootExitCodes = [194] };
+        RunScriptStep withPackage = s_script with { PackageId = Guid.NewGuid() };
+
+        (RunResult old, ScriptedAgentServer oldServer, _) = await RunAsync(Run(steps: [forWindowsPE, s_write, s_seed]));
+        (_, ScriptedAgentServer restartServer, _) = await RunAsync(Run(steps: [restarting, s_write]));
+        (_, ScriptedAgentServer packageServer, _) = await RunAsync(Run(steps: [withPackage, s_write]));
+
+        Assert.Equal(RunOutcome.Failed, old.Outcome);
+        Assert.Empty(_tools.Calls);
+        Assert.Empty(_toolRunner.Calls);
+        Assert.Equal(
+            "Install Linux cannot run: This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for " +
+            "the shell and let it run in the Linux boot environment. Correct the sequence and assign it again.",
+            oldServer.RunReports[^1].Error);
+        Assert.StartsWith("Install Linux cannot run: A sequence that writes a raw disk image keeps its state in memory", restartServer.RunReports[^1].Error, StringComparison.Ordinal);
+        Assert.StartsWith("Install Linux cannot run: The Linux boot environment has no partition to unpack a package on", packageServer.RunReports[^1].Error, StringComparison.Ordinal);
     }
 
     [Fact]

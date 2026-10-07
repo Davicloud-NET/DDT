@@ -4,6 +4,7 @@
 
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
+using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Tests;
 
@@ -23,6 +24,9 @@ internal sealed record TestRunnerOptions
     public IDomainJoiner? Joiner { get; init; }
 
     public IRawDisks? RawDisks { get; init; }
+
+    // The boot environment whose check TestAgents.Runner makes of a fresh run.
+    public AgentEnvironment? Environment { get; init; }
 
     public string? SystemDirectory { get; init; }
 

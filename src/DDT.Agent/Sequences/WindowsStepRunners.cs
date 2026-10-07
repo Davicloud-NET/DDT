@@ -6,16 +6,13 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Sequences;
 
-// The runners for every kind of step WinPE and the installed Windows run, from the machine's tools.
+// The runners for every kind of step WinPE and the installed Windows run, from the machine's tools. A raw disk image
+// and its seed are the Linux boot environment's.
 public sealed class WindowsStepRunners : IStepRunners
 {
     public required IAgentServer Server { get; init; }
 
-    public required IDisks Disks { get; init; }
-
     public required IDiskPartitioner Partitioner { get; init; }
-
-    public required IRawDisks RawDisks { get; init; }
 
     public required IImageApplier Applier { get; init; }
 
@@ -43,8 +40,6 @@ public sealed class WindowsStepRunners : IStepRunners
             new WriteUnattendStepRunner(Server, session, heartbeat.ReportNowAsync, Log, TimeProvider),
             new JoinDomainStepRunner(Joiner, Server, session, heartbeat.ReportNowAsync, Log, TimeProvider),
             new RunScriptStepRunner(Tools, new WindowsScriptLauncher(), downloads, session, Log, Options.WorkDirectory),
-            new WriteRawImageStepRunner(Disks, RawDisks, downloads, session, Log),
-            new WriteCloudInitSeedStepRunner(RawDisks, session, Log, TimeProvider),
             new PauseStepRunner(heartbeat, run.Console, Log, TimeProvider),
         ];
     }

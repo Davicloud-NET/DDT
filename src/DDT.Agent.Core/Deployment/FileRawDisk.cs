@@ -2,28 +2,31 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace DDT.Agent.Deployment;
 
-// A file that stands in for a disk of length bytes in 512-byte sectors, for the dry run. It's sparse on NTFS, so a
-// 128 GiB disk only takes up as much space on this computer as was written to it.
-public sealed unsafe class FileRawDisk : IRawDisk
+// A file that stands in for a disk of length bytes in 512-byte sectors, for the dry run. It's sparse, so a 128 GiB
+// disk only takes up as much space on this computer as was written to it.
+public sealed class FileRawDisk : IRawDisk
 {
     private readonly FileStream _file;
 
-    public FileRawDisk(string path, long length)
+    // makeSparse asks a system that keeps a file whole unless told otherwise, as Windows does. It runs before the file
+    // gets its length.
+    public FileRawDisk(string path, long length, Action<SafeFileHandle>? makeSparse = null)
     {
-        Length = length;
-        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
-        _file = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read, bufferSize: 0);
+        ArgumentException.ThrowIfNullOrEmpty(path);
 
-        if (OperatingSystem.IsWindows())
+        Length = length;
+
+        if (Path.GetDirectoryName(Path.GetFullPath(path)) is { } directory)
         {
-            MakeSparse(_file.SafeFileHandle);
+            Directory.CreateDirectory(directory);
         }
 
+        _file = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read, bufferSize: 0);
+        makeSparse?.Invoke(_file.SafeFileHandle);
         _file.SetLength(length);
     }
 
@@ -50,8 +53,4 @@ public sealed unsafe class FileRawDisk : IRawDisk
     }
 
     public void Dispose() => _file.Dispose();
-
-    // Not every file system can hold sparse files. Then the dry run needs the full space.
-    private static void MakeSparse(SafeFileHandle file) =>
-        DiskNativeMethods.DeviceIoControl(file, DiskNativeMethods.FsctlSetSparse, null, 0, null, 0, out _, 0);
 }

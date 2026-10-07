@@ -21,7 +21,7 @@ public sealed class FileRawDisksTests : IDisposable
         LocalDisk disk = FakeDeploymentTools.Disk(0, sizeBytes: 64L * 1024 * 1024);
         byte[] sector = Enumerable.Repeat((byte)0x5A, 512).ToArray();
 
-        using (IRawDisk raw = new FileRawDisks(_root, _log).Open(disk))
+        using (IRawDisk raw = new FileRawDisks(_root, _log, SparseFile.Make).Open(disk))
         {
             Assert.Equal((512, disk.SizeBytes), (raw.SectorSize, raw.Length));
             raw.Write(disk.SizeBytes - 512, sector);

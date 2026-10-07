@@ -10,8 +10,10 @@ using DDT.Core.Disks;
 namespace DDT.Agent.Sequences;
 
 // Picks the disk a fresh run erases, and checks it against the run before anything on it is erased.
-internal sealed class RunDiskChoice(IDisks machineDisks, IRawDisks rawDisks)
+internal sealed class RunDiskChoice(IDisks machineDisks, IRawDisks? rawDisks)
 {
+    public const string NoRawDisksMessage = "This boot environment writes no raw disk images, so the run cannot start in it.";
+
     public async Task<LocalDisk> ChooseAsync(AgentRun run, LocalDisk? confirmedDisk, RunInventory inventory, CancellationToken cancellationToken)
     {
         IReadOnlyList<LocalDisk> disks = await machineDisks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
@@ -34,7 +36,7 @@ internal sealed class RunDiskChoice(IDisks machineDisks, IRawDisks rawDisks)
 
         if (rawImages.Count > 0)
         {
-            using IRawDisk raw = rawDisks.Open(disk);
+            using IRawDisk raw = (rawDisks ?? throw new DeploymentStepException(NoRawDisksMessage)).Open(disk);
 
             if (raw.SectorSize != GptLayout.SectorSize)
             {

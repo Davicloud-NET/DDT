@@ -12,9 +12,9 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent;
 
-// The machine a dry run stands in for. Each restart starts the phase named in the run's state again, with new
-// instances, until the run ends. Tools only log, and nothing on this computer changes. The installed Windows reaches
-// the server through connect, with the settings from the agent.json that the hand-over staged.
+// The machine a dry run stands in for when it starts Windows PE. Each restart starts the phase named in the run's
+// state again, with new instances, until the run ends. Tools only log, and nothing on this computer changes. The
+// installed Windows reaches the server through connect, with the settings from the agent.json the hand-over staged.
 public sealed class DryRunMachine(
     DryRunMachineOptions options,
     IAgentServer server,
@@ -109,7 +109,6 @@ public sealed class DryRunMachine(
         AgentConfiguration staged = new(options.Agent.ServerUrl.AbsoluteUri, options.Agent.RootCertificate?.ExportCertificatePem(), null);
         DryRunBcdWriter bcdWriter = new(log);
         DryRunImageApplier applier = new(log);
-        FileRawDisks rawDisks = new(options.Root, log);
         SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval, workDirectory, DryRun: true);
 
         return new SequenceRunnerBuilder
@@ -117,15 +116,17 @@ public sealed class DryRunMachine(
             Server = runServer,
             Disks = disks,
             Partitioner = disks,
-            RawDisks = rawDisks,
             FreeSpace = new DriveFreeSpace(),
-            PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
+            PreflightChecks =
+            [
+                new BootEnvironmentCheck(AgentEnvironment.WindowsPE),
+                new BootImageToolsCheck(Environment.SystemDirectory),
+                new ImageApplierCheck(applier),
+            ],
             StepRunners = new WindowsStepRunners
             {
                 Server = runServer,
-                Disks = disks,
                 Partitioner = disks,
-                RawDisks = rawDisks,
                 Applier = applier,
                 Tools = tools,
                 Joiner = new DryRunDomainJoiner(log),

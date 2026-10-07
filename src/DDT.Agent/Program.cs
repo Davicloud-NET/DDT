@@ -36,17 +36,31 @@ AgentStartup startup = new(new AgentPlatform
 
 return await startup.RunAsync(args).ConfigureAwait(false);
 
-// A dry run does the whole run, both phases, in this process. A directory stands in for the machine's disk and holds
-// the run until it ends. The Windows phase reaches the server with the agent.json that the hand-over staged.
+// A dry run does the whole run in this process, in Windows PE unless it is asked for the Linux boot environment. A
+// directory stands in for the machine's disk and holds the run until it ends. The Windows phase reaches the server
+// with the agent.json that the hand-over staged.
 static Task<int> DryRunAsync(StartedAgent agent, CancellationToken cancellationToken)
 {
+    DryRunMachineOptions options = new(
+        agent.Options,
+        Path.Combine(Path.GetTempPath(), $"ddt-dry-run-{agent.Options.DryRunId}"),
+        Environment.ProcessPath!,
+        RunHeartbeat.DefaultInterval,
+        agent.Version);
+
+    if (agent.Options.DryRunEnvironment == AgentEnvironment.LinuxBoot)
+    {
+        LinuxBootDryRun linux = new(options, agent.Server, agent.Status, agent.Log, TimeProvider.System)
+        {
+            FreeSpace = new DriveFreeSpace(),
+            MakeSparse = SparseFile.Make,
+        };
+
+        return linux.RunAsync(cancellationToken);
+    }
+
     DryRunMachine machine = new(
-        new DryRunMachineOptions(
-            agent.Options,
-            Path.Combine(Path.GetTempPath(), $"ddt-dry-run-{agent.Options.DryRunId}"),
-            Environment.ProcessPath!,
-            RunHeartbeat.DefaultInterval,
-            agent.Version),
+        options,
         agent.Server,
         staged => new HttpAgentServer(staged.ServerUrl, staged.RootCertificate),
         agent.Status,
@@ -65,22 +79,23 @@ static Task<int> RunAsync(StartedAgent agent, CancellationToken cancellationToke
     DiskpartPartitioner disks = new(tools, log, TimeProvider.System, AppContext.BaseDirectory);
     BcdbootWriter bcdWriter = new(tools, firmware, log);
     WimImageApplier applier = new(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log"));
-    PhysicalDisks rawDisks = new();
     SequenceRunnerOptions runnerOptions = new(RunHeartbeat.DefaultInterval, AppContext.BaseDirectory, DryRun: false);
     SequenceRunner runner = new SequenceRunnerBuilder
     {
         Server = server,
         Disks = disks,
         Partitioner = disks,
-        RawDisks = rawDisks,
         FreeSpace = new DriveFreeSpace(),
-        PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
+        PreflightChecks =
+        [
+            new BootEnvironmentCheck(AgentEnvironment.WindowsPE),
+            new BootImageToolsCheck(Environment.SystemDirectory),
+            new ImageApplierCheck(applier),
+        ],
         StepRunners = new WindowsStepRunners
         {
             Server = server,
-            Disks = disks,
             Partitioner = disks,
-            RawDisks = rawDisks,
             Applier = applier,
             Tools = tools,
             Joiner = new NetJoinDomainJoiner(),

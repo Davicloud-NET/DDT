@@ -5,6 +5,7 @@
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
+using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Tests;
 
@@ -25,7 +26,6 @@ internal static class WindowsTestAgents
 
         options ??= new TestRunnerOptions();
         IToolRunner toolRunner = options.ToolRunner ?? new RecordingToolRunner();
-        IRawDisks rawDisks = options.RawDisks ?? new MemoryRawDisks();
         SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun);
 
         return new SequenceRunnerBuilder
@@ -33,15 +33,17 @@ internal static class WindowsTestAgents
             Server = server,
             Disks = tools,
             Partitioner = tools,
-            RawDisks = rawDisks,
             FreeSpace = new DriveFreeSpace(),
-            PreflightChecks = [new BootImageToolsCheck(options.SystemDirectory ?? SystemDirectory(tools)), new ImageApplierCheck(tools)],
+            PreflightChecks =
+            [
+                new BootEnvironmentCheck(AgentEnvironment.WindowsPE),
+                new BootImageToolsCheck(options.SystemDirectory ?? SystemDirectory(tools)),
+                new ImageApplierCheck(tools),
+            ],
             StepRunners = new WindowsStepRunners
             {
                 Server = server,
-                Disks = tools,
                 Partitioner = tools,
-                RawDisks = rawDisks,
                 Applier = tools,
                 Tools = toolRunner,
                 Joiner = options.Joiner ?? tools,

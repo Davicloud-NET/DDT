@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using Microsoft.Win32.SafeHandles;
+
 namespace DDT.Agent.Deployment;
 
 // The dry run's disks. Each is a file next to the dry run's root, as large as the disk it stands in for. The file
 // survives the run, whose root is deleted when the run ends, so the disk can be looked at afterwards. The next clean
-// deletes it.
-public sealed class FileRawDisks(string root, AgentLog log) : IRawDisks
+// deletes it. makeSparse is the system's way to keep the file sparse, where it needs one.
+public sealed class FileRawDisks(string root, AgentLog log, Action<SafeFileHandle>? makeSparse = null) : IRawDisks
 {
     public static string PathFor(string root, int diskNumber) =>
         string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{Path.TrimEndingDirectorySeparator(root)}-disk{diskNumber}.img");
@@ -19,6 +21,6 @@ public sealed class FileRawDisks(string root, AgentLog log) : IRawDisks
         string path = PathFor(root, disk.Number);
         log.Information($"Dry run: {path} stands in for disk {disk.Number}.");
 
-        return new FileRawDisk(path, disk.SizeBytes);
+        return new FileRawDisk(path, disk.SizeBytes, makeSparse);
     }
 }

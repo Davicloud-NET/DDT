@@ -152,7 +152,9 @@ public sealed class RunScriptStepRunner(
 
         if (session.RunDirectory is null)
         {
-            throw new DeploymentStepException("A script's package is unpacked on the partitioned disk, so this script can run only after the disk is partitioned.");
+            throw new DeploymentStepException(context.Phase == SequencePhase.LinuxBoot
+                ? "The Linux boot environment has no partition to unpack a package on, so this script cannot have one."
+                : "A script's package is unpacked on the partitioned disk, so this script can run only after the disk is partitioned.");
         }
 
         string package = Path.Combine(directory, "packages", step.Id.ToString("D"));

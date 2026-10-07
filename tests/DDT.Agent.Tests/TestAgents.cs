@@ -30,26 +30,38 @@ internal static class TestAgents
 
         options ??= new TestRunnerOptions();
         IToolRunner toolRunner = options.ToolRunner ?? new RecordingToolRunner();
+        IRawDisks rawDisks = options.RawDisks ?? new MemoryRawDisks();
+        SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun);
 
         return new SequenceRunnerBuilder
         {
             Server = server,
             Disks = tools,
             Partitioner = tools,
-            RawDisks = options.RawDisks ?? new MemoryRawDisks(),
+            RawDisks = rawDisks,
             FreeSpace = new DriveFreeSpace(),
-            Applier = tools,
             PreflightChecks = [new BootImageToolsCheck(options.SystemDirectory ?? SystemDirectory(tools)), new ImageApplierCheck(tools)],
+            StepRunners = new WindowsStepRunners
+            {
+                Server = server,
+                Disks = tools,
+                Partitioner = tools,
+                RawDisks = rawDisks,
+                Applier = tools,
+                Tools = toolRunner,
+                Joiner = options.Joiner ?? tools,
+                Log = log,
+                TimeProvider = timeProvider,
+                Options = runnerOptions,
+            },
             BcdWriter = options.BcdWriter ?? tools,
             BootOrder = tools,
             Rebooter = options.Rebooter ?? tools,
             RestartMarker = RestartMarker(tools, log),
-            Tools = toolRunner,
-            Joiner = options.Joiner ?? tools,
             HandOver = HandOver(tools, toolRunner, log, options.DryRunHandOver, options.ConsoleDirectory),
             Log = log,
             TimeProvider = timeProvider,
-            Options = new SequenceRunnerOptions(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun),
+            Options = runnerOptions,
             Status = options.Status,
             AccountTools = options.DryRun ? AccountTools.DryRun(log) : WindowsAccountTools.Create(log),
         }.Build();

@@ -7,24 +7,25 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Sequences;
 
-// Puts a SequenceRunner together from the machine's tools, the same way for WinPE, the installed Windows, a dry run
-// and the tests.
+// Puts a SequenceRunner together from the machine's tools and the platform's parts, the same way for WinPE, the
+// installed Windows, a dry run and the tests.
 public sealed class SequenceRunnerBuilder
 {
     public required IAgentServer Server { get; init; }
 
     public required IDisks Disks { get; init; }
 
-    public required IDiskPartitioner Partitioner { get; init; }
+    // Finds a resumed run's volumes again. Null on a platform whose runs have none.
+    public IDiskPartitioner? Partitioner { get; init; }
 
     public required IRawDisks RawDisks { get; init; }
 
     public required IFreeSpace FreeSpace { get; init; }
 
-    public required IImageApplier Applier { get; init; }
-
     // What the platform checks of a fresh run before anything is erased.
     public required IReadOnlyList<IPreflightCheck> PreflightChecks { get; init; }
+
+    public required IStepRunners StepRunners { get; init; }
 
     public required IBcdWriter BcdWriter { get; init; }
 
@@ -34,10 +35,6 @@ public sealed class SequenceRunnerBuilder
 
     // Records a restart that the boot environment owes, from the moment the run knows about it until it happens.
     public required IBootRestartMarker RestartMarker { get; init; }
-
-    public required IToolRunner Tools { get; init; }
-
-    public required IDomainJoiner Joiner { get; init; }
 
     public required IHandOver HandOver { get; init; }
 
@@ -69,7 +66,6 @@ public sealed class SequenceRunnerBuilder
             Log);
     }
 
-    // Each run gets its own step runners, because they share its session, store and heartbeat.
     private AgentStepRunner StepsFor(SequenceRun run)
     {
         RunSession session = run.Session;
@@ -77,17 +73,7 @@ public sealed class SequenceRunnerBuilder
         RunDownloads downloads = new(Server, session, FreeSpace, Log, TimeProvider, Options.HeartbeatInterval);
 
         return new AgentStepRunner(
-            [
-                new PartitionStepRunner(Partitioner, session, run.Store, Log, Options.DryRun),
-                new ApplyImageStepRunner(Applier, downloads, session, Log),
-                new InjectDriversStepRunner(Tools, downloads, session, Log),
-                new WriteUnattendStepRunner(Server, session, heartbeat.ReportNowAsync, Log, TimeProvider),
-                new JoinDomainStepRunner(Joiner, Server, session, heartbeat.ReportNowAsync, Log, TimeProvider),
-                new RunScriptStepRunner(Tools, new WindowsScriptLauncher(), downloads, session, Log, Options.WorkDirectory),
-                new WriteRawImageStepRunner(Disks, RawDisks, downloads, session, Log),
-                new WriteCloudInitSeedStepRunner(RawDisks, session, Log, TimeProvider),
-                new PauseStepRunner(heartbeat, Status?.Console, Log, TimeProvider),
-            ],
+            StepRunners.For(new StepRunnerParts(session, run.Store, heartbeat, downloads, Status?.Console)),
             new StepAccounts(Server, session, heartbeat.ReportNowAsync, AccountTools, Log, TimeProvider),
             heartbeat.TokenRejected,
             Log,

@@ -139,21 +139,33 @@ DiskpartPartitioner disks = new(tools, log, TimeProvider.System, AppContext.Base
 AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
 BcdbootWriter bcdWriter = new(tools, firmware, log);
 WimImageApplier applier = new(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log"));
+PhysicalDisks rawDisks = new();
+SequenceRunnerOptions runnerOptions = new(RunHeartbeat.DefaultInterval, AppContext.BaseDirectory, DryRun: false);
 SequenceRunner runner = new SequenceRunnerBuilder
 {
     Server = server,
     Disks = disks,
     Partitioner = disks,
-    RawDisks = new PhysicalDisks(),
+    RawDisks = rawDisks,
     FreeSpace = new DriveFreeSpace(),
-    Applier = applier,
     PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
+    StepRunners = new WindowsStepRunners
+    {
+        Server = server,
+        Disks = disks,
+        Partitioner = disks,
+        RawDisks = rawDisks,
+        Applier = applier,
+        Tools = tools,
+        Joiner = new NetJoinDomainJoiner(),
+        Log = log,
+        TimeProvider = TimeProvider.System,
+        Options = runnerOptions,
+    },
     BcdWriter = bcdWriter,
     BootOrder = bcdWriter,
     Rebooter = new WindowsPERebooter(tools, firmware, log),
     RestartMarker = new FileRestartMarker(AppContext.BaseDirectory, log, dryRun: false),
-    Tools = tools,
-    Joiner = new NetJoinDomainJoiner(),
     HandOver = new WindowsHandOver(
         new OfflineServiceRegistration(tools, log, dryRun: false),
         Environment.ProcessPath!,
@@ -163,7 +175,7 @@ SequenceRunner runner = new SequenceRunnerBuilder
         ConsoleForWindows),
     Log = log,
     TimeProvider = TimeProvider.System,
-    Options = new SequenceRunnerOptions(RunHeartbeat.DefaultInterval, AppContext.BaseDirectory, DryRun: false),
+    Options = runnerOptions,
     Status = status,
     AccountTools = WindowsAccountTools.Create(log),
 }.Build();

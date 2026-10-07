@@ -108,26 +108,38 @@ public sealed class DryRunMachine(
         AgentConfiguration staged = new(options.Agent.ServerUrl.AbsoluteUri, options.Agent.RootCertificate?.ExportCertificatePem(), null);
         DryRunBcdWriter bcdWriter = new(log);
         DryRunImageApplier applier = new(log);
+        FileRawDisks rawDisks = new(options.Root, log);
+        SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval, workDirectory, DryRun: true);
 
         return new SequenceRunnerBuilder
         {
             Server = runServer,
             Disks = disks,
             Partitioner = disks,
-            RawDisks = new FileRawDisks(options.Root, log),
+            RawDisks = rawDisks,
             FreeSpace = new DriveFreeSpace(),
-            Applier = applier,
             PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
+            StepRunners = new WindowsStepRunners
+            {
+                Server = runServer,
+                Disks = disks,
+                Partitioner = disks,
+                RawDisks = rawDisks,
+                Applier = applier,
+                Tools = tools,
+                Joiner = new DryRunDomainJoiner(log),
+                Log = log,
+                TimeProvider = timeProvider,
+                Options = runnerOptions,
+            },
             BcdWriter = bcdWriter,
             BootOrder = bcdWriter,
             Rebooter = rebooter,
             RestartMarker = new FileRestartMarker(workDirectory, log, dryRun: true),
-            Tools = tools,
-            Joiner = new DryRunDomainJoiner(log),
             HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), options.AgentPath, staged, log, dryRun: true),
             Log = log,
             TimeProvider = timeProvider,
-            Options = new SequenceRunnerOptions(options.HeartbeatInterval, workDirectory, DryRun: true),
+            Options = runnerOptions,
             Status = inWindows ? null : status,
             AccountTools = AccountTools.DryRun(log),
         }.Build();

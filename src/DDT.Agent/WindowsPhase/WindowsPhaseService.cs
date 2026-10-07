@@ -93,26 +93,38 @@ public static class WindowsPhaseService
         DiskpartPartitioner disks = new(tools, log, TimeProvider.System, parts.Directory);
         BcdbootWriter bcdWriter = new(tools, new UefiVariables(), log);
         WimImageApplier applier = new(log, AppContext.BaseDirectory, Path.Combine(parts.Directory, "logs", "wimlib.log"));
+        PhysicalDisks rawDisks = new();
+        SequenceRunnerOptions options = new(RunHeartbeat.DefaultInterval, parts.Directory, DryRun: false);
 
         return new SequenceRunnerBuilder
         {
             Server = parts.Server,
             Disks = disks,
             Partitioner = disks,
-            RawDisks = new PhysicalDisks(),
+            RawDisks = rawDisks,
             FreeSpace = new DriveFreeSpace(),
-            Applier = applier,
             PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
+            StepRunners = new WindowsStepRunners
+            {
+                Server = parts.Server,
+                Disks = disks,
+                Partitioner = disks,
+                RawDisks = rawDisks,
+                Applier = applier,
+                Tools = tools,
+                Joiner = new NetJoinDomainJoiner(),
+                Log = log,
+                TimeProvider = TimeProvider.System,
+                Options = options,
+            },
             BcdWriter = bcdWriter,
             BootOrder = bcdWriter,
             Rebooter = parts.Rebooter,
             RestartMarker = new FileRestartMarker(parts.Directory, log, dryRun: false),
-            Tools = tools,
-            Joiner = new NetJoinDomainJoiner(),
             HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: false), Environment.ProcessPath!, staged, log, dryRun: false),
             Log = log,
             TimeProvider = TimeProvider.System,
-            Options = new SequenceRunnerOptions(RunHeartbeat.DefaultInterval, parts.Directory, DryRun: false),
+            Options = options,
             Status = status,
             AccountTools = WindowsAccountTools.Create(log),
         }.Build();

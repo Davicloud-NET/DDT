@@ -303,26 +303,38 @@ public sealed class DryRunResumeTests : IDisposable
         DryRunDiskPartitioner disks = new(_root, log);
         DryRunBcdWriter bcdWriter = new(log);
         DryRunImageApplier applier = new(log);
+        FileRawDisks rawDisks = new(_root, log);
+        SequenceRunnerOptions options = new(Timeout.InfiniteTimeSpan, _root, DryRun: true);
 
         return new SequenceRunnerBuilder
         {
             Server = _server,
             Disks = disks,
             Partitioner = disks,
-            RawDisks = new FileRawDisks(_root, log),
+            RawDisks = rawDisks,
             FreeSpace = new DriveFreeSpace(),
-            Applier = applier,
             PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
+            StepRunners = new WindowsStepRunners
+            {
+                Server = _server,
+                Disks = disks,
+                Partitioner = disks,
+                RawDisks = rawDisks,
+                Applier = applier,
+                Tools = tools,
+                Joiner = new DryRunDomainJoiner(log),
+                Log = log,
+                TimeProvider = _time,
+                Options = options,
+            },
             BcdWriter = bcdWriter,
             BootOrder = bcdWriter,
             Rebooter = new DryRunRebooter(log),
             RestartMarker = new FileRestartMarker(_root, log, dryRun: true),
-            Tools = tools,
-            Joiner = new DryRunDomainJoiner(log),
             HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), Environment.ProcessPath!, TestAgents.Configuration, log, dryRun: true),
             Log = log,
             TimeProvider = _time,
-            Options = new SequenceRunnerOptions(Timeout.InfiniteTimeSpan, _root, DryRun: true),
+            Options = options,
             AccountTools = AccountTools.DryRun(log),
         }.Build();
     }

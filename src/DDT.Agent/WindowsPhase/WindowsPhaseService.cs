@@ -98,7 +98,7 @@ public static class WindowsPhaseService
             Applier = new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(parts.Directory, "logs", "wimlib.log")),
             BcdWriter = new BcdbootWriter(tools, new UefiVariables(), log),
             Rebooter = parts.Rebooter,
-            RestartMarker = new WindowsPERestartMarker(parts.Directory, log, dryRun: false),
+            RestartMarker = new FileRestartMarker(parts.Directory, log, dryRun: false),
             Tools = tools,
             Joiner = new NetJoinDomainJoiner(),
             HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: false), Environment.ProcessPath!, staged, log, dryRun: false),

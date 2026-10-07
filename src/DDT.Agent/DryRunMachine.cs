@@ -115,7 +115,7 @@ public sealed class DryRunMachine(
             Applier = new DryRunImageApplier(log),
             BcdWriter = new DryRunBcdWriter(log),
             Rebooter = rebooter,
-            RestartMarker = new WindowsPERestartMarker(workDirectory, log, dryRun: true),
+            RestartMarker = new FileRestartMarker(workDirectory, log, dryRun: true),
             Tools = tools,
             Joiner = new DryRunDomainJoiner(log),
             HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), options.AgentPath, staged, log, dryRun: true),

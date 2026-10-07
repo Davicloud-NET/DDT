@@ -9,7 +9,7 @@ namespace DDT.Agent.Deployment;
 // A restart that WinPE still owes the run, kept as a file on X:. Every WinPE start builds X: from scratch, so the
 // restart clears it. An agent stopped before the restart, or started by hand after wpeutil failed, finds it and
 // restarts. A marker that can't be written or read only costs that check, so it never fails the run.
-public sealed class WindowsPERestartMarker(string directory, AgentLog log, bool dryRun)
+public sealed class FileRestartMarker(string directory, AgentLog log, bool dryRun) : IBootRestartMarker
 {
     public const string FileName = "restart-due";
 
@@ -64,7 +64,6 @@ public sealed class WindowsPERestartMarker(string directory, AgentLog log, bool 
         }
     }
 
-    // The run gave up the restart.
     public void Clear()
     {
         if (!dryRun)

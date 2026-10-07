@@ -62,11 +62,11 @@ internal static class TestAgents
 
     // WinPE keeps it in its own directory. Here it gets a separate one, because the tests' dry runs delete X when they
     // end and would delete the marker with it.
-    public static WindowsPERestartMarker RestartMarker(FakeDeploymentTools tools, AgentLog log)
+    public static FileRestartMarker RestartMarker(FakeDeploymentTools tools, AgentLog log)
     {
         ArgumentNullException.ThrowIfNull(tools);
 
-        return new WindowsPERestartMarker(Path.Combine(tools.Root, "RAM disk"), log, dryRun: false);
+        return new FileRestartMarker(Path.Combine(tools.Root, "RAM disk"), log, dryRun: false);
     }
 
     // Stages AgentSource(tools) with Configuration, and the console in consoleDirectory.

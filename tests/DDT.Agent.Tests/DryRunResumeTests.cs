@@ -172,7 +172,7 @@ public sealed class DryRunResumeTests : IDisposable
         Assert.True(File.Exists(RunFiles.StatePathIn(Path.Combine(_root, "W"))));
 
         // Its end was the restart, so the next start does not restart again.
-        Assert.False(File.Exists(Path.Combine(_root, WindowsPERestartMarker.FileName)));
+        Assert.False(File.Exists(Path.Combine(_root, FileRestartMarker.FileName)));
 
         _server.OnRegister(registration => Registered() with { RunId = s_runId, RunToken = registration.RunToken })
             .OnNext(_ => Next("session-3", s_run with { DiskNumber = null }));
@@ -309,7 +309,7 @@ public sealed class DryRunResumeTests : IDisposable
             Applier = new DryRunImageApplier(log),
             BcdWriter = new DryRunBcdWriter(log),
             Rebooter = new DryRunRebooter(log),
-            RestartMarker = new WindowsPERestartMarker(_root, log, dryRun: true),
+            RestartMarker = new FileRestartMarker(_root, log, dryRun: true),
             Tools = tools,
             Joiner = new DryRunDomainJoiner(log),
             HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), Environment.ProcessPath!, TestAgents.Configuration, log, dryRun: true),

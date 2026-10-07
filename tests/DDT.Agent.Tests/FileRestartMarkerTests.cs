@@ -8,7 +8,7 @@ using Xunit;
 namespace DDT.Agent.Tests;
 
 // The marker in a temporary folder that stands in for X:\DDT. WinPE's restart empties that folder, and so does Dispose.
-public sealed class WindowsPERestartMarkerTests : IDisposable
+public sealed class FileRestartMarkerTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), $"ddt-restart-marker-{Guid.NewGuid():N}");
     private readonly StringWriter _console = new();
@@ -26,14 +26,14 @@ public sealed class WindowsPERestartMarkerTests : IDisposable
     [Fact]
     public void KeepsWhereTheDueRestartLeadsUntilTheRunGivesItUp()
     {
-        WindowsPERestartMarker marker = new(_directory, Log(), dryRun: false);
+        FileRestartMarker marker = new(_directory, Log(), dryRun: false);
 
         Assert.Null(marker.Due);
 
         marker.Set(RestartInto.BootEnvironment);
 
         // Another agent in the same WinPE, like one started by hand, finds it.
-        Assert.Equal(RestartInto.BootEnvironment, new WindowsPERestartMarker(_directory, Log(), dryRun: false).Due);
+        Assert.Equal(RestartInto.BootEnvironment, new FileRestartMarker(_directory, Log(), dryRun: false).Due);
 
         marker.Set(RestartInto.InstalledSystem);
 
@@ -50,7 +50,7 @@ public sealed class WindowsPERestartMarkerTests : IDisposable
     [Fact]
     public async Task AMarkerItCannotMakeSenseOfLeadsBackIntoWindowsPE()
     {
-        WindowsPERestartMarker marker = new(_directory, Log(), dryRun: false);
+        FileRestartMarker marker = new(_directory, Log(), dryRun: false);
         Directory.CreateDirectory(_directory);
         await File.WriteAllTextAsync(marker.FilePath, "Wind", TestContext.Current.CancellationToken);
 
@@ -65,7 +65,7 @@ public sealed class WindowsPERestartMarkerTests : IDisposable
 
         try
         {
-            WindowsPERestartMarker marker = new(_directory, Log(), dryRun: false);
+            FileRestartMarker marker = new(_directory, Log(), dryRun: false);
 
             marker.Set(RestartInto.BootEnvironment);
 
@@ -82,7 +82,7 @@ public sealed class WindowsPERestartMarkerTests : IDisposable
     [Fact]
     public void ADryRunOnlySaysWhereTheRestartWouldBeRecorded()
     {
-        WindowsPERestartMarker marker = new(_directory, Log(), dryRun: true);
+        FileRestartMarker marker = new(_directory, Log(), dryRun: true);
 
         marker.Set(RestartInto.BootEnvironment);
 

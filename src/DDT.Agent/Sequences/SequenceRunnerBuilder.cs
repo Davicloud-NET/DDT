@@ -24,8 +24,8 @@ public sealed class SequenceRunnerBuilder
 
     public required IRebooter Rebooter { get; init; }
 
-    // Records a restart that WinPE owes, from the moment the run knows about it until it happens.
-    public required WindowsPERestartMarker RestartMarker { get; init; }
+    // Records a restart that the boot environment owes, from the moment the run knows about it until it happens.
+    public required IBootRestartMarker RestartMarker { get; init; }
 
     public required IToolRunner Tools { get; init; }
 

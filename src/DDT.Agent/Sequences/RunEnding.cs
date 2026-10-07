@@ -15,7 +15,7 @@ namespace DDT.Agent.Sequences;
 internal sealed class RunEnding(
     RunBootOrder bootOrder,
     IRebooter rebooter,
-    WindowsPERestartMarker restartMarker,
+    IBootRestartMarker restartMarker,
     AgentLog log,
     TimeProvider timeProvider,
     ConsoleStatus? status)
@@ -24,7 +24,7 @@ internal sealed class RunEnding(
     private const int MaxFinalFlushFailures = 3;
 
     // Recorded as soon as the engine asks for a restart. The state already has that step as done.
-    public void RecordWindowsPERestart() => restartMarker.Set(RestartInto.BootEnvironment);
+    public void RecordBootRestart() => restartMarker.Set(RestartInto.BootEnvironment);
 
     // If WinPE recorded a restart that never happened, because the agent was stopped or wpeutil failed, it happens
     // first. Returns null when none is due. A start that is already stopped leaves it due.

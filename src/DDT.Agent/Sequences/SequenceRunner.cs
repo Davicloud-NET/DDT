@@ -57,7 +57,7 @@ public sealed class SequenceRunner
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(request.Run);
 
-        return RunAsync(RunPhases.BootOf(request.Run.Sequence), _ending.RecordWindowsPERestart, request, cancellationToken);
+        return RunAsync(RunPhases.BootOf(request.Run.Sequence), _ending.RecordBootRestart, request, cancellationToken);
     }
 
     // If WinPE recorded a pending restart, it happens first at the next start. Returns how it ended, or null if none

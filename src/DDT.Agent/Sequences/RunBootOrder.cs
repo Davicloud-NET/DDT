@@ -9,7 +9,7 @@ namespace DDT.Agent.Sequences;
 
 // Changes the firmware's boot order for a run. Until the last change, a restart starts the machine from the network
 // rather than a system that isn't ready. From then on a restart into the installed system is due.
-internal sealed class RunBootOrder(IBcdWriter bcdWriter, WindowsPERestartMarker restartMarker, AgentLog log)
+internal sealed class RunBootOrder(IBcdWriter bcdWriter, IBootRestartMarker restartMarker, AgentLog log)
 {
     // Firmware setup screens show a line of this much.
     private const int MaxBootEntryName = 64;

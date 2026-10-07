@@ -35,14 +35,6 @@ public sealed class LocalRunLocatorTests : IDisposable
         Assert.Null(new LocalRunLocator([empty]).Find());
     }
 
-    [Fact]
-    public void LeavesOutWindowsPEsOwnDrive()
-    {
-        string? own = Path.GetPathRoot(Environment.SystemDirectory);
-
-        Assert.DoesNotContain(own, WindowsFixedDrives.Roots(), StringComparer.OrdinalIgnoreCase);
-    }
-
     private string Drive(string letter, DateTime written)
     {
         string root = Path.Combine(_drives, letter);

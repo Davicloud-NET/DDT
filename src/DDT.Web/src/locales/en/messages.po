@@ -836,6 +836,22 @@ msgctxt "sequence.secretValueWarning"
 msgid "{name} looks like a password or another secret, and everyone who can sign in to DDT can read the values of sequences and runs. Keep it in an account, stored or asked for the run, which only the step that uses it gets."
 msgstr "{name} looks like a password or another secret, and everyone who can sign in to DDT can read the values of sequences and runs. Keep it in an account, stored or asked for the run, which only the step that uses it gets."
 
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first."
+msgstr "{name} runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first."
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it."
+msgstr "{name} runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it."
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in Windows PE, and this machine started the Linux boot environment. The machine restarts into Windows PE first."
+msgstr "{name} runs in Windows PE, and this machine started the Linux boot environment. The machine restarts into Windows PE first."
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in Windows PE, and this server has no boot image to start it from. The run stays assigned and does not start until an administrator builds one on the Boot image page."
+msgstr "{name} runs in Windows PE, and this server has no boot image to start it from. The run stays assigned and does not start until an administrator builds one on the Boot image page."
+
 #: src/lib/serverMessages.ts
 msgctxt "user.singleSignOnPassword"
 msgid "{name} signs in through single sign-on and has no password in DDT."
@@ -4108,6 +4124,10 @@ msgstr "Enter your password again to change the accounts that steps use."
 msgid "Entry"
 msgstr "Entry"
 
+#: src/machines/bootEnvironment.ts
+msgid "Environment"
+msgstr "Environment"
+
 #: src/sequences/steps.ts
 msgid "equals"
 msgstr "equals"
@@ -4872,6 +4892,10 @@ msgstr "Install Windows"
 msgid "Installed"
 msgstr "Installed"
 
+#: src/machines/bootEnvironment.ts
+msgid "Installed Windows"
+msgstr "Installed Windows"
+
 #: src/settings/networkBoot/InterfacesGroup.tsx
 msgid "Interfaces"
 msgstr "Interfaces"
@@ -5281,6 +5305,7 @@ msgid "Linked to {provider}"
 msgstr "Linked to {provider}"
 
 #: src/conditions/conditionSubjects.ts
+#: src/machines/bootEnvironment.ts
 #: src/sequences/steps.ts
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "Linux boot environment"
@@ -7501,6 +7526,10 @@ msgstr "Restart"
 msgid "Restart after this step"
 msgstr "Restart after this step"
 
+#: src/audit/auditView.ts
+msgid "Restart into the other boot environment"
+msgstr "Restart into the other boot environment"
+
 #: src/runs/runs.ts
 msgid "Restarted after step {number}, {name}"
 msgstr "Restarted after step {number}, {name}"
@@ -7512,6 +7541,18 @@ msgstr "Restarted after step {number}, {name}; back after {took}"
 #: src/deployments/deployments.ts
 msgid "Restarting"
 msgstr "Restarting"
+
+#: src/machines/bootEnvironment.ts
+msgid "Restarts into"
+msgstr "Restarts into"
+
+#: src/machines/bootEnvironment.ts
+msgid "Restarts into the Linux boot environment"
+msgstr "Restarts into the Linux boot environment"
+
+#: src/machines/bootEnvironment.ts
+msgid "Restarts into Windows PE"
+msgstr "Restarts into Windows PE"
 
 #: src/sequences/builder/nodeDetail.ts
 msgid "Restarts the machine"
@@ -8537,6 +8578,14 @@ msgstr "started {started}"
 #: src/boot/JobPanel.tsx
 msgid "Started {when} by {startedBy}"
 msgstr "Started {when} by {startedBy}"
+
+#: src/machines/bootEnvironment.ts
+msgid "Started the Linux boot environment"
+msgstr "Started the Linux boot environment"
+
+#: src/machines/bootEnvironment.ts
+msgid "Started Windows PE"
+msgstr "Started Windows PE"
 
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "Started with /bin/sh, or with the interpreter its first line names, such as #!/bin/bash."
@@ -11537,6 +11586,7 @@ msgid "Windows image"
 msgstr "Windows image"
 
 #: src/conditions/conditionSubjects.ts
+#: src/machines/bootEnvironment.ts
 #: src/packages/PackageName.tsx
 #: src/sequences/steps.ts
 msgid "Windows PE"

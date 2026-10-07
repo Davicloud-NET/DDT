@@ -158,6 +158,30 @@ describe("MachinePage", () => {
     expect(screen.queryByRole("heading", { level: 2, name: "Install Windows" })).toBeNull();
   });
 
+  it("shows the environment the machine's agent runs in, and the one it restarts into", async () => {
+    await open(
+      answers(
+        [
+          machine({
+            state: "Approved",
+            deployment: null,
+            agentEnvironment: "WindowsPE",
+            nextEnvironment: "LinuxBoot",
+          }),
+        ],
+        [],
+        [],
+      ),
+    );
+
+    expect(
+      (await screen.findByText("Environment", { selector: "dt" })).nextElementSibling,
+    ).toHaveTextContent("Windows PE");
+    expect(
+      screen.getByText("Restarts into", { selector: "dt" }).nextElementSibling,
+    ).toHaveTextContent("Linux boot environment");
+  });
+
   it("shows the machine's Secure Boot state, and that its run may write an image not signed for it", async () => {
     const linux = run({
       title: "Install Linux",

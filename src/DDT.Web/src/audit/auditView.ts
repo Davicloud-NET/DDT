@@ -34,6 +34,7 @@ const actionLabels: Record<string, MessageDescriptor> = {
   "machine.approved": msg`Machine approved`,
   "machine.rejected": msg`Machine rejected`,
   "machine.removed": msg`Machine removed`,
+  "machine.environment-requested": msg`Restart into the other boot environment`,
   "deployment.assigned": msg`Sequence assigned`,
   "deployment.cancelled": msg`Run stopped`,
   "deployment.started": msg`Run started`,

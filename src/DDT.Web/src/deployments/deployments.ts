@@ -154,6 +154,11 @@ export interface AssignSequenceRequest {
   answers?: InputAnswer[];
 }
 
+// The server's AgentEnvironment: where a machine's agent registered from. Windows PE and the Linux boot environment
+// are the boot environments, which a machine starts from the network. Windows is the installed one, while a run goes
+// on there.
+export type AgentEnvironment = "WindowsPE" | "Windows" | "LinuxBoot";
+
 export interface DeploymentOptionsView {
   domainConfigured: boolean;
   // DDT:Machines:RequireWebApproval. When it's on, a sign-in at a machine only records who is there.
@@ -162,6 +167,9 @@ export interface DeploymentOptionsView {
   zeroTouchEnabled: boolean;
   // The server's clock when it answered.
   serverUtc: string;
+  // The boot environments the server can start a machine in. Servers from before the Linux boot environment leave it
+  // out.
+  bootEnvironments?: AgentEnvironment[] | null;
 }
 
 export interface DeploymentOptions extends DeploymentOptionsView {

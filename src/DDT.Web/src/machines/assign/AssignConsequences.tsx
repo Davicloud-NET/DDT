@@ -5,6 +5,7 @@
 import { Trans } from "@lingui/react/macro";
 
 import type { DeploymentOptionsView } from "@/deployments/deployments";
+import { startNotice } from "@/machines/bootEnvironment";
 import { machineLabel, type MachineSummary } from "@/machines/machines";
 import type { SecureBootRisk } from "@/machines/secureBoot";
 import type { SequenceSummary } from "@/sequences/sequences";
@@ -26,8 +27,8 @@ interface AssignConsequencesProps {
   now: number;
 }
 
-// What the assignment does to this machine: its disk, Secure Boot, Windows, and for a waiting machine whether the
-// assignment also authorizes it.
+// What the assignment does to this machine: its disk, Secure Boot, the boot environment it restarts into, Windows, and
+// for a waiting machine whether the assignment also authorizes it.
 export function AssignConsequences({
   machine,
   sequence,
@@ -40,6 +41,7 @@ export function AssignConsequences({
 }: AssignConsequencesProps) {
   const label = machineLabel(machine);
   const sequenceName = sequence?.name ?? "";
+  const start = startNotice(machine, sequence, options?.bootEnvironments);
 
   return (
     <div className="flex flex-col gap-2">
@@ -62,6 +64,13 @@ export function AssignConsequences({
         <Notice tone="attention">
           <span id={warningId}>{risk.warning}</span>
         </Notice>
+      ) : null}
+      {start !== null ? (
+        start.warning ? (
+          <Notice tone="attention">{start.text}</Notice>
+        ) : (
+          <p>{start.text}</p>
+        )
       ) : null}
       {sequence?.continuesInWindows === true ? (
         <p>

@@ -836,6 +836,22 @@ msgctxt "sequence.secretValueWarning"
 msgid "{name} looks like a password or another secret, and everyone who can sign in to DDT can read the values of sequences and runs. Keep it in an account, stored or asked for the run, which only the step that uses it gets."
 msgstr "{name} sieht nach einem Kennwort oder einem anderen Geheimnis aus, und alle, die sich bei DDT anmelden können, können die Werte von Tasksequenzen und Ausführungen lesen. Bewahren Sie es in einem Konto auf, gespeichert oder für die Ausführung abgefragt, das nur der Schritt erhält, der es verwendet."
 
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first."
+msgstr "{name} läuft in der Linux-Startumgebung, und dieses Gerät hat Windows PE gestartet. Das Gerät startet zuerst in die Linux-Startumgebung neu."
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it."
+msgstr "{name} läuft in der Linux-Startumgebung, die dieser Server nicht hat. Die Ausführung bleibt zugewiesen und beginnt erst, wenn der Server sie hat."
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in Windows PE, and this machine started the Linux boot environment. The machine restarts into Windows PE first."
+msgstr "{name} läuft in Windows PE, und dieses Gerät hat die Linux-Startumgebung gestartet. Das Gerät startet zuerst in Windows PE neu."
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in Windows PE, and this server has no boot image to start it from. The run stays assigned and does not start until an administrator builds one on the Boot image page."
+msgstr "{name} läuft in Windows PE, und dieser Server hat kein Startimage, von dem er es starten könnte. Die Ausführung bleibt zugewiesen und beginnt erst, wenn ein Administrator auf der Seite „Bootimage“ eines erstellt."
+
 #: src/lib/serverMessages.ts
 msgctxt "user.singleSignOnPassword"
 msgid "{name} signs in through single sign-on and has no password in DDT."
@@ -4108,6 +4124,10 @@ msgstr "Geben Sie Ihr Kennwort erneut ein, um die Konten zu ändern, die Schritt
 msgid "Entry"
 msgstr "Eintrag"
 
+#: src/machines/bootEnvironment.ts
+msgid "Environment"
+msgstr "Umgebung"
+
 #: src/sequences/steps.ts
 msgid "equals"
 msgstr "ist gleich"
@@ -4872,6 +4892,10 @@ msgstr "Windows installieren"
 msgid "Installed"
 msgstr "Installiert"
 
+#: src/machines/bootEnvironment.ts
+msgid "Installed Windows"
+msgstr "Installiertes Windows"
+
 #: src/settings/networkBoot/InterfacesGroup.tsx
 msgid "Interfaces"
 msgstr "Schnittstellen"
@@ -5281,6 +5305,7 @@ msgid "Linked to {provider}"
 msgstr "Verknüpft mit {provider}"
 
 #: src/conditions/conditionSubjects.ts
+#: src/machines/bootEnvironment.ts
 #: src/sequences/steps.ts
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "Linux boot environment"
@@ -7501,6 +7526,10 @@ msgstr "Neu starten"
 msgid "Restart after this step"
 msgstr "Nach diesem Schritt neu starten"
 
+#: src/audit/auditView.ts
+msgid "Restart into the other boot environment"
+msgstr "Neustart in die andere Startumgebung"
+
 #: src/runs/runs.ts
 msgid "Restarted after step {number}, {name}"
 msgstr "Nach Schritt {number}, {name}, neu gestartet"
@@ -7512,6 +7541,18 @@ msgstr "Nach Schritt {number}, {name}, neu gestartet; nach {took} zurück"
 #: src/deployments/deployments.ts
 msgid "Restarting"
 msgstr "Wird neu gestartet"
+
+#: src/machines/bootEnvironment.ts
+msgid "Restarts into"
+msgstr "Startet neu in"
+
+#: src/machines/bootEnvironment.ts
+msgid "Restarts into the Linux boot environment"
+msgstr "Startet neu in die Linux-Startumgebung"
+
+#: src/machines/bootEnvironment.ts
+msgid "Restarts into Windows PE"
+msgstr "Startet neu in Windows PE"
 
 #: src/sequences/builder/nodeDetail.ts
 msgid "Restarts the machine"
@@ -8537,6 +8578,14 @@ msgstr "gestartet {started}"
 #: src/boot/JobPanel.tsx
 msgid "Started {when} by {startedBy}"
 msgstr "Gestartet {when} von {startedBy}"
+
+#: src/machines/bootEnvironment.ts
+msgid "Started the Linux boot environment"
+msgstr "Hat die Linux-Startumgebung gestartet"
+
+#: src/machines/bootEnvironment.ts
+msgid "Started Windows PE"
+msgstr "Hat Windows PE gestartet"
 
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "Started with /bin/sh, or with the interpreter its first line names, such as #!/bin/bash."
@@ -11537,6 +11586,7 @@ msgid "Windows image"
 msgstr "Windows-Image"
 
 #: src/conditions/conditionSubjects.ts
+#: src/machines/bootEnvironment.ts
 #: src/packages/PackageName.tsx
 #: src/sequences/steps.ts
 msgid "Windows PE"

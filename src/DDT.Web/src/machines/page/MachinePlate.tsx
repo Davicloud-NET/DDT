@@ -6,6 +6,7 @@ import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 
 import { relativeTime } from "@/lib/relativeTime";
+import { environmentFacts } from "@/machines/bootEnvironment";
 import { formatMac, type MachineSummary } from "@/machines/machines";
 import { secureBootFact } from "@/machines/secureBoot";
 import { Facts } from "@/ui/Facts";
@@ -37,6 +38,7 @@ export function MachinePlate({ machine, now }: { machine: MachineSummary; now: n
           value: from === null ? seen : t`${seen} from ${from}`,
         },
         { label: <Trans>Secure Boot</Trans>, value: secureBootFact(machine) },
+        ...environmentFacts(machine),
         { label: <Trans>Disks</Trans>, value: disks },
         { label: <Trans>Agent</Trans>, value: machine.agentVersion ?? t`Not reported` },
         { label: <Trans>SMBIOS UUID</Trans>, value: machine.smbiosUuid, mono: true },

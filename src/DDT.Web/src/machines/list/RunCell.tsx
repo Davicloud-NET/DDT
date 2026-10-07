@@ -6,6 +6,7 @@ import { t } from "@lingui/core/macro";
 
 import { isActive, isWaiting } from "@/deployments/deployments";
 import { relativeTime } from "@/lib/relativeTime";
+import { environmentLine } from "@/machines/bootEnvironment";
 import type { MachineSummary } from "@/machines/machines";
 import { railFromSummary, railLabel } from "@/machines/machineView";
 import { SequenceRailStrip } from "@/ui/SequenceRailStrip";
@@ -16,6 +17,7 @@ import { RunLines } from "./RunLines";
 // What a row says about the machine's run, or why it has none.
 export function RunCell({ machine, now }: { machine: MachineSummary; now: number }) {
   const run = machine.deployment;
+  const environment = environmentLine(machine);
 
   if (machine.state === "Pending" && !isActive(run)) {
     const by = machine.signedInBy;
@@ -30,8 +32,16 @@ export function RunCell({ machine, now }: { machine: MachineSummary; now: number
     );
   }
 
+  // Without a run to show, the row says what the machine started, or where it is on its way to.
   if (run === null) {
-    return <span className="type-small text-muted">{t`No sequence assigned`}</span>;
+    return environment === null ? (
+      <span className="type-small text-muted">{t`No sequence assigned`}</span>
+    ) : (
+      <span className="flex min-w-0 flex-col type-small text-muted">
+        <span className="truncate">{t`No sequence assigned`}</span>
+        <span className="truncate">{environment}</span>
+      </span>
+    );
   }
 
   const rail = railFromSummary(run);

@@ -15,6 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DDT.Agent.Core\DDT.Agent.Core.csproj" />
     <ProjectReference Include="..\DDT.ConsoleProtocol\DDT.ConsoleProtocol.csproj" />
     <ProjectReference Include="..\DDT.Contracts\DDT.Contracts.csproj" />
     <ProjectReference Include="..\DDT.Core\DDT.Core.csproj" />
@@ -25,8 +26,6 @@
          and the self-update stay one file. WimLibraryFile writes it out before the first wimlib call, unless a
          libwim-15.dll is already next to the agent. -->
     <PackageReference Include="ManagedWimLib" IncludeAssets="native" GeneratePathProperty="true" />
-    <!-- Unpacks raw disk images, which the server stores compressed with zstd, as they download. -->
-    <PackageReference Include="ZstdSharp.Port" />
     <EmbeddedResource Include="$(PkgManagedWimLib)\runtimes\win-x64\native\libwim-15.dll" LogicalName="libwim-15.dll" />
   </ItemGroup>
 

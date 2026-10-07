@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- What the agent is on every system. An executable adds its system's parts, as DDT.Agent does for Windows. The
+       namespaces stay DDT.Agent. -->
+  <PropertyGroup>
+    <RootNamespace>DDT.Agent</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The agent runs on Windows and Linux, so what only macOS lacks is no finding of CA1416 here. -->
+    <SupportedPlatform Remove="macOS" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DDT.ConsoleProtocol\DDT.ConsoleProtocol.csproj" />
+    <ProjectReference Include="..\DDT.Contracts\DDT.Contracts.csproj" />
+    <ProjectReference Include="..\DDT.Core\DDT.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Unpacks raw disk images, which the server stores compressed with zstd, as they download. -->
+    <PackageReference Include="ZstdSharp.Port" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The executables are all named ddt-agent. They and the tests reach the parts of a run that stay internal. -->
+    <InternalsVisibleTo Include="ddt-agent" />
+    <InternalsVisibleTo Include="DDT.Agent.Core.Tests" />
+    <InternalsVisibleTo Include="DDT.Agent.Tests" />
+  </ItemGroup>
+
+</Project>

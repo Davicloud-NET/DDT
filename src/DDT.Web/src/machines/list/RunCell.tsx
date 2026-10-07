@@ -6,7 +6,7 @@ import { t } from "@lingui/core/macro";
 
 import { isActive, isWaiting } from "@/deployments/deployments";
 import { relativeTime } from "@/lib/relativeTime";
-import { environmentLine } from "@/machines/bootEnvironment";
+import { environmentLine, restartLine } from "@/machines/bootEnvironment";
 import type { MachineSummary } from "@/machines/machines";
 import { railFromSummary, railLabel } from "@/machines/machineView";
 import { SequenceRailStrip } from "@/ui/SequenceRailStrip";
@@ -45,6 +45,8 @@ export function RunCell({ machine, now }: { machine: MachineSummary; now: number
   }
 
   const rail = railFromSummary(run);
+  // Under an earlier run, since a machine with a run of its own is never asked to restart for a pick.
+  const restart = restartLine(machine);
 
   return (
     <span className="flex min-w-0 flex-col gap-1.5 pr-6">
@@ -54,6 +56,7 @@ export function RunCell({ machine, now }: { machine: MachineSummary; now: number
         detailTone={isWaiting(run) ? "attention" : detailTone(run.state)}
       />
       {rail.length > 0 ? <SequenceRailStrip steps={rail} label={railLabel(run)} /> : null}
+      {restart !== null ? <span className="truncate type-small text-muted">{restart}</span> : null}
     </span>
   );
 }

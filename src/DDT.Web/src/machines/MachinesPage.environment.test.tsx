@@ -6,7 +6,12 @@ import { act, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { press } from "@/test/aria";
-import { deploymentOptions, machineSummary, sequenceSummary } from "@/test/builders";
+import {
+  deploymentOptions,
+  deploymentSummary,
+  machineSummary,
+  sequenceSummary,
+} from "@/test/builders";
 
 import {
   assignable,
@@ -84,6 +89,24 @@ describe("MachinesPage", () => {
       expect(fact(details, "Environment")).toBe("Linux boot environment");
       expect(within(details).queryByText("Restarts into")).not.toBeInTheDocument();
       expect(server.count("GET /api/machines")).toBe(1);
+    });
+
+    it("says under a machine's earlier run that it restarts into the other boot environment", async () => {
+      await open([
+        machineSummary({
+          assignedName: "PC-FAILED",
+          state: "Failed",
+          agentEnvironment: "LinuxBoot",
+          nextEnvironment: "WindowsPE",
+          deployment: deploymentSummary({ state: "Failed", title: "Install Linux" }),
+        }),
+      ]);
+
+      await screen.findByRole("link", { name: "PC-FAILED" });
+      const failed = within(row("PC-FAILED"));
+      expect(failed.getByText("Install Linux")).toBeInTheDocument();
+      expect(failed.getByText("Restarts into Windows PE")).toBeInTheDocument();
+      expect(failed.queryByText(/^Started/)).not.toBeInTheDocument();
     });
 
     it("tells before assigning that the machine restarts into the other boot environment first", async () => {

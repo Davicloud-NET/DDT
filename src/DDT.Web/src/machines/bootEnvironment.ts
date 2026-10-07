@@ -31,16 +31,25 @@ export function restartsInto(machine: MachineSummary): string | null {
   return next === null ? null : environmentName(next);
 }
 
-// What a list row says about a machine that has no run to show: where it restarts into, else what it started. Null
-// for a server that does not say.
-export function environmentLine(machine: MachineSummary): string | null {
+// What a list row says while the machine was asked to restart into the other boot environment. Null otherwise.
+export function restartLine(machine: MachineSummary): string | null {
   switch (machine.nextEnvironment ?? null) {
     case "WindowsPE":
       return t`Restarts into Windows PE`;
     case "LinuxBoot":
       return t`Restarts into the Linux boot environment`;
     default:
-      break;
+      return null;
+  }
+}
+
+// What a list row says about a machine that has no run to show: where it restarts into, else what it started. Null
+// for a server that does not say.
+export function environmentLine(machine: MachineSummary): string | null {
+  const restart = restartLine(machine);
+
+  if (restart !== null) {
+    return restart;
   }
 
   switch (machine.agentEnvironment) {

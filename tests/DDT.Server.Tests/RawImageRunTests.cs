@@ -65,7 +65,7 @@ public sealed class RawImageRunTests(DdtApplication application) : IClassFixture
             [new AgentRunImage(image.Id, image.Name, image.Sha256, image.SizeBytes, 0, 3_500_000_000, ImageKind.RawDisk, ImageBootCapability.SecureBootOk, UefiCa.Microsoft2011)],
             handed.Images);
         Assert.False(handed.AllowSecureBootMismatch);
-        Assert.Equal(2, handed.Sequence.Version);
+        Assert.Equal(4, handed.Sequence.Version);
         Assert.Equal("LINUX-01", handed.ComputerName);
         Assert.False((await administrator.RunAsync(run.Id)).AllowSecureBootMismatch);
 

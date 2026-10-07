@@ -280,8 +280,8 @@ public sealed class DryRunTests(DryRunLab lab)
         Assert.Equal((ImageKind.RawDisk, ImageBootCapability.NotSigned, "x64"), (image.Kind, image.BootCapability, image.Architecture));
         Assert.Equal("e2e-cloudimg-amd64", image.Name);
 
-        // WinPE can't restart in such a sequence, so the script treats no exit code as a restart.
-        RunScriptStep before = Script("Before the disk", SequencePhase.WindowsPE, "echo %DDT_PHASE%") with { RebootExitCodes = [] };
+        // The boot environment can't restart in such a sequence, so the script treats no exit code as a restart.
+        RunScriptStep before = Script("Before the disk", SequencePhase.LinuxBoot, "echo \"$DDT_PHASE\"", ScriptInterpreter.Shell) with { RebootExitCodes = [] };
         WriteRawImageStep write = new() { Id = Guid.CreateVersion7(), Name = "Write the disk image", ImageId = image.Id };
         WriteCloudInitSeedStep seed = SeedStep();
         SequenceView sequence = await lab.CreateSequenceAsync("Install Linux", [before, write, seed], cancellationToken);

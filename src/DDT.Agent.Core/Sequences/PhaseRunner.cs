@@ -43,7 +43,7 @@ internal sealed class PhaseRunner(
         {
             await TakeValuesAsync(run, stepping.Token).ConfigureAwait(false);
 
-            SequenceRunResult result = RunPhases.IsInstalled(run.State.Phase) && !run.InInstalledSystem
+            SequenceRunResult result = !SequenceKinds.IsBoot(run.State.Phase) && !run.InInstalledSystem
                 ? await HandOverAgainAsync(run).ConfigureAwait(false)
                 : await engine.RunAsync(run.State, run.Machine, stepping.Token).ConfigureAwait(false);
             run.State = result.State;

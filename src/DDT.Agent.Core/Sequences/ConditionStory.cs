@@ -180,7 +180,7 @@ internal static class ConditionStory
     {
         if (string.Equals(variable, MachineVariableNames.Phase, StringComparison.OrdinalIgnoreCase))
         {
-            return actual == nameof(SequencePhase.WindowsPE) ? "Windows PE" : actual;
+            return LogText.Phase(actual);
         }
 
         return ConditionEvaluator.TypeOf(variable) == FactType.Mac && actual.Length == 12 && actual.All(char.IsAsciiHexDigit)

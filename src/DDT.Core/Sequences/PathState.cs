@@ -11,16 +11,16 @@ namespace DDT.Core.Sequences;
 // have done.
 internal readonly record struct PathState(PathPhases Phases, Happened May, Happened Must)
 {
-    // A run starts in Windows PE with nothing done.
-    public static PathState Start { get; } = new(PathPhases.WindowsPE, Happened.None, Happened.None);
+    // A run starts in its boot phase with nothing done.
+    public static PathState Start { get; } = new(PathPhases.Boot, Happened.None, Happened.None);
 
     // No path at all. Joining it with another state gives that other state.
     public static PathState Never { get; } = new(PathPhases.None, Happened.None, Happened.All);
 
     // The phases a node runs in here when it doesn't ask for a phase.
     public PhaseSet Current =>
-        ((Phases & (PathPhases.WindowsPE | PathPhases.WindowsPEAfterWindows)) != 0 ? PhaseSet.WindowsPE : PhaseSet.None)
-        | ((Phases & PathPhases.Windows) != 0 ? PhaseSet.Windows : PhaseSet.None);
+        ((Phases & (PathPhases.Boot | PathPhases.BootAfterInstalled)) != 0 ? PhaseSet.Boot : PhaseSet.None)
+        | ((Phases & PathPhases.Installed) != 0 ? PhaseSet.Installed : PhaseSet.None);
 
     public PathState Join(PathState other) => new(Phases | other.Phases, May | other.May, Must & other.Must);
 
@@ -30,16 +30,16 @@ internal readonly record struct PathState(PathPhases Phases, Happened May, Happe
 
     public bool MustHave(Happened happened) => (Must & happened) == happened;
 
-    // The state after entering a node that asks for a phase. Windows PE after Windows is tracked separately, so only
-    // the paths that really went back are refused.
+    // The state after entering a node that asks for a phase. The boot phase after the installed one is tracked
+    // separately, so only the paths that really went back are refused.
     public PathState Enter(SequencePhase? phase) => phase switch
     {
-        SequencePhase.Windows => this with { Phases = Phases == PathPhases.None ? PathPhases.None : PathPhases.Windows },
-        SequencePhase.WindowsPE => this with
+        null => this,
+        { } boot when SequenceKinds.IsBoot(boot) => this with
         {
-            Phases = (Phases & PathPhases.WindowsPE)
-                | ((Phases & (PathPhases.Windows | PathPhases.WindowsPEAfterWindows)) != 0 ? PathPhases.WindowsPEAfterWindows : PathPhases.None),
+            Phases = (Phases & PathPhases.Boot)
+                | ((Phases & (PathPhases.Installed | PathPhases.BootAfterInstalled)) != 0 ? PathPhases.BootAfterInstalled : PathPhases.None),
         },
-        _ => this,
+        _ => this with { Phases = Phases == PathPhases.None ? PathPhases.None : PathPhases.Installed },
     };
 }

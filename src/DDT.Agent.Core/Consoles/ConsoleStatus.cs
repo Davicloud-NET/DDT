@@ -250,7 +250,7 @@ public sealed class ConsoleStatus
         IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(state.Definition);
         IReadOnlyDictionary<Guid, NodePosition> index = SequenceTree.Index(state.Definition);
         ConsoleStep[] steps = new ConsoleStep[nodes.Count];
-        SequencePhase phase = SequencePhase.WindowsPE;
+        SequencePhase phase = SequenceKinds.BootPhase(state.Definition);
 
         for (int order = 0; order < nodes.Count; order++)
         {

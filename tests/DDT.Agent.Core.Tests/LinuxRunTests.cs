@@ -179,7 +179,7 @@ public sealed class LinuxRunTests : IDisposable
         WriteCloudInitSeedStep unnamed = s_seed with
         {
             MetaData = "hostname: \"{{ComputerName}}\"",
-            Conditions = [new StepCondition(MachineVariableNames.Phase, ConditionOperator.Equals, "WindowsPE")],
+            Conditions = [new StepCondition(MachineVariableNames.Phase, ConditionOperator.Equals, "LinuxBoot")],
         };
         AgentRun run = Run(steps: [s_write, unnamed]) with { ComputerName = null };
 

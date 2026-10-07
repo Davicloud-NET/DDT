@@ -212,7 +212,7 @@ export function requiredVersion(definition: {
       (node.shares ?? []).length > 0 ||
       node.conditions.some(needsTree)
     ) {
-      version = 3;
+      version = Math.max(version, 3);
     }
   }
 
@@ -223,7 +223,7 @@ function minimumVersion(node: SequenceStep): number {
   switch (node.kind) {
     case "writeRawImage":
     case "writeCloudInitSeed":
-      return 2;
+      return 4;
     case "group":
     case "if":
     case "repeat":
@@ -231,6 +231,10 @@ function minimumVersion(node: SequenceStep): number {
     case "pause":
       return 3;
     case "runScript":
+      if (node.interpreter === "Shell" || node.phase === "LinuxBoot") {
+        return 4;
+      }
+
       return (node.runAs ?? null) === null ? 1 : 3;
     case "joinDomain":
       return (node.account ?? null) === null ? 1 : 3;

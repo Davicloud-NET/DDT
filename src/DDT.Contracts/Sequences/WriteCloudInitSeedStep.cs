@@ -18,8 +18,8 @@ public sealed record WriteCloudInitSeedStep : SequenceStep
     public string? NetworkConfig { get; init; }
 
     [JsonIgnore]
-    public override SequencePhase? RequiredPhase => SequencePhase.WindowsPE;
+    public override SequencePhase? RequiredPhase => SequencePhase.LinuxBoot;
 
     [JsonIgnore]
-    public override int MinimumVersion => 2;
+    public override int MinimumVersion => 4;
 }

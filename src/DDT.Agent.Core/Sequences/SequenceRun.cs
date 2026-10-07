@@ -34,7 +34,7 @@ internal sealed class SequenceRun
 
     public LocalRun? Resumed => Request.Resumed;
 
-    public bool InInstalledSystem => RunPhases.IsInstalled(Phase);
+    public bool InInstalledSystem => !SequenceKinds.IsBoot(Phase);
 
     // A restart the run asks for leads back into the current phase.
     public RestartInto SamePhase => InInstalledSystem ? RestartInto.InstalledSystem : RestartInto.BootEnvironment;

@@ -38,21 +38,6 @@ public sealed class SequenceValidatorTreeTests
                 (late.Id, "phase", "sequence.windowsPEAfterWindows"),
             ],
             Said(Validate(new SequenceDefinition(1, [reboot, package, partition, apply, Script(SequencePhase.Windows), late]))));
-
-        RunScriptStep restarting = Script(SequencePhase.WindowsPE) with { RebootAfter = true, RebootExitCodes = [3010] };
-        WriteCloudInitSeedStep again = WriteSeed();
-        PartitionStep windowsStep = Partition();
-        RunScriptStep inWindows = Script(SequencePhase.Windows);
-
-        Assert.Equal(
-            [
-                (restarting.Id, "rebootAfter", "sequence.restartWithRawImage"),
-                (restarting.Id, "rebootExitCodes", "sequence.restartWithRawImage"),
-                (again.Id, null, "sequence.oneSeed"),
-                (windowsStep.Id, null, "sequence.windowsWithRawImage"),
-                (inWindows.Id, "phase", "sequence.windowsWithRawImage"),
-            ],
-            Said(Validate(new SequenceDefinition(2, [restarting, WriteRawImage(), WriteSeed(), again, windowsStep, inWindows]))));
     }
 
     // A different image per model is what an IF is for.

@@ -525,6 +525,11 @@ msgctxt "sequence.emptyContainerWarning"
 msgid "{kind, select, if {This IF has no steps in Then or Else} repeat {This repeat has no steps} other {This group has no steps}}, so it does nothing."
 msgstr "{kind, select, if {This IF has no steps in Then or Else} repeat {This repeat has no steps} other {This group has no steps}}, so it does nothing."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.phaseValueOtherKindWarning"
+msgid "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}"
+msgstr "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}"
+
 #: src/runs/steps/RunStepItem.tsx
 msgid "{kind}, {phase}"
 msgstr "{kind}, {phase}"
@@ -1653,14 +1658,14 @@ msgid "A sequence that is gone"
 msgstr "A sequence that is gone"
 
 #: src/lib/serverMessages.ts
-msgctxt "sequence.packageWithRawImage"
-msgid "A sequence that writes a raw disk image has no partition to unpack a package on, so its scripts cannot have one."
-msgstr "A sequence that writes a raw disk image has no partition to unpack a package on, so its scripts cannot have one."
+msgctxt "sequence.restartWithRawImage"
+msgid "A sequence that writes a raw disk image keeps its state in memory, so the Linux boot environment cannot restart during it."
+msgstr "A sequence that writes a raw disk image keeps its state in memory, so the Linux boot environment cannot restart during it."
 
 #: src/lib/serverMessages.ts
-msgctxt "sequence.restartWithRawImage"
-msgid "A sequence that writes a raw disk image keeps its state in memory, so Windows PE cannot restart during it."
-msgstr "A sequence that writes a raw disk image keeps its state in memory, so Windows PE cannot restart during it."
+msgctxt "sequence.shellExitCodes"
+msgid "A shell script ends with an exit code from 0 to 255."
+msgstr "A shell script ends with an exit code from 0 to 255."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.tooManyShares"
@@ -3001,8 +3006,8 @@ msgstr "Choose an operator."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.scriptInterpreter"
-msgid "Choose cmd or PowerShell."
-msgstr "Choose cmd or PowerShell."
+msgid "Choose cmd, PowerShell or the shell."
+msgstr "Choose cmd, PowerShell or the shell."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.conditionVariable"
@@ -3061,8 +3066,8 @@ msgstr "Choose where the input is asked: on the web, at the machine, or both."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.scriptPhase"
-msgid "Choose Windows PE or Windows."
-msgstr "Choose Windows PE or Windows."
+msgid "Choose where the script runs."
+msgstr "Choose where the script runs."
 
 #: src/rules/ruleText.ts
 msgid "Chooses {sequence}"
@@ -5270,6 +5275,10 @@ msgstr "Light"
 #: src/users/UsersTable.tsx
 msgid "Linked to {provider}"
 msgstr "Linked to {provider}"
+
+#: src/sequences/steps.ts
+msgid "Linux boot environment"
+msgstr "Linux boot environment"
 
 #: src/settings/certificate/PemField.tsx
 msgid "Load a file"
@@ -9620,6 +9629,26 @@ msgstr "The library has no Windows images yet. Upload a WIM file under <0>OS ima
 msgid "The licences of the packages in this web interface"
 msgstr "The licences of the packages in this web interface"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.sharesNotInLinuxBoot"
+msgid "The Linux boot environment cannot connect shares. Remove them from this step."
+msgstr "The Linux boot environment cannot connect shares. Remove them from this step."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.packageWithRawImage"
+msgid "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one."
+msgstr "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.linuxPhaseWithoutRawImage"
+msgid "The Linux boot environment only runs sequences that write a raw disk image. Choose Windows PE or Windows."
+msgstr "The Linux boot environment only runs sequences that write a raw disk image. Choose Windows PE or Windows."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.linuxNeedsShell"
+msgid "The Linux boot environment runs only shell scripts. Choose the shell and rewrite the script for it."
+msgstr "The Linux boot environment runs only shell scripts. Choose the shell and rewrite the script for it."
+
 #: src/log/LogStatusBar.tsx
 msgid "The live connection is down. New lines appear once it is back."
 msgstr "The live connection is down. New lines appear once it is back."
@@ -10663,6 +10692,11 @@ msgstr "This process cannot read the key ring the stored secrets were encrypted 
 msgid "This run"
 msgstr "This run"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.windowsScriptInLinux"
+msgid "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment."
+msgstr "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment."
+
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "This sequence declares no variables or inputs yet."
 msgstr "This sequence declares no variables or inputs yet."
@@ -11477,6 +11511,11 @@ msgstr "Windows image"
 #: src/sequences/steps.ts
 msgid "Windows PE"
 msgstr "Windows PE"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.shellNeedsLinux"
+msgid "Windows PE and Windows run no shell scripts. Choose cmd or PowerShell."
+msgstr "Windows PE and Windows run no shell scripts. Choose cmd or PowerShell."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.restartBeforePartition"

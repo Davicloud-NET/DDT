@@ -23,6 +23,6 @@ public static class SequencePhases
             }
         }
 
-        return SequencePhase.WindowsPE;
+        return SequenceKinds.BootPhase(definition);
     }
 }

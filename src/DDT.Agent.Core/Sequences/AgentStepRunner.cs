@@ -77,7 +77,7 @@ public sealed class AgentStepRunner(
             return StepResult.RebootRequired();
         }
 
-        if (step is JoinDomainStep && context.Phase == SequencePhase.WindowsPE)
+        if (step is JoinDomainStep && SequenceKinds.IsBoot(context.Phase))
         {
             return StepResult.Failed(JoinDomainInWindowsPE);
         }

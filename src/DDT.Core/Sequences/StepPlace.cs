@@ -11,7 +11,7 @@ namespace DDT.Core.Sequences;
 // whether any path did.
 internal readonly record struct StepPlace(PathState Before, SequencePhase? Required, PhaseSet RunsIn, bool InRepeat)
 {
-    public bool InWindowsPE => (RunsIn & PhaseSet.WindowsPE) != 0;
+    public bool InBoot => (RunsIn & PhaseSet.Boot) != 0;
 
     public bool Partitioned => Before.MustHave(Happened.Partitioned);
 

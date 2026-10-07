@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 4,
   "steps": [
     {
       "kind": "partition",
@@ -123,6 +123,27 @@
     },
     {
       "kind": "runScript",
+      "phase": "WindowsPE",
+      "interpreter": "Shell",
+      "script": "exit 0",
+      "packageId": "0193a4b2-0000-7000-8000-0000000000b1",
+      "timeoutMinutes": 30,
+      "successExitCodes": [
+        0,
+        1
+      ],
+      "rebootExitCodes": [
+        3010,
+        1641
+      ],
+      "id": "00000000-0000-4000-8000-000000000009",
+      "name": "Script WindowsPE Shell",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "runScript",
       "phase": "Windows",
       "interpreter": "Cmd",
       "script": "exit 0",
@@ -136,7 +157,7 @@
         3010,
         1641
       ],
-      "id": "00000000-0000-4000-8000-000000000009",
+      "id": "00000000-0000-4000-8000-000000000010",
       "name": "Script Windows Cmd",
       "conditions": [],
       "continueOnError": false,
@@ -157,8 +178,92 @@
         3010,
         1641
       ],
-      "id": "00000000-0000-4000-8000-000000000010",
+      "id": "00000000-0000-4000-8000-000000000011",
       "name": "Script Windows PowerShell",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "runScript",
+      "phase": "Windows",
+      "interpreter": "Shell",
+      "script": "exit 0",
+      "packageId": "0193a4b2-0000-7000-8000-0000000000b1",
+      "timeoutMinutes": 30,
+      "successExitCodes": [
+        0,
+        1
+      ],
+      "rebootExitCodes": [
+        3010,
+        1641
+      ],
+      "id": "00000000-0000-4000-8000-000000000012",
+      "name": "Script Windows Shell",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "runScript",
+      "phase": "LinuxBoot",
+      "interpreter": "Cmd",
+      "script": "exit 0",
+      "packageId": "0193a4b2-0000-7000-8000-0000000000b1",
+      "timeoutMinutes": 30,
+      "successExitCodes": [
+        0,
+        1
+      ],
+      "rebootExitCodes": [
+        3010,
+        1641
+      ],
+      "id": "00000000-0000-4000-8000-000000000013",
+      "name": "Script LinuxBoot Cmd",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "runScript",
+      "phase": "LinuxBoot",
+      "interpreter": "PowerShell",
+      "script": "exit 0",
+      "packageId": "0193a4b2-0000-7000-8000-0000000000b1",
+      "timeoutMinutes": 30,
+      "successExitCodes": [
+        0,
+        1
+      ],
+      "rebootExitCodes": [
+        3010,
+        1641
+      ],
+      "id": "00000000-0000-4000-8000-000000000014",
+      "name": "Script LinuxBoot PowerShell",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "runScript",
+      "phase": "LinuxBoot",
+      "interpreter": "Shell",
+      "script": "exit 0",
+      "packageId": "0193a4b2-0000-7000-8000-0000000000b1",
+      "timeoutMinutes": 30,
+      "successExitCodes": [
+        0,
+        1
+      ],
+      "rebootExitCodes": [
+        3010,
+        1641
+      ],
+      "id": "00000000-0000-4000-8000-000000000015",
+      "name": "Script LinuxBoot Shell",
       "conditions": [],
       "continueOnError": false,
       "rebootAfter": false
@@ -166,7 +271,7 @@
     {
       "kind": "writeRawImage",
       "imageId": "0193a4b2-0000-7000-8000-0000000000a1",
-      "id": "00000000-0000-4000-8000-000000000011",
+      "id": "00000000-0000-4000-8000-000000000016",
       "name": "Write raw",
       "conditions": [],
       "continueOnError": false,
@@ -177,7 +282,7 @@
       "metaData": "instance-id: \"{{SmbiosUuid}}\"\n",
       "userData": "#cloud-config\nhostname: \"{{ComputerName}}\"\n",
       "networkConfig": "version: 2\n",
-      "id": "00000000-0000-4000-8000-000000000012",
+      "id": "00000000-0000-4000-8000-000000000017",
       "name": "Seed",
       "conditions": [],
       "continueOnError": false,

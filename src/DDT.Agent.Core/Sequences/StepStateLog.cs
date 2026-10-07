@@ -281,7 +281,7 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
     {
         if (variable == MachineVariableNames.Phase)
         {
-            return machine.Phase == SequencePhase.WindowsPE ? "Windows PE" : "Windows";
+            return LogText.Phase(machine.Phase.ToString());
         }
 
         IReadOnlyList<string> values = machine.Values(variable);

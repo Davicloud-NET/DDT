@@ -1189,6 +1189,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.keyboard",
     message: "''{keyboard}'' is not an input locale. Use a name such as de-DE or a code such as 0407:00000407.",
   }),
+  "sequence.linuxNeedsShell": msg({
+    context: "sequence.linuxNeedsShell",
+    message: "The Linux boot environment runs only shell scripts. Choose the shell and rewrite the script for it.",
+  }),
+  "sequence.linuxPhaseWithoutRawImage": msg({
+    context: "sequence.linuxPhaseWithoutRawImage",
+    message: "The Linux boot environment only runs sequences that write a raw disk image. Choose Windows PE or Windows.",
+  }),
   "sequence.locale": msg({
     context: "sequence.locale",
     message: "''{locale}'' is not a language and region that Windows knows. Use a name such as de-DE.",
@@ -1263,7 +1271,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.packageWithRawImage": msg({
     context: "sequence.packageWithRawImage",
-    message: "A sequence that writes a raw disk image has no partition to unpack a package on, so its scripts cannot have one.",
+    message: "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one.",
   }),
   "sequence.partitionAfterImage": msg({
     context: "sequence.partitionAfterImage",
@@ -1280,6 +1288,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.phaseChangeInRepeat": msg({
     context: "sequence.phaseChangeInRepeat",
     message: "A run cannot change between Windows PE and Windows inside a repeat. Move this step, or the steps before it, out of the repeat.",
+  }),
+  "sequence.phaseValueOtherKindWarning": msg({
+    context: "sequence.phaseValueOtherKindWarning",
+    message: "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}",
   }),
   "sequence.rawImageNotStarting": msg({
     context: "sequence.rawImageNotStarting",
@@ -1315,7 +1327,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.restartWithRawImage": msg({
     context: "sequence.restartWithRawImage",
-    message: "A sequence that writes a raw disk image keeps its state in memory, so Windows PE cannot restart during it.",
+    message: "A sequence that writes a raw disk image keeps its state in memory, so the Linux boot environment cannot restart during it.",
   }),
   "sequence.runAsWindowsOnly": msg({
     context: "sequence.runAsWindowsOnly",
@@ -1327,11 +1339,11 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.scriptInterpreter": msg({
     context: "sequence.scriptInterpreter",
-    message: "Choose cmd or PowerShell.",
+    message: "Choose cmd, PowerShell or the shell.",
   }),
   "sequence.scriptPhase": msg({
     context: "sequence.scriptPhase",
-    message: "Choose Windows PE or Windows.",
+    message: "Choose where the script runs.",
   }),
   "sequence.scriptTimeout": msg({
     context: "sequence.scriptTimeout",
@@ -1377,9 +1389,21 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.sharePath",
     message: "Enter the share as \\\\host\\share, such as \\\\files.example.com\\drivers.",
   }),
+  "sequence.sharesNotInLinuxBoot": msg({
+    context: "sequence.sharesNotInLinuxBoot",
+    message: "The Linux boot environment cannot connect shares. Remove them from this step.",
+  }),
   "sequence.sharesOnlyOnSteps": msg({
     context: "sequence.sharesOnlyOnSteps",
     message: "Only a step connects shares, for as long as it runs. Give them to the steps inside that need them.",
+  }),
+  "sequence.shellExitCodes": msg({
+    context: "sequence.shellExitCodes",
+    message: "A shell script ends with an exit code from 0 to 255.",
+  }),
+  "sequence.shellNeedsLinux": msg({
+    context: "sequence.shellNeedsLinux",
+    message: "Windows PE and Windows run no shell scripts. Choose cmd or PowerShell.",
   }),
   "sequence.stepCount": msg({
     context: "sequence.stepCount",
@@ -1500,6 +1524,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.windowsPEAfterWindows": msg({
     context: "sequence.windowsPEAfterWindows",
     message: "Steps in Windows PE come first, and an earlier step already runs in Windows.",
+  }),
+  "sequence.windowsScriptInLinux": msg({
+    context: "sequence.windowsScriptInLinux",
+    message: "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment.",
   }),
   "sequence.windowsWithRawImage": msg({
     context: "sequence.windowsWithRawImage",

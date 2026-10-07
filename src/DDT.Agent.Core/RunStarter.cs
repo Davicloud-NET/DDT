@@ -46,7 +46,7 @@ internal sealed class RunStarter(
         if (run.State == DeploymentState.Assigned && run.Id == prompts.PickedWithoutErase && SequenceTree.Nodes(run.Sequence).Any(step => step.ErasesDisk))
         {
             // The picker said why when the server answered the choice.
-            await ReportAsync(machineId, tokens, run.Id, FailedRunReport.Of(RunPhases.BootOf(run.Sequence), SequencePicker.ChangedAfterChoiceMessage), cancellationToken).ConfigureAwait(false);
+            await ReportAsync(machineId, tokens, run.Id, FailedRunReport.Of(SequenceKinds.BootPhase(run.Sequence), SequencePicker.ChangedAfterChoiceMessage), cancellationToken).ConfigureAwait(false);
             prompts.PickedWithoutErase = null;
         }
         else if (run.State == DeploymentState.Assigned || resumable is not null)
@@ -59,7 +59,7 @@ internal sealed class RunStarter(
             // or its own failure report didn't get through.
             AgentRunReport report = _abandonedRun is { } abandoned && abandoned.RunId == run.Id
                 ? abandoned.Report
-                : FailedRunReport.Of(RunPhases.BootOf(run.Sequence), SequenceRunner.LostContactMessage);
+                : FailedRunReport.Of(SequenceKinds.BootPhase(run.Sequence), SequenceRunner.LostContactMessage);
 
             log.Error(report.Error!);
             await ReportAsync(machineId, tokens, run.Id, report, cancellationToken).ConfigureAwait(false);

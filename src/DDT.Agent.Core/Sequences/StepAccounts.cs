@@ -49,7 +49,7 @@ public sealed class StepAccounts(
 
         bool runsAs = step is RunScriptStep { RunAs: not null };
 
-        if (runsAs && context.Phase == SequencePhase.WindowsPE)
+        if (runsAs && SequenceKinds.IsBoot(context.Phase))
         {
             return StepResult.Failed(RunAsInWindowsPE);
         }

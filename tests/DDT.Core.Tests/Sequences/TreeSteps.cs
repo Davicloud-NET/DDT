@@ -42,6 +42,9 @@ internal static class TreeSteps
     public static RunScriptStep Script(SequencePhase phase) =>
         new() { Id = Guid.NewGuid(), Name = "Run a script", Phase = phase, Script = "exit /b 0", RebootExitCodes = [] };
 
+    // A script as a Linux sequence takes it: for the shell, in the Linux boot environment.
+    public static RunScriptStep Shell() => Script(SequencePhase.LinuxBoot) with { Interpreter = ScriptInterpreter.Shell, Script = "exit 0" };
+
     public static RebootStep Reboot() => new() { Id = Guid.NewGuid(), Name = "Restart" };
 
     public static WriteRawImageStep WriteRawImage() => new() { Id = Guid.NewGuid(), Name = "Write the raw image", ImageId = Guid.NewGuid() };

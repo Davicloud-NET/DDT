@@ -26,7 +26,7 @@ public static class RunMachine
             identity.SmbiosUuid,
             identity.MacAddresses,
             run.ComputerName,
-            RunPhases.BootOf(run.Sequence))
+            SequenceKinds.BootPhase(run.Sequence))
         {
             Facts = identity.Facts is { } facts ? WithoutPlaceholders(facts) : null,
             DeviceKind = DeviceKinds.Classify(identity.Manufacturer, identity.Model, identity.ChassisType),

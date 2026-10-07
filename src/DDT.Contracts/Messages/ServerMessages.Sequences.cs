@@ -108,15 +108,28 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate SequenceRestartWithRawImage = Define(
         "sequence.restartWithRawImage",
-        "A sequence that writes a raw disk image keeps its state in memory, so Windows PE cannot restart during it.");
+        "A sequence that writes a raw disk image keeps its state in memory, so the Linux boot environment cannot restart during it.");
 
     public static readonly MessageTemplate SequencePackageWithRawImage = Define(
         "sequence.packageWithRawImage",
-        "A sequence that writes a raw disk image has no partition to unpack a package on, so its scripts cannot have one.");
+        "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one.");
 
     public static readonly MessageTemplate SequenceWindowsWithRawImage = Define(
         "sequence.windowsWithRawImage",
         "A sequence either installs Windows or writes a raw disk image. This step belongs to installing Windows.");
+
+    public static readonly MessageTemplate SequenceWindowsScriptInLinux = Define(
+        "sequence.windowsScriptInLinux",
+        "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in " +
+        "the Linux boot environment.");
+
+    public static readonly MessageTemplate SequenceLinuxPhaseWithoutRawImage = Define(
+        "sequence.linuxPhaseWithoutRawImage",
+        "The Linux boot environment only runs sequences that write a raw disk image. Choose Windows PE or Windows.");
+
+    public static readonly MessageTemplate SequenceSharesNotInLinuxBoot = Define(
+        "sequence.sharesNotInLinuxBoot",
+        "The Linux boot environment cannot connect shares. Remove them from this step.");
 
     public static readonly MessageTemplate SequenceOneImage = Define("sequence.oneImage", "A sequence can apply only one image.");
 
@@ -206,9 +219,19 @@ public static partial class ServerMessages
         "sequence.seedFileTooLarge",
         "The {file} file can have at most {max} KiB.");
 
-    public static readonly MessageTemplate SequenceScriptPhase = Define("sequence.scriptPhase", "Choose Windows PE or Windows.");
+    public static readonly MessageTemplate SequenceScriptPhase = Define("sequence.scriptPhase", "Choose where the script runs.");
 
-    public static readonly MessageTemplate SequenceScriptInterpreter = Define("sequence.scriptInterpreter", "Choose cmd or PowerShell.");
+    public static readonly MessageTemplate SequenceScriptInterpreter = Define(
+        "sequence.scriptInterpreter",
+        "Choose cmd, PowerShell or the shell.");
+
+    public static readonly MessageTemplate SequenceShellNeedsLinux = Define(
+        "sequence.shellNeedsLinux",
+        "Windows PE and Windows run no shell scripts. Choose cmd or PowerShell.");
+
+    public static readonly MessageTemplate SequenceLinuxNeedsShell = Define(
+        "sequence.linuxNeedsShell",
+        "The Linux boot environment runs only shell scripts. Choose the shell and rewrite the script for it.");
 
     public static readonly MessageTemplate SequenceScriptEmpty = Define("sequence.scriptEmpty", "Enter the script.");
 
@@ -231,6 +254,10 @@ public static partial class ServerMessages
     public static readonly MessageTemplate SequenceExitCodeMeansBoth = Define(
         "sequence.exitCodeMeansBoth",
         "An exit code cannot mean both success and a restart: {codes}.");
+
+    public static readonly MessageTemplate SequenceShellExitCodes = Define(
+        "sequence.shellExitCodes",
+        "A shell script ends with an exit code from 0 to 255.");
 
     public static readonly MessageTemplate SequencePackageBeforePartition = Define(
         "sequence.packageBeforePartition",
@@ -291,6 +318,11 @@ public static partial class ServerMessages
     public static readonly MessageTemplate SequenceNoDomain = Define(
         "sequence.noDomainSet",
         "No domain is set on the Deployment defaults page, so the machine has no domain to join. Set one there or remove this step.");
+
+    public static readonly MessageTemplate SequencePhaseValueOtherKindWarning = Define(
+        "sequence.phaseValueOtherKindWarning",
+        "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot and never {value}.} " +
+        "other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}");
 
     public static readonly MessageTemplate SequenceNoAdministratorWarning = Define(
         "sequence.noAdministratorWarning",

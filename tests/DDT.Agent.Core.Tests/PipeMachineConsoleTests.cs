@@ -182,6 +182,8 @@ public sealed class PipeMachineConsoleTests : IAsyncDisposable
     [Fact]
     public async Task StartsTheConsoleAsAProcessWithThePipesName()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "The console that stands in here is a cmd script.");
+
         Directory.CreateDirectory(_directory);
         string arguments = Path.Combine(_directory, "arguments.txt");
         string console = Path.Combine(_directory, "console.cmd");

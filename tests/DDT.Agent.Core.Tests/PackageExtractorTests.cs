@@ -41,8 +41,6 @@ public sealed class PackageExtractorTests : IDisposable
     [InlineData("drivers/../../evil.txt")]
     [InlineData("/rooted.txt")]
     [InlineData("\\rooted.txt")]
-    [InlineData("C:/Windows/evil.txt")]
-    [InlineData("setup.cmd:hidden")]
     [InlineData("drivers//net.inf")]
     [InlineData("drivers/./net.inf")]
     [InlineData("CON")]
@@ -62,6 +60,17 @@ public sealed class PackageExtractorTests : IDisposable
 
         Assert.Equal($"The {Name} holds an entry named {entry}, which the agent does not unpack.", exception.Message);
         Assert.False(Directory.Exists(Target));
+    }
+
+    // A drive and a file's stream are names of Windows alone. Elsewhere such an entry stays in the directory.
+    [Theory]
+    [InlineData("C:/Windows/evil.txt")]
+    [InlineData("setup.cmd:hidden")]
+    public async Task RefusesADriveAndAStreamWhereWindowsReadsThem(string entry)
+    {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "Only Windows reads a drive or a stream in a file's name.");
+
+        await RefusesANameWindowsWouldNotKeepInTheDirectory(entry);
     }
 
     [Fact]

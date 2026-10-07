@@ -134,7 +134,13 @@ public sealed class PinnedRootTests
             while (!Encoding.ASCII.GetString(buffer, 0, read).Contains("\r\n\r\n", StringComparison.Ordinal))
             {
                 int received = await tls.ReadAsync(buffer.AsMemory(read), cancellationToken);
-                Assert.NotEqual(0, received);
+
+                // Not every TLS library fails the read when the agent refuses the certificate. Some only end the stream.
+                if (received == 0)
+                {
+                    return;
+                }
+
                 read += received;
             }
 

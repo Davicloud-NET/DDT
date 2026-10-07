@@ -36,6 +36,9 @@ public sealed class RunFilesTests : IDisposable
     };
 
     private readonly string _windows = Directory.CreateTempSubdirectory("ddt-run-files-").FullName;
+
+    // DDT on a Windows volume, and the root itself elsewhere.
+    private string RunDirectory => RunFiles.DirectoryIn(_windows);
     private readonly StringWriter _console = new();
     private readonly RunFiles _files;
 
@@ -56,8 +59,8 @@ public sealed class RunFilesTests : IDisposable
         await _files.SaveStateAsync(s_state, TestContext.Current.CancellationToken);
         await _files.SaveTokenAsync("run-token-1", TestContext.Current.CancellationToken);
 
-        Assert.Equal(Path.Combine(_windows, "DDT", "run", "state.json"), _files.StatePath);
-        Assert.Equal(Path.Combine(_windows, "DDT", "run", "token"), _files.TokenPath);
+        Assert.Equal(Path.Combine(RunDirectory, "run", "state.json"), _files.StatePath);
+        Assert.Equal(Path.Combine(RunDirectory, "run", "token"), _files.TokenPath);
         Assert.Equal(RunFiles.StatePathIn(_windows), _files.StatePath);
         Assert.Equal(Json(s_state), Json(await _files.LoadStateAsync(TestContext.Current.CancellationToken)));
         Assert.Equal("run-token-1", await _files.LoadTokenAsync(TestContext.Current.CancellationToken));
@@ -74,7 +77,7 @@ public sealed class RunFilesTests : IDisposable
 
         Assert.Equal(2, (await _files.LoadStateAsync(TestContext.Current.CancellationToken))?.NextIndex);
         Assert.Equal("run-token-2", await _files.LoadTokenAsync(TestContext.Current.CancellationToken));
-        Assert.Equal(["state.json", "token"], Directory.EnumerateFiles(Path.Combine(_windows, "DDT", "run")).Select(Path.GetFileName).Order());
+        Assert.Equal(["state.json", "token"], Directory.EnumerateFiles(Path.Combine(RunDirectory, "run")).Select(Path.GetFileName).Order());
     }
 
     [Fact]
@@ -155,7 +158,7 @@ public sealed class RunFilesTests : IDisposable
 
         await _files.SaveFinalReportAsync(done, TestContext.Current.CancellationToken);
 
-        Assert.Equal(Path.Combine(_windows, "DDT", "run", "final-report.json"), _files.FinalReportPath);
+        Assert.Equal(Path.Combine(RunDirectory, "run", "final-report.json"), _files.FinalReportPath);
         Assert.Equal(Json(done), Json(await _files.LoadFinalReportAsync(TestContext.Current.CancellationToken)));
     }
 
@@ -181,8 +184,8 @@ public sealed class RunFilesTests : IDisposable
 
         _files.Discard();
 
-        Assert.False(Directory.Exists(Path.Combine(_windows, "DDT", "run")));
-        Assert.True(Directory.Exists(Path.Combine(_windows, "DDT")));
+        Assert.False(Directory.Exists(Path.Combine(RunDirectory, "run")));
+        Assert.True(Directory.Exists(RunDirectory));
     }
 
     // Partition, then a repeat around a script, stopped at the script on its second pass.

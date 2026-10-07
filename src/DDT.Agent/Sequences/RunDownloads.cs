@@ -9,7 +9,13 @@ namespace DDT.Agent.Sequences;
 
 // Downloads the run's images and packages from the server by their SHA-256, and unpacks packages. tokenWait is how
 // long a download waits for the heartbeat's next token after a refused one.
-public sealed class RunDownloads(IAgentServer server, RunSession session, AgentLog log, TimeProvider timeProvider, TimeSpan tokenWait)
+public sealed class RunDownloads(
+    IAgentServer server,
+    RunSession session,
+    IFreeSpace freeSpace,
+    AgentLog log,
+    TimeProvider timeProvider,
+    TimeSpan tokenWait)
 {
     // Downloads into directory as <sha256><extension>, resuming a part file an earlier attempt left there. Returns the
     // file.
@@ -62,8 +68,7 @@ public sealed class RunDownloads(IAgentServer server, RunSession session, AgentL
                 Directory.Delete(target, recursive: true);
             }
 
-            long available = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(target))!).AvailableFreeSpace;
-            await PackageExtractor.ExtractAsync(zip, target, name, available, cancellationToken).ConfigureAwait(false);
+            await PackageExtractor.ExtractAsync(zip, target, name, freeSpace.AvailableBytes(target), cancellationToken).ConfigureAwait(false);
             log.Information($"Unpacked {name} into {target}.");
         }
         finally

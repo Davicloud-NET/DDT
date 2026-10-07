@@ -145,6 +145,7 @@ SequenceRunner runner = new SequenceRunnerBuilder
     Disks = disks,
     Partitioner = disks,
     RawDisks = new PhysicalDisks(),
+    FreeSpace = new DriveFreeSpace(),
     Applier = applier,
     PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
     BcdWriter = bcdWriter,
@@ -169,7 +170,7 @@ SequenceRunner runner = new SequenceRunnerBuilder
 HardwareMachineIdentityReader identity = new(new FirmwareTables(), new SystemHardware(), new UefiVariables(), new WindowsSecureBoot());
 AgentLoop loop = new(
     server,
-    new AgentMachine(identity, disks, new LocalRunLocator(LocalRunLocator.FixedDrives()), version, AgentEnvironment.WindowsPE),
+    new AgentMachine(identity, disks, new LocalRunLocator(WindowsFixedDrives.Roots()), version, AgentEnvironment.WindowsPE),
     status,
     runner,
     log,

@@ -100,6 +100,7 @@ public static class WindowsPhaseService
             Disks = disks,
             Partitioner = disks,
             RawDisks = new PhysicalDisks(),
+            FreeSpace = new DriveFreeSpace(),
             Applier = applier,
             PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
             BcdWriter = bcdWriter,

@@ -310,6 +310,7 @@ public sealed class DryRunResumeTests : IDisposable
             Disks = disks,
             Partitioner = disks,
             RawDisks = new FileRawDisks(_root, log),
+            FreeSpace = new DriveFreeSpace(),
             Applier = applier,
             PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
             BcdWriter = bcdWriter,
@@ -337,7 +338,7 @@ public sealed class DryRunResumeTests : IDisposable
     private SequenceEngine Engine(RunSession session, FileRunStateStore store, DryRunDiskPartitioner disk, AgentLog log)
     {
         DryRunToolRunner tools = new(log);
-        RunDownloads downloads = new(_server, session, log, _time, TimeSpan.FromSeconds(10));
+        RunDownloads downloads = new(_server, session, new DriveFreeSpace(), log, _time, TimeSpan.FromSeconds(10));
         AgentStepRunner steps = new(
             [
                 new PartitionStepRunner(disk, session, store, log, dryRun: true),

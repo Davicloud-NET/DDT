@@ -115,6 +115,7 @@ public sealed class DryRunMachine(
             Disks = disks,
             Partitioner = disks,
             RawDisks = new FileRawDisks(options.Root, log),
+            FreeSpace = new DriveFreeSpace(),
             Applier = applier,
             PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
             BcdWriter = bcdWriter,

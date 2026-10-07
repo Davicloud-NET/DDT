@@ -19,6 +19,8 @@ public sealed class SequenceRunnerBuilder
 
     public required IRawDisks RawDisks { get; init; }
 
+    public required IFreeSpace FreeSpace { get; init; }
+
     public required IImageApplier Applier { get; init; }
 
     // What the platform checks of a fresh run before anything is erased.
@@ -72,7 +74,7 @@ public sealed class SequenceRunnerBuilder
     {
         RunSession session = run.Session;
         RunHeartbeat heartbeat = run.Heartbeat;
-        RunDownloads downloads = new(Server, session, Log, TimeProvider, Options.HeartbeatInterval);
+        RunDownloads downloads = new(Server, session, FreeSpace, Log, TimeProvider, Options.HeartbeatInterval);
 
         return new AgentStepRunner(
             [

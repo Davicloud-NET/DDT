@@ -37,6 +37,7 @@ internal static class TestAgents
             Disks = tools,
             Partitioner = tools,
             RawDisks = options.RawDisks ?? new MemoryRawDisks(),
+            FreeSpace = new DriveFreeSpace(),
             Applier = tools,
             PreflightChecks = [new BootImageToolsCheck(options.SystemDirectory ?? SystemDirectory(tools)), new ImageApplierCheck(tools)],
             BcdWriter = options.BcdWriter ?? tools,

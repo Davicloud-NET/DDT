@@ -40,7 +40,7 @@ public sealed class LocalRunLocatorTests : IDisposable
     {
         string? own = Path.GetPathRoot(Environment.SystemDirectory);
 
-        Assert.DoesNotContain(own, LocalRunLocator.FixedDrives(), StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain(own, WindowsFixedDrives.Roots(), StringComparer.OrdinalIgnoreCase);
     }
 
     private string Drive(string letter, DateTime written)

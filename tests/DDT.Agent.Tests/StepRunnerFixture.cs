@@ -50,7 +50,7 @@ internal sealed class StepRunnerFixture : IDisposable
             TrustedUefiCas = secureBoot.TrustedUefiCas,
         };
         Store = new FileRunStateStore(Session.Tokens);
-        Downloads = new RunDownloads(Server, Session, Log, Time, TimeSpan.FromSeconds(10));
+        Downloads = new RunDownloads(Server, Session, new DriveFreeSpace(), Log, Time, TimeSpan.FromSeconds(10));
         Directory.CreateDirectory(WorkDirectory);
     }
 

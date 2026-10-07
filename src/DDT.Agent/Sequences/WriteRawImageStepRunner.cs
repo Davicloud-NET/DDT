@@ -15,8 +15,8 @@ namespace DDT.Agent.Sequences;
 // partition table is written last, with the backup at this disk's end. An image the machine's Secure Boot wouldn't
 // start is refused first.
 public sealed class WriteRawImageStepRunner(
-    IDiskPartitioner partitioner,
-    IRawDisks disks,
+    IDisks disks,
+    IRawDisks rawDisks,
     RunDownloads downloads,
     RunSession session,
     AgentLog log) : IStepKindRunner<WriteRawImageStep>
@@ -39,8 +39,8 @@ public sealed class WriteRawImageStepRunner(
             throw new DeploymentStepException(refusal);
         }
 
-        IReadOnlyList<Guid> erased = await partitioner.CleanAsync(disk, cancellationToken).ConfigureAwait(false);
-        using IRawDisk raw = disks.Open(disk);
+        IReadOnlyList<Guid> erased = await disks.CleanAsync(disk, cancellationToken).ConfigureAwait(false);
+        using IRawDisk raw = rawDisks.Open(disk);
 
         if (raw.SectorSize != GptLayout.SectorSize)
         {

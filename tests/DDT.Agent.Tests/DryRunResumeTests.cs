@@ -300,12 +300,14 @@ public sealed class DryRunResumeTests : IDisposable
     private SequenceRunner Runner(AgentLog log)
     {
         DryRunToolRunner tools = new(log);
+        DryRunDiskPartitioner disks = new(_root, log);
         DryRunBcdWriter bcdWriter = new(log);
 
         return new SequenceRunnerBuilder
         {
             Server = _server,
-            Partitioner = new DryRunDiskPartitioner(_root, log),
+            Disks = disks,
+            Partitioner = disks,
             RawDisks = new FileRawDisks(_root, log),
             Applier = new DryRunImageApplier(log),
             BcdWriter = bcdWriter,

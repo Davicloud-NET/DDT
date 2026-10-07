@@ -14,6 +14,8 @@ public sealed class SequenceRunnerBuilder
 {
     public required IAgentServer Server { get; init; }
 
+    public required IDisks Disks { get; init; }
+
     public required IDiskPartitioner Partitioner { get; init; }
 
     public required IRawDisks RawDisks { get; init; }
@@ -50,7 +52,7 @@ public sealed class SequenceRunnerBuilder
     {
         RunBootOrder bootOrder = new(BcdWriter, BootOrder, RestartMarker, Log);
         RunEnding ending = new(bootOrder, Rebooter, RestartMarker, Log, TimeProvider, Status);
-        RunPreflight preflight = new(Server, new RunDiskChoice(Partitioner, RawDisks), Applier, Log, TimeProvider, Options.SystemDirectory);
+        RunPreflight preflight = new(Server, new RunDiskChoice(Disks, RawDisks), Applier, Log, TimeProvider, Options.SystemDirectory);
         RunInputsWait inputs = new(Server, Status?.Console, Log, TimeProvider);
 
         return new SequenceRunner(
@@ -78,7 +80,7 @@ public sealed class SequenceRunnerBuilder
                 new WriteUnattendStepRunner(Server, session, heartbeat.ReportNowAsync, Log, TimeProvider),
                 new JoinDomainStepRunner(Joiner, Server, session, heartbeat.ReportNowAsync, Log, TimeProvider),
                 new RunScriptStepRunner(Tools, downloads, session, Log, Options.WorkDirectory),
-                new WriteRawImageStepRunner(Partitioner, RawDisks, downloads, session, Log),
+                new WriteRawImageStepRunner(Disks, RawDisks, downloads, session, Log),
                 new WriteCloudInitSeedStepRunner(RawDisks, session, Log, TimeProvider),
                 new PauseStepRunner(heartbeat, Status?.Console, Log, TimeProvider),
             ],

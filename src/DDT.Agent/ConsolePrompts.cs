@@ -12,7 +12,7 @@ namespace DDT.Agent;
 
 // The questions the machine asks at its console while it polls: the sign-in, and which sequence and disk to pick.
 // Only reading the keyboard runs alongside polling. The loop sends the answer to the server.
-internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, IDiskPartitioner disks, AgentLog log, AgentRegistrar registrar)
+internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, IDisks disks, AgentLog log, AgentRegistrar registrar)
 {
     private SignInConversation _conversation = new(status.Console, log);
     private SequencePicker _picker = new(status.Console, log);

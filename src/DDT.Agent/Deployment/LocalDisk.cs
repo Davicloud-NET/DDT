@@ -10,6 +10,9 @@ namespace DDT.Agent.Deployment;
 // A disk DDT could install on. Number is the N of \\.\PhysicalDriveN, which is also diskpart's disk number.
 public sealed record LocalDisk(int Number, string? Model, long SizeBytes, StorageBusType BusType, int PartitionCount)
 {
+    // The disk's device, such as /dev/nvme0n1, where disks have names. Null where the number is all there is.
+    public string? Device { get; init; }
+
     public string DisplayModel => DisplayModelOf(Model);
 
     public AgentDisk ToAgentDisk() => new(Number, Model, SizeBytes, BusType.ToString(), PartitionCount);
@@ -21,10 +24,15 @@ public sealed record LocalDisk(int Number, string? Model, long SizeBytes, Storag
     {
         ArgumentNullException.ThrowIfNull(other);
 
-        return Number == other.Number && Model == other.Model && SizeBytes == other.SizeBytes && BusType == other.BusType;
+        return Number == other.Number && Model == other.Model && SizeBytes == other.SizeBytes && BusType == other.BusType && Device == other.Device;
     }
 
-    public string Describe() => Describe(Number, Model, SizeBytes, BusType.ToString(), PartitionCount);
+    public string Describe()
+    {
+        string disk = Describe(Number, Model, SizeBytes, BusType.ToString(), PartitionCount);
+
+        return Device is null ? disk : $"{disk}, {Device}";
+    }
 
     // How the text console lists a disk. The text console only knows the disk as the console protocol describes it.
     public static string Describe(int number, string? model, long sizeBytes, string busType, int partitionCount) =>

@@ -111,6 +111,7 @@ public sealed class DryRunMachine(
         return new SequenceRunnerBuilder
         {
             Server = runServer,
+            Disks = disks,
             Partitioner = disks,
             RawDisks = new FileRawDisks(options.Root, log),
             Applier = new DryRunImageApplier(log),

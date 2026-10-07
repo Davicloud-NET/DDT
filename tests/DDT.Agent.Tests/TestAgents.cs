@@ -34,6 +34,7 @@ internal static class TestAgents
         return new SequenceRunnerBuilder
         {
             Server = server,
+            Disks = tools,
             Partitioner = tools,
             RawDisks = options.RawDisks ?? new MemoryRawDisks(),
             Applier = tools,

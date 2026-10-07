@@ -8,7 +8,7 @@ namespace DDT.Agent.Deployment;
 
 // Stands in for a disk with three directories under root, which the runner deletes when the run ends. The partitions
 // always have the same ids: SystemPartitionId, WindowsPartitionId and RecoveryPartitionId.
-public sealed class DryRunDiskPartitioner(string root, AgentLog log) : IDiskPartitioner
+public sealed class DryRunDiskPartitioner(string root, AgentLog log) : IDisks, IDiskPartitioner
 {
     public static readonly Guid SystemPartitionId = Guid.Parse("d7c1a5e0-0000-4000-8000-000000000001");
     public static readonly Guid WindowsPartitionId = Guid.Parse("d7c1a5e0-0000-4000-8000-000000000002");

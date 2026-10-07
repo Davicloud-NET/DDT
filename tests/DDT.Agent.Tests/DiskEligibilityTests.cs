@@ -153,6 +153,16 @@ public sealed class DiskEligibilityTests
         Assert.Equal("Disk 1: Test disk, 256 GB, Nvme, 3 partitions", disk.Describe());
     }
 
+    [Fact]
+    public void ADiskWithADeviceShowsItAndIsToldApartByIt()
+    {
+        LocalDisk disk = new(1, "Test disk", Large, StorageBusType.Nvme, 3) { Device = "/dev/nvme0n1" };
+
+        Assert.Equal("Disk 1: Test disk, 256 GB, Nvme, 3 partitions, /dev/nvme0n1", disk.Describe());
+        Assert.True(disk.IsSameDiskAs(disk with { PartitionCount = 0 }));
+        Assert.False(disk.IsSameDiskAs(disk with { Device = "/dev/nvme1n1" }));
+    }
+
     private static byte[] Layout(int style, params (int Number, byte MbrType)[] entries)
     {
         byte[] layout = new byte[DriveLayoutReader.HeaderLength + (entries.Length * DriveLayoutReader.EntryLength)];

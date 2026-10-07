@@ -140,6 +140,7 @@ BcdbootWriter bcdWriter = new(tools, firmware, log);
 SequenceRunner runner = new SequenceRunnerBuilder
 {
     Server = server,
+    Disks = disks,
     Partitioner = disks,
     RawDisks = new PhysicalDisks(),
     Applier = new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log")),

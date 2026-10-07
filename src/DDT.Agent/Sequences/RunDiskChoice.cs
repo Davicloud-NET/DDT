@@ -10,11 +10,11 @@ using DDT.Core.Disks;
 namespace DDT.Agent.Sequences;
 
 // Picks the disk a fresh run erases, and checks it against the run before anything on it is erased.
-internal sealed class RunDiskChoice(IDiskPartitioner partitioner, IRawDisks rawDisks)
+internal sealed class RunDiskChoice(IDisks machineDisks, IRawDisks rawDisks)
 {
     public async Task<LocalDisk> ChooseAsync(AgentRun run, LocalDisk? confirmedDisk, RunInventory inventory, CancellationToken cancellationToken)
     {
-        IReadOnlyList<LocalDisk> disks = await partitioner.ListDisksAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<LocalDisk> disks = await machineDisks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
         LocalDisk disk = Select(run.DiskNumber, confirmedDisk, disks);
         IReadOnlyList<SequenceStep> steps = inventory.Steps;
         IReadOnlyList<AgentRunImage> rawImages = inventory.RawImages;

@@ -14,7 +14,7 @@ namespace DDT.Agent.Sequences;
 // anything changes on any disk. A resumed run is running already, and its first beat says where it is.
 internal sealed class RunStart(
     RunPreflight preflight,
-    IDiskPartitioner partitioner,
+    IDiskPartitioner? partitioner,
     RunEnding ending,
     ConsoleStatus? status,
     AgentLog log,
@@ -105,7 +105,7 @@ internal sealed class RunStart(
         {
             run.Session.RunningWindows = resumed.WindowsRoot;
         }
-        else if (RunVariables.DiskIds(resumed.State.Variables) is { } ids)
+        else if (partitioner is not null && RunVariables.DiskIds(resumed.State.Variables) is { } ids)
         {
             run.Session.Volumes = await partitioner.FindAsync(ids, resumed.WindowsRoot, cancellationToken).ConfigureAwait(false);
         }

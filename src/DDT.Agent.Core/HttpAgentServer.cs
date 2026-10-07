@@ -100,6 +100,14 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             AgentJsonContext.Default.AgentRun,
             cancellationToken);
 
+    public async Task RequestEnvironmentAsync(Guid machineId, string token, AgentEnvironmentRequest request, CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage message = Request(HttpMethod.Post, AgentRoutes.Environment(machineId), token);
+        message.Content = JsonContent.Create(request, AgentJsonContext.Default.AgentEnvironmentRequest);
+
+        using HttpResponseMessage response = await SendAsync(message, cancellationToken).ConfigureAwait(false);
+    }
+
     public Task<AgentRunReportResult> ReportRunAsync(Guid machineId, string token, Guid runId, AgentRunReport report, CancellationToken cancellationToken) =>
         PostAsync(
             AgentRoutes.RunReport(machineId, runId),

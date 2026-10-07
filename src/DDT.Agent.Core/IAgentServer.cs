@@ -35,6 +35,10 @@ public interface IAgentServer
     // Starts the sequence the technician picked at the machine.
     Task<AgentRun> PickSequenceAsync(Guid machineId, string token, AgentRunRequest request, CancellationToken cancellationToken);
 
+    // Says that the machine restarts into the other boot environment, for the sequence picked at it. The server
+    // refuses it unless someone who may pick is signed in at the machine.
+    Task RequestEnvironmentAsync(Guid machineId, string token, AgentEnvironmentRequest request, CancellationToken cancellationToken);
+
     Task<AgentRunReportResult> ReportRunAsync(Guid machineId, string token, Guid runId, AgentRunReport report, CancellationToken cancellationToken);
 
     // Sends the answers typed at the machine for the inputs a run waits for at its start. The answer to an Account

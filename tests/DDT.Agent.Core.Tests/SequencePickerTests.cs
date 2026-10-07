@@ -44,6 +44,17 @@ public sealed class SequencePickerTests
         RequiredBytes: 0,
         Suggested: false);
 
+    // Starts in the Linux boot environment, so a machine in Windows PE restarts for it.
+    private static readonly AgentSequenceChoice s_ubuntu = new(
+        Guid.Parse("0193a4b2-0000-7000-8000-00000000e004"),
+        "Install Ubuntu",
+        "Ubuntu 24.04 for the lab",
+        ErasesDisk: true,
+        NeedsComputerName: true,
+        RequiredBytes: 4L * 1024 * 1024 * 1024,
+        Suggested: false,
+        Environment: AgentEnvironment.LinuxBoot);
+
     [Fact]
     public async Task PicksASequenceForTheOnlyDiskAfterErase()
     {
@@ -333,6 +344,58 @@ public sealed class SequencePickerTests
         Assert.Equal(2, console.Questions.Count(question => question is EraseQuestion));
         Assert.DoesNotContain("Pa55-word", lines.ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain("LNZ", lines.ToString(), StringComparison.Ordinal);
+    }
+
+    // The text console has the note in the option's text. Nothing is asked here: the disk, the name and ERASE are asked
+    // where the sequence runs, after the restart.
+    [Fact]
+    public async Task ASequenceOfTheOtherBootEnvironmentSaysThatTheMachineRestartsFirstAndAsksNothingHere()
+    {
+        (SequencePicker picker, ScriptedSignInPrompt prompt, StringWriter console) = Create(
+            [s_install with { Environment = AgentEnvironment.WindowsPE }, s_ubuntu, s_ubuntu with { Id = Guid.NewGuid(), Name = "Install Debian", Description = null }],
+            [FakeDeploymentTools.Disk(0), FakeDeploymentTools.Disk(1)],
+            "2");
+
+        ConsoleAnswer? answer = await picker.ReadAsync(TestContext.Current.CancellationToken);
+
+        Assert.Null(picker.Accept(Assert.IsType<ConsoleAnswer>(answer)));
+        Assert.Equal(new AgentEnvironmentRequest(AgentEnvironment.LinuxBoot, s_ubuntu.Id), picker.TakeRestart());
+        Assert.Null(picker.TakeRestart());
+        Assert.Equal(["Sequence number"], prompt.Labels);
+        Assert.Null(picker.ChosenDisk);
+        Assert.True(picker.IsOffered);
+        Assert.Equal(
+            [
+                "  1. Install Windows 11 (erases a disk, needs 30 GB): Windows 11 Pro with the office drivers",
+                "  2. Install Ubuntu (erases a disk, needs 4 GB): The machine restarts into the Linux boot environment first. Ubuntu 24.04 for the lab",
+                "  3. Install Debian (erases a disk, needs 4 GB): The machine restarts into the Linux boot environment first.",
+            ],
+            Lines(console).Where(line => line.Contains(". Install ", StringComparison.Ordinal)).Select(line => line[15..]));
+    }
+
+    // The other boot environment reads the disks itself, and may find one where this one found none.
+    [Fact]
+    public void ASequenceOfTheOtherBootEnvironmentIsOfferedEvenWhereNoDiskWasFound()
+    {
+        (SequencePicker picker, _, _) = Create([s_install, s_ubuntu], []);
+
+        Assert.True(picker.IsOffered);
+    }
+
+    [Fact]
+    public async Task WhereItStartsTheSameSequenceAsksWhatItNeeds()
+    {
+        using StringWriter console = new();
+        ScriptedSignInPrompt prompt = new("1", "LINUX-01", "ERASE");
+        AgentLog log = new(new ImmediateTimeProvider(), console);
+        SequencePicker picker = new(new TextMachineConsole(prompt, log), log, AgentEnvironment.LinuxBoot);
+        picker.Offer([s_ubuntu], [FakeDeploymentTools.Disk(0)]);
+
+        AgentRunRequest? request = await AnswerAllAsync(picker);
+
+        Assert.Equal(new AgentRunRequest(s_ubuntu.Id, 0, "LINUX-01"), request);
+        Assert.Null(picker.TakeRestart());
+        Assert.Contains(console.ToString().Split(Environment.NewLine), line => line.EndsWith("  1. Install Ubuntu (erases a disk, needs 4 GB): Ubuntu 24.04 for the lab", StringComparison.Ordinal));
     }
 
     [Fact]

@@ -15,8 +15,8 @@ namespace DDT.Agent.Sequences;
 
 // What the technician signed in at the machine has chosen so far: a sequence, then only the questions it needs, up to
 // ERASE and ANYWAY. The answers to the inputs, passwords included, are forgotten once sent or when the picker starts
-// over.
-public sealed class SequencePicker(IMachineConsole console, AgentLog log)
+// over. A sequence that starts in the other boot environment asks nothing here: the machine restarts first.
+public sealed class SequencePicker(IMachineConsole console, AgentLog log, AgentEnvironment environment = AgentEnvironment.WindowsPE)
 {
     public const string ConfirmationWord = "ERASE";
 
@@ -39,6 +39,7 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
     private bool? _secureBootEnabled;
     private UefiCa? _trustedUefiCas;
     private bool _allowSecureBootMismatch;
+    private AgentEnvironmentRequest? _restart;
 
     public bool IsAvailable => console.CanAsk;
 
@@ -59,7 +60,8 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
         ArgumentNullException.ThrowIfNull(sequences);
         ArgumentNullException.ThrowIfNull(disks);
 
-        AgentSequenceChoice[] runnable = [.. sequences.Where(sequence => !sequence.ErasesDisk || disks.Count > 0)];
+        // The other boot environment reads the disks itself, so its sequences do not depend on those found here.
+        AgentSequenceChoice[] runnable = [.. sequences.Where(sequence => Elsewhere(sequence) is not null || !sequence.ErasesDisk || disks.Count > 0)];
 
         if (runnable.Length == 0)
         {
@@ -88,6 +90,16 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
         _secureBootEnabled = null;
         _trustedUefiCas = null;
         _allowSecureBootMismatch = false;
+        _restart = null;
+    }
+
+    // The restart into the other boot environment that the sequence just chosen needs, once. Null when it needs none.
+    public AgentEnvironmentRequest? TakeRestart()
+    {
+        AgentEnvironmentRequest? restart = _restart;
+        _restart = null;
+
+        return restart;
     }
 
     public Task<ConsoleAnswer?> ReadAsync(CancellationToken cancellationToken) => _question switch
@@ -188,6 +200,14 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
         if (_sequences.FirstOrDefault(candidate => candidate.Id == answer.SequenceId) is not { } sequence)
         {
             log.Warning("Choose one of the sequences shown.");
+
+            return null;
+        }
+
+        // Its disk, its name and its inputs are asked where it runs, after the restart.
+        if (Elsewhere(sequence) is { } starts)
+        {
+            _restart = new AgentEnvironmentRequest(starts, sequence.Id);
 
             return null;
         }
@@ -351,10 +371,20 @@ public sealed class SequencePicker(IMachineConsole console, AgentLog log)
         && _secureBootEnabled == true
         && MicrosoftUefiCa.Untrusted(_trustedUefiCas, sequence.RawImageSignedUnder);
 
+    // The boot environment the sequence starts in, when that is not the one this machine started.
+    private AgentEnvironment? Elsewhere(AgentSequenceChoice sequence) =>
+        sequence.Environment is { } starts && starts != environment ? starts : null;
+
+    // The console has no place of its own for it yet, so the description says that the machine restarts first.
+    private string? Description(AgentSequenceChoice sequence) =>
+        Elsewhere(sequence) is { } starts
+            ? $"The machine restarts into {AgentEnvironments.Name(starts)} first. {sequence.Description}".TrimEnd()
+            : sequence.Description;
+
     private SequenceOption Option(AgentSequenceChoice sequence) => new(
         sequence.Id,
         sequence.Name,
-        sequence.Description,
+        Description(sequence),
         sequence.Suggested,
         sequence.ErasesDisk,
         sequence.NeedsComputerName,

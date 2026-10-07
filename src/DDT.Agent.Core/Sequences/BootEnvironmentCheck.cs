@@ -15,8 +15,8 @@ public sealed class BootEnvironmentCheck(AgentEnvironment environment) : IPrefli
 
     public static string Message(SequenceKind kind, AgentEnvironment started) =>
         kind == SequenceKind.Linux
-            ? $"This sequence writes a raw disk image, which only the Linux boot environment does, and this machine started {Name(started)}. Nothing was erased."
-            : $"This sequence installs Windows, which only Windows PE does, and this machine started {Name(started)}. Nothing was erased.";
+            ? $"This sequence writes a raw disk image, which only the Linux boot environment does, and this machine started {AgentEnvironments.Name(started)}. Nothing was erased."
+            : $"This sequence installs Windows, which only Windows PE does, and this machine started {AgentEnvironments.Name(started)}. Nothing was erased.";
 
     public void Check(IReadOnlyList<SequenceStep> steps)
     {
@@ -29,11 +29,4 @@ public sealed class BootEnvironmentCheck(AgentEnvironment environment) : IPrefli
             throw new DeploymentStepException(Message(kind, environment));
         }
     }
-
-    private static string Name(AgentEnvironment started) => started switch
-    {
-        AgentEnvironment.WindowsPE => "Windows PE",
-        AgentEnvironment.LinuxBoot => "the Linux boot environment",
-        _ => "the installed Windows",
-    };
 }

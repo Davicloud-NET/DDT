@@ -36,9 +36,9 @@ AgentStartup startup = new(new AgentPlatform
 
 return await startup.RunAsync(args).ConfigureAwait(false);
 
-// A dry run does the whole run in this process, in Windows PE unless it is asked for the Linux boot environment. A
-// directory stands in for the machine's disk and holds the run until it ends. The Windows phase reaches the server
-// with the agent.json that the hand-over staged.
+// A dry run does the whole run in this process, in Windows PE unless it is asked for the Linux boot environment, and
+// in the other one once its agent restarts into it. A directory stands in for the machine's disk and holds the run
+// until it ends. The Windows phase reaches the server with the agent.json that the hand-over staged.
 static Task<int> DryRunAsync(StartedAgent agent, CancellationToken cancellationToken)
 {
     DryRunMachineOptions options = new(
@@ -48,18 +48,7 @@ static Task<int> DryRunAsync(StartedAgent agent, CancellationToken cancellationT
         RunHeartbeat.DefaultInterval,
         agent.Version);
 
-    if (agent.Options.DryRunEnvironment == AgentEnvironment.LinuxBoot)
-    {
-        LinuxBootDryRun linux = new(options, agent.Server, agent.Status, agent.Log, TimeProvider.System)
-        {
-            FreeSpace = new DriveFreeSpace(),
-            MakeSparse = SparseFile.Make,
-        };
-
-        return linux.RunAsync(cancellationToken);
-    }
-
-    DryRunMachine machine = new(
+    DryRunBoot machine = new(
         options,
         agent.Server,
         staged => new HttpAgentServer(staged.ServerUrl, staged.RootCertificate),
@@ -78,6 +67,7 @@ static Task<int> RunAsync(StartedAgent agent, CancellationToken cancellationToke
     UefiVariables firmware = new();
     DiskpartPartitioner disks = new(tools, log, TimeProvider.System, AppContext.BaseDirectory);
     BcdbootWriter bcdWriter = new(tools, firmware, log);
+    WindowsPERebooter rebooter = new(tools, firmware, log);
     WimImageApplier applier = new(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log"));
     SequenceRunnerOptions runnerOptions = new(RunHeartbeat.DefaultInterval, AppContext.BaseDirectory, DryRun: false);
     SequenceRunner runner = new SequenceRunnerBuilder
@@ -105,7 +95,7 @@ static Task<int> RunAsync(StartedAgent agent, CancellationToken cancellationToke
         },
         BcdWriter = bcdWriter,
         BootOrder = bcdWriter,
-        Rebooter = new WindowsPERebooter(tools, firmware, log),
+        Rebooter = rebooter,
         RestartMarker = new FileRestartMarker(AppContext.BaseDirectory, log, dryRun: false),
         HandOver = HandOver(agent, tools),
         Log = log,
@@ -114,19 +104,22 @@ static Task<int> RunAsync(StartedAgent agent, CancellationToken cancellationToke
         Status = status,
         AccountTools = WindowsAccountTools.Create(log),
     }.Build();
-    HardwareMachineIdentityReader identity = new(new FirmwareTables(), new SystemHardware(), new UefiVariables(), new WindowsSecureBoot());
-    AgentLoop loop = new(
-        server,
-        new AgentMachine(identity, disks, new LocalRunLocator(WindowsFixedDrives.Roots()), version, AgentEnvironment.WindowsPE),
-        status,
-        runner,
-        log,
-        TimeProvider.System)
+    AgentMachine machine = Machine(disks, new EnvironmentSwitch(new ResumeCarrier(firmware, AgentEnvironment.WindowsPE, log), rebooter), version);
+    AgentLoop loop = new(server, machine, status, runner, log, TimeProvider.System)
     {
         Logo = graphical is null ? null : new ConsoleLogo(server, status, AppContext.BaseDirectory, log),
     };
 
     return loop.RunAsync(cancellationToken);
+}
+
+// The machine as the loop sees it. Its resume token crosses a restart into the Linux boot environment in the firmware,
+// and comes back the same way.
+static AgentMachine Machine(DiskpartPartitioner disks, EnvironmentSwitch change, string version)
+{
+    HardwareMachineIdentityReader identity = new(new FirmwareTables(), new SystemHardware(), new UefiVariables(), new WindowsSecureBoot());
+
+    return new(identity, disks, new LocalRunLocator(WindowsFixedDrives.Roots()), version, AgentEnvironment.WindowsPE) { Switch = change };
 }
 
 // The agent.json it stages into Windows only holds what it takes to reach the server.

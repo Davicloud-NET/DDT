@@ -12,8 +12,8 @@ using DDT.Contracts.Machines;
 
 namespace DDT.Agent;
 
-// The agent in WinPE. It registers the machine, polls until it may run a task sequence, and runs it. After a restart
-// it continues the run it finds on disk, as long as the server still has that run going.
+// The agent in a boot environment. It registers the machine, polls until it may run a task sequence, and runs it.
+// After a restart it continues the run it finds on disk, as long as the server still has that run going.
 public sealed class AgentLoop
 {
     private readonly IAgentServer _server;
@@ -26,6 +26,7 @@ public sealed class AgentLoop
     private readonly LocalRunTracker _runs;
     private readonly ConsolePrompts _prompts;
     private readonly RunStarter _runStarter;
+    private readonly BootSwitch _bootSwitch;
 
     // The tokens that every registration, poll, report and run renews. The next registration sends their resume token.
     private DeploymentTokens? _tokens;
@@ -44,7 +45,8 @@ public sealed class AgentLoop
         _timeProvider = timeProvider;
         _registrar = new AgentRegistrar(server, machine, status, log, timeProvider);
         _runs = new LocalRunTracker(machine.Runs, log);
-        _prompts = new ConsolePrompts(server, status, machine.Disks, log, _registrar);
+        _bootSwitch = new BootSwitch(server, machine, status, log);
+        _prompts = new ConsolePrompts(server, status, machine, log, _registrar, _bootSwitch);
         _runStarter = new RunStarter(server, runner, _runs, _prompts, _registrar, log);
     }
 
@@ -131,7 +133,8 @@ public sealed class AgentLoop
             return null;
         }
 
-        string? resumeToken = _tokens?.ResumeToken is { Length: > 0 } resume ? resume : null;
+        // An agent that just started has no token of its own, but the one before a restart may have left it one.
+        string? resumeToken = _tokens?.ResumeToken is { Length: > 0 } resume ? resume : _bootSwitch.TakeCarried();
         AgentRegistrationResult? registration = await _registrar.RegisterAsync(resumeToken, _runs.RunToken, cancellationToken).ConfigureAwait(false);
 
         if (registration is null)
@@ -241,6 +244,12 @@ public sealed class AgentLoop
             await _prompts.StopTypingAsync().ConfigureAwait(false);
         }
 
+        // The machine's run starts in the other boot environment, so nothing more happens here.
+        if (next.RestartInto is { } target && IsAuthorized(poll.State) && await RestartIntoAsync(poll, target, cancellationToken).ConfigureAwait(false))
+        {
+            return RunOutcome.Restarting;
+        }
+
         if (await _runStarter.HandleAsync(poll.MachineId, poll.Tokens, run, cancellationToken).ConfigureAwait(false) is { } outcome)
         {
             return outcome;
@@ -322,9 +331,14 @@ public sealed class AgentLoop
     {
         try
         {
-            await _prompts.SendAsync(poll.MachineId, poll.Tokens.Token, answer, cancellationToken).ConfigureAwait(false);
+            if (!await _prompts.SendAsync(poll.MachineId, poll.Tokens, answer, cancellationToken).ConfigureAwait(false))
+            {
+                return PollStep.Wait;
+            }
 
-            return PollStep.Wait;
+            await FlushAsync(poll, cancellationToken).ConfigureAwait(false);
+
+            return PollStep.End(AgentExitCodes.Restarting);
         }
         catch (AgentTokenRejectedException)
         {
@@ -336,6 +350,19 @@ public sealed class AgentLoop
         {
             return PollStep.End(AgentExitCodes.Stopped);
         }
+    }
+
+    // The prompt lets go of the console first, and the server gets the log's last lines, which say why it restarts.
+    private async Task<bool> RestartIntoAsync(PollState poll, AgentEnvironment target, CancellationToken cancellationToken)
+    {
+        if (!await _bootSwitch.RestartForRunAsync(target, poll.Tokens, _prompts.StopTypingAsync, cancellationToken).ConfigureAwait(false))
+        {
+            return false;
+        }
+
+        await FlushAsync(poll, cancellationToken).ConfigureAwait(false);
+
+        return true;
     }
 
     // Any failure except a refused token keeps the lines queued for the next attempt, without a warning.
@@ -359,23 +386,6 @@ public sealed class AgentLoop
         MachineState.Approved => "approved, waiting for a task sequence",
         _ => state.ToString(),
     };
-
-    // The polling state of one registration. It holds the machine's tokens, its state and sign-in as the server last
-    // reported them, and when to poll next.
-    private sealed class PollState(AgentRegistrationResult registration, DeploymentTokens tokens)
-    {
-        public Guid MachineId { get; } = registration.MachineId;
-
-        public DeploymentTokens Tokens { get; } = tokens;
-
-        public MachineState State { get; set; } = registration.State;
-
-        public string? SignedInBy { get; set; } = registration.SignedInBy;
-
-        public TimeSpan Interval { get; set; } = TimeSpan.FromSeconds(registration.PollAfterSeconds);
-
-        public int Failures { get; set; }
-    }
 
     // What polling does next. It waits for the next poll, polls again right away, or ends with ExitCode.
     // A null ExitCode means register again.

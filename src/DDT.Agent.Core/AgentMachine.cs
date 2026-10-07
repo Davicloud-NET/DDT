@@ -14,4 +14,8 @@ public sealed record AgentMachine(
     IDisks Disks,
     LocalRunLocator Runs,
     string AgentVersion,
-    AgentEnvironment Environment);
+    AgentEnvironment Environment)
+{
+    // How the machine gets into the other boot environment. Null where nothing restarts it for that.
+    public EnvironmentSwitch? Switch { get; init; }
+}

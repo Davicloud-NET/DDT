@@ -23,6 +23,7 @@ internal sealed class ScriptedAgentServer : IAgentServer
     private readonly Dictionary<string, byte[]> _consoleFiles = new(StringComparer.Ordinal);
     private readonly Queue<Func<IReadOnlyList<AgentSequenceChoice>>> _sequences = new();
     private readonly Queue<Func<AgentRunRequest, AgentRun>> _sequencePicks = new();
+    private readonly Queue<Action<AgentEnvironmentRequest>> _environments = new();
     private readonly Dictionary<DeploymentState, Queue<Func<AgentRunReport, AgentRunReportResult>>> _runReports = [];
     private readonly Queue<Func<string, long?>> _fileHeads = new();
     private readonly Queue<Func<string, long, AgentImageStream>> _fileOpens = new();
@@ -79,6 +80,8 @@ internal sealed class ScriptedAgentServer : IAgentServer
 
     public List<AgentRunRequest> RunRequests { get; } = [];
 
+    public List<AgentEnvironmentRequest> EnvironmentRequests { get; } = [];
+
     // Answers every run report when set, ahead of the scripts.
     public Func<AgentRunReport, string, AgentRunReportResult>? AnswerRunReports { get; set; }
 
@@ -113,6 +116,9 @@ internal sealed class ScriptedAgentServer : IAgentServer
     public ScriptedAgentServer OnSequences(Func<IReadOnlyList<AgentSequenceChoice>> response) => Enqueue(_sequences, response);
 
     public ScriptedAgentServer OnPickSequence(Func<AgentRunRequest, AgentRun> response) => Enqueue(_sequencePicks, response);
+
+    // The answer to a machine that says it restarts into the other boot environment. It may throw to refuse it.
+    public ScriptedAgentServer OnEnvironment(Action<AgentEnvironmentRequest> action) => Enqueue(_environments, action);
 
     // Receives the SHA-256 asked for.
     public ScriptedAgentServer OnHeadRunFile(Func<string, long?> response) => Enqueue(_fileHeads, response);
@@ -296,6 +302,21 @@ internal sealed class ScriptedAgentServer : IAgentServer
         }
 
         return Answer($"pick-sequence {token}", _sequencePicks, response => response(request));
+    }
+
+    public Task RequestEnvironmentAsync(Guid machineId, string token, AgentEnvironmentRequest request, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            EnvironmentRequests.Add(request);
+        }
+
+        return Answer($"environment {token}", _environments, action =>
+        {
+            action(request);
+
+            return true;
+        });
     }
 
     public Task<AgentRunReportResult> ReportRunAsync(

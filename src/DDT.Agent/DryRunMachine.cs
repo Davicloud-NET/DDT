@@ -25,6 +25,11 @@ public sealed class DryRunMachine(
 {
     private string Windows => Path.Combine(options.Root, "W");
 
+    // What stands in for the machine's firmware variables, where its resume token crosses a restart into the Linux
+    // boot environment. Without it the fake machine cannot change its boot environment.
+    public IVendorVariables? Firmware { get; init; }
+
+    // Ends when the run does, and when the agent restarts into the Linux boot environment, which is not played here.
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
         while (true)
@@ -34,7 +39,7 @@ public sealed class DryRunMachine(
                 ? await RunWindowsAsync(cancellationToken).ConfigureAwait(false)
                 : await RunWindowsPEAsync(cancellationToken).ConfigureAwait(false);
 
-            if (exitCode != AgentExitCodes.Restarting || cancellationToken.IsCancellationRequested)
+            if (exitCode != AgentExitCodes.Restarting || cancellationToken.IsCancellationRequested || RestartsElsewhere())
             {
                 return exitCode;
             }
@@ -46,8 +51,12 @@ public sealed class DryRunMachine(
     private Task<int> RunWindowsPEAsync(CancellationToken cancellationToken)
     {
         DryRunDiskPartitioner disks = new(options.Root, log);
-        SequenceRunner runner = Runner(server, disks, new DryRunToolRunner(log), new DryRunRebooter(log), SequencePhase.WindowsPE);
-        AgentMachine machine = new(Identity(), disks, new LocalRunLocator([Windows]), options.AgentVersion, AgentEnvironment.WindowsPE);
+        DryRunRebooter rebooter = new(log);
+        SequenceRunner runner = Runner(server, disks, new DryRunToolRunner(log), rebooter, SequencePhase.WindowsPE);
+        AgentMachine machine = new(Identity(), disks, new LocalRunLocator([Windows]), options.AgentVersion, AgentEnvironment.WindowsPE)
+        {
+            Switch = Firmware is null ? null : new EnvironmentSwitch(new ResumeCarrier(Firmware, AgentEnvironment.WindowsPE, log), rebooter),
+        };
         AgentLoop loop = new(server, machine, status, runner, log, timeProvider);
 
         return loop.RunAsync(cancellationToken);
@@ -99,6 +108,9 @@ public sealed class DryRunMachine(
     }
 
     private DryRunMachineIdentityReader Identity() => new(options.Agent.DryRunId, options.Agent.DryRunSecureBoot);
+
+    private bool RestartsElsewhere() =>
+        Firmware is not null && ResumeCarrier.TargetIn(Firmware) is { } target && target != AgentEnvironment.WindowsPE;
 
     // The hand-over really stages the agent into the directory that stands in for Windows. In WinPE the root stands
     // in for the agent's directory. The console only shows the run in WinPE.

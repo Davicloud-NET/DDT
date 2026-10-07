@@ -12,10 +12,16 @@ namespace DDT.Agent;
 
 // The questions the machine asks at its console while it polls: the sign-in, and which sequence and disk to pick.
 // Only reading the keyboard runs alongside polling. The loop sends the answer to the server.
-internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, IDisks disks, AgentLog log, AgentRegistrar registrar)
+internal sealed class ConsolePrompts(
+    IAgentServer server,
+    ConsoleStatus status,
+    AgentMachine machine,
+    AgentLog log,
+    AgentRegistrar registrar,
+    BootSwitch bootSwitch)
 {
     private SignInConversation _conversation = new(status.Console, log);
-    private SequencePicker _picker = new(status.Console, log);
+    private SequencePicker _picker = new(status.Console, log, machine.Environment);
     private CancellationTokenSource? _stopTyping;
     private Task<ConsoleAnswer?>? _typing;
     private bool _typingForPicker;
@@ -42,7 +48,7 @@ internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, 
     public void StartSession()
     {
         _conversation = new SignInConversation(status.Console, log);
-        _picker = new SequencePicker(status.Console, log);
+        _picker = new SequencePicker(status.Console, log, machine.Environment);
         _pickableDisks = null;
     }
 
@@ -106,17 +112,22 @@ internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, 
         _typing = null;
     }
 
-    // A refused token and a stop are passed on to the caller.
-    public Task SendAsync(Guid machineId, string token, ConsoleAnswer answer, CancellationToken cancellationToken) =>
-        _typingForPicker
-            ? SendPickAsync(machineId, token, answer, cancellationToken)
-            : SendSignInAsync(machineId, token, answer, cancellationToken);
+    // A refused token and a stop are passed on to the caller. True if the machine restarts into the other boot
+    // environment, for a sequence chosen here that starts there.
+    public Task<bool> SendAsync(Guid machineId, DeploymentTokens tokens, ConsoleAnswer answer, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(tokens);
 
-    private async Task SendSignInAsync(Guid machineId, string token, ConsoleAnswer answer, CancellationToken cancellationToken)
+        return _typingForPicker
+            ? SendPickAsync(machineId, tokens, answer, cancellationToken)
+            : SendSignInAsync(machineId, tokens.Token, answer, cancellationToken);
+    }
+
+    private async Task<bool> SendSignInAsync(Guid machineId, string token, ConsoleAnswer answer, CancellationToken cancellationToken)
     {
         if (_conversation.Accept(answer) is not { } request)
         {
-            return;
+            return false;
         }
 
         try
@@ -128,20 +139,22 @@ internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, 
         {
             _conversation.NotSent(exception);
         }
+
+        return false;
     }
 
-    private async Task SendPickAsync(Guid machineId, string token, ConsoleAnswer answer, CancellationToken cancellationToken)
+    private async Task<bool> SendPickAsync(Guid machineId, DeploymentTokens tokens, ConsoleAnswer answer, CancellationToken cancellationToken)
     {
         if (_picker.Accept(answer) is not { } request)
         {
-            return;
+            return _picker.TakeRestart() is { } restart && await RestartAsync(machineId, tokens, restart, cancellationToken).ConfigureAwait(false);
         }
 
         ConfirmedDisk = _picker.ChosenDisk;
 
         try
         {
-            AgentRun run = await server.PickSequenceAsync(machineId, token, request, cancellationToken).ConfigureAwait(false);
+            AgentRun run = await server.PickSequenceAsync(machineId, tokens.Token, request, cancellationToken).ConfigureAwait(false);
             PickedWithoutErase = request.DiskNumber is null ? run.Id : null;
             _picker.Picked(run);
         }
@@ -153,6 +166,21 @@ internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, 
         {
             _picker.NotSent(exception);
         }
+
+        return false;
+    }
+
+    // A machine that stays gets a fresh list, since the server may no longer offer what was chosen.
+    private async Task<bool> RestartAsync(Guid machineId, DeploymentTokens tokens, AgentEnvironmentRequest restart, CancellationToken cancellationToken)
+    {
+        bool restarts = await bootSwitch.RestartForPickAsync(machineId, tokens, restart, cancellationToken).ConfigureAwait(false);
+
+        if (!restarts)
+        {
+            ResetPicker();
+        }
+
+        return restarts;
     }
 
     // Asks for the sequences until there are some. If a sequence erases a disk, the disks are read once per stretch in
@@ -186,7 +214,7 @@ internal sealed class ConsolePrompts(IAgentServer server, ConsoleStatus status, 
 
         if (_pickableDisks is null && sequences.Any(sequence => sequence.ErasesDisk))
         {
-            _pickableDisks = await disks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
+            _pickableDisks = await machine.Disks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
             status.DisksRead(_pickableDisks);
 
             if (_pickableDisks.Count == 0)

@@ -302,6 +302,7 @@ public sealed class DryRunResumeTests : IDisposable
         DryRunToolRunner tools = new(log);
         DryRunDiskPartitioner disks = new(_root, log);
         DryRunBcdWriter bcdWriter = new(log);
+        DryRunImageApplier applier = new(log);
 
         return new SequenceRunnerBuilder
         {
@@ -309,7 +310,8 @@ public sealed class DryRunResumeTests : IDisposable
             Disks = disks,
             Partitioner = disks,
             RawDisks = new FileRawDisks(_root, log),
-            Applier = new DryRunImageApplier(log),
+            Applier = applier,
+            PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
             BcdWriter = bcdWriter,
             BootOrder = bcdWriter,
             Rebooter = new DryRunRebooter(log),
@@ -319,7 +321,7 @@ public sealed class DryRunResumeTests : IDisposable
             HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), Environment.ProcessPath!, TestAgents.Configuration, log, dryRun: true),
             Log = log,
             TimeProvider = _time,
-            Options = new SequenceRunnerOptions(Timeout.InfiniteTimeSpan, _root, Environment.SystemDirectory, DryRun: true),
+            Options = new SequenceRunnerOptions(Timeout.InfiniteTimeSpan, _root, DryRun: true),
         }.Build();
     }
 
@@ -342,7 +344,7 @@ public sealed class DryRunResumeTests : IDisposable
                 new InjectDriversStepRunner(tools, downloads, session, log),
                 new WriteUnattendStepRunner(_server, session, _ => Task.CompletedTask, log, _time),
                 new JoinDomainStepRunner(new DryRunDomainJoiner(log), _server, session, _ => Task.CompletedTask, log, _time),
-                new RunScriptStepRunner(tools, downloads, session, log, _root),
+                new RunScriptStepRunner(tools, new WindowsScriptLauncher(), downloads, session, log, _root),
                 new WriteRawImageStepRunner(disk, new FileRawDisks(_root, log), downloads, session, log),
                 new WriteCloudInitSeedStepRunner(new FileRawDisks(_root, log), session, log, _time),
             ],

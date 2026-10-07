@@ -107,6 +107,7 @@ public sealed class DryRunMachine(
         string workDirectory = inWindows ? Path.Combine(Windows, "DDT") : options.Root;
         AgentConfiguration staged = new(options.Agent.ServerUrl.AbsoluteUri, options.Agent.RootCertificate?.ExportCertificatePem(), null);
         DryRunBcdWriter bcdWriter = new(log);
+        DryRunImageApplier applier = new(log);
 
         return new SequenceRunnerBuilder
         {
@@ -114,7 +115,8 @@ public sealed class DryRunMachine(
             Disks = disks,
             Partitioner = disks,
             RawDisks = new FileRawDisks(options.Root, log),
-            Applier = new DryRunImageApplier(log),
+            Applier = applier,
+            PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
             BcdWriter = bcdWriter,
             BootOrder = bcdWriter,
             Rebooter = rebooter,
@@ -124,7 +126,7 @@ public sealed class DryRunMachine(
             HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), options.AgentPath, staged, log, dryRun: true),
             Log = log,
             TimeProvider = timeProvider,
-            Options = new SequenceRunnerOptions(options.HeartbeatInterval, workDirectory, Environment.SystemDirectory, DryRun: true),
+            Options = new SequenceRunnerOptions(options.HeartbeatInterval, workDirectory, DryRun: true),
             Status = inWindows ? null : status,
         }.Build();
     }

@@ -136,11 +136,11 @@ public sealed class SequenceRunnerPreflightTests : SequenceRunnerTestBase
 
                 return new(TestRuns.Run([TestRuns.Partition, TestRuns.Apply, s_drivers, TestRuns.Unattend], _image), InjectDriversStepRunner.NoDismMessage);
             case "no PowerShell":
-                File.Delete(RunScriptStepRunner.PowerShellIn(_system));
+                File.Delete(WindowsScriptLauncher.PowerShellIn(_system));
 
                 return new(
                     TestRuns.Run([TestRuns.Partition, TestRuns.Script(1, interpreter: ScriptInterpreter.PowerShell), TestRuns.Apply, TestRuns.Unattend], _image),
-                    RunScriptStepRunner.NoPowerShellMessage);
+                    WindowsScriptLauncher.NoPowerShellMessage);
             default:
                 return null;
         }

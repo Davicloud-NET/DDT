@@ -85,7 +85,7 @@ internal sealed class StepRunnerFixture : IDisposable
 
     public JoinDomainStepRunner JoinDomain => new(Tools, Server, Session, ReportRunningAsync, Log, Time);
 
-    public RunScriptStepRunner RunScript => new(ToolRunner, Downloads, Session, Log, WorkDirectory);
+    public RunScriptStepRunner RunScript => new(ToolRunner, new WindowsScriptLauncher(), Downloads, Session, Log, WorkDirectory);
 
     public MemoryRawDisks RawDisks { get; } = new();
 

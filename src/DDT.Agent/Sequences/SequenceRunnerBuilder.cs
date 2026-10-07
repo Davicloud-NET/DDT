@@ -22,6 +22,9 @@ public sealed class SequenceRunnerBuilder
 
     public required IImageApplier Applier { get; init; }
 
+    // What the platform checks of a fresh run before anything is erased.
+    public required IReadOnlyList<IPreflightCheck> PreflightChecks { get; init; }
+
     public required IBcdWriter BcdWriter { get; init; }
 
     public required IBootOrder BootOrder { get; init; }
@@ -52,7 +55,7 @@ public sealed class SequenceRunnerBuilder
     {
         RunBootOrder bootOrder = new(BcdWriter, BootOrder, RestartMarker, Log);
         RunEnding ending = new(bootOrder, Rebooter, RestartMarker, Log, TimeProvider, Status);
-        RunPreflight preflight = new(Server, new RunDiskChoice(Disks, RawDisks), Applier, Log, TimeProvider, Options.SystemDirectory);
+        RunPreflight preflight = new(Server, new RunDiskChoice(Disks, RawDisks), PreflightChecks, Log, TimeProvider);
         RunInputsWait inputs = new(Server, Status?.Console, Log, TimeProvider);
 
         return new SequenceRunner(
@@ -79,7 +82,7 @@ public sealed class SequenceRunnerBuilder
                 new InjectDriversStepRunner(Tools, downloads, session, Log),
                 new WriteUnattendStepRunner(Server, session, heartbeat.ReportNowAsync, Log, TimeProvider),
                 new JoinDomainStepRunner(Joiner, Server, session, heartbeat.ReportNowAsync, Log, TimeProvider),
-                new RunScriptStepRunner(Tools, downloads, session, Log, Options.WorkDirectory),
+                new RunScriptStepRunner(Tools, new WindowsScriptLauncher(), downloads, session, Log, Options.WorkDirectory),
                 new WriteRawImageStepRunner(Disks, RawDisks, downloads, session, Log),
                 new WriteCloudInitSeedStepRunner(RawDisks, session, Log, TimeProvider),
                 new PauseStepRunner(heartbeat, Status?.Console, Log, TimeProvider),

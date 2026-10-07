@@ -138,13 +138,15 @@ UefiVariables firmware = new();
 DiskpartPartitioner disks = new(tools, log, TimeProvider.System, AppContext.BaseDirectory);
 AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
 BcdbootWriter bcdWriter = new(tools, firmware, log);
+WimImageApplier applier = new(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log"));
 SequenceRunner runner = new SequenceRunnerBuilder
 {
     Server = server,
     Disks = disks,
     Partitioner = disks,
     RawDisks = new PhysicalDisks(),
-    Applier = new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log")),
+    Applier = applier,
+    PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
     BcdWriter = bcdWriter,
     BootOrder = bcdWriter,
     Rebooter = new WindowsPERebooter(tools, firmware, log),
@@ -160,7 +162,7 @@ SequenceRunner runner = new SequenceRunnerBuilder
         ConsoleForWindows),
     Log = log,
     TimeProvider = TimeProvider.System,
-    Options = new SequenceRunnerOptions(RunHeartbeat.DefaultInterval, AppContext.BaseDirectory, Environment.SystemDirectory, DryRun: false),
+    Options = new SequenceRunnerOptions(RunHeartbeat.DefaultInterval, AppContext.BaseDirectory, DryRun: false),
     Status = status,
 }.Build();
 HardwareMachineIdentityReader identity = new(new FirmwareTables(), new SystemHardware(), new UefiVariables(), new WindowsSecureBoot());

@@ -56,11 +56,11 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
         string scripts = Path.Combine(Windows, "DDT", "scripts");
         Assert.Equal(
             [
-                RecordingToolRunner.CommandLine(RunScriptStepRunner.CmdPath, "/d", "/c", Path.Combine(scripts, $"{cmd.Id:D}.cmd")),
-                RecordingToolRunner.CommandLine(RunScriptStepRunner.CmdPath, "/d", "/c", Path.Combine(scripts, $"{powerShell.Id:D}.cmd")),
+                RecordingToolRunner.CommandLine(WindowsScriptLauncher.CmdPath, "/d", "/c", Path.Combine(scripts, $"{cmd.Id:D}.cmd")),
+                RecordingToolRunner.CommandLine(WindowsScriptLauncher.CmdPath, "/d", "/c", Path.Combine(scripts, $"{powerShell.Id:D}.cmd")),
             ],
             _toolRunner.Calls);
-        Assert.StartsWith(Environment.SystemDirectory, RunScriptStepRunner.CmdPath, StringComparison.OrdinalIgnoreCase);
+        Assert.StartsWith(Environment.SystemDirectory, WindowsScriptLauncher.CmdPath, StringComparison.OrdinalIgnoreCase);
 
         // The answer file was gone before the first step, and the count of returns to WinPE stays with the run.
         Assert.Equal([(false, "1"), (false, "1")], found);

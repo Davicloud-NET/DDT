@@ -92,6 +92,7 @@ public static class WindowsPhaseService
         ToolRunner tools = parts.Tools;
         DiskpartPartitioner disks = new(tools, log, TimeProvider.System, parts.Directory);
         BcdbootWriter bcdWriter = new(tools, new UefiVariables(), log);
+        WimImageApplier applier = new(log, AppContext.BaseDirectory, Path.Combine(parts.Directory, "logs", "wimlib.log"));
 
         return new SequenceRunnerBuilder
         {
@@ -99,7 +100,8 @@ public static class WindowsPhaseService
             Disks = disks,
             Partitioner = disks,
             RawDisks = new PhysicalDisks(),
-            Applier = new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(parts.Directory, "logs", "wimlib.log")),
+            Applier = applier,
+            PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
             BcdWriter = bcdWriter,
             BootOrder = bcdWriter,
             Rebooter = parts.Rebooter,
@@ -109,7 +111,7 @@ public static class WindowsPhaseService
             HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: false), Environment.ProcessPath!, staged, log, dryRun: false),
             Log = log,
             TimeProvider = TimeProvider.System,
-            Options = new SequenceRunnerOptions(RunHeartbeat.DefaultInterval, parts.Directory, Environment.SystemDirectory, DryRun: false),
+            Options = new SequenceRunnerOptions(RunHeartbeat.DefaultInterval, parts.Directory, DryRun: false),
             Status = status,
         }.Build();
     }

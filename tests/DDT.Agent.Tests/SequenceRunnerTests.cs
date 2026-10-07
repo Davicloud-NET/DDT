@@ -138,7 +138,7 @@ public sealed class SequenceRunnerTests : SequenceRunnerTestBase
     [Fact]
     public async Task RunsAPowerShellStepInWindowsWithABootImageWithoutPowerShell()
     {
-        File.Delete(RunScriptStepRunner.PowerShellIn(_system));
+        File.Delete(WindowsScriptLauncher.PowerShellIn(_system));
         AgentRun run = TestRuns.Run([.. TestRuns.InstallWindows, TestRuns.Script(4, SequencePhase.Windows, ScriptInterpreter.PowerShell)], _image);
         ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer());
 
@@ -146,7 +146,7 @@ public sealed class SequenceRunnerTests : SequenceRunnerTestBase
 
         // The installed Windows brings its own PowerShell, so the lean boot image is enough.
         Assert.Contains("partition 0", _tools.Calls);
-        Assert.DoesNotContain(server.RunReports, report => report.Error == RunScriptStepRunner.NoPowerShellMessage);
+        Assert.DoesNotContain(server.RunReports, report => report.Error == WindowsScriptLauncher.NoPowerShellMessage);
     }
 
     [Fact]

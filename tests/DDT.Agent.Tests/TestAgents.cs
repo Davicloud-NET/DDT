@@ -38,6 +38,7 @@ internal static class TestAgents
             Partitioner = tools,
             RawDisks = options.RawDisks ?? new MemoryRawDisks(),
             Applier = tools,
+            PreflightChecks = [new BootImageToolsCheck(options.SystemDirectory ?? SystemDirectory(tools)), new ImageApplierCheck(tools)],
             BcdWriter = options.BcdWriter ?? tools,
             BootOrder = tools,
             Rebooter = options.Rebooter ?? tools,
@@ -47,11 +48,7 @@ internal static class TestAgents
             HandOver = HandOver(tools, toolRunner, log, options.DryRunHandOver, options.ConsoleDirectory),
             Log = log,
             TimeProvider = timeProvider,
-            Options = new SequenceRunnerOptions(
-                options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan,
-                Path.Combine(tools.Root, "X"),
-                options.SystemDirectory ?? SystemDirectory(tools),
-                options.DryRun),
+            Options = new SequenceRunnerOptions(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun),
             Status = options.Status,
         }.Build();
     }
@@ -104,7 +101,7 @@ internal static class TestAgents
         ArgumentNullException.ThrowIfNull(tools);
 
         string system = Path.Combine(tools.Root, "System32");
-        string powerShell = RunScriptStepRunner.PowerShellIn(system);
+        string powerShell = WindowsScriptLauncher.PowerShellIn(system);
         Directory.CreateDirectory(Path.GetDirectoryName(powerShell)!);
         File.WriteAllText(powerShell, string.Empty);
         File.WriteAllText(InjectDriversStepRunner.DismIn(system), string.Empty);

@@ -14,10 +14,9 @@ namespace DDT.Agent.Sequences;
 internal sealed class RunPreflight(
     IAgentServer server,
     RunDiskChoice disks,
-    IImageApplier applier,
+    IReadOnlyList<IPreflightCheck> platformChecks,
     AgentLog log,
-    TimeProvider timeProvider,
-    string systemDirectory)
+    TimeProvider timeProvider)
 {
     public async Task CheckAsync(RunSession session, LocalDisk? confirmedDisk, CancellationToken cancellationToken)
     {
@@ -25,17 +24,14 @@ internal sealed class RunPreflight(
         CheckSequence(run);
         RunInventory inventory = InventoryOf(run);
         CheckSecureBoot(session, inventory.RawImages);
-        CheckTools(inventory.Steps);
+        CheckPlatform(inventory.Steps, afterDiskChoice: false);
 
         if (inventory.Steps.Any(step => step.ErasesDisk))
         {
             session.Disk = await disks.ChooseAsync(run, confirmedDisk, inventory, cancellationToken).ConfigureAwait(false);
         }
 
-        if (inventory.Images.Count > 0)
-        {
-            applier.Prepare();
-        }
+        CheckPlatform(inventory.Steps, afterDiskChoice: true);
 
         await CheckFilesAsync(session, inventory, cancellationToken).ConfigureAwait(false);
         log.Information(session.Disk is { } chosen ? $"Running {run.SequenceName} on {chosen.Describe()}." : $"Running {run.SequenceName}.");
@@ -106,18 +102,11 @@ internal sealed class RunPreflight(
         }
     }
 
-    // A lean boot image may lack DISM or PowerShell. The installed Windows brings its own PowerShell.
-    private void CheckTools(IReadOnlyList<SequenceStep> steps)
+    private void CheckPlatform(IReadOnlyList<SequenceStep> steps, bool afterDiskChoice)
     {
-        if (steps.OfType<InjectDriversStep>().Any() && !File.Exists(InjectDriversStepRunner.DismIn(systemDirectory)))
+        foreach (IPreflightCheck check in platformChecks.Where(check => check.AfterDiskChoice == afterDiskChoice))
         {
-            throw new DeploymentStepException(InjectDriversStepRunner.NoDismMessage);
-        }
-
-        if (steps.OfType<RunScriptStep>().Any(step => step is { Interpreter: ScriptInterpreter.PowerShell, Phase: SequencePhase.WindowsPE })
-            && !File.Exists(RunScriptStepRunner.PowerShellIn(systemDirectory)))
-        {
-            throw new DeploymentStepException(RunScriptStepRunner.NoPowerShellMessage);
+            check.Check(steps);
         }
     }
 

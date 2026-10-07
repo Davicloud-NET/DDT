@@ -51,7 +51,7 @@ public sealed class RunScriptStepRunnerTests
         StepResult result = await run.RunScript.RunAsync(s_cmd, run.Context(), TestContext.Current.CancellationToken);
 
         Assert.Equal(StepOutcome.Done, result.Outcome);
-        Assert.Equal([RecordingToolRunner.CommandLine(RunScriptStepRunner.CmdPath, "/d", "/c", file)], run.ToolRunner.Calls);
+        Assert.Equal([RecordingToolRunner.CommandLine(WindowsScriptLauncher.CmdPath, "/d", "/c", file)], run.ToolRunner.Calls);
         ToolRunOptions options = Assert.Single(run.ToolRunner.Options);
         Assert.Equal(scripts, options.WorkingDirectory);
         Assert.Equal(TimeSpan.FromMinutes(5), options.Timeout);
@@ -87,11 +87,11 @@ public sealed class RunScriptStepRunnerTests
 
         await run.RunScript.RunAsync(s_powerShell, run.Context(), TestContext.Current.CancellationToken);
 
-        Assert.Equal([RecordingToolRunner.CommandLine(RunScriptStepRunner.CmdPath, "/d", "/c", launcher)], run.ToolRunner.Calls);
+        Assert.Equal([RecordingToolRunner.CommandLine(WindowsScriptLauncher.CmdPath, "/d", "/c", launcher)], run.ToolRunner.Calls);
         byte[] written = await File.ReadAllBytesAsync(file, TestContext.Current.CancellationToken);
         Assert.Equal([.. Encoding.UTF8.Preamble, .. Encoding.UTF8.GetBytes("Write-Output 'Grüße'\r\n")], written);
         Assert.Equal(
-            $"@chcp 65001 >nul\r\n@\"{RunScriptStepRunner.PowerShellPath}\" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{file}\"\r\n",
+            $"@chcp 65001 >nul\r\n@\"{WindowsScriptLauncher.PowerShellPath}\" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{file}\"\r\n",
             await File.ReadAllTextAsync(launcher, TestContext.Current.CancellationToken));
 
         // Offline changes to the applied Windows need its letter.
@@ -241,7 +241,7 @@ public sealed class RunScriptStepRunnerTests
     {
         RunScriptStep step = s_cmd with { Interpreter = interpreter, Script = script };
         using StepRunnerFixture run = new([step], variables: s_variables);
-        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), run.Downloads, run.Session, run.Log, run.WorkDirectory);
+        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), new WindowsScriptLauncher(), run.Downloads, run.Session, run.Log, run.WorkDirectory);
 
         StepResult result = await runner.RunAsync(
             step,
@@ -297,7 +297,7 @@ public sealed class RunScriptStepRunnerTests
     {
         RunScriptStep step = s_cmd with { Script = "echo Grüße aus dem Skript\r\nexit /b 3010" };
         using StepRunnerFixture run = new([step]);
-        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), run.Downloads, run.Session, run.Log, run.WorkDirectory);
+        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), new WindowsScriptLauncher(), run.Downloads, run.Session, run.Log, run.WorkDirectory);
 
         StepResult result = await runner.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
 
@@ -313,7 +313,7 @@ public sealed class RunScriptStepRunnerTests
         string folder = Path.Combine(run.WorkDirectory, "tree", "für");
         Directory.CreateDirectory(folder);
         RunScriptStep step = s_cmd with { Script = $"tree \"{Path.GetDirectoryName(folder)}\"" };
-        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), run.Downloads, run.Session, run.Log, run.WorkDirectory);
+        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), new WindowsScriptLauncher(), run.Downloads, run.Session, run.Log, run.WorkDirectory);
 
         await runner.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
 
@@ -323,7 +323,7 @@ public sealed class RunScriptStepRunnerTests
     [Fact]
     public void ALauncherKeepsThePercentSignsOfAPath()
     {
-        string launcher = Encoding.UTF8.GetString(RunScriptStepRunner.PowerShellLauncher(@"C:\Windows\powershell.exe", @"C:\100% sure\a.ps1"));
+        string launcher = Encoding.UTF8.GetString(WindowsScriptLauncher.PowerShellLauncher(@"C:\Windows\powershell.exe", @"C:\100% sure\a.ps1"));
 
         Assert.Contains("-File \"C:\\100%% sure\\a.ps1\"", launcher, StringComparison.Ordinal);
     }
@@ -342,7 +342,7 @@ public sealed class RunScriptStepRunnerTests
             SuccessExitCodes = [7],
         };
         using StepRunnerFixture run = new([step]);
-        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), run.Downloads, run.Session, run.Log, run.WorkDirectory);
+        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), new WindowsScriptLauncher(), run.Downloads, run.Session, run.Log, run.WorkDirectory);
 
         StepResult result = await runner.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
 

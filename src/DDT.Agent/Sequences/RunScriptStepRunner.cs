@@ -10,12 +10,17 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Runs a sequence author's script with cmd or Windows PowerShell, in either phase. It runs from the run's directory,
+// Runs a sequence author's script through the system's launcher, in either phase. It runs from the run's directory,
 // or from workDirectory before Partition made one. Values reach the script as DDT_VAR_<Name> in its environment, never
 // in its text. The script sets variables through the file DDT_VARIABLES_OUT names. The log gets their names, never
 // their values.
-public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads downloads, RunSession session, AgentLog log, string workDirectory)
-    : IStepKindRunner
+public sealed class RunScriptStepRunner(
+    IToolRunner tools,
+    IScriptLauncher launcher,
+    RunDownloads downloads,
+    RunSession session,
+    AgentLog log,
+    string workDirectory) : IStepKindRunner
 {
     public const string VariablePrefix = "DDT_VAR_";
 
@@ -27,39 +32,6 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
 
     // Blank lines count too, so a file of nothing but line ends is read no further than this.
     private const int MaxOutputCharacters = MaxOutputLines * (MaxOutputLineLength + 2) * 2;
-
-    public const string NoPowerShellMessage =
-        "This boot image has no Windows PowerShell, which a script of this sequence needs in Windows PE. Build the boot image " +
-        "again with build\\Build-BootImage.ps1 without -SkipPowerShell.";
-
-    public static string CmdPath => Path.Combine(Environment.SystemDirectory, "cmd.exe");
-
-    public static string PowerShellPath => PowerShellIn(Environment.SystemDirectory);
-
-    public static string PowerShellIn(string systemDirectory) => Path.Combine(systemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
-
-    // cmd reads a script in the console's code page, line by line, so the first line switches it to UTF-8 for the rest.
-    // Windows PowerShell 5.1 reads a file without a byte order mark as ANSI.
-    public static byte[] ScriptFile(RunScriptStep step)
-    {
-        ArgumentNullException.ThrowIfNull(step);
-
-        string text = step.Script.ReplaceLineEndings("\r\n");
-
-        if (!text.EndsWith("\r\n", StringComparison.Ordinal))
-        {
-            text += "\r\n";
-        }
-
-        return step.Interpreter == ScriptInterpreter.PowerShell
-            ? [.. Encoding.UTF8.Preamble, .. Encoding.UTF8.GetBytes(text)]
-            : Encoding.UTF8.GetBytes($"@chcp 65001 >nul\r\n{text}");
-    }
-
-    // PowerShell and the programs it starts write in the console's code page, so a cmd file switches the console to
-    // UTF-8 first and passes PowerShell's exit code on. cmd would expand a % in a path.
-    public static byte[] PowerShellLauncher(string powerShell, string script) => Encoding.UTF8.GetBytes(
-        $"@chcp 65001 >nul\r\n@\"{Escape(powerShell)}\" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{Escape(script)}\"\r\n");
 
     // The run's values with what steps set on top, without the agent's own. A name with anything but letters, digits
     // and underscores can't be an environment variable's name, and a value with a NUL can't be its value. The validator
@@ -95,9 +67,9 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
         ArgumentNullException.ThrowIfNull(step);
         ArgumentNullException.ThrowIfNull(context);
 
-        if (step.Interpreter == ScriptInterpreter.PowerShell && context.Phase == SequencePhase.WindowsPE && !File.Exists(PowerShellPath))
+        if (launcher.Missing(step, context.Phase) is { } missing)
         {
-            return StepResult.Failed(NoPowerShellMessage);
+            return StepResult.Failed(missing);
         }
 
         string directory = session.RunDirectory ?? workDirectory;
@@ -108,7 +80,11 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
             scripts = Path.Combine(scripts, step.Id.ToString("D"));
         }
 
-        string launcher = await WriteScriptAsync(step, scripts, account, cancellationToken).ConfigureAwait(false);
+        Directory.CreateDirectory(scripts);
+
+        // Before the files are written, so they inherit the entry.
+        account?.Admit(scripts);
+        ScriptLaunch launch = await launcher.WriteAsync(step, scripts, cancellationToken).ConfigureAwait(false);
         string? package = await UnpackAsync(step, directory, context, account, cancellationToken).ConfigureAwait(false);
         Dictionary<string, string> environment = EnvironmentFor(step, context, package);
 
@@ -120,7 +96,7 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
 
         try
         {
-            exitCode = await tools.RunForExitCodeAsync(CmdPath, ["/d", "/c", launcher], options, cancellationToken).ConfigureAwait(false);
+            exitCode = await tools.RunForExitCodeAsync(launch.FileName, launch.Arguments, options, cancellationToken).ConfigureAwait(false);
 
             if (outputs is not null && Succeeded(step, exitCode))
             {
@@ -148,32 +124,8 @@ public sealed class RunScriptStepRunner(IToolRunner tools, RunDownloads download
     Task<StepResult> IStepKindRunner.RunAsync(SequenceStep step, StepContext context, IAccountSession? account, CancellationToken cancellationToken) =>
         RunAsync((RunScriptStep)step, context, account, cancellationToken);
 
-    private static string Escape(string path) => path.Replace("%", "%%", StringComparison.Ordinal);
-
     private static bool Succeeded(RunScriptStep step, int exitCode) =>
         step.SuccessExitCodes.Contains(exitCode) || step.RebootExitCodes.Contains(exitCode);
-
-    // A PowerShell script starts from a cmd launcher next to it. Returns what cmd runs.
-    private static async Task<string> WriteScriptAsync(RunScriptStep step, string scripts, IAccountSession? account, CancellationToken cancellationToken)
-    {
-        bool powerShell = step.Interpreter == ScriptInterpreter.PowerShell;
-        string file = Path.Combine(scripts, step.Id.ToString("D") + (powerShell ? ".ps1" : ".cmd"));
-        Directory.CreateDirectory(scripts);
-
-        // Before the files are written, so they inherit the entry.
-        account?.Admit(scripts);
-        await File.WriteAllBytesAsync(file, ScriptFile(step), cancellationToken).ConfigureAwait(false);
-
-        if (!powerShell)
-        {
-            return file;
-        }
-
-        string launcher = Path.ChangeExtension(file, ".cmd");
-        await File.WriteAllBytesAsync(launcher, PowerShellLauncher(PowerShellPath, file), cancellationToken).ConfigureAwait(false);
-
-        return launcher;
-    }
 
     // The step's package, unpacked on the partitioned disk to be the script's working directory. Null without a
     // package.

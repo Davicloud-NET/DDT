@@ -31,6 +31,9 @@ public static class AgentRoutes
 
     public static string Runs(Guid machineId) => $"api/agents/{machineId:D}/runs";
 
+    // POST an AgentEnvironmentRequest before the machine restarts into the other boot environment.
+    public static string Environment(Guid machineId) => $"api/agents/{machineId:D}/environment";
+
     public static string RunReport(Guid machineId, Guid runId) => $"api/agents/{machineId:D}/runs/{runId:D}/report";
 
     // POST the AgentInputAnswers given at the machine while the run waits to start.

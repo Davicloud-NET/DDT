@@ -33,6 +33,10 @@ public sealed class Deployment
 
     public DeploymentSource Source { get; set; }
 
+    // The boot environment the run's sequence starts in, kept when the run was created. Netboot starts the machine
+    // there. Null for a run from before the Linux boot environment.
+    public AgentEnvironment? BootEnvironment { get; set; }
+
     public Guid? RequestedByUserId { get; set; }
 
     public string? RequestedByName { get; set; }

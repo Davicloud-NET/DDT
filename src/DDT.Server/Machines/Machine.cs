@@ -99,6 +99,16 @@ public sealed class Machine
     // The newest deployment, active or not, so the machines list loads one deployment per machine.
     public Guid? LastDeploymentId { get; set; }
 
+    // The boot environment the machine was asked to restart into, and when. Netboot starts it there, and its resume
+    // token crosses to that environment, only for DeploymentLimits.EnvironmentSwitch after.
+    public AgentEnvironment? NextEnvironment { get; set; }
+
+    public DateTimeOffset? NextEnvironmentUtc { get; set; }
+
+    // The sequence picked at the machine that waits for that restart. It's offered first there and grants nothing, so
+    // it has no foreign key and may name a sequence that is gone.
+    public Guid? PendingSequenceId { get; set; }
+
     public void Approve(Guid? by, DateTimeOffset now)
     {
         State = MachineState.Approved;

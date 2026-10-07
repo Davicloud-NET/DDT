@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text.Json.Serialization;
 using DDT.Contracts.Machines;
 
 namespace DDT.Contracts.Agents;
@@ -21,5 +22,8 @@ public sealed record AgentNextResult(
     // sequences never mistakes a run for an image deployment.
     AgentRun? Run = null,
     bool CanPickSequence = false,
-    // The sequence an assignment rule chose.
-    Guid? SuggestedSequenceId = null);
+    // The sequence an assignment rule chose, or the one picked at the machine before it changed its boot environment.
+    Guid? SuggestedSequenceId = null,
+    // The boot environment the machine's assigned run starts in, when that is not the one this agent runs in. The agent
+    // restarts into it and takes its resume token along.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AgentEnvironment? RestartInto = null);

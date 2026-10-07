@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 
@@ -31,4 +32,8 @@ public sealed record MachineSummary(
     UefiCa? TrustedUefiCas = null,
     DeviceKind DeviceKind = DeviceKind.Unknown,
     // What the agent last registered with; null from an agent that predates version 3 sequences.
-    MachineFacts? Facts = null);
+    MachineFacts? Facts = null,
+    // Where the machine's agent last registered from.
+    AgentEnvironment AgentEnvironment = AgentEnvironment.WindowsPE,
+    // The boot environment the machine was asked to restart into, until it registers from there.
+    AgentEnvironment? NextEnvironment = null);

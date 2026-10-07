@@ -341,6 +341,10 @@ namespace DDT.Server.Migrations.Sqlite
                     b.Property<string>("Answers")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("BootEnvironment")
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("ContinuePass")
                         .HasColumnType("INTEGER");
 
@@ -860,6 +864,16 @@ namespace DDT.Server.Migrations.Sqlite
 
                     b.Property<string>("Model")
                         .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NextEnvironment")
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("NextEnvironmentUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("PendingSequenceId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PrimaryMac")

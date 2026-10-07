@@ -23,4 +23,8 @@ public static class DeploymentLimits
     // Two last-seen resolutions and a poll. A Pending machine seen longer ago may not be the one at the prompt
     // any more, and whoever still holds its tokens must not be authorized by an assignment.
     public static readonly TimeSpan WaitingAtPrompt = TimeSpan.FromSeconds(90);
+
+    // How long a restart into the other boot environment may take. After that the machine's resume token no longer
+    // crosses to it, and netboot no longer starts it there.
+    public static readonly TimeSpan EnvironmentSwitch = TimeSpan.FromMinutes(15);
 }

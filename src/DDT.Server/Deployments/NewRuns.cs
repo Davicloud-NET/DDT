@@ -179,6 +179,7 @@ public sealed class NewRuns(
             DiskNumber = run.DiskNumber,
             State = DeploymentState.Assigned,
             Source = run.Source,
+            BootEnvironment = SequenceKinds.BootEnvironment(SequenceKinds.Of(sequence.Definition)),
             RequestedByUserId = run.Request.Giver.UserId,
             RequestedByName = run.Request.Giver.Name,
             StepCount = RunPaths.Leaves(sequence.Definition, steps).Count,

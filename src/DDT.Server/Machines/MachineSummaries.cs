@@ -39,6 +39,8 @@ public static class MachineSummaries
             machine.SecureBootEnabled,
             machine.TrustedUefiCas,
             DeviceKinds.Classify(machine.Manufacturer, machine.Model, machine.ChassisType),
-            MachineFactsDocuments.Read(machine.Facts));
+            MachineFactsDocuments.Read(machine.Facts),
+            machine.AgentEnvironment,
+            machine.NextEnvironment);
     }
 }

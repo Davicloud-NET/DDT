@@ -21,6 +21,8 @@ internal sealed class ScriptedMachineConsole(params Func<ConsoleQuestion, Consol
 
     public bool CanAsk { get; init; } = true;
 
+    public bool AnswersLater => false;
+
     public List<ConsoleQuestion> Questions
     {
         get

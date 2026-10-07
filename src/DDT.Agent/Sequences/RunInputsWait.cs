@@ -24,7 +24,7 @@ internal sealed class RunInputsWait(IAgentServer server, IMachineConsole? consol
 
         log.Information($"The run waits for answers to {string.Join(", ", pending.Inputs.Select(input => input.Label))}, at this machine or on the machine's page.");
 
-        while (!fromWeb.IsCompleted && pending.Inputs.Count > 0 && console is not null && (console.CanAsk || console is SessionMachineConsole))
+        while (!fromWeb.IsCompleted && pending.Inputs.Count > 0 && console is not null && (console.CanAsk || console.AnswersLater))
         {
             if (await AskAsync(console, run, pending, fromWeb, cancellationToken).ConfigureAwait(false) is not { } answer)
             {

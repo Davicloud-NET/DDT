@@ -13,6 +13,9 @@ public interface IMachineConsole
     // False when nobody can answer here, for example when input is redirected.
     bool CanAsk { get; }
 
+    // True for a console that someone may still come to, so a question is asked even while CanAsk is false.
+    bool AnswersLater { get; }
+
     // Replaces what the console shows with state.
     void Show(ConsoleState state);
 

@@ -57,6 +57,8 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
     // The console may still be starting. A question waits for it, or for the text console if it never comes.
     public bool CanAsk => !_outbox.IsShut || _fallback.CanAsk;
 
+    public bool AnswersLater => false;
+
     // True once the text console has taken over.
     public bool FellBack => _outbox.IsShut;
 

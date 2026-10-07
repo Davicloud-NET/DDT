@@ -69,10 +69,10 @@ public sealed class PauseStepRunner(RunHeartbeat heartbeat, IMachineConsole? con
     }
 
     // True once someone continued at the machine. False when nobody can answer there or the question was called off.
-    // The console in DDT's session asks even while none is connected, because Windows may start its session any moment.
+    // A console that answers later is asked even while nobody is at it.
     private async Task<bool> AskAsync(PauseStep step, string message, CancellationToken cancellationToken)
     {
-        if (console is null || !(console.CanAsk || console is SessionMachineConsole))
+        if (console is null || !(console.CanAsk || console.AnswersLater))
         {
             return false;
         }

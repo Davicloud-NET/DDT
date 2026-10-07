@@ -17,6 +17,8 @@ public sealed class TextMachineConsole(ISignInPrompt prompt, AgentLog log) : IMa
 
     public bool CanAsk => prompt.IsAvailable;
 
+    public bool AnswersLater => false;
+
     // Every change has its line in the log.
     public void Show(ConsoleState state)
     {

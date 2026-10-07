@@ -22,6 +22,8 @@ public sealed class SequenceRunnerBuilder
 
     public required IBcdWriter BcdWriter { get; init; }
 
+    public required IBootOrder BootOrder { get; init; }
+
     public required IRebooter Rebooter { get; init; }
 
     // Records a restart that the boot environment owes, from the moment the run knows about it until it happens.
@@ -46,7 +48,7 @@ public sealed class SequenceRunnerBuilder
 
     public SequenceRunner Build()
     {
-        RunBootOrder bootOrder = new(BcdWriter, RestartMarker, Log);
+        RunBootOrder bootOrder = new(BcdWriter, BootOrder, RestartMarker, Log);
         RunEnding ending = new(bootOrder, Rebooter, RestartMarker, Log, TimeProvider, Status);
         RunPreflight preflight = new(Server, new RunDiskChoice(Partitioner, RawDisks), Applier, Log, TimeProvider, Options.SystemDirectory);
         RunInputsWait inputs = new(Server, Status?.Console, Log, TimeProvider);

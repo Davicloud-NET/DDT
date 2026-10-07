@@ -89,6 +89,7 @@ public static class WindowsPhaseService
     {
         AgentLog log = parts.Log;
         ToolRunner tools = parts.Tools;
+        BcdbootWriter bcdWriter = new(tools, new UefiVariables(), log);
 
         return new SequenceRunnerBuilder
         {
@@ -96,7 +97,8 @@ public static class WindowsPhaseService
             Partitioner = new DiskpartPartitioner(tools, log, TimeProvider.System, parts.Directory),
             RawDisks = new PhysicalDisks(),
             Applier = new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(parts.Directory, "logs", "wimlib.log")),
-            BcdWriter = new BcdbootWriter(tools, new UefiVariables(), log),
+            BcdWriter = bcdWriter,
+            BootOrder = bcdWriter,
             Rebooter = parts.Rebooter,
             RestartMarker = new FileRestartMarker(parts.Directory, log, dryRun: false),
             Tools = tools,

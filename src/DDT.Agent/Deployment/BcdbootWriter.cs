@@ -6,20 +6,19 @@ namespace DDT.Agent.Deployment;
 
 // Follows Microsoft's steps after applying an image, with the bcdboot and reagentc from the image, because they match
 // its version. bcdboot always gets /s. Without it, bcdboot may write to another disk's EFI system partition, which
-// nobody confirmed erasing.
-public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, AgentLog log) : IBcdWriter
+// nobody confirmed erasing. After a change to the boot order, bcdedit lists it for the machine log.
+public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, AgentLog log) : IBcdWriter, IBootOrder
 {
     private static readonly string s_bcdedit = Path.Combine(Environment.SystemDirectory, "bcdedit.exe");
 
-    // What PutWindowsFirstAsync changed in the current run.
-    private UndoableUefiVariables? _changes;
+    private readonly FirmwareBootOrder _bootOrder = new(variables, log);
 
     public async Task WriteAsync(TargetVolumes volumes, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(volumes);
 
-        // Every run comes here first, so nothing an earlier run changed is ever put back.
-        _changes = null;
+        // Every run comes here first.
+        _bootOrder.Forget();
 
         string windows = Path.Combine(volumes.Windows, "Windows");
         string system32 = Path.Combine(windows, "System32");
@@ -52,13 +51,10 @@ public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, A
     {
         ArgumentNullException.ThrowIfNull(volumes);
 
-        UndoableUefiVariables changes = new(variables);
-        _changes = changes;
-
         try
         {
-            new FirmwareBootEntry(changes, log).MakeFirst(
-                EspReader.Read(volumes.System),
+            _bootOrder.MakeFirst(
+                () => EspReader.Read(volumes.System),
                 FirmwareBootEntry.WindowsLoaderPath,
                 FirmwareBootEntry.WindowsDescription,
                 volumes.ErasedSystemPartitionIds);
@@ -80,22 +76,11 @@ public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, A
         IReadOnlyCollection<Guid> erasedSystemPartitionIds,
         CancellationToken cancellationToken)
     {
-        UndoableUefiVariables changes = new(variables);
-        _changes = changes;
-
-        try
-        {
-            new FirmwareBootEntry(changes, log).MakeFirst(esp, loaderPath, description, erasedSystemPartitionIds);
-        }
-        catch (Exception exception)
-        {
-            log.Warning(
-                $"{description} could not be put first in the firmware boot order ({exception.Message}), so this machine may start " +
-                "from the network again. Set its boot order to start the disk first.");
-        }
-
+        await _bootOrder.PutFirstAsync(esp, loaderPath, description, erasedSystemPartitionIds, cancellationToken).ConfigureAwait(false);
         await ListFirmwareEntriesAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    public Task RestoreAsync(CancellationToken cancellationToken) => _bootOrder.RestoreAsync(cancellationToken);
 
     private async Task ListFirmwareEntriesAsync(CancellationToken cancellationToken)
     {
@@ -108,27 +93,5 @@ public sealed class BcdbootWriter(IToolRunner tools, IUefiVariables variables, A
         {
             log.Warning($"The firmware boot entries cannot be listed ({exception.Message}).");
         }
-    }
-
-    public Task RestoreBootOrderAsync(CancellationToken cancellationToken)
-    {
-        UndoableUefiVariables? changes = _changes;
-        _changes = null;
-
-        try
-        {
-            if (changes is not null && changes.Undo())
-            {
-                log.Information("The firmware boot order is back as it was before the deployment, so this machine does not start Windows without its answer file.");
-            }
-        }
-        catch (Exception exception)
-        {
-            log.Warning(
-                $"The firmware boot order could not be put back as it was before the deployment ({exception.Message}), so this machine may " +
-                "start Windows without its answer file. Start it from the network to deploy it again.");
-        }
-
-        return Task.CompletedTask;
     }
 }

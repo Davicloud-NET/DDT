@@ -4,7 +4,7 @@
 
 namespace DDT.Agent.Deployment;
 
-public sealed class DryRunBcdWriter(AgentLog log) : IBcdWriter
+public sealed class DryRunBcdWriter(AgentLog log) : IBcdWriter, IBootOrder
 {
     public Task WriteAsync(TargetVolumes volumes, CancellationToken cancellationToken)
     {
@@ -48,7 +48,7 @@ public sealed class DryRunBcdWriter(AgentLog log) : IBcdWriter
         return Task.CompletedTask;
     }
 
-    public Task RestoreBootOrderAsync(CancellationToken cancellationToken)
+    public Task RestoreAsync(CancellationToken cancellationToken)
     {
         log.Information("Dry run: the firmware boot order was not changed, so it is not put back.");
 

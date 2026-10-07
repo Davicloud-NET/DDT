@@ -136,13 +136,15 @@ ToolRunner tools = new(log, TimeProvider.System, new AccountProcessStarter(log))
 UefiVariables firmware = new();
 DiskpartPartitioner disks = new(tools, log, TimeProvider.System, AppContext.BaseDirectory);
 AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
+BcdbootWriter bcdWriter = new(tools, firmware, log);
 SequenceRunner runner = new SequenceRunnerBuilder
 {
     Server = server,
     Partitioner = disks,
     RawDisks = new PhysicalDisks(),
     Applier = new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(AppContext.BaseDirectory, "wimlib.log")),
-    BcdWriter = new BcdbootWriter(tools, firmware, log),
+    BcdWriter = bcdWriter,
+    BootOrder = bcdWriter,
     Rebooter = new WindowsPERebooter(tools, firmware, log),
     RestartMarker = new FileRestartMarker(AppContext.BaseDirectory, log, dryRun: false),
     Tools = tools,

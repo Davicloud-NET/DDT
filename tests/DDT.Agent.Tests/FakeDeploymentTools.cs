@@ -12,7 +12,7 @@ namespace DDT.Agent.Tests;
 // restart marker and the agent's removal. Every call goes into one journal, so a test can check their order. The
 // volumes are directories in a temporary folder that Dispose removes.
 internal sealed class FakeDeploymentTools
-    : IDiskPartitioner, IImageApplier, IBcdWriter, IRebooter, IWindowsSetupProbe, IDomainJoiner, IRestartMarker, IAgentRemoval, IRestartDeleter, IDisposable
+    : IDiskPartitioner, IImageApplier, IBcdWriter, IBootOrder, IRebooter, IWindowsSetupProbe, IDomainJoiner, IRestartMarker, IAgentRemoval, IRestartDeleter, IDisposable
 {
     private readonly Lock _lock = new();
     private readonly List<string> _calls = [];
@@ -157,7 +157,7 @@ internal sealed class FakeDeploymentTools
         }
     }
 
-    public Task RestoreBootOrderAsync(CancellationToken cancellationToken)
+    public Task RestoreAsync(CancellationToken cancellationToken)
     {
         Record("restore");
 

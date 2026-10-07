@@ -9,7 +9,7 @@ namespace DDT.Agent.Sequences;
 
 // Changes the firmware's boot order for a run. Until the last change, a restart starts the machine from the network
 // rather than a system that isn't ready. From then on a restart into the installed system is due.
-internal sealed class RunBootOrder(IBcdWriter bcdWriter, IBootRestartMarker restartMarker, AgentLog log)
+internal sealed class RunBootOrder(IBcdWriter bcdWriter, IBootOrder bootOrder, IBootRestartMarker restartMarker, AgentLog log)
 {
     // Firmware setup screens show a line of this much.
     private const int MaxBootEntryName = 64;
@@ -47,7 +47,7 @@ internal sealed class RunBootOrder(IBcdWriter bcdWriter, IBootRestartMarker rest
 
         string description = BootEntryName(run);
         run.WindowsFirst = true;
-        await bcdWriter.PutFirstAsync(
+        await bootOrder.PutFirstAsync(
             esp,
             FirmwareBootEntry.FallbackLoaderPath,
             description,
@@ -63,7 +63,7 @@ internal sealed class RunBootOrder(IBcdWriter bcdWriter, IBootRestartMarker rest
         {
             run.WindowsFirst = false;
             restartMarker.Clear();
-            await bcdWriter.RestoreBootOrderAsync(CancellationToken.None).ConfigureAwait(false);
+            await bootOrder.RestoreAsync(CancellationToken.None).ConfigureAwait(false);
         }
     }
 

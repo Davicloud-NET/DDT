@@ -38,6 +38,7 @@ internal static class TestAgents
             RawDisks = options.RawDisks ?? new MemoryRawDisks(),
             Applier = tools,
             BcdWriter = options.BcdWriter ?? tools,
+            BootOrder = tools,
             Rebooter = options.Rebooter ?? tools,
             RestartMarker = RestartMarker(tools, log),
             Tools = toolRunner,

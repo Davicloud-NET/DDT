@@ -106,6 +106,7 @@ public sealed class DryRunMachine(
         bool inWindows = phase == SequencePhase.Windows;
         string workDirectory = inWindows ? Path.Combine(Windows, "DDT") : options.Root;
         AgentConfiguration staged = new(options.Agent.ServerUrl.AbsoluteUri, options.Agent.RootCertificate?.ExportCertificatePem(), null);
+        DryRunBcdWriter bcdWriter = new(log);
 
         return new SequenceRunnerBuilder
         {
@@ -113,7 +114,8 @@ public sealed class DryRunMachine(
             Partitioner = disks,
             RawDisks = new FileRawDisks(options.Root, log),
             Applier = new DryRunImageApplier(log),
-            BcdWriter = new DryRunBcdWriter(log),
+            BcdWriter = bcdWriter,
+            BootOrder = bcdWriter,
             Rebooter = rebooter,
             RestartMarker = new FileRestartMarker(workDirectory, log, dryRun: true),
             Tools = tools,

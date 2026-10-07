@@ -300,6 +300,7 @@ public sealed class DryRunResumeTests : IDisposable
     private SequenceRunner Runner(AgentLog log)
     {
         DryRunToolRunner tools = new(log);
+        DryRunBcdWriter bcdWriter = new(log);
 
         return new SequenceRunnerBuilder
         {
@@ -307,7 +308,8 @@ public sealed class DryRunResumeTests : IDisposable
             Partitioner = new DryRunDiskPartitioner(_root, log),
             RawDisks = new FileRawDisks(_root, log),
             Applier = new DryRunImageApplier(log),
-            BcdWriter = new DryRunBcdWriter(log),
+            BcdWriter = bcdWriter,
+            BootOrder = bcdWriter,
             Rebooter = new DryRunRebooter(log),
             RestartMarker = new FileRestartMarker(_root, log, dryRun: true),
             Tools = tools,

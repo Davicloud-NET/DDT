@@ -28,6 +28,7 @@
     </Project>
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/DDT.Agent.Core.Tests/DDT.Agent.Core.Tests.csproj" />
     <Project Path="tests/DDT.Agent.Tests/DDT.Agent.Tests.csproj" />
     <Project Path="tests/DDT.Core.Tests/DDT.Core.Tests.csproj" />
     <Project Path="tests/DDT.E2E/DDT.E2E.csproj" />

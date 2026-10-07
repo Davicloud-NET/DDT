@@ -113,6 +113,7 @@ public static class WindowsPhaseService
             TimeProvider = TimeProvider.System,
             Options = new SequenceRunnerOptions(RunHeartbeat.DefaultInterval, parts.Directory, DryRun: false),
             Status = status,
+            AccountTools = WindowsAccountTools.Create(log),
         }.Build();
     }
 

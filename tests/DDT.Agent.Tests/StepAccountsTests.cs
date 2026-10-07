@@ -47,12 +47,28 @@ public sealed class StepAccountsTests
         Assert.Equal(StepOutcome.Done, result.Outcome);
         Assert.Equal([s_drivers.Path], whileRunning);
         Assert.Empty(run.Accounts.Shares.Connected);
+        Assert.DoesNotContain(
+            Assert.Single(run.ToolRunner.Options).Environment!.Keys,
+            name => name.StartsWith(RunScriptStepRunner.SharePrefix, StringComparison.Ordinal));
         Assert.Equal(
             ["run-report Running session", $"run-accounts {step.Id} session"],
             run.Server.Calls);
         Assert.Equal(
             [$@"connect {s_drivers.Path} as CORP\svc-drivers for the agent", $"disconnect {s_drivers.Path}"],
             run.Accounts.Events);
+    }
+
+    [Fact]
+    public async Task TheScriptLearnsWhereItsSharesAreWhenTheSystemGivesThemPlaces()
+    {
+        RunScriptStep step = Script(SequencePhase.WindowsPE, [Share]);
+        using StepRunnerFixture run = new([step]);
+        run.Server.OnRunStepAccounts(_ => new AgentStepAccounts(null, [s_drivers]));
+        run.Accounts.Shares.LocalPaths = ["/run/ddt/shares/1"];
+
+        await run.Steps.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
+
+        Assert.Equal("/run/ddt/shares/1", Assert.Single(run.ToolRunner.Options).Environment![RunScriptStepRunner.SharePrefix + "1"]);
     }
 
     [Fact]
@@ -202,7 +218,7 @@ public sealed class StepAccountsTests
         StepResult result = await dryRun.RunAsync(
             step,
             run.Context(SequencePhase.Windows),
-            account => runner.RunAsync(step, run.Context(SequencePhase.Windows), account, TestContext.Current.CancellationToken),
+            resources => runner.RunAsync(step, run.Context(SequencePhase.Windows), resources, TestContext.Current.CancellationToken),
             TestContext.Current.CancellationToken);
 
         Assert.Equal(StepOutcome.Done, result.Outcome);

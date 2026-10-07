@@ -9,7 +9,6 @@ namespace DDT.Agent.Deployment;
 public interface IShareConnector
 {
     // Connects every share in order, in account's logon session, or in the agent's when account is null. A failure
-    // disconnects the shares already connected and names the share, never a password. Disposing disconnects them all
-    // and never throws.
-    Task<IAsyncDisposable> ConnectAsync(IReadOnlyList<AgentShareConnection> shares, IAccountSession? account, CancellationToken cancellationToken);
+    // disconnects the shares already connected and names the share, never a password.
+    Task<IConnectedShares> ConnectAsync(IReadOnlyList<AgentShareConnection> shares, IAccountSession? account, CancellationToken cancellationToken);
 }

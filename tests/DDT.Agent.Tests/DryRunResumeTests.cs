@@ -322,6 +322,7 @@ public sealed class DryRunResumeTests : IDisposable
             Log = log,
             TimeProvider = _time,
             Options = new SequenceRunnerOptions(Timeout.InfiniteTimeSpan, _root, DryRun: true),
+            AccountTools = AccountTools.DryRun(log),
         }.Build();
     }
 

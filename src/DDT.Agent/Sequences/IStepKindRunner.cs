@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using DDT.Agent.Deployment;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 
@@ -13,6 +12,5 @@ public interface IStepKindRunner
 {
     bool Runs(SequenceStep step);
 
-    // account is the account the step runs as, signed in already, or null to run as the agent.
-    Task<StepResult> RunAsync(SequenceStep step, StepContext context, IAccountSession? account, CancellationToken cancellationToken);
+    Task<StepResult> RunAsync(SequenceStep step, StepContext context, StepResources resources, CancellationToken cancellationToken);
 }

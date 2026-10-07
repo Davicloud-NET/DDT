@@ -128,6 +128,7 @@ public sealed class DryRunMachine(
             TimeProvider = timeProvider,
             Options = new SequenceRunnerOptions(options.HeartbeatInterval, workDirectory, DryRun: true),
             Status = inWindows ? null : status,
+            AccountTools = AccountTools.DryRun(log),
         }.Build();
     }
 }

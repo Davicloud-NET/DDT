@@ -16,6 +16,9 @@ internal sealed class FakeShareConnector(List<string> events) : IShareConnector
 
     public Exception Failure { get; set; } = new DeploymentStepException("The scripted share failed.");
 
+    // Where a step finds its shares. Empty as in Windows, unless a test stands in for a system that mounts them.
+    public IReadOnlyList<string> LocalPaths { get; set; } = [];
+
     // The remotes connected right now, so a step can check them while it runs.
     public IReadOnlyList<string> Connected
     {
@@ -28,7 +31,7 @@ internal sealed class FakeShareConnector(List<string> events) : IShareConnector
         }
     }
 
-    public Task<IAsyncDisposable> ConnectAsync(IReadOnlyList<AgentShareConnection> shares, IAccountSession? account, CancellationToken cancellationToken)
+    public Task<IConnectedShares> ConnectAsync(IReadOnlyList<AgentShareConnection> shares, IAccountSession? account, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(shares);
         string who = account is null ? "the agent" : account.UserName;
@@ -42,7 +45,7 @@ internal sealed class FakeShareConnector(List<string> events) : IShareConnector
                 Disconnect();
                 Record($"share failed {remote}");
 
-                return Task.FromException<IAsyncDisposable>(Failure);
+                return Task.FromException<IConnectedShares>(Failure);
             }
 
             lock (_connected)
@@ -53,7 +56,7 @@ internal sealed class FakeShareConnector(List<string> events) : IShareConnector
             Record($"connect {remote} as {share.UserName} for {who}");
         }
 
-        return Task.FromResult<IAsyncDisposable>(new Handle(this));
+        return Task.FromResult<IConnectedShares>(new Handle(this));
     }
 
     private void Disconnect()
@@ -80,8 +83,10 @@ internal sealed class FakeShareConnector(List<string> events) : IShareConnector
         }
     }
 
-    private sealed class Handle(FakeShareConnector connector) : IAsyncDisposable
+    private sealed class Handle(FakeShareConnector connector) : IConnectedShares
     {
+        public IReadOnlyList<string> LocalPaths => connector.LocalPaths;
+
         public ValueTask DisposeAsync()
         {
             connector.Disconnect();

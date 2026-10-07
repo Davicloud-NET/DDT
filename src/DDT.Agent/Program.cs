@@ -164,6 +164,7 @@ SequenceRunner runner = new SequenceRunnerBuilder
     TimeProvider = TimeProvider.System,
     Options = new SequenceRunnerOptions(RunHeartbeat.DefaultInterval, AppContext.BaseDirectory, DryRun: false),
     Status = status,
+    AccountTools = WindowsAccountTools.Create(log),
 }.Build();
 HardwareMachineIdentityReader identity = new(new FirmwareTables(), new SystemHardware(), new UefiVariables(), new WindowsSecureBoot());
 AgentLoop loop = new(

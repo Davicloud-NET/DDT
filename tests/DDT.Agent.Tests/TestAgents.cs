@@ -50,6 +50,7 @@ internal static class TestAgents
             TimeProvider = timeProvider,
             Options = new SequenceRunnerOptions(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun),
             Status = options.Status,
+            AccountTools = options.DryRun ? AccountTools.DryRun(log) : WindowsAccountTools.Create(log),
         }.Build();
     }
 

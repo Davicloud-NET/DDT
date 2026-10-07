@@ -8,8 +8,7 @@ using DDT.Agent.Deployment;
 namespace DDT.Agent.Sequences;
 
 // Puts a SequenceRunner together from the machine's tools, the same way for WinPE, the installed Windows, a dry run
-// and the tests. Without AccountTools, a dry run only logs accounts and shares, and any other run uses Windows for
-// them.
+// and the tests.
 public sealed class SequenceRunnerBuilder
 {
     public required IAgentServer Server { get; init; }
@@ -49,7 +48,8 @@ public sealed class SequenceRunnerBuilder
     // What the console at the machine shows, which the run keeps up to date.
     public ConsoleStatus? Status { get; init; }
 
-    public AccountTools? AccountTools { get; init; }
+    // A dry run's tools only log accounts and shares.
+    public required AccountTools AccountTools { get; init; }
 
     public SequenceRunner Build()
     {
@@ -73,7 +73,6 @@ public sealed class SequenceRunnerBuilder
         RunSession session = run.Session;
         RunHeartbeat heartbeat = run.Heartbeat;
         RunDownloads downloads = new(Server, session, Log, TimeProvider, Options.HeartbeatInterval);
-        AccountTools accountTools = AccountTools ?? (Options.DryRun ? AccountTools.DryRun(Log) : AccountTools.Native(Log));
 
         return new AgentStepRunner(
             [
@@ -87,7 +86,7 @@ public sealed class SequenceRunnerBuilder
                 new WriteCloudInitSeedStepRunner(RawDisks, session, Log, TimeProvider),
                 new PauseStepRunner(heartbeat, Status?.Console, Log, TimeProvider),
             ],
-            new StepAccounts(Server, session, heartbeat.ReportNowAsync, accountTools, Log, TimeProvider),
+            new StepAccounts(Server, session, heartbeat.ReportNowAsync, AccountTools, Log, TimeProvider),
             heartbeat.TokenRejected,
             Log,
             TimeProvider);

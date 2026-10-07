@@ -38,7 +38,7 @@ public sealed class AgentStepRunner(
 
             try
             {
-                result = await accounts.RunAsync(step, context, account => RunKindAsync(step, context, account, cancellationToken), cancellationToken)
+                result = await accounts.RunAsync(step, context, resources => RunKindAsync(step, context, resources, cancellationToken), cancellationToken)
                     .ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -70,7 +70,7 @@ public sealed class AgentStepRunner(
     }
 
     // A Restart step needs no runner. Any other step without a runner for its kind fails.
-    private async Task<StepResult> RunKindAsync(SequenceStep step, StepContext context, IAccountSession? account, CancellationToken cancellationToken)
+    private async Task<StepResult> RunKindAsync(SequenceStep step, StepContext context, StepResources resources, CancellationToken cancellationToken)
     {
         if (step is RebootStep)
         {
@@ -83,7 +83,7 @@ public sealed class AgentStepRunner(
         }
 
         return runners.FirstOrDefault(runner => runner.Runs(step)) is { } kind
-            ? await kind.RunAsync(step, context, account, cancellationToken).ConfigureAwait(false)
+            ? await kind.RunAsync(step, context, resources, cancellationToken).ConfigureAwait(false)
             : StepResult.Failed(UnknownKind);
     }
 

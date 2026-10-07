@@ -31,11 +31,11 @@ public sealed class StepAccounts(
         return step is RunScriptStep { RunAs: not null } || step.Shares is { Count: > 0 };
     }
 
-    // run gets the signed-in account, or null for a step that runs as the agent.
+    // run gets the signed-in account and the shares' places, or nothing for a step without accounts.
     public async Task<StepResult> RunAsync(
         SequenceStep step,
         StepContext context,
-        Func<IAccountSession?, Task<StepResult>> run,
+        Func<StepResources, Task<StepResult>> run,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(step);
@@ -44,7 +44,7 @@ public sealed class StepAccounts(
 
         if (!Uses(step))
         {
-            return await run(null).ConfigureAwait(false);
+            return await run(StepResources.None).ConfigureAwait(false);
         }
 
         bool runsAs = step is RunScriptStep { RunAs: not null };
@@ -65,7 +65,7 @@ public sealed class StepAccounts(
             cancellationToken).ConfigureAwait(false);
 
         IAccountSession? account = null;
-        IAsyncDisposable? shares = null;
+        IConnectedShares? shares = null;
 
         try
         {
@@ -77,7 +77,7 @@ public sealed class StepAccounts(
 
             shares = await tools.Shares.ConnectAsync(accounts.Shares ?? [], account, cancellationToken).ConfigureAwait(false);
 
-            return await run(account).ConfigureAwait(false);
+            return await run(new StepResources(account, shares.LocalPaths)).ConfigureAwait(false);
         }
         finally
         {

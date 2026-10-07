@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Globalization;
 using System.Text;
 using DDT.Agent.Deployment;
 using DDT.Contracts.Agents;
@@ -25,6 +26,9 @@ public sealed class RunScriptStepRunner(
     public const string VariablePrefix = "DDT_VAR_";
 
     public const string VariablesOut = "DDT_VARIABLES_OUT";
+
+    // DDT_SHARE_1 is where the script finds its first share, when the system gave the share a place of its own.
+    public const string SharePrefix = "DDT_SHARE_";
 
     public const int MaxOutputLines = 64;
 
@@ -57,15 +61,17 @@ public sealed class RunScriptStepRunner(
     }
 
     public Task<StepResult> RunAsync(RunScriptStep step, StepContext context, CancellationToken cancellationToken) =>
-        RunAsync(step, context, null, cancellationToken);
+        RunAsync(step, context, StepResources.None, cancellationToken);
 
-    // account is the account the step runs as, already signed in, or null to run as the agent. A script run as an
-    // account gets a separate directory. The account is let into it and the package, because only SYSTEM may open the
-    // run's directory.
-    public async Task<StepResult> RunAsync(RunScriptStep step, StepContext context, IAccountSession? account, CancellationToken cancellationToken)
+    // A script run as an account gets a separate directory. The account is let into it and the package, because only
+    // SYSTEM may open the run's directory.
+    public async Task<StepResult> RunAsync(RunScriptStep step, StepContext context, StepResources resources, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(step);
         ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(resources);
+
+        IAccountSession? account = resources.Account;
 
         if (launcher.Missing(step, context.Phase) is { } missing)
         {
@@ -86,7 +92,7 @@ public sealed class RunScriptStepRunner(
         account?.Admit(scripts);
         ScriptLaunch launch = await launcher.WriteAsync(step, scripts, cancellationToken).ConfigureAwait(false);
         string? package = await UnpackAsync(step, directory, context, account, cancellationToken).ConfigureAwait(false);
-        Dictionary<string, string> environment = EnvironmentFor(step, context, package);
+        Dictionary<string, string> environment = EnvironmentFor(step, context, package, resources.SharePaths);
 
         VariableDeclaration[] settable = [.. session.Run.Sequence.Variables?.Where(variable => variable is { SetBySteps: true }) ?? []];
         string? outputs = PrepareOutputs(step, scripts, settable, environment);
@@ -121,8 +127,8 @@ public sealed class RunScriptStepRunner(
 
     bool IStepKindRunner.Runs(SequenceStep step) => step is RunScriptStep;
 
-    Task<StepResult> IStepKindRunner.RunAsync(SequenceStep step, StepContext context, IAccountSession? account, CancellationToken cancellationToken) =>
-        RunAsync((RunScriptStep)step, context, account, cancellationToken);
+    Task<StepResult> IStepKindRunner.RunAsync(SequenceStep step, StepContext context, StepResources resources, CancellationToken cancellationToken) =>
+        RunAsync((RunScriptStep)step, context, resources, cancellationToken);
 
     private static bool Succeeded(RunScriptStep step, int exitCode) =>
         step.SuccessExitCodes.Contains(exitCode) || step.RebootExitCodes.Contains(exitCode);
@@ -178,7 +184,7 @@ public sealed class RunScriptStepRunner(
         return outputs;
     }
 
-    private Dictionary<string, string> EnvironmentFor(RunScriptStep step, StepContext context, string? package)
+    private Dictionary<string, string> EnvironmentFor(RunScriptStep step, StepContext context, string? package, IReadOnlyList<string> sharePaths)
     {
         Dictionary<string, string> environment = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -196,6 +202,11 @@ public sealed class RunScriptStepRunner(
         if (context.Phase == SequencePhase.WindowsPE && session.Volumes is { } volumes)
         {
             environment["DDT_WINDOWS"] = volumes.Windows;
+        }
+
+        for (int index = 0; index < sharePaths.Count; index++)
+        {
+            environment[string.Create(CultureInfo.InvariantCulture, $"{SharePrefix}{index + 1}")] = sharePaths[index];
         }
 
         foreach ((string name, string value) in UserVariables(context))

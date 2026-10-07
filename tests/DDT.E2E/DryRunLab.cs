@@ -53,6 +53,9 @@ public sealed partial class DryRunLab : IAsyncLifetime
 
     internal HostProcess Host => _host!;
 
+    // Where the host is told to look for the Linux boot environment. Empty unless a test offers it.
+    private string LinuxBootFolder => Path.Combine(_directory, "linux-boot");
+
     internal AdminApi Api => _api!;
 
     internal LiveRecorder Live => _live!;
@@ -139,6 +142,10 @@ public sealed partial class DryRunLab : IAsyncLifetime
 
         return AgentProcess.Start(start);
     }
+
+    // Until the result is disposed, the host can start both boot environments, so a machine gets from one into the
+    // other. Otherwise it has neither, and every dry run stays in the boot environment it started.
+    internal BootEnvironmentFiles OfferBothBootEnvironments() => new(Host.StorePath, LinuxBootFolder);
 
     internal Task<SequenceView> CreateSequenceAsync(string name, IReadOnlyList<SequenceStep> steps, CancellationToken cancellationToken) =>
         CreateSequenceAsync(name, new SequenceDefinition(SequenceDefinition.CurrentVersion, steps), cancellationToken);
@@ -236,8 +243,8 @@ public sealed partial class DryRunLab : IAsyncLifetime
     internal Task<MachineLogPage> LogAsync(Guid machineId, string query, CancellationToken cancellationToken) =>
         Api.GetAsync($"api/machines/{machineId:D}/log?{query}", DdtJsonContext.Default.MachineLogPage, cancellationToken);
 
-    // The audit events about a run, read from the host's database.
-    internal async Task<IReadOnlyList<AuditEvent>> AuditAsync(Guid runId, CancellationToken cancellationToken)
+    // The audit events about a run or a machine, read from the host's database.
+    internal async Task<IReadOnlyList<AuditEvent>> AuditAsync(Guid subjectId, CancellationToken cancellationToken)
     {
         DbContextOptions<SqliteDdtDbContext> options = new DbContextOptionsBuilder<SqliteDdtDbContext>()
             .UseSqlite($"Data Source={Host.DatabasePath};Mode=ReadOnly;Pooling=False")
@@ -246,7 +253,7 @@ public sealed partial class DryRunLab : IAsyncLifetime
 
         await using (database.ConfigureAwait(false))
         {
-            string subject = runId.ToString("D");
+            string subject = subjectId.ToString("D");
 
             return await database.AuditEvents.AsNoTracking().Where(audit => audit.SubjectId == subject).ToListAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -350,6 +357,7 @@ public sealed partial class DryRunLab : IAsyncLifetime
                 ["DDT:Deployment:Domain:Name"] = Domain,
                 ["DDT:Deployment:Domain:UserName"] = @"E2E\ddt-join",
                 ["DDT:Deployment:Domain:Password"] = JoinPassword,
+                ["DDT:LinuxBoot:Path"] = LinuxBootFolder,
             },
             cancellationToken).ConfigureAwait(false);
 

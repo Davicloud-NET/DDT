@@ -7,17 +7,17 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// A run that an earlier start of the agent left on the Windows volume at WindowsRoot. It holds the state and the run
-// token kept with it. The token resumes the run if the server still has it running.
-public sealed record LocalRun(string WindowsRoot, RunFiles Files, SequenceState State, string? RunToken)
+// A run that an earlier start of the agent left at Root, which is a Windows volume such as C:\. It holds the state and
+// the run token kept with it. The token resumes the run if the server still has it running.
+public sealed record LocalRun(string Root, RunFiles Files, SequenceState State, string? RunToken)
 {
-    // Null when the volume holds no state this agent can continue.
-    public static async Task<LocalRun?> LoadAsync(string windowsRoot, AgentLog log, CancellationToken cancellationToken)
+    // Null when the root holds no state this agent can continue.
+    public static async Task<LocalRun?> LoadAsync(string root, AgentLog log, CancellationToken cancellationToken)
     {
-        RunFiles files = RunFiles.In(windowsRoot, log);
+        RunFiles files = RunFiles.In(root, log);
         SequenceState? state = await files.LoadStateAsync(cancellationToken).ConfigureAwait(false);
 
-        return state is null ? null : new LocalRun(windowsRoot, files, state, await files.LoadTokenAsync(cancellationToken).ConfigureAwait(false));
+        return state is null ? null : new LocalRun(root, files, state, await files.LoadTokenAsync(cancellationToken).ConfigureAwait(false));
     }
 
     // The answer file holds passwords. It may be there once its step started, even if the engine has since failed that
@@ -41,6 +41,6 @@ public sealed record LocalRun(string WindowsRoot, RunFiles Files, SequenceState 
     public void Discard(AgentLog log)
     {
         Files.Discard();
-        DeleteAnswerFile(State, WindowsRoot, log);
+        DeleteAnswerFile(State, Root, log);
     }
 }

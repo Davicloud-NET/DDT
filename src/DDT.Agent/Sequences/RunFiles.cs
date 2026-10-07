@@ -10,9 +10,9 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// A run's files in <Windows volume>\DDT\run. state.json uses Format 1 for a list and Format 2 for a tree. token holds
-// the run token, a secret that's never logged. Each file is replaced through a temporary file written through to disk,
-// so a power loss leaves the old file or the new one, never part of one.
+// A run's files in the run folder of its directory. state.json uses Format 1 for a list and Format 2 for a tree. token
+// holds the run token, a secret that's never logged. Each file is replaced through a temporary file written through to
+// disk, so a power loss leaves the old file or the new one, never part of one.
 public sealed class RunFiles(string runDirectory, AgentLog log)
 {
     public string StatePath => Path.Combine(runDirectory, "run", "state.json");
@@ -22,11 +22,14 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
     // In the installed Windows, the report of how the run ended, which stays with the token until the server has it.
     public string FinalReportPath => Path.Combine(runDirectory, "run", "final-report.json");
 
-    // The files of a run whose Windows volume is at windowsRoot, such as C:\.
-    public static RunFiles In(string windowsRoot, AgentLog log) => new(Path.Combine(windowsRoot, "DDT"), log);
+    // A run's directory under root: DDT on a Windows volume such as C:\, and the root itself where the agent has a
+    // directory of its own.
+    public static string DirectoryIn(string root) => OperatingSystem.IsWindows() ? Path.Combine(root, "DDT") : root;
 
-    // Where a Windows volume keeps a run's state, if it has one.
-    public static string StatePathIn(string windowsRoot) => Path.Combine(windowsRoot, "DDT", "run", "state.json");
+    public static RunFiles In(string root, AgentLog log) => new(DirectoryIn(root), log);
+
+    // Where a root keeps a run's state, if it has one.
+    public static string StatePathIn(string root) => Path.Combine(DirectoryIn(root), "run", "state.json");
 
     public Task SaveStateAsync(SequenceState state, CancellationToken cancellationToken) =>
         ReplaceAsync(StatePath, JsonSerializer.SerializeToUtf8Bytes(state, AgentJsonContext.Default.SequenceState), cancellationToken);

@@ -28,7 +28,7 @@ internal sealed class LocalRunTracker(LocalRunLocator locator, AgentLog log)
 
             if (local.State.RunId != known)
             {
-                log.Information($"Found run {local.State.RunId} on {local.WindowsRoot}. It goes on if the server still runs it.");
+                log.Information($"Found run {local.State.RunId} on {local.Root}. It goes on if the server still runs it.");
             }
         }
     }

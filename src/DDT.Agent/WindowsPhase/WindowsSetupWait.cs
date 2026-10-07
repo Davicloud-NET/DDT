@@ -103,9 +103,9 @@ internal sealed class WindowsSetupWait(
     // Setup has read the answer file, and its SetupComplete.cmd line may never have run, because an OEM key skips it.
     private void DeleteAnswerFile(LocalRun local)
     {
-        string path = UnattendFile.PathIn(local.WindowsRoot);
+        string path = UnattendFile.PathIn(local.Root);
         bool there = File.Exists(path);
-        LocalRun.DeleteAnswerFile(local.State, local.WindowsRoot, log);
+        LocalRun.DeleteAnswerFile(local.State, local.Root, log);
 
         if (there && !File.Exists(path))
         {

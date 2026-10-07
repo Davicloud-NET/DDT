@@ -103,11 +103,11 @@ internal sealed class RunStart(
     {
         if (run.InInstalledSystem)
         {
-            run.Session.RunningWindows = resumed.WindowsRoot;
+            run.Session.RunRoot = resumed.Root;
         }
         else if (partitioner is not null && RunVariables.DiskIds(resumed.State.Variables) is { } ids)
         {
-            run.Session.Volumes = await partitioner.FindAsync(ids, resumed.WindowsRoot, cancellationToken).ConfigureAwait(false);
+            run.Session.Volumes = await partitioner.FindAsync(ids, resumed.Root, cancellationToken).ConfigureAwait(false);
         }
 
         await run.Store.AttachAsync(resumed.Files, CancellationToken.None).ConfigureAwait(false);
@@ -123,7 +123,7 @@ internal sealed class RunStart(
         if (run.Resumed is { } resumed)
         {
             await ending.EndRunAsync(run, resumed.Files, report).ConfigureAwait(false);
-            LocalRun.DeleteAnswerFile(resumed.State, resumed.WindowsRoot, log);
+            LocalRun.DeleteAnswerFile(resumed.State, resumed.Root, log);
         }
 
         return await ending.ReportFailedAsync(run, run.Resumed?.Files, report, cancellationToken).ConfigureAwait(false);

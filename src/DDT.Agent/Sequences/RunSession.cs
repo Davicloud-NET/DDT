@@ -9,8 +9,8 @@ using DDT.Contracts.Images;
 namespace DDT.Agent.Sequences;
 
 // What the steps of one run share: the run, the machine's tokens, the disk chosen before it started, and its volumes
-// once Partition made them or a restart found them again. In the installed Windows the run continues in the running
-// Windows.
+// once Partition made them or a restart found them again. In the installed system the run continues in the running
+// system.
 public sealed class RunSession(Guid machineId, AgentRun run, DeploymentTokens tokens)
 {
     public Guid MachineId { get; } = machineId;
@@ -29,11 +29,11 @@ public sealed class RunSession(Guid machineId, AgentRun run, DeploymentTokens to
 
     public TargetVolumes? Volumes { get; set; }
 
-    // The root of the running Windows, such as C:\, while the run continues in it.
-    public string? RunningWindows { get; set; }
+    // The root of the running system, such as C:\, while the run continues in it.
+    public string? RunRoot { get; set; }
 
-    // <Windows volume>\DDT, which holds the run's files. Null until the disk is partitioned.
-    public string? RunDirectory => (Volumes?.Windows ?? RunningWindows) is { } windows ? Path.Combine(windows, "DDT") : null;
+    // The directory that holds the run's files, <Windows volume>\DDT. Null until the disk is partitioned.
+    public string? RunDirectory => (Volumes?.Windows ?? RunRoot) is { } root ? RunFiles.DirectoryIn(root) : null;
 
     public TargetVolumes RequireVolumes() =>
         Volumes ?? throw new DeploymentStepException("This step works on the partitioned disk, but no earlier step partitioned it.");

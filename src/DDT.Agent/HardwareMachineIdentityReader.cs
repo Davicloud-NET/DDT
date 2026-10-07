@@ -9,14 +9,13 @@ using DDT.Agent.Facts;
 
 namespace DDT.Agent;
 
-public sealed class HardwareMachineIdentityReader(IFirmwareTables firmware, ISystemHardware hardware, IUefiVariables uefi) : IMachineIdentityReader
+public sealed class HardwareMachineIdentityReader(
+    IFirmwareTables firmware,
+    ISystemHardware hardware,
+    IUefiVariables uefi,
+    ISecureBootReader secureBoot) : IMachineIdentityReader
 {
     private readonly MachineFactsReader _facts = new(firmware, hardware, uefi);
-
-    public HardwareMachineIdentityReader()
-        : this(new FirmwareTables(), new SystemHardware(), new UefiVariables())
-    {
-    }
 
     public MachineIdentity Read()
     {
@@ -30,8 +29,8 @@ public sealed class HardwareMachineIdentityReader(IFirmwareTables firmware, ISys
             system?.Manufacturer,
             system?.ProductName,
             system?.SerialNumber,
-            SecureBootState.Read(),
-            SecureBootTrust.Read(),
+            secureBoot.Enabled(),
+            secureBoot.TrustedCas(),
             system?.ChassisType,
             addresses,
             _facts.Read(system, network));

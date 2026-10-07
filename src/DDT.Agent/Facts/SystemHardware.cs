@@ -20,9 +20,12 @@ public sealed class SystemHardware : ISystemHardware
         return NativeMethods.GlobalMemoryStatusEx(ref status) && status.TotalPhys > 0 ? status.TotalPhys : null;
     }
 
-    // The first call only asks for the size. It's asked again if it grew in between, as it would when a processor is
-    // added while Windows runs.
-    public byte[]? ProcessorCores()
+    public ProcessorCount? ProcessorCores() => CoreRecords() is { } records ? ProcessorCount.From(records) : null;
+
+    // What GetLogicalProcessorInformationEx writes for RelationProcessorCore: one record per core. The first call only
+    // asks for the size. It's asked again if it grew in between, as it would when a processor is added while Windows
+    // runs.
+    private static byte[]? CoreRecords()
     {
         uint length = 0;
 

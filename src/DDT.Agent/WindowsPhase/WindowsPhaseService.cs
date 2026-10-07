@@ -5,6 +5,7 @@
 using System.Text;
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
+using DDT.Agent.Facts;
 using DDT.Agent.Sequences;
 using Microsoft.Win32;
 
@@ -117,7 +118,7 @@ public static class WindowsPhaseService
         new WindowsPhaseLoopBuilder
         {
             Server = parts.Server,
-            IdentityReader = new HardwareMachineIdentityReader(),
+            IdentityReader = new HardwareMachineIdentityReader(new FirmwareTables(), new SystemHardware(), new UefiVariables(), new WindowsSecureBoot()),
             Runner = runner,
             Setup = new RegistrySetupProbe(),
             Rebooter = parts.Rebooter,

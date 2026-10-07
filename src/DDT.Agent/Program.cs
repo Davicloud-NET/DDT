@@ -6,6 +6,7 @@ using System.Text;
 using DDT.Agent;
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
+using DDT.Agent.Facts;
 using DDT.Agent.Sequences;
 using DDT.Agent.WindowsPhase;
 using DDT.Contracts.Agents;
@@ -162,9 +163,10 @@ SequenceRunner runner = new SequenceRunnerBuilder
     Options = new SequenceRunnerOptions(RunHeartbeat.DefaultInterval, AppContext.BaseDirectory, Environment.SystemDirectory, DryRun: false),
     Status = status,
 }.Build();
+HardwareMachineIdentityReader identity = new(new FirmwareTables(), new SystemHardware(), new UefiVariables(), new WindowsSecureBoot());
 AgentLoop loop = new(
     server,
-    new AgentMachine(new HardwareMachineIdentityReader(), disks, new LocalRunLocator(LocalRunLocator.FixedDrives()), version, AgentEnvironment.WindowsPE),
+    new AgentMachine(identity, disks, new LocalRunLocator(LocalRunLocator.FixedDrives()), version, AgentEnvironment.WindowsPE),
     status,
     runner,
     log,

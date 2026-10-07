@@ -18,7 +18,7 @@ public sealed class MachineFactsReader(IFirmwareTables firmware, ISystemHardware
     // they couldn't be read.
     public MachineFacts Read(SmbiosSystemInformation? smbios, NetworkFacts? network)
     {
-        ProcessorCount? processors = Try(() => hardware.ProcessorCores() is { } records ? ProcessorCount.From(records) : null);
+        ProcessorCount? processors = Try(hardware.ProcessorCores);
         byte[]? acpiTables = Try(() => firmware.List(FirmwareTables.AcpiProvider));
         string? tpmVersion = acpiTables is null ? null : AcpiTpm.Version(acpiTables);
 

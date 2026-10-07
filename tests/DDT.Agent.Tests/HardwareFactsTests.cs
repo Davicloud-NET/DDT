@@ -31,11 +31,7 @@ public sealed class HardwareFactsTests
     [Fact]
     public void CountsThisMachinesCoresAndLogicalProcessors()
     {
-        byte[]? records = new SystemHardware().ProcessorCores();
-
-        Assert.NotNull(records);
-
-        ProcessorCount? count = ProcessorCount.From(records);
+        ProcessorCount? count = new SystemHardware().ProcessorCores();
 
         Assert.NotNull(count);
         Assert.InRange(count.Cores, 1, count.LogicalProcessors);

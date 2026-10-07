@@ -4,16 +4,16 @@
 
 namespace DDT.Agent.Facts;
 
-// What Windows counts of the machine's memory and processors. Each member is null when Windows cannot tell.
+// What the system counts of the machine's memory and processors. Each member is null when it cannot tell.
 public interface ISystemHardware
 {
     // The memory installed, in kilobytes, as the firmware's SMBIOS memory devices add up. Some virtual machines and
-    // boards list none that Windows can use.
+    // boards list none that the system can use.
     ulong? InstalledMemoryKilobytes();
 
-    // The physical memory Windows can use, in bytes, a little less than is installed.
+    // The physical memory the system can use, in bytes, a little less than is installed.
     ulong? UsableMemoryBytes();
 
-    // What GetLogicalProcessorInformationEx writes for RelationProcessorCore: one record per core.
-    byte[]? ProcessorCores();
+    // The cores and logical processors of the whole machine, not only those this process may run on.
+    ProcessorCount? ProcessorCores();
 }

@@ -1,0 +1,127 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+using System.Text;
+using DDT.Agent.Consoles;
+
+namespace DDT.Agent;
+
+// What every agent does before its system's own parts: the legal texts, the options, the consoles and the update.
+// Then the platform does the run, or a dry run of it.
+public sealed class AgentStartup(AgentPlatform platform)
+{
+    public const string LicensesArgument = "--licenses";
+
+    public async Task<int> RunAsync(string[] args)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+
+        if (args.Contains(LicensesArgument))
+        {
+            WriteLicenses();
+
+            return AgentExitCodes.Stopped;
+        }
+
+        platform.WriteStartupNotices(Console.Out);
+
+        if (!AgentOptions.TryParse(args, out AgentOptions? options, out string error))
+        {
+            Console.Error.WriteLine(error);
+
+            return AgentExitCodes.ConfigurationError;
+        }
+
+        using CancellationTokenSource stop = new();
+
+        Console.CancelKeyPress += (_, eventArgs) =>
+        {
+            eventArgs.Cancel = true;
+            stop.Cancel();
+        };
+
+        string version = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "unknown";
+
+        using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate);
+
+        AgentLog log = new(TimeProvider.System, Console.Out);
+        TextMachineConsole text = new(new ConsoleSignInPrompt(log, TimeProvider.System, options.KeyboardLayout), log);
+
+        // If there's a graphical console, it starts before anything else, so it shows the update check and the
+        // connection too. The text console stays underneath it and takes over if it goes away.
+        string? consolePath = PipeMachineConsole.PathFor(options, Console.IsInputRedirected, AppContext.BaseDirectory);
+        await using PipeMachineConsole? graphical = consolePath is null
+            ? null
+            : new PipeMachineConsole(text, new ProcessConsoleLauncher(consolePath), log, version);
+        log.MachineConsole = graphical;
+        ConsoleStatus status = new(graphical ?? (IMachineConsole)text, version, options.ServerUrl, options.KeyboardLayout, options.DryRun);
+        graphical?.Start();
+
+        StartedAgent agent = new(options, server, log, status, graphical, consolePath, version);
+
+        if (options.DryRun)
+        {
+            log.Information($"Dry run {options.DryRunId}: this computer stands in for a fake machine and nothing on it is changed.");
+        }
+
+        if (await UpdateAsync(agent, args, stop.Token).ConfigureAwait(false) is { } exitCode)
+        {
+            return exitCode;
+        }
+
+        return options.DryRun
+            ? await platform.DryRunAsync(agent, stop.Token).ConfigureAwait(false)
+            : await platform.RunAsync(agent, stop.Token).ConfigureAwait(false);
+    }
+
+    // Console.Out encodes for the console's code page, 437 in an English WinPE, and replaces characters it lacks,
+    // such as the copyright sign. When output is redirected, the texts go out in UTF-8, so a file gets them unchanged.
+    private void WriteLicenses()
+    {
+        if (Console.IsOutputRedirected)
+        {
+            using StreamWriter output = new(Console.OpenStandardOutput(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            platform.WriteLicenses(output);
+        }
+        else
+        {
+            platform.WriteLicenses(Console.Out);
+        }
+    }
+
+    // A dry run changes nothing on the computer it runs on, and a build run from source would swap itself for the
+    // published agent, so neither updates. An agent started by an update never updates again. The exit code is the
+    // newer agent's, and null when this one goes on.
+    private async Task<int?> UpdateAsync(StartedAgent agent, string[] args, CancellationToken cancellationToken)
+    {
+        if (agent.Options.DryRun || !platform.IsPublished)
+        {
+            agent.Log.Information("Not checking for a newer agent in a dry run or an agent that was not published.");
+
+            return null;
+        }
+
+        if (agent.Options.NoUpdate)
+        {
+            return null;
+        }
+
+        string current = await ReleaseFiles.Sha256Async(Environment.ProcessPath!, cancellationToken).ConfigureAwait(false);
+        ProcessAgentRelauncher relauncher = new(() =>
+        {
+            agent.Server.CloseConnections();
+            agent.Graphical?.Close();
+        });
+        // A console passed with --console is kept. The one next to the agent is replaced by the server's version.
+        AgentUpdate update = new(
+            agent.Server,
+            relauncher,
+            agent.Log,
+            TimeProvider.System,
+            new RunningAgent(current, AppContext.BaseDirectory, args, agent.Options.ConsolePath is null ? agent.ConsolePath : null),
+            agent.Status);
+
+        return await update.RunAsync(cancellationToken).ConfigureAwait(false);
+    }
+}

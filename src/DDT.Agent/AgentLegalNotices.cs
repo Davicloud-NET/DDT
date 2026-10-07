@@ -8,8 +8,6 @@ namespace DDT.Agent;
 // to it. The start-up lines are the GPL's Appropriate Legal Notices. The LGPL wants wimlib's copyright among them.
 public static class AgentLegalNotices
 {
-    public const string LicensesArgument = "--licenses";
-
     // Additional term 1 in NOTICE requires this exact text.
     public const string AttributionNotice = "DDT, the Davicloud Deployment Toolkit. Copyright (C) 2026 Davicloud.";
 
@@ -23,7 +21,7 @@ public static class AgentLegalNotices
         "It is free software: you can redistribute it and modify it under the GNU General Public License, " +
         "version 3 or later, with additional terms.",
         $"It uses wimlib, {WimlibCopyright}, which is under the GNU Lesser General Public License, version 3 or later.",
-        $"Run ddt-agent {LicensesArgument} to read the licences.",
+        $"Run ddt-agent {AgentStartup.LicensesArgument} to read the licences.",
     ];
 
     // Embedded under these names by DDT.Agent.csproj, and printed in this order.

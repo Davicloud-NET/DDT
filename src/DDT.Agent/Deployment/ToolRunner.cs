@@ -9,10 +9,13 @@ using System.Text;
 
 namespace DDT.Agent.Deployment;
 
-// Runs a Windows tool and logs everything it prints. On a real PC the machine log is the only record of why diskpart,
-// bcdboot or reagentc refused. A script run as an account starts through accountProcessStarter, because Process can't
-// do that.
-public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider, IAccountProcessStarter? accountProcessStarter = null) : IToolRunner
+// Runs a tool and logs everything it prints. On a real PC the machine log is the only record of why diskpart, bcdboot
+// or reagentc refused. A script run as an account starts through accountProcessStarter, because Process can't do that.
+public sealed class ToolRunner(
+    AgentLog log,
+    TimeProvider timeProvider,
+    ToolOutputDecoder decoder,
+    IAccountProcessStarter? accountProcessStarter = null) : IToolRunner
 {
     // A process that a script starts in the background inherits its output, and can keep it open long after the
     // script ended. So the rest of the output isn't waited for beyond this.
@@ -30,12 +33,12 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider, IAccount
         using Process process = Start(StartInfo(fileName, arguments), tool);
 
         List<string> lines = [];
-        Task output = ToolOutput.ForwardAsync(process.StandardOutput.BaseStream, line =>
+        Task output = ToolOutput.ForwardAsync(process.StandardOutput.BaseStream, decoder, line =>
         {
             lines.Add(line);
             log.Information(line);
         });
-        Task errors = ToolOutput.ForwardAsync(process.StandardError.BaseStream, log.Warning);
+        Task errors = ToolOutput.ForwardAsync(process.StandardError.BaseStream, decoder, log.Warning);
 
         try
         {
@@ -85,8 +88,8 @@ public sealed class ToolRunner(AgentLog log, TimeProvider timeProvider, IAccount
         long started = timeProvider.GetTimestamp();
         using IToolProcess process = StartFor(fileName, arguments, options, tool);
 
-        Task output = ToolOutput.ForwardAsync(process.StandardOutput, log.Information);
-        Task errors = ToolOutput.ForwardAsync(process.StandardError, log.Warning);
+        Task output = ToolOutput.ForwardAsync(process.StandardOutput, decoder, log.Information);
+        Task errors = ToolOutput.ForwardAsync(process.StandardError, decoder, log.Warning);
 
         try
         {

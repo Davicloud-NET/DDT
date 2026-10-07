@@ -66,7 +66,7 @@ public sealed class DiskpartPartitionerTests : IDisposable
 
         ImmediateTimeProvider time = new();
         AgentLog log = new(time, TextWriter.Null);
-        DiskpartPartitioner partitioner = new(new ToolRunner(log, time), log, time, Path.GetTempPath());
+        DiskpartPartitioner partitioner = new(new ToolRunner(log, time, AnsiCodePage.Decode), log, time, Path.GetTempPath());
 
         IReadOnlyList<LocalDisk> disks = await partitioner.ListDisksAsync(TestContext.Current.CancellationToken);
 

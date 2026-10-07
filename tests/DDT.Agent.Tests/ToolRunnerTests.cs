@@ -173,7 +173,7 @@ public sealed class ToolRunnerTests
     {
         AgentLog log = new(new ImmediateTimeProvider(), TextWriter.Null);
 
-        return (new ToolRunner(log, time ?? TimeProvider.System), new ScriptedAgentServer(), log);
+        return (new ToolRunner(log, time ?? TimeProvider.System, AnsiCodePage.Decode), new ScriptedAgentServer(), log);
     }
 
     // In real time, because the scripts start as fast as the computer lets them.

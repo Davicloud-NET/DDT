@@ -13,7 +13,7 @@ public sealed class ToolOutputTests
     private static async Task<List<string>> LinesOfAsync(byte[] output)
     {
         List<string> lines = [];
-        await ToolOutput.ForwardAsync(new MemoryStream(output), lines.Add);
+        await ToolOutput.ForwardAsync(new MemoryStream(output), AnsiCodePage.Decode, lines.Add);
 
         return lines;
     }
@@ -47,6 +47,7 @@ public sealed class ToolOutputTests
     [Fact]
     public void PlainAsciiReadsTheSameEitherWay()
     {
-        Assert.Equal("C:.", ToolOutput.Decode("C:."u8));
+        Assert.Equal("C:.", ToolOutput.Decode("C:."u8, AnsiCodePage.Decode));
+        Assert.Equal("C:.", AnsiCodePage.Decode("C:."u8));
     }
 }

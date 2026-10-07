@@ -241,7 +241,7 @@ public sealed class RunScriptStepRunnerTests
     {
         RunScriptStep step = s_cmd with { Interpreter = interpreter, Script = script };
         using StepRunnerFixture run = new([step], variables: s_variables);
-        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System), run.Downloads, run.Session, run.Log, run.WorkDirectory);
+        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), run.Downloads, run.Session, run.Log, run.WorkDirectory);
 
         StepResult result = await runner.RunAsync(
             step,
@@ -297,7 +297,7 @@ public sealed class RunScriptStepRunnerTests
     {
         RunScriptStep step = s_cmd with { Script = "echo Grüße aus dem Skript\r\nexit /b 3010" };
         using StepRunnerFixture run = new([step]);
-        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System), run.Downloads, run.Session, run.Log, run.WorkDirectory);
+        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), run.Downloads, run.Session, run.Log, run.WorkDirectory);
 
         StepResult result = await runner.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
 
@@ -313,7 +313,7 @@ public sealed class RunScriptStepRunnerTests
         string folder = Path.Combine(run.WorkDirectory, "tree", "für");
         Directory.CreateDirectory(folder);
         RunScriptStep step = s_cmd with { Script = $"tree \"{Path.GetDirectoryName(folder)}\"" };
-        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System), run.Downloads, run.Session, run.Log, run.WorkDirectory);
+        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), run.Downloads, run.Session, run.Log, run.WorkDirectory);
 
         await runner.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
 
@@ -342,7 +342,7 @@ public sealed class RunScriptStepRunnerTests
             SuccessExitCodes = [7],
         };
         using StepRunnerFixture run = new([step]);
-        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System), run.Downloads, run.Session, run.Log, run.WorkDirectory);
+        RunScriptStepRunner runner = new(new ToolRunner(run.Log, TimeProvider.System, AnsiCodePage.Decode), run.Downloads, run.Session, run.Log, run.WorkDirectory);
 
         StepResult result = await runner.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
 

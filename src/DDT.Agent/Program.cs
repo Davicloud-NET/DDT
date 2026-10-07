@@ -133,7 +133,7 @@ if (options.DryRun)
 
 // In WinPE the agent's directory is X:\DDT, on the RAM disk that every restart builds from scratch. The agent.json it
 // stages into Windows only holds what it takes to reach the server.
-ToolRunner tools = new(log, TimeProvider.System, new AccountProcessStarter(log));
+ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode, new AccountProcessStarter(log));
 UefiVariables firmware = new();
 DiskpartPartitioner disks = new(tools, log, TimeProvider.System, AppContext.BaseDirectory);
 AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);

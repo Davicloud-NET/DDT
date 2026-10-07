@@ -59,7 +59,7 @@ static Task<int> DryRunAsync(StartedAgent agent, CancellationToken cancellationT
 // In WinPE the agent's directory is X:\DDT, on the RAM disk that every restart builds from scratch.
 static Task<int> RunAsync(StartedAgent agent, CancellationToken cancellationToken)
 {
-    (AgentOptions options, HttpAgentServer server, AgentLog log, ConsoleStatus status, PipeMachineConsole? graphical, _, string version) = agent;
+    (_, HttpAgentServer server, AgentLog log, ConsoleStatus status, PipeMachineConsole? graphical, _, string version) = agent;
     ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode, new AccountProcessStarter(log));
     UefiVariables firmware = new();
     DiskpartPartitioner disks = new(tools, log, TimeProvider.System, AppContext.BaseDirectory);

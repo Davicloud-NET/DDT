@@ -62,8 +62,7 @@ export function environmentLine(machine: MachineSummary): string | null {
   }
 }
 
-// What a list row says once the server restarted the machine for its run twice and it did not start the boot
-// environment the run needs. Null otherwise.
+// What a list row says once the server stopped restarting the machine for its run. Null otherwise.
 export function restartsFailedLine(machine: MachineSummary): string | null {
   switch (machine.restartsFailed ?? null) {
     case "WindowsPE":

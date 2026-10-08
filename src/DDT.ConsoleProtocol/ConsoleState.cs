@@ -25,6 +25,5 @@ public sealed record ConsoleState(
     string? Language = null,
     // A PNG for the right end of the top bar, which is dark in both themes. Null shows no logo.
     string? Logo = null,
-    // Why the run that is assigned to the machine does not start here, in the words the agent logs. Null while it
-    // starts, or none is assigned.
+    // Why the machine's assigned run does not start here, in the words the agent logs. Null while there is no reason.
     string? Waiting = null);

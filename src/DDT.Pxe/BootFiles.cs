@@ -107,8 +107,7 @@ public sealed class BootFiles
     public static bool IsLinuxName(string? requested) =>
         Normalized(requested) is { } name && (name == GrubConfigName || name.StartsWith(LinuxFolder + "/", StringComparison.Ordinal));
 
-    // Asks the environment the server has ready. Whatever fails behind it, a machine must still get the answer it
-    // would get without the environment, so a failure counts as none. The log says so once until it works again.
+    // Asks the environment. A failure behind it counts as none, so the machine still gets an answer. Logged once a streak.
     private T? FromLinux<T>(Func<LinuxBootBundle, T?> ask)
     {
         try
@@ -176,8 +175,7 @@ public sealed class BootFiles
         return new MemoryBootContent(GrubConfigName + note, Encoding.ASCII.GetBytes(text));
     }
 
-    // Only what the environment's description lists, by its exact name and from its folder itself, so nothing else in
-    // the folder is ever served and no marker in it leads elsewhere. The file is looked at when it is opened.
+    // Only a listed name, from the folder itself: no marker in it leads elsewhere. The file is checked when it is opened.
     private static FileBootContent? FromBundle(string file, LinuxBootBundle bundle) =>
         bundle.Files.TryGetValue(file, out BootFileStamp stamp)
             ? new FileBootContent(new FileInfo(Path.Combine(bundle.Folder, file))) { Checked = stamp, Changed = () => bundle.Changed?.Invoke(file) }

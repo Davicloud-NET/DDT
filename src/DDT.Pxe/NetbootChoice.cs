@@ -29,8 +29,7 @@ public sealed class NetbootChoice
         _files = files;
     }
 
-    // Null when the server can start no boot environment for this machine, so it gets no answer. Called for every PXE
-    // request on the segment, from the loop that receives them, so it answers from memory alone.
+    // Null when no boot environment can be started for this machine. Answers from memory: the DHCP loop calls it.
     public ProxyDhcpConfiguration? For(DhcpMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);

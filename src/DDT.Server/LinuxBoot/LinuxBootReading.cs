@@ -15,8 +15,7 @@ using Microsoft.Win32.SafeHandles;
 namespace DDT.Server.LinuxBoot;
 
 // One look at the Linux boot environment's folder: what its description says and whether the files it lists are there
-// in their sizes. Whether each is the very file the description names is found out by reading it, in the background
-// or, for a folder that changed under its description, before the look counts.
+// in their sizes. Whether each is the very file the description names is found out in the background.
 internal sealed class LinuxBootReading
 {
     // The description lists every file and package, which stays far below this.
@@ -169,8 +168,7 @@ internal sealed class LinuxBootReading
         && name is not ("." or "..")
         && name.All(character => char.IsAsciiLetterOrDigit(character) || character is '.' or '-' or '_');
 
-    // The first listed file that is not there, is a link or has another size, which costs no reading. Else what each
-    // file is now goes into stamps.
+    // The first listed file that is missing, a link or of another size. Else stamps gets what each file is now.
     private static LinuxBootState? FindUnfit(string folder, List<ListedFile> files, Dictionary<string, BootFileStamp> stamps)
     {
         foreach (ListedFile listed in files)
@@ -255,8 +253,7 @@ internal sealed class LinuxBootReading
     private static LinuxBootState Damaged(string folder, string reason, string name) =>
         new(folder, ServerMessages.LinuxBootDamaged.With("folder", folder, "reason", reason, "name", name));
 
-    // The first file whose content is not what the description names makes the whole environment damaged. Each file
-    // is served afterwards only while it still has the length and the time it had when it was read here.
+    // The first file whose content is not what the description names makes the whole environment damaged.
     private void CheckHashes()
     {
         Dictionary<string, BootFileStamp> read = new(StringComparer.Ordinal);

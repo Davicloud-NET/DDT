@@ -6,8 +6,7 @@ using System.Net;
 
 namespace DDT.Pxe;
 
-// A boot port connection: the address it really comes from, which no header can change, and whether it carried the
-// Linux boot environment's content. track makes the connection known to BootConnections until it is disposed.
+// A boot port connection: the address it really comes from, and whether it carried the Linux boot environment's content.
 public sealed class BootClient(IPAddress address, Func<IDisposable>? track = null) : IDisposable
 {
     private readonly Lock _lock = new();

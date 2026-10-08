@@ -208,18 +208,18 @@ public sealed class PxeHost : IHostedService, IDisposable
     private PxeBindException? Start(PxeSetup setup)
     {
         BootFiles files = new(setup.Files, _source.Linux, setup.Options.HttpBootPort, _connections, _timeProvider, _logger);
-        NetbootChoice choice = new(setup, _source.Choice, files);
-        NetbootReader reader = new(_source.Linux, choice, _timeProvider, _logger);
         PxeBindException? dhcpPort = null;
-
-        // The first look at the files comes before any listener, and every later one in the background.
-        reader.Read();
 
         if (LogInterfaces(setup.Interfaces))
         {
-            PxeStartLog.BootTargets(_logger, setup, _source.Linux is null ? null : files);
+            NetbootChoice choice = new(setup, _source.Choice, files);
+            NetbootReader reader = new(_source.Linux, choice, _timeProvider, _logger);
+
+            // The first look at the files comes before any listener, and every later one in the background.
+            reader.Read();
             reader.Start();
             _stops.Add(async () => await reader.DisposeAsync().ConfigureAwait(false));
+            PxeStartLog.BootTargets(_logger, setup, _source.Linux is null ? null : files);
 
             if (setup.Options.EnableProxyDhcp)
             {

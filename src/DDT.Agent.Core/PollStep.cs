@@ -4,8 +4,7 @@
 
 namespace DDT.Agent;
 
-// What polling does next. It waits for the next poll, polls again right away, or ends with ExitCode.
-// A null ExitCode means register again.
+// What polling does next: wait for the next poll, poll again at once, or end. A null ExitCode means register again.
 internal readonly record struct PollStep(bool Ends, int? ExitCode, bool AtOnce)
 {
     public static PollStep Wait => new(false, null, false);

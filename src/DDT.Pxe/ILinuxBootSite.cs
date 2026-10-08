@@ -4,8 +4,7 @@
 
 namespace DDT.Pxe;
 
-// The Linux boot environment as the server has it now. Netboot asks at every request, from the loops that receive
-// the datagrams, so Current answers from memory and never looks at the disk.
+// The Linux boot environment as the server has it ready. The packet loops ask, so Current never looks at the disk.
 public interface ILinuxBootSite
 {
     // Null while the environment cannot be started: its files are missing or damaged, or there is no root to hand out.

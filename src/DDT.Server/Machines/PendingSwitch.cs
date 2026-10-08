@@ -19,8 +19,7 @@ public static class PendingSwitch
         return IsOpen(machine.NextEnvironmentUtc, now);
     }
 
-    // The same for the time alone, where the machine's row is not at hand. A time in the future is left from before
-    // the clock was set back, or comes from a host with another clock, and opens nothing.
+    // The same for the time alone. A time in the future, left by a clock that was set back, opens nothing.
     public static bool IsOpen(DateTimeOffset? asked, DateTimeOffset now) =>
         asked is { } at && at <= now && now - at <= DeploymentLimits.EnvironmentSwitch;
 
@@ -28,8 +27,7 @@ public static class PendingSwitch
     public static bool Arrives(Machine machine, AgentEnvironment environment, DateTimeOffset now) =>
         IsOpen(machine, now) && machine.NextEnvironment == environment;
 
-    // Whether the server told the machine to restart into the environment so lately that its agent is still about to.
-    // An agent that still polls after that did not restart.
+    // Whether the server ordered this restart so lately that the agent is still about to. One that still polls did not.
     public static bool IsOrdered(Machine machine, AgentEnvironment environment, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -40,8 +38,7 @@ public static class PendingSwitch
             && now - at <= DeploymentLimits.RestartOrderOpen;
     }
 
-    // The boot environment the machine did not start although the server restarted it for its run as often as it
-    // does. Null while the server still orders restarts, or one is under way, or the run is not the machine's any more.
+    // The boot environment the server stopped restarting the machine for. Null while it still orders or one is under way.
     public static AgentEnvironment? GaveUp(Machine machine, Deployment? run)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -55,8 +52,7 @@ public static class PendingSwitch
                 : null;
     }
 
-    // The machine is where it was asked to go, or is told where to go by a run. The sequence picked for it stays, with
-    // the time it was picked at, so it lapses when the restart's time is over.
+    // The machine arrived, or a run now says where it goes. A pick stays with its time, so it lapses with the window.
     public static void End(Machine machine)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -78,8 +74,7 @@ public static class PendingSwitch
         machine.PendingSequenceId = null;
     }
 
-    // Forgets a restart that took too long, and the sequence picked for one once its time is over, also where the
-    // machine arrived: the pick is only a suggestion. True if the machine changed.
+    // Forgets a restart that took too long, and a pick whose window is over. True if the machine changed.
     public static bool Expire(Machine machine, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(machine);

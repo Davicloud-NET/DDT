@@ -28,11 +28,9 @@ public static class DeploymentLimits
     // crosses to it, and netboot no longer starts it there.
     public static readonly TimeSpan EnvironmentSwitch = TimeSpan.FromMinutes(15);
 
-    // How often the server restarts a machine for a run that starts in the other boot environment. Netboot may never
-    // start it there, and a third restart would be as vain as the second.
+    // How often the server restarts a machine for a run of the other boot environment. Netboot may never start it there.
     public const int RestartOrders = 2;
 
-    // How long after it was told to restart an agent may still be about to. It restarts at once and polls every ten
-    // seconds, so one that still polls after three polls did not restart.
+    // How long an agent told to restart counts as about to. It restarts at once, so one that still polls then did not.
     public static readonly TimeSpan RestartOrderOpen = TimeSpan.FromSeconds(30);
 }

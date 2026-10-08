@@ -9,11 +9,10 @@ using DDT.Server.Deployments;
 
 namespace DDT.Server.Machines;
 
-// Tells a machine to restart into the boot environment its assigned run starts in, and counts how often. Netboot may
-// not start it there: a BIOS, a DHCP server that names the boot file, firmware that keeps no variable. So after two
-// restarts that did not bring it there the server stops, keeps the run assigned and says why. Nothing here saves.
+// Orders the restarts for a run of the other boot environment, and stops after two that did not get the machine there.
 internal sealed class RestartOrders(DdtDbContext database, RunQueries queries, BootEnvironments environments)
 {
+    // Nothing here saves. Netboot may never start the machine there: a BIOS, a DHCP server that names the boot file.
     public async Task<RestartOrder> ForAsync(Machine machine, Deployment run, string? address, DateTimeOffset now, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);

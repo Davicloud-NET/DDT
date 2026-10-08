@@ -15,8 +15,7 @@ public sealed class NetbootReader(ILinuxBootSite? linux, NetbootChoice? choice, 
     private Task _loop = Task.CompletedTask;
     private bool _failing;
 
-    // One look, on the caller's thread. A look that fails leaves netboot with what the look before found, and the log
-    // says so once until one works again.
+    // One look. A look that fails leaves what the look before found, and is logged once a streak.
     public void Read()
     {
         try

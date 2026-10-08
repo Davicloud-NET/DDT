@@ -81,8 +81,7 @@ internal sealed class TftpTransfer
 
         try
         {
-            // Finding and opening the file look at the disk, which the loop that receives every machine's requests
-            // must not wait for.
+            // Finding and opening the file look at the disk, which the receive loop must not wait for.
             await Task.Yield();
 
             if (_find() is not { } content)

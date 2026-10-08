@@ -64,9 +64,7 @@ public sealed class BootEnvironments(BootImageCatalog bootImage, LinuxBootEnviro
             : null;
     }
 
-    // Whether netboot names this machine the Windows PE boot file where it would otherwise name the Linux boot
-    // environment's: its firmware is known to refuse that one, and Windows PE can start instead. Netboot believes only
-    // a row someone approved, since anyone can register a row and claim any firmware.
+    // Whether netboot keeps this machine out of Linux: an approved row's firmware refuses the shim, and Windows PE starts.
     public bool RefusesLinux(Machine machine)
     {
         ArgumentNullException.ThrowIfNull(machine);

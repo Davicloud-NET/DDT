@@ -101,8 +101,7 @@ public sealed class ProxyDhcpHandler
             : decision;
     }
 
-    // A request on the boot server port begins a machine's start, from the address it will load from. Only the
-    // datagram's source counts: an address named inside the packet would let any host reset another machine's reads.
+    // A request on the boot server port begins a start. Only the datagram's source counts, or any host could name a victim.
     private int Starting(DhcpMessage message, ProxyDhcpListenPort port, DatagramArrival arrival)
     {
         // Behind a relay the source is the relay, and nothing proves the machine's own address.

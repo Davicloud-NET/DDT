@@ -38,8 +38,7 @@ public static class BootHttpEndpoints
     }
 
     // Interfaces is read on every request, so the gate follows the setup the listeners were last started with. Null
-    // serves nothing. With connections, a read of the Linux boot environment that is cut off is remembered for the
-    // machine's next start.
+    // serves nothing. With connections, a Linux read that is cut off is remembered for the machine's next start.
     public static IApplicationBuilder UseBootListenerIsolation(
         this IApplicationBuilder app,
         int bootPort,
@@ -74,8 +73,7 @@ public static class BootHttpEndpoints
         });
     }
 
-    // GRUB opens a connection per file and never asks on it twice, so none is kept open for a next request. A read
-    // that ends before its answer is whole leaves the machine without the file, and maybe the server with the connection.
+    // GRUB asks once per connection, so none is kept. A read that ends early may leave the server with the connection.
     private static async Task ReadLinuxAsync(HttpContext context, RequestDelegate next, BootConnections? connections)
     {
         bool whole = false;

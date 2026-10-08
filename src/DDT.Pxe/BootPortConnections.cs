@@ -9,8 +9,7 @@ using Microsoft.AspNetCore.Connections.Features;
 
 namespace DDT.Pxe;
 
-// Kestrel connection middleware for the boot port: a connection is known to BootConnections from the moment it carries
-// the Linux boot environment's content until it ends.
+// Kestrel connection middleware for the boot port: BootConnections learns of a connection once it carries Linux content.
 public static class BootPortConnections
 {
     public static ConnectionDelegate Track(ConnectionDelegate next, BootConnections connections)

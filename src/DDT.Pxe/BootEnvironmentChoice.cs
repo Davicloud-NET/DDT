@@ -14,8 +14,7 @@ public static class BootEnvironmentChoice
     {
         ArgumentNullException.ThrowIfNull(wish);
 
-        // Firmware known to refuse the shim is not named it where Windows PE can start. Where it cannot, the shim costs
-        // nothing, and the agent it may start after all corrects what the server knew of the firmware.
+        // Where Windows PE cannot start, the shim costs nothing, and its agent corrects what the server knew of the firmware.
         bool linuxStarts = linux && (!wish.LinuxRefused || !windowsPE);
 
         // A wish that cannot be met starts the other environment, whose agent says why the run does not start.

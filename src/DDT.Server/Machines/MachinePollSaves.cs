@@ -12,8 +12,7 @@ namespace DDT.Server.Machines;
 // Saves what a poll changed on the machine and its run, and pushes it to the web.
 internal sealed class MachinePollSaves(DdtDbContext database, RunQueries queries, LiveNotifier live)
 {
-    // False if the save lost to an approval, a rejection, an assignment or a registration. What the poll wanted to
-    // record can wait for the next one, but its answer has to reflect what's stored now, so the machine is read again.
+    // False if the save lost to another change of the machine, which is then read again so the answer shows what's stored.
     public async Task<bool> SaveAsync(Machine machine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);

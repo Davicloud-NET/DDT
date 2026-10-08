@@ -6,8 +6,7 @@ using System.Collections.Frozen;
 
 namespace DDT.Pxe.Tests;
 
-// A Linux boot environment as the server hands it to netboot: a folder and the files it lists, each as it is on disk
-// at that moment, which is what the server's check of the files leaves.
+// A Linux boot environment as the server hands it to netboot: a folder and its listed files as they are on disk now.
 internal static class TestBundle
 {
     public static LinuxBootBundle Of(string folder, params string[] names) =>

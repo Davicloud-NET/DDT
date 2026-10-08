@@ -17,8 +17,7 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// The restarts the server orders for a run that starts in the other boot environment: each is recorded and counted,
-// and after two that did not bring the machine there the server stops and says why.
+// The restarts the server orders for a run of the other boot environment: recorded, counted, and stopped after two.
 public sealed class RestartOrderTests(BothEnvironmentsApplication application) : IClassFixture<BothEnvironmentsApplication>
 {
     private const string Requested = "machine.environment-requested";

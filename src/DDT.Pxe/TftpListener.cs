@@ -10,9 +10,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Pxe;
 
-// Each read request on port 69 becomes a TftpTransfer on a separate task, so one slow client can't stall the rest, and
-// neither can a slow disk: the transfer looks its file up itself. A transfer answers from its own port. In single port
-// mode it answers from port 69, and this loop routes its datagrams.
+// Each read request on port 69 becomes a TftpTransfer on a separate task, so one slow client can't stall the rest. A
+// transfer answers from its own port. In single port mode it answers from port 69, and this loop routes its datagrams.
 public sealed class TftpListener : IPxeListener, IAsyncDisposable
 {
     private const int ReceiveBufferLength = 1024;

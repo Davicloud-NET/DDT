@@ -41,8 +41,7 @@ public sealed class LinuxBootEnvironment(IOptions<LinuxBootOptions> options, Bun
     // Ends once every file's hash was compared with the description, which happens in the background.
     public Task CheckedAsync() => Read().Checked;
 
-    // Looks at the description and at each listed file. A folder that changed under an unchanged description is read
-    // whole before it counts as usable again, since something replaced a file that was already checked.
+    // Looks at the description and each listed file. A folder that changed under its description is read whole first.
     public void Refresh()
     {
         if (Read() is { } reading && reading.Outdated())
@@ -51,8 +50,7 @@ public sealed class LinuxBootEnvironment(IOptions<LinuxBootOptions> options, Bun
         }
     }
 
-    // A file netboot was about to serve is gone or no longer what it was when it was checked. No machine is started
-    // in the environment until the folder was read again.
+    // Netboot found a listed file gone or changed. No machine is started here until the folder was read again.
     public void Changed(string name)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);

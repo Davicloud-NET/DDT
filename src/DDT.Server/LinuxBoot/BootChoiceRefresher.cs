@@ -86,8 +86,7 @@ public sealed partial class BootChoiceRefresher(
         }
     }
 
-    // Reads of every machine what netboot asks, and of every active run where it starts, and replaces the list in one
-    // step. Nothing else of a row is read, since a run's row holds its answers, values and variables.
+    // Reads what netboot asks of every machine and where each active run starts, no other column, and replaces the list.
     public async Task RefreshAsync(CancellationToken cancellationToken)
     {
         await using AsyncServiceScope scope = scopes.CreateAsyncScope();

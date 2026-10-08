@@ -14,8 +14,7 @@ using Xunit;
 
 namespace DDT.Pxe.Tests;
 
-// The boot port on a real Kestrel, with plain sockets as the machine: GRUB's own HTTP client is that simple. The same
-// folder is the boot directory and the Linux boot environment's, so one large file is read both ways.
+// The boot port on a real Kestrel, with plain sockets as the machine. One folder is the boot directory and the bundle.
 public sealed class BootPortConnectionsTests : IAsyncLifetime
 {
     private const string Large = "base.img";

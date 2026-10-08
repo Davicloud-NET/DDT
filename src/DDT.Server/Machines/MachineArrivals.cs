@@ -215,9 +215,7 @@ public sealed class MachineArrivals(
     private static bool Crosses(NormalisedRegistration registration, Machine machine, DateTimeOffset now) =>
         registration.Environment == machine.AgentEnvironment || machine.NextEnvironment is null || PendingSwitch.IsOpen(machine, now);
 
-    // The machine arrived where it was asked to go, which ends the restart. One that took too long is forgotten.
-    // assigned is the run the machine came with, if that had not started: a restart the server ordered for it ends with
-    // any arrival, and the next poll sees where the machine is now.
+    // An arrival ends the restart the machine asked for, and any the server ordered for its assigned run.
     private static void EndSwitch(Machine machine, Deployment? assigned, AgentEnvironment environment, DateTimeOffset now)
     {
         // Where its run starts, the restarts that failed before count for nothing any more.

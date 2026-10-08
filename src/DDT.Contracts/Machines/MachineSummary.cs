@@ -37,9 +37,7 @@ public sealed record MachineSummary(
     AgentEnvironment AgentEnvironment = AgentEnvironment.WindowsPE,
     // The boot environment the machine was asked to restart into, until it registers from there.
     AgentEnvironment? NextEnvironment = null,
-    // Whether the machine's agent can restart into the other boot environment and stay signed in. Null from a server
-    // that does not say.
+    // Whether the machine's agent can restart into the other boot environment and stay signed in.
     bool? ChangesBootEnvironment = null,
-    // The boot environment the machine did not start although the server restarted it for its assigned run twice. The
-    // server no longer restarts it, and the run waits.
+    // The boot environment the machine did not start after two restarts for its run. The server stopped, and the run waits.
     AgentEnvironment? RestartsFailed = null);

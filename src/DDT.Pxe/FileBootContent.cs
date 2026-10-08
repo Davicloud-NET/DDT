@@ -11,8 +11,7 @@ public sealed class FileBootContent(FileInfo file) : BootContent
 {
     public FileInfo File { get; } = file ?? throw new ArgumentNullException(nameof(file));
 
-    // What the file was when the server checked its content. It is served only while it is still that. Null for a file
-    // nobody checked, which is served as it is.
+    // What the file was when the server checked it. Null for a file nobody checked, which is served as it is.
     public BootFileStamp? Checked { get; init; }
 
     // Called when a checked file turns out gone or changed.

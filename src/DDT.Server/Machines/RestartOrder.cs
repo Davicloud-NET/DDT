@@ -6,8 +6,7 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Server.Machines;
 
-// What a poll tells a machine whose assigned run starts in the other boot environment: to restart into it, or why the
-// run waits. Changed: the machine or the run was changed and has to be saved before the answer goes out.
+// What a poll answers about a run of the other boot environment: restart into it, or why not. Changed: save first.
 internal sealed record RestartOrder(AgentEnvironment? Into, string? WaitReason, bool Changed)
 {
     public static RestartOrder None { get; } = new(null, null, false);

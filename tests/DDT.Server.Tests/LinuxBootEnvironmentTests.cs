@@ -373,10 +373,11 @@ public sealed class LinuxBootEnvironmentTests : IDisposable
     }
 
     [Fact]
-    public void AFileRemovedUnderAnUnchangedDescriptionIsFoundAtTheNextLookAndSoIsItsReturn()
+    public async Task AFileRemovedUnderAnUnchangedDescriptionIsFoundAtTheNextLookAndSoIsItsReturn()
     {
         LinuxBootEnvironment environment = Environment();
         TestLinuxBoot.Write(environment.Folder);
+        await environment.CheckedAsync();
         Assert.True(environment.Available);
         string image = Path.Combine(environment.Folder, "ddt.img");
         byte[] content = File.ReadAllBytes(image);

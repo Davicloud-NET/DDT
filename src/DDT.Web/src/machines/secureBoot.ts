@@ -100,10 +100,8 @@ export function uefiCaCount(value: string | null): number {
 }
 
 // Why netboot does not start this machine in the Linux boot environment: Secure Boot is on, and its firmware trusts
-// none of the CAs the environment's shim is signed under. Null when nothing is known to keep it from starting.
-// shimSignedUnder is what the server read from the shim, and undefined for a server that does not say. existing are
-// the boot environments the server can start: without Windows PE to start instead, netboot names the machine the
-// Linux boot environment all the same, so nothing is refused.
+// none of the CAs the environment's shim is signed under. Null when nothing is known to keep it from starting, also
+// on a server that cannot start Windows PE instead (existing), where netboot names the shim all the same.
 export function linuxBootRefusal(
   machine: MachineSummary,
   shimSignedUnder: string | null | undefined,

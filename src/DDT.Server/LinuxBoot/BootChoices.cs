@@ -29,8 +29,7 @@ public sealed class BootChoices(TimeProvider timeProvider) : IBootChoice
     private TaskCompletionSource? _changed;
     private Maps _maps = new(FrozenDictionary<string, BootChoiceEntry[]>.Empty, FrozenDictionary<string, BootChoiceEntry[]>.Empty);
 
-    // An adapter can be listed by several machines, and so can a UUID, so one row has to be found among them. Where
-    // that fails, the machine gets the default, as one nobody knows.
+    // Several rows can list an adapter or share a UUID. Where no single row is found, the machine gets the default.
     public BootWish For(NetbootMachine machine)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -85,8 +84,7 @@ public sealed class BootChoices(TimeProvider timeProvider) : IBootChoice
     // Whoever fills the list reads it again at once instead of at its next turn.
     public void Changed() => Volatile.Read(ref _changed)?.TrySetResult();
 
-    // A machine was saved. Machines poll and report every few seconds, and none of that moves what they start, so only
-    // a change to what netboot reads of the machine makes the list be read again.
+    // A machine was saved. Only a change to what netboot reads of it makes the list be read again: a poll changes none.
     public void Changed(Machine machine)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -126,8 +124,7 @@ public sealed class BootChoices(TimeProvider timeProvider) : IBootChoice
         return next.Task;
     }
 
-    // The rows the request could come from: the one that has both its adapter and its UUID, or else every row that
-    // lists the adapter, and the row of the UUID where it names a single machine.
+    // The row with both the adapter and the UUID, else every row with the adapter and the one row of the UUID.
     private static BootChoiceEntry[] Rows(Maps maps, NetbootMachine machine)
     {
         BootChoiceEntry[] byMac = maps.ByMac.GetValueOrDefault(machine.Mac, []);

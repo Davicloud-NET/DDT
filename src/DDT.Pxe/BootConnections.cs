@@ -6,10 +6,7 @@ using System.Net;
 
 namespace DDT.Pxe;
 
-// What the HTTP boot port knows of each machine that loads the Linux boot environment, by its address: its connections
-// still open, and when a read last ended badly. GRUB uses the same source ports at every start, and a connection the
-// server still holds from the start before makes it hang. So a machine that starts again has them reset, and loads
-// over TFTP for a while.
+// The boot port's open connections that carry the Linux boot environment, and the reads that ended badly, by machine.
 public sealed class BootConnections(TimeProvider timeProvider, SystemTcpConnections? system = null)
 {
     // How long after a read that ended badly a machine is kept off HTTP, whatever the server's system still holds.
@@ -54,7 +51,7 @@ public sealed class BootConnections(TimeProvider timeProvider, SystemTcpConnecti
         }
     }
 
-    // The machine starts from the network again. Returns how many connections of its start before were reset.
+    // The machine starts again. GRUB hangs on a connection its start before left here, so those are reset and counted.
     public int NetbootStarts(IPAddress client)
     {
         ArgumentNullException.ThrowIfNull(client);

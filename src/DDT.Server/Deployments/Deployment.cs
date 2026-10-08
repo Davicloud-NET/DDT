@@ -37,8 +37,7 @@ public sealed class Deployment
     // there. Null for a run from before the Linux boot environment.
     public AgentEnvironment? BootEnvironment { get; set; }
 
-    // How often the server told the machine to restart into BootEnvironment for this run. It stops at
-    // DeploymentLimits.RestartOrders, and starts counting anew once the machine arrived there.
+    // How often the server told the machine to restart into BootEnvironment for this run. Zero again once it arrived.
     public int RestartsOrdered { get; set; }
 
     public Guid? RequestedByUserId { get; set; }

@@ -12,6 +12,7 @@ import { nodePhasesOf } from "./problems";
 import { sequenceEdits } from "./sequenceEdits";
 import {
   bootPhase,
+  isBootPhase,
   kindOfNodes,
   kindOfPhase,
   scriptInterpreters,
@@ -51,6 +52,10 @@ describe("a sequence's kind", () => {
     expect(kindOfPhase("WindowsPE")).toBe("Windows");
     expect(kindOfPhase("Windows")).toBe("Windows");
     expect(kindOfPhase("LinuxBoot")).toBe("Linux");
+    expect((["WindowsPE", "Windows", "LinuxBoot"] as const).filter(isBootPhase)).toEqual([
+      "WindowsPE",
+      "LinuxBoot",
+    ]);
     expect(scriptPhases("Windows")).toEqual(["WindowsPE", "Windows"]);
     expect(scriptPhases("Linux")).toEqual(["LinuxBoot"]);
     expect(scriptInterpreters("Windows")).toEqual(["Cmd", "PowerShell"]);

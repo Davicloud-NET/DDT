@@ -22,6 +22,11 @@ export function bootPhase(kind: SequenceKind): SequencePhase {
   return kind === "Linux" ? "LinuxBoot" : "WindowsPE";
 }
 
+// A phase of a boot environment, before any hand-over to an installed system.
+export function isBootPhase(phase: SequencePhase): boolean {
+  return phase === "WindowsPE" || phase === "LinuxBoot";
+}
+
 // The kind whose sequences run in the phase.
 export function kindOfPhase(phase: SequencePhase): SequenceKind {
   return phase === "LinuxBoot" ? "Linux" : "Windows";

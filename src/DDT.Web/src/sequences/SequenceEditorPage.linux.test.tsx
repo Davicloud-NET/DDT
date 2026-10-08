@@ -34,6 +34,12 @@ const rewrite: SequenceProblem = {
   code: "sequence.windowsScriptInLinux",
 };
 
+// What the server answers for such a sequence: the script's phase is the one it was stored with.
+const stored: Partial<SequenceView> = {
+  stepPhases: ["WindowsPE", "LinuxBoot", "LinuxBoot"],
+  problems: [rewrite],
+};
+
 // A sequence that writes a raw disk image, with a script before it.
 function linuxView(script: SequenceStep, overrides: Partial<SequenceView> = {}): SequenceView {
   return view({
@@ -108,9 +114,7 @@ describe("SequenceEditorPage, a Linux sequence", () => {
 
   // The script keeps what it was stored with, next to the problem that says what to change.
   it("shows a script written for Windows PE as it is, and makes it a shell script with the Linux boot environment", async () => {
-    const { saves } = serve(administrator, linuxView(forWindowsPE, { problems: [rewrite] }), {
-      step: "s",
-    });
+    const { saves } = serve(administrator, linuxView(forWindowsPE, stored), { step: "s" });
 
     await opened("Install Linux");
 
@@ -131,5 +135,19 @@ describe("SequenceEditorPage, a Linux sequence", () => {
         interpreter: "Shell",
       });
     }, saveWait);
+  });
+
+  it("draws no hand-over line under a script that was stored for Windows PE", async () => {
+    serve(administrator, linuxView(forWindowsPE, stored));
+
+    await opened("Install Linux");
+
+    expect(
+      screen.getByRole("button", {
+        name: "Add a step between Before the disk and Write raw disk image",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("In Windows PE")).not.toBeInTheDocument();
+    expect(screen.queryByText(/after the hand-over$/)).not.toBeInTheDocument();
   });
 });

@@ -20,9 +20,9 @@ self-hosted replacement for MDT, made for networks of 10 to 100 machines, even w
 over a few sites and a VPN.
 
 Plug a PC into the network and let it netboot. DDT takes it from there: it starts Windows PE, runs
-a task sequence that partitions the disk and applies Windows (or writes a Linux image), carries on
-inside the freshly installed Windows, and reports every step live to your browser. You get to drink
-your coffee.
+a task sequence that partitions the disk and applies Windows, carries on inside the freshly
+installed Windows, and reports every step live to your browser. For a Linux image it starts a small
+Linux boot environment of its own instead. You get to drink your coffee.
 
 > [!NOTE]
 > **The documentation is still thin.** There is a quick start right below, and a guide for people
@@ -68,10 +68,12 @@ Work through it from the top. Most of it is one click each:
 - **The network card.** The MSI's setup has asked already. After the PowerShell line, pick the card
   your machines sit on under *Boot, Network boot*. Until you do, DDT answers no netboot at all,
   which is on purpose.
-- **The boot image.** On Windows, *Boot, Boot image* builds it with one button, and installs the ADK
-  first if the server has none. A Linux server cannot run the ADK, so the same page gives you a zip
-  instead: unpack it on any Windows PC that has the ADK, run `Build.cmd`, and it uploads the result
-  by itself.
+- **The boot image.** The list ticks this one by itself, because a release brings a Linux boot
+  environment and machines netboot into it before anything is built. That one writes Linux images
+  only. To install Windows, build the Windows PE boot image: on Windows, *Boot, Boot image* builds
+  it with one button, and installs the ADK first if the server has none. A Linux server cannot run
+  the ADK, so the same page gives you a zip instead: unpack it on any Windows PC that has the ADK,
+  run `Build.cmd`, and it uploads the result by itself.
 - **A Windows image.** Drop an ISO onto *Library, OS images*. DDT digs the `install.wim` out of it.
 - **A task sequence.** *Deployment, Task sequences, New task sequence*, and start from
   **Install Windows**.
@@ -93,7 +95,8 @@ Two things that save an afternoon:
 
 - **Netboots with what you already have.** PXE with ProxyDHCP and TFTP, right next to the DHCP
   server you run today. No custom bootloader and no switching Secure Boot off: DDT serves
-  Microsoft's own signed boot manager from the Windows ADK and does its magic after that.
+  Microsoft's own signed boot manager from the Windows ADK, or Debian's signed shim, GRUB and
+  kernel for Linux, and does its magic after that.
 - **Runs task sequences.** Partition, apply an image, inject drivers, write the answer file, run
   scripts, join a domain, and restart as often as it takes, in Windows PE and in the installed
   Windows. You draw them as a flow, with IF branches, loops, groups and pauses, and conditions on the
@@ -101,12 +104,16 @@ Two things that save an afternoon:
   such as its name or time zone, a sequence can ask its questions on the web or at the machine, and
   a step can use an account whose password its script never sees.
 - **Does Linux, too.** Raw disk images (raw, gzip, zstd, xz or qcow2) with a cloud-init seed,
-  written from the very same Windows PE. One agent, one boot path.
+  written from a Linux boot environment that comes with every release: Debian's kernel and DDT's
+  agent for Linux, about 36 MB, with no ADK and nothing to build. The server names each machine the
+  boot environment its task sequence needs, Windows PE for Windows and this one for Linux. The run
+  ends when the disk is written. Carrying on inside the installed Linux is the next part of M8.
 - **Has a web UI that stays live.** Changes show up the moment they happen, no reload button
   required. Light and dark, English and German, and it fits on a phone, for approving a machine
   from the couch.
 - **Puts a console at the machine.** A graphical console in Windows PE lets a technician sign in,
-  pick a sequence and watch it run. Shift+F10 still gets you a command prompt.
+  pick a sequence and watch it run. Shift+F10 still gets you a command prompt. The Linux boot
+  environment does the same in text for now.
 - **Is secure by default.** HTTPS only, with DDT's own root certificate. A machine gets no image,
   package or secret until it is authorized: by someone signing in at it, by an approval on the web,
   or by a zero-touch network you chose. Local accounts, LDAP and OpenID Connect, two-factor
@@ -146,8 +153,10 @@ Who helps with what:
 
 ## Where it's at
 
-DDT is young, and what it publishes for now are pre-releases. It has deployed Windows and Linux to
-Hyper-V test machines and netbooted real hardware, but treat it as a preview.
+DDT is young, and what it publishes for now are pre-releases. It has deployed Windows to Hyper-V
+test machines and netbooted real hardware. The Linux boot environment is newer: it has deployed
+Debian to QEMU virtual machines with Secure Boot on, and has not run on Hyper-V or on real hardware
+as it ships yet. Treat all of it as a preview.
 
 | | Milestone | |
 |---|---|---|
@@ -157,11 +166,15 @@ Hyper-V test machines and netbooted real hardware, but treat it as a preview.
 | M6.5 | The real UI: a new web UI, the graphical console, settings on web pages | ✅ Done |
 | M6.6 | Installing DDT with one command, on Windows Server and on Linux | ✅ Done |
 | M7 | A node-based flow builder for task sequences | ✅ Done |
-| M8 | Runs that carry on inside the installed Linux | 🔜 Next |
+| M8 | Linux: a boot environment of its own, runs that carry on inside the installed Linux, the graphical console | 🔜 Part 1 of 3 |
 | M9 | Applications and Windows configuration | Planned |
 | M10 | Golden images and the machine lifecycle | Planned |
 | M11 | Beyond netboot and beyond a single site | Planned |
 | M12 | Documentation, the proper kind | Planned |
+
+M8 comes in three parts. The first is built: the Linux boot environment and the agent for Linux,
+which write Linux images in place of Windows PE. The run that carries on inside the installed Linux
+and the graphical console on Linux are the next two.
 
 The [roadmap](docs/roadmap.md) has the details, and what is not planned at all.
 
@@ -171,7 +184,8 @@ Running DDT no longer takes a compiler, see the quick start. This part is for wo
 will want:
 
 - the .NET SDK 10.0.201 or a later 10.0 feature band, and Node.js 24 LTS;
-- Docker, for the container and for the PostgreSQL and SQL Server tests;
+- Docker, for the container, for the PostgreSQL and SQL Server tests, and for the agent for Linux
+  and the Linux boot environment, which are built in containers;
 - the Visual Studio C++ build tools, for the NativeAOT agent;
 - the Windows ADK with its WinPE add-on, 10.1.26100.2454 or later, for the boot image.
 
@@ -191,8 +205,10 @@ docker compose -f build/compose.yaml up
 ```
 
 Netbooting real machines needs a Linux host for the container, because Docker Desktop does not pass
-DHCP broadcasts through, and a boot image built on Windows with `build/Build-BootImage.ps1`.
-[CONTRIBUTING.md](CONTRIBUTING.md) says how to run the tests.
+DHCP broadcasts through. For Windows sequences it also needs a boot image built on Windows with
+`build/Build-BootImage.ps1`. For Linux sequences it needs the Linux boot environment, which an
+image built this way does not hold: `build/Publish-LinuxAgent.ps1` and `build/Build-LinuxBoot.ps1`
+build it, on Windows too. [CONTRIBUTING.md](CONTRIBUTING.md) says how, and how to run the tests.
 
 ## Contributing
 
@@ -219,3 +235,9 @@ its source code and its notices: LICENSE, NOTICE, [THIRD-PARTY-NOTICES.md](THIRD
 and `licenses/`. NOTICE also permits conveying the console together with Avalonia, which contains
 code under a licence the GPL does not otherwise get along with. The Windows PE and ADK files in a
 boot image are Microsoft's: you bring them from your own ADK, and DDT's licence does not cover them.
+
+Most of the Linux boot environment in a release is not DDT's either. Besides DDT's agent and start
+scripts it holds Debian packages under their own licences, the Linux kernel, GRUB and BusyBox among
+them, and network card firmware that is not free software. Whoever passes a release on passes the
+packages' source code on with it: every release publishes it as `ddt-linux-boot-sources.tar`, and
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) names each package.

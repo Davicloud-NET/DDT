@@ -1,0 +1,52 @@
+# syntax=docker/dockerfile:1
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# Publishes the agent for Linux as one static file. NativeAOT does not compile across systems or C libraries, so the
+# .NET SDK on Alpine compiles it against musl. build/Publish-LinuxAgent.ps1 runs this with the repository's root as
+# the context:
+#   docker build -f build/Dockerfile.agent-linux --target export --output artifacts/agent-linux .
+
+# Alpine 3.24 with the .NET SDK 10.0.401. The digest is the tag's of 2026-10-08, so the image is the same every time.
+ARG DOTNET_SDK=mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:3cc3bbbbf93d82104892f42aa9106b6be4d120346dea0649643a97c801525256
+
+FROM ${DOTNET_SDK} AS build
+# NativeAOT links with clang. StaticOpenSslLinking compiles the runtime's OpenSSL shim with cmake against the static
+# libssl and libcrypto, which then are part of the agent, as musl is. THIRD-PARTY-NOTICES.md names both.
+RUN apk add --no-cache clang build-base cmake openssl-dev openssl-libs-static
+WORKDIR /src
+COPY global.json nuget.config Directory.Build.props Directory.Build.targets Directory.Packages.props .editorconfig ./
+COPY src/DDT.ConsoleProtocol/DDT.ConsoleProtocol.csproj src/DDT.ConsoleProtocol/
+COPY src/DDT.Contracts/DDT.Contracts.csproj src/DDT.Contracts/
+COPY src/DDT.Core/DDT.Core.csproj src/DDT.Core/
+COPY src/DDT.Agent.Core/DDT.Agent.Core.csproj src/DDT.Agent.Core/
+COPY src/DDT.Agent.Linux/DDT.Agent.Linux.csproj src/DDT.Agent.Linux/
+RUN --mount=type=cache,id=ddt-agent-linux-nuget,target=/root/.nuget/packages \
+    dotnet restore src/DDT.Agent.Linux/DDT.Agent.Linux.csproj
+COPY src/DDT.ConsoleProtocol/ src/DDT.ConsoleProtocol/
+COPY src/DDT.Contracts/ src/DDT.Contracts/
+COPY src/DDT.Core/ src/DDT.Core/
+COPY src/DDT.Agent.Core/ src/DDT.Agent.Core/
+COPY src/DDT.Agent.Linux/ src/DDT.Agent.Linux/
+# The agent prints these, so they are compiled into it.
+COPY LICENSE NOTICE THIRD-PARTY-NOTICES.md ./
+COPY licenses/dotnet/ licenses/dotnet/
+COPY licenses/gcc/ licenses/gcc/
+COPY licenses/musl/ licenses/musl/
+COPY licenses/openssl/ licenses/openssl/
+COPY licenses/zstd/ licenses/zstd/
+# The release's version, as 26.1.412. Nothing in here can count the commits, so without it Build is 0.
+ARG DDT_VERSION
+RUN --mount=type=cache,id=ddt-agent-linux-nuget,target=/root/.nuget/packages \
+    dotnet publish src/DDT.Agent.Linux/DDT.Agent.Linux.csproj -c Release --no-restore -o /out ${DDT_VERSION:+-p:Version=$DDT_VERSION}
+# The boot environment has no library to lend the agent, and the server reads the agent's version out of the file.
+RUN if readelf -l -d /out/ddt-agent | grep -E 'INTERP|NEEDED'; then \
+        echo "ddt-agent is not static: it names an interpreter or a library." >&2; exit 1; \
+    fi; \
+    if ! grep -a -q "DDT-AGENT-VERSION:${DDT_VERSION:-[0-9]}" /out/ddt-agent; then \
+        echo "ddt-agent does not carry its version." >&2; exit 1; \
+    fi
+
+FROM scratch AS export
+COPY --from=build /out/ddt-agent /ddt-agent

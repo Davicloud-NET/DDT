@@ -366,7 +366,7 @@ public sealed class AgentLoop
     // The prompt lets go of the console first, and the server gets the log's last lines, which say why it restarts.
     private async Task<bool> RestartIntoAsync(PollState poll, AgentEnvironment target, CancellationToken cancellationToken)
     {
-        if (!await _bootSwitch.RestartForRunAsync(target, poll.Tokens, _prompts.StopTypingAsync, cancellationToken).ConfigureAwait(false))
+        if (!await _bootSwitch.RestartForRunAsync(target, poll, _prompts.StopTypingAsync, cancellationToken).ConfigureAwait(false))
         {
             return false;
         }

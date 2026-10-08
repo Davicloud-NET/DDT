@@ -13,13 +13,19 @@ public sealed class WindowsPERebooter(IToolRunner tools, IUefiVariables variable
 {
     private readonly NextStart _next = new(variables, log, AgentEnvironment.WindowsPE);
 
-    public async Task RebootAsync(RestartInto into, CancellationToken cancellationToken)
+    public Task RebootAsync(RestartInto into, CancellationToken cancellationToken) => RebootAsync(into, () => Task.CompletedTask, cancellationToken);
+
+    // wpeutil takes Windows PE down at once, so the lines written until here go to the server before it runs.
+    public async Task RebootAsync(RestartInto into, Func<Task> lastLines, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(lastLines);
+
         if (into == RestartInto.BootEnvironment)
         {
             _next.FromThisEntry();
         }
 
+        await lastLines().ConfigureAwait(false);
         await tools.RunAsync(Path.Combine(Environment.SystemDirectory, "wpeutil.exe"), ["reboot"], cancellationToken).ConfigureAwait(false);
     }
 }

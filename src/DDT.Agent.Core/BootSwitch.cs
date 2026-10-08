@@ -58,14 +58,14 @@ internal sealed class BootSwitch(IAgentServer server, AgentMachine machine, Cons
             return false;
         }
 
-        return await RestartAsync(pick.Environment, tokens, cancellationToken).ConfigureAwait(false);
+        return await RestartAsync(pick.Environment, machineId, tokens, cancellationToken).ConfigureAwait(false);
     }
 
     // For a run assigned on the web or by a rule, which every poll answer names until the machine is where the run
     // starts. letGo runs first, only when the machine does restart. True if it restarts.
-    public async Task<bool> RestartForRunAsync(AgentEnvironment target, DeploymentTokens tokens, Func<Task> letGo, CancellationToken cancellationToken)
+    public async Task<bool> RestartForRunAsync(AgentEnvironment target, PollState poll, Func<Task> letGo, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(tokens);
+        ArgumentNullException.ThrowIfNull(poll);
         ArgumentNullException.ThrowIfNull(letGo);
 
         if (!CanRestartInto(target, again: false))
@@ -75,7 +75,7 @@ internal sealed class BootSwitch(IAgentServer server, AgentMachine machine, Cons
 
         await letGo().ConfigureAwait(false);
 
-        return await RestartAsync(target, tokens, cancellationToken).ConfigureAwait(false);
+        return await RestartAsync(target, poll.MachineId, poll.Tokens, cancellationToken).ConfigureAwait(false);
     }
 
     // Says why not. A poll asks every few seconds, so it is told once per environment unless again is set.
@@ -99,7 +99,7 @@ internal sealed class BootSwitch(IAgentServer server, AgentMachine machine, Cons
         return why is null;
     }
 
-    private async Task<bool> RestartAsync(AgentEnvironment target, DeploymentTokens tokens, CancellationToken cancellationToken)
+    private async Task<bool> RestartAsync(AgentEnvironment target, Guid machineId, DeploymentTokens tokens, CancellationToken cancellationToken)
     {
         if (machine.Switch is not { } change)
         {
@@ -115,7 +115,9 @@ internal sealed class BootSwitch(IAgentServer server, AgentMachine machine, Cons
 
         try
         {
-            await change.Rebooter.RebootAsync(RestartInto.BootEnvironment, cancellationToken).ConfigureAwait(false);
+            await change.Rebooter
+                .RebootAsync(RestartInto.BootEnvironment, () => SendLastLinesAsync(machineId, tokens.Token, cancellationToken), cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -130,5 +132,18 @@ internal sealed class BootSwitch(IAgentServer server, AgentMachine machine, Cons
         }
 
         return true;
+    }
+
+    // One try, as after a poll: the restart is worth more than the lines. A refused token is the loop's to answer.
+    private async Task SendLastLinesAsync(Guid machineId, string token, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await log.FlushAsync(server, machineId, token, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is AgentTokenRejectedException
+            || (LoopCallRules.IsTransient(exception) && !cancellationToken.IsCancellationRequested))
+        {
+        }
     }
 }

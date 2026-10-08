@@ -42,6 +42,33 @@ public sealed class WindowsPERebooterTests
         Assert.Contains(await SentAsync(), line => line.Message == "The next start comes from boot entry Boot0003 again, the one this start came from.");
     }
 
+    // wpeutil takes Windows PE down at once, so what it said of the next start has to be sent before it runs.
+    [Fact]
+    public async Task SendsTheLastLinesOnceTheNextStartIsSetAndBeforeWindowsPEGoesDown()
+    {
+        _variables.Values["BootCurrent"] = [0x03, 0x00];
+        _variables.Values["Boot0003"] = [0x01];
+        List<string> order = [];
+        _tools.Answer = (_, _) =>
+        {
+            order.Add("wpeutil");
+
+            return [];
+        };
+
+        await Rebooter().RebootAsync(
+            RestartInto.BootEnvironment,
+            () =>
+            {
+                order.Add($"last lines, BootNext {(_variables.Values.ContainsKey("BootNext") ? "set" : "not set")}, {_log.QueuedLines} to send");
+
+                return Task.CompletedTask;
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(["last lines, BootNext set, 1 to send", "wpeutil"], order);
+    }
+
     [Fact]
     public async Task RestartsPlainlyWhenThatEntryIsGone()
     {

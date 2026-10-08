@@ -1,0 +1,36 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# Run by the placeholder agent in the hardware check: what the agent's facts do not show.
+
+PATH=/usr/bin
+export PATH
+
+# The start scripts ask DHCP on one adapter. Every other one is asked here, without touching the routes.
+for path in /sys/class/net/*; do
+    name=${path##*/}
+    if [ "$(cat "$path/type")" != 1 ] || ip -4 -o addr show dev "$name" | grep -q inet; then
+        continue
+    fi
+    driver=$(readlink "$path/device/driver")
+    ip link set "$name" up
+    tries=0
+    while [ "$(cat "$path/carrier" 2> /dev/null)" != 1 ] && [ "$tries" -lt 20 ]; do
+        usleep 250000
+        tries=$((tries + 1))
+    done
+    answer=$(udhcpc -i "$name" -n -q -t 5 -T 2 -s /usr/bin/true 2>&1 | grep 'lease of' || echo "no lease")
+    echo "hardware: second adapter $name driver=${driver##*/} $answer"
+done
+
+echo "hardware: gateway $(ping -c 1 -W 2 10.0.2.2 2>&1 | grep -E 'bytes from|100% packet loss' | head -n 1)"
+# busybox is linked statically, and this is where its glibc has to find a name server by itself.
+echo "hardware: name lookup $(ping -c 1 -W 1 deb.debian.org 2>&1 | head -n 1)"
+
+# Keycode 21 is Y on a US keyboard and Z on a German one: 7a0b is the letter z. Its two bytes are at 305.
+echo "hardware: keycode 21 gives $(dumpkmap < /dev/tty0 | xxd -p | tr -d '\n' | cut -c 611-614)"
+
+# lsattr is linked against glibc, so this line also shows that the loader and libc in base.img work.
+echo "hardware: lsattr says $(lsattr -d /sys/firmware/efi/efivars/BootOrder-8be4df61-93ca-11d2-aa0d-00e098032b8c 2>&1)"

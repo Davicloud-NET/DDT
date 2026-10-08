@@ -1,0 +1,9 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# Run by the placeholder agent in the restart check: an agent that says it restarts the machine and does not.
+
+echo "restart: ending with the agent's code for a restart, without restarting"
+exit 5

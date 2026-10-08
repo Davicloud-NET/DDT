@@ -8,6 +8,7 @@ using DDT.Agent.Deployment;
 using DDT.Agent.Facts;
 using DDT.Agent.InstalledPhase;
 using DDT.Agent.Sequences;
+using DDT.Contracts.Agents;
 using Microsoft.Win32;
 
 namespace DDT.Agent.WindowsPhase;
@@ -16,7 +17,7 @@ namespace DDT.Agent.WindowsPhase;
 // run. Nobody watches its console, so it logs to DDT\logs\agent.log as well as to the server.
 public static class WindowsPhaseService
 {
-    public static string LogPathIn(string windowsRoot) => Path.Combine(windowsRoot, "DDT", "logs", "agent.log");
+    public static string LogPathIn(string windowsRoot) => Path.Combine(RunFiles.DirectoryIn(windowsRoot), "logs", "agent.log");
 
     public static async Task<int> RunAsync(CancellationToken cancellationToken)
     {
@@ -94,7 +95,7 @@ public static class WindowsPhaseService
         DiskpartPartitioner disks = new(tools, log, TimeProvider.System, parts.Directory);
         BcdbootWriter bcdWriter = new(tools, new UefiVariables(), log);
         WimImageApplier applier = new(log, AppContext.BaseDirectory, Path.Combine(parts.Directory, "logs", "wimlib.log"));
-        SequenceRunnerOptions options = new(RunHeartbeat.DefaultInterval, parts.Directory, DryRun: false);
+        SequenceRunnerOptions options = new(RunHeartbeat.DefaultInterval, parts.Directory, DryRun: false) { Environment = AgentEnvironment.Windows };
 
         return new SequenceRunnerBuilder
         {
@@ -151,6 +152,6 @@ public static class WindowsPhaseService
     // What the service's runner and loop share.
     private sealed record ServiceParts(string WindowsRoot, AgentLog Log, HttpAgentServer Server, ToolRunner Tools, WindowsRebooter Rebooter, string Version)
     {
-        public string Directory => Path.Combine(WindowsRoot, "DDT");
+        public string Directory => RunFiles.DirectoryIn(WindowsRoot);
     }
 }

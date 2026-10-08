@@ -25,8 +25,12 @@ internal sealed record TestRunnerOptions
 
     public IRawDisks? RawDisks { get; init; }
 
-    // The boot environment whose check TestAgents.Runner makes of a fresh run.
+    // The boot environment the runner runs in, whose check TestAgents.Runner makes of a fresh run. Null is Windows PE
+    // without the check.
     public AgentEnvironment? Environment { get; init; }
+
+    // What the script launcher adds to every script's environment.
+    public IReadOnlyDictionary<string, string>? ScriptEnvironment { get; init; }
 
     public string? SystemDirectory { get; init; }
 

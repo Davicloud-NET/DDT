@@ -42,6 +42,24 @@ public sealed class AgentOptionsTests
         Assert.Equal(AgentEnvironment.WindowsPE, windowsPE!.DryRunEnvironment);
     }
 
+    // The executable for Linux stands in for its own boot environment only, and names neither Windows PE nor the
+    // graphical console in what it prints.
+    [Fact]
+    public void TheExecutableForLinuxEndsARefusalWithItsOwnUsageAndHasNoDryRunOfWindowsPE()
+    {
+        string[] dryRun = ["--server", "https://ddt.example:7152", "--dry-run"];
+
+        Assert.True(AgentOptions.TryParse([.. dryRun, "--dry-run-environment", "LinuxBoot"], AgentEnvironment.LinuxBoot, out AgentOptions? own, out string error), error);
+        Assert.False(AgentOptions.TryParse([.. dryRun, "--dry-run-environment", "WindowsPE"], AgentEnvironment.LinuxBoot, out _, out string other));
+        Assert.False(AgentOptions.TryParse(["--server", "http://ddt.example"], AgentEnvironment.LinuxBoot, out _, out string plain));
+
+        Assert.Equal(AgentEnvironment.LinuxBoot, own!.DryRunEnvironment);
+        Assert.Equal($"Unknown or invalid argument --dry-run-environment. {EnvironmentTexts.LinuxUsage}", other);
+        Assert.Equal($"An https server URL is required. {EnvironmentTexts.LinuxUsage}", plain);
+        Assert.DoesNotContain("WindowsPE", EnvironmentTexts.LinuxUsage, StringComparison.Ordinal);
+        Assert.DoesNotContain(".exe", EnvironmentTexts.LinuxUsage, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TurnsDownADryRunEnvironmentThatIsNoBootEnvironmentOrComesWithoutADryRun()
     {

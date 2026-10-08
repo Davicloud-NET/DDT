@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Agents;
+
 namespace DDT.Agent.Deployment;
 
 // Changes the firmware's boot order through its variables, and remembers what a run changed to put it back.
@@ -9,6 +11,9 @@ public sealed class FirmwareBootOrder(IUefiVariables variables, AgentLog log) : 
 {
     // What the current run changed.
     private UndoableUefiVariables? _changes;
+
+    // The boot environment that changes the order, for what putting it back keeps the machine from starting.
+    public AgentEnvironment Environment { get; init; } = AgentEnvironment.WindowsPE;
 
     // A new run starts, so nothing an earlier run changed is ever put back.
     public void Forget() => _changes = null;
@@ -53,14 +58,12 @@ public sealed class FirmwareBootOrder(IUefiVariables variables, AgentLog log) : 
         {
             if (changes is not null && changes.Undo())
             {
-                log.Information("The firmware boot order is back as it was before the deployment, so this machine does not start Windows without its answer file.");
+                log.Information(EnvironmentTexts.BootOrderIsBack(Environment));
             }
         }
         catch (Exception exception)
         {
-            log.Warning(
-                $"The firmware boot order could not be put back as it was before the deployment ({exception.Message}), so this machine may " +
-                "start Windows without its answer file. Start it from the network to deploy it again.");
+            log.Warning(EnvironmentTexts.BootOrderStays(Environment, exception.Message));
         }
 
         return Task.CompletedTask;

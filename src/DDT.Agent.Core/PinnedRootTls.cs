@@ -4,6 +4,7 @@
 
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
+using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
@@ -11,6 +12,9 @@ namespace DDT.Agent;
 // handshake went, so a refused connection can say what to fix.
 internal sealed class PinnedRootTls(X509Certificate2 root)
 {
+    // Where the agent runs, which decides how a root gets to it and so what to fix.
+    public AgentEnvironment Environment { get; set; } = AgentEnvironment.WindowsPE;
+
     // How DDT names its roots, so a refused certificate from a DDT root can be told apart from an administrator's.
     private const string DdtRootSubjectPrefix = "CN=DDT root ";
 
@@ -49,16 +53,10 @@ internal sealed class PinnedRootTls(X509Certificate2 root)
 
             if (issuer is not null && issuer.StartsWith(DdtRootSubjectPrefix, StringComparison.Ordinal))
             {
-                return "The server's certificate does not come from the root certificate this boot image trusts. Build the " +
-                    "boot image again with Build-BootImage.ps1 -RootCertificatePath set to the server's ddt-root.pem, which is " +
-                    "next to its certificate (/var/lib/ddt/certs/ddt-root.pem in the container). A server that moved to its " +
-                    "own root needs this once.";
+                return EnvironmentTexts.OtherDdtRoot(Environment);
             }
 
-            return $"The server's certificate, issued by {issuer}, does not chain to the root certificate this boot image " +
-                "trusts. Build the boot image with Build-BootImage.ps1 -RootCertificatePath set to the root of the CA that " +
-                "issued it, and have the server send the intermediate certificates after its own in the certificate file, " +
-                "because the agent does not download them.";
+            return EnvironmentTexts.OtherIssuer(Environment, issuer);
         }
 
         if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))

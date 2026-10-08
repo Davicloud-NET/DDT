@@ -5,4 +5,8 @@
 namespace DDT.Agent.Sequences;
 
 // The program that runs a script, and its arguments.
-public sealed record ScriptLaunch(string FileName, IReadOnlyList<string> Arguments);
+public sealed record ScriptLaunch(string FileName, IReadOnlyList<string> Arguments)
+{
+    // What the script finds in its environment besides the agent's own variables and DDT's. Null for nothing more.
+    public IReadOnlyDictionary<string, string>? Environment { get; init; }
+}

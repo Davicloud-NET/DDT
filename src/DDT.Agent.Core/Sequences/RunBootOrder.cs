@@ -9,8 +9,10 @@ namespace DDT.Agent.Sequences;
 
 // Changes the firmware's boot order for a run. Until the last change, a restart starts the machine from the network
 // rather than a system that isn't ready. From then on a restart into the installed system is due.
-internal sealed class RunBootOrder(IBcdWriter bcdWriter, IBootOrder bootOrder, IBootRestartMarker restartMarker, AgentLog log)
+internal sealed class RunBootOrder(IBcdWriter? bcdWriter, IBootOrder bootOrder, IBootRestartMarker restartMarker, AgentLog log)
 {
+    public const string NoWindowsMessage = "This boot environment applies no Windows, so it cannot make one start.";
+
     // Firmware setup screens show a line of this much.
     private const int MaxBootEntryName = 64;
 
@@ -19,14 +21,16 @@ internal sealed class RunBootOrder(IBcdWriter bcdWriter, IBootOrder bootOrder, I
     // nothing to undo.
     public async Task MakeBootableAsync(SequenceRun run, TargetVolumes volumes, Func<Task>? handOverRun, CancellationToken cancellationToken)
     {
+        IBcdWriter writer = bcdWriter ?? throw new DeploymentStepException(NoWindowsMessage);
+
         if (handOverRun is not null)
         {
             await handOverRun().ConfigureAwait(false);
         }
 
-        await bcdWriter.WriteAsync(volumes, cancellationToken).ConfigureAwait(false);
+        await writer.WriteAsync(volumes, cancellationToken).ConfigureAwait(false);
         run.WindowsFirst = true;
-        await bcdWriter.PutWindowsFirstAsync(volumes, cancellationToken).ConfigureAwait(false);
+        await writer.PutWindowsFirstAsync(volumes, cancellationToken).ConfigureAwait(false);
         restartMarker.Set(RestartInto.InstalledSystem);
     }
 

@@ -14,10 +14,11 @@ internal sealed class RunDiskChoice(IDisks machineDisks, IRawDisks? rawDisks)
 {
     public const string NoRawDisksMessage = "This boot environment writes no raw disk images, so the run cannot start in it.";
 
-    public async Task<LocalDisk> ChooseAsync(AgentRun run, LocalDisk? confirmedDisk, RunInventory inventory, CancellationToken cancellationToken)
+    public async Task<LocalDisk> ChooseAsync(RunSession session, LocalDisk? confirmedDisk, RunInventory inventory, CancellationToken cancellationToken)
     {
+        AgentRun run = session.Run;
         IReadOnlyList<LocalDisk> disks = await machineDisks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
-        LocalDisk disk = Select(run.DiskNumber, confirmedDisk, disks);
+        LocalDisk disk = Select(run.DiskNumber, confirmedDisk, disks, session.Environment);
         IReadOnlyList<SequenceStep> steps = inventory.Steps;
         IReadOnlyList<AgentRunImage> rawImages = inventory.RawImages;
 
@@ -49,7 +50,7 @@ internal sealed class RunDiskChoice(IDisks machineDisks, IRawDisks? rawDisks)
 
     // Disk numbers can change when the machine starts again. So a disk chosen at the machine only counts while it's the
     // exact disk confirmed in this process.
-    private static LocalDisk Select(int? diskNumber, LocalDisk? confirmedDisk, IReadOnlyList<LocalDisk> disks)
+    private static LocalDisk Select(int? diskNumber, LocalDisk? confirmedDisk, IReadOnlyList<LocalDisk> disks, AgentEnvironment environment)
     {
         if (diskNumber is { } number)
         {
@@ -76,7 +77,7 @@ internal sealed class RunDiskChoice(IDisks machineDisks, IRawDisks? rawDisks)
 
         return disks.Count switch
         {
-            0 => throw new DeploymentStepException(SequenceRunner.NoDiskMessage),
+            0 => throw new DeploymentStepException(EnvironmentTexts.NoDisk(environment)),
             1 => disks[0],
             _ => throw new DeploymentStepException(SequenceRunner.SeveralDisksMessage),
         };

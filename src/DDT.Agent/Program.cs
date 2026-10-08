@@ -27,6 +27,7 @@ if (args.Contains(WindowsServiceHost.Argument))
 
 AgentStartup startup = new(new AgentPlatform
 {
+    BootEnvironment = AgentEnvironment.WindowsPE,
     IsPublished = AgentBuild.IsPublished,
     WriteStartupNotices = AgentLegalNotices.WriteStartupNotices,
     WriteLicenses = AgentLegalNotices.WriteLicenses,

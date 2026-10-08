@@ -43,6 +43,18 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         _client = NewClient();
     }
 
+    // The boot environment the agent runs in, for what a refused certificate tells the reader to do.
+    public AgentEnvironment Environment
+    {
+        init
+        {
+            if (_tls is not null)
+            {
+                _tls.Environment = value;
+            }
+        }
+    }
+
     // Called before the agent starts a newer one. WinPE's next start reuses the client ports, which would collide with
     // connections a restart left open on the server. Later requests open new connections.
     public void CloseConnections() => Interlocked.Exchange(ref _client, NewClient()).Dispose();

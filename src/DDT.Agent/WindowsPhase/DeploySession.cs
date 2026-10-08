@@ -49,10 +49,10 @@ public sealed class DeploySession(
     private readonly SessionCleanup _cleanup = new(accounts, log, timeProvider);
     private bool _renewed;
 
-    public static string FilePathIn(string windowsRoot) => Path.Combine(windowsRoot, "DDT", "session.json");
+    public static string FilePathIn(string windowsRoot) => Path.Combine(RunFiles.DirectoryIn(windowsRoot), "session.json");
 
     public static string ConsolePathIn(string windowsRoot) =>
-        Path.Combine(windowsRoot, "DDT", WindowsHandOver.ConsoleDirectory, ConsolePipe.FileName);
+        Path.Combine(RunFiles.DirectoryIn(windowsRoot), WindowsHandOver.ConsoleDirectory, ConsolePipe.FileName);
 
     // Called in WinPE once the console is staged. Setup signs in as DDTDeploy once, at the end of the out-of-box
     // experience, through the answer file's AutoLogon. Returns false without an answer file, as when someone at the

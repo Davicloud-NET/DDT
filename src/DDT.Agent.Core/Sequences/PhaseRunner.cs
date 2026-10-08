@@ -21,7 +21,7 @@ internal sealed class PhaseRunner(
     RunEnding ending,
     AgentLog log)
 {
-    // How often Windows PE may start instead of the installed Windows and hand the run over again.
+    // How often the boot environment may start instead of the installed system and hand the run over again.
     private const int MaxWindowsPEReturns = 3;
 
     public async Task<RunResult> RunAsync(SequenceRun run, CancellationToken cancellationToken)
@@ -106,10 +106,10 @@ internal sealed class PhaseRunner(
 
         if (returns > MaxWindowsPEReturns)
         {
-            return new SequenceRunResult(SequenceOutcome.Failed, state, SequenceRunner.WindowsDidNotStartMessage);
+            return new SequenceRunResult(SequenceOutcome.Failed, state, EnvironmentTexts.InstalledSystemDidNotStart(run.Session.Environment));
         }
 
-        log.Warning($"The run goes on in the installed Windows, but the machine started Windows PE. Handing the run over again ({returns} of {MaxWindowsPEReturns} times).");
+        log.Warning(EnvironmentTexts.HandingOverAgain(run.Session.Environment, returns, MaxWindowsPEReturns));
 
         Dictionary<string, string> variables = new(state.Variables, StringComparer.Ordinal)
         {

@@ -21,7 +21,7 @@ internal sealed class DeploySessionStore(string windowsRoot, AgentLog log)
 
     public async Task SaveAsync(DeploySessionFile file, CancellationToken cancellationToken)
     {
-        Directory.CreateDirectory(Path.Combine(windowsRoot, "DDT"));
+        Directory.CreateDirectory(RunFiles.DirectoryIn(windowsRoot));
         await File.WriteAllBytesAsync(FilePath, JsonSerializer.SerializeToUtf8Bytes(file, DeploySessionFileJsonContext.Default.DeploySessionFile), cancellationToken)
             .ConfigureAwait(false);
     }

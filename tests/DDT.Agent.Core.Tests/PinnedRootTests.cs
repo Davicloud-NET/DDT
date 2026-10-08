@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using DDT.Contracts.Agents;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -99,13 +100,36 @@ public sealed class PinnedRootTests
         Assert.Contains("DDT:Https:SubjectAlternativeNames", refusal.Message, StringComparison.Ordinal);
     }
 
-    private static async Task<HttpRequestException> RefusedAsync(X509Certificate2 pin, X509Certificate2 certificate)
+    // The Linux boot environment gets its root when it starts from the network, so no boot image is built again.
+    [Fact]
+    public async Task InTheLinuxBootEnvironmentARefusedCertificateSaysToStartFromTheNetworkAgain()
+    {
+        using X509Certificate2 pinnedRoot = TestCertificates.Root("DDT root 0001");
+        using X509Certificate2 pin = TestCertificates.Pin(pinnedRoot);
+        using X509Certificate2 otherRoot = TestCertificates.Root("DDT root 0002");
+        using X509Certificate2 otherCa = TestCertificates.Root("Example Issuing CA");
+        using X509Certificate2 fromOtherRoot = TestCertificates.Issue(otherRoot, Address);
+        using X509Certificate2 fromOtherCa = TestCertificates.Issue(otherCa, Address);
+
+        HttpRequestException root = await RefusedAsync(pin, fromOtherRoot, AgentEnvironment.LinuxBoot);
+        HttpRequestException issuer = await RefusedAsync(pin, fromOtherCa, AgentEnvironment.LinuxBoot);
+
+        Assert.Contains(EnvironmentTexts.OtherDdtRoot(AgentEnvironment.LinuxBoot), root.Message, StringComparison.Ordinal);
+        Assert.Contains(EnvironmentTexts.OtherIssuer(AgentEnvironment.LinuxBoot, "CN=Example Issuing CA"), issuer.Message, StringComparison.Ordinal);
+        Assert.All([root, issuer], refusal => Assert.DoesNotContain("boot image", refusal.Message, StringComparison.Ordinal));
+        Assert.All([root, issuer], refusal => Assert.Contains("start the machine from the network again", refusal.Message, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static async Task<HttpRequestException> RefusedAsync(
+        X509Certificate2 pin,
+        X509Certificate2 certificate,
+        AgentEnvironment environment = AgentEnvironment.WindowsPE)
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
         using TcpListener listener = new(IPAddress.Loopback, 0);
         listener.Start();
         Task serving = AnswerNotFoundAsync(listener, certificate, cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), pin, s_requestTimeout);
+        using HttpAgentServer server = new(AddressOf(listener), pin, s_requestTimeout) { Environment = environment };
 
         HttpRequestException refusal = await Assert.ThrowsAsync<HttpRequestException>(() => server.GetReleaseAsync(cancellationToken));
         await serving;

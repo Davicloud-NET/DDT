@@ -27,6 +27,9 @@ public sealed class RunScriptStepRunner(
 
     public const string VariablesOut = "DDT_VARIABLES_OUT";
 
+    // The device of the disk the raw disk image was written to, such as /dev/nvme0n1, once it is written.
+    public const string Disk = "DDT_DISK";
+
     // DDT_SHARE_1 is where the script finds its first share, when the system gave the share a place of its own.
     public const string SharePrefix = "DDT_SHARE_";
 
@@ -93,6 +96,7 @@ public sealed class RunScriptStepRunner(
         ScriptLaunch launch = await launcher.WriteAsync(step, scripts, cancellationToken).ConfigureAwait(false);
         string? package = await UnpackAsync(step, directory, context, account, cancellationToken).ConfigureAwait(false);
         Dictionary<string, string> environment = EnvironmentFor(step, context, package, resources.SharePaths);
+        AddMissing(environment, launch.Environment);
 
         VariableDeclaration[] settable = [.. session.Run.Sequence.Variables?.Where(variable => variable is { SetBySteps: true }) ?? []];
         string? outputs = PrepareOutputs(step, scripts, settable, environment);
@@ -206,6 +210,12 @@ public sealed class RunScriptStepRunner(
             environment["DDT_WINDOWS"] = volumes.Windows;
         }
 
+        // A script after the image changes what is on the disk, so it has to know which one it is.
+        if (session.Disk?.Device is { } device && context.Variables.TryGetValue(RunVariables.RawImageWritten, out string? written) && written == RunVariables.Set)
+        {
+            environment[Disk] = device;
+        }
+
         for (int index = 0; index < sharePaths.Count; index++)
         {
             environment[string.Create(CultureInfo.InvariantCulture, $"{SharePrefix}{index + 1}")] = sharePaths[index];
@@ -217,6 +227,15 @@ public sealed class RunScriptStepRunner(
         }
 
         return environment;
+    }
+
+    // The launcher's variables never replace DDT's.
+    private static void AddMissing(Dictionary<string, string> environment, IReadOnlyDictionary<string, string>? more)
+    {
+        foreach ((string name, string value) in more ?? new Dictionary<string, string>())
+        {
+            environment.TryAdd(name, value);
+        }
     }
 
     // A restart code restarts the machine before the next step, a success code is done, and any other code fails.

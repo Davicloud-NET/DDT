@@ -28,7 +28,8 @@ public sealed class SequenceRunnerBuilder
 
     public required IStepRunners StepRunners { get; init; }
 
-    public required IBcdWriter BcdWriter { get; init; }
+    // Makes an applied Windows start. Null on a platform that applies none.
+    public IBcdWriter? BcdWriter { get; init; }
 
     public required IBootOrder BootOrder { get; init; }
 
@@ -59,7 +60,7 @@ public sealed class SequenceRunnerBuilder
         RunInputsWait inputs = new(Server, Status?.Console, Log, TimeProvider);
 
         return new SequenceRunner(
-            new SequenceRunFactory(new RunHeartbeatFactory(Server, Log, TimeProvider, Options.HeartbeatInterval), Status, Log),
+            new SequenceRunFactory(new RunHeartbeatFactory(Server, Log, TimeProvider, Options.HeartbeatInterval), Status, Log, Options.Environment),
             new RunStart(preflight, Partitioner, ending, Status, Log, TimeProvider),
             new PhaseRunner(StepsFor, inputs, HandOver, bootOrder, ending, Log),
             ending,

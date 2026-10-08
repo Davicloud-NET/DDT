@@ -43,17 +43,22 @@ public sealed record AgentOptions(
     public string? ConsolePath { get; init; }
 
     // Arguments override agent.json, which by default sits next to the executable.
-    public static bool TryParse(IReadOnlyList<string> args, out AgentOptions? options, out string error)
+    public static bool TryParse(IReadOnlyList<string> args, out AgentOptions? options, out string error) =>
+        TryParse(args, AgentEnvironment.WindowsPE, out options, out error);
+
+    // bootEnvironment is the one the executable is built for. Its usage text ends every refusal, and an executable
+    // for Linux has no dry run of Windows PE.
+    public static bool TryParse(IReadOnlyList<string> args, AgentEnvironment bootEnvironment, out AgentOptions? options, out string error)
     {
         ArgumentNullException.ThrowIfNull(args);
 
         options = null;
-        Arguments parsed = new();
+        Arguments parsed = new(bootEnvironment);
 
         if (!TryParseArguments(args, parsed, out error)
             || !parsed.TryCheckDryRun(out error)
             || !TryApplyConfigFile(parsed, out error)
-            || !TryReadServerUrl(parsed.Server, out Uri? serverUrl, out error)
+            || !TryReadServerUrl(parsed, out Uri? serverUrl, out error)
             || !TryLoadRoot(parsed.RootPem, out X509Certificate2? root, out error))
         {
             return false;
@@ -82,7 +87,7 @@ public sealed record AgentOptions(
 
             if (index + 1 >= args.Count)
             {
-                error = $"{argument} needs a value. {Usage}";
+                error = $"{argument} needs a value. {parsed.Usage}";
 
                 return false;
             }
@@ -125,12 +130,12 @@ public sealed record AgentOptions(
                 parsed.DryRunId = id;
 
                 return true;
-            case DryRunEnvironmentArgument when BootEnvironment(value) is { } environment:
+            case DryRunEnvironmentArgument when BootEnvironment(value) is { } environment && parsed.CanDryRun(environment):
                 parsed.DryRunEnvironment = environment;
 
                 return true;
             default:
-                error = $"Unknown or invalid argument {argument}. {Usage}";
+                error = $"Unknown or invalid argument {argument}. {parsed.Usage}";
 
                 return false;
         }
@@ -179,12 +184,12 @@ public sealed record AgentOptions(
         }
     }
 
-    private static bool TryReadServerUrl(string? server, [NotNullWhen(true)] out Uri? serverUrl, out string error)
+    private static bool TryReadServerUrl(Arguments parsed, [NotNullWhen(true)] out Uri? serverUrl, out string error)
     {
-        if (!Uri.TryCreate(server, UriKind.Absolute, out serverUrl) || serverUrl.Scheme != Uri.UriSchemeHttps)
+        if (!Uri.TryCreate(parsed.Server, UriKind.Absolute, out serverUrl) || serverUrl.Scheme != Uri.UriSchemeHttps)
         {
             serverUrl = null;
-            error = $"An https server URL is required. {Usage}";
+            error = $"An https server URL is required. {parsed.Usage}";
 
             return false;
         }
@@ -237,8 +242,10 @@ public sealed record AgentOptions(
     }
 
     // What the command line and agent.json say, before it is checked.
-    private sealed class Arguments
+    private sealed class Arguments(AgentEnvironment bootEnvironment)
     {
+        public string Usage { get; } = EnvironmentTexts.Usage(bootEnvironment);
+
         public string? ConfigPath { get; set; }
 
         public string? Server { get; set; }
@@ -266,6 +273,9 @@ public sealed record AgentOptions(
 
             return error.Length == 0;
         }
+
+        // The Windows executable stands in for both boot environments, the one for Linux only for its own.
+        public bool CanDryRun(AgentEnvironment environment) => bootEnvironment == AgentEnvironment.WindowsPE || environment == bootEnvironment;
 
         // False for an argument that takes a value.
         public bool TrySetFlag(string argument)

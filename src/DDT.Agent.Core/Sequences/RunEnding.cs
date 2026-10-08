@@ -28,7 +28,7 @@ internal sealed class RunEnding(
 
     // If WinPE recorded a restart that never happened, because the agent was stopped or wpeutil failed, it happens
     // first. Returns null when none is due. A start that is already stopped leaves it due.
-    public async Task<RunOutcome?> RestartIfDueAsync(CancellationToken cancellationToken)
+    public async Task<RunOutcome?> RestartIfDueAsync(AgentEnvironment environment, CancellationToken cancellationToken)
     {
         if (restartMarker.Due is not { } into)
         {
@@ -40,9 +40,7 @@ internal sealed class RunEnding(
             return RunOutcome.Stopped;
         }
 
-        log.Warning(into == RestartInto.BootEnvironment
-            ? "The machine was to restart into Windows PE for the run but has not restarted since. Restarting it now."
-            : "The machine was to start the installed Windows but has not restarted since. Restarting it now.");
+        log.Warning(EnvironmentTexts.RestartWasDue(environment, into));
 
         RunResult result = await RebootAsync(into, RestartReason.WasDue, RunOutcome.Restarting, "Restart it by hand.", cancellationToken)
             .ConfigureAwait(false);
@@ -94,9 +92,7 @@ internal sealed class RunEnding(
         run.Heartbeat.Activity = RunActivity.Restarting;
         log.Information(run.InInstalledSystem
             ? "Windows restarts, and the run goes on after the restart."
-            : handingOver
-                ? "The machine restarts into the installed Windows, where the agent goes on with the run."
-                : "The machine restarts into Windows PE, and the run goes on after the restart.");
+            : EnvironmentTexts.Restarts(run.Session.Environment, handingOver));
 
         try
         {

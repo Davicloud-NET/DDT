@@ -50,7 +50,7 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
     {
         FileRawDisks rawDisks = new(options.Root, log, MakeSparse);
         DryRunBcdWriter bootOrder = new(log);
-        SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval, options.Root, DryRun: true);
+        SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval, options.Root, DryRun: true) { Environment = AgentEnvironment.LinuxBoot };
 
         return new SequenceRunnerBuilder
         {
@@ -69,7 +69,6 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
                 TimeProvider = timeProvider,
                 Options = runnerOptions,
             },
-            BcdWriter = bootOrder,
             BootOrder = bootOrder,
             Rebooter = rebooter,
             RestartMarker = new FileRestartMarker(options.Root, log, dryRun: true) { DryRunNote = RestartNote },

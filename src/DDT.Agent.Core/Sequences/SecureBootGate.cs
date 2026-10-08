@@ -32,8 +32,9 @@ public static class SecureBootGate
             "allowing the image.";
     }
 
-    // What the log says when the image is written although it may not start, or null.
-    public static string? Warning(AgentRunImage image, bool allowed, bool? secureBootEnabled, UefiCa? trustedUefiCas)
+    // What the log says when the image is written although it may not start, or null. environment is where the agent
+    // runs, which could not tell whether Secure Boot is on.
+    public static string? Warning(AgentRunImage image, bool allowed, bool? secureBootEnabled, UefiCa? trustedUefiCas, AgentEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(image);
 
@@ -50,7 +51,7 @@ public static class SecureBootGate
         {
             true when allowed =>
                 $"{image.Name} {why}, and this machine has Secure Boot on. The run was allowed to write it: the machine starts it {starts}.",
-            null => $"{image.Name} {why}, and Windows PE does not say whether Secure Boot is on. If it is, the machine " +
+            null => $"{image.Name} {why}, and {EnvironmentTexts.SecureBootTeller(environment)} does not say whether Secure Boot is on. If it is, the machine " +
                 $"{(image.BootCapability == ImageBootCapability.Unknown ? "may not" : "will not")} start the image.",
             _ => null,
         };

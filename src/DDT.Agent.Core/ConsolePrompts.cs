@@ -219,7 +219,7 @@ internal sealed class ConsolePrompts(
 
             if (_pickableDisks.Count == 0)
             {
-                log.Error(SequenceRunner.NoDiskMessage);
+                log.Error(EnvironmentTexts.NoDisk(machine.Environment));
             }
         }
 

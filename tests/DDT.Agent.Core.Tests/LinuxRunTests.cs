@@ -50,6 +50,7 @@ public sealed class LinuxRunTests : IDisposable
     private readonly RecordingToolRunner _toolRunner = new();
     private readonly MemoryRawDisks _disks = new();
     private readonly TestRawImage _image = new();
+    private readonly Dictionary<string, string> _scriptEnvironment = new(StringComparer.Ordinal);
 
     public void Dispose() => _tools.Dispose();
 
@@ -76,14 +77,20 @@ public sealed class LinuxRunTests : IDisposable
         AgentEnvironment environment = AgentEnvironment.LinuxBoot)
     {
         server ??= _image.Serve(new ScriptedAgentServer());
-        ImmediateTimeProvider time = new();
         StringWriter console = new();
-        TestRunnerOptions options = new() { RawDisks = _disks, Environment = environment, ToolRunner = _toolRunner };
-        SequenceRunner runner = TestAgents.Runner(server, _tools, new AgentLog(time, console), time, options);
+        SequenceRunner runner = Runner(server, console, environment);
 
         RunResult result = await runner.RunAsync(new RunRequest(s_machineId, run, null, null, new DeploymentTokens("session-0", "resume-0"), Identity(secureBootEnabled)), server.Stop.Token);
 
         return (result, server, console.ToString());
+    }
+
+    private SequenceRunner Runner(ScriptedAgentServer server, StringWriter console, AgentEnvironment environment = AgentEnvironment.LinuxBoot)
+    {
+        ImmediateTimeProvider time = new();
+        TestRunnerOptions options = new() { RawDisks = _disks, Environment = environment, ToolRunner = _toolRunner, ScriptEnvironment = _scriptEnvironment };
+
+        return TestAgents.Runner(server, _tools, new AgentLog(time, console), time, options);
     }
 
     [Fact]
@@ -255,6 +262,62 @@ public sealed class LinuxRunTests : IDisposable
         byte[] volume = disk.ReadAt(seed.FirstLba * GptLayout.SectorSize, (int)(seed.Sectors * GptLayout.SectorSize));
         FatVolume fat = FatVolume.Open(new MemoryStream(volume), 0, volume.Length);
         Assert.Contains("local-hostname: \"SEA-00042\"", Encoding.UTF8.GetString(fat.ReadFile(fat.Find(CloudInitSeed.MetaData)!, 64 * 1024)), StringComparison.Ordinal);
+    }
+
+    // Only once the image is written does the disk hold what a script could change, and DDT's own variables stay.
+    [Fact]
+    public async Task TellsAScriptAfterTheImageWhichDiskItWasWrittenTo()
+    {
+        _tools.Disks[0] = FakeDeploymentTools.Disk(0) with { Device = "/dev/nvme0n1" };
+        _scriptEnvironment["PATH"] = "/usr/bin";
+        _scriptEnvironment["DDT_PHASE"] = "theirs";
+        RunScriptStep after = s_script with { Id = Guid.Parse("0193a4b2-0000-7000-8000-00000000e004"), Name = "After the disk" };
+
+        (RunResult result, _, _) = await RunAsync(Run(steps: [s_script, s_write, s_seed, after]));
+
+        Assert.Equal(new RunResult(RunOutcome.Finished), result);
+        Assert.False(_toolRunner.Options[0].Environment?.ContainsKey(RunScriptStepRunner.Disk));
+        Assert.Equal("/dev/nvme0n1", _toolRunner.Options[1].Environment?[RunScriptStepRunner.Disk]);
+        Assert.All(_toolRunner.Options, options => Assert.Equal(("/usr/bin", "LinuxBoot"), (options.Environment?["PATH"], options.Environment?["DDT_PHASE"])));
+    }
+
+    [Fact]
+    public async Task WithoutADiskItSaysWhatTheLinuxBootEnvironmentMayLack()
+    {
+        _tools.Disks.Clear();
+
+        (RunResult result, ScriptedAgentServer server, _) = await RunAsync(Run());
+
+        Assert.Equal(RunOutcome.Failed, result.Outcome);
+        Assert.Equal(EnvironmentTexts.LinuxNoDisk, server.RunReports[^1].Error);
+    }
+
+    [Fact]
+    public async Task SaysThatTheFirmwareDoesNotTellWhetherSecureBootIsOn()
+    {
+        (RunResult result, _, string console) = await RunAsync(Run(ImageBootCapability.NotSigned), secureBootEnabled: null);
+
+        Assert.Equal(RunOutcome.Finished, result.Outcome);
+        Assert.Contains(
+            "noble-test is not signed for Secure Boot, and this machine's firmware does not say whether Secure Boot is on. If it is, the machine will not start the image.",
+            console,
+            StringComparison.Ordinal);
+    }
+
+    // The agent was started again at the machine before the restart it owed had happened.
+    [Theory]
+    [InlineData(RestartInto.InstalledSystem, "The machine was to start the installed Linux but has not restarted since. Restarting it now.")]
+    [InlineData(RestartInto.BootEnvironment, "The machine was to restart into the Linux boot environment for the run but has not restarted since. Restarting it now.")]
+    public async Task RestartsFirstWhenARestartIsStillDueAndSaysSoInItsOwnWords(RestartInto into, string sentence)
+    {
+        StringWriter console = new();
+        TestAgents.RestartMarker(_tools, new AgentLog(new ImmediateTimeProvider(), TextWriter.Null)).Set(into);
+
+        RunOutcome? outcome = await Runner(new ScriptedAgentServer(), console).RestartIfDueAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(RunOutcome.Restarting, outcome);
+        Assert.StartsWith("reboot", Assert.Single(_tools.Calls), StringComparison.Ordinal);
+        Assert.Contains(sentence, console.ToString(), StringComparison.Ordinal);
     }
 
     // A seed step with conditions is left to its step, which fails after the image was written.

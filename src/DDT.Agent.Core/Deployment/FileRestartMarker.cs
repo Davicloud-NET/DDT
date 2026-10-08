@@ -15,7 +15,7 @@ public sealed class FileRestartMarker(string directory, AgentLog log, bool dryRu
     private const string InstalledSystemWord = "Windows";
     private const string BootEnvironmentWord = "WindowsPE";
 
-    // What a dry run says in place of recording the restart. WinPE's words unless the composition gives its own.
+    // What a dry run says in place of recording the restart. Windows PE's words unless the composition gives its own.
     public string DryRunNote { get; init; } =
         $@"in Windows PE the due restart would be recorded in X:\DDT\{FileName}, on the RAM disk that the restart clears";
 

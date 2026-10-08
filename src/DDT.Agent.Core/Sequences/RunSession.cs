@@ -21,6 +21,9 @@ public sealed class RunSession(Guid machineId, AgentRun run, DeploymentTokens to
 
     public LocalDisk? Disk { get; set; }
 
+    // The boot environment or installed system the run's agent runs in.
+    public AgentEnvironment Environment { get; init; } = AgentEnvironment.WindowsPE;
+
     // What the firmware said at the start of the run.
     public bool? SecureBootEnabled { get; init; }
 

@@ -26,7 +26,7 @@ public sealed class AgentStartup(AgentPlatform platform)
 
         platform.WriteStartupNotices(Console.Out);
 
-        if (!AgentOptions.TryParse(args, out AgentOptions? options, out string error))
+        if (!AgentOptions.TryParse(args, platform.BootEnvironment, out AgentOptions? options, out string error))
         {
             Console.Error.WriteLine(error);
 
@@ -43,14 +43,14 @@ public sealed class AgentStartup(AgentPlatform platform)
 
         string version = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "unknown";
 
-        using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate);
+        using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate) { Environment = platform.BootEnvironment };
 
         AgentLog log = new(TimeProvider.System, Console.Out);
         TextMachineConsole text = new(new ConsoleSignInPrompt(log, TimeProvider.System, options.KeyboardLayout), log);
 
         // If there's a graphical console, it starts before anything else, so it shows the update check and the
         // connection too. The text console stays underneath it and takes over if it goes away.
-        string? consolePath = PipeMachineConsole.PathFor(options, Console.IsInputRedirected, AppContext.BaseDirectory);
+        string? consolePath = ConsolePathFor(options, log);
         await using PipeMachineConsole? graphical = consolePath is null
             ? null
             : new PipeMachineConsole(text, new ProcessConsoleLauncher(consolePath), log, version);
@@ -73,6 +73,22 @@ public sealed class AgentStartup(AgentPlatform platform)
         return options.DryRun
             ? await platform.DryRunAsync(agent, stop.Token).ConfigureAwait(false)
             : await platform.RunAsync(agent, stop.Token).ConfigureAwait(false);
+    }
+
+    // Null for an executable that starts no graphical console, which says so of one --console names.
+    private string? ConsolePathFor(AgentOptions options, AgentLog log)
+    {
+        if (platform.StartsGraphicalConsole)
+        {
+            return PipeMachineConsole.PathFor(options, Console.IsInputRedirected, AppContext.BaseDirectory);
+        }
+
+        if (options.ConsolePath is not null)
+        {
+            log.Information($"This agent starts no graphical console, so {options.ConsolePath} is not started and the text console stays.");
+        }
+
+        return null;
     }
 
     // Console.Out encodes for the console's code page, 437 in an English WinPE, and replaces characters it lacks,
@@ -104,6 +120,13 @@ public sealed class AgentStartup(AgentPlatform platform)
 
         if (agent.Options.NoUpdate)
         {
+            return null;
+        }
+
+        if (platform.NoUpdateReason is { } reason)
+        {
+            agent.Log.Information(reason);
+
             return null;
         }
 

@@ -38,6 +38,20 @@ public sealed class FirmwareBootOrderTests
             StringComparison.Ordinal));
     }
 
+    // What the order keeps from starting is a disk image there, not a Windows without its answer file.
+    [Fact]
+    public async Task InTheLinuxBootEnvironmentItSaysWhichStartTheOldOrderPrevents()
+    {
+        _variables.Values["BootOrder"] = Order(0);
+        FirmwareBootOrder order = new(_variables, _log) { Environment = AgentEnvironment.LinuxBoot };
+
+        await order.PutFirstAsync(s_esp, FirmwareBootEntry.FallbackLoaderPath, "Debian", [], TestContext.Current.CancellationToken);
+        await order.RestoreAsync(TestContext.Current.CancellationToken);
+
+        Assert.Contains(await SentAsync(), line => line.Level == AgentLogLevel.Information && line.Message ==
+            "The firmware boot order is back as it was before the deployment, so this machine does not start a disk image whose run did not finish.");
+    }
+
     [Fact]
     public async Task OnlyWarnsWhenTheFirmwareRefuses()
     {

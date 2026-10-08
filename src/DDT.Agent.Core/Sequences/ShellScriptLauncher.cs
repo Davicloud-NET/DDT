@@ -19,6 +19,9 @@ public sealed class ShellScriptLauncher(bool dryRun = false) : IScriptLauncher
 
     private const char ByteOrderMark = '\uFEFF';
 
+    // What every script finds in its environment, such as PATH and HOME where the agent's own start gave it none.
+    public IReadOnlyDictionary<string, string>? Environment { get; init; }
+
     // The script as its file holds it. A byte order mark or a carriage return would end up in the first command, or in
     // the interpreter's name. Only CR LF and CR become LF: a shell takes every other line separator as text.
     public static string Text(string script)
@@ -90,7 +93,7 @@ public sealed class ShellScriptLauncher(bool dryRun = false) : IScriptLauncher
 
         IReadOnlyList<string> interpreter = Named(text) ?? [DefaultShell];
 
-        return new ScriptLaunch(interpreter[0], [.. interpreter.Skip(1), file]);
+        return new ScriptLaunch(interpreter[0], [.. interpreter.Skip(1), file]) { Environment = Environment };
     }
 
     // The kernel ends the line at LF alone and splits it at spaces and tabs alone.

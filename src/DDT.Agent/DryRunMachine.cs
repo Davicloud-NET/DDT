@@ -65,7 +65,7 @@ public sealed class DryRunMachine(
     // Starts the agent the way Windows would start the service. The staged agent.json has to name the server.
     private async Task<int> RunWindowsAsync(CancellationToken cancellationToken)
     {
-        string configuration = Path.Combine(Windows, "DDT", WindowsHandOver.AgentDirectory, WindowsHandOver.ConfigurationFileName);
+        string configuration = Path.Combine(RunFiles.DirectoryIn(Windows), WindowsHandOver.AgentDirectory, WindowsHandOver.ConfigurationFileName);
 
         if (!AgentOptions.TryParse(["--config", configuration], out AgentOptions? staged, out string error))
         {
@@ -117,11 +117,14 @@ public sealed class DryRunMachine(
     private SequenceRunner Runner(IAgentServer runServer, DryRunDiskPartitioner disks, DryRunToolRunner tools, IRebooter rebooter, SequencePhase phase)
     {
         bool inWindows = phase == SequencePhase.Windows;
-        string workDirectory = inWindows ? Path.Combine(Windows, "DDT") : options.Root;
+        string workDirectory = inWindows ? RunFiles.DirectoryIn(Windows) : options.Root;
         AgentConfiguration staged = new(options.Agent.ServerUrl.AbsoluteUri, options.Agent.RootCertificate?.ExportCertificatePem(), null);
         DryRunBcdWriter bcdWriter = new(log);
         DryRunImageApplier applier = new(log);
-        SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval, workDirectory, DryRun: true);
+        SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval, workDirectory, DryRun: true)
+        {
+            Environment = inWindows ? AgentEnvironment.Windows : AgentEnvironment.WindowsPE,
+        };
 
         return new SequenceRunnerBuilder
         {

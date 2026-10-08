@@ -62,7 +62,8 @@ public sealed class SequenceRunner
 
     // If WinPE recorded a pending restart, it happens first at the next start. Returns how it ended, or null if none
     // was due.
-    public Task<RunOutcome?> RestartIfDueAsync(CancellationToken cancellationToken) => _ending.RestartIfDueAsync(cancellationToken);
+    public Task<RunOutcome?> RestartIfDueAsync(CancellationToken cancellationToken) =>
+        _ending.RestartIfDueAsync(_options.Environment, cancellationToken);
 
     // request.Resumed is the run as the hand-over left it in the running system, whose phase is phase. The run ends with
     // its Done report and no restart, because the agent still has to remove itself. recordRestart keeps a due restart

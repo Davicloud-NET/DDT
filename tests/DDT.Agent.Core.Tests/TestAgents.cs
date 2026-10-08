@@ -30,7 +30,10 @@ internal static class TestAgents
 
         options ??= new TestRunnerOptions();
         IRawDisks rawDisks = options.RawDisks ?? new MemoryRawDisks();
-        SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun);
+        SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun)
+        {
+            Environment = options.Environment ?? AgentEnvironment.WindowsPE,
+        };
 
         return new SequenceRunnerBuilder
         {
@@ -45,12 +48,13 @@ internal static class TestAgents
                 Disks = tools,
                 RawDisks = rawDisks,
                 Tools = options.ToolRunner ?? new RecordingToolRunner(),
-                Scripts = new ShellScriptLauncher(dryRun: true),
+                Scripts = new ShellScriptLauncher(dryRun: true) { Environment = options.ScriptEnvironment },
                 Log = log,
                 TimeProvider = timeProvider,
                 Options = runnerOptions,
             },
-            BcdWriter = options.BcdWriter ?? tools,
+            // The Linux boot environment applies no Windows, so its runner gets no writer for one.
+            BcdWriter = options.BcdWriter ?? (options.Environment == AgentEnvironment.LinuxBoot ? null : tools),
             BootOrder = tools,
             Rebooter = options.Rebooter ?? tools,
             RestartMarker = RestartMarker(tools, log),

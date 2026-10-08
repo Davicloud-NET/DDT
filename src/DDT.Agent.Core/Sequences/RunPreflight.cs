@@ -30,7 +30,7 @@ internal sealed class RunPreflight(
 
         if (inventory.Steps.Any(step => step.ErasesDisk))
         {
-            session.Disk = await disks.ChooseAsync(run, confirmedDisk, inventory, cancellationToken).ConfigureAwait(false);
+            session.Disk = await disks.ChooseAsync(session, confirmedDisk, inventory, cancellationToken).ConfigureAwait(false);
         }
 
         CheckPlatform(inventory.Steps, afterDiskChoice: true);
@@ -92,7 +92,7 @@ internal sealed class RunPreflight(
                 throw new DeploymentStepException(refusal);
             }
 
-            if (SecureBootGate.Warning(rawImage, allowed, session.SecureBootEnabled, session.TrustedUefiCas) is { } warning)
+            if (SecureBootGate.Warning(rawImage, allowed, session.SecureBootEnabled, session.TrustedUefiCas, session.Environment) is { } warning)
             {
                 log.Warning(warning);
             }

@@ -106,6 +106,42 @@ public sealed class LinuxBootOrderTests : IDisposable
         Assert.Equal(EfiLoadOption.Build("debian-12", old, FirmwareBootEntry.FallbackLoaderPath), _variables.Read("Boot0002"));
     }
 
+    // A firmware may keep an entry it made itself. The disk is first by then, so that is said and nothing else fails.
+    [Fact]
+    public async Task AnEntryTheFirmwareDoesNotLetGoIsOnlySaid()
+    {
+        Guid erased = Guid.Parse("7a6b5c4d-3e2f-4a1b-8c9d-0e1f2a3b4c5d");
+        EspPartition old = s_esp with { PartitionId = erased };
+        FirmwareOfAMachineThatStartedFromTheNetwork();
+        _tree.WriteVariable("Boot0002", LinuxUefiVariables.Global, EfiLoadOption.Build("debian-12", old, FirmwareBootEntry.FallbackLoaderPath));
+        _tree.WriteVariable("Boot0003", LinuxUefiVariables.Global, EfiLoadOption.Build("debian", old, @"\EFI\debian\shimx64.efi"));
+        _tree.WriteVariable("BootOrder", LinuxUefiVariables.Global, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00);
+        string kept = Path.Combine(_tree.Variables, LinuxUefiVariables.FileName("Boot0002", LinuxUefiVariables.Global));
+        LinuxUefiVariables refusing = new(
+            _tree.Root,
+            path =>
+            {
+                if (path == kept)
+                {
+                    throw new UnauthorizedAccessException("Operation not permitted");
+                }
+            },
+            _tree.Efivarfs.Open);
+        LinuxBootOrder order = new(refusing, new AgentLog(new ImmediateTimeProvider(), _console));
+
+        await order.PutFirstAsync(s_esp, FirmwareBootEntry.FallbackLoaderPath, "debian-13", [erased], TestContext.Current.CancellationToken);
+
+        Assert.Equal([0x03, 0x00, 0x00, 0x00, 0x01, 0x00], refusing.Read("BootOrder"));
+        Assert.NotNull(refusing.Read("Boot0002"));
+        string console = _console.ToString();
+        Assert.Contains(
+            "Firmware boot entry Boot0002 pointed at an EFI system partition this deployment erased and could not be removed " +
+            "(The firmware variable Boot0002 cannot be deleted (Operation not permitted).). It is no longer in the boot order.",
+            console,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("could not be put first", console, StringComparison.Ordinal);
+    }
+
     // What other systems and firmware wrote can be anything. The list never fails the run for it.
     [Fact]
     public void DescribesWhatItCanOfEntriesItDoesNotKnow()

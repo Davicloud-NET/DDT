@@ -64,8 +64,23 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
         // After the order no longer names them, so the firmware never finds an entry there that is gone.
         foreach (ushort number in dead)
         {
-            variables.Delete(OptionName(number));
-            log.Information($"Removed firmware boot entry {OptionName(number)}, which pointed at an EFI system partition this deployment erased.");
+            Remove(OptionName(number));
+        }
+    }
+
+    // The loader is first by now, so an entry the firmware keeps is only said.
+    private void Remove(string name)
+    {
+        try
+        {
+            variables.Delete(name);
+            log.Information($"Removed firmware boot entry {name}, which pointed at an EFI system partition this deployment erased.");
+        }
+        catch (DeploymentStepException exception)
+        {
+            log.Warning(
+                $"Firmware boot entry {name} pointed at an EFI system partition this deployment erased and could not be removed " +
+                $"({exception.Message}). It is no longer in the boot order.");
         }
     }
 

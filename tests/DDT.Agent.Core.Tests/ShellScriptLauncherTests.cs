@@ -40,10 +40,53 @@ public sealed class ShellScriptLauncherTests : IDisposable
         (_, string file) = await WrittenAsync("echo \"$DDT_PHASE\"\r\necho Größe");
 
         Assert.Equal("echo \"$DDT_PHASE\"\necho Größe\n"u8.ToArray(), await File.ReadAllBytesAsync(file, TestContext.Current.CancellationToken));
+    }
+
+    // The script's text may begin with the mark itself, which an encoder without a preamble still writes.
+    [Fact]
+    public async Task DropsAByteOrderMarkTheScriptBeginsWith()
+    {
+        (ScriptLaunch launch, string file) = await WrittenAsync("\uFEFF#!/bin/bash\necho \uFEFF");
+
+        Assert.Equal("#!/bin/bash\necho \uFEFF\n"u8.ToArray(), await File.ReadAllBytesAsync(file, TestContext.Current.CancellationToken));
+        Assert.Equal("/bin/bash", launch.FileName);
+    }
+
+    // A form feed, NEL and the Unicode separators are text to a shell, as in a quoted string or a here-document.
+    [Fact]
+    public async Task TurnsOnlyCarriageReturnsIntoLineFeeds()
+    {
+        (_, string file) = await WrittenAsync("printf 'a\fb\u0085c\u2028d\u2029e'\r\ntrue\rexit 0");
+
+        Assert.Equal(
+            "printf 'a\fb\u0085c\u2028d\u2029e'\ntrue\nexit 0\n",
+            await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken));
+    }
+
+    // The mode is part of creating the file, so the umask never decides who reads the script, not even for a moment.
+    [Fact]
+    public async Task CreatesTheFileForItsOwnerAloneAndReplacesOneFromAnEarlierTurn()
+    {
+        const UnixFileMode OwnerOnly = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+        string earlier = Path.Combine(_directory, $"{Script("").Id:D}.sh");
+        await File.WriteAllTextAsync(earlier, "echo earlier, and longer than what follows\n", TestContext.Current.CancellationToken);
 
         if (!OperatingSystem.IsWindows())
         {
-            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(file));
+            File.SetUnixFileMode(earlier, OwnerOnly | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+        }
+
+        (_, string file) = await WrittenAsync("echo now");
+        FileStreamOptions options = ShellScriptLauncher.NewFile();
+
+        Assert.Equal(earlier, file);
+        Assert.Equal("echo now\n", await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken));
+        Assert.Equal(FileMode.CreateNew, options.Mode);
+        Assert.Equal(OperatingSystem.IsWindows() ? null : OwnerOnly, options.UnixCreateMode);
+
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Equal(OwnerOnly, File.GetUnixFileMode(file));
         }
     }
 
@@ -63,6 +106,10 @@ public sealed class ShellScriptLauncherTests : IDisposable
     [InlineData("#! /usr/bin/env  bash\necho hello", "/usr/bin/env", "bash")]
     [InlineData("#!/usr/bin/env -S python3 -u\nprint(1)", "/usr/bin/env", "-S python3 -u")]
     [InlineData("#!/usr/bin/python3", "/usr/bin/python3", null)]
+    [InlineData("#!/bin/bash -eu\recho hello\recho bye", "/bin/bash", "-eu")]
+    [InlineData("#!/bin/bash\recho hello", "/bin/bash", null)]
+    [InlineData("\uFEFF#!/bin/bash -eu\r\necho hello", "/bin/bash", "-eu")]
+    [InlineData("#!/bin/bash\u2028-eu\necho hello", "/bin/bash\u2028-eu", null)]
     public async Task StartsTheInterpreterTheFirstLineNamesWithItsOneArgument(string script, string interpreter, string? argument)
     {
         (ScriptLaunch launch, string file) = await WrittenAsync(script);

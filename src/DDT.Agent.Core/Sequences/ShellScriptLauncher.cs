@@ -7,8 +7,7 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Runs a script with the interpreter its #! line names, or else with /bin/sh. The interpreter gets the file, so the
-// script runs from a volume mounted noexec too. A dry run starts nothing, so it asks for no interpreter.
+// Runs a script with the interpreter its #! line names, or else with /bin/sh, which gets the file as an argument.
 public sealed class ShellScriptLauncher(bool dryRun = false) : IScriptLauncher
 {
     public const string DefaultShell = "/bin/sh";
@@ -18,38 +17,40 @@ public sealed class ShellScriptLauncher(bool dryRun = false) : IScriptLauncher
 
     private const string Marker = "#!";
 
-    // LF line ends and no byte order mark, which the kernel and the shell would take for part of the first line.
-    public static byte[] ScriptFile(RunScriptStep step)
+    private const char ByteOrderMark = '\uFEFF';
+
+    // The script as its file holds it. A byte order mark or a carriage return would end up in the first command, or in
+    // the interpreter's name. Only CR LF and CR become LF: a shell takes every other line separator as text.
+    public static string Text(string script)
     {
-        ArgumentNullException.ThrowIfNull(step);
+        ArgumentNullException.ThrowIfNull(script);
 
-        string text = step.Script.ReplaceLineEndings("\n");
+        string text = (script.StartsWith(ByteOrderMark) ? script[1..] : script)
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace('\r', '\n');
 
-        return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(text.EndsWith('\n') ? text : text + "\n");
+        return text.EndsWith('\n') ? text : text + "\n";
     }
 
     // The interpreter of a first line such as "#!/usr/bin/env bash", and its argument if it has one. Like the kernel,
     // this takes everything after the interpreter as one argument. Null without such a line.
-    public static IReadOnlyList<string>? Interpreter(string script)
+    public static IReadOnlyList<string>? Interpreter(string script) => Named(Text(script));
+
+    // The file is its owner's alone from the moment it exists, where the system has such modes. The script may hold
+    // what only root should read.
+    public static FileStreamOptions NewFile()
     {
-        ArgumentNullException.ThrowIfNull(script);
+        FileStreamOptions options = new() { Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None, Options = FileOptions.Asynchronous };
 
-        if (!script.StartsWith(Marker, StringComparison.Ordinal))
+        if (!OperatingSystem.IsWindows())
         {
-            return null;
+            options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
         }
 
-        string line = script[Marker.Length..].Split('\n', 2)[0].Trim();
-        int space = line.IndexOfAny([' ', '\t']);
-
-        if (line.Length == 0)
-        {
-            return null;
-        }
-
-        return space < 0 ? [line] : [line[..space], line[space..].Trim()];
+        return options;
     }
 
+    // A dry run starts nothing, so it asks for no interpreter.
     public string? Missing(RunScriptStep step, SequencePhase phase)
     {
         ArgumentNullException.ThrowIfNull(step);
@@ -77,16 +78,37 @@ public sealed class ShellScriptLauncher(bool dryRun = false) : IScriptLauncher
         ArgumentNullException.ThrowIfNull(step);
 
         string file = Path.Combine(directory, step.Id.ToString("D") + ".sh");
-        await File.WriteAllBytesAsync(file, ScriptFile(step), cancellationToken).ConfigureAwait(false);
+        string text = Text(step.Script);
 
-        // The script may hold what only root should read.
-        if (!OperatingSystem.IsWindows())
+        // A file from an earlier turn of the step would keep the mode it has.
+        File.Delete(file);
+
+        await using (FileStream stream = new(file, NewFile()))
         {
-            File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            await stream.WriteAsync(new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(text), cancellationToken).ConfigureAwait(false);
         }
 
-        IReadOnlyList<string> interpreter = Interpreter(step.Script) ?? [DefaultShell];
+        IReadOnlyList<string> interpreter = Named(text) ?? [DefaultShell];
 
         return new ScriptLaunch(interpreter[0], [.. interpreter.Skip(1), file]);
+    }
+
+    // The kernel ends the line at LF alone and splits it at spaces and tabs alone.
+    private static string[]? Named(string text)
+    {
+        if (!text.StartsWith(Marker, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        string line = text[Marker.Length..text.IndexOf('\n', StringComparison.Ordinal)].Trim(' ', '\t');
+        int space = line.IndexOfAny([' ', '\t']);
+
+        if (line.Length == 0)
+        {
+            return null;
+        }
+
+        return space < 0 ? [line] : [line[..space], line[space..].Trim(' ', '\t')];
     }
 }

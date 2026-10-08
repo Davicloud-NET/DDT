@@ -41,6 +41,24 @@ public sealed class RunScriptStepRunnerTests
         new() { Name = "Region" },
     ];
 
+    // The validator lets no shell script into a sequence that installs Windows, so this is an unvalidated run.
+    [Theory]
+    [InlineData(SequencePhase.WindowsPE)]
+    [InlineData(SequencePhase.Windows)]
+    public async Task RefusesAShellScriptAndWritesNothing(SequencePhase phase)
+    {
+        RunScriptStep shell = s_cmd with { Phase = phase, Interpreter = ScriptInterpreter.Shell, Script = "echo hello" };
+        using WindowsStepRunnerFixture run = new([shell]);
+
+        StepResult result = await run.RunScript.RunAsync(shell, run.Context(phase), TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            StepResult.Failed("Windows runs cmd and PowerShell scripts, and this script was written for the shell. Choose cmd or PowerShell for it in the sequence."),
+            result);
+        Assert.Empty(run.ToolRunner.Calls);
+        Assert.False(Directory.Exists(Path.Combine(run.WorkDirectory, "scripts")));
+    }
+
     [Fact]
     public async Task RunsACmdScriptFromTheAgentsDirectoryBeforeTheDiskIsPartitioned()
     {

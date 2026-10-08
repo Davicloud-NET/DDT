@@ -14,6 +14,9 @@ public sealed class WindowsScriptLauncher : IScriptLauncher
         "This boot image has no Windows PowerShell, which a script of this sequence needs in Windows PE. Build the boot image " +
         "again with build\\Build-BootImage.ps1 without -SkipPowerShell.";
 
+    public const string ShellScriptMessage =
+        "Windows runs cmd and PowerShell scripts, and this script was written for the shell. Choose cmd or PowerShell for it in the sequence.";
+
     public static string CmdPath => Path.Combine(Environment.SystemDirectory, "cmd.exe");
 
     public static string PowerShellPath => PowerShellIn(Environment.SystemDirectory);
@@ -43,10 +46,15 @@ public sealed class WindowsScriptLauncher : IScriptLauncher
     public static byte[] PowerShellLauncher(string powerShell, string script) => Encoding.UTF8.GetBytes(
         $"@chcp 65001 >nul\r\n@\"{Escape(powerShell)}\" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{Escape(script)}\"\r\n");
 
-    // The installed Windows brings its own PowerShell. A lean boot image may lack it.
+    // The installed Windows brings its own PowerShell. A lean boot image may lack it. No Windows runs a shell script.
     public string? Missing(RunScriptStep step, SequencePhase phase)
     {
         ArgumentNullException.ThrowIfNull(step);
+
+        if (step.Interpreter == ScriptInterpreter.Shell)
+        {
+            return ShellScriptMessage;
+        }
 
         return step.Interpreter == ScriptInterpreter.PowerShell && phase == SequencePhase.WindowsPE && !File.Exists(PowerShellPath)
             ? NoPowerShellMessage

@@ -122,7 +122,11 @@ function Invoke-Checked {
         [string[]] $ArgumentList = @()
     )
 
+    # vite and others warn on stderr. Windows PowerShell makes errors of that when the caller redirects it,
+    # and they would end the script here.
+    $ErrorActionPreference = 'Continue'
     & $FilePath @ArgumentList
+    $ErrorActionPreference = 'Stop'
     if ($LASTEXITCODE -ne 0) {
         throw "$FilePath $($ArgumentList -join ' ') failed with exit code $LASTEXITCODE."
     }

@@ -9,7 +9,8 @@ using Microsoft.AspNetCore.Connections.Features;
 
 namespace DDT.Pxe;
 
-// Kestrel connection middleware for the boot port: every connection is known to BootConnections while it is open.
+// Kestrel connection middleware for the boot port: a connection is known to BootConnections from the moment it carries
+// the Linux boot environment's content until it ends.
 public static class BootPortConnections
 {
     public static ConnectionDelegate Track(ConnectionDelegate next, BootConnections connections)
@@ -26,13 +27,11 @@ public static class BootPortConnections
                 return;
             }
 
-            BootClient client = new(remote.Address.IsIPv4MappedToIPv6 ? remote.Address.MapToIPv4() : remote.Address);
-            context.Features.Set(client);
+            IPAddress address = remote.Address.IsIPv4MappedToIPv6 ? remote.Address.MapToIPv4() : remote.Address;
 
-            using (connections.Opened(client.Address, () => Reset(context)))
-            {
-                await next(context).ConfigureAwait(false);
-            }
+            using BootClient client = new(address, () => connections.Opened(address, () => Reset(context)));
+            context.Features.Set(client);
+            await next(context).ConfigureAwait(false);
         };
     }
 

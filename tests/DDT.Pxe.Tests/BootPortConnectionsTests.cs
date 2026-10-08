@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Collections.Frozen;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -14,23 +15,30 @@ using Xunit;
 
 namespace DDT.Pxe.Tests;
 
-// The boot port on a real Kestrel, with plain sockets as the machine: GRUB's own HTTP client is that simple.
+// The boot port on a real Kestrel, with plain sockets as the machine: GRUB's own HTTP client is that simple. The same
+// folder is the boot directory and the Linux boot environment's, so one large file is read both ways.
 public sealed class BootPortConnectionsTests : IAsyncLifetime
 {
-    private static readonly TimeSpan s_timeout = TimeSpan.FromSeconds(10);
+    private const string Large = "base.img";
+    private const string Small = "small.img";
+
+    // Far more than the socket buffers hold, so the answer is still being sent when the machine goes away.
+    private const int LargeLength = 64 * 1024 * 1024;
+
+    private static readonly TimeSpan s_timeout = TimeSpan.FromSeconds(30);
 
     private readonly string _root = Directory.CreateTempSubdirectory("ddt-boot-port-").FullName;
     private readonly int _port = FreePort();
     private readonly BootConnections _connections = new(TimeProvider.System);
+    private readonly FakeLinuxBootSite _site = new();
 
     private WebApplication? _app;
 
     public async ValueTask InitializeAsync()
     {
-        // Far more than the socket buffers hold, so the answer is still being sent when the machine goes away.
-        byte[] image = new byte[64 * 1024 * 1024];
-        await File.WriteAllBytesAsync(Path.Combine(_root, "base.img"), image);
-        await File.WriteAllTextAsync(Path.Combine(_root, "small.txt"), "small");
+        await File.WriteAllBytesAsync(Path.Combine(_root, Large), new byte[LargeLength]);
+        await File.WriteAllTextAsync(Path.Combine(_root, Small), "small");
+        _site.Current = new LinuxBootBundle(_root, new[] { Large, Small }.ToFrozenSet(StringComparer.Ordinal), new Uri("https://ddt-server.example.test:8443"), "root");
 
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
         builder.Logging.SetMinimumLevel(LogLevel.Warning);
@@ -42,7 +50,7 @@ public sealed class BootPortConnectionsTests : IAsyncLifetime
         _app = builder.Build();
         _app.UseRouting();
         _app.UseBootListenerIsolation(_port, Loopback.Map, _connections);
-        _app.MapBootFiles(new BootFiles(new BootFileResolver(_root), null, _port, _connections, TimeProvider.System));
+        _app.MapBootFiles(new BootFiles(new BootFileResolver(_root), _site, _port, _connections, TimeProvider.System));
 
         await _app.StartAsync();
     }
@@ -65,10 +73,12 @@ public sealed class BootPortConnectionsTests : IAsyncLifetime
         return ((IPEndPoint)socket.LocalEndPoint!).Port;
     }
 
-    private async Task<Socket> ConnectAsync()
+    private Task<Socket> ConnectAsync() => ConnectAsync(_port);
+
+    private static async Task<Socket> ConnectAsync(int port)
     {
         Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        await socket.ConnectAsync(new IPEndPoint(IPAddress.Loopback, _port), TestContext.Current.CancellationToken);
+        await socket.ConnectAsync(new IPEndPoint(IPAddress.Loopback, port), TestContext.Current.CancellationToken);
 
         return socket;
     }
@@ -106,6 +116,43 @@ public sealed class BootPortConnectionsTests : IAsyncLifetime
         }
     }
 
+    // Reads one answer from a connection the server keeps open: its head, and as many octets after it as it announces.
+    private static async Task<string> ReadAnswerAsync(Socket socket)
+    {
+        using CancellationTokenSource timeout = new(s_timeout);
+        byte[] buffer = new byte[65536];
+        StringBuilder head = new();
+        long? left = null;
+
+        while (left is null or > 0)
+        {
+            int read = await socket.ReceiveAsync(buffer, SocketFlags.None, timeout.Token);
+            Assert.True(read > 0, "The server closed a connection it should have kept.");
+
+            if (left is not null)
+            {
+                left -= read;
+
+                continue;
+            }
+
+            head.Append(Encoding.Latin1.GetString(buffer, 0, read));
+            string text = head.ToString();
+            int end = text.IndexOf("\r\n\r\n", StringComparison.Ordinal);
+
+            if (end >= 0)
+            {
+                string length = text[..end].Split("\r\n").Single(line => line.StartsWith("Content-Length: ", StringComparison.Ordinal))["Content-Length: ".Length..];
+                left = long.Parse(length, System.Globalization.CultureInfo.InvariantCulture) - (text.Length - end - 4);
+                head.Length = end;
+            }
+        }
+
+        Assert.Equal(0, left);
+
+        return head.ToString();
+    }
+
     private static async Task UntilAsync(Func<bool> condition)
     {
         using CancellationTokenSource timeout = new(s_timeout);
@@ -117,10 +164,10 @@ public sealed class BootPortConnectionsTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ClosesTheConnectionAfterItsAnswerAlthoughTheMachineAskedForNone()
+    public async Task ClosesTheConnectionAfterALinuxAnswerAlthoughTheMachineAskedForNone()
     {
         using Socket machine = await ConnectAsync();
-        await SendAsync(machine, "/boot/small.txt");
+        await SendAsync(machine, $"/boot/linux/{Small}");
 
         (string text, bool reset) = await ReadToEndAsync(machine);
 
@@ -133,13 +180,36 @@ public sealed class BootPortConnectionsTests : IAsyncLifetime
         Assert.True(_connections.HttpIsSafe(IPAddress.Loopback));
     }
 
+    // Firmware that loads Windows PE over HTTP asks for file after file on one connection, as it always could.
+    [Fact]
+    public async Task KeepsTheConnectionOfAWindowsPEReadOpenForTheNextRequest()
+    {
+        using Socket machine = await ConnectAsync();
+
+        foreach (int _ in Enumerable.Range(0, 3))
+        {
+            await SendAsync(machine, $"/boot/{Small}");
+            string head = await ReadAnswerAsync(machine);
+
+            Assert.StartsWith("HTTP/1.1 200 OK\r\n", head, StringComparison.Ordinal);
+            Assert.DoesNotContain("Connection:", head, StringComparison.OrdinalIgnoreCase);
+        }
+
+        await SendAsync(machine, "/boot/x64/no-such-file.efi");
+        string missing = await ReadAnswerAsync(machine);
+
+        Assert.StartsWith("HTTP/1.1 404 Not Found\r\n", missing, StringComparison.Ordinal);
+        Assert.DoesNotContain("Connection:", missing, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, _connections.Open);
+    }
+
     // The price of closing first: the server's system keeps the connection for a while after an answer that arrived
     // whole, and Kestrel has nothing left to reset. So the system's own list is asked before a machine is sent to HTTP.
     [Fact]
     public async Task AfterAnAnswerThatArrivedWholeTheSystemStillHoldsTheConnectionAndThatIsARisk()
     {
         Socket machine = await ConnectAsync();
-        await SendAsync(machine, "/boot/small.txt");
+        await SendAsync(machine, $"/boot/linux/{Small}");
         Assert.False((await ReadToEndAsync(machine)).Reset);
         machine.Dispose();
         await UntilAsync(() => _connections.Open == 0);
@@ -150,7 +220,7 @@ public sealed class BootPortConnectionsTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ClosesTheConnectionAfterAnAnswerThatThereIsNoSuchFile()
+    public async Task ClosesTheConnectionAfterAnAnswerThatThereIsNoSuchLinuxFile()
     {
         using Socket machine = await ConnectAsync();
         await SendAsync(machine, "/boot/linux/revocations_sbat.efi");
@@ -166,28 +236,58 @@ public sealed class BootPortConnectionsTests : IAsyncLifetime
     // A reset, not an orderly close: the server's system forgets the connection at once, so the same port can connect
     // again. An orderly close would go on sending to a machine that no longer listens.
     [Fact]
-    public async Task AMachineThatStartsAgainHasItsOpenConnectionsReset()
+    public async Task AMachineThatStartsAgainHasItsLinuxReadsReset()
     {
-        using Socket idle = await ConnectAsync();
-        using Socket reading = await ConnectAsync();
-        await SendAsync(reading, "/boot/base.img");
-        byte[] first = new byte[1024];
-        Assert.True(await reading.ReceiveAsync(first, SocketFlags.None, TestContext.Current.CancellationToken) > 0);
+        using Socket first = await ConnectAsync();
+        using Socket second = await ConnectAsync();
+        byte[] some = new byte[1024];
+
+        foreach (Socket reading in new[] { first, second })
+        {
+            await SendAsync(reading, $"/boot/linux/{Large}");
+            Assert.True(await reading.ReceiveAsync(some, SocketFlags.None, TestContext.Current.CancellationToken) > 0);
+        }
+
         await UntilAsync(() => _connections.Open == 2);
 
         Assert.Equal(2, _connections.NetbootStarts(IPAddress.Loopback));
 
-        Assert.True((await ReadToEndAsync(idle)).Reset);
-        Assert.True((await ReadToEndAsync(reading)).Reset);
+        Assert.True((await ReadToEndAsync(first)).Reset);
+        Assert.True((await ReadToEndAsync(second)).Reset);
         await UntilAsync(() => _connections.Open == 0);
         Assert.False(_connections.HttpIsSafe(IPAddress.Loopback));
     }
 
+    // A boot.wim takes minutes, and no datagram may end it: only connections that carried Linux content are reset.
     [Fact]
-    public async Task AMachineThatGoesAwayInTheMiddleOfAReadIsRememberedForItsNextStart()
+    public async Task AWindowsPEReadAndAConnectionThatAskedNothingAreLeftAloneWhenTheMachineStartsAgain()
+    {
+        using Socket idle = await ConnectAsync();
+        using Socket windowsPE = await ConnectAsync();
+        using Socket linux = await ConnectAsync();
+        await SendAsync(windowsPE, $"/boot/{Large}");
+        await SendAsync(linux, $"/boot/linux/{Large}");
+        Assert.True(await linux.ReceiveAsync(new byte[1024], SocketFlags.None, TestContext.Current.CancellationToken) > 0);
+        await UntilAsync(() => _connections.Open == 1);
+
+        Assert.Equal(1, _connections.NetbootStarts(IPAddress.Loopback));
+
+        Assert.True((await ReadToEndAsync(linux)).Reset);
+        Assert.StartsWith("HTTP/1.1 200 OK\r\n", await ReadAnswerAsync(windowsPE), StringComparison.Ordinal);
+
+        // Both still answer, on the connections they had.
+        foreach (Socket kept in new[] { windowsPE, idle })
+        {
+            await SendAsync(kept, $"/boot/{Small}");
+            Assert.StartsWith("HTTP/1.1 200 OK\r\n", await ReadAnswerAsync(kept), StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public async Task AMachineThatGoesAwayInTheMiddleOfALinuxReadIsRememberedForItsNextStart()
     {
         Socket machine = await ConnectAsync();
-        await SendAsync(machine, "/boot/base.img");
+        await SendAsync(machine, $"/boot/linux/{Large}");
         byte[] first = new byte[1024];
         Assert.True(await machine.ReceiveAsync(first, SocketFlags.None, TestContext.Current.CancellationToken) > 0);
         Assert.True(_connections.HttpIsSafe(IPAddress.Loopback));
@@ -199,9 +299,10 @@ public sealed class BootPortConnectionsTests : IAsyncLifetime
         await UntilAsync(() => _connections.Open == 0);
     }
 
-    // The host's own wiring: Kestrel reads the endpoint named Boot from configuration and tracks its connections.
+    // The host's own wiring: Kestrel reads the endpoint named Boot from configuration and hands each connection over.
+    // This host serves no interface, so the test marks the connection as the boot port does for a file GRUB asks for.
     [Fact]
-    public async Task TheHostsBootEndpointTracksItsConnectionsAndClosesAfterEachAnswer()
+    public async Task TheHostsBootEndpointKnowsEachConnectionAndResetsOneThatCarriedLinux()
     {
         int port = FreePort();
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
@@ -217,29 +318,45 @@ public sealed class BootPortConnectionsTests : IAsyncLifetime
         // The host listens on every address. A test stays on loopback.
         builder.Configuration[$"Kestrel:Endpoints:{PxeHostingExtensions.BootEndpointName}:Url"] = $"http://127.0.0.1:{port}";
 
+        TaskCompletionSource<IPAddress?> marked = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         await using WebApplication app = builder.Build();
         app.UseRouting();
+        app.Use(async (context, next) =>
+        {
+            if (context.Request.Path.StartsWithSegments("/boot/linux"))
+            {
+                BootClient? client = context.Features.Get<BootClient>();
+                client?.CarriesLinux();
+                marked.TrySetResult(client?.Address);
+                await release.Task;
+            }
+
+            await next(context);
+        });
         app.UseDdtBootListener(bootstrap);
         await app.StartAsync(TestContext.Current.CancellationToken);
 
         BootConnections connections = app.Services.GetRequiredService<BootConnections>();
-        using Socket machine = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        await machine.ConnectAsync(new IPEndPoint(IPAddress.Loopback, port), TestContext.Current.CancellationToken);
-        await UntilAsync(() => connections.Open == 1);
+        using Socket windowsPE = await ConnectAsync(port);
+        using Socket linux = await ConnectAsync(port);
+        await SendAsync(linux, "/boot/linux/vmlinuz");
 
-        await SendAsync(machine, "/boot/linux/vmlinuz");
-        (string text, bool reset) = await ReadToEndAsync(machine);
-
-        Assert.StartsWith("HTTP/1.1 404 Not Found\r\n", text, StringComparison.Ordinal);
-        Assert.Contains("\r\nConnection: close\r\n", text, StringComparison.Ordinal);
-        Assert.False(reset);
+        Assert.Equal(IPAddress.Loopback, await marked.Task.WaitAsync(s_timeout, TestContext.Current.CancellationToken));
+        Assert.Equal(1, connections.Open);
+        Assert.Equal(1, connections.NetbootStarts(IPAddress.Loopback));
+        Assert.True((await ReadToEndAsync(linux)).Reset);
+        release.TrySetResult();
         await UntilAsync(() => connections.Open == 0);
 
-        using Socket again = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        await again.ConnectAsync(new IPEndPoint(IPAddress.Loopback, port), TestContext.Current.CancellationToken);
-        await UntilAsync(() => connections.Open == 1);
+        // What Windows PE's firmware would ask for is answered on a connection that stays, as before.
+        foreach (int _ in Enumerable.Range(0, 2))
+        {
+            await SendAsync(windowsPE, "/boot/x64/bootmgfw.efi");
+            string answer = await ReadAnswerAsync(windowsPE);
 
-        Assert.Equal(1, connections.NetbootStarts(IPAddress.Loopback));
-        Assert.True((await ReadToEndAsync(again)).Reset);
+            Assert.StartsWith("HTTP/1.1 404 Not Found\r\n", answer, StringComparison.Ordinal);
+            Assert.DoesNotContain("Connection:", answer, StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

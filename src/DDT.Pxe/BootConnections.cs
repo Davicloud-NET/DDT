@@ -6,9 +6,10 @@ using System.Net;
 
 namespace DDT.Pxe;
 
-// What the HTTP boot port knows of each machine, by its address: the connections still open, and when a read last
-// ended badly. GRUB uses the same source ports at every start, and a connection the server still holds from the start
-// before makes it hang. So a machine that starts again has its connections reset, and loads over TFTP for a while.
+// What the HTTP boot port knows of each machine that loads the Linux boot environment, by its address: its connections
+// still open, and when a read last ended badly. GRUB uses the same source ports at every start, and a connection the
+// server still holds from the start before makes it hang. So a machine that starts again has them reset, and loads
+// over TFTP for a while.
 public sealed class BootConnections(TimeProvider timeProvider, SystemTcpConnections? system = null)
 {
     // How long after a read that ended badly a machine is kept off HTTP, whatever the server's system still holds.
@@ -86,7 +87,7 @@ public sealed class BootConnections(TimeProvider timeProvider, SystemTcpConnecti
 
         lock (_lock)
         {
-            return !_failed.TryGetValue(Key(client), out DateTimeOffset failed) || timeProvider.GetUtcNow() - failed > Remembered;
+            return !_failed.TryGetValue(Key(client), out DateTimeOffset failed) || IsOver(failed, timeProvider.GetUtcNow());
         }
     }
 
@@ -116,13 +117,16 @@ public sealed class BootConnections(TimeProvider timeProvider, SystemTcpConnecti
 
     private static IPAddress Key(IPAddress client) => client.IsIPv4MappedToIPv6 ? client.MapToIPv4() : client;
 
+    // A time in the future is left from before the clock was set back, and keeps no machine off HTTP.
+    private static bool IsOver(DateTimeOffset failed, DateTimeOffset now) => failed > now || now - failed > Remembered;
+
     private void Remember(IPAddress client)
     {
         DateTimeOffset now = timeProvider.GetUtcNow();
 
         if (_failed.Count >= MaxRemembered && !_failed.ContainsKey(client))
         {
-            foreach (IPAddress old in _failed.Where(entry => now - entry.Value > Remembered).Select(entry => entry.Key).ToList())
+            foreach (IPAddress old in _failed.Where(entry => IsOver(entry.Value, now)).Select(entry => entry.Key).ToList())
             {
                 _failed.Remove(old);
             }

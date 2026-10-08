@@ -101,18 +101,16 @@ public sealed class ProxyDhcpHandler
             : decision;
     }
 
-    // A request on the boot server port begins a machine's start, from the address it will load from. A relayed one
-    // names that address itself, or not at all.
+    // A request on the boot server port begins a machine's start, from the address it will load from. Only the
+    // datagram's source counts: an address named inside the packet would let any host reset another machine's reads.
     private int Starting(DhcpMessage message, ProxyDhcpListenPort port, DatagramArrival arrival)
     {
-        if (_connections is null || port != ProxyDhcpListenPort.PxeBootServer)
+        // Behind a relay the source is the relay, and nothing proves the machine's own address.
+        if (_connections is null || port != ProxyDhcpListenPort.PxeBootServer || !message.GatewayAddress.Equals(IPAddress.Any))
         {
             return 0;
         }
 
-        bool relayed = !message.GatewayAddress.Equals(IPAddress.Any);
-        IPAddress client = !message.ClientAddress.Equals(IPAddress.Any) || relayed ? message.ClientAddress : arrival.Source.Address;
-
-        return client.Equals(IPAddress.Any) ? 0 : _connections.NetbootStarts(client);
+        return arrival.Source.Address.Equals(IPAddress.Any) ? 0 : _connections.NetbootStarts(arrival.Source.Address);
     }
 }

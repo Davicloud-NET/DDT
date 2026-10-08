@@ -109,6 +109,7 @@ public sealed class ProxyDhcpListener : IPxeListener, IAsyncDisposable
                         egressInterface = outcome.EgressInterface;
                     }
 
+                    LogReset(outcome, source.Address);
                     await SendAsync(socket, reply.AsMemory(0, outcome.Length), outcome, port, cancellationToken)
                         .ConfigureAwait(false);
                 }
@@ -128,6 +129,15 @@ public sealed class ProxyDhcpListener : IPxeListener, IAsyncDisposable
         }
     }
 
+    // The address is the datagram's source, whose connections were reset, whatever the packet names.
+    private void LogReset(ProxyDhcpOutcome outcome, IPAddress source)
+    {
+        if (outcome.ConnectionsReset > 0)
+        {
+            PxeLog.BootConnectionsReset(_logger, outcome.ConnectionsReset, source);
+        }
+    }
+
     private async Task SendAsync(
         Socket socket,
         ReadOnlyMemory<byte> datagram,
@@ -137,12 +147,6 @@ public sealed class ProxyDhcpListener : IPxeListener, IAsyncDisposable
     {
         ProxyDhcpReply reply = outcome.Reply!;
         IPEndPoint destination = new(reply.Destination.Address, reply.Destination.Port);
-
-        if (outcome.ConnectionsReset > 0)
-        {
-            IPAddress client = outcome.Message is { } asked && !asked.ClientAddress.Equals(IPAddress.Any) ? asked.ClientAddress : destination.Address;
-            PxeLog.BootConnectionsReset(_logger, outcome.ConnectionsReset, client);
-        }
 
         try
         {

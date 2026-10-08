@@ -92,6 +92,22 @@ public sealed class BootConnectionsTests
         Assert.True(_connections.HttpIsSafe(s_machine));
     }
 
+    // A clock that was set back leaves the failure in the future, where it would count for longer than three minutes.
+    [Fact]
+    public void AFailureRecordedInTheFutureIsNoRecentFailure()
+    {
+        _connections.ReadFailed(s_machine);
+        _connections.ReadFailed(s_other);
+        _clock.Advance(TimeSpan.FromHours(-1));
+
+        Assert.True(_connections.HttpIsSafe(s_machine));
+        Assert.Equal(HttpBootRisk.None, _connections.HttpRisk(s_machine, 8080));
+
+        // A failure after the clock was set back counts from then, as any other.
+        _connections.ReadFailed(s_other);
+        Assert.False(_connections.HttpIsSafe(s_other));
+    }
+
     [Fact]
     public void ALaterFailureStartsTheThreeMinutesAgain()
     {

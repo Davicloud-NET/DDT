@@ -6,5 +6,35 @@ using System.Net;
 
 namespace DDT.Pxe;
 
-// The address a boot port connection really comes from, kept on the connection. No header can change it.
-public sealed record BootClient(IPAddress Address);
+// A boot port connection: the address it really comes from, which no header can change, and whether it carried the
+// Linux boot environment's content. track makes the connection known to BootConnections until it is disposed.
+public sealed class BootClient(IPAddress address, Func<IDisposable>? track = null) : IDisposable
+{
+    private readonly Lock _lock = new();
+    private IDisposable? _tracked;
+    private bool _ended;
+
+    public IPAddress Address { get; } = address ?? throw new ArgumentNullException(nameof(address));
+
+    // From here on the machine's next start resets the connection. One that only ever carried Windows PE never is.
+    public void CarriesLinux()
+    {
+        lock (_lock)
+        {
+            if (!_ended)
+            {
+                _tracked ??= track?.Invoke();
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        lock (_lock)
+        {
+            _ended = true;
+            _tracked?.Dispose();
+            _tracked = null;
+        }
+    }
+}

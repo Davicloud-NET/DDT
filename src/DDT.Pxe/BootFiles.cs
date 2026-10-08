@@ -91,6 +91,10 @@ public sealed class BootFiles
     public static string? Normalized(string? requested) =>
         string.IsNullOrEmpty(requested) || requested.Length > MaxRequestLength ? null : requested.Replace('\\', '/').TrimStart('/');
 
+    // Whether the name is one of the Linux boot environment's: what GRUB loads, and nothing Windows PE asks for.
+    public static bool IsLinuxName(string? requested) =>
+        Normalized(requested) is { } name && (name == GrubConfigName || name.StartsWith(LinuxFolder + "/", StringComparison.Ordinal));
+
     private BootContent? OfLinux(string name, LinuxBootBundle bundle, BootRequest request)
     {
         if (name == GrubConfigName)

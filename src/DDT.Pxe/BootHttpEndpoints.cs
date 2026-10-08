@@ -38,7 +38,8 @@ public static class BootHttpEndpoints
     }
 
     // Interfaces is read on every request, so the gate follows the setup the listeners were last started with. Null
-    // serves nothing. With connections, a read that is cut off is remembered for the machine's next start.
+    // serves nothing. With connections, a read of the Linux boot environment that is cut off is remembered for the
+    // machine's next start.
     public static IApplicationBuilder UseBootListenerIsolation(
         this IApplicationBuilder app,
         int bootPort,
@@ -53,12 +54,6 @@ public static class BootHttpEndpoints
             bool onBootPort = context.Connection.LocalPort == bootPort;
             bool bootEndpoint = context.GetEndpoint()?.Metadata.GetMetadata<BootEndpointMarker>() is not null;
 
-            // GRUB opens a connection per file and never asks on it twice, so none is kept open for a next request.
-            if (onBootPort)
-            {
-                context.Response.Headers.Connection = "close";
-            }
-
             if (onBootPort != bootEndpoint
                 || (onBootPort && (context.Connection.LocalIpAddress is not { } local || interfaces() is not { } served || !served.IsServedAddress(local))))
             {
@@ -67,9 +62,10 @@ public static class BootHttpEndpoints
                 return;
             }
 
-            if (onBootPort && connections is not null)
+            // Only what GRUB asks for is handled apart. Firmware that loads Windows PE over HTTP keeps its connection.
+            if (onBootPort && BootFiles.IsLinuxName(context.GetRouteValue("path") as string))
             {
-                await ReadAsync(context, next, connections).ConfigureAwait(false);
+                await ReadLinuxAsync(context, next, connections).ConfigureAwait(false);
             }
             else
             {
@@ -78,11 +74,13 @@ public static class BootHttpEndpoints
         });
     }
 
-    // A read that ends before its answer is whole leaves the machine without the file, and maybe the server with the
-    // connection.
-    private static async Task ReadAsync(HttpContext context, RequestDelegate next, BootConnections connections)
+    // GRUB opens a connection per file and never asks on it twice, so none is kept open for a next request. A read
+    // that ends before its answer is whole leaves the machine without the file, and maybe the server with the connection.
+    private static async Task ReadLinuxAsync(HttpContext context, RequestDelegate next, BootConnections? connections)
     {
         bool whole = false;
+        context.Response.Headers.Connection = "close";
+        context.Features.Get<BootClient>()?.CarriesLinux();
 
         try
         {
@@ -93,7 +91,7 @@ public static class BootHttpEndpoints
         {
             if (!whole)
             {
-                connections.ReadFailed(ClientOf(context));
+                connections?.ReadFailed(ClientOf(context));
             }
         }
     }

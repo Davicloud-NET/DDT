@@ -36,12 +36,12 @@ public sealed class ProxyDhcpHandlerTests
         return new ProxyDhcpHandler(PxeSetup.Create(options, map).ProxyDhcp, map, connections);
     }
 
-    // The address the firmware asks the boot server from is the one GRUB will load from a moment later.
-    private static IPAddress ClientOf(byte[] datagram, IPAddress source)
+    // ciaddr is at octet 12 of a DHCP message. Anyone can write any address there.
+    private static byte[] WithClientAddress(byte[] datagram, IPAddress client)
     {
-        Assert.True(DhcpMessageParser.TryParse(datagram, out DhcpMessage? message, out _));
+        client.GetAddressBytes().CopyTo(datagram, 12);
 
-        return message.ClientAddress.Equals(IPAddress.Any) ? source : message.ClientAddress;
+        return datagram;
     }
 
     private static byte[] WithGateway(byte[] datagram, IPAddress gateway)
@@ -152,27 +152,71 @@ public sealed class ProxyDhcpHandlerTests
         Assert.Equal(ProxyDhcpSilenceReason.RelayNotAuthorised, outcome.SilenceReason);
     }
 
+    // The address the firmware asks the boot server from is the one GRUB will load from a moment later.
     [Fact]
     public void ARequestOnTheBootServerPortResetsWhatTheMachinesStartBeforeLeftOpen()
     {
         BootConnections connections = new(TimeProvider.System);
-        byte[] request = Loopback.Fixture("Dhcp", "request-4011-uefi-x64");
-        IPAddress source = IPAddress.Parse("192.0.2.55");
-        IPAddress machine = ClientOf(request, source);
+        IPAddress machine = IPAddress.Parse("192.0.2.55");
         int reset = 0;
         using IDisposable left = connections.Opened(machine, () => reset++);
         using IDisposable other = connections.Opened(IPAddress.Parse("192.0.2.56"), () => Assert.Fail("Another machine's connection was reset."));
 
         ProxyDhcpOutcome outcome = Handler(connections: connections).Handle(
-            request,
+            Loopback.Fixture("Dhcp", "request-4011-uefi-x64"),
             ProxyDhcpListenPort.PxeBootServer,
-            new DatagramArrival(ServedIndex, s_servedAddress, new IPEndPoint(source, 4011)),
+            new DatagramArrival(ServedIndex, s_servedAddress, new IPEndPoint(machine, 4011)),
             new byte[1500]);
 
         Assert.Equal(ProxyDhcpOutcomeKind.Replied, outcome.Kind);
         Assert.Equal(1, outcome.ConnectionsReset);
         Assert.Equal(1, reset);
         Assert.False(connections.HttpIsSafe(machine));
+    }
+
+    // One datagram from anywhere must not end another machine's downloads: only the sender's own are reset.
+    [Fact]
+    public void ARequestThatNamesAnotherMachinesAddressInsideResetsNothingOfThatMachine()
+    {
+        BootConnections connections = new(TimeProvider.System);
+        IPAddress sender = IPAddress.Parse("192.0.2.77");
+        IPAddress victim = IPAddress.Parse("192.0.2.55");
+        int reset = 0;
+        using IDisposable own = connections.Opened(sender, () => reset++);
+        using IDisposable downloading = connections.Opened(victim, () => Assert.Fail("A machine named inside the packet was reset."));
+
+        ProxyDhcpOutcome outcome = Handler(connections: connections).Handle(
+            WithClientAddress(Loopback.Fixture("Dhcp", "request-4011-uefi-x64"), victim),
+            ProxyDhcpListenPort.PxeBootServer,
+            new DatagramArrival(ServedIndex, s_servedAddress, new IPEndPoint(sender, 4011)),
+            new byte[1500]);
+
+        Assert.Equal(ProxyDhcpOutcomeKind.Replied, outcome.Kind);
+        Assert.Equal(1, outcome.ConnectionsReset);
+        Assert.Equal(1, reset);
+        Assert.True(connections.HttpIsSafe(victim));
+        Assert.Equal(1, connections.Open);
+    }
+
+    // Behind a relay the sender is the relay, so neither it nor the address the packet names proves a machine.
+    [Fact]
+    public void ARelayedRequestOnTheBootServerPortResetsNothing()
+    {
+        BootConnections connections = new(TimeProvider.System);
+        IPAddress victim = IPAddress.Parse("192.0.2.55");
+        using IDisposable downloading = connections.Opened(victim, () => Assert.Fail("A machine behind a relay was reset."));
+        using IDisposable relay = connections.Opened(s_relay, () => Assert.Fail("The relay's own connection was reset."));
+
+        ProxyDhcpOutcome outcome = Handler(relays: "192.0.2.1", connections: connections).Handle(
+            WithGateway(WithClientAddress(Loopback.Fixture("Dhcp", "request-4011-uefi-x64"), victim), s_relay),
+            ProxyDhcpListenPort.PxeBootServer,
+            new DatagramArrival(ServedIndex, s_servedAddress, new IPEndPoint(s_relay, 4011)),
+            new byte[1500]);
+
+        Assert.Equal(ProxyDhcpOutcomeKind.Replied, outcome.Kind);
+        Assert.Equal(0, outcome.ConnectionsReset);
+        Assert.True(connections.HttpIsSafe(victim));
+        Assert.Equal(2, connections.Open);
     }
 
     // A DISCOVER comes from no address yet, so it names no machine whose connections could be reset.

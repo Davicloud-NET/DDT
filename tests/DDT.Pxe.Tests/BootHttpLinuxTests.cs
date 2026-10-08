@@ -28,6 +28,8 @@ public sealed class BootHttpLinuxTests : IAsyncLifetime
     {
         string boot = Directory.CreateDirectory(Path.Combine(_root, "boot")).FullName;
         string bundle = Directory.CreateDirectory(Path.Combine(_root, "linux-boot")).FullName;
+        Directory.CreateDirectory(Path.Combine(boot, "x64"));
+        await File.WriteAllTextAsync(Path.Combine(boot, "x64", "bootmgfw.efi"), "boot manager");
         await File.WriteAllBytesAsync(Path.Combine(bundle, "vmlinuz"), _kernel);
         await File.WriteAllTextAsync(Path.Combine(bundle, "ddt-linux-boot.json"), "{}");
 
@@ -118,6 +120,23 @@ public sealed class BootHttpLinuxTests : IAsyncLifetime
         Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
         Assert.Equal(text.Length, context.Response.ContentLength);
         Assert.StartsWith("set timeout=0\nif linux (http,127.0.0.1:8080)/boot/linux/vmlinuz ", text, StringComparison.Ordinal);
+    }
+
+    // GRUB never asks twice on a connection. Firmware that loads Windows PE does, and its answers stay as they were.
+    [Theory]
+    [InlineData("/boot/linux/vmlinuz", StatusCodes.Status200OK, true)]
+    [InlineData("/boot/linux/site.cpio", StatusCodes.Status200OK, true)]
+    [InlineData("/boot/grub/grub.cfg", StatusCodes.Status200OK, true)]
+    [InlineData("/boot/linux/base.img", StatusCodes.Status404NotFound, true)]
+    [InlineData("/boot/x64/bootmgfw.efi", StatusCodes.Status200OK, false)]
+    [InlineData("/boot/x64/boot.wim", StatusCodes.Status404NotFound, false)]
+    [InlineData("/boot/grub/fonts/unicode.pf2", StatusCodes.Status404NotFound, false)]
+    public async Task OnlyAnAnswerToWhatGrubLoadsTellsTheMachineThatTheConnectionCloses(string path, int status, bool closes)
+    {
+        HttpContext context = await SendAsync(HttpMethods.Get, path);
+
+        Assert.Equal(status, context.Response.StatusCode);
+        Assert.Equal(closes ? "close" : string.Empty, context.Response.Headers.Connection.ToString());
     }
 
     [Theory]

@@ -21,6 +21,9 @@ public sealed class ToolRunner(
     // script ended. So the rest of the output isn't waited for beyond this.
     public static readonly TimeSpan OutputGrace = TimeSpan.FromSeconds(10);
 
+    // Finds what a stopped tool started outside its own process tree. Null where only the tree itself can be ended.
+    public IStrayProcesses? Strays { get; init; }
+
     public async Task<IReadOnlyList<string>> RunAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(fileName);
@@ -149,7 +152,9 @@ public sealed class ToolRunner(
             start.Environment[name] = value;
         }
 
-        return new ProcessToolProcess(Start(start, tool), log);
+        Process process = Start(start, tool);
+
+        return new ProcessToolProcess(process, log, Strays?.WatchFrom(process.Id));
     }
 
     public static string CommandLine(string fileName, IReadOnlyList<string> arguments)

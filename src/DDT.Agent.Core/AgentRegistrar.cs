@@ -19,6 +19,7 @@ internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, 
     public async Task<AgentRegistrationResult?> RegisterAsync(string? resumeToken, string? runToken, CancellationToken cancellationToken)
     {
         int failures = 0;
+        bool toldNoAdapter = false;
         status.Registering();
         IReadOnlyList<AgentDisk>? eligibleDisks = await ReadDisksAsync(cancellationToken).ConfigureAwait(false);
 
@@ -43,6 +44,18 @@ internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, 
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 return null;
+            }
+            catch (NoNetworkAdapterException exception)
+            {
+                // An adapter on USB or in a dock may come later, so this is said once and asked again.
+                failures++;
+                status.Unreachable(exception);
+
+                if (!toldNoAdapter)
+                {
+                    toldNoAdapter = true;
+                    log.Warning(exception.Message);
+                }
             }
             catch (Exception exception) when (LoopCallRules.IsTransient(exception))
             {

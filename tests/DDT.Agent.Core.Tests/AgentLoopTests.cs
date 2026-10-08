@@ -77,6 +77,28 @@ public sealed class AgentLoopTests : IDisposable
         Assert.Equal([TimeSpan.FromSeconds(10), AgentLimits.MinRetryDelay], time.Delays);
     }
 
+    // A system that shows no network adapter yet says so in a sentence of its own. The agent shows it once, waits as
+    // it does for a server that does not answer, and registers when an adapter is there.
+    [Fact]
+    public async Task WaitsForANetworkAdapterInsteadOfEndingAndSaysOnceWhatIsWrong()
+    {
+        const string NoAdapter = "This system shows no network adapter. Connect one.";
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Registered(MachineState.Approved, token: "session-0"))
+            .OnNext(_ => Next(MachineState.Approved, "session-1"));
+        LateAdapterIdentityReader identity = new(readsWithout: 3, NoAdapter);
+
+        (AgentLoop loop, ImmediateTimeProvider time) = Create(server, identity);
+
+        int exitCode = await loop.RunAsync(server.Stop.Token);
+
+        Assert.Equal(AgentExitCodes.Stopped, exitCode);
+        Assert.Equal(4, identity.Reads);
+        Assert.Single(server.Registrations);
+        Assert.Single(server.SentLines, line => line.Message == NoAdapter && line.Level == AgentLogLevel.Warning);
+        Assert.Equal([TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(8)], time.Delays.Take(3));
+    }
+
     // The registration carries the deployment setting for the language. The console switches to it once it knows it.
     [Fact]
     public async Task TheConsoleSpeaksTheLanguageTheServerNames()

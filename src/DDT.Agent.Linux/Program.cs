@@ -14,6 +14,9 @@ if (!Console.IsInputRedirected && !args.Contains(AgentStartup.LicensesArgument))
     _ = Console.KeyAvailable;
 }
 
+// Scroll Lock and Ctrl+S must not hold the screen the agent writes to, or a run would wait with it.
+using ITimer? flowing = Console.IsOutputRedirected ? null : new LinuxTerminal().KeepFlowing(TimeProvider.System);
+
 AgentStartup startup = new(new AgentPlatform
 {
     BootEnvironment = AgentEnvironment.LinuxBoot,
@@ -22,6 +25,7 @@ AgentStartup startup = new(new AgentPlatform
     StartsGraphicalConsole = false,
     WriteStartupNotices = LinuxLegalNotices.WriteStartupNotices,
     WriteLicenses = LinuxLegalNotices.WriteLicenses,
+    ReadyAsync = LinuxBoot.ReadyAsync,
     DryRunAsync = DryRunAsync,
     RunAsync = RunAsync,
 });

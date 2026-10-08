@@ -66,7 +66,7 @@ public sealed class AgentStartup(AgentPlatform platform)
             log.Information($"Dry run {options.DryRunId}: this computer stands in for a fake machine and nothing on it is changed.");
         }
 
-        if (await UpdateAsync(agent, args, stop.Token).ConfigureAwait(false) is { } exitCode)
+        if (await BeforeRunAsync(agent, args, stop.Token).ConfigureAwait(false) is { } exitCode)
         {
             return exitCode;
         }
@@ -108,6 +108,18 @@ public sealed class AgentStartup(AgentPlatform platform)
         {
             platform.WriteLicenses(Console.Out);
         }
+    }
+
+    // Waits for what the system needs before the first call to the server, then looks for a newer agent. The exit code
+    // is null when this agent goes on to its run.
+    private async Task<int?> BeforeRunAsync(StartedAgent agent, string[] args, CancellationToken cancellationToken)
+    {
+        if (platform.ReadyAsync is { } ready && !agent.Options.DryRun && !await ready(agent, cancellationToken).ConfigureAwait(false))
+        {
+            return AgentExitCodes.Stopped;
+        }
+
+        return await UpdateAsync(agent, args, cancellationToken).ConfigureAwait(false);
     }
 
     // A dry run changes nothing on the computer it runs on, and a build run from source would swap itself for the

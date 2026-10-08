@@ -25,6 +25,10 @@ public sealed record AgentPlatform
     // Whether the executable starts the graphical console beside it. One that does not keeps the text console.
     public bool StartsGraphicalConsole { get; init; } = true;
 
+    // What the system waits for before the agent first calls the server, such as a network adapter. False once stopped.
+    // Null for a system that waits for nothing.
+    public Func<StartedAgent, CancellationToken, Task<bool>>? ReadyAsync { get; init; }
+
     // The executable carries the legal texts of what it is built from.
     public required Action<TextWriter> WriteStartupNotices { get; init; }
 

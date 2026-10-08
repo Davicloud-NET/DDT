@@ -169,6 +169,30 @@ public sealed class ToolRunnerTests
             stop.Token));
     }
 
+    // What a tool left outside its own tree is asked for only when the tool had to be stopped, after its tree.
+    [Fact]
+    public async Task EndsWhatAToolLeftOutsideItsTreeOnlyWhenTheToolIsStopped()
+    {
+        RecordingStrays strays = new();
+        ToolRunner tools = new(new AgentLog(new ImmediateTimeProvider(), TextWriter.Null), TimeProvider.System, AnsiCodePage.Decode) { Strays = strays };
+        using CancellationTokenSource stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+
+        await tools.RunForExitCodeAsync(s_cmd, ["/d", "/c", "exit /b 0"], new ToolRunOptions(), TestContext.Current.CancellationToken);
+
+        Assert.Single(strays.Watched);
+        Assert.Empty(strays.Ended);
+
+        stop.CancelAfter(TimeSpan.FromMilliseconds(200));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => tools.RunForExitCodeAsync(
+            s_cmd,
+            ["/d", "/c", "ping -n 30 127.0.0.1 >nul"],
+            new ToolRunOptions(Timeout: TimeSpan.FromMinutes(5)),
+            stop.Token));
+
+        Assert.Equal(2, strays.Watched.Count);
+        Assert.Equal([strays.Watched[1]], strays.Ended);
+    }
+
     private static (ToolRunner Tools, ScriptedAgentServer Server, AgentLog Log) Create(TimeProvider? time = null)
     {
         AgentLog log = new(new ImmediateTimeProvider(), TextWriter.Null);

@@ -21,6 +21,14 @@ public static class LinuxBoot
 
     public static string WorkDirectory => Path.Combine(RunDirectory, "work");
 
+    // A machine the firmware started from the network may have no adapter Linux has a driver for, or get it late.
+    public static Task<bool> ReadyAsync(StartedAgent agent, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(agent);
+
+        return new LinuxAdapters(Root).WaitAsync(agent.Log, TimeProvider.System, cancellationToken);
+    }
+
     // The machine restarts only once the loop has ended, so the server has the last lines of its log, and however the
     // loop ended: the server may have the run as done by then.
     public static async Task<int> RunAsync(AgentLoop loop, LinuxRestart restart, CancellationToken cancellationToken)
@@ -49,7 +57,9 @@ public static class LinuxBoot
         LinuxRawDisks rawDisks = new(Root, new KernelBlockDevices());
         LinuxDisks disks = new(Root, rawDisks, log);
         LinuxBootRebooter rebooter = new(firmware, restart, log);
-        HardwareMachineIdentityReader identity = new(new LinuxFirmwareTables(Root), new LinuxSystemHardware(Root), firmware, new LinuxSecureBoot(firmware));
+        LinuxIdentityReader identity = new(
+            new HardwareMachineIdentityReader(new LinuxFirmwareTables(Root), new LinuxSystemHardware(Root), firmware, new LinuxSecureBoot(firmware)),
+            new LinuxAdapters(Root));
         ResumeCarrier carrier = new(firmware, AgentEnvironment.LinuxBoot, log);
         AgentMachine machine = new(identity, disks, new LocalRunLocator([]), agent.Version, AgentEnvironment.LinuxBoot)
         {
@@ -78,7 +88,10 @@ public static class LinuxBoot
             {
                 Disks = disks,
                 RawDisks = rawDisks,
-                Tools = new ToolRunner(log, TimeProvider.System, Latin1Output.Decode),
+                Tools = new ToolRunner(log, TimeProvider.System, Latin1Output.Decode)
+                {
+                    Strays = new LinuxStrayProcesses(Root, log, Environment.ProcessId) { Adopts = LinuxStrayProcesses.Adopt() },
+                },
                 Scripts = new ShellScriptLauncher { Environment = LinuxShell.Environment(Environment.GetEnvironmentVariable) },
                 Log = log,
                 TimeProvider = TimeProvider.System,

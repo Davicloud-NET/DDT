@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Text.Json;
 using Xunit;
@@ -23,6 +24,7 @@ public sealed class BootFilesTests : IDisposable
     private readonly string _bundle;
     private readonly FakeLinuxBootSite _site = new();
     private readonly TestClock _clock = new(DateTimeOffset.FromUnixTimeSeconds(1_791_460_800));
+    private readonly List<TcpConnectionInformation> _held = [];
     private readonly BootConnections _connections;
     private readonly BootFiles _files;
 
@@ -50,7 +52,7 @@ public sealed class BootFilesTests : IDisposable
             KeyboardLayout = "German (de)",
             KernelArguments = "console=ttyS0,115200",
         };
-        _connections = new BootConnections(_clock);
+        _connections = new BootConnections(_clock, new SystemTcpConnections(_clock, () => [.. _held]));
         _files = new BootFiles(new BootFileResolver(_boot), _site, 8080, _connections, _clock);
     }
 
@@ -109,6 +111,40 @@ public sealed class BootFilesTests : IDisposable
         _clock.Advance(TimeSpan.FromSeconds(1));
         Assert.Contains("(http,10.77.0.1:8080)", TextOf(Find("grub/grub.cfg")), StringComparison.Ordinal);
         Assert.Equal("generated grub/grub.cfg", Find("grub/grub.cfg")!.Description);
+    }
+
+    // Kestrel has closed these and cannot reset them: the connections of a start that loaded everything, in TIME_WAIT,
+    // or one whose answer was handed to the system whole before the machine went away.
+    [Fact]
+    public void AMachineWithAConnectionLeftInTheServersSystemLoadsOverTftpAloneWhileItIsThere()
+    {
+        _held.Add(new FakeTcpConnection("10.77.0.128", 8080));
+        _held.Add(new FakeTcpConnection("10.77.0.129", 8443));
+
+        string text = TextOf(Find("grub/grub.cfg"));
+
+        Assert.DoesNotContain("(http,", text, StringComparison.Ordinal);
+        Assert.StartsWith("set timeout=0\nif linux (tftp,10.77.0.1)/linux/vmlinuz rdinit=/init ", text, StringComparison.Ordinal);
+        Assert.Equal("generated grub/grub.cfg" + BootFiles.ConnectionLeftNote, Find("grub/grub.cfg")!.Description);
+
+        // A machine with a connection to another port of the server is not held back.
+        BootContent? other = Find("grub/grub.cfg", s_request with { Client = IPAddress.Parse("10.77.0.129") });
+        Assert.Contains("(http,10.77.0.1:8080)", TextOf(other), StringComparison.Ordinal);
+
+        _held.Clear();
+        _clock.Advance(SystemTcpConnections.Kept);
+        Assert.Contains("(http,10.77.0.1:8080)", TextOf(Find("grub/grub.cfg")), StringComparison.Ordinal);
+        Assert.Equal("generated grub/grub.cfg", Find("grub/grub.cfg")!.Description);
+    }
+
+    // The read that ended badly is the reason the log gives, since it holds for three minutes whatever the system says.
+    [Fact]
+    public void AReadThatDidNotEndIsTheReasonGivenBeforeAConnectionLeft()
+    {
+        _held.Add(new FakeTcpConnection("10.77.0.128", 8080));
+        _connections.ReadFailed(s_request.Client);
+
+        Assert.Equal("generated grub/grub.cfg" + BootFiles.TftpAloneNote, Find("grub/grub.cfg")!.Description);
     }
 
     [Theory]

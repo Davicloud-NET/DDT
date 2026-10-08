@@ -36,7 +36,7 @@ public static class PxeHostingExtensions
         ]);
 
         // Kestrel reads the Boot endpoint from configuration as it starts, and hands every connection of it here.
-        BootConnections connections = new(TimeProvider.System);
+        BootConnections connections = new(TimeProvider.System, new SystemTcpConnections(TimeProvider.System));
         builder.WebHost.ConfigureKestrel(kestrel => kestrel.ConfigurationLoader?.Endpoint(
             BootEndpointName,
             endpoint => endpoint.ListenOptions.Use(next => BootPortConnections.Track(next, connections))));

@@ -152,6 +152,37 @@ public sealed class BootConnectionsTests
     }
 
     [Fact]
+    public void WithoutTheSystemsListOnlyAReadThatEndedBadlyIsARisk()
+    {
+        Assert.Equal(HttpBootRisk.None, _connections.HttpRisk(s_machine, 8080));
+
+        _connections.ReadFailed(s_machine);
+
+        Assert.Equal(HttpBootRisk.ReadEndedBadly, _connections.HttpRisk(s_machine, 8080));
+        Assert.Equal(HttpBootRisk.None, _connections.HttpRisk(s_other, 8080));
+    }
+
+    // What Kestrel closed is no longer among the open connections, and the system can hold it for a minute or more.
+    [Fact]
+    public void AConnectionTheSystemStillHoldsWithTheBootPortIsARiskAlthoughNoneIsOpenAndNoReadFailed()
+    {
+        List<FakeTcpConnection> held = [new("10.77.0.128", 8080), new("10.77.0.129", 8443)];
+        BootConnections connections = new(_clock, new SystemTcpConnections(_clock, () => [.. held]));
+
+        Assert.Equal(HttpBootRisk.ConnectionLeft, connections.HttpRisk(s_machine, 8080));
+        Assert.Equal(HttpBootRisk.ConnectionLeft, connections.HttpRisk(s_machine.MapToIPv6(), 8080));
+        Assert.Equal(HttpBootRisk.None, connections.HttpRisk(s_other, 8080));
+        Assert.True(connections.HttpIsSafe(s_machine));
+
+        connections.ReadFailed(s_machine);
+        Assert.Equal(HttpBootRisk.ReadEndedBadly, connections.HttpRisk(s_machine, 8080));
+
+        held.Clear();
+        _clock.Advance(BootConnections.Remembered + TimeSpan.FromSeconds(1));
+        Assert.Equal(HttpBootRisk.None, connections.HttpRisk(s_machine, 8080));
+    }
+
+    [Fact]
     public async Task TakesConnectionsAndStartsFromManyThreadsAtOnce()
     {
         int reset = 0;

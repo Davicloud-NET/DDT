@@ -133,6 +133,22 @@ public sealed class BootPortConnectionsTests : IAsyncLifetime
         Assert.True(_connections.HttpIsSafe(IPAddress.Loopback));
     }
 
+    // The price of closing first: the server's system keeps the connection for a while after an answer that arrived
+    // whole, and Kestrel has nothing left to reset. So the system's own list is asked before a machine is sent to HTTP.
+    [Fact]
+    public async Task AfterAnAnswerThatArrivedWholeTheSystemStillHoldsTheConnectionAndThatIsARisk()
+    {
+        Socket machine = await ConnectAsync();
+        await SendAsync(machine, "/boot/small.txt");
+        Assert.False((await ReadToEndAsync(machine)).Reset);
+        machine.Dispose();
+        await UntilAsync(() => _connections.Open == 0);
+
+        Assert.Equal(HttpBootRisk.None, _connections.HttpRisk(IPAddress.Loopback, _port));
+        await UntilAsync(() => new BootConnections(TimeProvider.System, new SystemTcpConnections(TimeProvider.System))
+            .HttpRisk(IPAddress.Loopback, _port) == HttpBootRisk.ConnectionLeft);
+    }
+
     [Fact]
     public async Task ClosesTheConnectionAfterAnAnswerThatThereIsNoSuchFile()
     {

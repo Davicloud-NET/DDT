@@ -9,9 +9,9 @@ namespace DDT.Pxe;
 // What the HTTP boot port knows of each machine, by its address: the connections still open, and when a read last
 // ended badly. GRUB uses the same source ports at every start, and a connection the server still holds from the start
 // before makes it hang. So a machine that starts again has its connections reset, and loads over TFTP for a while.
-public sealed class BootConnections(TimeProvider timeProvider)
+public sealed class BootConnections(TimeProvider timeProvider, SystemTcpConnections? system = null)
 {
-    // How long after a read that ended badly a machine is kept off HTTP. The server's system forgets sooner.
+    // How long after a read that ended badly a machine is kept off HTTP, whatever the server's system still holds.
     public static readonly TimeSpan Remembered = TimeSpan.FromMinutes(3);
 
     // A rollout of more machines than this within three minutes forgets the oldest of them.
@@ -79,7 +79,7 @@ public sealed class BootConnections(TimeProvider timeProvider)
         return left.Count;
     }
 
-    // False while the machine's HTTP reads could meet what its start before left on the server.
+    // False while a read of the machine that ended badly is remembered.
     public bool HttpIsSafe(IPAddress client)
     {
         ArgumentNullException.ThrowIfNull(client);
@@ -88,6 +88,18 @@ public sealed class BootConnections(TimeProvider timeProvider)
         {
             return !_failed.TryGetValue(Key(client), out DateTimeOffset failed) || timeProvider.GetUtcNow() - failed > Remembered;
         }
+    }
+
+    // Why the machine's HTTP reads on the boot port could meet what its start before left on the server.
+    public HttpBootRisk HttpRisk(IPAddress client, int bootPort)
+    {
+        if (!HttpIsSafe(client))
+        {
+            return HttpBootRisk.ReadEndedBadly;
+        }
+
+        // Kestrel no longer knows a connection it has closed, and cannot reset it. The system holds it for a while.
+        return system?.Any(client, bootPort) == true ? HttpBootRisk.ConnectionLeft : HttpBootRisk.None;
     }
 
     // How many connections are open now, for a test and a log line.

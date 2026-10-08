@@ -22,6 +22,7 @@ public sealed class BootFiles
 
     // What the log adds to the name, so a start that loads slower says why.
     public const string TftpAloneNote = " for TFTP alone, since an HTTP read of this machine did not end well";
+    public const string ConnectionLeftNote = " for TFTP alone, since this server's system still holds a connection of the machine's start before";
 
     private const int MaxRequestLength = 512;
 
@@ -116,15 +117,21 @@ public sealed class BootFiles
     // GRUB hangs in an HTTP read that meets a connection its start before left on the server. TFTP has none.
     private MemoryBootContent GrubConfigFor(LinuxBootBundle bundle, BootRequest request)
     {
-        bool http = _connections.HttpIsSafe(request.Client);
-        string text = GrubConfig.Write(new GrubConfigValues(request.Server, http ? _httpBootPort : null, _timeProvider.GetUtcNow())
+        HttpBootRisk risk = _connections.HttpRisk(request.Client, _httpBootPort);
+        string text = GrubConfig.Write(new GrubConfigValues(request.Server, risk == HttpBootRisk.None ? _httpBootPort : null, _timeProvider.GetUtcNow())
         {
             Keymap = bundle.Keymap,
             HostName = bundle.ServerUrl.Host,
             KernelArguments = bundle.KernelArguments,
         });
+        string note = risk switch
+        {
+            HttpBootRisk.ReadEndedBadly => TftpAloneNote,
+            HttpBootRisk.ConnectionLeft => ConnectionLeftNote,
+            _ => string.Empty,
+        };
 
-        return new MemoryBootContent(http ? GrubConfigName : GrubConfigName + TftpAloneNote, Encoding.ASCII.GetBytes(text));
+        return new MemoryBootContent(GrubConfigName + note, Encoding.ASCII.GetBytes(text));
     }
 
     // The same rules as for the boot directory: a real entry of the folder, and no link.

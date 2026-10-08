@@ -43,6 +43,10 @@ public sealed class EnvironmentTextsTests
             "The run goes on in the installed Windows, but the machine started Windows PE. Handing the run over again (2 of 3 times).",
             EnvironmentTexts.HandingOverAgain(environment, 2, 3));
         Assert.Equal("Windows PE", EnvironmentTexts.SecureBootTeller(environment));
+        Assert.Equal(
+            "The machine restarts without choosing where it starts next, so it comes back to Windows PE only if its boot order " +
+            "starts from the network before the disk.",
+            EnvironmentTexts.RestartsPlainly(environment));
     }
 
     [Fact]
@@ -87,6 +91,7 @@ public sealed class EnvironmentTextsTests
             EnvironmentTexts.Restarts(LinuxBoot, handingOver: false),
             EnvironmentTexts.HandingOverAgain(LinuxBoot, 1, 3),
             EnvironmentTexts.SecureBootTeller(LinuxBoot),
+            EnvironmentTexts.RestartsPlainly(LinuxBoot),
             EnvironmentTexts.BootOrderIsBack(LinuxBoot),
             EnvironmentTexts.BootOrderStays(LinuxBoot, "refused"),
             EnvironmentTexts.OtherDdtRoot(LinuxBoot),

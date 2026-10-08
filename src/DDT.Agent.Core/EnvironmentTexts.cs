@@ -52,6 +52,13 @@ public static class EnvironmentTexts
         ? $"The run goes on in the installed Linux, but the machine started the Linux boot environment. Handing the run over again ({returns} of {most} times)."
         : $"The run goes on in the installed Windows, but the machine started Windows PE. Handing the run over again ({returns} of {most} times).";
 
+    // A restart that could not be pointed back at the boot environment.
+    public static string RestartsPlainly(AgentEnvironment environment) => IsLinux(environment)
+        ? "The machine restarts without choosing where it starts next, so it comes back to the Linux boot environment only if " +
+            "its boot order starts from the network before the disk."
+        : "The machine restarts without choosing where it starts next, so it comes back to Windows PE only if its boot order " +
+            "starts from the network before the disk.";
+
     // Who could not tell whether Secure Boot is on. Linux reads the firmware's own variable.
     public static string SecureBootTeller(AgentEnvironment environment) => IsLinux(environment) ? "this machine's firmware" : "Windows PE";
 

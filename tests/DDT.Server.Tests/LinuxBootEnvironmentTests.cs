@@ -420,6 +420,29 @@ public sealed class LinuxBootEnvironmentTests : IDisposable
         Assert.Equal("hash", Reason(environment.Current));
     }
 
+    // The hashes are compared in the background. Whichever of the two ends last, what netboot found is the newer finding.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task WhatNetbootFindsWhileTheHashesAreComparedStaysOnceTheyWere(bool otherContent)
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder);
+
+        if (otherContent)
+        {
+            File.WriteAllText(Path.Combine(environment.Folder, "ddt.img"), "TEST ddt.img");
+        }
+
+        Task compared = environment.CheckedAsync();
+        environment.Changed("vmlinuz");
+        await compared;
+
+        Assert.False(environment.Known.Available);
+        Assert.Equal("changed", Reason(environment.Known));
+        Assert.Equal("vmlinuz", environment.Known.Problem!.Args["name"]);
+    }
+
     // Only the file's time moved, as a copy of the folder leaves it. Read again, it is the same file as before.
     [Fact]
     public async Task AFileThatWasOnlyTouchedIsServedAgainOnceItWasReadAgain()

@@ -31,6 +31,9 @@ internal sealed class LinuxBootReading
 
     // What each listed file was at this look, and null for one that was not there. A folder that differs has changed.
     private readonly Dictionary<string, BootFileStamp?> _seen;
+
+    // Netboot and the check of the hashes each write what they found under it, so neither takes back the other's finding.
+    private readonly Lock _findings = new();
     private volatile LinuxBootState _state;
     private volatile bool _stale;
 
@@ -87,8 +90,11 @@ internal sealed class LinuxBootReading
     // A file netboot was about to serve is gone or no longer what it was. The next look reads every file again.
     public void Changed(string name)
     {
-        _state = Damaged(Folder, "changed", name);
-        _stale = true;
+        lock (_findings)
+        {
+            _state = Damaged(Folder, "changed", name);
+            _stale = true;
+        }
     }
 
     // Whether the folder is no longer what this look found: a listed file is gone, new, or of another length or time.
@@ -287,20 +293,26 @@ internal sealed class LinuxBootReading
         }
 
         // A file that was replaced between the look and the reading is served as the one that was read.
-        LinuxBootState state = _state;
+        FrozenDictionary<string, BootFileStamp> files = read.ToFrozenDictionary(StringComparer.Ordinal);
 
-        if (!_stale && state.Problem is null)
+        lock (_findings)
         {
-            _state = state with { Files = read.ToFrozenDictionary(StringComparer.Ordinal) };
+            if (!_stale && _state.Problem is null)
+            {
+                _state = _state with { Files = files };
+            }
         }
     }
 
     // What netboot found while the files were read stays: it is the newer finding.
     private void Fail(LinuxBootState damaged)
     {
-        if (!_stale)
+        lock (_findings)
         {
-            _state = damaged;
+            if (!_stale)
+            {
+                _state = damaged;
+            }
         }
     }
 

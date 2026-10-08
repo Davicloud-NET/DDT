@@ -312,16 +312,16 @@ for machines to take when theirs is another. Besides DDT's own code, from `DDT.A
   the agent is compiled with.
 - `ZstdSharp.Port` 0.8.8 and the Zstandard 1.5.7 code it is ported from, as described for the server
   above, which the agent unpacks raw disk images with.
-- OpenSSL 3.5, whose libcrypto and libssl the linker takes from Alpine's `openssl-libs-static`
-  package, so the agent's connection to the server needs no library of the machine. Copyright (c)
-  1998-2026 The OpenSSL Project Authors and Copyright (c) 1995-1998 Eric A. Young, Tim J. Hudson,
-  under the Apache License 2.0, text in
+- OpenSSL 3.5.9, whose libcrypto and libssl the linker takes from Alpine's `openssl-libs-static`
+  package 3.5.9-r0, so the agent's connection to the server needs no library of the machine.
+  Copyright (c) 1998-2026 The OpenSSL Project Authors and Copyright (c) 1995-1998 Eric A. Young,
+  Tim J. Hudson, under the Apache License 2.0, text in
   [licenses/openssl/LICENSE.txt](licenses/openssl/LICENSE.txt), from OpenSSL 3.5.9. DDT does not
-  change it. The agent gets the 3.5 release Alpine has on the day it is published, which was 3.5.9
-  when this was written.
-- musl 1.2.6, Alpine's C library, from its `musl-dev` package. Copyright (c) 2005-2020 Rich Felker,
-  et al., under the MIT licence, with parts by others under licences alike that
-  [licenses/musl/COPYRIGHT](licenses/musl/COPYRIGHT) names, the file of musl 1.2.6.
+  change it. The build names the package by this version and takes no other.
+- musl 1.2.6, Alpine's C library, from its `musl-dev` package 1.2.6-r2, which the build names by
+  that version too. Copyright (c) 2005-2020 Rich Felker, et al., under the MIT licence, with parts
+  by others under licences alike that [licenses/musl/COPYRIGHT](licenses/musl/COPYRIGHT) names, the
+  file of musl 1.2.6.
 - Support code of GCC 15.2, `libgcc`, which the linker adds. Copyright (C) Free Software
   Foundation, Inc., under the GNU General Public License, version 3 or later, with the GCC Runtime
   Library Exception 3.1, text in [licenses/gcc/COPYING.RUNTIME](licenses/gcc/COPYING.RUNTIME),

@@ -1,11 +1,12 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 # check=skip=InvalidDefaultArgInFrom
 # Copyright (C) 2026 Davicloud
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 # Builds the DDT Linux boot environment from the Debian packages in packages.lock.json, with this folder as context.
-# build/Build-LinuxBoot.ps1 takes the stage export, build/Update-LinuxBootLock.ps1 the stages lock and notices.
+# build/Build-LinuxBoot.ps1 takes the stage export, build/Update-LinuxBootLock.ps1 the stages lock, tools-lock and
+# notices. The first line names the program that reads this file by its digest, so it is the same one every time.
 
 # The image's tools shape base.img's bytes, so the lock names it by digest and there is no default.
 # busybox runs here to list its applets, which needs --platform linux/amd64.
@@ -15,7 +16,7 @@ ARG TOOLS_IMAGE
 FROM scratch AS agent
 COPY placeholder/ /
 
-FROM ${TOOLS_IMAGE} AS tools
+FROM ${TOOLS_IMAGE} AS installed
 COPY packages.lock.json /src/
 # The tools come from the lock's snapshot too. apt would refuse its Release files, which are past their date.
 RUN snapshot=$(sed -n 's/.*"snapshot": *"\([0-9TZ]*\)".*/\1/p' /src/packages.lock.json) \
@@ -28,6 +29,16 @@ RUN snapshot=$(sed -n 's/.*"snapshot": *"\([0-9TZ]*\)".*/\1/p' /src/packages.loc
     && rm -rf /var/lib/apt/lists/* \
     # Files in the archives carry the snapshot's time, so one lock gives one base.img.
     && date -u -d "$(echo "$snapshot" | sed 's/^\(....\)\(..\)\(..\)T\(..\)\(..\)\(..\)Z$/\1-\2-\3 \4:\5:\6/')" +%s > /src/mtime
+
+# apt takes the tools over plain HTTP, where another state of the archive that Debian signed as well can be handed
+# over. Every package in the image must be at the version the lock names, or base.img could differ unnoticed.
+FROM installed AS tools
+RUN dpkg-query --show --showformat '${Package} ${Version}\n' | sort > /tmp/installed \
+    && jq --raw-output '.expected.toolsPackages | to_entries[] | "\(.key) \(.value)"' /src/packages.lock.json | sort > /tmp/named \
+    && if ! diff /tmp/named /tmp/installed; then \
+        echo "The tools image holds other packages than the lock names. Update-LinuxBootLock.ps1 writes the lock again." >&2; \
+        exit 1; \
+    fi
 
 FROM tools AS packages
 COPY fetch.py /src/
@@ -53,14 +64,23 @@ RUN python3 /src/mkcpio.py --mtime "$(cat /src/mtime)" /agent /tmp/ddt.cpio \
 FROM scratch AS export
 COPY --from=build /out/ /
 
-# The lock again, for the snapshot of Debian's archive that SNAPSHOT names.
-FROM tools AS relock
+# The lock again, for the snapshot of Debian's archive that SNAPSHOT names. Its tools are those of the lock before,
+# and not compared: after a change of the tools image the lock that names them is the one to be written.
+FROM installed AS relock
 ARG SNAPSHOT
 COPY fetch.py lock.py /src/
 RUN python3 /src/lock.py /src/packages.lock.json "${SNAPSHOT:?}" /out/packages.lock.json
 
 FROM scratch AS lock
 COPY --from=relock /out/ /
+
+# The lock again with the packages of the tools image as it is at the lock's snapshot.
+FROM installed AS retool
+COPY fetch.py lock.py /src/
+RUN python3 /src/lock.py --tools /src/packages.lock.json /out/packages.lock.json
+
+FROM scratch AS tools-lock
+COPY --from=retool /out/ /
 
 # What licenses/linux-boot holds: the copyright files of the lock's packages and the list of their sources.
 FROM packages AS copyrights

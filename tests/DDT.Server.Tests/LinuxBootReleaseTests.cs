@@ -130,6 +130,49 @@ public sealed partial class LinuxBootReleaseTests
         });
     }
 
+    // The tools shape base.img too, and apt takes them over plain HTTP. The lock names every package of the tools
+    // image, the build compares before it uses them, and the script that moves the lock writes them again.
+    [Fact]
+    public async Task TheLockNamesTheToolsPackagesThatEveryBuildIsComparedWith()
+    {
+        using JsonDocument lockFile = JsonDocument.Parse(await ReadAsync("build", "LinuxBoot", "packages.lock.json"));
+        string dockerfile = await ReadAsync("build", "LinuxBoot", "Dockerfile");
+        string update = await ReadAsync("build", "Update-LinuxBootLock.ps1");
+        JsonElement tools = lockFile.RootElement.GetProperty("expected").GetProperty("toolsPackages");
+
+        Assert.All((string[])["apt", "jq", "kmod", "python3", "sqv", "xz-utils", "zstd"], name => Assert.False(string.IsNullOrEmpty(tools.GetProperty(name).GetString())));
+        Assert.Contains("FROM installed AS tools", dockerfile, StringComparison.Ordinal);
+        Assert.Contains("'.expected.toolsPackages | to_entries[]", dockerfile, StringComparison.Ordinal);
+        Assert.Contains("if ! diff /tmp/named /tmp/installed; then", dockerfile, StringComparison.Ordinal);
+        Assert.Contains("FROM tools AS packages", dockerfile, StringComparison.Ordinal);
+        Assert.Contains("-Target 'tools-lock'", update, StringComparison.Ordinal);
+    }
+
+    // The lock is what every later build believes, so the script that writes it believes Debian's indexes only as far
+    // as Debian signed them.
+    [Fact]
+    public async Task TheLockIsWrittenFromIndexesDebianSigned()
+    {
+        string script = await ReadAsync("build", "LinuxBoot", "lock.py");
+
+        Assert.Contains("[\"sqv\", \"--keyring\", keyring, \"--cleartext\", \"--output\", text, path]", script, StringComparison.Ordinal);
+        Assert.Contains("/dists/%s/InRelease", script, StringComparison.Ordinal);
+        Assert.Contains("signed = self.release(suite).get(name)", script, StringComparison.Ordinal);
+        Assert.Contains("if signed != found:", script, StringComparison.Ordinal);
+    }
+
+    // A tag moves. The program that reads a Dockerfile shapes what is built from it, so the two builds whose result
+    // ships name it by its digest.
+    [Theory]
+    [InlineData("build/LinuxBoot/Dockerfile")]
+    [InlineData("build/Dockerfile.agent-linux")]
+    public async Task TheBuildsThatShipNameTheirDockerfileFrontendByItsDigest(string dockerfile)
+    {
+        string first = (await ReadAsync(dockerfile.Split('/'))).Split('\n')[0];
+
+        Assert.Matches("^# syntax=docker/dockerfile:1@sha256:[0-9a-f]{64}$", first);
+    }
+
     // A start script nobody listed would go unchecked. Every shell script of the boot environment has to be named in
     // the job, by itself or by its folder.
     [Fact]

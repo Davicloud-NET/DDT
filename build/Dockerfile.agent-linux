@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 # Copyright (C) 2026 Davicloud
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
@@ -13,8 +13,12 @@ ARG DOTNET_SDK=mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:3cc3bbbbf93d82104
 
 FROM ${DOTNET_SDK} AS build
 # NativeAOT links with clang. StaticOpenSslLinking compiles the runtime's OpenSSL shim with cmake against the static
-# libssl and libcrypto, which then are part of the agent, as musl is. THIRD-PARTY-NOTICES.md names both.
-RUN apk add --no-cache clang build-base cmake openssl-dev openssl-libs-static
+# libssl and libcrypto, which then are part of the agent, as musl is. THIRD-PARTY-NOTICES.md names both by the
+# versions here. Alpine keeps only its newest build of a package, so this step fails once Alpine has a newer one,
+# and the versions here and in the notices are moved on together.
+ARG OPENSSL=3.5.9-r0
+ARG MUSL=1.2.6-r2
+RUN apk add --no-cache clang build-base cmake "openssl-dev=${OPENSSL}" "openssl-libs-static=${OPENSSL}" "musl-dev=${MUSL}"
 WORKDIR /src
 COPY global.json nuget.config Directory.Build.props Directory.Build.targets Directory.Packages.props .editorconfig ./
 COPY src/DDT.ConsoleProtocol/DDT.ConsoleProtocol.csproj src/DDT.ConsoleProtocol/

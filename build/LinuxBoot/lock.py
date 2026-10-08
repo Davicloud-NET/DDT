@@ -7,6 +7,15 @@
 # and hashes that snapshot has, and the source packages they were built from. Update-LinuxBootLock.ps1 runs it.
 #
 #   lock.py packages.lock.json <snapshot, as 20261006T203214Z> <new lock>
+#
+# What it writes is what every later build trusts, so it believes an index only as far as Debian signed it: each
+# suite's InRelease must carry a signature of one of the archive keys in the tools image, and each index must have
+# the size and SHA-256 that InRelease names for it.
+#
+#   lock.py --tools packages.lock.json <new lock>
+#
+# writes the lock again with the packages installed in the image it runs in, which the build's tools stage compares
+# its own with.
 
 import json
 import lzma
@@ -17,7 +26,10 @@ import sys
 import tempfile
 import urllib.request
 
-from fetch import download
+from fetch import download, sha256_of
+
+# Debian's archive keys, as the tools image has them.
+KEYRING = "/usr/share/keyrings/debian-archive-keyring.pgp"
 
 # Their upstream tarball holds the vendors' firmware as it is, without source code. A release leaves it out.
 BINARY_ONLY = "pool/non-free-firmware/"
@@ -57,19 +69,62 @@ def built_using(entry):
     return found
 
 
+# The text of a file signed in the clear, once one of the keys in the keyring has signed it. sqv writes nothing
+# of a text whose signature does not hold.
+def signed_text(path, keyring=KEYRING):
+    text = path + ".signed"
+    if os.path.exists(text):
+        os.remove(text)
+    checked = subprocess.run(["sqv", "--keyring", keyring, "--cleartext", "--output", text, path],
+                             check=False, capture_output=True, text=True)
+    if checked.returncode != 0 or not os.path.exists(text):
+        sys.exit("%s is not signed by one of Debian's archive keys, so nothing in it is believed: %s" % (
+            path, (checked.stderr or checked.stdout).strip().replace("\n", " ")))
+    with open(text, encoding="utf-8") as source:
+        return source.read()
+
+
+# The size and SHA-256 of each file a Release names, by its path below the suite.
+def release_files(text):
+    files, listed = {}, False
+    for line in text.split("\n"):
+        if not line.startswith(" "):
+            listed = line.strip() == "SHA256:"
+        elif listed:
+            sha256, size, name = line.split()
+            files[name] = (int(size), sha256)
+    return files
+
+
 class Snapshot:
     def __init__(self, archive, stamp, architecture, work):
         self.archive = archive
         self.architecture = architecture
         self.work = work
+        self.releases = {}
         # The archive answers a time between two snapshots with the earlier one, and that one's name is kept.
         with urllib.request.urlopen("%s/%s/" % (archive, stamp), timeout=120) as response:
             self.stamp = re.search(r"/(\d{8}T\d{6}Z)/?$", response.geturl()).group(1)
 
+    # What the suite's signed Release says of its indexes.
+    def release(self, suite):
+        if suite not in self.releases:
+            path = os.path.join(self.work, "%s_InRelease" % suite)
+            download("%s/%s/dists/%s/InRelease" % (self.archive, self.stamp, suite), path)
+            self.releases[suite] = release_files(signed_text(path))
+        return self.releases[suite]
+
     def index(self, suite, component, kind):
+        name = "%s/%s.xz" % (component, kind)
         path = os.path.join(self.work, "%s_%s_%s.xz" % (suite, component, kind.replace("/", "_")))
         if not os.path.exists(path):
-            download("%s/%s/dists/%s/%s/%s.xz" % (self.archive, self.stamp, suite, component, kind), path)
+            download("%s/%s/dists/%s/%s" % (self.archive, self.stamp, suite, name), path)
+            signed = self.release(suite).get(name)
+            found = (os.path.getsize(path), sha256_of(path))
+            if signed != found:
+                os.remove(path)
+                sys.exit("%s of %s is not the index Debian signed: %s, and the signed Release names %s" % (
+                    name, suite, "%d bytes, sha256 %s" % found, "%d bytes, sha256 %s" % signed if signed else "no such file"))
         return stanzas(path)
 
     # The newest version of each named package in one suite and component.
@@ -152,7 +207,27 @@ def resolve_sources(snapshot, packages):
     return [found[source] for source in sorted(found)]
 
 
+# Every package installed in this image with its version, which is what the build's tools are.
+def installed_packages():
+    listed = subprocess.run(["dpkg-query", "--show", "--showformat", "${Package} ${Version}\\n"],
+                            check=True, capture_output=True, text=True).stdout
+    return dict(line.split() for line in sorted(listed.splitlines()) if line)
+
+
+def write(lock, target):
+    os.makedirs(os.path.dirname(os.path.abspath(target)), exist_ok=True)
+    with open(target, "w", encoding="utf-8", newline="\n") as file:
+        json.dump(lock, file, indent=2)
+        file.write("\n")
+
+
 def main():
+    if sys.argv[1] == "--tools":
+        with open(sys.argv[2], encoding="utf-8") as source:
+            lock = json.load(source)
+        lock["expected"]["toolsPackages"] = installed_packages()
+        write(lock, sys.argv[3])
+        return
     lock_path, stamp, target = sys.argv[1:4]
     with open(lock_path, encoding="utf-8") as source:
         lock = json.load(source)
@@ -162,10 +237,7 @@ def main():
         packages = resolve_packages(snapshot, lock, release)
         sources = resolve_sources(snapshot, packages)
     lock.update(snapshot=snapshot.stamp, kernelRelease=release, packages=packages, sources=sources)
-    os.makedirs(os.path.dirname(os.path.abspath(target)), exist_ok=True)
-    with open(target, "w", encoding="utf-8", newline="\n") as file:
-        json.dump(lock, file, indent=2)
-        file.write("\n")
+    write(lock, target)
 
 
 if __name__ == "__main__":

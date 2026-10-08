@@ -14,6 +14,10 @@ snapshot.debian.org holds there, the kernel release that Debian's kernel meta pa
 packages all of them were built from. Then it writes licenses/linux-boot again from the new packages: the
 copyright file of every source package, the licence texts those point to, and SOURCES.md.
 
+It believes Debian's package indexes only as far as Debian signed them: the InRelease file of each suite must carry
+a signature of one of the archive keys in the tools image, and each index must be the one InRelease names. The lock
+also gets the packages of the tools image as they are at the snapshot, which every build compares its tools with.
+
 At the end it builds base.img from the lock and writes its SHA-256 into the lock, as the hash every build of that
 lock has to give. Continuous integration and a release compare their base.img with it, so a base.img that came
 out differently on another computer does not ship unnoticed.
@@ -22,7 +26,8 @@ After it, build with Build-LinuxBoot.ps1 and test with Test-LinuxBoot.ps1 and on
 another name, as the kernel's do with each release, THIRD-PARTY-NOTICES.md has to follow; LinuxBootNoticesTests
 says where.
 
-The tools image, which the lock names by its digest, stays. Change it by hand.
+The tools image, which the lock names by its digest, stays. Change it by hand, then run this script for the
+snapshot the lock is at, so the lock names the new image's packages.
 
 Needs Docker with the Linux engine.
 
@@ -121,6 +126,10 @@ if (-not $BaseImageOnly) {
     Invoke-DockerStage -Context $context -ToolsImage $before.toolsImage -Target 'lock' -Destination (Join-Path $work 'lock') `
         -BuildArgument "SNAPSHOT=$Snapshot"
     Copy-Item -LiteralPath (Join-Path $work 'lock\packages.lock.json') -Destination $lockPath -Force
+
+    # The tools come from the snapshot too, so the lock names them as they are there.
+    Invoke-DockerStage -Context $context -ToolsImage $before.toolsImage -Target 'tools-lock' -Destination (Join-Path $work 'tools')
+    Copy-Item -LiteralPath (Join-Path $work 'tools\packages.lock.json') -Destination $lockPath -Force
 
     # From the lock as it is now, so the packages this downloads are the ones the next build takes from the cache.
     Invoke-DockerStage -Context $context -ToolsImage $before.toolsImage -Target 'notices' -Destination (Join-Path $work 'notices')

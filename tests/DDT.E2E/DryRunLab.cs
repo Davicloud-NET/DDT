@@ -22,7 +22,8 @@ using Xunit;
 namespace DDT.E2E;
 
 // The host, the published agent, a signed-in administrator, a live connection and the uploads that all dry runs share.
-// Everything lives in a temporary directory, which is deleted with the dry runs' disks when the tests end.
+// Everything lives in a temporary directory, which is deleted with the dry runs' disks when the tests end. On Linux
+// the agent is the one for Linux, which the tests are handed, and the host is the server as its container runs it.
 public sealed partial class DryRunLab : IAsyncLifetime
 {
     public const string LocalAdministratorPassword = "E2e-Local-Admin-7Qx4";
@@ -306,7 +307,19 @@ public sealed partial class DryRunLab : IAsyncLifetime
         }
     }
 
-    internal void SkipWhenUnavailable() => Assert.SkipWhen(SkipReason is not null, SkipReason ?? string.Empty);
+    // For the dry runs of the agent for Windows, which stands in for both boot environments and for Windows.
+    internal void SkipWhenUnavailable()
+    {
+        Assert.SkipWhen(SkipReason is not null, SkipReason ?? string.Empty);
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "This dry run takes the agent for Windows, which runs on Windows alone.");
+    }
+
+    // For the dry runs of the agent for Linux itself, the file a release ships.
+    internal void SkipUnlessLinuxAgent()
+    {
+        Assert.SkipUnless(OperatingSystem.IsLinux(), "This dry run takes the agent for Linux, which runs on Linux alone.");
+        Assert.SkipWhen(SkipReason is not null, SkipReason ?? string.Empty);
+    }
 
     // The agent's console lines start with the time and the level.
     [GeneratedRegex(@"^\d\d:\d\d:\d\d (WARN|ERROR) ")]

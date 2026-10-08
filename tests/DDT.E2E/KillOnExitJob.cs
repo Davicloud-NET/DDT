@@ -10,24 +10,65 @@ using Microsoft.Win32.SafeHandles;
 
 namespace DDT.E2E;
 
-// A job object that holds every process the tests start, and every process those start, so no host, agent or publish
-// outlives the tests. Windows closes the job's handle when the test process ends, however it ends, and that kills
-// everything in the job.
+// Holds every process the tests start, and every process those start, so no host, agent or publish outlives the
+// tests. On Windows a job object does it: Windows closes the job's handle when the test process ends, however it
+// ends, and that kills everything in the job. Other systems have no such thing, so there each process tree is killed
+// when the test process ends in an orderly way.
 internal static partial class KillOnExitJob
 {
     private const int ExtendedLimitInformation = 9;
     private const uint KillOnJobClose = 0x2000;
 
-    private static readonly SafeFileHandle s_job = Create();
+    private static readonly SafeFileHandle? s_job = OperatingSystem.IsWindows() ? Create() : null;
+    private static readonly Lock s_lock = new();
+    private static readonly List<Process> s_started = StartedProcesses();
 
     // Call this before the process starts a child process, so the child is in the job too.
     public static void Add(Process process)
     {
         ArgumentNullException.ThrowIfNull(process);
 
-        if (!AssignProcessToJobObject(s_job, process.SafeHandle))
+        if (s_job is null)
+        {
+            lock (s_lock)
+            {
+                s_started.Add(process);
+            }
+        }
+        else if (!AssignProcessToJobObject(s_job, process.SafeHandle))
         {
             throw new Win32Exception();
+        }
+    }
+
+    private static List<Process> StartedProcesses()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => KillStarted();
+        }
+
+        return [];
+    }
+
+    private static void KillStarted()
+    {
+        lock (s_lock)
+        {
+            foreach (Process process in s_started)
+            {
+                try
+                {
+                    if (!process.HasExited)
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    // A test ended and disposed it already.
+                }
+            }
         }
     }
 

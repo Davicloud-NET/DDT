@@ -46,6 +46,9 @@ public sealed class BothEnvironmentsApplication : DdtApplication
 
         builder.UseSetting("DDT:LinuxBoot:Path", LinuxBootFolder);
 
+        // A lab whose machines keep a web assignment's approval when they netboot. No test's machine is in it by itself.
+        builder.UseSetting("DDT:Machines:ZeroTouchNetworks", "10.200.0.0/16");
+
         // The test host serves no HTTPS, so it has no root of its own. Machines are handed this one.
         builder.ConfigureTestServices(services => services
             .AddSingleton<TimeProvider>(Clock)

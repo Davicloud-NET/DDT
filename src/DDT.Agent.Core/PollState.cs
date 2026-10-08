@@ -22,4 +22,25 @@ internal sealed class PollState(AgentRegistrationResult registration, Deployment
     public TimeSpan Interval { get; set; } = TimeSpan.FromSeconds(registration.PollAfterSeconds);
 
     public int Failures { get; set; }
+
+    // Why the machine's assigned run does not start here, as the server last said. Null while it said nothing.
+    public string? WaitReason { get; private set; }
+
+    // Every poll repeats the reason, so it goes into the log only when it is new.
+    public void Waits(string? reason, AgentLog log)
+    {
+        ArgumentNullException.ThrowIfNull(log);
+
+        if (reason == WaitReason)
+        {
+            return;
+        }
+
+        WaitReason = reason;
+
+        if (reason is not null)
+        {
+            log.Warning(reason);
+        }
+    }
 }

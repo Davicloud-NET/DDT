@@ -26,4 +26,7 @@ public sealed record AgentNextResult(
     Guid? SuggestedSequenceId = null,
     // The boot environment the machine's assigned run starts in, when that is not the one this agent runs in. The agent
     // restarts into it and takes its resume token along.
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AgentEnvironment? RestartInto = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AgentEnvironment? RestartInto = null,
+    // Why the machine's assigned run does not start here although the machine is not restarted for it, in a sentence
+    // for the console. Null while there is nothing to say.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? WaitReason = null);

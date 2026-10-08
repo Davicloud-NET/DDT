@@ -41,6 +41,8 @@ public static class MachineSummaries
             DeviceKinds.Classify(machine.Manufacturer, machine.Model, machine.ChassisType),
             MachineFactsDocuments.Read(machine.Facts),
             machine.AgentEnvironment,
-            machine.NextEnvironment);
+            machine.NextEnvironment,
+            machine.SequenceVersion >= PhaseRules.SwitchVersion,
+            PendingSwitch.GaveUp(machine, deployment));
     }
 }

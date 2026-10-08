@@ -10,9 +10,12 @@ import { linuxBootRefusal } from "@/machines/secureBoot";
 import { Notice } from "@/ui/Notice";
 
 // Says why netboot does not start this machine in the Linux boot environment, when its firmware would refuse it.
+// Netboot believes only what a machine someone approved reported, since anyone can register a machine.
 export function LinuxBootNotice({ machine }: { machine: MachineSummary }) {
   const options = useQuery(deploymentOptionsQuery).data;
-  const refusal = linuxBootRefusal(machine, options?.linuxShimSignedUnder);
+  const refusal = machine.everApproved
+    ? linuxBootRefusal(machine, options?.linuxShimSignedUnder, options?.bootEnvironments)
+    : null;
 
   return refusal === null ? null : <Notice tone="info">{refusal}</Notice>;
 }

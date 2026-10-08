@@ -83,6 +83,12 @@ export interface MachineSummary {
   agentEnvironment?: AgentEnvironment;
   // The boot environment the machine was asked to restart into, until it registers from there.
   nextEnvironment?: AgentEnvironment | null;
+  // Whether the machine's agent can restart into the other boot environment and stay signed in. Servers that do not
+  // say leave it out.
+  changesBootEnvironment?: boolean | null;
+  // The boot environment the machine did not start although the server restarted it for its assigned run twice. The
+  // server no longer restarts it, and the run waits.
+  restartsFailed?: AgentEnvironment | null;
 }
 
 // A hardware model as the machine's firmware reports it. Comparisons ignore case and runs of spaces. A null

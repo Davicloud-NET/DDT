@@ -24,4 +24,7 @@ public sealed record ConsoleState(
     // en or de, as the server says once the agent has registered. Null leaves it to Windows.
     string? Language = null,
     // A PNG for the right end of the top bar, which is dark in both themes. Null shows no logo.
-    string? Logo = null);
+    string? Logo = null,
+    // Why the run that is assigned to the machine does not start here, in the words the agent logs. Null while it
+    // starts, or none is assigned.
+    string? Waiting = null);

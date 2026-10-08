@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Agents;
+using DDT.Core.Boot;
 using DDT.Server.BootImage;
 using DDT.Server.Deployments;
 using DDT.Server.LinuxBoot;
@@ -24,14 +25,12 @@ public sealed class BootEnvironments(BootImageCatalog bootImage, LinuxBootEnviro
 
     public IReadOnlyList<AgentEnvironment> Existing() => [.. s_boot.Where(Exists)];
 
-    // The other boot environment, when the machine's agent can restart into it and this server can start it.
+    // The other boot environment, when the machine's agent can restart into it and netboot would start it there.
     public AgentEnvironment? ReachableFrom(Machine machine)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
-        return machine.SequenceVersion >= PhaseRules.SwitchVersion && PhaseRules.Other(machine.AgentEnvironment) is { } other && Exists(other)
-            ? other
-            : null;
+        return PhaseRules.Other(machine.AgentEnvironment) is { } other && Unreachable(machine, other) is null ? other : null;
     }
 
     // Why the machine cannot restart into the environment, for the technician at it. Null when it can.
@@ -54,7 +53,28 @@ public sealed class BootEnvironments(BootImageCatalog bootImage, LinuxBootEnviro
             return "This machine's agent is too old to change the boot environment. Start the machine from the network again, so it gets the server's agent.";
         }
 
-        return Exists(environment) ? null : Missing(environment);
+        if (!Exists(environment))
+        {
+            return Missing(environment);
+        }
+
+        return environment == AgentEnvironment.LinuxBoot && RefusesLinux(machine)
+            ? "This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware does not trust the certificate " +
+              "authority that signs the environment's first loader. Allow it in the firmware setup, or turn Secure Boot off there."
+            : null;
+    }
+
+    // Whether netboot names this machine the Windows PE boot file where it would otherwise name the Linux boot
+    // environment's: its firmware is known to refuse that one, and Windows PE can start instead. Netboot believes only
+    // a row someone approved, since anyone can register a row and claim any firmware.
+    public bool RefusesLinux(Machine machine)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+
+        return machine.FirstApprovedUtc is not null
+            && machine.SecureBootEnabled == true
+            && MicrosoftUefiCa.Untrusted(machine.TrustedUefiCas, linuxBoot.Current.ShimSignedUnder)
+            && Exists(AgentEnvironment.WindowsPE);
     }
 
     // What an administrator does to get the environment.

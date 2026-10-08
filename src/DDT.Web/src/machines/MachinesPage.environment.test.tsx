@@ -133,6 +133,61 @@ describe("MachinesPage", () => {
       expect(failed.queryByText(/^Started/)).not.toBeInTheDocument();
     });
 
+    it("says in the row of a machine the server no longer restarts which boot environment it did not start", async () => {
+      const machine = machineSummary({
+        assignedName: "PC-BIOS",
+        agentEnvironment: "WindowsPE",
+        nextEnvironment: "LinuxBoot",
+        deployment: deploymentSummary({ state: "Assigned", title: "Install Linux" }),
+      });
+      const { server, hub } = await open([machine]);
+
+      await screen.findByRole("link", { name: "PC-BIOS" });
+      const stuck = within(row("PC-BIOS"));
+      expect(stuck.getByText("Restarts into the Linux boot environment")).toBeInTheDocument();
+      expect(stuck.queryByText(/after two restarts/)).not.toBeInTheDocument();
+
+      act(() => {
+        hub?.push("machineChanged", {
+          ...machine,
+          nextEnvironment: null,
+          restartsFailed: "LinuxBoot",
+        });
+      });
+
+      expect(
+        await stuck.findByText("Did not start the Linux boot environment after two restarts"),
+      ).toBeInTheDocument();
+      expect(stuck.queryByText(/^Restarts into/)).not.toBeInTheDocument();
+      expect(stuck.getByText("Install Linux")).toBeInTheDocument();
+      expect(server.count("GET /api/machines")).toBe(1);
+    });
+
+    it("warns before assigning to a machine whose agent is too old to change the boot environment", async () => {
+      await open(
+        [machineSummary({ agentEnvironment: "WindowsPE", changesBootEnvironment: false })],
+        assigning({
+          "GET /api/sequences": { body: [installLinux] },
+          "GET /api/deployments/options": {
+            body: deploymentOptions({
+              serverUtc: now.toISOString(),
+              bootEnvironments: ["WindowsPE", "LinuxBoot"],
+            }),
+          },
+        }),
+      );
+
+      const dialog = await openAssign();
+      await assignable(dialog);
+
+      expect(
+        await within(dialog).findByText(
+          "Install Linux runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again.",
+        ),
+      ).toBeInTheDocument();
+      expect(within(dialog).queryByText(restartsFirst)).not.toBeInTheDocument();
+    });
+
     it("tells before assigning that the machine restarts into the other boot environment first", async () => {
       await open(
         [machineSummary({ agentEnvironment: "WindowsPE" })],

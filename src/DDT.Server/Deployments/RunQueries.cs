@@ -14,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DDT.Server.Deployments;
 
 // The run a machine has, and the run as its agent receives it.
-public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSettings settings, BootEnvironments environments)
+public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSettings settings)
 {
     public async Task<Deployment?> ActiveAsync(Machine machine, CancellationToken cancellationToken)
     {
@@ -90,23 +90,6 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
     // The same from the run's sequence alone, for a caller that has not read the run's row.
     public async Task<AgentEnvironment> StartsInAsync(Guid runId, CancellationToken cancellationToken) =>
         PhaseRules.StartsIn(await DefinitionAsync(runId, cancellationToken).ConfigureAwait(false));
-
-    // The boot environment the machine restarts into for its assigned run, which starts there and not where the machine
-    // is. Null unless its agent can change the environment and this server can start the other one.
-    public async Task<AgentEnvironment?> RestartIntoAsync(Machine machine, Deployment run, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(machine);
-        ArgumentNullException.ThrowIfNull(run);
-
-        if (run.State != DeploymentState.Assigned)
-        {
-            return null;
-        }
-
-        AgentEnvironment starts = await StartsInAsync(run, cancellationToken).ConfigureAwait(false);
-
-        return starts != machine.AgentEnvironment && environments.ReachableFrom(machine) == starts ? starts : null;
-    }
 
     // The run as its agent receives it, from what was frozen when it was assigned.
     public async Task<AgentRun> AgentRunAsync(Machine machine, Deployment run, CancellationToken cancellationToken)

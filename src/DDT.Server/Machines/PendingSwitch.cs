@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Agents;
+using DDT.Contracts.Deployments;
 using DDT.Server.Deployments;
 
 namespace DDT.Server.Machines;
@@ -27,22 +28,58 @@ public static class PendingSwitch
     public static bool Arrives(Machine machine, AgentEnvironment environment, DateTimeOffset now) =>
         IsOpen(machine, now) && machine.NextEnvironment == environment;
 
-    // The machine is where it was asked to go, or is told where to go by a run. The sequence picked for it stays.
+    // Whether the server told the machine to restart into the environment so lately that its agent is still about to.
+    // An agent that still polls after that did not restart.
+    public static bool IsOrdered(Machine machine, AgentEnvironment environment, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+
+        return machine.NextEnvironment == environment
+            && machine.NextEnvironmentUtc is { } at
+            && at <= now
+            && now - at <= DeploymentLimits.RestartOrderOpen;
+    }
+
+    // The boot environment the machine did not start although the server restarted it for its run as often as it
+    // does. Null while the server still orders restarts, or one is under way, or the run is not the machine's any more.
+    public static AgentEnvironment? GaveUp(Machine machine, Deployment? run)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+
+        return run is { State: DeploymentState.Assigned, BootEnvironment: { } starts }
+            && run.Id == machine.ActiveDeploymentId
+            && run.RestartsOrdered >= DeploymentLimits.RestartOrders
+            && machine.NextEnvironment is null
+            && starts != machine.AgentEnvironment
+                ? starts
+                : null;
+    }
+
+    // The machine is where it was asked to go, or is told where to go by a run. The sequence picked for it stays, with
+    // the time it was picked at, so it lapses when the restart's time is over.
     public static void End(Machine machine)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
         machine.NextEnvironment = null;
-        machine.NextEnvironmentUtc = null;
+
+        if (machine.PendingSequenceId is null)
+        {
+            machine.NextEnvironmentUtc = null;
+        }
     }
 
     public static void Forget(Machine machine)
     {
-        End(machine);
+        ArgumentNullException.ThrowIfNull(machine);
+
+        machine.NextEnvironment = null;
+        machine.NextEnvironmentUtc = null;
         machine.PendingSequenceId = null;
     }
 
-    // Forgets a restart that took too long, with the sequence picked for it. True if the machine changed.
+    // Forgets a restart that took too long, and the sequence picked for one once its time is over, also where the
+    // machine arrived: the pick is only a suggestion. True if the machine changed.
     public static bool Expire(Machine machine, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(machine);

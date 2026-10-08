@@ -108,7 +108,8 @@ public sealed class BootEnvironmentDryRunTests(DryRunLab lab)
     }
 
     // The agent of the other boot environment registered as the machine that was approved, with the resume token it
-    // found. A registration without it would have started the machine over, which the audit log would show.
+    // found. A registration without it would have started the machine over, which the audit log would show. The one
+    // restart the server ordered for the run is there, and no second one.
     private async Task AssertTheSameAuthorizedMachineAsync(AgentProcess agent, MachineSummary machine, AgentEnvironment now, CancellationToken cancellationToken)
     {
         MachineSummary after = await lab.WaitForMachineAsync(agent, cancellationToken);
@@ -116,6 +117,10 @@ public sealed class BootEnvironmentDryRunTests(DryRunLab lab)
 
         Assert.Equal((machine.Id, MachineState.Done, now), (after.Id, after.State, after.AgentEnvironment));
         Assert.Null(after.NextEnvironment);
-        Assert.Equal(["machine.registered", "machine.approved"], audit.OrderBy(entry => entry.Id).Select(entry => entry.Action));
+        Assert.Null(after.RestartsFailed);
+        Assert.Equal(
+            ["machine.registered", "machine.approved", "machine.environment-requested"],
+            audit.OrderBy(entry => entry.Id).Select(entry => entry.Action));
+        Assert.EndsWith("Restart 1 of 2 the server orders for this run.", audit.OrderBy(entry => entry.Id).Last().Detail, StringComparison.Ordinal);
     }
 }

@@ -13,7 +13,9 @@ using DDT.Server.Data;
 using DDT.Server.Images;
 using DDT.Server.Live;
 using DDT.Server.Machines;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace DDT.Server.Tests;
@@ -163,6 +165,34 @@ public sealed class EnvironmentSwitchTests(BothEnvironmentsApplication applicati
         await AssertNothingKeptAsync(approvedOnTheWeb.Id);
         await AssertNothingKeptAsync(waiting.Id);
         await AssertNothingKeptAsync(signedIn.Id);
+    }
+
+    // A viewer can never sign in at a machine. Someone who did as an operator and is a viewer by now still shows as
+    // signed in there, and must not be able to send the machine anywhere either.
+    [Fact]
+    public async Task AViewerWhoIsStillSignedInAtTheMachineMayNotSayIt()
+    {
+        (DeployingMachine machine, string operatorName) = await SignedInAsync();
+        using DeployingMachine owned = machine;
+        SequenceView linux = await LinuxAsync();
+
+        using (IServiceScope scope = application.Services.CreateScope())
+        {
+            UserManager<DdtUser> users = scope.ServiceProvider.GetRequiredService<UserManager<DdtUser>>();
+            DdtUser user = Assert.IsType<DdtUser>(await users.FindByNameAsync(operatorName));
+
+            Assert.True((await users.RemoveFromRoleAsync(user, DdtRoleNames.Operator)).Succeeded);
+            Assert.True((await users.AddToRoleAsync(user, DdtRoleNames.Viewer)).Succeeded);
+        }
+
+        HttpResponseMessage refused = await AskAsync(machine, AgentEnvironment.LinuxBoot, linux.Id);
+
+        Assert.Equal(operatorName, (await application.MachineAsync(machine.Id)).SignedInUserName);
+        Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+        Assert.Equal(
+            "Only an operator or administrator signed in at this machine can restart it into another boot environment. Sign in at the machine first.",
+            await TestDatabase.TitleAsync(refused));
+        await AssertNothingKeptAsync(machine.Id);
     }
 
     // A machine with a run does not pick, so it does not restart for a pick either. Its run tells it where to go.

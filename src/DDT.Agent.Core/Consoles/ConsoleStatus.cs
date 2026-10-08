@@ -103,8 +103,8 @@ public sealed class ConsoleStatus
     }
 
     // A registration or a poll got through, and says what state the machine is in. choosing says that the person at the
-    // machine can choose a sequence now.
-    public void Reached(Guid machineId, MachineState machineState, string? signedInBy, bool choosing = false) =>
+    // machine can choose a sequence now. waiting is why its assigned run does not start here, if the server said so.
+    public void Reached(Guid machineId, MachineState machineState, string? signedInBy, bool choosing = false, string? waiting = null) =>
         Change(state => state with
         {
             Stage = machineState switch
@@ -118,6 +118,7 @@ public sealed class ConsoleStatus
             MachineId = machineId,
             SignedInBy = machineState == MachineState.Pending ? signedInBy : null,
             Restart = null,
+            Waiting = machineState == MachineState.Pending || choosing ? null : waiting,
         });
 
     // The language the server has the console speak, from the registration: en, de, or null for Windows' language.

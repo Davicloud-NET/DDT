@@ -41,12 +41,13 @@ export function AssignConsequences({
 }: AssignConsequencesProps) {
   const label = machineLabel(machine);
   const sequenceName = sequence?.name ?? "";
-  const start = startNotice(machine, sequence, options?.bootEnvironments);
   // A Linux sequence starts in the Linux boot environment, which this machine's firmware may refuse.
   const refused =
     sequence !== null && startsIn(sequence) === "LinuxBoot"
-      ? linuxBootRefusal(machine, options?.linuxShimSignedUnder)
+      ? linuxBootRefusal(machine, options?.linuxShimSignedUnder, options?.bootEnvironments)
       : null;
+  // A machine that is not started there is not restarted for it either, and the refusal says so.
+  const start = refused === null ? startNotice(machine, sequence, options?.bootEnvironments) : null;
 
   return (
     <div className="flex flex-col gap-2">

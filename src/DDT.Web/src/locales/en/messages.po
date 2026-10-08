@@ -858,12 +858,20 @@ msgid "{name} looks like a password or another secret, and everyone who can sign
 msgstr "{name} looks like a password or another secret, and everyone who can sign in to DDT can read the values of sequences and runs. Keep it in an account, stored or asked for the run, which only the step that uses it gets."
 
 #: src/machines/bootEnvironment.ts
+msgid "{name} runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."
+msgstr "{name} runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."
+
+#: src/machines/bootEnvironment.ts
 msgid "{name} runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first."
 msgstr "{name} runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first."
 
 #: src/machines/bootEnvironment.ts
 msgid "{name} runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it."
 msgstr "{name} runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it."
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in Windows PE, and this machine started the Linux boot environment with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."
+msgstr "{name} runs in Windows PE, and this machine started the Linux boot environment with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."
 
 #: src/machines/bootEnvironment.ts
 msgid "{name} runs in Windows PE, and this machine started the Linux boot environment. The machine restarts into Windows PE first."
@@ -3656,6 +3664,14 @@ msgstr "DHCP options 66 and 67 set"
 #: src/machines/facts.ts
 msgid "DHCP server"
 msgstr "DHCP server"
+
+#: src/machines/bootEnvironment.ts
+msgid "Did not start the Linux boot environment after two restarts"
+msgstr "Did not start the Linux boot environment after two restarts"
+
+#: src/machines/bootEnvironment.ts
+msgid "Did not start Windows PE after two restarts"
+msgstr "Did not start Windows PE after two restarts"
 
 #: src/settings/directory/DirectorySettings.tsx
 msgid "Directory"
@@ -10939,6 +10955,14 @@ msgstr "This ISO holds no sources\\install.wim or install.esd, so it is no Windo
 msgctxt "deployment.alreadyHasRun"
 msgid "This machine already has a run. Cancel it before assigning another sequence."
 msgstr "This machine already has a run. Cancel it before assigning another sequence."
+
+#: src/machines/bootEnvironment.ts
+msgid "This machine did not start the Linux boot environment after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts the Linux boot environment."
+msgstr "This machine did not start the Linux boot environment after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts the Linux boot environment."
+
+#: src/machines/bootEnvironment.ts
+msgid "This machine did not start Windows PE after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts Windows PE."
+msgstr "This machine did not start Windows PE after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts Windows PE."
 
 #: src/machines/assign/AssignConsequences.tsx
 msgid "This machine has more than one disk. Sign in at it and choose the disk there."

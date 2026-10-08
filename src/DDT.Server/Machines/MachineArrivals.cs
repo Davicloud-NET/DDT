@@ -63,7 +63,7 @@ public sealed class MachineArrivals(
         else
         {
             await RecordReturnAsync(new Visit(machine, active, continuation, registration, remoteAddress, now), cancellationToken).ConfigureAwait(false);
-            EndSwitch(machine, registration.Environment, now);
+            EndSwitch(machine, before == DeploymentState.Assigned ? active : null, registration.Environment, now);
         }
 
         RecordRefusedRunToken(new Visit(machine, active, continuation, registration, remoteAddress, now));
@@ -210,15 +210,23 @@ public sealed class MachineArrivals(
         && payload.MachineId == machine.Id
         && payload.TokenGeneration == machine.TokenGeneration;
 
-    // A resume token goes along into another environment than the machine last registered from. Once the machine was
+    // A resume token goes along into another environment than the machine last registered from. While the machine is
     // asked to restart into the other boot environment, it does so only for as long as that restart may take.
     private static bool Crosses(NormalisedRegistration registration, Machine machine, DateTimeOffset now) =>
-        registration.Environment == machine.AgentEnvironment || machine.NextEnvironmentUtc is null || PendingSwitch.IsOpen(machine, now);
+        registration.Environment == machine.AgentEnvironment || machine.NextEnvironment is null || PendingSwitch.IsOpen(machine, now);
 
     // The machine arrived where it was asked to go, which ends the restart. One that took too long is forgotten.
-    private static void EndSwitch(Machine machine, AgentEnvironment environment, DateTimeOffset now)
+    // assigned is the run the machine came with, if that had not started: a restart the server ordered for it ends with
+    // any arrival, and the next poll sees where the machine is now.
+    private static void EndSwitch(Machine machine, Deployment? assigned, AgentEnvironment environment, DateTimeOffset now)
     {
-        if (machine.NextEnvironment == environment)
+        // Where its run starts, the restarts that failed before count for nothing any more.
+        if (assigned is not null && assigned.BootEnvironment == environment)
+        {
+            assigned.RestartsOrdered = 0;
+        }
+
+        if (machine.NextEnvironment == environment || (assigned is not null && machine.NextEnvironment is not null))
         {
             PendingSwitch.End(machine);
         }

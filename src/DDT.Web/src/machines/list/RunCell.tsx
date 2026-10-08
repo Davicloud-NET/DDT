@@ -6,7 +6,7 @@ import { t } from "@lingui/core/macro";
 
 import { isActive, isWaiting } from "@/deployments/deployments";
 import { relativeTime } from "@/lib/relativeTime";
-import { environmentLine, restartLine } from "@/machines/bootEnvironment";
+import { environmentLine, restartLine, restartsFailedLine } from "@/machines/bootEnvironment";
 import type { MachineSummary } from "@/machines/machines";
 import { railFromSummary, railLabel } from "@/machines/machineView";
 import { SequenceRailStrip } from "@/ui/SequenceRailStrip";
@@ -45,8 +45,9 @@ export function RunCell({ machine, now }: { machine: MachineSummary; now: number
   }
 
   const rail = railFromSummary(run);
-  // Under an earlier run, since a machine with a run of its own is never asked to restart for a pick.
+  // Under the run: where the machine restarts into for it, or that the restarts did not get it there.
   const restart = restartLine(machine);
+  const failed = restartsFailedLine(machine);
 
   return (
     <span className="flex min-w-0 flex-col gap-1.5 pr-6">
@@ -57,6 +58,9 @@ export function RunCell({ machine, now }: { machine: MachineSummary; now: number
       />
       {rail.length > 0 ? <SequenceRailStrip steps={rail} label={railLabel(run)} /> : null}
       {restart !== null ? <span className="truncate type-small text-muted">{restart}</span> : null}
+      {failed !== null ? (
+        <span className="truncate type-small font-semibold text-attention-text">{failed}</span>
+      ) : null}
     </span>
   );
 }

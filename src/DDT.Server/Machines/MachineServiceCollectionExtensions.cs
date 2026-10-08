@@ -28,6 +28,8 @@ public static class MachineServiceCollectionExtensions
         services.AddScoped<RegistrationPublisher>();
         services.AddScoped<MachineRegistrar>();
         services.AddScoped<MachinePolls>();
+        services.AddScoped<MachinePollSaves>();
+        services.AddScoped<RestartOrders>();
         services.AddScoped<EnvironmentSwitches>();
         services.AddScoped<MachineSignIn>();
         services.AddScoped<SignInApprovals>();

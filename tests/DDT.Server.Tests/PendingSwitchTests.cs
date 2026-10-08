@@ -71,16 +71,83 @@ public sealed class PendingSwitchTests
         Assert.Equal(s_sequence, machine.PendingSequenceId);
     }
 
+    // What was picked is only a suggestion for whoever sits at the machine after the restart. It keeps the time it
+    // was picked at, so it lapses with the restart's time and not never.
     [Fact]
-    public void AnEndedRestartKeepsWhatWasPickedForIt()
+    public void AnEndedRestartKeepsWhatWasPickedForItUntilTheRestartsTimeIsOver()
     {
         Machine machine = Asked();
 
         PendingSwitch.End(machine);
 
         Assert.Null(machine.NextEnvironment);
-        Assert.Null(machine.NextEnvironmentUtc);
+        Assert.Equal(s_asked, machine.NextEnvironmentUtc);
         Assert.Equal(s_sequence, machine.PendingSequenceId);
+        Assert.False(PendingSwitch.Arrives(machine, AgentEnvironment.LinuxBoot, s_asked));
+        Assert.False(PendingSwitch.Expire(machine, s_asked + DeploymentLimits.EnvironmentSwitch));
+        Assert.Equal(s_sequence, machine.PendingSequenceId);
+
+        Assert.True(PendingSwitch.Expire(machine, s_asked + DeploymentLimits.EnvironmentSwitch + TimeSpan.FromSeconds(1)));
+
+        Assert.Null(machine.PendingSequenceId);
+        Assert.Null(machine.NextEnvironmentUtc);
+    }
+
+    [Fact]
+    public void AnEndedRestartNothingWasPickedForLeavesNothing()
+    {
+        Machine machine = Asked();
+        machine.PendingSequenceId = null;
+
+        PendingSwitch.End(machine);
+
+        Assert.Null(machine.NextEnvironment);
+        Assert.Null(machine.NextEnvironmentUtc);
+    }
+
+    // The server restarts a machine for its run only so often, and says so once the last restart is over.
+    [Fact]
+    public void GivesUpOnlyAfterTheLastRestartItOrdersIsOver()
+    {
+        Guid runId = Guid.NewGuid();
+        Machine machine = new() { SmbiosUuid = "4c4c4544-0042-3510-8052-b4c04f4d3232", PrimaryMac = "00155D010203", ActiveDeploymentId = runId };
+        Deployment run = new() { Id = runId, Title = "Install Linux", BootEnvironment = AgentEnvironment.LinuxBoot, RestartsOrdered = DeploymentLimits.RestartOrders };
+
+        Assert.Equal(2, DeploymentLimits.RestartOrders);
+        Assert.Equal(AgentEnvironment.LinuxBoot, PendingSwitch.GaveUp(machine, run));
+
+        machine.NextEnvironment = AgentEnvironment.LinuxBoot;
+        Assert.Null(PendingSwitch.GaveUp(machine, run));
+
+        machine.NextEnvironment = null;
+        run.RestartsOrdered = 1;
+        Assert.Null(PendingSwitch.GaveUp(machine, run));
+
+        run.RestartsOrdered = 2;
+        machine.AgentEnvironment = AgentEnvironment.LinuxBoot;
+        Assert.Null(PendingSwitch.GaveUp(machine, run));
+
+        machine.AgentEnvironment = AgentEnvironment.WindowsPE;
+        run.State = DDT.Contracts.Deployments.DeploymentState.Running;
+        Assert.Null(PendingSwitch.GaveUp(machine, run));
+
+        run.State = DDT.Contracts.Deployments.DeploymentState.Assigned;
+        machine.ActiveDeploymentId = Guid.NewGuid();
+        Assert.Null(PendingSwitch.GaveUp(machine, run));
+        Assert.Null(PendingSwitch.GaveUp(machine, null));
+    }
+
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(30, true)]
+    [InlineData(31, false)]
+    [InlineData(-1, false)]
+    public void AnOrderedRestartIsUnderWayForThirtySeconds(int seconds, bool underWay)
+    {
+        Machine machine = Asked();
+
+        Assert.Equal(underWay, PendingSwitch.IsOrdered(machine, AgentEnvironment.LinuxBoot, s_asked + TimeSpan.FromSeconds(seconds)));
+        Assert.False(PendingSwitch.IsOrdered(machine, AgentEnvironment.WindowsPE, s_asked + TimeSpan.FromSeconds(seconds)));
     }
 
     // Only a boot environment has another one to restart into.

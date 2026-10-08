@@ -161,11 +161,12 @@ public sealed class DeployingMachine : IDisposable
         Assert.True(response.IsSuccessStatusCode, $"{(int)response.StatusCode} {await response.Content.ReadAsStringAsync()}");
     }
 
-    // Registers again without the resume token, like a new agent process after the machine netbooted again.
-    public async Task<AgentRegistrationResult> RegisterAgainAsync(AgentClient? from = null)
+    // Registers again without the resume token, like a new agent process after the machine netbooted again. environment
+    // is the boot environment that netboot started, when it is another than before.
+    public async Task<AgentRegistrationResult> RegisterAgainAsync(AgentClient? from = null, AgentEnvironment? environment = null)
     {
         AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
-            await (from ?? Agent).RegisterAsync(Registration));
+            await (from ?? Agent).RegisterAsync(environment is { } started ? Registration with { Environment = started } : Registration));
 
         if (registered.Token is not null)
         {

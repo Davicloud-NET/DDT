@@ -60,11 +60,12 @@ public sealed class EnvironmentResumeTests(BothEnvironmentsApplication applicati
 
         Assert.Equal((machine.Id, MachineState.Approved, operatorName), (registered.MachineId, registered.State, registered.SignedInBy));
 
-        // The machine is where it was asked to go, so the restart is over. What was picked for it waits to be picked.
+        // The machine is where it was asked to go, so the restart is over. What was picked for it waits to be picked,
+        // with the time it was picked at.
         Machine stored = await application.MachineAsync(machine.Id);
         Assert.Equal((AgentEnvironment.LinuxBoot, generation), (stored.AgentEnvironment, stored.TokenGeneration));
         Assert.Null(stored.NextEnvironment);
-        Assert.Null(stored.NextEnvironmentUtc);
+        Assert.Equal(application.Clock.GetUtcNow() - DeploymentLimits.EnvironmentSwitch, stored.NextEnvironmentUtc);
         Assert.Equal(linux.Id, stored.PendingSequenceId);
         Assert.Empty(await ReregisteredAsync(machine.Id));
     }
@@ -201,6 +202,51 @@ public sealed class EnvironmentResumeTests(BothEnvironmentsApplication applicati
         Assert.True(Assert.Single(choices, c => c.Id == linux.Id).Suggested);
         Assert.Equal(AgentEnvironment.LinuxBoot, Assert.Single(choices, c => c.Id == linux.Id).Environment);
         Assert.False(Assert.Single(choices, c => c.Id == ruled.Id).Suggested);
+    }
+
+    // The pick is only a suggestion to whoever sits at the machine after the restart. One that nobody takes up must not
+    // stay for ever, so it lapses with the restart's time, also where the machine arrived.
+    [Fact]
+    public async Task ThePickLapsesFifteenMinutesAfterItWasMadeAlsoWhereTheMachineArrived()
+    {
+        (DeployingMachine machine, SequenceView linux, _) = await AskedToRestartAsync();
+        using DeployingMachine owned = machine;
+        application.Clock.Advance(TimeSpan.FromMinutes(1));
+        await machine.RestartIntoAsync(AgentEnvironment.LinuxBoot);
+
+        Assert.Equal(linux.Id, (await machine.NextAsync()).SuggestedSequenceId);
+
+        application.Clock.Advance(DeploymentLimits.EnvironmentSwitch - TimeSpan.FromMinutes(1));
+        Assert.Equal(linux.Id, (await machine.NextAsync()).SuggestedSequenceId);
+
+        application.Clock.Advance(s_second);
+        AgentNextResult later = await machine.NextAsync();
+
+        Machine stored = await application.MachineAsync(machine.Id);
+        Assert.True(later.CanPickSequence);
+        Assert.Null(later.SuggestedSequenceId);
+        Assert.Null(stored.PendingSequenceId);
+        Assert.Null(stored.NextEnvironmentUtc);
+
+        // It is still there to choose, as any sequence.
+        Assert.False(Assert.Single(await ChoicesAsync(machine), c => c.Id == linux.Id).Suggested);
+    }
+
+    // The resume token crosses environments again as it always did once the machine arrived, whatever was picked.
+    [Fact]
+    public async Task AfterTheMachineArrivedItsResumeTokenCrossesAgainWhileThePickStillWaits()
+    {
+        (DeployingMachine machine, SequenceView linux, string operatorName) = await AskedToRestartAsync();
+        using DeployingMachine owned = machine;
+        await machine.RestartIntoAsync(AgentEnvironment.LinuxBoot);
+        await machine.NextAsync();
+        application.Clock.Advance(TimeSpan.FromHours(1));
+
+        AgentRegistrationResult back = await machine.RestartIntoAsync(AgentEnvironment.WindowsPE);
+
+        Assert.Equal((MachineState.Approved, operatorName), (back.State, back.SignedInBy));
+        Assert.Null((await application.MachineAsync(machine.Id)).PendingSequenceId);
+        Assert.NotEqual(linux.Id, (await machine.NextAsync()).SuggestedSequenceId);
     }
 
     // The run is made where it starts, after the restart, from the pick made there. That uses the earlier pick up.

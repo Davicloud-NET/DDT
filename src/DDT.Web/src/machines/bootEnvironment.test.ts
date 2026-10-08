@@ -11,6 +11,8 @@ import {
   environmentFacts,
   environmentLine,
   environmentName,
+  restartsFailedLine,
+  restartsFailedNotice,
   startNotice,
   startsIn,
 } from "./bootEnvironment";
@@ -75,6 +77,60 @@ describe("the boot environment of a machine", () => {
   });
 });
 
+describe("a machine the server no longer restarts for its run", () => {
+  const assigned = deploymentSummary({ state: "Assigned", title: "Install Linux" });
+
+  it("says in its row which boot environment it did not start", () => {
+    expect(
+      restartsFailedLine(
+        machineSummary({ agentEnvironment: "WindowsPE", restartsFailed: "LinuxBoot" }),
+      ),
+    ).toBe("Did not start the Linux boot environment after two restarts");
+    expect(
+      restartsFailedLine(
+        machineSummary({ agentEnvironment: "LinuxBoot", restartsFailed: "WindowsPE" }),
+      ),
+    ).toBe("Did not start Windows PE after two restarts");
+  });
+
+  it("says on its page what to look at and that the run stays assigned", () => {
+    expect(
+      restartsFailedNotice(
+        machineSummary({
+          agentEnvironment: "WindowsPE",
+          restartsFailed: "LinuxBoot",
+          deployment: assigned,
+        }),
+      ),
+    ).toBe(
+      "This machine did not start the Linux boot environment after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. Install Linux stays assigned and starts once the machine starts the Linux boot environment.",
+    );
+    expect(
+      restartsFailedNotice(
+        machineSummary({
+          agentEnvironment: "LinuxBoot",
+          restartsFailed: "WindowsPE",
+          deployment: deploymentSummary({ state: "Assigned", title: "Install Windows" }),
+        }),
+      ),
+    ).toBe(
+      "This machine did not start Windows PE after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. Install Windows stays assigned and starts once the machine starts Windows PE.",
+    );
+  });
+
+  it("says nothing while the server still restarts it, and for a server that does not say", () => {
+    const restarting = machineSummary({
+      agentEnvironment: "WindowsPE",
+      nextEnvironment: "LinuxBoot",
+    });
+
+    expect(restartsFailedLine(restarting)).toBeNull();
+    expect(restartsFailedNotice(restarting)).toBeNull();
+    expect(restartsFailedLine(machineSummary({ restartsFailed: null }))).toBeNull();
+    expect(restartsFailedNotice(machineSummary())).toBeNull();
+  });
+});
+
 describe("what assigning says about where a sequence starts", () => {
   const inWindowsPE = machineSummary({ agentEnvironment: "WindowsPE" });
   const inLinuxBoot = machineSummary({ agentEnvironment: "LinuxBoot" });
@@ -95,6 +151,35 @@ describe("what assigning says about where a sequence starts", () => {
       warning: false,
       text: "Install Windows runs in Windows PE, and this machine started the Linux boot environment. The machine restarts into Windows PE first.",
     });
+  });
+
+  // The server restarts only an agent that can take its sign-in along. An older one gets the run at its next netboot.
+  it("warns that an agent too old to change the boot environment is not restarted", () => {
+    const old = { changesBootEnvironment: false } as const;
+
+    expect(startNotice({ ...inWindowsPE, ...old }, linux, both)).toEqual({
+      warning: true,
+      text: "Install Linux runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again.",
+    });
+    expect(startNotice({ ...inLinuxBoot, ...old }, windows, both)).toEqual({
+      warning: true,
+      text: "Install Windows runs in Windows PE, and this machine started the Linux boot environment with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again.",
+    });
+    // Where the sequence starts here, the agent's age changes nothing.
+    expect(startNotice({ ...inWindowsPE, ...old }, windows, both)).toBeNull();
+    // A server that cannot start the environment says that first.
+    expect(startNotice({ ...inWindowsPE, ...old }, linux, ["WindowsPE"])?.text).toMatch(
+      /which this server does not have/,
+    );
+  });
+
+  it("says that an agent that can change the boot environment restarts, as a server that does not say", () => {
+    expect(
+      startNotice({ ...inWindowsPE, changesBootEnvironment: true }, linux, both)?.warning,
+    ).toBe(false);
+    expect(
+      startNotice({ ...inWindowsPE, changesBootEnvironment: null }, linux, both)?.warning,
+    ).toBe(false);
   });
 
   it("warns when the server cannot start the boot environment the sequence runs in", () => {

@@ -457,6 +457,9 @@ namespace DDT.Server.Migrations.SqlServer
                     b.Property<Guid?>("RequestedByUserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("RestartsOrdered")
+                        .HasColumnType("int");
+
                     b.Property<Guid?>("RuleId")
                         .HasColumnType("uniqueidentifier");
 

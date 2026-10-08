@@ -408,6 +408,9 @@ namespace DDT.Server.Migrations.Sqlite
                     b.Property<Guid?>("RequestedByUserId")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("RestartsOrdered")
+                        .HasColumnType("INTEGER");
+
                     b.Property<Guid?>("RuleId")
                         .HasColumnType("TEXT");
 

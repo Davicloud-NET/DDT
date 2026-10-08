@@ -62,6 +62,33 @@ export function environmentLine(machine: MachineSummary): string | null {
   }
 }
 
+// What a list row says once the server restarted the machine for its run twice and it did not start the boot
+// environment the run needs. Null otherwise.
+export function restartsFailedLine(machine: MachineSummary): string | null {
+  switch (machine.restartsFailed ?? null) {
+    case "WindowsPE":
+      return t`Did not start Windows PE after two restarts`;
+    case "LinuxBoot":
+      return t`Did not start the Linux boot environment after two restarts`;
+    default:
+      return null;
+  }
+}
+
+// The same for the machine's page, with what to look at. Null otherwise.
+export function restartsFailedNotice(machine: MachineSummary): string | null {
+  const title = machine.deployment?.title ?? "";
+
+  switch (machine.restartsFailed ?? null) {
+    case "WindowsPE":
+      return t`This machine did not start Windows PE after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. ${title} stays assigned and starts once the machine starts Windows PE.`;
+    case "LinuxBoot":
+      return t`This machine did not start the Linux boot environment after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. ${title} stays assigned and starts once the machine starts the Linux boot environment.`;
+    default:
+      return null;
+  }
+}
+
 // The facts about where the machine's agent runs: the environment it last registered from and, while the machine was
 // asked to restart into the other boot environment, that one. None for a server that does not say.
 export function environmentFacts(machine: MachineSummary): { label: string; value: string }[] {
@@ -121,6 +148,17 @@ export function startNotice(
         needed === "LinuxBoot"
           ? t`${name} runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it.`
           : t`${name} runs in Windows PE, and this server has no boot image to start it from. The run stays assigned and does not start until an administrator builds one on the Boot image page.`,
+    };
+  }
+
+  // An agent from before the Linux boot environment cannot take its sign-in along, so the server does not restart it.
+  if (machine.changesBootEnvironment === false) {
+    return {
+      warning: true,
+      text:
+        needed === "LinuxBoot"
+          ? t`${name} runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again.`
+          : t`${name} runs in Windows PE, and this machine started the Linux boot environment with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again.`,
     };
   }
 

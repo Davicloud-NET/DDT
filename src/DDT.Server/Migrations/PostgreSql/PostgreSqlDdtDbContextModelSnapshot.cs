@@ -414,6 +414,9 @@ namespace DDT.Server.Migrations.PostgreSql
                     b.Property<Guid?>("RequestedByUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<int>("RestartsOrdered")
+                        .HasColumnType("integer");
+
                     b.Property<Guid?>("RuleId")
                         .HasColumnType("uuid");
 

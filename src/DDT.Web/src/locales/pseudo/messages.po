@@ -858,11 +858,19 @@ msgid "{name} looks like a password or another secret, and everyone who can sign
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
+msgid "{name} runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
 msgid "{name} runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first."
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
 msgid "{name} runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it."
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in Windows PE, and this machine started the Linux boot environment with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
@@ -3655,6 +3663,14 @@ msgstr ""
 
 #: src/machines/facts.ts
 msgid "DHCP server"
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "Did not start the Linux boot environment after two restarts"
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "Did not start Windows PE after two restarts"
 msgstr ""
 
 #: src/settings/directory/DirectorySettings.tsx
@@ -10938,6 +10954,14 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "deployment.alreadyHasRun"
 msgid "This machine already has a run. Cancel it before assigning another sequence."
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "This machine did not start the Linux boot environment after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts the Linux boot environment."
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "This machine did not start Windows PE after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts Windows PE."
 msgstr ""
 
 #: src/machines/assign/AssignConsequences.tsx

@@ -5,22 +5,19 @@
 using System.Security.Claims;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Machines;
-using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Endpoints;
-using DDT.Server.Live;
 using DDT.Server.Settings;
-using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Machines;
 
 // What an agent learns when it polls: its tokens, its run and whether someone at the machine may pick a sequence.
 internal sealed class MachinePolls(
-    DdtDbContext database,
     MachineTokenService tokens,
     RunQueries queries,
     SequenceChoices choices,
-    LiveNotifier live,
+    RestartOrders restarts,
+    MachinePollSaves saves,
     DdtSettings settings)
 {
     // Null if the machine started over after the token was checked.
@@ -31,7 +28,7 @@ internal sealed class MachinePolls(
         // Both are tried. A machine that still polls long after it was asked to restart did not get there.
         bool changed = LastSeen.Record(machine, now, address) | PendingSwitch.Expire(machine, now);
 
-        if (changed && !await SaveSeenAsync(machine, user, cancellationToken).ConfigureAwait(false))
+        if (changed && !await SavedAsync(machine, user, cancellationToken).ConfigureAwait(false))
         {
             return null;
         }
@@ -41,6 +38,21 @@ internal sealed class MachinePolls(
         bool authorized = machine.State is MachineState.Approved or MachineState.Deploying or MachineState.Failed;
         Deployment? active = authorized ? await queries.ActiveAsync(machine, cancellationToken).ConfigureAwait(false) : null;
         AgentRun? run = active is null ? null : await queries.HandOverAsync(machine, active, cancellationToken).ConfigureAwait(false);
+        RestartOrder restart = active is null || run is not null
+            ? RestartOrder.None
+            : await restarts.ForAsync(machine, active, address, now, cancellationToken).ConfigureAwait(false);
+
+        // A restart that could not be recorded is not ordered. The next poll orders it.
+        if (restart.Changed && !await saves.SaveAsync(machine, cancellationToken).ConfigureAwait(false))
+        {
+            if (!Principals.HoldsCurrentGeneration(user, machine))
+            {
+                return null;
+            }
+
+            restart = RestartOrder.None;
+        }
+
         bool canPick = await choices.CanPickAsync(machine, cancellationToken).ConfigureAwait(false);
 
         return new AgentNextResult(
@@ -56,25 +68,11 @@ internal sealed class MachinePolls(
             Run: run,
             CanPickSequence: canPick,
             SuggestedSequenceId: canPick ? await choices.SuggestedAsync(machine, cancellationToken).ConfigureAwait(false) : null,
-            RestartInto: active is null || run is not null ? null : await queries.RestartIntoAsync(machine, active, cancellationToken).ConfigureAwait(false));
+            RestartInto: restart.Into,
+            WaitReason: restart.WaitReason);
     }
 
-    // Returns false if the save lost to an approval, a rejection, an assignment or a registration, and the machine
-    // started over. Last seen can wait for the next poll, but the answer has to reflect what's stored now.
-    private async Task<bool> SaveSeenAsync(Machine machine, ClaimsPrincipal user, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            live.MachineChanged(machine, await queries.ShownAsync(machine, cancellationToken).ConfigureAwait(false));
-
-            return true;
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            await database.Entry(machine).ReloadAsync(cancellationToken).ConfigureAwait(false);
-
-            return Principals.HoldsCurrentGeneration(user, machine);
-        }
-    }
+    // False if the save lost to a change that made the machine start over. Last seen can wait for the next poll.
+    private async Task<bool> SavedAsync(Machine machine, ClaimsPrincipal user, CancellationToken cancellationToken) =>
+        await saves.SaveAsync(machine, cancellationToken).ConfigureAwait(false) || Principals.HoldsCurrentGeneration(user, machine);
 }

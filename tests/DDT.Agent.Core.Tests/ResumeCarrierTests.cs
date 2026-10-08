@@ -174,6 +174,59 @@ public sealed class ResumeCarrierTests : IDisposable
             Lines());
     }
 
+    // A firmware keeps far less than a megabyte of variables. A token is 4096 characters at most, and what the firmware
+    // holds is taken for one only up to the two bytes before it and that many after.
+    [Fact]
+    public void ATokenMayHave4096CharactersAndNotOneMore()
+    {
+        string longest = new('t', 4096);
+        byte[] payload = Assert.IsType<byte[]>(ResumeCarrier.Encode(AgentEnvironment.LinuxBoot, longest));
+
+        Assert.Equal(4098, payload.Length);
+        Assert.Equal((AgentEnvironment.LinuxBoot, longest), ResumeCarrier.Decode(payload));
+        Assert.Null(ResumeCarrier.Encode(AgentEnvironment.LinuxBoot, longest + "t"));
+        Assert.Null(ResumeCarrier.Decode([.. payload, (byte)'t']));
+        Assert.False(Carrier(AgentEnvironment.WindowsPE).Put(AgentEnvironment.LinuxBoot, longest + "t"));
+        Assert.Empty(_firmware.Calls);
+    }
+
+    [Fact]
+    public void AVariableLongerThanAnyTokenIsDeletedAndNotUsed()
+    {
+        _firmware.Resume = [ResumeCarrier.Version, ResumeCarrier.LinuxBootCode, .. Enumerable.Repeat((byte)'t', 4097)];
+        ResumeCarrier carrier = Carrier(AgentEnvironment.LinuxBoot);
+
+        Assert.Null(carrier.Take());
+
+        Assert.Null(_firmware.Resume);
+        Assert.False(carrier.SwitchFailed);
+        Assert.Equal(
+            ["WARN  The firmware variable DdtResume holds nothing this agent can read, so it was deleted. The machine registers anew."],
+            Lines());
+    }
+
+    // The token lets its holder go on as the machine. It goes into the firmware and to the server, never into a line.
+    [Fact]
+    public void NoLineTheCarrierWritesHoldsTheToken()
+    {
+        Carrier(AgentEnvironment.WindowsPE).Put(AgentEnvironment.LinuxBoot, Token);
+        Carrier(AgentEnvironment.WindowsPE).Take();
+
+        _firmware.WriteFailure = "The firmware variable DdtResume cannot be written (Windows error 1314).";
+        Carrier(AgentEnvironment.WindowsPE).Put(AgentEnvironment.LinuxBoot, Token);
+        _firmware.WriteFailure = null;
+
+        Carrier(AgentEnvironment.WindowsPE).Put(AgentEnvironment.LinuxBoot, Token);
+        _firmware.DeleteFailure = "The firmware variable DdtResume cannot be deleted (Windows error 5).";
+        Carrier(AgentEnvironment.LinuxBoot).Take();
+        Carrier(AgentEnvironment.WindowsPE).Put(AgentEnvironment.Windows, Token);
+        Carrier(AgentEnvironment.WindowsPE).Put(AgentEnvironment.LinuxBoot, Token + "\u00e4");
+
+        Assert.Equal(5, Lines().Length);
+        Assert.DoesNotContain(Token, _console.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(Token[..12], _console.ToString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void ReadsBackWhatItWrote()
     {

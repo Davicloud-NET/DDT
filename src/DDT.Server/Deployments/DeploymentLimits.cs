@@ -27,4 +27,12 @@ public static class DeploymentLimits
     // How long a restart into the other boot environment may take. After that the machine's resume token no longer
     // crosses to it, and netboot no longer starts it there.
     public static readonly TimeSpan EnvironmentSwitch = TimeSpan.FromMinutes(15);
+
+    // How often the server restarts a machine for a run that starts in the other boot environment. Netboot may never
+    // start it there, and a third restart would be as vain as the second.
+    public const int RestartOrders = 2;
+
+    // How long after it was told to restart an agent may still be about to. It restarts at once and polls every ten
+    // seconds, so one that still polls after three polls did not restart.
+    public static readonly TimeSpan RestartOrderOpen = TimeSpan.FromSeconds(30);
 }

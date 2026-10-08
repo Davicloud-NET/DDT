@@ -259,7 +259,7 @@ public sealed class AgentLoop
         bool pickWanted = next.CanPickSequence && run is null && _prompts.CanPick;
         bool choosing = await _prompts.UpdateAsync(poll.MachineId, poll.Tokens.Token, signInWanted, pickWanted, cancellationToken).ConfigureAwait(false);
 
-        _status.Reached(poll.MachineId, poll.State, poll.SignedInBy, choosing);
+        _status.Reached(poll.MachineId, poll.State, poll.SignedInBy, choosing, poll.WaitReason);
 
         // Only an authorized machine may write to the server's log. Until then lines wait here.
         if (IsAuthorized(poll.State))
@@ -294,6 +294,9 @@ public sealed class AgentLoop
         }
 
         bool authorized = IsAuthorized(poll.State);
+
+        // The run that is assigned starts elsewhere, and the server says why the machine is not restarted for it.
+        poll.Waits(authorized ? next.WaitReason : null, _log);
 
         if (authorized && next.Deployment is not null && next.Run is null && !_toldNoDeployments)
         {
@@ -386,15 +389,4 @@ public sealed class AgentLoop
         MachineState.Approved => "approved, waiting for a task sequence",
         _ => state.ToString(),
     };
-
-    // What polling does next. It waits for the next poll, polls again right away, or ends with ExitCode.
-    // A null ExitCode means register again.
-    private readonly record struct PollStep(bool Ends, int? ExitCode, bool AtOnce)
-    {
-        public static PollStep Wait => new(false, null, false);
-
-        public static PollStep Now => new(false, null, true);
-
-        public static PollStep End(int? exitCode) => new(true, exitCode, false);
-    }
 }

@@ -4,6 +4,7 @@
 
 import { t } from "@lingui/core/macro";
 
+import type { AgentEnvironment } from "@/deployments/deployments";
 import type { MachineSummary } from "@/machines/machines";
 import type { SequenceSummary } from "@/sequences/sequences";
 
@@ -100,14 +101,22 @@ export function uefiCaCount(value: string | null): number {
 
 // Why netboot does not start this machine in the Linux boot environment: Secure Boot is on, and its firmware trusts
 // none of the CAs the environment's shim is signed under. Null when nothing is known to keep it from starting.
-// shimSignedUnder is what the server read from the shim, and undefined for a server that does not say.
+// shimSignedUnder is what the server read from the shim, and undefined for a server that does not say. existing are
+// the boot environments the server can start: without Windows PE to start instead, netboot names the machine the
+// Linux boot environment all the same, so nothing is refused.
 export function linuxBootRefusal(
   machine: MachineSummary,
   shimSignedUnder: string | null | undefined,
+  existing?: readonly AgentEnvironment[] | null,
 ): string | null {
   const signedUnder = shimSignedUnder ?? null;
+  const windowsPE = existing === undefined || existing === null || existing.includes("WindowsPE");
 
-  if (machine.secureBootEnabled !== true || !untrusted(machine.trustedUefiCas, signedUnder)) {
+  if (
+    !windowsPE ||
+    machine.secureBootEnabled !== true ||
+    !untrusted(machine.trustedUefiCas, signedUnder)
+  ) {
     return null;
   }
 

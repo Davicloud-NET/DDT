@@ -68,6 +68,66 @@ describe("why a machine is not offered the Linux boot environment", () => {
     expect(screen.queryByText(refusal)).not.toBeInTheDocument();
   });
 
+  // Netboot names such a machine the Linux boot environment after all, since there is nothing else to start.
+  it("is not said on the page while the server has no boot image to start Windows PE from", async () => {
+    const routes = answers(
+      [pageMachine({ state: "Approved", deployment: null, ...untrusting })],
+      [],
+      [],
+    );
+    routes["GET /api/deployments/options"] = {
+      body: deploymentOptions({
+        serverUtc: now.toISOString(),
+        bootEnvironments: ["LinuxBoot"],
+        linuxShimSignedUnder: "Microsoft2011",
+      }),
+    };
+
+    const { server } = await openMachine(routes);
+
+    await waitFor(() => {
+      expect(server.count("GET /api/deployments/options")).toBe(1);
+    });
+    expect(screen.queryByText(refusal)).not.toBeInTheDocument();
+  });
+
+  // Anyone on the network can register a machine and claim any firmware, so netboot believes an approved one only.
+  it("is not said on the page of a machine nobody ever approved", async () => {
+    const routes = answers(
+      [pageMachine({ state: "Pending", everApproved: false, deployment: null, ...untrusting })],
+      [],
+      [],
+    );
+    routes["GET /api/deployments/options"] = { body: options };
+
+    const { server } = await openMachine(routes);
+
+    await waitFor(() => {
+      expect(server.count("GET /api/deployments/options")).toBe(1);
+    });
+    expect(screen.queryByText(refusal)).not.toBeInTheDocument();
+  });
+
+  it("stands in the assign dialog instead of a restart that would not happen", async () => {
+    const machine = machineSummary({ ...untrusting, agentEnvironment: "WindowsPE" });
+    await openMachines(
+      [machine],
+      assigning({
+        "GET /api/sequences": {
+          body: [installWindows, { ...linux, rawImageBootCapability: "SecureBootOk" }],
+        },
+        "GET /api/deployments/options": { body: options },
+      }),
+    );
+
+    const dialog = await openAssign();
+    await assignable(dialog);
+    await chooseOption(dialog, "Task sequence", "Install Linux");
+
+    expect(await within(dialog).findByText(refusal)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/restarts into the Linux boot environment first/)).toBeNull();
+  });
+
   it("is said in the assign dialog for a Linux sequence, and not for a Windows one", async () => {
     const machine = machineSummary(untrusting);
     await openMachines(

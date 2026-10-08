@@ -23,7 +23,20 @@ public sealed class AgentSwitchContractTests
         string json = JsonSerializer.Serialize(new AgentNextResult(MachineState.Approved, "session", "resume", 10, null), AgentJsonContext.Default.AgentNextResult);
 
         Assert.DoesNotContain("restartInto", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("waitReason", json, StringComparison.Ordinal);
         Assert.EndsWith(""","canPickSequence":false,"suggestedSequenceId":null}""", json, StringComparison.Ordinal);
+    }
+
+    // An older agent reads the answer as before and goes on waiting. A newer one says the sentence at the machine.
+    [Fact]
+    public void APollAnswerSaysWhyTheRunWaitsOnlyWhenThereIsAReason()
+    {
+        AgentNextResult next = new(MachineState.Approved, "session", "resume", 10, null, WaitReason: "Install Linux runs in the Linux boot environment.");
+        string json = JsonSerializer.Serialize(next, AgentJsonContext.Default.AgentNextResult);
+
+        Assert.DoesNotContain("restartInto", json, StringComparison.Ordinal);
+        Assert.EndsWith(""","waitReason":"Install Linux runs in the Linux boot environment."}""", json, StringComparison.Ordinal);
+        Assert.Equal("Install Linux runs in the Linux boot environment.", JsonSerializer.Deserialize(json, AgentJsonContext.Default.AgentNextResult)?.WaitReason);
     }
 
     [Fact]

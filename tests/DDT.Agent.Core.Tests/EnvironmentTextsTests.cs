@@ -116,6 +116,15 @@ public sealed class EnvironmentTextsTests
         Assert.Equal("139", EnvironmentTexts.ExitCode(LinuxBoot, 139));
     }
 
+    // An NVMe disk behind a controller in RAID or RST mode is no device Linux sees, whatever drivers it has.
+    [Fact]
+    public void WithoutADiskTheLinuxBootEnvironmentNamesTheControllerModeThatHidesOne() =>
+        Assert.Equal(
+            "No internal disk was found. The Linux boot environment may have no driver for this PC's storage controller, or the " +
+            "controller is in RAID or Intel RST mode, which hides the disk from Linux: set it to AHCI in the firmware setup to show " +
+            "it. The log lists every disk it saw and why it was left out.",
+            EnvironmentTexts.NoDisk(AgentEnvironment.LinuxBoot));
+
     // The constants other code and tests name are the Windows sentences.
     [Fact]
     public void TheRunnersConstantsAreWhatWindowsPESays()

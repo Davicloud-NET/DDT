@@ -35,11 +35,16 @@ internal sealed class LinuxTree : IDisposable
     public byte[] ReadVariableFile(string name, Guid vendor) => File.ReadAllBytes(Path.Combine(Variables, LinuxUefiVariables.FileName(name, vendor)));
 
     // An entry of /sys/block with what the kernel shows of a disk. The size is in units of 512 bytes.
-    public string AddDisk(string name, long sizeBytes, bool removable = false, int sectorSize = 512)
+    public string AddDisk(string name, long sizeBytes, bool removable = false, int sectorSize = 512, string? model = null)
     {
         Write($"{sizeBytes / 512}\n", "sys", "block", name, "size");
         Write(removable ? "1\n" : "0\n", "sys", "block", name, "removable");
         Write($"{sectorSize}\n", "sys", "block", name, "queue", "logical_block_size");
+
+        if (model is not null)
+        {
+            Write(model + "\n", "sys", "block", name, "device", "model");
+        }
 
         return PathOf("sys", "block", name);
     }

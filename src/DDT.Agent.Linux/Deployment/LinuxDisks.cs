@@ -6,7 +6,7 @@ using DDT.Core.Disks;
 
 namespace DDT.Agent.Deployment;
 
-// The machine's disks as /sys/block lists them, with the rules Windows PE has for which of them DDT may install on.
+// The machine's disks as /sys/block lists them, with LinuxDiskEligibility's rules for which of them DDT may install on.
 // realPath says where an entry of /sys/block leads, which is how the kernel shows what a disk is attached to.
 public sealed class LinuxDisks(string root, IRawDisks rawDisks, AgentLog log, Func<string, string>? realPath = null) : IDisks
 {
@@ -42,17 +42,16 @@ public sealed class LinuxDisks(string root, IRawDisks rawDisks, AgentLog log, Fu
         ArgumentNullException.ThrowIfNull(disk);
 
         using IRawDisk raw = rawDisks.Open(disk);
-        IReadOnlyList<GptPartition> partitions = OldPartitions(raw);
-        List<Guid> erased = [.. partitions.Where(partition => partition.Type == GptPartitionTypes.EfiSystem).Select(partition => partition.Id)];
+        (IReadOnlyList<(long Start, long Length)> partitions, List<Guid> erased) = OldPartitions(raw);
 
         log.Information(
             $"Erasing the partition table of disk {disk.Number}, {disk.Device}: zeroing the first and the last mebibyte of the disk " +
             $"and of {LocalDisk.Partitions(partitions.Count)}.");
 
-        foreach (GptPartition partition in partitions)
+        foreach ((long start, long length) in partitions)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            ZeroEnds(raw, partition.FirstLba * raw.SectorSize, partition.Sectors * raw.SectorSize);
+            ZeroEnds(raw, start, length);
         }
 
         ZeroEnds(raw, 0, raw.Length);
@@ -96,28 +95,17 @@ public sealed class LinuxDisks(string root, IRawDisks rawDisks, AgentLog log, Fu
         }
 
         bool removable = SysfsText.ReadNumber(Path.Combine(block, "removable")) is > 0;
+        bool readOnly = SysfsText.ReadNumber(Path.Combine(block, "ro")) is > 0;
         StorageBusType bus = LinuxBusType.Of(name, _realPath(block), SysfsText.Read(Path.Combine(block, "device", "type")));
         long size = units * LinuxRawDisks.SizeUnit;
-        string? reason = DiskEligibility.ExclusionReason(removable, bus, size);
-        LocalDisk disk = new(number, Model(name, block), size, bus, PartitionCount(block)) { Device = Path.Combine(root, "dev", name) };
+        string? reason = LinuxDiskEligibility.ExclusionReason(removable, readOnly, bus, size);
+        LocalDisk disk = new(number, LinuxDiskModel.Of(name, block), size, bus, PartitionCount(block)) { Device = Path.Combine(root, "dev", name) };
 
         log.Information(
             $"{disk.Describe()}, removable {(removable ? "yes" : "no")}: " +
             (reason is null ? "DDT can install on it." : $"left out because {reason}."));
 
         return reason is null ? disk : null;
-    }
-
-    // SCSI and SATA disks have a vendor and a model, NVMe disks a model, cards a name. Other disks have none of them:
-    // what a virtio disk calls its vendor is a number.
-    private static string? Model(string name, string block)
-    {
-        string device = Path.Combine(block, "device");
-        string? vendor = name.StartsWith("sd", StringComparison.Ordinal) ? SysfsText.Read(Path.Combine(device, "vendor")) : null;
-        string?[] parts = [vendor, SysfsText.Read(Path.Combine(device, "model")) ?? SysfsText.Read(Path.Combine(device, "name"))];
-        string model = string.Join(' ', parts.Where(part => part is not null));
-
-        return model.Length == 0 ? null : model;
     }
 
     // The kernel shows each partition as a folder of the disk that holds a file named partition.
@@ -133,20 +121,29 @@ public sealed class LinuxDisks(string root, IRawDisks rawDisks, AgentLog log, Fu
         }
     }
 
-    // A disk without a partition table DDT can read has no partitions to erase.
-    private static IReadOnlyList<GptPartition> OldPartitions(IRawDisk raw)
+    // The partitions of a GPT with its EFI system partitions, or else those of a master boot record. A disk with
+    // neither has no partitions to erase.
+    private static (IReadOnlyList<(long Start, long Length)> Partitions, List<Guid> SystemPartitions) OldPartitions(IRawDisk raw)
     {
         byte[] head = new byte[(int)Math.Min(GptLayout.MaxHeadBytes, raw.Length)];
         raw.Read(0, head);
 
         try
         {
-            return raw.SectorSize == GptLayout.SectorSize ? GptLayout.Read(head).Partitions : [];
+            if (raw.SectorSize == GptLayout.SectorSize)
+            {
+                IReadOnlyList<GptPartition> partitions = GptLayout.Read(head).Partitions;
+
+                return (
+                    [.. partitions.Select(partition => (partition.FirstLba * raw.SectorSize, partition.Sectors * raw.SectorSize))],
+                    [.. partitions.Where(partition => partition.Type == GptPartitionTypes.EfiSystem).Select(partition => partition.Id)]);
+            }
         }
         catch (Exception exception) when (exception is InvalidGptException or ArgumentException)
         {
-            return [];
         }
+
+        return (MbrPartitions.Read(raw, head), []);
     }
 
     // An old table may name sectors the disk does not have.

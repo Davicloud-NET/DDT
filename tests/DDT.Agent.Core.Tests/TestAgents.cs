@@ -30,6 +30,7 @@ internal static class TestAgents
 
         options ??= new TestRunnerOptions();
         IRawDisks rawDisks = options.RawDisks ?? new MemoryRawDisks();
+        IDisks disks = options.Disks ?? tools;
         SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun)
         {
             Environment = options.Environment ?? AgentEnvironment.WindowsPE,
@@ -38,14 +39,14 @@ internal static class TestAgents
         return new SequenceRunnerBuilder
         {
             Server = server,
-            Disks = tools,
+            Disks = disks,
             Partitioner = tools,
             RawDisks = rawDisks,
             FreeSpace = new FakeFreeSpace(),
             PreflightChecks = options.Environment is { } environment ? [new BootEnvironmentCheck(environment)] : [],
             StepRunners = new LinuxBootStepRunners
             {
-                Disks = tools,
+                Disks = disks,
                 RawDisks = rawDisks,
                 Tools = options.ToolRunner ?? new RecordingToolRunner(),
                 Scripts = new ShellScriptLauncher(dryRun: true) { Environment = options.ScriptEnvironment },

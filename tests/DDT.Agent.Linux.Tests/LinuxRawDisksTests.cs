@@ -21,7 +21,7 @@ public sealed class LinuxRawDisksTests : IDisposable
     private LocalDisk Disk(string name = "nvme0n1", int length = 4 * Megabyte, int sectorSize = 512)
     {
         string device = _tree.Write(new byte[length], "dev", name);
-        _tree.AddDisk(name, length, sectorSize: sectorSize);
+        _tree.AddDisk(name, length, sectorSize: sectorSize, model: "Test");
 
         return new LocalDisk(0, "Test", length, StorageBusType.Nvme, 0) { Device = device };
     }
@@ -98,6 +98,24 @@ public sealed class LinuxRawDisksTests : IDisposable
 
         Assert.Contains("The kernel no longer lists", Assert.Throws<DeploymentStepException>(() => Disks().Open(gone)).Message, StringComparison.Ordinal);
         Assert.Equal("Disk 1 has no device to open it by.", Assert.Throws<DeploymentStepException>(() => Disks().Open(unnamed)).Message);
+        Assert.Empty(_devices.Opened);
+    }
+
+    // Between the choice and the write another disk can have got the name: one unplugged, another plugged in.
+    [Fact]
+    public void RefusesADiskThatIsNoLongerTheOneThatWasChosen()
+    {
+        LocalDisk chosen = Disk();
+        LocalDisk larger = chosen with { SizeBytes = 8 * Megabyte };
+        LocalDisk other = chosen with { Model = "Other" };
+        LocalDisk unnamed = chosen with { Model = null };
+
+        Assert.Equal(
+            $"{chosen.Device} is not the disk that was chosen any more: that was Test with 8388608 bytes, and this is Test with 4194304 bytes. " +
+            "Nothing was written to it. Start the run again.",
+            Assert.Throws<DeploymentStepException>(() => Disks().Open(larger)).Message);
+        Assert.Contains("that was Other with 4194304 bytes, and this is Test with", Assert.Throws<DeploymentStepException>(() => Disks().Open(other)).Message, StringComparison.Ordinal);
+        Assert.Contains("that was unknown model with", Assert.Throws<DeploymentStepException>(() => Disks().Open(unnamed)).Message, StringComparison.Ordinal);
         Assert.Empty(_devices.Opened);
     }
 

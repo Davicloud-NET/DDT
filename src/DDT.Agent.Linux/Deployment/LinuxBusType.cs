@@ -10,7 +10,7 @@ namespace DDT.Agent.Deployment;
 public static partial class LinuxBusType
 {
     // name is the disk's, such as sda. devicePath is where /sys/block/<name> leads, with the controllers on the way.
-    // cardType is what an SD or eMMC card says it is, null for other disks.
+    // cardType is what an SD or eMMC card says it is, null for other disks. Only MMC is a built-in eMMC.
     public static StorageBusType Of(string name, string devicePath, string? cardType)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -25,7 +25,7 @@ public static partial class LinuxBusType
 
         if (name.StartsWith("mmcblk", StringComparison.Ordinal))
         {
-            return string.Equals(cardType, "SD", StringComparison.OrdinalIgnoreCase) ? StorageBusType.Sd : StorageBusType.Mmc;
+            return string.Equals(cardType, "MMC", StringComparison.OrdinalIgnoreCase) ? StorageBusType.Mmc : StorageBusType.Sd;
         }
 
         // A USB adapter shows its disk as a SCSI or SATA one further down the same path, so USB is asked first.

@@ -122,7 +122,7 @@ public sealed class LinuxDisksTests : IDisposable
         image.Disk.CopyTo(before, 0);
         string device = _tree.Write(before, "dev", "sda");
         AddDisk("sda", before.Length, "/sys/devices/pci0000:00/0000:00:17.0/ata1/host0/target0:0:0/0:0:0:0/block/sda");
-        LocalDisk disk = new(0, "Test", before.Length, StorageBusType.Sata, 2) { Device = device };
+        LocalDisk disk = new(0, null, before.Length, StorageBusType.Sata, 2) { Device = device };
 
         IReadOnlyList<Guid> erased = await Disks().CleanAsync(disk, TestContext.Current.CancellationToken);
 
@@ -163,5 +163,70 @@ public sealed class LinuxDisksTests : IDisposable
         Assert.Equal(0xCD, after[2 * 1024 * 1024]);
         Assert.Contains("did not read the partition table", _console.ToString(), StringComparison.Ordinal);
         Assert.Contains("The disk is erased all the same.", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    // A disk with a master boot record: two primary partitions and an extended one that holds two logical ones.
+    [Fact]
+    public async Task CleaningADiskWithAMasterBootRecordZeroesTheEndsOfItsPartitionsToo()
+    {
+        const int Mebibyte = 1024 * 1024;
+        const int Sector = 512;
+        byte[] before = [.. Enumerable.Repeat((byte)0x5E, 48 * Mebibyte)];
+        MbrTable(before, 0, (0x83, 2048, 16384), (0x8E, 18432, 16384), (0x05, 36864, 61440));
+        MbrTable(before, 36864, (0x83, 2048, 20480), (0x05, 22528, 22528));
+        MbrTable(before, 36864 + 22528, (0xFD, 2048, 20480));
+        string device = _tree.Write(before, "dev", "sda");
+        AddDisk("sda", before.Length, "/sys/devices/pci0000:00/0000:00:17.0/ata1/host0/target0:0:0/0:0:0:0/block/sda");
+
+        IReadOnlyList<Guid> erased = await Disks().CleanAsync(
+            new LocalDisk(0, null, before.Length, StorageBusType.Sata, 0) { Device = device },
+            TestContext.Current.CancellationToken);
+
+        byte[] after = File.ReadAllBytes(device);
+        Assert.Empty(erased);
+
+        // Where a file system, a volume group or a RAID set of each partition would be recognised.
+        foreach (int first in new[] { 2048, 18432, 36864, 36864 + 2048, 36864 + 22528 + 2048 })
+        {
+            Assert.True(IsZero(after.AsSpan(first * Sector, 64 * 1024)), $"sector {first}");
+        }
+
+        // The end of the second primary partition, where a RAID set of the old kind keeps its mark.
+        Assert.True(IsZero(after.AsSpan(((18432 + 16384) * Sector) - Mebibyte, Mebibyte)));
+        Assert.Equal(0x5E, after[(2048 * Sector) + (2 * Mebibyte)]);
+        Assert.Contains("zeroing the first and the last mebibyte of the disk and of 5 partitions.", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    // A table inside the extended partition that names itself as the next one must not keep the clean going round.
+    [Fact]
+    public async Task CleaningEndsOnAMasterBootRecordThatLeadsInACircle()
+    {
+        byte[] before = [.. Enumerable.Repeat((byte)0x5E, 8 * 1024 * 1024)];
+        MbrTable(before, 0, (0x0F, 2048, 8192));
+        MbrTable(before, 2048, (0x83, 64, 512), (0x05, 1024, 4096));
+        MbrTable(before, 3072, (0x83, 64, 512), (0x05, 1024, 4096));
+        string device = _tree.Write(before, "dev", "sda");
+        AddDisk("sda", before.Length, "/sys/devices/pci0000:00/0000:00:17.0/ata1/host0/target0:0:0/0:0:0:0/block/sda");
+
+        await Disks().CleanAsync(new LocalDisk(0, null, before.Length, StorageBusType.Sata, 0) { Device = device }, TestContext.Current.CancellationToken);
+
+        Assert.Contains("and of 3 partitions.", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    // The table of a master boot record or of an extended partition, at the sector it lies in.
+    private static void MbrTable(byte[] disk, int sector, params (byte Type, uint First, uint Sectors)[] entries)
+    {
+        Span<byte> table = disk.AsSpan(sector * 512, 512);
+        table.Clear();
+        table[510] = 0x55;
+        table[511] = 0xAA;
+
+        for (int index = 0; index < entries.Length; index++)
+        {
+            Span<byte> entry = table.Slice(446 + (index * 16), 16);
+            entry[4] = entries[index].Type;
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(entry[8..], entries[index].First);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(entry[12..], entries[index].Sectors);
+        }
     }
 }

@@ -26,7 +26,7 @@ public sealed class LinuxKernelTests : IDisposable
         Assert.SkipUnless(OperatingSystem.IsLinux(), OnlyLinux);
 
         string device = _tree.Write(new byte[4 * Megabyte], "dev", "sda");
-        _tree.AddDisk("sda", 4 * Megabyte);
+        _tree.AddDisk("sda", 4 * Megabyte, model: "Test");
         LocalDisk disk = new(0, "Test", 4 * Megabyte, StorageBusType.Sata, 0) { Device = device };
         byte[] written = [.. Enumerable.Range(0, 4096).Select(index => (byte)(index * 7))];
         byte[] read = new byte[4096];

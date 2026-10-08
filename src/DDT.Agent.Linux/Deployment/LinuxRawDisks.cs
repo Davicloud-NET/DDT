@@ -6,7 +6,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace DDT.Agent.Deployment;
 
-// Opens a disk by its device, with its size and sector size from /sys/block.
+// Opens a disk by its device, with its size and sector size from /sys/block, while it is still the disk that was chosen.
 public sealed class LinuxRawDisks(string root, IBlockDevices devices, Action<TimeSpan>? wait = null) : IRawDisks
 {
     // The kernel counts a disk's size in these, whatever its sectors are.
@@ -32,7 +32,20 @@ public sealed class LinuxRawDisks(string root, IBlockDevices devices, Action<Tim
             throw new DeploymentStepException($"The kernel no longer lists {path}, so the disk cannot be opened. It may have been unplugged.");
         }
 
+        RequireSameDisk(disk, path, LinuxDiskModel.Of(Path.GetFileName(path), block), units * SizeUnit);
+
         return new LinuxRawDisk(OpenAlone(path), path, units * SizeUnit, (int)sectorSize, devices);
+    }
+
+    // A device name goes to another disk when one is unplugged and the other plugged in.
+    private static void RequireSameDisk(LocalDisk chosen, string path, string? model, long size)
+    {
+        if (size != chosen.SizeBytes || !string.Equals(model, chosen.Model, StringComparison.Ordinal))
+        {
+            throw new DeploymentStepException(
+                $"{path} is not the disk that was chosen any more: that was {chosen.DisplayModel} with {chosen.SizeBytes} bytes, and " +
+                $"this is {LocalDisk.DisplayModelOf(model)} with {size} bytes. Nothing was written to it. Start the run again.");
+        }
     }
 
     private SafeFileHandle OpenAlone(string path)

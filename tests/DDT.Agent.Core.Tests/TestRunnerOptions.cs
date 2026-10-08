@@ -25,6 +25,9 @@ internal sealed record TestRunnerOptions
 
     public IRawDisks? RawDisks { get; init; }
 
+    // The machine's disks, where a test brings those of a system. Null is the fake's.
+    public IDisks? Disks { get; init; }
+
     // The boot environment the runner runs in, whose check TestAgents.Runner makes of a fresh run. Null is Windows PE
     // without the check.
     public AgentEnvironment? Environment { get; init; }

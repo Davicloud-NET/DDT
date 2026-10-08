@@ -26,6 +26,9 @@ public sealed class LinuxBusTypeTests
     [InlineData("xvda", "/sys/devices/vbd-51712/block/xvda", null, StorageBusType.Virtual)]
     [InlineData("mmcblk0", "/sys/devices/platform/80860F14:00/mmc_host/mmc0/mmc0:0001/block/mmcblk0", "MMC", StorageBusType.Mmc)]
     [InlineData("mmcblk1", "/sys/devices/pci0000:00/0000:00:1c.0/0000:02:00.0/mmc_host/mmc1/mmc1:aaaa/block/mmcblk1", "SD", StorageBusType.Sd)]
+    [InlineData("mmcblk1", "/sys/devices/pci0000:00/0000:00:1c.0/0000:02:00.0/mmc_host/mmc1/mmc1:aaaa/block/mmcblk1", "SDcombo", StorageBusType.Sd)]
+    [InlineData("mmcblk1", "/sys/devices/pci0000:00/0000:00:1c.0/0000:02:00.0/mmc_host/mmc1/mmc1:aaaa/block/mmcblk1", null, StorageBusType.Sd)]
+    [InlineData("sda", "/sys/devices/pci0000:00/0000:00:14.0/usb2/2-3/2-3:1.0/host6/target6:0:0/6:0:0:0/block/sda", null, StorageBusType.Usb)]
     [InlineData("sda", @"C:\tree\sys\devices\pci0000:00\ata3\host2\block\sda", null, StorageBusType.Sata)]
     public void NamesTheBusAsWindowsDoes(string name, string path, string? cardType, StorageBusType expected) =>
         Assert.Equal(expected, LinuxBusType.Of(name, path, cardType));

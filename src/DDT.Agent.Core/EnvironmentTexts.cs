@@ -17,8 +17,9 @@ public static class EnvironmentTexts
         "[--no-update] [--dry-run [--dry-run-id <number>] [--dry-run-secure-boot]], or ddt-agent --licenses";
 
     public const string LinuxNoDisk =
-        "No internal disk was found. The Linux boot environment may have no driver for this PC's storage controller. " +
-        "The log lists every disk it saw and why it was left out.";
+        "No internal disk was found. The Linux boot environment may have no driver for this PC's storage controller, or the " +
+        "controller is in RAID or Intel RST mode, which hides the disk from Linux: set it to AHCI in the firmware setup to show " +
+        "it. The log lists every disk it saw and why it was left out.";
 
     public const string LinuxDidNotStart =
         "The machine keeps starting the Linux boot environment instead of the installed Linux, so the run cannot go on there. " +

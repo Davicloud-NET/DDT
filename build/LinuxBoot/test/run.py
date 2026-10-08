@@ -9,8 +9,12 @@
 #   run.py [--boot <folder>] [--out <folder>] [<check> ...]
 #
 # --boot is the output of Build-LinuxBoot.ps1, --out gets the serial logs. Without names, every check runs.
+#
+# ddt.img holds the real agent, which says nothing on the serial port and needs a server. So every check but
+# "agent" hands the machine one more initramfs file, whose placeholder takes the agent's place.
 
 import argparse
+import json
 import os
 import re
 import shutil
@@ -21,7 +25,10 @@ import time
 from machine import AGENT_JSON, SERVER, WORK, Machine, archive
 
 LIBRARIES = "/usr/lib/x86_64-linux-gnu"
+PLACEHOLDER = "/test/placeholder/ddt-agent"
 READY = "DDT-PLACEHOLDER-AGENT ready"
+# The first line the real agent prints, which additional term 1 in NOTICE asks for.
+NOTICE = "DDT, the Davicloud Deployment Toolkit. Copyright (C) 2026 Davicloud."
 DONE = "DDT-PLACEHOLDER-AGENT facts done"
 SCREEN = ["-device", "VGA"]
 KEYBOARDS = ["-device", "qemu-xhci", "-device", "usb-kbd", "-device", "virtio-keyboard-pci"]
@@ -30,6 +37,8 @@ OLD_CLOCK = ["-rtc", "base=2020-01-01T00:00:00"]
 DISPLAY_DRIVERS = {"bochs", "virtio_gpu", "hyperv_drm", "simpledrm", "vmwgfx"}
 
 results = []
+# The initramfs file with the placeholder and its hooks, which main() makes.
+extra = []
 
 
 def check(name, good, evidence):
@@ -37,9 +46,14 @@ def check(name, good, evidence):
     print("%s %s: %s" % ("PASS" if good else "FAIL", name, evidence), flush=True)
 
 
-# The firmware loads shim, shim loads GRUB, GRUB loads the kernel and three initramfs files.
+# A machine whose agent is the placeholder. A file of a later initramfs archive replaces the one before.
+def placeholder(name, boot, out, arguments="", **options):
+    return Machine(name, boot, out, arguments, extra, **options)
+
+
+# The firmware loads shim, shim loads GRUB, GRUB loads the kernel and its initramfs files.
 def chain(boot, out):
-    machine = Machine("chain", boot, out)
+    machine = placeholder("chain", boot, out)
     machine.start(SCREEN)
     seconds = machine.wait(re.escape(READY), 120)
     machine.wait(re.escape(DONE), 30)
@@ -75,7 +89,7 @@ def chain(boot, out):
 
 # The menu an agent that failed leaves takes its keys from the first screen: 1 starts the agent again, 4 powers off.
 def menu(boot, out):
-    machine = Machine("menu", boot, out)
+    machine = placeholder("menu", boot, out)
     machine.start(SCREEN)
     ended = "ddt: agent: ended with code 3"
     first = machine.wait(ended, 120)
@@ -100,7 +114,7 @@ def menu(boot, out):
 # Secure Boot is not just switched on, it refuses what is not signed.
 def tampered(boot, out):
     for file, refusal in [("vmlinuz", "bad shim signature"), ("grubx64.efi", "Security Violation|Verification failed")]:
-        machine = Machine("tampered-" + file.split(".")[0], boot, out, tamper=file)
+        machine = placeholder("tampered-" + file.split(".")[0], boot, out, tamper=file)
         machine.start(SCREEN)
         seconds = machine.wait(refusal + "|" + re.escape(READY), 90)
         # A kernel that starts anyway would show its marker soon after.
@@ -114,13 +128,13 @@ def tampered(boot, out):
 
 
 # Network, disk, screen and keyboards come up, with each display QEMU can stand in for.
-def hardware(boot, out, hooks):
+def hardware(boot, out):
     second_card = ["-netdev", "user,id=second,net=10.0.3.0/24", "-device", "e1000e,netdev=second,romfile="]
     # virtio-gpu-pci has no frame buffer in the firmware, and base.img brings no driver for it.
     displays = [("VGA", "EFI VGA"), ("virtio-vga", "EFI VGA"), ("ramfb", "EFI VGA"), ("bochs-display", "EFI VGA"),
                 ("virtio-gpu-pci", None)]
     for display, firmware in displays:
-        machine = Machine("hardware-" + display, boot, out, "ddt.hook=hardware", [hooks])
+        machine = placeholder("hardware-" + display, boot, out, "ddt.hook=hardware")
         machine.start(KEYBOARDS + second_card + ["-device", display])
         machine.wait("DDT-PLACEHOLDER-AGENT hook", 150)
         machine.stop()
@@ -162,8 +176,8 @@ def hardware_facts(machine):
 
 
 # UEFI variables through efivarfs, over three starts of one machine. hooks/variables does the work.
-def variables(boot, out, hooks):
-    machine = Machine("variables", boot, out, "ddt.hook=variables", [hooks])
+def variables(boot, out):
+    machine = placeholder("variables", boot, out, "ddt.hook=variables")
     machine.start(SCREEN, network_first=False)
     seconds = machine.wait("variables: finished|variables: FAILED unknown", 300)
     machine.stop()
@@ -179,7 +193,7 @@ def variables(boot, out, hooks):
 
 # A hardware clock that is years off is set from ddt.time, and without ddt.time it stays wrong and the screen says so.
 def clock(boot, out):
-    machine = Machine("clock", boot, out)
+    machine = placeholder("clock", boot, out)
     machine.start(SCREEN + OLD_CLOCK)
     machine.wait(re.escape(DONE), 150)
     machine.stop()
@@ -188,7 +202,7 @@ def clock(boot, out):
     check("clock: a hardware clock in 2020 is set from ddt.time", "set from ddt.time" in line and abs(date - time.time()) < 300,
           "%s; the agent's clock is %d s from this computer's" % (line, date - time.time()))
 
-    machine = Machine("clock-no-time", boot, out, server_time=False)
+    machine = placeholder("clock-no-time", boot, out, server_time=False)
     machine.start(SCREEN + OLD_CLOCK)
     machine.wait(re.escape(DONE), 150)
     machine.stop()
@@ -199,8 +213,8 @@ def clock(boot, out):
 
 
 # The server's name from the kernel command line is found without a name server, in lower case.
-def server(boot, out, hooks):
-    machine = Machine("server", boot, out, "ddt.hostname=DDT-Server.Example.Test ddt.hostip=%s ddt.hook=server" % SERVER, [hooks])
+def server(boot, out):
+    machine = placeholder("server", boot, out, "ddt.hostname=DDT-Server.Example.Test ddt.hostip=%s ddt.hook=server" % SERVER)
     machine.start(SCREEN)
     machine.wait("DDT-PLACEHOLDER-AGENT hook", 150)
     machine.stop()
@@ -212,8 +226,8 @@ def server(boot, out, hooks):
 
 
 # Ctrl+C ends the agent and leaves the menu, and the session itself stays through it.
-def session(boot, out, hooks):
-    machine = Machine("session", boot, out, "ddt.hook=wait", [hooks])
+def session(boot, out):
+    machine = placeholder("session", boot, out, "ddt.hook=wait")
     machine.start(SCREEN)
     waiting = machine.wait("wait: waiting", 150)
     if waiting is None:
@@ -243,8 +257,8 @@ def session(boot, out, hooks):
 
 
 # An agent that ends with the code for a restart and leaves the machine running: the session restarts it.
-def restart(boot, out, hooks):
-    machine = Machine("restart", boot, out, "ddt.hook=restart", [hooks])
+def restart(boot, out):
+    machine = placeholder("restart", boot, out, "ddt.hook=restart")
     machine.start(SCREEN)
     ended = machine.wait("ddt: agent: ended with code 5", 150)
     back = machine.wait("(?s)%s.*%s" % (re.escape(READY), re.escape(READY)), 90) if ended is not None else None
@@ -258,7 +272,7 @@ def restart(boot, out, hooks):
 # Keys pressed while the machine starts are neither shown nor left for the agent to read.
 def keys(boot, out):
     # The kernel prints the start scripts' lines on the serial port only at this log level.
-    machine = Machine("keys", boot, out, "loglevel=7", screen=True)
+    machine = placeholder("keys", boot, out, "loglevel=7", screen=True)
     machine.start(SCREEN)
     # Without a cable the start waits half a minute for DHCP, which is the time the keys are pressed in.
     if machine.wait("Linux version", 120) is not None:
@@ -285,15 +299,15 @@ def power_off_on_second_screen(machine):
 
 
 # A root shell opens with ddt.shell on the kernel command line, or once the agent has failed, and not before.
-def shell(boot, out, hooks):
-    machine = Machine("shell", boot, out, "ddt.shell")
+def shell(boot, out):
+    machine = placeholder("shell", boot, out, "ddt.shell")
     machine.start(SCREEN)
     seconds = machine.wait("ddt:~# ", 120)
     machine.stop()
     check("shell: ddt.shell opens a root shell on the serial port", seconds is not None,
           "the prompt 'ddt:~# ' %.1f s after power-on" % seconds if seconds is not None else machine.tail())
 
-    machine = Machine("shell-after-failure", boot, out, "ddt.hook=wait", [hooks])
+    machine = placeholder("shell-after-failure", boot, out, "ddt.hook=wait")
     machine.start(SCREEN)
     if machine.wait("wait: waiting", 150) is None:
         machine.stop()
@@ -317,18 +331,58 @@ def shell(boot, out, hooks):
           "poweroff typed there after the agent ended with code 130, and the machine went off" if off else machine.tail())
 
 
-# One more initramfs file for the tests: the placeholder's hooks, and chattr with the libraries it needs.
-def hooks_archive():
-    tree = os.path.join(WORK, "hooks-tree")
+# The real agent from ddt.img, started by the session as on any machine. No server answers here, so the agent
+# gets as far as its notice and its first question to the server, which shows that it runs and read agent.json.
+def agent(boot, out):
+    with open(os.path.join(boot, "ddt-linux-boot.json"), encoding="utf-8") as source:
+        bundled = json.load(source).get("agent")
+    if not bundled:
+        check("agent: ddt.img holds the agent", False,
+              "it holds the placeholder. Build the boot environment with Build-LinuxBoot.ps1 -AgentFolder")
+        return
+    check("agent: ddt.img holds the agent", True, "version %s, SHA-256 %s" % (bundled["version"], bundled["sha256"]))
+    machine = Machine("agent", boot, out, initrds=[watch_archive()], init="/ddt-test/init")
+    machine.start(SCREEN)
+    started = machine.wait("ddt: agent: starting", 120)
+    noticed = machine.wait("screen: " + re.escape(NOTICE), 60) if started is not None else None
+    asked = machine.wait("screen: .*Cannot reach the server to ask for the current agent", 90) if noticed is not None else None
+    # An agent that gave up would end within moments of its first question.
+    ended = machine.wait("ddt: agent: ended", 5)
+    machine.stop()
+    screen = [line[8:] for line in machine.lines("screen: ")]
+    check("agent: the agent from ddt.img starts on the first screen", noticed is not None,
+          "'%s' %.1f s after power-on" % (NOTICE, noticed) if noticed is not None else machine.tail())
+    question = [line for line in screen if "Cannot reach the server" in line]
+    check("agent: it read agent.json and asks the server it names", asked is not None and SERVER + ":8443" in " ".join(screen),
+          question[0] if question else machine.tail())
+    check("agent: it stays and asks again", asked is not None and ended is None and machine.count("ddt: agent: starting") == 1,
+          "started %d time, not ended %.1f s after power-on" % (machine.count("ddt: agent: starting"), machine.seconds()))
+
+
+# One more initramfs file for the agent check: the watcher that copies the first screen to the serial port.
+def watch_archive():
+    tree = os.path.join(WORK, "watch-tree")
+    shutil.rmtree(tree, ignore_errors=True)
+    shutil.copytree(os.path.join(os.path.dirname(os.path.abspath(__file__)), "watch"), os.path.join(tree, "ddt-test"))
+    path = os.path.join(WORK, "watch.cpio")
+    archive(tree, path)
+    return path
+
+
+# One more initramfs file for the other checks: the placeholder in the agent's place, its hooks, and chattr with
+# the libraries it needs.
+def placeholder_archive():
+    tree = os.path.join(WORK, "placeholder-tree")
     shutil.rmtree(tree, ignore_errors=True)
     shutil.copytree(os.path.join(os.path.dirname(os.path.abspath(__file__)), "hooks"), os.path.join(tree, "ddt", "hooks"))
+    shutil.copyfile(PLACEHOLDER, os.path.join(tree, "ddt", "ddt-agent"))
     os.makedirs(os.path.join(tree, "usr", "bin"))
     os.makedirs(os.path.join(tree, LIBRARIES[1:]))
     for tool in ["chattr", "lsattr"]:
         shutil.copyfile(shutil.which(tool), os.path.join(tree, "usr", "bin", tool))
     for library in ["libe2p.so.2", "libcom_err.so.2"]:
         shutil.copyfile(os.path.join(LIBRARIES, library), os.path.join(tree, LIBRARIES[1:], library))
-    path = os.path.join(WORK, "hooks.cpio")
+    path = os.path.join(WORK, "placeholder.cpio")
     archive(tree, path)
     return path
 
@@ -340,20 +394,21 @@ def main():
     parser.add_argument("checks", nargs="*")
     arguments = parser.parse_args()
     os.makedirs(WORK, exist_ok=True)
-    hooks = hooks_archive()
+    extra.append(placeholder_archive())
     boot, out = arguments.boot, arguments.out
     known = {
         "chain": lambda: chain(boot, out),
         "menu": lambda: menu(boot, out),
         "tampered": lambda: tampered(boot, out),
-        "hardware": lambda: hardware(boot, out, hooks),
-        "variables": lambda: variables(boot, out, hooks),
+        "hardware": lambda: hardware(boot, out),
+        "variables": lambda: variables(boot, out),
         "clock": lambda: clock(boot, out),
-        "server": lambda: server(boot, out, hooks),
-        "session": lambda: session(boot, out, hooks),
-        "restart": lambda: restart(boot, out, hooks),
+        "server": lambda: server(boot, out),
+        "session": lambda: session(boot, out),
+        "restart": lambda: restart(boot, out),
         "keys": lambda: keys(boot, out),
-        "shell": lambda: shell(boot, out, hooks),
+        "shell": lambda: shell(boot, out),
+        "agent": lambda: agent(boot, out),
     }
     for name in arguments.checks or list(known):
         if name not in known:

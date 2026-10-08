@@ -12,7 +12,9 @@ Boots the DDT Linux boot environment in QEMU with Secure Boot on and checks that
 Builds an image with QEMU and OVMF from build/LinuxBoot/test/Dockerfile and runs build/LinuxBoot/test/run.py in
 it, against the output of Build-LinuxBoot.ps1. The virtual machine starts as a PC does: the firmware has
 Microsoft's keys and loads shimx64.efi over TFTP, shim loads GRUB, GRUB loads the kernel and the initramfs files.
-The start scripts and the placeholder agent in ddt.img then report on the serial port.
+The start scripts then report on the serial port, and so does a placeholder that every check but the last puts in
+the agent's place with one more initramfs file. So the boot environment under test is one that is shipped, with the
+real agent in ddt.img.
 
 The checks:
 
@@ -31,8 +33,10 @@ The checks:
               DHCP goes on to the agent.
   shell       ddt.shell opens a root shell on the serial port. The second screen has one only once the agent has
               failed.
+  agent       The real agent from ddt.img starts on the first screen, reads agent.json and asks the server it names
+              for a newer agent. No server answers here, so that is as far as it gets.
 
-They need ddt.img with the placeholder agent, so not one built with -AgentFolder.
+The agent check needs a boot environment built with -AgentFolder, and fails on one with the placeholder in ddt.img.
 
 Needs Docker with the Linux engine. The container runs privileged, because QEMU needs /dev/kvm. Without KVM
 QEMU emulates the processor, which takes many times longer.
@@ -41,7 +45,7 @@ QEMU emulates the processor, which takes many times longer.
 .\build\Test-LinuxBoot.ps1
 
 .EXAMPLE
-.\build\Test-LinuxBoot.ps1 -Check chain, tampered
+.\build\Test-LinuxBoot.ps1 -Check chain, tampered, agent
 #>
 [CmdletBinding()]
 param(
@@ -51,7 +55,7 @@ param(
     # Gets the serial log and the QEMU command line of every start.
     [string] $LogFolder,
 
-    [ValidateSet('chain', 'menu', 'tampered', 'hardware', 'variables', 'clock', 'server', 'session', 'restart', 'keys', 'shell')]
+    [ValidateSet('chain', 'menu', 'tampered', 'hardware', 'variables', 'clock', 'server', 'session', 'restart', 'keys', 'shell', 'agent')]
     [string[]] $Check = @(),
 
     # The image is built under this name, and the container runs under it.

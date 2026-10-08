@@ -1,0 +1,22 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# Copies what the first screen shows to the serial port every two seconds, each row after "screen: ". The real
+# agent writes to its screen alone, and the test reads the serial port.
+
+PATH=/usr/bin
+export PATH
+
+# /init makes both devices, after this has started.
+until [ -c /dev/vcs1 ] && [ -c /dev/ttyS0 ]; do
+    sleep 1
+done
+
+while :; do
+    sleep 2
+    size=$(stty -F /dev/tty1 size 2> /dev/null) || continue
+    # The kernel hands the screen out as one line of all its rows. size is "rows columns".
+    fold -w "${size#* }" /dev/vcs1 | sed -e 's/ *$//' -e '/^$/d' -e 's/^/screen: /' > /dev/ttyS0
+done

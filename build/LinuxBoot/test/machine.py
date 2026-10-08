@@ -23,7 +23,8 @@ WORK = "/tmp/ddt-linux-boot"
 # QEMU's own network: it is the DHCP and TFTP server at this address.
 SERVER = "10.0.2.2"
 ADDRESS = "52:54:00:dd:70:01"
-AGENT_JSON = '{"server":"https://%s:8443","note":"written by the test"}' % SERVER
+# As the server writes it, without a root certificate: no server answers at this address.
+AGENT_JSON = '{"serverUrl":"https://%s:8443"}' % SERVER
 BOOT_FILES = ["shimx64.efi", "grubx64.efi", "vmlinuz", "base.img", "ddt.img"]
 ESCAPES = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b[()][0-9A-B]|\r")
 
@@ -35,8 +36,9 @@ def archive(tree, path):
 
 class Machine:
     # server_time=False leaves ddt.time out. screen=True makes the screen /dev/console, as on a PC without a
-    # serial console; otherwise it is the serial port, where the start scripts' lines can then be read.
-    def __init__(self, name, boot, out, arguments="", initrds=(), tamper=None, server_time=True, screen=False):
+    # serial console; otherwise it is the serial port, where the start scripts' lines can then be read. init is
+    # the first program the kernel starts.
+    def __init__(self, name, boot, out, arguments="", initrds=(), tamper=None, server_time=True, screen=False, init="/init"):
         self.name = name
         self.out = out
         self.folder = os.path.join(WORK, name)
@@ -57,7 +59,7 @@ class Machine:
         for path in initrds:
             shutil.copyfile(path, os.path.join(self.tftp, "linux", os.path.basename(path)))
             names.append(os.path.basename(path))
-        self.write_grub_config(arguments, names, server_time, screen)
+        self.write_grub_config(arguments, names, server_time, screen, init)
         shutil.copyfile(FIRMWARE_VARIABLES, os.path.join(self.folder, "variables.fd"))
         # 8 GB, of which the file system keeps only what is written.
         with open(os.path.join(self.folder, "disk.img"), "wb") as disk:
@@ -81,8 +83,8 @@ class Machine:
 
     # As the server will generate it, but over TFTP only. Debian's network GRUB asks the server it came from
     # for /grub/grub.cfg.
-    def write_grub_config(self, arguments, initrds, server_time, screen):
-        kernel = ["rdinit=/init", "loglevel=4", "ddt.bootif=${net_default_mac}", "ddt.keymap=de"]
+    def write_grub_config(self, arguments, initrds, server_time, screen, init):
+        kernel = ["rdinit=" + init, "loglevel=4", "ddt.bootif=${net_default_mac}", "ddt.keymap=de"]
         if server_time:
             kernel.append("ddt.time=%d" % int(time.time()))
         # The last console named is /dev/console.

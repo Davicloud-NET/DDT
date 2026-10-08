@@ -21,4 +21,6 @@ RUN snapshot=$(sed -n 's/.*"snapshot": *"\([0-9TZ]*\)".*/\1/p' /src/packages.loc
     && apt-get install -y --no-install-recommends e2fsprogs ovmf python3 qemu-system-x86 \
     && rm -rf /var/lib/apt/lists/*
 COPY mkcpio.py test/ /test/
+# The tests put it in the place of the agent that ddt.img holds.
+COPY placeholder/ /test/placeholder/
 ENTRYPOINT ["python3", "/test/run.py"]

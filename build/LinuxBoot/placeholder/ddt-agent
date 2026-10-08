@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-# Stands in for the DDT agent in ddt.img until the Linux agent exists: prints a marker and what it finds on the
-# machine. ddt.hook=<name> on the kernel command line then runs /ddt/hooks/<name>, which a test puts there, and
-# ends with that hook's exit code.
+# Stands in for the DDT agent, in a ddt.img that Build-LinuxBoot.ps1 was given no agent for and in the tests of
+# the boot environment: prints a marker and what it finds on the machine. ddt.hook=<name> on the kernel command
+# line then runs /ddt/hooks/<name>, which a test puts there, and ends with that hook's exit code.
 
 PATH=/usr/bin
 export PATH

@@ -80,6 +80,13 @@ A few things work differently from LiteTouch:
   may well have, it says so and asks you to replace it. If you would rather not touch the ADK that
   MDT lives on, use **Build on another PC** instead: a zip you unpack on any Windows PC with a
   current ADK. `Build.cmd` in it builds the image and uploads it by itself.
+- **The boot image is for Windows only.** The same page has a second panel, *Linux boot
+  environment*. That one comes with DDT and is never built: task sequences that write a Linux
+  image run in it, and Windows sequences run in Windows PE. DDT names each machine the one its
+  task sequence needs. For machines without one, *Boot, Network boot* has the setting **Machines
+  without a run start**. Left on automatic, that is Windows PE from the moment a boot image
+  exists, and the Linux boot environment before, which is why a new server netboots machines
+  before you have built anything.
 
 ## Bringing the deployment share along
 
@@ -175,6 +182,9 @@ The Deployment Wizard is now a console that starts in Windows PE:
    and serial number. Approve it there with a sequence, and it starts without anyone touching its
    keyboard.
 
+A machine that started the Linux boot environment asks the same things as plain text. It has no
+graphical console yet.
+
 DDT accounts can be local ones, or your Active Directory through LDAP, so technicians sign in with
 the password they already have. That is under *Administration, Sign-in*. And if you want real zero
 touch, *Machines, Approval and zero touch* takes a list of networks whose machines deploy without
@@ -202,6 +212,11 @@ Better you hear it here than find out on a Friday afternoon:
 - **Capturing a reference image.** Also M10. Until then, capture the way you do today and import
   the WIM.
 - **Offline media.** No USB sticks yet; machines netboot. M11.
+- **Linux past the image.** If you deploy Linux too: DDT writes the disk image with its cloud-init
+  seed and the run ends there. Steps inside the installed Linux and a graphical console for the
+  Linux boot environment are the rest of M8, and joining a Linux machine to a domain is not
+  planned. The Linux boot environment also needs DDT's own netboot. From the WDS boot menu a
+  machine starts DDT's Windows PE and nothing else.
 - **BIOS and 32-bit machines.** Not planned at all. Windows 11 wants UEFI and x64, and so does DDT.
 
 The [roadmap](roadmap.md) has the rest.

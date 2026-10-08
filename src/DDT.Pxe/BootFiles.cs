@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
@@ -19,21 +20,29 @@ public sealed class BootFiles
     public const string SiteArchiveName = "site.cpio";
     public const string GrubConfigName = "grub/grub.cfg";
 
+    // What the log adds to the name, so a start that loads slower says why.
+    public const string TftpAloneNote = " for TFTP alone, since an HTTP read of this machine did not end well";
+
     private const int MaxRequestLength = 512;
+
+    private const string LinuxBootFile = LinuxFolder + "/" + Shim;
 
     private readonly ILinuxBootSite? _linux;
     private readonly int _httpBootPort;
+    private readonly BootConnections _connections;
     private readonly TimeProvider _timeProvider;
     private BootFileResolver? _bundle;
 
-    public BootFiles(BootFileResolver boot, ILinuxBootSite? linux, int httpBootPort, TimeProvider timeProvider)
+    public BootFiles(BootFileResolver boot, ILinuxBootSite? linux, int httpBootPort, BootConnections connections, TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(boot);
+        ArgumentNullException.ThrowIfNull(connections);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         Boot = boot;
         _linux = linux;
         _httpBootPort = httpBootPort;
+        _connections = connections;
         _timeProvider = timeProvider;
     }
 
@@ -68,6 +77,15 @@ public sealed class BootFiles
         return content is not null;
     }
 
+    // A TFTP read of shim or of grub.cfg begins a machine's start, so what its start before left open is reset.
+    // Returns how many connections that were.
+    public int Starting(string requested, IPAddress client)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+
+        return Normalized(requested) is LinuxBootFile or GrubConfigName ? _connections.NetbootStarts(client) : 0;
+    }
+
     // Forward slashes and no leading one, as the resolver reads a request. Null for what no file can be named by.
     public static string? Normalized(string? requested) =>
         string.IsNullOrEmpty(requested) || requested.Length > MaxRequestLength ? null : requested.Replace('\\', '/').TrimStart('/');
@@ -95,16 +113,18 @@ public sealed class BootFiles
         return bundle.Files.Contains(file) ? FromBundle(file, bundle) : null;
     }
 
+    // GRUB hangs in an HTTP read that meets a connection its start before left on the server. TFTP has none.
     private MemoryBootContent GrubConfigFor(LinuxBootBundle bundle, BootRequest request)
     {
-        string text = GrubConfig.Write(new GrubConfigValues(request.Server, _httpBootPort, _timeProvider.GetUtcNow())
+        bool http = _connections.HttpIsSafe(request.Client);
+        string text = GrubConfig.Write(new GrubConfigValues(request.Server, http ? _httpBootPort : null, _timeProvider.GetUtcNow())
         {
             Keymap = bundle.Keymap,
             HostName = bundle.ServerUrl.Host,
             KernelArguments = bundle.KernelArguments,
         });
 
-        return new MemoryBootContent(GrubConfigName, Encoding.ASCII.GetBytes(text));
+        return new MemoryBootContent(http ? GrubConfigName : GrubConfigName + TftpAloneNote, Encoding.ASCII.GetBytes(text));
     }
 
     // The same rules as for the boot directory: a real entry of the folder, and no link.

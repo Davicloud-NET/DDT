@@ -42,7 +42,7 @@ public sealed class BootHttpLinuxTests : IAsyncLifetime
         _app = builder.Build();
         _app.UseRouting();
         _app.UseBootListenerIsolation(BootPort, Loopback.Map());
-        _app.MapBootFiles(new BootFiles(new BootFileResolver(boot), _site, BootPort, _clock));
+        _app.MapBootFiles(new BootFiles(new BootFileResolver(boot), _site, BootPort, new BootConnections(_clock), _clock));
 
         await _app.StartAsync();
     }

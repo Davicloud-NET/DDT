@@ -58,6 +58,12 @@ internal static partial class PxeLog
     [LoggerMessage(EventId = 523, Level = LogLevel.Error, Message = "Applying the pxe settings failed")]
     public static partial void ApplyCrashed(ILogger logger, Exception exception);
 
+    [LoggerMessage(
+        EventId = 524,
+        Level = LogLevel.Information,
+        Message = "Reset {Count} HTTP boot connections still open from {Client}, which starts from the network again")]
+    public static partial void BootConnectionsReset(ILogger logger, int count, IPAddress client);
+
     // A successful bind proves nothing on Windows. Another process holding a specific address on the same port
     // silently takes the unicast traffic. The first datagram is the real sign that the listener works.
     [LoggerMessage(EventId = 510, Level = LogLevel.Information, Message = "First datagram on UDP {Port}, from {Source} on interface {Name}")]

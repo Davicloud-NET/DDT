@@ -29,11 +29,12 @@ public static class BootHttpEndpoints
     }
 
     // Interfaces is read on every request, so the gate follows the setup the listeners were last started with. Null
-    // serves nothing.
+    // serves nothing. With connections, a read that is cut off is remembered for the machine's next start.
     public static IApplicationBuilder UseBootListenerIsolation(
         this IApplicationBuilder app,
         int bootPort,
-        Func<NetworkInterfaceMap?> interfaces)
+        Func<NetworkInterfaceMap?> interfaces,
+        BootConnections? connections = null)
     {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(interfaces);
@@ -43,6 +44,12 @@ public static class BootHttpEndpoints
             bool onBootPort = context.Connection.LocalPort == bootPort;
             bool bootEndpoint = context.GetEndpoint()?.Metadata.GetMetadata<BootEndpointMarker>() is not null;
 
+            // GRUB opens a connection per file and never asks on it twice, so none is kept open for a next request.
+            if (onBootPort)
+            {
+                context.Response.Headers.Connection = "close";
+            }
+
             if (onBootPort != bootEndpoint
                 || (onBootPort && (context.Connection.LocalIpAddress is not { } local || interfaces() is not { } served || !served.IsServedAddress(local))))
             {
@@ -51,9 +58,40 @@ public static class BootHttpEndpoints
                 return;
             }
 
-            await next(context).ConfigureAwait(false);
+            if (onBootPort && connections is not null)
+            {
+                await ReadAsync(context, next, connections).ConfigureAwait(false);
+            }
+            else
+            {
+                await next(context).ConfigureAwait(false);
+            }
         });
     }
+
+    // A read that ends before its answer is whole leaves the machine without the file, and maybe the server with the
+    // connection.
+    private static async Task ReadAsync(HttpContext context, RequestDelegate next, BootConnections connections)
+    {
+        bool whole = false;
+
+        try
+        {
+            await next(context).ConfigureAwait(false);
+            whole = !context.RequestAborted.IsCancellationRequested;
+        }
+        finally
+        {
+            if (!whole)
+            {
+                connections.ReadFailed(ClientOf(context));
+            }
+        }
+    }
+
+    // The connection's own address where Kestrel serves, which no forwarded header changes.
+    private static IPAddress ClientOf(HttpContext context) =>
+        context.Features.Get<BootClient>()?.Address ?? Version4(context.Connection.RemoteIpAddress ?? IPAddress.None);
 
     // Maps both GET and HEAD. UEFI HTTP Boot sends HEAD first, and a HEAD that matches no endpoint falls through to the
     // deny by default policy. That turns it into a redirect the firmware refuses to follow.
@@ -102,9 +140,7 @@ public static class BootHttpEndpoints
 
     // The address the request arrived on is the one a generated file names as the server.
     private static BootRequest? RequestOf(HttpContext context) =>
-        context.Connection.LocalIpAddress is { } local
-            ? new BootRequest(Version4(local), Version4(context.Connection.RemoteIpAddress ?? IPAddress.None))
-            : null;
+        context.Connection.LocalIpAddress is { } local ? new BootRequest(Version4(local), ClientOf(context)) : null;
 
     private static IPAddress Version4(IPAddress address) => address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address;
 

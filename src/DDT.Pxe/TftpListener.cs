@@ -187,6 +187,11 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
             return;
         }
 
+        if (_files.Starting(request.FileName, client.Address) is > 0 and int reset)
+        {
+            PxeLog.BootConnectionsReset(_logger, reset, client.Address);
+        }
+
         if (!_files.TryFind(request.FileName, new BootRequest(localAddress, client.Address), out BootContent? content))
         {
             LogNotFound(request.FileName, client);

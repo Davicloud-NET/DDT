@@ -42,7 +42,7 @@ public sealed class BootHttpEndpointsTests : IAsyncLifetime
         _app.UseBootListenerIsolation(BootPort, Loopback.Map());
         _app.UseAuthentication();
         _app.UseAuthorization();
-        _app.MapBootFiles(new BootFiles(new BootFileResolver(_root), null, BootPort, TimeProvider.System));
+        _app.MapBootFiles(new BootFiles(new BootFileResolver(_root), null, BootPort, new BootConnections(TimeProvider.System), TimeProvider.System));
         _app.MapGet("/api/ping", () => "pong");
         _app.MapFallback(() => "spa").AllowAnonymous();
 
@@ -192,7 +192,7 @@ public sealed class BootHttpEndpointsTests : IAsyncLifetime
         await using WebApplication app = builder.Build();
         app.UseRouting();
         app.UseBootListenerIsolation(BootPort, new NetworkInterfaceMap(string.Empty, [Loopback.Interface]));
-        app.MapBootFiles(new BootFiles(new BootFileResolver(_root), null, BootPort, TimeProvider.System));
+        app.MapBootFiles(new BootFiles(new BootFileResolver(_root), null, BootPort, new BootConnections(TimeProvider.System), TimeProvider.System));
         app.MapFallback(() => "spa");
         await app.StartAsync(TestContext.Current.CancellationToken);
 

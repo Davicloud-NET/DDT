@@ -40,7 +40,7 @@ public sealed class TftpListenerTests : IDisposable
         TftpListener listener = new(
             Loopback.AnyPort,
             map ?? Loopback.Map(),
-            new BootFiles(new BootFileResolver(_root), _site, 8080, _clock),
+            new BootFiles(new BootFileResolver(_root), _site, 8080, new BootConnections(_clock), _clock),
             new TftpServing(TftpLimits.Default, MaxTransfers: 8, singlePort),
             TimeProvider.System,
             NullLogger<TftpListener>.Instance);

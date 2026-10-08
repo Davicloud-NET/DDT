@@ -138,6 +138,12 @@ public sealed class ProxyDhcpListener : IPxeListener, IAsyncDisposable
         ProxyDhcpReply reply = outcome.Reply!;
         IPEndPoint destination = new(reply.Destination.Address, reply.Destination.Port);
 
+        if (outcome.ConnectionsReset > 0)
+        {
+            IPAddress client = outcome.Message is { } asked && !asked.ClientAddress.Equals(IPAddress.Any) ? asked.ClientAddress : destination.Address;
+            PxeLog.BootConnectionsReset(_logger, outcome.ConnectionsReset, client);
+        }
+
         try
         {
             await socket.SendToAsync(datagram, SocketFlags.None, destination, cancellationToken).ConfigureAwait(false);

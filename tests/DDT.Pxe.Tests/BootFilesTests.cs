@@ -22,6 +22,8 @@ public sealed class BootFilesTests : IDisposable
     private readonly string _boot;
     private readonly string _bundle;
     private readonly FakeLinuxBootSite _site = new();
+    private readonly TestClock _clock = new(DateTimeOffset.FromUnixTimeSeconds(1_791_460_800));
+    private readonly BootConnections _connections;
     private readonly BootFiles _files;
 
     public BootFilesTests()
@@ -48,7 +50,8 @@ public sealed class BootFilesTests : IDisposable
             KeyboardLayout = "German (de)",
             KernelArguments = "console=ttyS0,115200",
         };
-        _files = new BootFiles(new BootFileResolver(_boot), _site, 8080, new TestClock(DateTimeOffset.FromUnixTimeSeconds(1_791_460_800)));
+        _connections = new BootConnections(_clock);
+        _files = new BootFiles(new BootFileResolver(_boot), _site, 8080, _connections, _clock);
     }
 
     public void Dispose() => Directory.Delete(_root, recursive: true);
@@ -83,6 +86,65 @@ public sealed class BootFilesTests : IDisposable
         Assert.Contains("(tftp,192.168.50.7)/linux/site.cpio", text, StringComparison.Ordinal);
         Assert.Contains(" ddt.hostip=192.168.50.7 ", text, StringComparison.Ordinal);
         Assert.DoesNotContain("10.77.0.1", text, StringComparison.Ordinal);
+    }
+
+    // GRUB hangs in an HTTP read that meets what the machine's start before left on the server.
+    [Fact]
+    public void AMachineWhoseHttpReadDidNotEndLoadsOverTftpAloneForThreeMinutes()
+    {
+        _connections.ReadFailed(s_request.Client);
+
+        string text = TextOf(Find("grub/grub.cfg"));
+
+        Assert.DoesNotContain("(http,", text, StringComparison.Ordinal);
+        Assert.StartsWith("set timeout=0\nif linux (tftp,10.77.0.1)/linux/vmlinuz rdinit=/init ", text, StringComparison.Ordinal);
+        Assert.EndsWith(BootFiles.TftpAloneNote, Find("grub/grub.cfg")!.Description, StringComparison.Ordinal);
+
+        // Another machine is not held back by it.
+        Assert.Contains("(http,10.77.0.1:8080)", TextOf(Find("grub/grub.cfg", s_request with { Client = IPAddress.Parse("10.77.0.129") })), StringComparison.Ordinal);
+
+        _clock.Advance(BootConnections.Remembered);
+        Assert.DoesNotContain("(http,", TextOf(Find("grub/grub.cfg")), StringComparison.Ordinal);
+
+        _clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.Contains("(http,10.77.0.1:8080)", TextOf(Find("grub/grub.cfg")), StringComparison.Ordinal);
+        Assert.Equal("generated grub/grub.cfg", Find("grub/grub.cfg")!.Description);
+    }
+
+    [Theory]
+    [InlineData("linux/shimx64.efi")]
+    [InlineData("/linux/shimx64.efi")]
+    [InlineData("/grub/grub.cfg")]
+    [InlineData(@"\grub\grub.cfg")]
+    public void AReadOfShimOrOfGrubsConfigurationBeginsAStartAndResetsWhatTheMachineLeftOpen(string requested)
+    {
+        int reset = 0;
+        using IDisposable own = _connections.Opened(s_request.Client, () => reset++);
+        using IDisposable again = _connections.Opened(s_request.Client, () => reset++);
+        using IDisposable other = _connections.Opened(IPAddress.Parse("10.77.0.129"), () => Assert.Fail("Another machine's connection was reset."));
+
+        Assert.Equal(2, _files.Starting(requested, s_request.Client));
+
+        Assert.Equal(2, reset);
+        Assert.Equal(1, _connections.Open);
+        Assert.False(_connections.HttpIsSafe(s_request.Client));
+        Assert.Equal(0, _files.Starting(requested, s_request.Client));
+    }
+
+    [Theory]
+    [InlineData("linux/vmlinuz")]
+    [InlineData("linux/grubx64.efi")]
+    [InlineData("linux/base.img")]
+    [InlineData("linux/site.cpio")]
+    [InlineData("x64/bootmgfw.efi")]
+    [InlineData("shimx64.efi")]
+    [InlineData("")]
+    public void AReadOfAnyOtherFileResetsNothing(string requested)
+    {
+        using IDisposable open = _connections.Opened(s_request.Client, () => Assert.Fail("A connection was reset in the middle of a start."));
+
+        Assert.Equal(0, _files.Starting(requested, s_request.Client));
+        Assert.True(_connections.HttpIsSafe(s_request.Client));
     }
 
     [Theory]
@@ -240,7 +302,7 @@ public sealed class BootFilesTests : IDisposable
     [Fact]
     public void AHostWithoutALinuxSiteServesTheBootDirectoryAlone()
     {
-        BootFiles files = new(new BootFileResolver(_boot), null, 8080, TimeProvider.System);
+        BootFiles files = new(new BootFileResolver(_boot), null, 8080, _connections, TimeProvider.System);
 
         Assert.False(files.LinuxAvailable);
         Assert.True(files.TryFind("x64/bootmgfw.efi", s_request, out _));

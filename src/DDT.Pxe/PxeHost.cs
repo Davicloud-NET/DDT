@@ -19,6 +19,7 @@ public sealed class PxeHost : IHostedService, IDisposable
 {
     private readonly PxeHostSource _source;
     private readonly PxeListenerBinding _binding;
+    private readonly BootConnections _connections;
     private readonly TimeProvider _timeProvider;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger _logger;
@@ -30,7 +31,12 @@ public sealed class PxeHost : IHostedService, IDisposable
     private long _version = -1;
     private IDisposable? _subscription;
 
-    public PxeHost(PxeHostSource source, TimeProvider timeProvider, ILoggerFactory loggerFactory, PxeListenerBinding? binding = null)
+    public PxeHost(
+        PxeHostSource source,
+        TimeProvider timeProvider,
+        ILoggerFactory loggerFactory,
+        PxeListenerBinding? binding = null,
+        BootConnections? connections = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -38,6 +44,7 @@ public sealed class PxeHost : IHostedService, IDisposable
 
         _source = source;
         _binding = binding ?? PxeListenerBinding.Standard;
+        _connections = connections ?? new BootConnections(timeProvider);
         _timeProvider = timeProvider;
         _loggerFactory = loggerFactory;
         _logger = loggerFactory.CreateLogger<PxeHost>();
@@ -198,7 +205,7 @@ public sealed class PxeHost : IHostedService, IDisposable
     // The setup counts as applied once its listeners run, also when it serves no interface.
     private void Start(PxeSetup setup)
     {
-        BootFiles files = new(setup.Files, _source.Linux, setup.Options.HttpBootPort, _timeProvider);
+        BootFiles files = new(setup.Files, _source.Linux, setup.Options.HttpBootPort, _connections, _timeProvider);
 
         if (LogInterfaces(setup.Interfaces))
         {
@@ -253,7 +260,7 @@ public sealed class PxeHost : IHostedService, IDisposable
 
     private void StartProxyDhcp(PxeSetup setup)
     {
-        ProxyDhcpHandler handler = new(setup.ProxyDhcp, setup.Interfaces);
+        ProxyDhcpHandler handler = new(setup.ProxyDhcp, setup.Interfaces, _connections);
 
         // Microsoft's DHCP Server takes its address on this port for itself alone. That fails once DDT holds the port,
         // and the DHCP server then serves no one.

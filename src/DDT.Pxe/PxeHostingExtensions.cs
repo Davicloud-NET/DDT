@@ -5,6 +5,7 @@
 using System.Globalization;
 using DDT.Core.Configuration;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -34,12 +35,20 @@ public static class PxeHostingExtensions
             new($"Kestrel:Endpoints:{BootEndpointName}:Protocols", "Http1"),
         ]);
 
+        // Kestrel reads the Boot endpoint from configuration as it starts, and hands every connection of it here.
+        BootConnections connections = new(TimeProvider.System);
+        builder.WebHost.ConfigureKestrel(kestrel => kestrel.ConfigurationLoader?.Endpoint(
+            BootEndpointName,
+            endpoint => endpoint.ListenOptions.Use(next => BootPortConnections.Track(next, connections))));
+
         builder.Services.TryAddSingleton(TimeProvider.System);
         builder.Services.AddSingleton(bootstrap);
+        builder.Services.AddSingleton(connections);
         builder.Services.AddSingleton(provider => new PxeHost(
             source(provider),
             provider.GetRequiredService<TimeProvider>(),
-            provider.GetRequiredService<ILoggerFactory>()));
+            provider.GetRequiredService<ILoggerFactory>(),
+            connections: connections));
         builder.Services.AddHostedService(provider => provider.GetRequiredService<PxeHost>());
 
         return bootstrap;
@@ -65,7 +74,9 @@ public static class PxeHostingExtensions
         PxeHost host = app.Services.GetRequiredService<PxeHost>();
 
         // While no interface is served the gate answers 404 to everything on the boot port.
-        app.UseBootListenerIsolation(bootstrap.HttpBootPort, () => host.Applied?.Interfaces);
+        BootConnections connections = app.Services.GetRequiredService<BootConnections>();
+
+        app.UseBootListenerIsolation(bootstrap.HttpBootPort, () => host.Applied?.Interfaces, connections);
         app.MapBootFiles(() => host.Files);
     }
 }

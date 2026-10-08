@@ -18,7 +18,7 @@ public sealed class ProxyDhcpHandlerTests
     private static readonly IPAddress s_secondaryAddress = IPAddress.Parse("172.24.64.2");
     private static readonly IPAddress s_relay = IPAddress.Parse("192.0.2.1");
 
-    private static ProxyDhcpHandler Handler(string relays = "")
+    private static ProxyDhcpHandler Handler(string relays = "", BootConnections? connections = null)
     {
         NetworkInterfaceMap map = new(
             "vEthernet (Default Switch)",
@@ -33,7 +33,15 @@ public sealed class ProxyDhcpHandlerTests
             BootTargets = { ["X64Uefi"] = new BootTargetOptions { Method = "Tftp", BootFile = "x64/bootmgfw.efi" } },
         };
 
-        return new ProxyDhcpHandler(PxeSetup.Create(options, map).ProxyDhcp, map);
+        return new ProxyDhcpHandler(PxeSetup.Create(options, map).ProxyDhcp, map, connections);
+    }
+
+    // The address the firmware asks the boot server from is the one GRUB will load from a moment later.
+    private static IPAddress ClientOf(byte[] datagram, IPAddress source)
+    {
+        Assert.True(DhcpMessageParser.TryParse(datagram, out DhcpMessage? message, out _));
+
+        return message.ClientAddress.Equals(IPAddress.Any) ? source : message.ClientAddress;
     }
 
     private static byte[] WithGateway(byte[] datagram, IPAddress gateway)
@@ -142,6 +150,48 @@ public sealed class ProxyDhcpHandlerTests
 
         Assert.Equal(ProxyDhcpOutcomeKind.Silenced, outcome.Kind);
         Assert.Equal(ProxyDhcpSilenceReason.RelayNotAuthorised, outcome.SilenceReason);
+    }
+
+    [Fact]
+    public void ARequestOnTheBootServerPortResetsWhatTheMachinesStartBeforeLeftOpen()
+    {
+        BootConnections connections = new(TimeProvider.System);
+        byte[] request = Loopback.Fixture("Dhcp", "request-4011-uefi-x64");
+        IPAddress source = IPAddress.Parse("192.0.2.55");
+        IPAddress machine = ClientOf(request, source);
+        int reset = 0;
+        using IDisposable left = connections.Opened(machine, () => reset++);
+        using IDisposable other = connections.Opened(IPAddress.Parse("192.0.2.56"), () => Assert.Fail("Another machine's connection was reset."));
+
+        ProxyDhcpOutcome outcome = Handler(connections: connections).Handle(
+            request,
+            ProxyDhcpListenPort.PxeBootServer,
+            new DatagramArrival(ServedIndex, s_servedAddress, new IPEndPoint(source, 4011)),
+            new byte[1500]);
+
+        Assert.Equal(ProxyDhcpOutcomeKind.Replied, outcome.Kind);
+        Assert.Equal(1, outcome.ConnectionsReset);
+        Assert.Equal(1, reset);
+        Assert.False(connections.HttpIsSafe(machine));
+    }
+
+    // A DISCOVER comes from no address yet, so it names no machine whose connections could be reset.
+    [Fact]
+    public void ABroadcastDiscoverResetsNothing()
+    {
+        BootConnections connections = new(TimeProvider.System);
+        using IDisposable open = connections.Opened(IPAddress.Any, () => Assert.Fail("A connection was reset for a DISCOVER."));
+        using IDisposable served = connections.Opened(s_servedAddress, () => Assert.Fail("A connection was reset for a DISCOVER."));
+
+        ProxyDhcpOutcome outcome = Handler(connections: connections).Handle(
+            Loopback.Fixture("Dhcp", "discover-uefi-x64-pxeclient"),
+            ProxyDhcpListenPort.Dhcp,
+            new DatagramArrival(ServedIndex, IPAddress.Broadcast, new IPEndPoint(IPAddress.Any, 68)),
+            new byte[1500]);
+
+        Assert.Equal(ProxyDhcpOutcomeKind.Replied, outcome.Kind);
+        Assert.Equal(0, outcome.ConnectionsReset);
+        Assert.Equal(2, connections.Open);
     }
 
     [Fact]

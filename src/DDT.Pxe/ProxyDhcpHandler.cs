@@ -14,14 +14,16 @@ public sealed class ProxyDhcpHandler
 {
     private readonly ProxyDhcpConfiguration _configuration;
     private readonly NetworkInterfaceMap _interfaces;
+    private readonly BootConnections? _connections;
 
-    public ProxyDhcpHandler(ProxyDhcpConfiguration configuration, NetworkInterfaceMap interfaces)
+    public ProxyDhcpHandler(ProxyDhcpConfiguration configuration, NetworkInterfaceMap interfaces, BootConnections? connections = null)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(interfaces);
 
         _configuration = configuration;
         _interfaces = interfaces;
+        _connections = connections;
     }
 
     public ProxyDhcpOutcome Handle(ReadOnlySpan<byte> datagram, ProxyDhcpListenPort port, DatagramArrival arrival, Span<byte> reply)
@@ -78,6 +80,22 @@ public sealed class ProxyDhcpHandler
             Reply = proxyReply,
             Length = length,
             EgressInterface = proxyReply.Destination.Address.Equals(IPAddress.Broadcast) ? served.Index : 0,
+            ConnectionsReset = Starting(message, port, arrival),
         };
+    }
+
+    // A request on the boot server port begins a machine's start, from the address it will load from. A relayed one
+    // names that address itself, or not at all.
+    private int Starting(DhcpMessage message, ProxyDhcpListenPort port, DatagramArrival arrival)
+    {
+        if (_connections is null || port != ProxyDhcpListenPort.PxeBootServer)
+        {
+            return 0;
+        }
+
+        bool relayed = !message.GatewayAddress.Equals(IPAddress.Any);
+        IPAddress client = !message.ClientAddress.Equals(IPAddress.Any) || relayed ? message.ClientAddress : arrival.Source.Address;
+
+        return client.Equals(IPAddress.Any) ? 0 : _connections.NetbootStarts(client);
     }
 }

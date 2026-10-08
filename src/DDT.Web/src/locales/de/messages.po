@@ -158,6 +158,11 @@ msgid "''{value}'' is not one of the choices of {label}."
 msgstr "''{value}'' ist keine der Auswahlmöglichkeiten von {label}."
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.deployment.keyboardLayoutInvalid"
+msgid "''{value}'' is not the name of a keyboard layout. Use one the Linux boot environment has, such as us or de, or leave it empty for us."
+msgstr "''{value}'' ist nicht der Name eines Tastaturlayouts. Verwenden Sie eines, das die Linux-Startumgebung hat, etwa us oder de, oder lassen Sie das Feld leer für us."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.deployment.domainUserNameForm"
 msgid "''{value}'' must be written as DOMAIN\\user or user@domain.example."
 msgstr "''{value}'' muss als DOMAIN\\user oder user@domain.example geschrieben werden."
@@ -5326,6 +5331,11 @@ msgstr "Verknüpft mit {provider}"
 msgid "Linux boot environment"
 msgstr "Linux-Startumgebung"
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.linuxDefaultUnavailable"
+msgid "Linux is the default, but this server cannot start the Linux boot environment, so machines without a run are named the Windows PE boot file. {problem}"
+msgstr "Linux ist der Standard, aber dieser Server kann die Linux-Startumgebung nicht starten. Geräten ohne Ausführung wird deshalb die Startdatei von Windows PE genannt. {problem}"
+
 #: src/settings/certificate/PemField.tsx
 msgid "Load a file"
 msgstr "Datei laden"
@@ -9720,6 +9730,11 @@ msgid "The licences of the packages in this web interface"
 msgstr "Die Lizenzen der Pakete in dieser Weboberfläche"
 
 #: src/lib/serverMessages.ts
+msgctxt "linuxBoot.noRoot"
+msgid "The Linux boot environment cannot be started, because this server has no root certificate of its own to hand to the machines: its certificate comes from an administrator. A machine in that environment trusts the server only through the root it is handed. Let DDT issue the server's certificate, or start machines in Windows PE."
+msgstr "Die Linux-Startumgebung kann nicht gestartet werden, weil dieser Server kein eigenes Stammzertifikat hat, das er den Geräten mitgeben könnte: Sein Zertifikat stammt von einem Administrator. Ein Gerät in dieser Umgebung vertraut dem Server nur über das Stammzertifikat, das es mitbekommt. Lassen Sie DDT das Zertifikat des Servers ausstellen, oder starten Sie Geräte in Windows PE."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.sharesNotInLinuxBoot"
 msgid "The Linux boot environment cannot connect shares. Remove them from this step."
 msgstr "Die Linux-Startumgebung kann keine Netzwerkfreigaben verbinden. Entfernen Sie sie aus diesem Schritt."
@@ -9728,6 +9743,16 @@ msgstr "Die Linux-Startumgebung kann keine Netzwerkfreigaben verbinden. Entferne
 msgctxt "sequence.packageWithRawImage"
 msgid "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one."
 msgstr "Die Linux-Startumgebung hat keine Partition, auf der ein Paket entpackt werden kann, daher kann ein Skript dort keines haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "linuxBoot.damaged"
+msgid "The Linux boot environment in {folder} is damaged: {reason, select, unreadable {its description, {name}, cannot be read} incomplete {its description does not list {name}} missing {{name} is not there} size {{name} has another size than its description says} hash {{name} is not the file its description names} signatures {{name} carries other signatures than its description says} other {{name} cannot be read}}. Install this release of DDT again, which brings the folder anew."
+msgstr "Die Linux-Startumgebung in {folder} ist beschädigt: {reason, select, unreadable {Die Beschreibung, {name}, lässt sich nicht lesen} incomplete {Die Beschreibung führt {name} nicht auf} missing {{name} fehlt} size {{name} hat eine andere Größe, als die Beschreibung angibt} hash {{name} ist nicht die Datei, die die Beschreibung nennt} signatures {{name} trägt andere Signaturen, als die Beschreibung angibt} other {{name} lässt sich nicht lesen}}. Installieren Sie dieses Release von DDT erneut, das den Ordner neu mitbringt."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.keyboardLayoutUnknown"
+msgid "The Linux boot environment of this server has no keyboard layout ''{value}''. It has {layouts}."
+msgstr "Die Linux-Startumgebung dieses Servers hat kein Tastaturlayout ''{value}''. Sie hat {layouts}."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.linuxPhaseWithoutRawImage"
@@ -10834,6 +10859,11 @@ msgstr "Dieser Server kann das Image nicht selbst erstellen; dafür braucht es d
 msgctxt "settings.keyRingUnreadable"
 msgid "This server cannot read the key ring the stored settings secrets were encrypted with, so it saves no settings. Every DDT process on one database has to share the key ring in DDT:StorePath/keys."
 msgstr "Dieser Server kann den Schlüsselbund nicht lesen, mit dem die gespeicherten Geheimnisse der Einstellungen verschlüsselt wurden, daher speichert er keine Einstellungen. Alle DDT-Prozesse an einer Datenbank müssen den Schlüsselbund in DDT:StorePath/keys teilen."
+
+#: src/lib/serverMessages.ts
+msgctxt "linuxBoot.missing"
+msgid "This server has no Linux boot environment: {folder} holds no ddt-linux-boot.json. A release of DDT brings the folder with it."
+msgstr "Dieser Server hat keine Linux-Startumgebung: {folder} enthält keine ddt-linux-boot.json. Ein Release von DDT bringt den Ordner mit."
 
 #: src/settings/server/ServerSettings.tsx
 msgid "This server saves no settings"

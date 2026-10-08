@@ -18,8 +18,7 @@ public static class DeploymentServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.TryAddSingleton(TimeProvider.System);
-        services.AddOptions<LinuxBootOptions>().BindConfiguration(LinuxBootOptions.SectionName);
-        services.AddSingleton<LinuxBootEnvironment>();
+        services.AddDdtLinuxBoot();
         services.AddSingleton<BootEnvironments>();
         services.AddSingleton<UnattendRenderer>();
         services.AddScoped<RunQueries>();

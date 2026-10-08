@@ -5,9 +5,10 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using DDT.Contracts.BootImage;
+using DDT.Pxe;
 using DDT.Server.Certificates;
 using DDT.Server.Data;
-using Microsoft.Extensions.Configuration;
+using DDT.Server.LinuxBoot;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.Server.BootImage;
@@ -19,7 +20,7 @@ public sealed class BootImageViews(
     InstalledAdk adk,
     IBootImageHelper helper,
     CurrentBootImageJob jobs,
-    IConfiguration configuration,
+    ServerAddress address,
     IServiceProvider services)
 {
     public const string DriversChanged = "drivers";
@@ -27,11 +28,8 @@ public sealed class BootImageViews(
     public const string RootChanged = "root";
     public const string AdkChanged = "adk";
 
-    private const int DefaultPort = 8443;
-
     // The address a build puts into the image: the server's DNS name, which its certificate carries, and its port.
-    // In lower case, as Uri writes a host, so the page and the build's record agree.
-    public string ServerUrl => $"https://{new UriBuilder(Uri.UriSchemeHttps, ServerNames.DnsName()).Uri.Host}:{Port()}";
+    public string ServerUrl => address.Url;
 
     public async Task<BootImageView> ViewAsync(DdtDbContext database, CancellationToken cancellationToken)
     {
@@ -59,7 +57,26 @@ public sealed class BootImageViews(
             reasons,
             new BootImageBuilder(helper.Available, ServerUrl, installed, services.GetRequiredService<BuilderPackage>().Available),
             jobs.Job,
-            catalog.Builds());
+            catalog.Builds(),
+            Linux(services.GetRequiredService<LinuxBootEnvironment>().Current));
+    }
+
+    // The Linux boot environment as the page shows it, with the sentence that says why it cannot be started.
+    public static LinuxBootView Linux(LinuxBootState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+
+        return new LinuxBootView(
+            state.Available,
+            state.Problem?.Text,
+            state.Problem,
+            state.Snapshot,
+            state.KernelRelease,
+            state.ShimVersion,
+            state.GrubVersion,
+            state.ShimSignedUnder,
+            state.Keymaps,
+            PxeSetup.LinuxBootFile);
     }
 
     // What the build was made for and is no longer true. A build that recorded none of it is left alone.
@@ -87,15 +104,9 @@ public sealed class BootImageViews(
 
     // The agent in the image validates the name against the certificate and connects to the port.
     private bool Reaches(string serverUrl, X509Certificate2 certificate) =>
-        Uri.TryCreate(serverUrl, UriKind.Absolute, out Uri? address)
-        && address.Port == Port()
-        && ServerNames.Of(certificate).Contains(address.Host, StringComparer.OrdinalIgnoreCase);
-
-    private int Port() =>
-        configuration["Kestrel:Endpoints:Https:Url"] is { } url
-        && Uri.TryCreate(url.Replace('*', 'x').Replace('+', 'x'), UriKind.Absolute, out Uri? listening)
-            ? listening.Port
-            : DefaultPort;
+        Uri.TryCreate(serverUrl, UriKind.Absolute, out Uri? built)
+        && built.Port == address.Port
+        && ServerNames.Of(certificate).Contains(built.Host, StringComparer.OrdinalIgnoreCase);
 
     private static string Sha256(string pem)
     {

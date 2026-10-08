@@ -597,6 +597,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "iso.noWindowsImage",
     message: "This ISO holds no sources\\install.wim or install.esd, so it is no Windows installation medium.",
   }),
+  "linuxBoot.damaged": msg({
+    context: "linuxBoot.damaged",
+    message: "The Linux boot environment in {folder} is damaged: {reason, select, unreadable {its description, {name}, cannot be read} incomplete {its description does not list {name}} missing {{name} is not there} size {{name} has another size than its description says} hash {{name} is not the file its description names} signatures {{name} carries other signatures than its description says} other {{name} cannot be read}}. Install this release of DDT again, which brings the folder anew.",
+  }),
+  "linuxBoot.missing": msg({
+    context: "linuxBoot.missing",
+    message: "This server has no Linux boot environment: {folder} holds no ddt-linux-boot.json. A release of DDT brings the folder with it.",
+  }),
+  "linuxBoot.noRoot": msg({
+    context: "linuxBoot.noRoot",
+    message: "The Linux boot environment cannot be started, because this server has no root certificate of its own to hand to the machines: its certificate comes from an administrator. A machine in that environment trusts the server only through the root it is handed. Let DDT issue the server's certificate, or start machines in Windows PE.",
+  }),
   "mac.enterFull": msg({
     context: "mac.enterFull",
     message: "Enter a MAC address of 12 hex digits, such as 00:15:5D:01:02:03.",
@@ -1689,6 +1701,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "settings.deployment.domainUserNameRequired",
     message: "Required when Domain:Name is set. Name the account that joins the machines, as DOMAIN\\user or user@domain.example.",
   }),
+  "settings.deployment.keyboardLayoutInvalid": msg({
+    context: "settings.deployment.keyboardLayoutInvalid",
+    message: "''{value}'' is not the name of a keyboard layout. Use one the Linux boot environment has, such as us or de, or leave it empty for us.",
+  }),
+  "settings.deployment.keyboardLayoutUnknown": msg({
+    context: "settings.deployment.keyboardLayoutUnknown",
+    message: "The Linux boot environment of this server has no keyboard layout ''{value}''. It has {layouts}.",
+  }),
   "settings.deployment.localeUnknown": msg({
     context: "settings.deployment.localeUnknown",
     message: "''{value}'' is not a culture name. Use one such as de-DE or en-US, or leave it empty for the image's own language.",
@@ -1988,6 +2008,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "settings.pxe.kernelArgumentsReserved": msg({
     context: "settings.pxe.kernelArgumentsReserved",
     message: "''{word}'' would replace what DDT sets itself. Leave out init, rdinit, initrd, BOOT_IMAGE and every word that starts with ddt., except ddt.shell, which opens a root shell at the machine.",
+  }),
+  "settings.pxe.linuxDefaultUnavailable": msg({
+    context: "settings.pxe.linuxDefaultUnavailable",
+    message: "Linux is the default, but this server cannot start the Linux boot environment, so machines without a run are named the Windows PE boot file. {problem}",
   }),
   "settings.pxe.methodForArchitecture": msg({
     context: "settings.pxe.methodForArchitecture",

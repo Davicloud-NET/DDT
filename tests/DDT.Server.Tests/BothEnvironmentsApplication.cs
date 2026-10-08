@@ -11,17 +11,24 @@ namespace DDT.Server.Tests;
 // A server that can start both boot environments until a test takes one away. Only a test moves its clock.
 public sealed class BothEnvironmentsApplication : DdtApplication
 {
-    private const string Manifest = """{"snapshot":"20261006T203214Z","kernelRelease":"7.2.6+deb13-amd64","files":{}}""";
-
     public ManualTimeProvider Clock { get; } = new();
 
     public string LinuxBootFolder { get; } = Directory.CreateTempSubdirectory("ddt-linux-boot-").FullName;
 
-    private string ManifestPath => Path.Combine(LinuxBootFolder, "ddt-linux-boot.json");
-
     private string BootImagePath => Path.Combine(StorePath, "boot", "Boot", "boot.wim");
 
-    public void SetLinuxBoot(bool exists) => Set(ManifestPath, exists ? Manifest : null);
+    // The five files a release brings and their description, or no description, which is no boot environment.
+    public void SetLinuxBoot(bool exists)
+    {
+        if (exists)
+        {
+            TestLinuxBoot.Write(LinuxBootFolder);
+        }
+        else
+        {
+            TestLinuxBoot.Remove(LinuxBootFolder);
+        }
+    }
 
     // The server only looks whether the file is there.
     public void SetBootImage(bool exists) => Set(BootImagePath, exists ? "boot.wim" : null);
@@ -33,7 +40,11 @@ public sealed class BothEnvironmentsApplication : DdtApplication
         SetLinuxBoot(true);
         SetBootImage(true);
         builder.UseSetting("DDT:LinuxBoot:Path", LinuxBootFolder);
-        builder.ConfigureTestServices(services => services.AddSingleton<TimeProvider>(Clock));
+
+        // The test host serves no HTTPS, so it has no root of its own. Machines are handed this one.
+        builder.ConfigureTestServices(services => services
+            .AddSingleton<TimeProvider>(Clock)
+            .AddSingleton(_ => TestLinuxBoot.Environment(LinuxBootFolder)));
     }
 
     protected override void Dispose(bool disposing)

@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text.Json.Nodes;
+using DDT.Contracts.Images;
+using DDT.Contracts.Messages;
 using DDT.Server.LinuxBoot;
 using DDT.Server.Machines;
 using Microsoft.Extensions.Options;
@@ -9,24 +12,20 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// Where the server looks for the Linux boot environment, and what it takes for one.
+// Where the server looks for the Linux boot environment, what it takes for one, and what it says is wrong with it.
 public sealed class LinuxBootEnvironmentTests : IDisposable
 {
     private readonly string _programFiles = Directory.CreateTempSubdirectory("ddt-linux-boot-tests-").FullName;
 
     public void Dispose() => Directory.Delete(_programFiles, recursive: true);
 
-    private LinuxBootEnvironment Environment(string configured = "") =>
-        new(Options.Create(new LinuxBootOptions { Path = configured }), new BundledReleases(_programFiles));
+    private LinuxBootEnvironment Environment(string configured = "", Func<string?>? root = null) =>
+        new(Options.Create(new LinuxBootOptions { Path = configured }), new BundledReleases(_programFiles), root ?? (() => TestLinuxBoot.Root));
 
-    private static void Describe(string folder, string json)
-    {
-        Directory.CreateDirectory(folder);
-        File.WriteAllText(Path.Combine(folder, LinuxBootEnvironment.ManifestName), json);
-    }
+    private static string Reason(LinuxBootState state) => (string)state.Problem!.Args["reason"];
 
     [Fact]
-    public void AReleasePutsItNextToTheServersProgramFiles()
+    public async Task AReleasePutsItNextToTheServersProgramFiles()
     {
         LinuxBootEnvironment environment = Environment();
 
@@ -34,26 +33,82 @@ public sealed class LinuxBootEnvironmentTests : IDisposable
         Assert.Equal(Path.Combine(_programFiles, "linux-boot"), environment.Folder);
         Assert.Equal(Path.Combine(_programFiles, "linux-boot", "ddt-linux-boot.json"), environment.ManifestPath);
         Assert.False(environment.Available);
+        Assert.Equal(ServerMessages.LinuxBootMissing.Code, environment.Current.Problem?.Code);
+        Assert.Equal(
+            $"This server has no Linux boot environment: {environment.Folder} holds no ddt-linux-boot.json. A release of DDT brings the folder with it.",
+            environment.Current.Problem?.Text);
 
-        Describe(environment.Folder, """{"snapshot":"20261006T203214Z","kernelRelease":"7.2.6+deb13-amd64","files":{"vmlinuz":{"size":1,"sha256":"00"}}}""");
+        TestLinuxBoot.Write(environment.Folder);
 
         Assert.True(environment.Available);
+        await environment.CheckedAsync();
+        Assert.True(environment.Available);
+        Assert.Null(environment.Current.Problem);
     }
 
     [Fact]
     public void ConfigurationNamesAnotherFolder()
     {
         string elsewhere = Path.Combine(_programFiles, "from source");
-        Describe(Path.Combine(_programFiles, "linux-boot"), "{}");
+        TestLinuxBoot.Write(Path.Combine(_programFiles, "linux-boot"));
         LinuxBootEnvironment environment = Environment(elsewhere);
 
         Assert.True(environment.Configured);
         Assert.Equal(elsewhere, environment.Folder);
         Assert.False(environment.Available);
 
-        Describe(elsewhere, "{}");
+        TestLinuxBoot.Write(elsewhere);
 
         Assert.True(environment.Available);
+    }
+
+    [Fact]
+    public void SaysWhatTheDescriptionSaysForThePages()
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder);
+
+        LinuxBootState state = environment.Current;
+
+        Assert.Equal("20261006T203214Z", state.Snapshot);
+        Assert.Equal("7.2.6+deb13-amd64", state.KernelRelease);
+        Assert.Equal("1.51~1+deb13u1+16.1-2~deb13u1", state.ShimVersion);
+        Assert.Equal("1+2.12+9+deb13u2", state.GrubVersion);
+        Assert.Equal(TestLinuxBoot.Keymaps, state.Keymaps);
+        Assert.Equal(TestLinuxBoot.Names.Order(), state.Files.Order());
+        Assert.Equal(environment.Folder, state.Folder);
+
+        // The test's shim is no program, so no certificate authority is known for it.
+        Assert.Null(state.ShimSignedUnder);
+    }
+
+    // The server reads the shim's signatures itself, as firmware does, and holds the description to it.
+    [Fact]
+    public void ReadsTheCertificateAuthoritiesFromTheShimsOwnSignatures()
+    {
+        LinuxBootEnvironment environment = Environment();
+        byte[] shim = TestPe.Fixture("shimx64.efi.dualsigned");
+
+        TestLinuxBoot.Write(environment.Folder, shim, manifest => manifest["shimSignedUnder"] = new JsonArray("Microsoft Corporation UEFI CA 2011"));
+
+        Assert.True(environment.Available);
+        Assert.Equal(UefiCa.Microsoft2011, environment.Current.ShimSignedUnder);
+    }
+
+    [Fact]
+    public void ADescriptionThatNamesOtherAuthoritiesThanTheShimCarriesIsDamaged()
+    {
+        LinuxBootEnvironment environment = Environment();
+        byte[] shim = TestPe.Fixture("shimx64.efi.dualsigned");
+
+        TestLinuxBoot.Write(
+            environment.Folder,
+            shim,
+            manifest => manifest["shimSignedUnder"] = new JsonArray("Microsoft Corporation UEFI CA 2011", "Microsoft UEFI CA 2023"));
+
+        Assert.False(environment.Available);
+        Assert.Equal("signatures", Reason(environment.Current));
+        Assert.Contains("shimx64.efi carries other signatures than its description says", environment.Current.Problem!.Text, StringComparison.Ordinal);
     }
 
     // The folder alone, or a description nobody can read, is no boot environment.
@@ -62,26 +117,137 @@ public sealed class LinuxBootEnvironmentTests : IDisposable
     [InlineData("not json")]
     [InlineData("null")]
     [InlineData("[]")]
-    public void ADescriptionThatCannotBeReadIsNoBootEnvironment(string json)
+    [InlineData("{}")]
+    [InlineData("""{"files":[]}""")]
+    [InlineData("""{"files":{"vmlinuz":{"size":1,"sha256":"00"}}}""")]
+    [InlineData("""{"files":[{"name":"../ddt-key.pem","size":1,"sha256":"00"}]}""")]
+    [InlineData("""{"files":[{"name":"sub/vmlinuz","size":1,"sha256":"00"}]}""")]
+    [InlineData("""{"files":[{"size":1,"sha256":"00"}]}""")]
+    public void ADescriptionThatCannotBeReadIsDamaged(string json)
     {
         LinuxBootEnvironment environment = Environment();
-        Describe(environment.Folder, json);
+        Directory.CreateDirectory(environment.Folder);
+        File.WriteAllText(environment.ManifestPath, json);
 
-        Assert.False(environment.Available);
+        LinuxBootState state = environment.Current;
+
+        Assert.False(state.Available);
+        Assert.Equal(ServerMessages.LinuxBootDamaged.Code, state.Problem?.Code);
+        Assert.Equal("unreadable", Reason(state));
+        Assert.Empty(state.Files);
     }
 
-    // The file is read again only when it changed, and then it is.
+    [Fact]
+    public void ADescriptionWithoutOneOfTheFilesAMachineNeedsIsDamaged()
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder, change: manifest => ((JsonArray)manifest["files"]!).RemoveAt(2));
+
+        Assert.False(environment.Available);
+        Assert.Equal("incomplete", Reason(environment.Current));
+        Assert.Contains("its description does not list vmlinuz", environment.Current.Problem!.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AListedFileThatIsNotThereIsDamage()
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder);
+        File.Delete(Path.Combine(environment.Folder, "base.img"));
+
+        Assert.False(environment.Available);
+        Assert.Equal(
+            $"The Linux boot environment in {environment.Folder} is damaged: base.img is not there. Install this release of DDT again, which brings the folder anew.",
+            environment.Current.Problem!.Text);
+    }
+
+    [Fact]
+    public void AListedFileOfAnotherSizeIsDamage()
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder);
+        File.AppendAllText(Path.Combine(environment.Folder, "ddt.img"), "cut off or grown");
+
+        Assert.False(environment.Available);
+        Assert.Equal("size", Reason(environment.Current));
+        Assert.Equal("ddt.img", environment.Current.Problem!.Args["name"]);
+    }
+
+    // The same size and other content: only reading the file tells, which happens once and in the background.
+    [Fact]
+    public async Task AListedFileWithOtherContentIsFoundDamagedOnceItsHashWasCompared()
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder);
+        File.WriteAllText(Path.Combine(environment.Folder, "vmlinuz"), "TEST vmlinuz");
+
+        await environment.CheckedAsync();
+
+        Assert.False(environment.Available);
+        Assert.Equal("hash", Reason(environment.Current));
+        Assert.Contains("vmlinuz is not the file its description names", environment.Current.Problem!.Text, StringComparison.Ordinal);
+    }
+
+    // Machines trust the server only through the root they are handed, so without one none can be started.
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void WithoutARootCertificateToHandOutNoMachineCanBeStarted(string? root)
+    {
+        LinuxBootEnvironment environment = Environment(root: () => root);
+        TestLinuxBoot.Write(environment.Folder);
+
+        LinuxBootState state = environment.Current;
+
+        Assert.False(state.Available);
+        Assert.Equal(ServerMessages.LinuxBootNoRoot.Code, state.Problem?.Code);
+        Assert.StartsWith("The Linux boot environment cannot be started, because this server has no root certificate of its own", state.Problem!.Text, StringComparison.Ordinal);
+
+        // What the pages show of it is still there.
+        Assert.Equal("7.2.6+deb13-amd64", state.KernelRelease);
+    }
+
+    [Fact]
+    public void ARootThatArrivesLaterMakesItAvailableWithoutAnotherLookAtTheFiles()
+    {
+        string? root = null;
+        LinuxBootEnvironment environment = Environment(root: () => root);
+        TestLinuxBoot.Write(environment.Folder);
+        Assert.False(environment.Available);
+
+        root = TestLinuxBoot.Root;
+
+        Assert.True(environment.Available);
+        Assert.Equal(TestLinuxBoot.Root, environment.RootCertificatePem);
+    }
+
+    // The description is read again only when it changed, and then it is.
     [Fact]
     public void NoticesADescriptionThatWasReplacedOrRemoved()
     {
         LinuxBootEnvironment environment = Environment();
-        Describe(environment.Folder, "not json at all");
+        Directory.CreateDirectory(environment.Folder);
+        File.WriteAllText(environment.ManifestPath, "not json at all");
         Assert.False(environment.Available);
 
-        Describe(environment.Folder, """{"snapshot":"20261006T203214Z"}""");
+        TestLinuxBoot.Write(environment.Folder);
         Assert.True(environment.Available);
 
-        File.Delete(environment.ManifestPath);
+        TestLinuxBoot.Remove(environment.Folder);
         Assert.False(environment.Available);
+        Assert.Equal(ServerMessages.LinuxBootMissing.Code, environment.Current.Problem?.Code);
+    }
+
+    [Fact]
+    public void LooksAtTheFilesOnceForADescriptionAndNotAtEveryQuestion()
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder);
+        Assert.True(environment.Available);
+
+        // Gone behind the catalogue's back: it finds out when the description changes, and netboot when it serves.
+        File.Delete(Path.Combine(environment.Folder, "base.img"));
+
+        Assert.True(environment.Available);
     }
 }

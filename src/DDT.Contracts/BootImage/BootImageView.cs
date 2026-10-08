@@ -22,4 +22,6 @@ public sealed record BootImageView(
     // The job that runs, or the last one since the server started.
     BootImageJob? Job,
     // What the boot directory holds, newest first.
-    IReadOnlyList<BootImageStoredBuild> Builds);
+    IReadOnlyList<BootImageStoredBuild> Builds,
+    // The Linux boot environment, which comes with DDT and needs no build. Null from a server that does not say.
+    LinuxBootView? Linux = null);

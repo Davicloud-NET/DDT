@@ -16,6 +16,7 @@ using DDT.Contracts.Settings;
 using DDT.Contracts.Tokens;
 using DDT.Contracts.Users;
 using DDT.Server.Deployments;
+using DDT.Server.LinuxBoot;
 using DDT.Server.Machines;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
@@ -30,7 +31,8 @@ public sealed partial class LiveNotifier(
     IHubContext<LiveHub> hub,
     TimeProvider timeProvider,
     IHostApplicationLifetime lifetime,
-    ILogger<LiveNotifier> logger)
+    ILogger<LiveNotifier> logger,
+    BootChoices? bootChoices = null)
 {
     // A running sequence reports every few seconds, and every browser redraws the machine's row for each push.
     public static readonly TimeSpan MachinePushInterval = TimeSpan.FromSeconds(1);
@@ -68,6 +70,9 @@ public sealed partial class LiveNotifier(
 
         MachineSummary summary = MachineSummaries.From(machine, deployment);
         _machines.Push(summary.Id, () => PushAsync(summary));
+
+        // What the machine starts from the network next may have changed with it.
+        bootChoices?.Changed();
 
         if (deployment is not null)
         {
@@ -109,6 +114,7 @@ public sealed partial class LiveNotifier(
         ArgumentNullException.ThrowIfNull(machineIds);
 
         Guid[] removed = [.. machineIds];
+        bootChoices?.Changed();
 
         foreach (Guid machineId in removed)
         {

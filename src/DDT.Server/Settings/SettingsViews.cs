@@ -5,7 +5,9 @@
 using System.Text.Json;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Settings;
+using DDT.Pxe;
 using DDT.Server.Data;
+using DDT.Server.LinuxBoot;
 using DDT.Server.Live;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,7 +16,12 @@ namespace DDT.Server.Settings;
 // Builds the page's view of a section. It holds the snapshot and, for a section applied by rebuilding a component, how
 // every host applied it. A change reaches other browsers through the hub with the whole view, so they patch what they
 // show.
-public sealed class SettingsViews(DdtDbContext database, DdtSettings settings, SettingsHostStates hostStates, LiveNotifier live)
+public sealed class SettingsViews(
+    DdtDbContext database,
+    DdtSettings settings,
+    SettingsHostStates hostStates,
+    LiveNotifier live,
+    LinuxBootEnvironment linuxBoot)
 {
     public async Task<object> ViewAsync(SettingsSectionApi api, SettingsSnapshot snapshot, CancellationToken cancellationToken)
     {
@@ -135,7 +142,7 @@ public sealed class SettingsViews(DdtDbContext database, DdtSettings settings, S
                 SettingsHostStates.Text(row)))];
 
     // The host only logs an interface name that matches nothing, so the page says which host didn't find it.
-    private static List<SettingMessage> Warnings(SettingsSectionState state, List<SettingsHostState> rows) =>
+    private List<SettingMessage> Warnings(SettingsSectionState state, List<SettingsHostState> rows) =>
         state.Name != SettingsSectionNames.Pxe
             ? []
             : [.. rows
@@ -144,7 +151,22 @@ public sealed class SettingsViews(DdtDbContext database, DdtSettings settings, S
                 .SelectMany(entry => entry.Detail!.Unmatched.Select(name => Message(
                     "interfaces",
                     ServerMessages.SettingsPxeInterfaceNotFound.With("name", name, "host", entry.Host),
-                    SettingWarningCodes.PxeInterfaceNotFound)))];
+                    SettingWarningCodes.PxeInterfaceNotFound))),
+                .. LinuxDefault(state)];
+
+    // Netboot then names the Windows PE boot file instead, which the page would otherwise not say.
+    private IEnumerable<SettingMessage> LinuxDefault(SettingsSectionState state)
+    {
+        if (state.Options is PxeOptions pxe
+            && PxeSetup.ReadDefaultEnvironment(pxe.DefaultBootEnvironment) == DefaultBootEnvironment.Linux
+            && linuxBoot.Current.Problem is { } problem)
+        {
+            yield return Message(
+                "defaultBootEnvironment",
+                ServerMessages.SettingsPxeLinuxDefaultUnavailable.With("problem", problem),
+                SettingWarningCodes.PxeLinuxDefaultUnavailable);
+        }
+    }
 
     private static SettingMessage Message(string field, ServerMessage text, string? code) => new(field, text.Text, code, text);
 

@@ -23,4 +23,7 @@ public sealed record AgentRegistrationResult(
     // The language the console at the machine starts in, en or de. Null means the language of WinPE.
     string? ConsoleLanguage = null,
     // The logo the console shows. The agent downloads it from AgentRoutes.ConsoleLogo. Null when there's no logo.
-    string? ConsoleLogoSha256 = null);
+    string? ConsoleLogoSha256 = null,
+    // The keyboard layout of the console in the Linux boot environment, by its keymap's name, such as de. Null where
+    // the settings name none, and for an agent in another environment.
+    string? ConsoleKeyboardLayout = null);

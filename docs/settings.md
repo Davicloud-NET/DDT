@@ -153,6 +153,7 @@ administrator here stay the defaults (see "Accounts in M7" below).
 | Locale | culture name | unset: image language, else en-US | | live | Admin |
 | Keyboard | input locale | unset: the locale | | live | Admin |
 | ConsoleLanguage | en or de | unset: the language of Windows PE | | live, from the next registration | Admin |
+| ConsoleKeyboardLayout | a keymap of the Linux boot environment, such as de | unset: us | | live, from the next netboot | Admin |
 | LocalAdministrator:Name | 1 to 20 characters | Admin | | live | Admin |
 | LocalAdministrator:Password | text | unset: no account, Windows asks | yes | live | Admin |
 | Domain:Name | DNS name | unset: workgroup | | live | Admin |
@@ -164,6 +165,13 @@ administrator here stay the defaults (see "Accounts in M7" below).
 Domain:Controller is used only by the join account check on the page (POST
 /api/deployments/domain-check), which reads the section at every check, so the page can offer the
 check next to the fields it tests.
+
+ConsoleKeyboardLayout is the keyboard layout of the console in the Linux boot environment. The page
+offers the layouts that environment has keymaps for, which its description lists (LinuxBootReading.cs),
+and a save refuses any other. The server puts the name onto the kernel command line as `ddt.keymap`
+when it generates grub.cfg, so a change reaches a machine at its next netboot, and it sends the name
+in the registration answer to an agent in that environment as well, for the graphical console that
+follows. Windows PE keeps the layout its boot image was built with (section 4).
 
 The same page holds the console's logo, which is a file rather than a value of the section: a PNG of
 at most 512 KB and 2048 by 2048 pixels, uploaded as `PUT /api/settings/console-logo` (image/png) and

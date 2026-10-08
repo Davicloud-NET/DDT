@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Agents;
 using DDT.Contracts.Server;
 using DDT.Server.Authentication;
-using DDT.Server.BootImage;
 using DDT.Server.Certificates;
 using DDT.Server.Data;
+using DDT.Server.Machines;
 using DDT.Server.Settings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -43,15 +44,16 @@ public static class ServerEndpoints
         DdtDbContext database,
         DdtSettings settings,
         FirstAdministratorFile firstPassword,
-        BootImageCatalog bootImage,
+        BootEnvironments environments,
         CancellationToken cancellationToken) =>
         TypedResults.Ok(new SetupChecklist(
             !File.Exists(firstPassword.Path),
             !string.IsNullOrWhiteSpace(settings.Current.Pxe?.Interfaces),
-            bootImage.Builds().Count > 0,
+            environments.Exists(AgentEnvironment.WindowsPE),
             await database.Images.AnyAsync(cancellationToken).ConfigureAwait(false),
             await database.TaskSequences.AnyAsync(cancellationToken).ConfigureAwait(false),
-            await database.Machines.AnyAsync(cancellationToken).ConfigureAwait(false)));
+            await database.Machines.AnyAsync(cancellationToken).ConfigureAwait(false),
+            environments.Exists(AgentEnvironment.LinuxBoot)));
 
     // Empty where the server logs to its console, as in a container.
     private static Ok<IReadOnlyList<LogFileView>> GetLogs(LogFiles logs) => TypedResults.Ok(logs.List());

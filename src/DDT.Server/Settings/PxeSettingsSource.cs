@@ -6,6 +6,7 @@ using System.Text.Json;
 using DDT.Contracts.Messages;
 using DDT.Pxe;
 using DDT.Server.Data;
+using DDT.Server.LinuxBoot;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.Server.Settings;
@@ -37,7 +38,11 @@ public static class PxeSettingsSource
                 });
 
                 return Task.CompletedTask;
-            });
+            })
+        {
+            Linux = services.GetRequiredService<LinuxBootSite>(),
+            Choice = services.GetRequiredService<BootChoices>(),
+        };
     }
 
     // While the section has problems nothing is served. When configuration names the interfaces, a bind failure at

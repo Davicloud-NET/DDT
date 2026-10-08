@@ -23,6 +23,10 @@ public sealed class DeploymentOptions
     // it's WinPE's language, which is English in the image copype makes. It isn't in the answer file.
     public string? ConsoleLanguage { get; set; }
 
+    // The keyboard layout of the console in the Linux boot environment, by the name of its keymap, such as de. If
+    // unset, it's us. Windows PE has its layout from the boot image's build.
+    public string? ConsoleKeyboardLayout { get; set; }
+
     public LocalAdministratorOptions LocalAdministrator { get; set; } = new();
 
     public DomainOptions Domain { get; set; } = new();

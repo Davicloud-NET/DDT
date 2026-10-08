@@ -27,6 +27,15 @@ public static partial class ServerMessages
         "''{value}'' is not a language the console at the machine speaks. Use en or de, or leave it empty for the language of " +
         "Windows PE.");
 
+    public static readonly MessageTemplate SettingsDeploymentKeyboardLayoutInvalid = Define(
+        "settings.deployment.keyboardLayoutInvalid",
+        "''{value}'' is not the name of a keyboard layout. Use one the Linux boot environment has, such as us or de, or leave " +
+        "it empty for us.");
+
+    public static readonly MessageTemplate SettingsDeploymentKeyboardLayoutUnknown = Define(
+        "settings.deployment.keyboardLayoutUnknown",
+        "The Linux boot environment of this server has no keyboard layout ''{value}''. It has {layouts}.");
+
     public static readonly MessageTemplate SettingsDeploymentAdministratorNameInvalid = Define(
         "settings.deployment.administratorNameInvalid",
         "''{value}'' is not a valid account name. Use 1 to {max} characters and none of \" / \\ [ ] : ; | = , + * ? < >.");
@@ -217,6 +226,12 @@ public static partial class ServerMessages
         "settings.pxe.kernelArgumentsReserved",
         "''{word}'' would replace what DDT sets itself. Leave out init, rdinit, initrd, BOOT_IMAGE and every word that starts " +
         "with ddt., except ddt.shell, which opens a root shell at the machine.");
+
+    // Problem is the sentence that says why the Linux boot environment cannot be started.
+    public static readonly MessageTemplate SettingsPxeLinuxDefaultUnavailable = Define(
+        "settings.pxe.linuxDefaultUnavailable",
+        "Linux is the default, but this server cannot start the Linux boot environment, so machines without a run are named " +
+        "the Windows PE boot file. {problem}");
 
     public static readonly MessageTemplate SettingsPxeKernelArgumentsLength = Define(
         "settings.pxe.kernelArgumentsLength",

@@ -12,4 +12,6 @@ public sealed record DeploymentSettings(
     LocalAdministratorSettings LocalAdministrator,
     DomainSettings Domain,
     // The language the console at the machine starts in, en or de. Null means the language of WinPE.
-    string? ConsoleLanguage = null);
+    string? ConsoleLanguage = null,
+    // The keyboard layout of the console in the Linux boot environment, by its keymap's name, such as de. Null is us.
+    string? ConsoleKeyboardLayout = null);

@@ -64,6 +64,26 @@ public sealed class DeploymentOptionsValidationTests
         Assert.All(problems, problem => Assert.Equal("ConsoleLanguage", problem.Field));
     }
 
+    // The name goes onto the kernel command line of every machine that netboots Linux, so it is a keymap's name.
+    [Theory]
+    [InlineData("de", true)]
+    [InlineData("us", true)]
+    [InlineData(" ch ", true)]
+    [InlineData("de-latin1", true)]
+    [InlineData("", true)]
+    [InlineData("DE", false)]
+    [InlineData("de quiet", false)]
+    [InlineData("de;reboot", false)]
+    [InlineData("0407:00000407", false)]
+    [InlineData("a-layout-name-that-is-too-long", false)]
+    public void TheConsolesKeyboardLayoutIsAKeymapsName(string layout, bool valid)
+    {
+        IReadOnlyList<SettingProblem> problems = DeploymentOptionsValidation.FindProblems(new DeploymentOptions { ConsoleKeyboardLayout = layout });
+
+        Assert.Equal(valid, problems.Count == 0);
+        Assert.All(problems, problem => Assert.Equal("ConsoleKeyboardLayout", problem.Field));
+    }
+
     [Fact]
     public void ADomainNeedsItsAccountAndALocalAdministrator()
     {

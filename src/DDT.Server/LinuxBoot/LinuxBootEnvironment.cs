@@ -2,24 +2,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Text.Json;
+using DDT.Contracts.Messages;
 using DDT.Server.Machines;
 using Microsoft.Extensions.Options;
 
 namespace DDT.Server.LinuxBoot;
 
 // The Linux boot environment a release puts next to the server: its loaders, kernel and initrds, with a description.
-public sealed class LinuxBootEnvironment(IOptions<LinuxBootOptions> options, BundledReleases bundled)
+// rootCertificate gives the root the machines are handed, or null when the server has none of its own.
+public sealed class LinuxBootEnvironment(IOptions<LinuxBootOptions> options, BundledReleases bundled, Func<string?> rootCertificate)
 {
     public const string FolderName = "linux-boot";
 
     public const string ManifestName = "ddt-linux-boot.json";
 
-    // The description lists every file and package, which stays far below this.
-    private const int MaxManifestBytes = 1024 * 1024;
-
     private readonly Lock _lock = new();
-    private (string Path, long Length, DateTime WriteTimeUtc, bool Readable)? _read;
+    private LinuxBootReading? _reading;
 
     // True when configuration names the folder, as a server run from source does.
     public bool Configured => !string.IsNullOrWhiteSpace(options.Value.Path);
@@ -28,54 +26,63 @@ public sealed class LinuxBootEnvironment(IOptions<LinuxBootOptions> options, Bun
 
     public string ManifestPath => Path.Combine(Folder, ManifestName);
 
-    // Whether the folder holds a description DDT can read. The files it lists are not checked yet.
-    public bool Available
+    // Whether machines can be started in it now.
+    public bool Available => Current.Available;
+
+    // What the folder holds, read again only when the description changed, since every list of sequences asks.
+    public LinuxBootState Current
     {
         get
         {
-            try
-            {
-                FileInfo file = new(ManifestPath);
+            LinuxBootState state = Read().State;
 
-                return file.Exists && file.Length <= MaxManifestBytes && Readable(file);
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                return false;
-            }
+            return state.Problem is null && string.IsNullOrWhiteSpace(rootCertificate())
+                ? state with { Problem = ServerMessages.LinuxBootNoRoot.With() }
+                : state;
         }
     }
 
-    // Read again only when the file changed, since every list of sequences asks.
-    private bool Readable(FileInfo file)
+    // The root certificate the machines are handed, in PEM. Null while there is none.
+    public string? RootCertificatePem => rootCertificate();
+
+    // Ends once every file's hash was compared with the description, which happens in the background.
+    public Task CheckedAsync() => Read().Checked;
+
+    private LinuxBootReading Read()
     {
+        string folder = Folder;
+        (long Length, DateTime WriteTimeUtc) stamp = Stamp(Path.Combine(folder, ManifestName));
+
         lock (_lock)
         {
-            if (_read is { } read && read.Path == file.FullName && read.Length == file.Length && read.WriteTimeUtc == file.LastWriteTimeUtc)
+            if (_reading is { } known && known.Folder == folder && known.Stamp == stamp)
             {
-                return read.Readable;
+                return known;
             }
         }
 
-        bool readable = Read(file.FullName) is not null;
+        LinuxBootReading reading = LinuxBootReading.Of(folder, stamp);
 
         lock (_lock)
         {
-            _read = (file.FullName, file.Length, file.LastWriteTimeUtc, readable);
+            _reading = reading;
         }
 
-        return readable;
+        return reading;
     }
 
-    private static LinuxBootManifest? Read(string path)
+    // A description that is not there has no length, which is a stamp too.
+    private static (long Length, DateTime WriteTimeUtc) Stamp(string manifest)
     {
         try
         {
-            return JsonSerializer.Deserialize(File.ReadAllBytes(path), LinuxBootJsonContext.Default.LinuxBootManifest);
+            FileInfo file = new(manifest);
+
+            return file.Exists ? (file.Length, file.LastWriteTimeUtc) : (-1, default);
         }
-        catch (JsonException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return null;
+            return (-1, default);
         }
     }
 }

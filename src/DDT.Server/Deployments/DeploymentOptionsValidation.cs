@@ -7,6 +7,7 @@ using System.Globalization;
 using DDT.Contracts.Messages;
 using DDT.Core.Configuration;
 using DDT.Core.Unattend;
+using DDT.Pxe;
 
 namespace DDT.Server.Deployments;
 
@@ -39,6 +40,12 @@ public static class DeploymentOptionsValidation
         if (!string.IsNullOrWhiteSpace(options.ConsoleLanguage) && options.ConsoleLanguage.Trim() is not ("en" or "de"))
         {
             problems.Add(new("ConsoleLanguage", ServerMessages.SettingsDeploymentConsoleLanguageUnknown.With("value", options.ConsoleLanguage)));
+        }
+
+        // The name goes onto the kernel command line, so it is a keymap's name or nothing.
+        if (!string.IsNullOrWhiteSpace(options.ConsoleKeyboardLayout) && !GrubConfig.IsKeymap(options.ConsoleKeyboardLayout.Trim()))
+        {
+            problems.Add(new("ConsoleKeyboardLayout", ServerMessages.SettingsDeploymentKeyboardLayoutInvalid.With("value", options.ConsoleKeyboardLayout)));
         }
 
         if (!string.IsNullOrEmpty(options.LocalAdministrator.Password) && !IsAccountName(options.LocalAdministrator.Name))

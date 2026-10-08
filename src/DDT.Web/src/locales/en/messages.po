@@ -158,6 +158,11 @@ msgid "''{value}'' is not one of the choices of {label}."
 msgstr "''{value}'' is not one of the choices of {label}."
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.deployment.keyboardLayoutInvalid"
+msgid "''{value}'' is not the name of a keyboard layout. Use one the Linux boot environment has, such as us or de, or leave it empty for us."
+msgstr "''{value}'' is not the name of a keyboard layout. Use one the Linux boot environment has, such as us or de, or leave it empty for us."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.deployment.domainUserNameForm"
 msgid "''{value}'' must be written as DOMAIN\\user or user@domain.example."
 msgstr "''{value}'' must be written as DOMAIN\\user or user@domain.example."
@@ -5326,6 +5331,11 @@ msgstr "Linked to {provider}"
 msgid "Linux boot environment"
 msgstr "Linux boot environment"
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.linuxDefaultUnavailable"
+msgid "Linux is the default, but this server cannot start the Linux boot environment, so machines without a run are named the Windows PE boot file. {problem}"
+msgstr "Linux is the default, but this server cannot start the Linux boot environment, so machines without a run are named the Windows PE boot file. {problem}"
+
 #: src/settings/certificate/PemField.tsx
 msgid "Load a file"
 msgstr "Load a file"
@@ -9720,6 +9730,11 @@ msgid "The licences of the packages in this web interface"
 msgstr "The licences of the packages in this web interface"
 
 #: src/lib/serverMessages.ts
+msgctxt "linuxBoot.noRoot"
+msgid "The Linux boot environment cannot be started, because this server has no root certificate of its own to hand to the machines: its certificate comes from an administrator. A machine in that environment trusts the server only through the root it is handed. Let DDT issue the server's certificate, or start machines in Windows PE."
+msgstr "The Linux boot environment cannot be started, because this server has no root certificate of its own to hand to the machines: its certificate comes from an administrator. A machine in that environment trusts the server only through the root it is handed. Let DDT issue the server's certificate, or start machines in Windows PE."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.sharesNotInLinuxBoot"
 msgid "The Linux boot environment cannot connect shares. Remove them from this step."
 msgstr "The Linux boot environment cannot connect shares. Remove them from this step."
@@ -9728,6 +9743,16 @@ msgstr "The Linux boot environment cannot connect shares. Remove them from this 
 msgctxt "sequence.packageWithRawImage"
 msgid "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one."
 msgstr "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one."
+
+#: src/lib/serverMessages.ts
+msgctxt "linuxBoot.damaged"
+msgid "The Linux boot environment in {folder} is damaged: {reason, select, unreadable {its description, {name}, cannot be read} incomplete {its description does not list {name}} missing {{name} is not there} size {{name} has another size than its description says} hash {{name} is not the file its description names} signatures {{name} carries other signatures than its description says} other {{name} cannot be read}}. Install this release of DDT again, which brings the folder anew."
+msgstr "The Linux boot environment in {folder} is damaged: {reason, select, unreadable {its description, {name}, cannot be read} incomplete {its description does not list {name}} missing {{name} is not there} size {{name} has another size than its description says} hash {{name} is not the file its description names} signatures {{name} carries other signatures than its description says} other {{name} cannot be read}}. Install this release of DDT again, which brings the folder anew."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.keyboardLayoutUnknown"
+msgid "The Linux boot environment of this server has no keyboard layout ''{value}''. It has {layouts}."
+msgstr "The Linux boot environment of this server has no keyboard layout ''{value}''. It has {layouts}."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.linuxPhaseWithoutRawImage"
@@ -10834,6 +10859,11 @@ msgstr "This server cannot build the image itself, which takes the DDT Helper se
 msgctxt "settings.keyRingUnreadable"
 msgid "This server cannot read the key ring the stored settings secrets were encrypted with, so it saves no settings. Every DDT process on one database has to share the key ring in DDT:StorePath/keys."
 msgstr "This server cannot read the key ring the stored settings secrets were encrypted with, so it saves no settings. Every DDT process on one database has to share the key ring in DDT:StorePath/keys."
+
+#: src/lib/serverMessages.ts
+msgctxt "linuxBoot.missing"
+msgid "This server has no Linux boot environment: {folder} holds no ddt-linux-boot.json. A release of DDT brings the folder with it."
+msgstr "This server has no Linux boot environment: {folder} holds no ddt-linux-boot.json. A release of DDT brings the folder with it."
 
 #: src/settings/server/ServerSettings.tsx
 msgid "This server saves no settings"

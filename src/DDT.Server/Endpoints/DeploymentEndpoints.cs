@@ -7,6 +7,7 @@ using DDT.Contracts.Messages;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
+using DDT.Server.LinuxBoot;
 using DDT.Server.Machines;
 using DDT.Server.Settings;
 using Microsoft.AspNetCore.Builder;
@@ -48,7 +49,11 @@ public static class DeploymentEndpoints
 
     // Three booleans and the time, from one snapshot, and nothing else from the settings, because Viewers read this.
     // The boot environments are the server's files, not a setting.
-    private static Ok<DeploymentOptionsView> ReadOptions(DdtSettings settings, BootEnvironments environments, TimeProvider timeProvider)
+    private static Ok<DeploymentOptionsView> ReadOptions(
+        DdtSettings settings,
+        BootEnvironments environments,
+        LinuxBootEnvironment linuxBoot,
+        TimeProvider timeProvider)
     {
         SettingsSnapshot snapshot = settings.Current;
 
@@ -57,7 +62,8 @@ public static class DeploymentEndpoints
             snapshot.Machines.RequireWebApproval,
             snapshot.Machines.ZeroTouchEnabled,
             timeProvider.GetUtcNow(),
-            environments.Existing()));
+            environments.Existing(),
+            linuxBoot.Current.ShimSignedUnder));
     }
 
     private static async Task<Ok<DomainJoinCheckView>> CheckDomainJoinAsync(

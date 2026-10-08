@@ -13,11 +13,11 @@ licence texts. The container image carries LICENSE, NOTICE, this file and `licen
 `/app/legal`, and the web UI's About page links to them. The agent carries LICENSE, NOTICE, this
 file, `licenses/dotnet`, `licenses/wimlib` and `licenses/zstd`, and prints them with
 `ddt-agent --licenses`. The agent for Linux does the same, with `licenses/gcc`, `licenses/musl` and
-`licenses/openssl` in place of `licenses/wimlib`. The console in Windows PE carries LICENSE, NOTICE and the licence texts of
-what it contains, and shows them on its licences view. The web bundle alone holds no licence files;
-its licences are in `licenses/web`, which the About page links to. The Linux boot environment holds
-none either; its texts are in `licenses/linux-boot`. Pass LICENSE, NOTICE, this file and
-`licenses/` on with any artefact you distribute.
+`licenses/openssl` in place of `licenses/wimlib`. The console in Windows PE carries LICENSE, NOTICE
+and the licence texts of what it contains, and shows them on its licences view. The web bundle
+alone holds no licence files; its licences are in `licenses/web`, which the About page links to.
+The Linux boot environment holds none either; its texts are in `licenses/linux-boot`. Pass LICENSE,
+NOTICE, this file and `licenses/` on with any artefact you distribute.
 
 `src/DDT.ServiceDefaults/Extensions.cs` is code from the .NET Aspire ServiceDefaults project
 template, Copyright (c) .NET Foundation and Contributors, under the MIT licence in

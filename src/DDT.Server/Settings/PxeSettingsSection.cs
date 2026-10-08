@@ -22,11 +22,14 @@ public sealed class PxeSettingsSection() : SettingsSectionDefinition<PxeOptions>
     [
         new("Interfaces"),
         new("EnableProxyDhcp"),
+        new("LeaveDhcpPort"),
         new("EnableTftp"),
         new("TftpSinglePort"),
         new("TftpMaxWindowSize"),
         new("MaxConcurrentTftpTransfers"),
         new("AuthorisedRelayAgents"),
+        new("DefaultBootEnvironment"),
+        new("LinuxKernelArguments"),
         new(
             "BootTargets",
             SettingFieldKind.Collection,

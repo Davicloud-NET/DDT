@@ -15,8 +15,14 @@ public sealed class ProxyDhcpHandler
     private readonly ProxyDhcpConfiguration _configuration;
     private readonly NetworkInterfaceMap _interfaces;
     private readonly BootConnections? _connections;
+    private readonly NetbootChoice? _choice;
 
-    public ProxyDhcpHandler(ProxyDhcpConfiguration configuration, NetworkInterfaceMap interfaces, BootConnections? connections = null)
+    // Without a choice every machine gets the boot targets of the configuration.
+    public ProxyDhcpHandler(
+        ProxyDhcpConfiguration configuration,
+        NetworkInterfaceMap interfaces,
+        BootConnections? connections = null,
+        NetbootChoice? choice = null)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(interfaces);
@@ -24,6 +30,7 @@ public sealed class ProxyDhcpHandler
         _configuration = configuration;
         _interfaces = interfaces;
         _connections = connections;
+        _choice = choice;
     }
 
     public ProxyDhcpOutcome Handle(ReadOnlySpan<byte> datagram, ProxyDhcpListenPort port, DatagramArrival arrival, Span<byte> reply)
@@ -47,16 +54,14 @@ public sealed class ProxyDhcpHandler
         // must carry that one.
         IPAddress localAddress = served.Owns(arrival.Address) ? arrival.Address : served.Address;
 
-        ProxyDhcpDecision decision = ProxyDhcpResponder.Respond(
-            new ProxyDhcpRequest
-            {
-                Message = message,
-                ReceivedOn = port,
-                LocalAddress = localAddress,
-                SourceAddress = arrival.Source.Address,
-                SourcePort = arrival.Source.Port,
-            },
-            _configuration);
+        ProxyDhcpDecision decision = Decide(new ProxyDhcpRequest
+        {
+            Message = message,
+            ReceivedOn = port,
+            LocalAddress = localAddress,
+            SourceAddress = arrival.Source.Address,
+            SourcePort = arrival.Source.Port,
+        });
 
         if (!decision.TryGetReply(out ProxyDhcpReply? proxyReply))
         {
@@ -82,6 +87,18 @@ public sealed class ProxyDhcpHandler
             EgressInterface = proxyReply.Destination.Address.Equals(IPAddress.Broadcast) ? served.Index : 0,
             ConnectionsReset = Starting(message, port, arrival),
         };
+    }
+
+    // The machine's boot environment decides which boot file the answer names. A machine the server can start none
+    // for gets no answer, but only where it would have got one, so every other reason to stay silent keeps its name.
+    private ProxyDhcpDecision Decide(ProxyDhcpRequest request)
+    {
+        ProxyDhcpConfiguration? chosen = _choice is null ? _configuration : _choice.For(request.Message);
+        ProxyDhcpDecision decision = ProxyDhcpResponder.Respond(request, chosen ?? _configuration);
+
+        return chosen is null && decision.Reply is not null
+            ? ProxyDhcpDecision.Silent(ProxyDhcpSilenceReason.NoBootEnvironmentForMachine)
+            : decision;
     }
 
     // A request on the boot server port begins a machine's start, from the address it will load from. A relayed one

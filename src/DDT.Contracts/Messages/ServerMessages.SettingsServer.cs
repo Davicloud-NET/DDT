@@ -132,6 +132,8 @@ public static partial class ServerMessages
         "tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not " +
         "bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this " +
         "port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, " +
-        "PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check " +
-        "that no other service holds the port.}}");
+        "PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} " +
+        "dhcpServerHere {A DHCP server on this computer holds the port. Turn on LeaveDhcpPort, and DDT answers on UDP 4011 " +
+        "alone, which machines reach once that DHCP server sends option 60, PXEClient. UDP 4011 and TFTP are serving " +
+        "meanwhile.} other {Check that no other service holds the port.}}");
 }

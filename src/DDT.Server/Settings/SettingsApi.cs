@@ -155,12 +155,18 @@ public static class SettingsApi
                         target.Value.ServerAddress,
                         target.Value.ServerHostName,
                         target.Value.AdvertiseBootServerDiscovery),
-                    StringComparer.OrdinalIgnoreCase))
+                    StringComparer.OrdinalIgnoreCase),
+                pxe.LeaveDhcpPort,
+                BootEnvironmentName(pxe.DefaultBootEnvironment),
+                pxe.LinuxKernelArguments)
             : throw Unexpected(options),
         values => new PxeOptions
         {
             Interfaces = Join(values.Interfaces),
             EnableProxyDhcp = values.EnableProxyDhcp,
+            LeaveDhcpPort = values.LeaveDhcpPort,
+            DefaultBootEnvironment = BootEnvironmentName(values.DefaultBootEnvironment),
+            LinuxKernelArguments = string.Join(' ', KernelArguments.Split(values.LinuxKernelArguments)),
             EnableTftp = values.EnableTftp,
             TftpSinglePort = values.TftpSinglePort,
             TftpMaxWindowSize = values.TftpMaxWindowSize,
@@ -205,6 +211,10 @@ public static class SettingsApi
 
     private static string Join(IEnumerable<string>? values) =>
         string.Join(", ", (values ?? []).Select(value => value?.Trim()).Where(value => !string.IsNullOrEmpty(value)));
+
+    // The name as the code spells it. Nothing means Auto, and a value that is no name stays to be refused.
+    private static string BootEnvironmentName(string? value) =>
+        PxeSetup.ReadDefaultEnvironment(value)?.ToString() ?? Optional(value) ?? nameof(DefaultBootEnvironment.Auto);
 
     private static string? Optional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 

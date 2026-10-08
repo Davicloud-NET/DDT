@@ -12,4 +12,7 @@ public sealed record PxeHostSource(Func<PxeDesiredSetup> Desired, Func<IChangeTo
 {
     // The Linux boot environment the server came with. Null for a host that knows of none.
     public ILinuxBootSite? Linux { get; init; }
+
+    // Which boot environment each machine should start. Null lets the settings alone decide.
+    public IBootChoice? Choice { get; init; }
 }

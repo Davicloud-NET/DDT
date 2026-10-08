@@ -209,7 +209,8 @@ public sealed class ProxyDhcpListener : IPxeListener, IAsyncDisposable
             or ProxyDhcpSilenceReason.MalformedClientArchitecture
             or ProxyDhcpSilenceReason.NoBootTargetForArchitecture
             or ProxyDhcpSilenceReason.BootMethodDoesNotMatchVendorClass
-            or ProxyDhcpSilenceReason.RelayNotAuthorised;
+            or ProxyDhcpSilenceReason.RelayNotAuthorised
+            or ProxyDhcpSilenceReason.NoBootEnvironmentForMachine;
 
     private static string FormatMac(ProxyDhcpOutcome outcome) =>
         outcome.Message is { } message ? Convert.ToHexString(message.ClientHardwareAddress.Span) : string.Empty;

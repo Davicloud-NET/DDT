@@ -19,4 +19,7 @@ public enum ProxyDhcpSilenceReason
     BootMethodDoesNotMatchVendorClass,
     ServerIdentifierNamesAnotherServer,
     RelayNotAuthorised,
+
+    // The server can start neither the boot environment the machine needs nor the other one.
+    NoBootEnvironmentForMachine,
 }

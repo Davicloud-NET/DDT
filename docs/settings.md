@@ -194,16 +194,40 @@ in progress (TftpListener.cs:72-80), and the page says so.
 |---|---|---|---|---|---|
 | Interfaces | interface names or local IPv4 addresses | empty: serve nothing | | restart: PXE | Admin |
 | EnableProxyDhcp | bool | true | | restart: PXE | Admin |
+| LeaveDhcpPort | bool | false | | restart: PXE | Admin |
 | EnableTftp | bool | true | | restart: PXE | Admin |
 | TftpSinglePort | bool | false | | restart: PXE | Admin |
 | TftpMaxWindowSize | integer, 1 to 64 | 16 | | restart: PXE | Admin |
 | MaxConcurrentTftpTransfers | integer, at least 1 | 128 | | restart: PXE | Admin |
 | AuthorisedRelayAgents | IPv4 addresses | empty | | restart: PXE | Admin |
+| DefaultBootEnvironment | Auto, WindowsPE or Linux | Auto | | restart: PXE | Admin |
+| LinuxKernelArguments | words, at most 256 characters | empty | | restart: PXE | Admin |
 | BootTargets:{arch}:Method | Tftp or Http | no targets | | restart: PXE | Admin |
 | BootTargets:{arch}:BootFile | path, or http(s) URL for Http | none | | restart: PXE | Admin |
 | BootTargets:{arch}:ServerAddress | IPv4 | address of the arrival interface | | restart: PXE | Admin |
 | BootTargets:{arch}:ServerHostName | ASCII, at most 63 | the server address | | restart: PXE | Admin |
 | BootTargets:{arch}:AdvertiseBootServerDiscovery | bool | false | | restart: PXE | Admin |
+
+LeaveDhcpPort leaves UDP 67 to a DHCP server on the same computer, so DDT answers on UDP 4011 alone and
+machines reach it once that DHCP server sends option 60, PXEClient. Where Microsoft's DHCP Server is
+installed DDT does this by itself (DhcpServerRole.cs). Without the setting, a DHCP port that does not
+bind is reported as a failed apply, and UDP 4011 and TFTP go on serving (PxeHost.cs).
+
+DefaultBootEnvironment decides what a 64-bit UEFI machine without a run starts. A machine with a run,
+or one that was asked to restart into the other boot environment, starts what that needs
+(BootChoices.cs, BootEnvironmentChoice.cs). Auto is Windows PE once a boot image is built, and the
+Linux boot environment until then, so a server that is upgraded keeps starting Windows PE. The Linux
+boot environment is named only while the server has its files, and never to a machine whose firmware
+has Secure Boot on and trusts none of the certificate authorities its shim is signed under.
+
+LinuxKernelArguments is added to the kernel command line of the Linux boot environment, for example
+`console=ttyS0,115200`. The words go into the grub.cfg DDT generates, which GRUB runs as a script on
+every machine, so each word may hold only letters, digits and `_ . : , = + / @ -`, and none may start
+with a hyphen (KernelArguments.cs). `init`, `rdinit`, `initrd`, `BOOT_IMAGE` and every word that starts
+with `ddt.` are refused, because DDT sets them itself; `ddt.shell` is the one exception, and opens a
+root shell at the machine, which a failed agent opens there as well. The field needs no fresh
+password: it runs no code of the administrator's, it only passes words to Debian's kernel and to DDT's
+own start scripts.
 
 How the page fills in these fields:
 

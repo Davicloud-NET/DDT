@@ -46,6 +46,19 @@ internal static partial class PxeLog
             "Machines find DDT on UDP {BootServerPort} once the DHCP server sends option 60, PXEClient, or through its options 66 and 67")]
     public static partial void DhcpPortLeft(ILogger logger, int port, int bootServerPort);
 
+    [LoggerMessage(
+        EventId = 509,
+        Level = LogLevel.Warning,
+        Message = "The pxe settings leave UDP {Port} to a DHCP server on this computer, so ProxyDHCP does not listen there. " +
+            "Machines find DDT on UDP {BootServerPort} once that DHCP server sends option 60, PXEClient")]
+    public static partial void DhcpPortLeftBySetting(ILogger logger, int port, int bootServerPort);
+
+    [LoggerMessage(
+        EventId = 525,
+        Level = LogLevel.Error,
+        Message = "ProxyDHCP does not answer broadcasts, while UDP {BootServerPort} and TFTP go on serving: {Reason}")]
+    public static partial void DhcpPortNotBound(ILogger logger, int bootServerPort, string reason);
+
     [LoggerMessage(EventId = 520, Level = LogLevel.Warning, Message = "Netboot is not served: {Reason}")]
     public static partial void Stopped(ILogger logger, string reason);
 

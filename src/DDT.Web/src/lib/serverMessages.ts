@@ -1559,7 +1559,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "settings.apply.pxeBindFailed": msg({
     context: "settings.apply.pxeBindFailed",
-    message: "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}",
+    message: "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} dhcpServerHere {A DHCP server on this computer holds the port. Turn on LeaveDhcpPort, and DDT answers on UDP 4011 alone, which machines reach once that DHCP server sends option 60, PXEClient. UDP 4011 and TFTP are serving meanwhile.} other {Check that no other service holds the port.}}",
   }),
   "settings.apply.pxeClosed": msg({
     context: "settings.apply.pxeClosed",
@@ -1953,6 +1953,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "settings.pxe.bootDirectoryIsRoot",
     message: "''{directory}'' is the root of a filesystem, which would serve every file on it. Use a directory of its own, such as {suggested}.",
   }),
+  "settings.pxe.bootEnvironmentInvalid": msg({
+    context: "settings.pxe.bootEnvironmentInvalid",
+    message: "''{value}'' is not a boot environment. Use Auto, WindowsPE or Linux.",
+  }),
   "settings.pxe.bootFileRequired": msg({
     context: "settings.pxe.bootFileRequired",
     message: "Must be set.",
@@ -1972,6 +1976,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "settings.pxe.interfaceNotFound": msg({
     context: "settings.pxe.interfaceNotFound",
     message: "''{name}'' names no interface on {host}, which serves nothing for it.",
+  }),
+  "settings.pxe.kernelArgumentsInvalid": msg({
+    context: "settings.pxe.kernelArgumentsInvalid",
+    message: "''{word}'' cannot be added to the kernel command line. Use words of letters, digits and _ . : , = + / @ - with spaces between them, and start none with a hyphen. Nothing else is taken, because the words go into the boot loader's script.",
+  }),
+  "settings.pxe.kernelArgumentsLength": msg({
+    context: "settings.pxe.kernelArgumentsLength",
+    message: "Use at most {max} characters.",
+  }),
+  "settings.pxe.kernelArgumentsReserved": msg({
+    context: "settings.pxe.kernelArgumentsReserved",
+    message: "''{word}'' would replace what DDT sets itself. Leave out init, rdinit, initrd, BOOT_IMAGE and every word that starts with ddt., except ddt.shell, which opens a root shell at the machine.",
   }),
   "settings.pxe.methodForArchitecture": msg({
     context: "settings.pxe.methodForArchitecture",

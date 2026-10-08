@@ -204,6 +204,24 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate SettingsPxeBootFileUrl = Define("settings.pxe.bootFileUrl", "Must be an absolute http or https URL.");
 
+    public static readonly MessageTemplate SettingsPxeBootEnvironmentInvalid = Define(
+        "settings.pxe.bootEnvironmentInvalid",
+        "''{value}'' is not a boot environment. Use Auto, WindowsPE or Linux.");
+
+    public static readonly MessageTemplate SettingsPxeKernelArgumentsInvalid = Define(
+        "settings.pxe.kernelArgumentsInvalid",
+        "''{word}'' cannot be added to the kernel command line. Use words of letters, digits and _ . : , = + / @ - with spaces " +
+        "between them, and start none with a hyphen. Nothing else is taken, because the words go into the boot loader's script.");
+
+    public static readonly MessageTemplate SettingsPxeKernelArgumentsReserved = Define(
+        "settings.pxe.kernelArgumentsReserved",
+        "''{word}'' would replace what DDT sets itself. Leave out init, rdinit, initrd, BOOT_IMAGE and every word that starts " +
+        "with ddt., except ddt.shell, which opens a root shell at the machine.");
+
+    public static readonly MessageTemplate SettingsPxeKernelArgumentsLength = Define(
+        "settings.pxe.kernelArgumentsLength",
+        "Use at most {max} characters.");
+
     public static readonly MessageTemplate SettingsLoggingLevelUnknown = Define(
         "settings.logging.levelUnknown",
         "''{value}'' is not a log level. Use Trace, Debug, Information, Warning, Error, Critical or None.");

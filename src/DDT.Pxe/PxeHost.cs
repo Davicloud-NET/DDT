@@ -152,9 +152,10 @@ public sealed class PxeHost : IHostedService, IDisposable
 
         try
         {
-            Start(next);
-
-            return new PxeApplyResult(desired.Version, true, null, next.Interfaces);
+            // Without the DHCP port the rest still serves, and the result says what is missing.
+            return Start(next) is { } dhcpPort
+                ? new PxeApplyResult(desired.Version, false, dhcpPort.Message, next.Interfaces, dhcpPort.Reason)
+                : new PxeApplyResult(desired.Version, true, null, next.Interfaces);
         }
         catch (InvalidOperationException failure)
         {
@@ -166,7 +167,7 @@ public sealed class PxeHost : IHostedService, IDisposable
             {
                 try
                 {
-                    Start(previous);
+                    _ = Start(previous);
                     PxeLog.RolledBack(_logger);
                 }
                 catch (InvalidOperationException again)
@@ -202,10 +203,12 @@ public sealed class PxeHost : IHostedService, IDisposable
         }
     }
 
-    // The setup counts as applied once its listeners run, also when it serves no interface.
-    private void Start(PxeSetup setup)
+    // The setup counts as applied once its listeners run, also when it serves no interface. Returns why the DHCP port
+    // could not be bound, when everything else could.
+    private PxeBindException? Start(PxeSetup setup)
     {
         BootFiles files = new(setup.Files, _source.Linux, setup.Options.HttpBootPort, _connections, _timeProvider);
+        PxeBindException? dhcpPort = null;
 
         if (LogInterfaces(setup.Interfaces))
         {
@@ -213,7 +216,7 @@ public sealed class PxeHost : IHostedService, IDisposable
 
             if (setup.Options.EnableProxyDhcp)
             {
-                StartProxyDhcp(setup);
+                dhcpPort = StartProxyDhcp(setup, files);
             }
 
             if (setup.Options.EnableTftp)
@@ -225,6 +228,8 @@ public sealed class PxeHost : IHostedService, IDisposable
         }
 
         Serve(setup, files);
+
+        return dhcpPort;
     }
 
     private void Serve(PxeSetup? setup, BootFiles? files)
@@ -258,13 +263,18 @@ public sealed class PxeHost : IHostedService, IDisposable
         return true;
     }
 
-    private void StartProxyDhcp(PxeSetup setup)
+    private PxeBindException? StartProxyDhcp(PxeSetup setup, BootFiles files)
     {
-        ProxyDhcpHandler handler = new(setup.ProxyDhcp, setup.Interfaces, _connections);
+        ProxyDhcpHandler handler = new(setup.ProxyDhcp, setup.Interfaces, _connections, new NetbootChoice(setup, _source.Choice, files, _timeProvider));
+        PxeBindException? dhcpPort = null;
 
         // Microsoft's DHCP Server takes its address on this port for itself alone. That fails once DDT holds the port,
         // and the DHCP server then serves no one.
-        if (_binding.DhcpServerHere())
+        if (setup.Options.LeaveDhcpPort)
+        {
+            PxeLog.DhcpPortLeftBySetting(_logger, _binding.DhcpPort, _binding.BootServerPort);
+        }
+        else if (_binding.DhcpServerHere())
         {
             PxeLog.DhcpPortLeft(_logger, _binding.DhcpPort, _binding.BootServerPort);
         }
@@ -276,7 +286,17 @@ public sealed class PxeHost : IHostedService, IDisposable
                 handler,
                 setup.Interfaces,
                 _loggerFactory.CreateLogger<ProxyDhcpListener>());
-            Bind(dhcp, "ProxyDHCP", "proxyDhcp", _binding.DhcpPort);
+
+            // A DHCP server on this computer holds the port. Machines it sends to the boot server port still start.
+            try
+            {
+                Bind(dhcp, "ProxyDHCP", "proxyDhcp", _binding.DhcpPort);
+            }
+            catch (PxeBindException exception)
+            {
+                PxeLog.DhcpPortNotBound(_logger, _binding.BootServerPort, exception.Message);
+                dhcpPort = exception;
+            }
         }
 
         ProxyDhcpListener bootServer = new(
@@ -286,6 +306,8 @@ public sealed class PxeHost : IHostedService, IDisposable
             setup.Interfaces,
             _loggerFactory.CreateLogger<ProxyDhcpListener>());
         Bind(bootServer, "PXE boot server", "bootServer", _binding.BootServerPort);
+
+        return dhcpPort;
     }
 
     private void StartTftp(PxeSetup setup, BootFiles files)
@@ -329,7 +351,7 @@ public sealed class PxeHost : IHostedService, IDisposable
             string advice = exception.SocketErrorCode switch
             {
                 SocketError.AccessDenied => OperatingSystem.IsWindows() ? "heldOnWindows" : "privilegedPort",
-                SocketError.AddressAlreadyInUse => "inUse",
+                SocketError.AddressAlreadyInUse => port == _binding.DhcpPort && kind == "proxyDhcp" ? "dhcpServerHere" : "inUse",
                 _ => "other",
             };
 

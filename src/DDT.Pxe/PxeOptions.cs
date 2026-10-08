@@ -21,6 +21,10 @@ public sealed class PxeOptions
     // turning it off means DDT binds nothing on UDP 67 or 4011.
     public bool EnableProxyDhcp { get; set; } = true;
 
+    // Leaves UDP 67 to a DHCP server on this computer, and answers on UDP 4011 alone. Machines come there once that DHCP
+    // server sends option 60, PXEClient. Where Microsoft's DHCP Server is installed, DDT does so by itself.
+    public bool LeaveDhcpPort { get; set; }
+
     public bool EnableTftp { get; set; } = true;
 
     // Replies from port 69 instead of a new port per transfer. Use it when a read request reaches DDT but the client
@@ -35,6 +39,14 @@ public sealed class PxeOptions
     public string AuthorisedRelayAgents { get; set; } = string.Empty;
 
     public int MaxConcurrentTftpTransfers { get; set; } = 128;
+
+    // What a machine without a run starts: Auto, WindowsPE or Linux. Auto is Windows PE once a boot image is built,
+    // and the Linux boot environment until then. A string, so a wrong value is named instead of becoming Auto.
+    public string DefaultBootEnvironment { get; set; } = "Auto";
+
+    // Words added to the kernel command line of the Linux boot environment, such as console=ttyS0,115200.
+    // KernelArguments says which are allowed, because they go into grub.cfg.
+    public string LinuxKernelArguments { get; set; } = string.Empty;
 
     // Keyed by ClientArchitecture member name as a string. The binder silently drops a dictionary key
     // it cannot convert to an enum, which would leave a machine at a blank screen with no error.

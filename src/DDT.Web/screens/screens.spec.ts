@@ -186,7 +186,7 @@ for (const scheme of ["light", "dark"] as const) {
     test("a machine's run", async ({ page }) => {
       await page.setViewportSize({ width: 1440, height: 1080 });
       await show(page, `/machines/${treeMachineId}`, {
-        "GET /api/machines": [treeMachine(), ...machines],
+        "GET /api/machines": [treeMachine({ agentEnvironment: "Windows" }), ...machines],
         [`GET /api/machines/${treeMachineId}/deployments`]: [tree.summary],
         [`GET /api/machines/${treeMachineId}/sequence`]: sequenceResolution({
           source: "Assigned",

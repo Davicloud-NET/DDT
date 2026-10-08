@@ -32,9 +32,10 @@ closure, grouped here by the project they come from.
 `/app/legal` holds LICENSE, NOTICE, this file and `licenses/`. The server serves them without
 sign-in at `/api/about/legal/<path>`, for example `/api/about/legal/LICENSE`.
 
-A release's `/app` also holds `ddt-agent.exe` and `ddt-console.zip`, which the server hands to the
-machines it deploys. They're described in their own sections below, and their licence texts are in
-the same `legal` folder.
+A release's `/app` also holds `ddt-agent.exe`, `ddt-console.zip` and `ddt-agent-linux-x64`, which
+the server hands to the machines it deploys, and `linux-boot/`, the Linux boot environment it starts
+machines in. They're described in their own sections below, and their licence texts are in the same
+`legal` folder.
 
 ### Microsoft libraries
 
@@ -297,8 +298,9 @@ changes, then use it in one of two ways:
 
 `build/Publish-LinuxAgent.ps1` publishes the agent for Linux as one static NativeAOT executable, in
 a container of the .NET SDK on Alpine Linux 3.24. It runs in the Linux boot environment, whose
-`ddt.img` holds it. Besides DDT's own code, from `DDT.Agent.Linux`, `DDT.Agent.Core`,
-`DDT.ConsoleProtocol`, `DDT.Core` and `DDT.Contracts`, it contains:
+`ddt.img` holds it, and a release puts the same file next to the server as `ddt-agent-linux-x64`,
+for machines to take when theirs is another. Besides DDT's own code, from `DDT.Agent.Linux`,
+`DDT.Agent.Core`, `DDT.ConsoleProtocol`, `DDT.Core` and `DDT.Contracts`, it contains:
 
 - The .NET runtime and libraries, compiled ahead of time by
   `runtime.linux-musl-x64.Microsoft.DotNet.ILCompiler` from
@@ -454,11 +456,13 @@ which names its copyright holders and licences in full. Where such a file points
   `binary-redist-Realtek-restrictive`. The firmware is a work of its own that `base.img` merely
   carries beside the others, and DDT's licence does not cover it.
 
-The source code of all of this goes out with every release as `ddt-linux-boot-sources.tar`, beside
-the release's other files: the Debian source package of each package above and of what Debian
-built it with. [licenses/linux-boot/SOURCES.md](licenses/linux-boot/SOURCES.md) lists each file
-with its SHA-256 and its address in Debian's archive, and `build/LinuxBoot/sources.sh` collects
-them. The firmware has no source code, so of `firmware-nonfree` only Debian's packaging is in it.
+The source code of all of this goes out with every release, at both places the release puts
+`linux-boot/`: as `ddt-linux-boot-sources.tar` beside `DDT.msi` among the release's files, and as
+the image `ghcr.io/davicloud-net/ddt-sources`, which holds that file, beside the server's image and
+under its tag. It is the Debian source package of each package above and of what Debian built it
+with. [licenses/linux-boot/SOURCES.md](licenses/linux-boot/SOURCES.md) lists each file with its
+SHA-256 and its address in Debian's archive, and `build/LinuxBoot/sources.sh` collects them. The
+firmware has no source code, so of `firmware-nonfree` only Debian's packaging is in it.
 
 ## The container base image
 
@@ -478,8 +482,8 @@ under their own licences.
 `build/Build-Installer.ps1` publishes the server self-contained for win-x64 and packs it into
 `DDT.msi` with the WiX Toolset. The MSI installs the same server as `/app`, with its `legal`
 folder, so everything listed for the server and the web UI bundle applies to it too. It installs the
-agent and the console next to it as well, and `Build-BootImage.ps1` with its module, which are
-DDT's own.
+agent, the console, the agent for Linux and the Linux boot environment next to it as well, as
+`/app` holds them, and `Build-BootImage.ps1` with its module, which are DDT's own.
 
 Because it's self-contained, it also carries the .NET runtime and the ASP.NET Core shared framework,
 which the container gets from its base image instead. Both are under the MIT licence in

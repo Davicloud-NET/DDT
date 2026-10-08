@@ -1,0 +1,22 @@
+# syntax=docker/dockerfile:1
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# The source code of the DDT Linux boot environment as an image, ghcr.io/davicloud-net/ddt-sources. The server's image
+# holds the environment's programs, so their source code is offered at the same place, under the same tag. The release
+# workflow builds it with the folder that holds ddt-linux-boot-sources.tar as the context.
+#
+# The image holds that one file and nothing that runs. To take the file out:
+#   docker create --name ddt-sources ghcr.io/davicloud-net/ddt-sources:26.1.412 none
+#   docker cp ddt-sources:/ddt-linux-boot-sources.tar .
+#   docker rm ddt-sources
+
+FROM scratch
+# The release's version, as 26.1.412.
+ARG DDT_VERSION
+LABEL org.opencontainers.image.title="Source code of the DDT Linux boot environment" \
+      org.opencontainers.image.description="The Debian source packages of what ghcr.io/davicloud-net/ddt holds in /app/linux-boot, as ddt-linux-boot-sources.tar with the list SOURCES.md in it." \
+      org.opencontainers.image.source="https://github.com/Davicloud-NET/DDT" \
+      org.opencontainers.image.version="${DDT_VERSION}"
+COPY ddt-linux-boot-sources.tar /

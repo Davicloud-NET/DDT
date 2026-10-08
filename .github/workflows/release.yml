@@ -1,9 +1,15 @@
 name: Release
 
 # Run by hand, from master. The version is Year.Major.Build, as build/Get-Version.ps1 counts it for the commit. The run
-# makes the tag and a GitHub release with DDT.msi, install.ps1, install.sh, compose.yaml and SHA256SUMS, and pushes the
-# image to ghcr.io/davicloud-net/ddt. Only Windows compiles the agent and console, so the image takes them from the
-# MSI job. Nothing is published until the MSI is signed and the image is built.
+# makes the tag and a GitHub release with DDT.msi, install.ps1, install.sh, compose.yaml, ddt-linux-boot-sources.tar
+# and SHA256SUMS, and pushes the image to ghcr.io/davicloud-net/ddt. Only Windows compiles the agent and console, so the
+# image takes them from the MSI job. Nothing is published until the MSI is signed and the image is built.
+#
+# The Linux boot environment. A job on Linux compiles the agent for Linux in its container and builds the boot
+# environment around it from the Debian packages the lock pins. Both go into the MSI and into the image. The
+# environment holds programs under the GPL, so the release publishes their source code where it publishes them:
+# ddt-linux-boot-sources.tar beside the MSI, and the same file as the image ghcr.io/davicloud-net/ddt-sources beside
+# the server's image. LinuxBootReleaseTests keeps a change here from dropping one of the two.
 #
 # Signing. A release signs DDT.Host.exe, the agent, the console and the MSI through SSL.com's eSigner. Whoever holds
 # that account's secrets can sign anything in the maintainer's name, so they are kept apart from everything else:
@@ -14,6 +20,8 @@ name: Release
 #   They check out nothing and build nothing, so no package a build restores ever runs in a job that has the secrets.
 # - What is signed is what this run built from the commit it started on. The jobs after check every signature.
 # A dry run signs nothing and needs no approval.
+# The Linux files are not signed, and their job has no secret. Secure Boot sees Microsoft's and Debian's signatures on
+# the loaders and the kernel, which DDT passes on unchanged, and a machine takes the agent from the server it pins.
 on:
   workflow_dispatch:
     inputs:
@@ -176,10 +184,80 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  # No secret and no signing here. Built without a cache, so nothing an earlier run left is in a release.
+  linux:
+    name: Linux agent and boot environment
+    needs: programs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      VERSION: ${{ needs.programs.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # NativeAOT does not compile across systems or C libraries, so the agent for Linux is compiled against musl in
+      # the Alpine container build/Dockerfile.agent-linux names. The build itself fails when the file is not static.
+      - name: Publish the agent for Linux
+        run: |
+          docker buildx build --file build/Dockerfile.agent-linux --target export --platform linux/amd64 --no-cache \
+            --build-arg "DDT_VERSION=$VERSION" --output type=local,dest=artifacts/agent-linux .
+
+      # ddt.img gets the agent from the step before, so a machine that starts this release runs this release's agent.
+      - name: Build the Linux boot environment around it
+        run: |
+          tools=$(jq --raw-output .toolsImage build/LinuxBoot/packages.lock.json)
+          docker buildx build --file build/LinuxBoot/Dockerfile --target export --platform linux/amd64 --no-cache \
+            --build-arg "TOOLS_IMAGE=$tools" --build-context agent=artifacts/agent-linux \
+            --output type=local,dest=artifacts/linux-boot build/LinuxBoot
+
+      # base.img is the one the lock names and continuous integration booted. The agent in ddt.img is the file the
+      # server offers and carries this release's version, so no machine downloads it again at its start.
+      - name: Check what was built
+        run: |
+          expected=$(jq --raw-output .expected.baseImageSha256 build/LinuxBoot/packages.lock.json)
+          echo "$expected  artifacts/linux-boot/base.img" | sha256sum --check
+          jq --raw-output '.files[] | "\(.sha256)  \(.name)"' artifacts/linux-boot/ddt-linux-boot.json | (cd artifacts/linux-boot && sha256sum --check)
+          jq --exit-status --arg version "$VERSION" '.agent.version == $version' artifacts/linux-boot/ddt-linux-boot.json
+          echo "$(jq --raw-output .agent.sha256 artifacts/linux-boot/ddt-linux-boot.json)  artifacts/agent-linux/ddt-agent" | sha256sum --check
+
+      # The source packages of everything in the boot environment, each checked against the lock, with the list that
+      # is also in the server's legal folder. The archive is the same for the same lock: names in order, no owner, and
+      # the snapshot's time on every file.
+      - name: Collect the source code of the boot environment
+        run: |
+          sh build/LinuxBoot/sources.sh build/LinuxBoot/packages.lock.json artifacts/linux-boot-sources/files
+          cmp artifacts/linux-boot-sources/files/SOURCES.md licenses/linux-boot/SOURCES.md
+          snapshot=$(jq --raw-output .snapshot build/LinuxBoot/packages.lock.json | sed 's/^\(....\)\(..\)\(..\)T\(..\)\(..\)\(..\)Z$/\1-\2-\3 \4:\5:\6 UTC/')
+          tar --create --file artifacts/linux-boot-sources/ddt-linux-boot-sources.tar --sort=name --owner=0 --group=0 --numeric-owner \
+            --mtime="$snapshot" --directory artifacts/linux-boot-sources/files .
+          ls -l artifacts/linux-boot-sources/ddt-linux-boot-sources.tar
+
+      # For the MSI and, through it, the container image
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux
+          path: |
+            artifacts/agent-linux/ddt-agent
+            artifacts/linux-boot/
+          if-no-files-found: error
+          retention-days: 1
+
+      # For the release's files and the image of the sources
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-boot-sources
+          path: artifacts/linux-boot-sources/ddt-linux-boot-sources.tar
+          if-no-files-found: error
+          retention-days: 1
+
   installer:
     name: MSI
-    needs: [programs, sign-programs]
-    if: ${{ !cancelled() && needs.programs.result == 'success' && (inputs.dry_run || needs.sign-programs.result == 'success') }}
+    needs: [programs, sign-programs, linux]
+    if: ${{ !cancelled() && needs.programs.result == 'success' && needs.linux.result == 'success' && (inputs.dry_run || needs.sign-programs.result == 'success') }}
     runs-on: windows-2025
     timeout-minutes: 20
     env:
@@ -215,17 +293,38 @@ jobs:
             Copy-Item -LiteralPath "artifacts\signed\$name" -Destination $places[$name] -Force
           }
 
+      # Where Build-Installer.ps1 looks for the agent for Linux and the Linux boot environment
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: linux
+          path: artifacts
+
+      # Stops when the agent for Linux is not the one in the boot environment, or not of this version.
       - name: Build the MSI
         shell: powershell
         run: .\build\Build-Installer.ps1 -Version $env:VERSION -Staged
 
-      # For the container image, which can't compile them on Linux
+      # Without them the script only says so, and the server of such a release would start no machine in the Linux
+      # boot environment.
+      - name: Check that the MSI holds the Linux files
+        shell: powershell
+        run: |
+          $payload = 'artifacts\installer-work\payload'
+          $files = @('ddt-agent-linux-x64') + (@('ddt-linux-boot.json', 'shimx64.efi', 'grubx64.efi', 'vmlinuz', 'base.img', 'ddt.img') | ForEach-Object { "linux-boot\$_" })
+          foreach ($file in $files) {
+            if (-not (Test-Path -LiteralPath (Join-Path $payload $file) -PathType Leaf)) { throw "The MSI's payload has no $file." }
+          }
+
+      # For the container image, which can't compile the Windows programs on Linux. The Linux files go the same way,
+      # so the image holds exactly what the MSI holds.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bundle
           path: |
             artifacts/installer-work/payload/ddt-agent.exe
             artifacts/installer-work/payload/ddt-console.zip
+            artifacts/installer-work/payload/ddt-agent-linux-x64
+            artifacts/installer-work/payload/linux-boot/
           if-no-files-found: error
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -280,7 +379,7 @@ jobs:
 
   files:
     name: Release files
-    needs: [programs, installer, sign-installer]
+    needs: [programs, linux, installer, sign-installer]
     if: ${{ !cancelled() && needs.installer.result == 'success' && (inputs.dry_run || needs.sign-installer.result == 'success') }}
     runs-on: windows-2025
     timeout-minutes: 10
@@ -301,6 +400,12 @@ jobs:
         shell: powershell
         run: .\build\Test-Signature.ps1 artifacts\installer\DDT.msi
 
+      # The source code of the Linux boot environment the MSI holds, which goes out beside it
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: linux-boot-sources
+          path: artifacts/linux-boot-sources
+
       # winget takes no pre-releases
       - name: Write the winget manifests
         if: ${{ !inputs.prerelease }}
@@ -320,6 +425,7 @@ jobs:
             [IO.File]::WriteAllText((Join-Path $release $Name), $text.Replace($Marker, $Stamped))
           }
           Copy-Item artifacts\installer\DDT.msi $release
+          Copy-Item artifacts\linux-boot-sources\ddt-linux-boot-sources.tar $release
           Copy-Stamped build\Install-Ddt.ps1 install.ps1 "`$released = ''" "`$released = '$version'"
           Copy-Stamped build\install.sh install.sh "`nreleased=`n" "`nreleased=$version`n"
           Copy-Stamped build\compose.release.yaml compose.yaml 'ghcr.io/davicloud-net/ddt:latest' "ghcr.io/davicloud-net/ddt:$version"
@@ -372,24 +478,39 @@ jobs:
         with:
           persist-credentials: false
 
-      # Where build/Dockerfile looks for the agent and console the server offers
+      # Where build/Dockerfile looks for the agents and console the server offers and for the Linux boot environment
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: bundle
           path: artifacts/bundle
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: linux-boot-sources
+          path: artifacts/linux-boot-sources
+
+      # An image without them would start no machine in the Linux boot environment, and its build would not say so.
+      - name: Check that the bundle holds the Linux files
+        run: |
+          for file in ddt-agent-linux-x64 linux-boot/ddt-linux-boot.json linux-boot/shimx64.efi linux-boot/grubx64.efi linux-boot/vmlinuz linux-boot/base.img linux-boot/ddt.img; do
+            test -f "artifacts/bundle/$file" || { echo "The bundle has no $file."; exit 1; }
+          done
 
       # A pre-release leaves latest alone, so docker pull and install.sh without a version keep the last release.
       - name: Tags
         id: tags
         run: |
           tags="ghcr.io/davicloud-net/ddt:$VERSION"
+          sources="ghcr.io/davicloud-net/ddt-sources:$VERSION"
           label=$VERSION
           if [ "$PRERELEASE" = "true" ]; then
             label="$VERSION-pre"
           else
             tags="$tags,ghcr.io/davicloud-net/ddt:latest"
+            sources="$sources,ghcr.io/davicloud-net/ddt-sources:latest"
           fi
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
+          echo "sources=$sources" >> "$GITHUB_OUTPUT"
           echo "label=$label" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -400,6 +521,19 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
+
+      # First, so the server's image is never there without the source code of the Linux boot environment in it. It
+      # has the server's tags, under a name of its own.
+      - name: Build and push the sources
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: artifacts/linux-boot-sources
+          file: build/Dockerfile.sources
+          platforms: linux/amd64
+          push: ${{ !inputs.dry_run }}
+          provenance: ${{ inputs.dry_run && 'false' || 'mode=max' }}
+          build-args: DDT_VERSION=${{ steps.tags.outputs.label }}
+          tags: ${{ steps.tags.outputs.sources }}
 
       - name: Build and push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
@@ -441,5 +575,6 @@ jobs:
         run: |
           flags=()
           if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
-          gh release create "v$VERSION" release/DDT.msi release/install.ps1 release/install.sh release/compose.yaml release/SHA256SUMS \
+          gh release create "v$VERSION" release/DDT.msi release/install.ps1 release/install.sh release/compose.yaml \
+            release/ddt-linux-boot-sources.tar release/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --notes "$(cat text/notes.md)" --generate-notes --title "DDT $VERSION" "${flags[@]}"

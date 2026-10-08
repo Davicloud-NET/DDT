@@ -127,6 +127,192 @@ jobs:
           done
           exit $status
 
+  linux-agent:
+    name: Linux agent
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # A release gives the agent the server's version. Here it has only to be one the checks below can look for.
+      - name: Version
+        id: version
+        shell: pwsh
+        run: |
+          $version = ./build/Get-Version.ps1 -AllowShallow
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "DDT $version"
+
+      # NativeAOT does not compile across systems or C libraries, so the agent for Linux is compiled against musl in
+      # the Alpine container build/Dockerfile.agent-linux names, as build/Publish-LinuxAgent.ps1 does it.
+      - name: Publish the agent
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: build/Dockerfile.agent-linux
+          target: export
+          platforms: linux/amd64
+          build-args: DDT_VERSION=${{ steps.version.outputs.version }}
+          outputs: type=local,dest=artifacts/agent-linux
+          cache-from: type=gha,scope=linux-agent
+          cache-to: type=gha,mode=max,scope=linux-agent
+
+      # The boot environment has no library to lend the agent, and the server reads the agent's version out of the
+      # file, since an ELF file has no version resource.
+      - name: Check that the agent is static and carries its version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          agent=artifacts/agent-linux/ddt-agent
+          file "$agent"
+          if readelf --program-headers --dynamic "$agent" | grep --extended-regexp 'INTERP|NEEDED'; then
+            echo "ddt-agent names an interpreter or a library, so it is not static."
+            exit 1
+          fi
+          strings "$agent" | grep --fixed-strings --line-regexp "DDT-AGENT-VERSION:$VERSION"
+
+      # In an image that holds nothing else, so the agent shows that it needs nothing of the system it runs on. It
+      # prints every licence text it embeds, and the last of them is the one of the compiler's runtime.
+      - name: Print the agent's licences in an empty container
+        run: |
+          printf 'FROM scratch\nCOPY ddt-agent /ddt-agent\n' | docker buildx build --load --quiet --tag ddt-agent:ci --file - artifacts/agent-linux
+          docker run --rm ddt-agent:ci /ddt-agent --licenses > licenses.txt
+          wc --bytes licenses.txt
+          for text in 'GNU GENERAL PUBLIC LICENSE' 'The agent for Linux, `ddt-agent`' 'OpenSSL' 'musl as a whole is licensed' 'GCC RUNTIME LIBRARY EXCEPTION'; do
+            grep --fixed-strings --quiet "$text" licenses.txt || { echo "The licences lack: $text"; exit 1; }
+          done
+
+      # For the job that builds the boot environment around it, and for the image the container job builds.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-agent
+          path: artifacts/agent-linux/ddt-agent
+          if-no-files-found: error
+          retention-days: 1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ github.job }}-${{ hashFiles('global.json', 'Directory.Packages.props', '**/*.csproj', '.config/dotnet-tools.json') }}
+          restore-keys: nuget-${{ github.job }}-
+
+      # The end-to-end tests' part for Linux: the host as the container runs it, built here, and a dry run of a Linux
+      # sequence with the file from above. The other end-to-end tests take the agent for Windows and skip here, so
+      # only this part is asked for, and a skip of it fails instead of passing unnoticed.
+      - name: Test end to end with the agent for Linux
+        env:
+          DDT_E2E_AGENT: ${{ github.workspace }}/artifacts/agent-linux/ddt-agent
+        run: dotnet test --project tests/DDT.E2E -- --filter-trait "Agent=Linux" --fail-skips on
+
+  linux-boot:
+    name: Linux boot environment
+    needs: linux-agent
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: linux-agent
+          path: artifacts/agent-linux
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Read the lock
+        id: lock
+        run: |
+          echo "tools=$(jq --raw-output .toolsImage build/LinuxBoot/packages.lock.json)" >> "$GITHUB_OUTPUT"
+          echo "base=$(jq --raw-output .expected.baseImageSha256 build/LinuxBoot/packages.lock.json)" >> "$GITHUB_OUTPUT"
+
+      # As build/Build-LinuxBoot.ps1 -AgentFolder builds it: Debian's packages as the lock pins them, and the agent
+      # of the job before in ddt.img. The cache keeps the downloads, which the build checks against the lock's hashes.
+      - name: Build the boot environment
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: build/LinuxBoot
+          file: build/LinuxBoot/Dockerfile
+          target: export
+          platforms: linux/amd64
+          build-args: TOOLS_IMAGE=${{ steps.lock.outputs.tools }}
+          build-contexts: agent=artifacts/agent-linux
+          outputs: type=local,dest=artifacts/linux-boot
+          cache-from: type=gha,scope=linux-boot
+          cache-to: type=gha,mode=max,scope=linux-boot
+
+      # One lock has to give one base.img on every computer, or one nobody tested would ship unnoticed. When its
+      # start scripts or lists changed, build/Update-LinuxBootLock.ps1 -BaseImageOnly writes the new hash into the lock.
+      - name: Compare base.img with the one the lock expects
+        env:
+          EXPECTED: ${{ steps.lock.outputs.base }}
+        run: |
+          echo "$EXPECTED  artifacts/linux-boot/base.img" | sha256sum --check
+          jq --raw-output '.files[] | "\(.sha256)  \(.name)"' artifacts/linux-boot/ddt-linux-boot.json | (cd artifacts/linux-boot && sha256sum --check)
+          echo "$(jq --raw-output .agent.sha256 artifacts/linux-boot/ddt-linux-boot.json)  artifacts/agent-linux/ddt-agent" | sha256sum --check
+
+      # -x and -P let it follow the scripts into common.sh, which they read from where the boot environment has it.
+      - name: Check the start scripts
+        run: |
+          shellcheck --shell=sh -x -P build/LinuxBoot/rootfs \
+            build/LinuxBoot/rootfs/init build/LinuxBoot/rootfs/etc/init.d/rcS build/LinuxBoot/rootfs/usr/lib/ddt/* \
+            build/LinuxBoot/placeholder/ddt-agent build/LinuxBoot/test/hooks/* build/LinuxBoot/test/watch/* \
+            build/LinuxBoot/sources.sh
+
+      # GitHub's Linux runners have KVM, and its device belongs to a group the runner's user is not in. Without KVM
+      # QEMU would emulate the processor, and the checks would take many times as long.
+      - name: Let the runner's user start virtual machines
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          test -w /dev/kvm
+
+      - name: Build the image the checks run in
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: build/LinuxBoot
+          file: build/LinuxBoot/test/Dockerfile
+          platforms: linux/amd64
+          build-args: TOOLS_IMAGE=${{ steps.lock.outputs.tools }}
+          load: true
+          tags: ddt-linux-boot-test:ci
+          cache-from: type=gha,scope=linux-boot-test
+          cache-to: type=gha,mode=max,scope=linux-boot-test
+
+      # As build/Test-LinuxBoot.ps1 runs it: the firmware has Microsoft's keys and starts the shim over TFTP, as a PC
+      # does. The container is privileged because QEMU needs /dev/kvm.
+      - name: Boot it in QEMU with Secure Boot on
+        run: |
+          mkdir --parents artifacts/linux-boot-test
+          docker run --rm --privileged --volume "$PWD/artifacts/linux-boot:/boot-files:ro" \
+            --volume "$PWD/artifacts/linux-boot-test:/out" ddt-linux-boot-test:ci
+
+      - name: Keep the serial logs
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-boot-serial-logs
+          path: artifacts/linux-boot-test/
+          retention-days: 14
+
+      # For the image the container job builds.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-boot
+          path: artifacts/linux-boot/
+          if-no-files-found: error
+          retention-days: 1
+
   e2e:
     name: End to end
     runs-on: windows-2025
@@ -227,12 +413,28 @@ jobs:
 
   container:
     name: Container image
+    needs: [linux-agent, linux-boot]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      # Where build/Dockerfile looks for what a release puts next to the server. The agent for Windows and the
+      # console are compiled on Windows alone, so this image has none of them.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: linux-boot
+          path: artifacts/bundle/linux-boot
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: linux-agent
+          path: artifacts/agent-linux
+
+      - name: Put the agent for Linux beside the boot environment
+        run: cp artifacts/agent-linux/ddt-agent artifacts/bundle/ddt-agent-linux-x64
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
@@ -261,6 +463,25 @@ jobs:
           done
           docker logs ddt
           exit 1
+
+      # With netboot on, the server says at its start what it starts machines in. The agent's route is open to
+      # every machine, so it answers without a sign-in.
+      - name: Check that the server offers the Linux files the image holds
+        run: |
+          docker run --detach --name ddt-netboot --publish 9443:8443 --env DDT__Roles=web,pxe --env DDT__Pxe__Interfaces=eth0 ddt:ci
+          expected=$(sha256sum artifacts/bundle/ddt-agent-linux-x64 | cut --delimiter=' ' --fields=1)
+          said='Linux boot environment: Tftp linux/shimx64.efi from /app/linux-boot'
+          for attempt in $(seq 1 30); do
+            docker logs ddt-netboot > netboot.log 2>&1
+            if curl --fail --silent --insecure --output release.json https://localhost:9443/api/agents/releases/linux-x64; then
+              if grep --fixed-strings --quiet "$said" netboot.log; then break; fi
+            fi
+            sleep 2
+          done
+          docker rm --force ddt-netboot
+          cat release.json
+          jq --exit-status --arg sha256 "$expected" '.sha256 == $sha256' release.json
+          grep --fixed-strings "$said" netboot.log
 
       - name: Check install.sh
         run: shellcheck --shell=sh build/install.sh

@@ -918,14 +918,34 @@ wrote `DdtResume`, and the firmware started the network entry again. The lab had
 PE, so the Linux agent started once more: it read and deleted the variable and was still signed
 in.
 
-Not tried yet with the server and the agent as they ship: Hyper-V, a physical PC, a firmware that
-trusts only Microsoft's 2023 CA, a server on Windows, and `DdtResume` written in Windows PE and
-read in the Linux boot environment or the other way round. An earlier trial on Hyper-V had the
-same shim, GRUB and kernel, with a `grub.cfg` made by hand and a test program in the agent's
-place: a generation 2 machine started them from PXE with Secure Boot on, through ProxyDHCP, TFTP
-and HTTP of a DDT on Windows. There a reset during the HTTP read made the next starts fail for one
-to two and a half minutes. The resets and the three minutes of TFTP come from that, and whether
-they cure it there is still to be shown.
+Tried on Hyper-V with the server and the agent as they ship, installed from the MSI on Windows
+Server 2025 with Microsoft's DHCP Server on the same computer, so DDT answered on UDP 4011 alone.
+A generation 2 machine with Secure Boot on and the template Microsoft UEFI Certificate Authority
+reached the agent 13 seconds after power-on. A Debian 13 cloud image was written in 5 seconds, and
+Debian started with Secure Boot on and applied its seed. An earlier trial there, with a `grub.cfg`
+made by hand and a test program in the agent's place, had found that a reset during the HTTP read
+made the next starts fail for one to two and a half minutes. The resets and the three minutes of
+TFTP come from that, and they cure it: reset seven times, six of them in the HTTP read of the
+initrds and one in Linux's first second, the machine reached the agent each time 14 to 16 seconds
+later, over TFTP.
+
+The change of boot environment was tried there too. A Linux sequence picked in Windows PE
+restarted the machine into the Linux boot environment in 14 seconds, which went on without a
+second sign-in, and a Windows sequence picked there went back the same way. `DdtResume` was read
+and deleted each time. A run assigned on the web did the same with nobody at the machine. A
+machine with the template Microsoft Windows was named Windows PE, and a Linux run assigned to it
+stayed assigned, with the reason on its page and on its console. With options 66 and 67 naming the
+Windows boot manager, DDT stopped restarting the machine and said why. With them naming the shim,
+the Linux boot environment started without ProxyDHCP.
+
+No Secure Boot setting of Hyper-V starts both the Windows boot manager and the shim: the template
+Microsoft UEFI Certificate Authority refuses the first, the template Microsoft Windows the second.
+So the change of boot environment ran with Secure Boot off. With Secure Boot on it is shown in
+halves only: the Linux boot environment wrote the variable under one template, and Windows PE read
+and deleted it under the other, the template changed while the machine was off.
+
+Not tried yet: a physical PC, a firmware that trusts only Microsoft's 2023 CA, and the change of
+boot environment on one firmware with Secure Boot on, which needs a PC that trusts both.
 
 Hyper-V's Default Switch does not stand in for a network here. Its DHCP is Windows' connection
 sharing, and on the test host it answered no machine on the switch any more from the moment DDT,

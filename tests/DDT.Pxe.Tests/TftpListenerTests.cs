@@ -298,6 +298,50 @@ public sealed class TftpListenerTests : IDisposable
         Assert.Equal((ushort)TftpOpcode.Error, Opcode(refused.Value.Datagram));
     }
 
+    // The same for finding the file, which reads folders: it happens in the transfer and not in the loop.
+    [Fact]
+    public async Task ASlowSearchForOneMachinesFileDoesNotHoldUpTheNextMachinesRequest()
+    {
+        using ManualResetEventSlim searching = new();
+        using ManualResetEventSlim release = new();
+        int asked = 0;
+        _site.Current = TestBundle.Of(_root);
+        _site.Asked = () =>
+        {
+            // Only the first machine's search is slow.
+            if (Interlocked.Increment(ref asked) == 1)
+            {
+                searching.Set();
+                release.Wait(TimeSpan.FromSeconds(30));
+            }
+        };
+        await using TftpListener listener = Listener();
+        using Socket slow = Loopback.Client();
+        using Socket next = Loopback.Client();
+
+        try
+        {
+            await slow.SendToAsync(ReadRequest("does-not-exist.efi"), listener.LocalEndPoint);
+            Assert.True(searching.Wait(s_timeout, TestContext.Current.CancellationToken), "The file was never searched for.");
+
+            await next.SendToAsync(Loopback.Fixture("Tftp", "rrq-wdsmgfw-blksize1456-window4"), listener.LocalEndPoint);
+            (byte[] Datagram, IPEndPoint From)? answered = await Loopback.ReceiveAsync(next, s_timeout);
+
+            Assert.NotNull(answered);
+            Assert.Equal((ushort)TftpOpcode.OptionAcknowledgement, Opcode(answered.Value.Datagram));
+            Assert.False(release.IsSet);
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        (byte[] Datagram, IPEndPoint From)? refused = await Loopback.ReceiveAsync(slow, s_timeout);
+
+        Assert.NotNull(refused);
+        Assert.Equal((ushort)TftpErrorCode.FileNotFound, BinaryPrimitives.ReadUInt16BigEndian(refused.Value.Datagram.AsSpan(2)));
+    }
+
     [Fact]
     public async Task SendsAFileOfTheLinuxBootEnvironmentThatIsStillWhatTheServerChecked()
     {

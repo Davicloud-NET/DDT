@@ -12,9 +12,18 @@ internal sealed class FakeLinuxBootSite : ILinuxBootSite
 
     public LinuxBootBundle? Current
     {
-        get => Failure is null ? _current : throw Failure;
+        get
+        {
+            Asked?.Invoke();
+
+            return Failure is null ? _current : throw Failure;
+        }
+
         set => _current = value;
     }
+
+    // Runs at every question, on the thread that asks.
+    public Action? Asked { get; set; }
 
     public Exception? Failure { get; set; }
 

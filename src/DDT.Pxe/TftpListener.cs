@@ -10,8 +10,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Pxe;
 
-// Each read request on port 69 becomes a TftpTransfer on a separate task, so one slow client can't stall the rest. A
-// transfer answers from its own port. In single port mode it answers from port 69, and this loop routes its datagrams.
+// Each read request on port 69 becomes a TftpTransfer on a separate task, so one slow client can't stall the rest, and
+// neither can a slow disk: the transfer looks its file up itself. A transfer answers from its own port. In single port
+// mode it answers from port 69, and this loop routes its datagrams.
 public sealed class TftpListener : IPxeListener, IAsyncDisposable
 {
     private const int ReceiveBufferLength = 1024;
@@ -163,10 +164,11 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
             return;
         }
 
-        await AcceptReadAsync(socket, request, localAddress, client, cancellationToken).ConfigureAwait(false);
+        AcceptRead(socket, request, localAddress, client, cancellationToken);
     }
 
-    private async Task AcceptReadAsync(
+    // Nothing here looks at the disk or waits: this is the loop every machine's request comes through.
+    private void AcceptRead(
         Socket socket,
         TftpReadRequest request,
         IPAddress localAddress,
@@ -192,17 +194,24 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
             PxeLog.BootConnectionsReset(_logger, reset, client.Address);
         }
 
-        if (!_files.TryFind(request.FileName, new BootRequest(localAddress, client.Address), out BootContent? content))
-        {
-            LogNotFound(request.FileName, client);
-            using ITftpTransport refusal = CreateTransport(socket, localAddress, client);
-            await SendErrorAsync(refusal, TftpErrorCode.FileNotFound, "File not found", cancellationToken).ConfigureAwait(false);
+        BootRequest asked = new(localAddress, client.Address);
 
-            return;
+        StartTransfer(CreateTransport(socket, localAddress, client), client, () => Find(request.FileName, asked, client), request, cancellationToken);
+    }
+
+    // Runs in the transfer, since it looks at the disk. Null when there is no such file to send.
+    private BootContent? Find(string requested, BootRequest asked, IPEndPoint client)
+    {
+        if (!_files.TryFind(requested, asked, out BootContent? content))
+        {
+            LogNotFound(requested, client);
+
+            return null;
         }
 
-        PxeLog.TftpRead(_logger, request.FileName, client, content.Description);
-        StartTransfer(CreateTransport(socket, localAddress, client), client, content, request, cancellationToken);
+        PxeLog.TftpRead(_logger, requested, client, content.Description);
+
+        return content;
     }
 
     // shim and GRUB ask for a handful of files at every start that DDT does not have, and go on without them.
@@ -252,11 +261,11 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
     private void StartTransfer(
         ITftpTransport transport,
         IPEndPoint client,
-        BootContent content,
+        Func<BootContent?> find,
         TftpReadRequest request,
         CancellationToken cancellationToken)
     {
-        TftpTransfer transfer = new(transport, client, content, request, _transferServices, cancellationToken);
+        TftpTransfer transfer = new(transport, client, find, request, _transferServices, cancellationToken);
 
         _transfers[transfer] = client;
 

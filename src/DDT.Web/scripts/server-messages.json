@@ -455,6 +455,8 @@
   "settings.ldapTest.role": "{result} The group map makes the account {role}.",
   "settings.ldapTest.searchFailed": "The search for {name} under {baseDn} failed: {error}",
   "settings.ldapTest.sendValues": "Send the values to test.",
+  "settings.linuxAgent.configured": "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration, so it cannot be uploaded here. Remove the key to upload it on this page.",
+  "settings.linuxAgent.notExecutable": "That is not a 64-bit Linux program for x86-64. Upload ddt-agent as Publish-LinuxAgent.ps1 builds it, or ddt-agent-linux-x64 from a DDT release.",
   "settings.logging.levelUnknown": "''{value}'' is not a log level. Use Trace, Debug, Information, Warning, Error, Critical or None.",
   "settings.machines.networkEverything": "''{value}'' is every address there is. Name the provisioning networks themselves.",
   "settings.machines.networkHoldsProxy": "The zero touch network {network} contains the proxy {proxy}. A request the proxy forwards without the client's address would count as one from that network.",

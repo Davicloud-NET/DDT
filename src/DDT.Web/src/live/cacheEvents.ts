@@ -59,7 +59,12 @@ import {
   settingsOverviewQuery,
   type SettingsSectionView,
 } from "@/settings/settings";
-import { agentBinaryQuery, consoleBinaryQuery, type AgentBinaryView } from "@/settings/agentBinary";
+import {
+  agentBinaryQuery,
+  consoleBinaryQuery,
+  linuxAgentBinaryQuery,
+  type AgentBinaryView,
+} from "@/settings/agentBinary";
 import { consoleLogoQuery, type ConsoleLogoView } from "@/settings/consoleLogo";
 import { serverCertificateQuery } from "@/server/serverCertificate";
 import { pxeInterfacesQuery, type PxeHostInterfaces } from "@/settings/networkBoot";
@@ -232,6 +237,10 @@ function administrationEvents(queryClient: QueryClient) {
     agentChanged: (agent: AgentBinaryView) => {
       queryClient.setQueryData(agentBinaryQuery.queryKey, agent);
     },
+    // Administrators receive an uploaded agent for Linux.
+    linuxAgentChanged: (agent: AgentBinaryView) => {
+      queryClient.setQueryData(linuxAgentBinaryQuery.queryKey, agent);
+    },
     // Administrators receive an uploaded console as well.
     consoleChanged: (console: AgentBinaryView) => {
       queryClient.setQueryData(consoleBinaryQuery.queryKey, console);
@@ -290,6 +299,7 @@ export function reconnectKeys(): QueryKey[] {
     settingsOverviewQuery.queryKey,
     certificateKey,
     agentBinaryQuery.queryKey,
+    linuxAgentBinaryQuery.queryKey,
     consoleBinaryQuery.queryKey,
     consoleLogoQuery.queryKey,
     serverCertificateQuery.queryKey,

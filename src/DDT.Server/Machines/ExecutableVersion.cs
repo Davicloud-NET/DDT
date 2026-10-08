@@ -9,7 +9,7 @@ namespace DDT.Server.Machines;
 // The file version of a Windows executable, found while its bytes pass by for hashing. FileVersionInfo reads only
 // managed assemblies on Linux, and the agent is native. So this looks for the fixed part of the version resource,
 // VS_FIXEDFILEINFO: its signature, its structure version, then the file version.
-public sealed class ExecutableVersion
+public sealed class ExecutableVersion : IEmbeddedVersion
 {
     private const int VersionBytes = 8;
 

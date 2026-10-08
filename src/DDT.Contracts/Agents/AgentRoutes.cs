@@ -64,4 +64,9 @@ public static class AgentRoutes
     public static string ConsoleReleaseFile(string name) => $"api/agents/release/console/{Uri.EscapeDataString(name)}";
 
     public const string ConsoleLogo = "api/agents/console/logo";
+
+    // Frozen as well. The agent built for a platform, named as in AgentPlatforms, answered with an AgentRelease too.
+    public static string PlatformRelease(string platform) => $"api/agents/releases/{Uri.EscapeDataString(platform)}";
+
+    public static string PlatformReleaseBinary(string platform) => $"api/agents/releases/{Uri.EscapeDataString(platform)}/binary";
 }

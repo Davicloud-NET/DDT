@@ -9,8 +9,8 @@ import { apiErrorFrom, apiFetch, apiGet } from "@/lib/api";
 import { reauthenticationToken } from "./settings";
 
 // None: machines keep the agent or console of their boot image. Uploaded: uploaded on this page. Bundled: the one the
-// server came with, offered while nothing is uploaded. Configuration: DDT:Agent:BinaryPath or DDT:Agent:ConsolePath
-// names the file, and the page can't replace it.
+// server came with, offered while nothing is uploaded. Configuration: DDT:Agent:BinaryPath, DDT:Agent:LinuxBinaryPath
+// or DDT:Agent:ConsolePath names the file, and the page can't replace it.
 export type AgentBinarySource = "None" | "Uploaded" | "Bundled" | "Configuration";
 
 // The agent that netbooting machines switch to. The values are null when there's none. version is the file's version
@@ -35,6 +35,13 @@ export const agentBinaryQuery = queryOptions({
   queryFn: () => apiGet<AgentBinaryView>("/api/settings/agent"),
 });
 
+// The agent that machines in the Linux boot environment switch to. The hub's linuxAgentChanged brings an upload to
+// other administrators' pages.
+export const linuxAgentBinaryQuery = queryOptions({
+  queryKey: ["settings-agent-linux"],
+  queryFn: () => apiGet<AgentBinaryView>("/api/settings/agent/linux"),
+});
+
 // The console those machines show. The view describes its ddt-console.exe and the size of all its files. The hub's
 // consoleChanged brings an upload to other administrators' pages.
 export const consoleBinaryQuery = queryOptions({
@@ -48,6 +55,11 @@ export function uploadAgent(file: File): Promise<AgentBinaryView> {
   return upload("/api/settings/agent/binary", file, "application/octet-stream");
 }
 
+// Sends the agent for Linux, the file Publish-LinuxAgent.ps1 writes, the same way.
+export function uploadLinuxAgent(file: File): Promise<AgentBinaryView> {
+  return upload("/api/settings/agent/linux/binary", file, "application/octet-stream");
+}
+
 // Sends the zip of the folder Publish-Console.ps1 writes, the same way.
 export function uploadConsole(file: File): Promise<AgentBinaryView> {
   return upload("/api/settings/agent/console", file, "application/zip");
@@ -56,6 +68,10 @@ export function uploadConsole(file: File): Promise<AgentBinaryView> {
 // Takes machines back to the agent the server came with, or their boot image's. The answer is the new view.
 export function removeAgentUpload(): Promise<AgentBinaryView> {
   return removeUpload("/api/settings/agent/binary");
+}
+
+export function removeLinuxAgentUpload(): Promise<AgentBinaryView> {
+  return removeUpload("/api/settings/agent/linux/binary");
 }
 
 export function removeConsoleUpload(): Promise<AgentBinaryView> {

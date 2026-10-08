@@ -788,6 +788,7 @@ msgid "{name} is in the library now."
 msgstr "{name} is in the library now."
 
 #: src/settings/AgentPanel.tsx
+#: src/settings/LinuxAgentPanel.tsx
 msgid "{name} is larger than {limit}, the most the server takes for the agent."
 msgstr "{name} is larger than {limit}, the most the server takes for the agent."
 
@@ -906,6 +907,10 @@ msgstr "{name}, {hardware}"
 #: src/settings/AgentPanel.tsx
 msgid "{name}, {size}, replaces the agent every machine that netboots from now on runs as SYSTEM."
 msgstr "{name}, {size}, replaces the agent every machine that netboots from now on runs as SYSTEM."
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "{name}, {size}, replaces the agent every machine that starts the Linux boot environment from now on runs as root."
+msgstr "{name}, {size}, replaces the agent every machine that starts the Linux boot environment from now on runs as root."
 
 #: src/settings/ConsolePanel.tsx
 msgid "{name}, {size}, replaces the console every machine that netboots from now on runs as SYSTEM."
@@ -1371,6 +1376,10 @@ msgstr "64-bit UEFI PCs, over TFTP"
 #: src/sequences/steps/WriteCloudInitSeedFields.tsx
 msgid "A #cloud-config document, or a script that starts with #!."
 msgstr "A #cloud-config document, or a script that starts with #!."
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "A 64-bit Linux program for x64 of at most 128 MB."
+msgstr "A 64-bit Linux program for x64 of at most 128 MB."
 
 #: src/lib/serverMessages.ts
 msgctxt "bootImage.busy"
@@ -2191,6 +2200,10 @@ msgstr "Agent"
 #: src/settings/AgentPanel.tsx
 msgid "Agent for netbooting machines"
 msgstr "Agent for netbooting machines"
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Agent for the Linux boot environment"
+msgstr "Agent for the Linux boot environment"
 
 #: src/machines/machineView.ts
 #: src/runs/runHistory.ts
@@ -3067,6 +3080,10 @@ msgstr "Choose one of the variables {variables}."
 msgid "Choose the agent first."
 msgstr "Choose the agent first."
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Choose the agent for Linux first."
+msgstr "Choose the agent for Linux first."
+
 #: src/settings/ConsolePanel.tsx
 msgid "Choose the console first."
 msgstr "Choose the console first."
@@ -3473,6 +3490,15 @@ msgctxt "settings.console.configured"
 msgid "DDT:Agent:ConsolePath names the console in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
 msgstr "DDT:Agent:ConsolePath names the console in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration, so it cannot be uploaded here. Remove the key and restart DDT to upload it on this page."
+msgstr "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration, so it cannot be uploaded here. Remove the key and restart DDT to upload it on this page."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.linuxAgent.configured"
+msgid "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
+msgstr "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
+
 #: src/settings/certificate/ServedCertificate.tsx
 msgid "DDT:Https:GenerateSelfSignedCertificate is false in configuration, so DDT issues no certificate here. Upload one instead."
 msgstr "DDT:Https:GenerateSelfSignedCertificate is false in configuration, so DDT issues no certificate here. Upload one instead."
@@ -3826,9 +3852,17 @@ msgstr "Drop a file to upload"
 msgid "Drop another logo here to replace it, or choose one."
 msgstr "Drop another logo here to replace it, or choose one."
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Drop ddt-agent-linux-x64 here, or choose it."
+msgstr "Drop ddt-agent-linux-x64 here, or choose it."
+
 #: src/settings/AgentPanel.tsx
 msgid "Drop ddt-agent.exe here, or choose it."
 msgstr "Drop ddt-agent.exe here, or choose it."
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Drop the agent for Linux to upload it"
+msgstr "Drop the agent for Linux to upload it"
 
 #: src/settings/AgentPanel.tsx
 msgid "Drop the agent to upload it"
@@ -5613,6 +5647,7 @@ msgid "Machines of {targets} no longer get these drivers."
 msgstr "Machines of {targets} no longer get these drivers."
 
 #: src/settings/AgentPanel.tsx
+#: src/settings/LinuxAgentPanel.tsx
 msgid "Machines run"
 msgstr "Machines run"
 
@@ -5632,6 +5667,10 @@ msgstr "Machines take it at their next netboot: the agent downloads it and shows
 msgid "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
 msgstr "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Machines take it at their next netboot: the agent the Linux boot environment brings downloads it and runs it instead, so a newer agent needs no new environment. A machine that cannot download or start it goes on with the agent the environment brought."
+msgstr "Machines take it at their next netboot: the agent the Linux boot environment brings downloads it and runs it instead, so a newer agent needs no new environment. A machine that cannot download or start it goes on with the agent the environment brought."
+
 #: src/boot/StoredBuilds.tsx
 msgid "Machines that netboot from now on get this build. A machine that is netbooting right now finishes with the build it started."
 msgstr "Machines that netboot from now on get this build. A machine that is netbooting right now finishes with the build it started."
@@ -5643,6 +5682,10 @@ msgstr "Machines that netboot from now on run the agent this server came with. I
 #: src/settings/ConsolePanel.tsx
 msgid "Machines that netboot from now on show the console this server came with. If it came with none, they show the console in their boot image."
 msgstr "Machines that netboot from now on show the console this server came with. If it came with none, they show the console in their boot image."
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Machines that start the Linux boot environment from now on run the agent for Linux this server came with. If it came with none, they run the agent the environment brings."
+msgstr "Machines that start the Linux boot environment from now on run the agent for Linux this server came with. If it came with none, they run the agent the environment brings."
 
 #: src/settings/networkBoot/BootEnvironmentGroup.tsx
 msgid "Machines that start the Linux boot environment load {file} over TFTP, whatever the boot target for 64-bit UEFI names."
@@ -7483,6 +7526,14 @@ msgstr "Remove the logo?"
 msgid "Remove the uploaded agent"
 msgstr "Remove the uploaded agent"
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Remove the uploaded agent for Linux"
+msgstr "Remove the uploaded agent for Linux"
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Remove the uploaded agent for Linux?"
+msgstr "Remove the uploaded agent for Linux?"
+
 #: src/settings/AgentPanel.tsx
 msgid "Remove the uploaded agent?"
 msgstr "Remove the uploaded agent?"
@@ -7519,6 +7570,10 @@ msgstr "Removed. Machines that netboot from now on no longer get that agent."
 msgid "Removed. Machines that netboot from now on no longer get that console."
 msgstr "Removed. Machines that netboot from now on no longer get that console."
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Removed. Machines that start the Linux boot environment from now on no longer get that agent."
+msgstr "Removed. Machines that start the Linux boot environment from now on no longer get that agent."
+
 #: src/deployments/deployments.ts
 msgid "Removing the agent from Windows"
 msgstr "Removing the agent from Windows"
@@ -7530,6 +7585,10 @@ msgstr "Removing the logo"
 #: src/settings/AgentPanel.tsx
 msgid "Removing the uploaded agent"
 msgstr "Removing the uploaded agent"
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Removing the uploaded agent for Linux"
+msgstr "Removing the uploaded agent for Linux"
 
 #: src/settings/ConsolePanel.tsx
 msgid "Removing the uploaded console"
@@ -8373,6 +8432,7 @@ msgstr "Several of a list"
 #: src/images/ImageFacts.tsx
 #: src/settings/AgentPanel.tsx
 #: src/settings/certificate/CertificateFacts.tsx
+#: src/settings/LinuxAgentPanel.tsx
 msgid "SHA-256"
 msgstr "SHA-256"
 
@@ -8542,6 +8602,7 @@ msgstr "Single sign-on is off on this host: {error}"
 #: src/images/ImagesTable.tsx
 #: src/packages/PackagesTable.tsx
 #: src/settings/AgentPanel.tsx
+#: src/settings/LinuxAgentPanel.tsx
 #: src/settings/logo/LogoDetails.tsx
 msgid "Size"
 msgstr "Size"
@@ -9056,6 +9117,11 @@ msgid "That did not work."
 msgstr "That did not work."
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.linuxAgent.notExecutable"
+msgid "That is not a 64-bit Linux program for x86-64. Upload ddt-agent as Publish-LinuxAgent.ps1 builds it, or ddt-agent-linux-x64 from a DDT release."
+msgstr "That is not a 64-bit Linux program for x86-64. Upload ddt-agent as Publish-LinuxAgent.ps1 builds it, or ddt-agent-linux-x64 from a DDT release."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.consoleLogo.notPng"
 msgid "That is not a PNG image. Upload the logo as a PNG file."
 msgstr "That is not a PNG image. Upload the logo as a PNG file."
@@ -9152,6 +9218,18 @@ msgstr "The accounts could not be loaded."
 msgid "The accounts steps use: a script runs as one, a share is connected with one, a domain is joined with one. Each password is stored encrypted and goes only to the step that uses it, while the step runs; this page never shows it."
 msgstr "The accounts steps use: a script runs as one, a share is connected with one, a domain is joined with one. Each password is stored encrypted and goes only to the step that uses it, while the step runs; this page never shows it."
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The agent for Linux this server came with, since none was uploaded"
+msgstr "The agent for Linux this server came with, since none was uploaded"
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The agent for Linux uploaded here"
+msgstr "The agent for Linux uploaded here"
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The agent for the Linux boot environment could not be read."
+msgstr "The agent for the Linux boot environment could not be read."
+
 #: src/settings/AgentPanel.tsx
 msgid "The agent in their boot image, since none was uploaded"
 msgstr "The agent in their boot image, since none was uploaded"
@@ -9169,6 +9247,10 @@ msgstr "The agent may be at most {max} MB."
 msgid "The agent on this machine reported no facts. A newer agent reports them at the machine's next netboot."
 msgstr "The agent on this machine reported no facts. A newer agent reports them at the machine's next netboot."
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The agent runs as root on every machine that starts the Linux boot environment, so uploading it needs your password again."
+msgstr "The agent runs as root on every machine that starts the Linux boot environment, so uploading it needs your password again."
+
 #: src/settings/AgentPanel.tsx
 msgid "The agent runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
 msgstr "The agent runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
@@ -9177,6 +9259,10 @@ msgstr "The agent runs as SYSTEM on every machine that netboots, so uploading it
 msgid "The agent started the run"
 msgstr "The agent started the run"
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The agent the Linux boot environment brings, since none was uploaded"
+msgstr "The agent the Linux boot environment brings, since none was uploaded"
+
 #: src/settings/AgentPanel.tsx
 msgid "The agent this server came with, since none was uploaded"
 msgstr "The agent this server came with, since none was uploaded"
@@ -9184,6 +9270,10 @@ msgstr "The agent this server came with, since none was uploaded"
 #: src/settings/AgentPanel.tsx
 msgid "The agent uploaded here"
 msgstr "The agent uploaded here"
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The agent you upload runs as root on every machine that starts the Linux boot environment from now on, before anybody authorized the machine. The server checks only that the file is a Linux program for x64, not where it comes from. Upload only ddt-agent-linux-x64 from a DDT release, or ddt-agent as Publish-LinuxAgent.ps1 builds it."
+msgstr "The agent you upload runs as root on every machine that starts the Linux boot environment from now on, before anybody authorized the machine. The server checks only that the file is a Linux program for x64, not where it comes from. Upload only ddt-agent-linux-x64 from a DDT release, or ddt-agent as Publish-LinuxAgent.ps1 builds it."
 
 #: src/settings/AgentPanel.tsx
 msgid "The agent you upload runs as SYSTEM on every machine that netboots from now on, before anybody authorized the machine. Upload only ddt-agent.exe from a DDT release or as Publish-Agent.ps1 builds it."
@@ -9612,6 +9702,10 @@ msgstr "The fields marked below say what."
 #: src/settings/AgentPanel.tsx
 msgid "The file DDT:Agent:BinaryPath names in configuration"
 msgstr "The file DDT:Agent:BinaryPath names in configuration"
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The file DDT:Agent:LinuxBinaryPath names in configuration"
+msgstr "The file DDT:Agent:LinuxBinaryPath names in configuration"
 
 #: src/lib/serverMessages.ts
 msgctxt "gpt.noTable"
@@ -10573,6 +10667,10 @@ msgstr "The upload is no boot image build: its zip, its boot.wim or its descript
 msgid "The upload of {name} stopped. Choose the file again to resume."
 msgstr "The upload of {name} stopped. Choose the file again to resume."
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The uploaded agent for Linux was not removed. {reason}"
+msgstr "The uploaded agent for Linux was not removed. {reason}"
+
 #: src/settings/AgentPanel.tsx
 msgid "The uploaded agent was not removed. {reason}"
 msgstr "The uploaded agent was not removed. {reason}"
@@ -10928,6 +11026,7 @@ msgid "This sequence was deleted, so nothing more is saved."
 msgstr "This sequence was deleted, so nothing more is saved."
 
 #: src/settings/AgentPanel.tsx
+#: src/settings/LinuxAgentPanel.tsx
 msgid "This server came with agent {version}, which is newer than the uploaded one. Remove the upload, and machines run the server's own."
 msgstr "This server came with agent {version}, which is newer than the uploaded one. Remove the upload, and machines run the server's own."
 
@@ -11260,6 +11359,10 @@ msgstr "Up to 15 letters A to Z, digits and hyphens."
 msgid "Upload"
 msgstr "Upload"
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Upload {name} as the agent for Linux?"
+msgstr "Upload {name} as the agent for Linux?"
+
 #: src/settings/AgentPanel.tsx
 msgid "Upload {name} as the agent?"
 msgstr "Upload {name} as the agent?"
@@ -11285,6 +11388,7 @@ msgid "Upload a zip of files, then choose it in a Run script step of a task sequ
 msgstr "Upload a zip of files, then choose it in a Run script step of a task sequence."
 
 #: src/settings/AgentPanel.tsx
+#: src/settings/LinuxAgentPanel.tsx
 msgid "Upload agent"
 msgstr "Upload agent"
 
@@ -11300,6 +11404,10 @@ msgstr "Upload console"
 #: src/settings/AgentPanel.tsx
 msgid "Upload the agent"
 msgstr "Upload the agent"
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Upload the agent for Linux"
+msgstr "Upload the agent for Linux"
 
 #: src/settings/ConsolePanel.tsx
 msgid "Upload the console"
@@ -11323,6 +11431,10 @@ msgstr "Uploaded. Machines that netboot from now on run the agent with SHA-256 {
 #: src/settings/ConsolePanel.tsx
 msgid "Uploaded. Machines that netboot from now on show the console whose ddt-console.exe has SHA-256 {uploaded}."
 msgstr "Uploaded. Machines that netboot from now on show the console whose ddt-console.exe has SHA-256 {uploaded}."
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Uploaded. Machines that start the Linux boot environment from now on run the agent with SHA-256 {uploaded}."
+msgstr "Uploaded. Machines that start the Linux boot environment from now on run the agent with SHA-256 {uploaded}."
 
 #: src/uploads/UploadProgress.tsx
 msgid "Uploading {file}"

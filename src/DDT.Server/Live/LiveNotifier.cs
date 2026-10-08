@@ -261,6 +261,13 @@ public sealed partial class LiveNotifier(
         _ = PushToAdministratorsAsync(LiveEvents.AgentChanged, agent);
     }
 
+    public void LinuxAgentChanged(AgentBinaryView agent)
+    {
+        ArgumentNullException.ThrowIfNull(agent);
+
+        _ = PushToAdministratorsAsync(LiveEvents.LinuxAgentChanged, agent);
+    }
+
     public void ConsoleChanged(AgentBinaryView console)
     {
         ArgumentNullException.ThrowIfNull(console);

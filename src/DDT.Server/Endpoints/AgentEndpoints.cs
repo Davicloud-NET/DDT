@@ -48,29 +48,7 @@ public static class AgentEndpoints
             .RequireRateLimiting(RateLimitPolicies.SignIn)
             .WithMetadata(new RequestSizeLimitAttribute(MachineLogLimits.MaxSignInBytes));
 
-        // The agent every netbooting machine switches to. Anonymous, because the same binary is in every boot
-        // image anyway.
-        group.MapGet("/release", GetReleaseAsync)
-            .AllowAnonymous()
-            .RequireRateLimiting(RateLimitPolicies.AgentRelease);
-
-        group.MapGet("/release/binary", GetReleaseBinaryAsync)
-            .AllowAnonymous()
-            .RequireRateLimiting(RateLimitPolicies.AgentDownload);
-
-        // The graphical console those agents show. It's anonymous like the agent, for the same reason.
-        group.MapGet("/release/console", GetConsoleReleaseAsync)
-            .AllowAnonymous()
-            .RequireRateLimiting(RateLimitPolicies.AgentRelease);
-
-        group.MapGet("/release/console/{name}", GetConsoleFileAsync)
-            .AllowAnonymous()
-            .RequireRateLimiting(RateLimitPolicies.AgentDownload);
-
-        // The logo that console shows. Every registration answer names its hash.
-        group.MapGet("/console/logo", GetConsoleLogo)
-            .AllowAnonymous()
-            .RequireRateLimiting(RateLimitPolicies.AgentRelease);
+        group.MapAgentReleaseEndpoints();
 
         return group;
     }
@@ -105,69 +83,6 @@ public static class AgentEndpoints
                 ConsoleLogoSha256 = (await logos.CurrentAsync(cancellationToken).ConfigureAwait(false))?.Sha256,
             }),
         };
-    }
-
-    private static async Task<Results<Ok<AgentRelease>, NotFound>> GetReleaseAsync(
-        AgentReleaseStore releases,
-        CancellationToken cancellationToken)
-    {
-        AgentRelease? release = await releases.CurrentAsync(cancellationToken).ConfigureAwait(false);
-
-        return release is null ? TypedResults.NotFound() : TypedResults.Ok(release);
-    }
-
-    // Not PhysicalFile, which opens without FileShare.Delete: an upload then can't replace the agent on Windows while
-    // a machine downloads it.
-    private static async Task<Results<FileStreamHttpResult, NotFound>> GetReleaseBinaryAsync(
-        AgentReleaseStore releases,
-        CancellationToken cancellationToken)
-    {
-        if (await releases.OfferedAsync(cancellationToken).ConfigureAwait(false) is not { } agent)
-        {
-            return TypedResults.NotFound();
-        }
-
-        try
-        {
-            return TypedResults.File(FileReplacement.OpenRead(agent.Path), "application/octet-stream");
-        }
-        catch (FileNotFoundException)
-        {
-            return TypedResults.NotFound();
-        }
-    }
-
-    private static Results<FileStreamHttpResult, NotFound> GetConsoleLogo(ConsoleLogoStore logos) =>
-        logos.Open() is { } logo ? TypedResults.File(logo, "image/png") : TypedResults.NotFound();
-
-    private static async Task<Results<Ok<ConsoleRelease>, NotFound>> GetConsoleReleaseAsync(
-        ConsoleReleaseStore consoles,
-        CancellationToken cancellationToken)
-    {
-        ConsoleRelease? release = await consoles.CurrentAsync(cancellationToken).ConfigureAwait(false);
-
-        return release is null ? TypedResults.NotFound() : TypedResults.Ok(release);
-    }
-
-    // Only the files the release names, with the length it names, so the agent's download ends where the file does.
-    private static async Task<Results<PushStreamHttpResult, NotFound>> GetConsoleFileAsync(
-        string name,
-        HttpContext context,
-        ConsoleReleaseStore consoles,
-        CancellationToken cancellationToken)
-    {
-        StoredConsole? console = await consoles.OfferedAsync(cancellationToken).ConfigureAwait(false);
-
-        if (console?.Release.Files.FirstOrDefault(file => file.Name == name) is not { } file)
-        {
-            return TypedResults.NotFound();
-        }
-
-        context.Response.ContentLength = file.Size;
-
-        return TypedResults.Stream(
-            body => ConsoleReleaseStore.CopyFileAsync(console, file.Name, body, context.RequestAborted),
-            "application/octet-stream");
     }
 
     private static async Task<Results<Ok<AgentNextResult>, ForbidHttpResult, UnauthorizedHttpResult, NotFound>> NextAsync(

@@ -316,6 +316,7 @@ Certificate actions have these limits:
 | Key | Type | Default | Secret | Applies | Who |
 |---|---|---|---|---|---|
 | Agent binary (replaces DDT:Agent:BinaryPath) | upload of ddt-agent.exe | the agent the server came with; without one, machines keep the boot image agent | | live: next netboot | Admin, re-auth to upload |
+| Agent for Linux (replaces DDT:Agent:LinuxBinaryPath) | upload of ddt-agent-linux-x64, a 64-bit Linux program for x86-64 | the agent for Linux the server came with; without one, machines keep the agent the Linux boot environment brings | | live: next netboot | Admin, re-auth to upload |
 | Console (replaces DDT:Agent:ConsolePath) | upload of a zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll | the console the server came with; without one, machines keep the boot image console | | live: next netboot | Admin, re-auth to upload |
 
 - The upload goes to the default path `<StorePath>/agent/ddt-agent.exe` (AgentReleaseStore.cs).
@@ -325,9 +326,24 @@ Certificate actions have these limits:
   from its first start. The view names the source (`Uploaded`, `Bundled`, `Configuration`, `None`)
   and the file version, which the server reads out of the executable (ExecutableVersion.cs), on
   Linux as well.
-- `DELETE /api/settings/agent/binary` and `DELETE /api/settings/agent/console` remove an upload
-  again, audited as `agent.upload-removed` and `console.upload-removed`, without a fresh password:
-  it only takes machines back to what the server came with. While an upload is older than the
+- The agent for Linux is a second agent beside the one for Windows PE, with the same rules
+  (AgentReleaseStores.cs). Its upload goes to `<StorePath>/agent/ddt-agent-linux-x64`, a release puts
+  `ddt-agent-linux-x64` next to DDT.Host, and DDT:Agent:LinuxBinaryPath is its development override,
+  which Start-DevHost.ps1 points at the file Publish-LinuxAgent.ps1 writes. An ELF file has no
+  version resource, so the agent's build writes `DDT-AGENT-VERSION:` and the version into it, and
+  the server reads that (ElfAgentVersion.cs).
+- The server takes an upload for Linux only when its header says it is a 64-bit program for
+  x86-64 (ElfHeader.cs), as it takes one for Windows PE only when it starts with MZ. Neither check
+  says where a file comes from or what it does: DDT signs no agent for Linux, and every machine
+  that starts the Linux boot environment runs the upload as root. The fresh password and the audit
+  row are what stand between an administrator's session and that.
+- Agents ask for the one built for their system: `GET /api/agents/releases/{platform}` and
+  `.../binary`, with `windows-x64` and `linux-x64` as platforms (AgentPlatforms.cs). They answer as
+  the frozen `api/agents/release` routes do, which stay the Windows PE agent's.
+- `DELETE /api/settings/agent/binary`, `DELETE /api/settings/agent/linux/binary` and
+  `DELETE /api/settings/agent/console` remove an upload again, audited as `agent.upload-removed`,
+  `agent.linux.upload-removed` and `console.upload-removed`, without a fresh password: it only
+  takes machines back to what the server came with. While an upload is older than the
   bundled file, the view says so in `newerBundledVersion`, and the page offers the removal.
 - DDT:Agent:BinaryPath stays only as a configuration override for development (Start-DevHost.ps1).
   While it is set, uploads answer 409, and the bundled agent is not offered.
@@ -755,7 +771,7 @@ stated requirement.
 - settings.imported, settings.changed, settings.refused, settings.reset
 - settings.applied, settings.apply-failed
 - certificate.replaced, certificate.rolled-back
-- agent.uploaded
+- agent.uploaded, agent.linux.uploaded
 - administrator.created
 
 **Row contents.**
@@ -962,6 +978,9 @@ ring, so it also works for the streamed agent upload.
 | POST /api/settings/certificate/confirm | Makes a provisional pair permanent. Accepted only from a connection that was served the new pair. |
 | GET /api/settings/agent | `{ sha256, size, uploadedUtc, uploadedBy, source }`. |
 | PUT /api/settings/agent/binary | Streamed application/octet-stream with a size limit and an MZ header check. Written to a temporary file, then renamed. Returns `{ sha256, size }` and audits `agent.uploaded` with the hash. Answers 409 while DDT:Agent:BinaryPath is set in configuration. Needs re-auth. |
+| GET /api/settings/agent/linux | The same view for the agent for Linux. `version` comes from the marker its build writes. |
+| PUT /api/settings/agent/linux/binary | As PUT /api/settings/agent/binary, with a check of the ELF header for a 64-bit x86-64 program in place of MZ. Audits `agent.linux.uploaded`. Answers 409 while DDT:Agent:LinuxBinaryPath is set in configuration. Needs re-auth. |
+| DELETE /api/settings/agent/linux/binary | Removes the upload, audited as `agent.linux.upload-removed`. 404 when nothing was uploaded. |
 | GET /api/settings/agent/console | The same view for the console: the SHA-256 of ddt-console.exe and the size of the three files. |
 | PUT /api/settings/agent/console | A zip of the console's three files, at the root or in one folder, each starting with MZ, at most 128 MB zipped and unpacked. Repacked to a temporary file, then renamed. Returns the view and audits `console.uploaded` with the hash of ddt-console.exe. Answers 409 while DDT:Agent:ConsolePath is set in configuration. Needs re-auth. |
 | GET /api/auth/external/providers | Anonymous. The enabled providers with their DisplayName, for the sign-in page. |

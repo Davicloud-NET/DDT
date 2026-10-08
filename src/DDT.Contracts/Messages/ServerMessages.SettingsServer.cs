@@ -83,6 +83,14 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate SettingsAgentTooLarge = Define("settings.agent.tooLarge", "The agent may be at most {max} MB.");
 
+    public static readonly MessageTemplate SettingsLinuxAgentConfigured = Define(
+        "settings.linuxAgent.configured",
+        "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration, so it cannot be uploaded here. Remove the key to upload it on this page.");
+
+    public static readonly MessageTemplate SettingsLinuxAgentNotExecutable = Define(
+        "settings.linuxAgent.notExecutable",
+        "That is not a 64-bit Linux program for x86-64. Upload ddt-agent as Publish-LinuxAgent.ps1 builds it, or ddt-agent-linux-x64 from a DDT release.");
+
     public static readonly MessageTemplate SettingsConsoleConfigured = Define(
         "settings.console.configured",
         "DDT:Agent:ConsolePath names the console in configuration, so it cannot be uploaded here. Remove the key to upload it on this page.");

@@ -1833,6 +1833,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "settings.ldapTest.sendValues",
     message: "Send the values to test.",
   }),
+  "settings.linuxAgent.configured": msg({
+    context: "settings.linuxAgent.configured",
+    message: "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration, so it cannot be uploaded here. Remove the key to upload it on this page.",
+  }),
+  "settings.linuxAgent.notExecutable": msg({
+    context: "settings.linuxAgent.notExecutable",
+    message: "That is not a 64-bit Linux program for x86-64. Upload ddt-agent as Publish-LinuxAgent.ps1 builds it, or ddt-agent-linux-x64 from a DDT release.",
+  }),
   "settings.logging.levelUnknown": msg({
     context: "settings.logging.levelUnknown",
     message: "''{value}'' is not a log level. Use Trace, Debug, Information, Warning, Error, Critical or None.",

@@ -14,29 +14,30 @@ namespace DDT.Server.Settings;
 // The agent and console builds that netbooting machines get. The settings page shows them, replaces them and removes
 // an upload again. Who uploaded one and when comes from the audit row of its latest upload.
 internal sealed class ReleaseUploads(
-    AgentReleaseStore releases,
+    AgentReleaseStores agents,
     ConsoleReleaseStore consoles,
     DdtDbContext database,
     TimeProvider timeProvider,
     LiveNotifier live)
 {
-    public bool AgentConfigured => releases.Configured;
-
     public bool ConsoleConfigured => consoles.Configured;
 
-    public async Task<AgentBinaryView> AgentAsync(CancellationToken cancellationToken)
+    public bool AgentConfigured(AgentUpload agent) => StoreOf(agent).Configured;
+
+    public async Task<AgentBinaryView> AgentAsync(AgentUpload agent, CancellationToken cancellationToken)
     {
+        AgentReleaseStore releases = StoreOf(agent);
         StoredAgent? offered = await releases.OfferedAsync(cancellationToken).ConfigureAwait(false);
         bool uploaded = offered?.Source == AgentBinarySource.Uploaded;
         StoredAgent? bundled = uploaded ? await releases.BundledAsync(cancellationToken).ConfigureAwait(false) : null;
-        AuditEvent? upload = uploaded ? await LatestAsync(AuditActions.AgentUploaded, cancellationToken).ConfigureAwait(false) : null;
+        AuditEvent? upload = uploaded ? await LatestAsync(agent.UploadedAction, cancellationToken).ConfigureAwait(false) : null;
 
         return new AgentBinaryView(
             offered?.Release.Sha256,
             offered?.Release.Size,
             upload?.OccurredUtc,
             upload?.ActorName,
-            offered?.Source ?? (AgentConfigured ? AgentBinarySource.Configuration : AgentBinarySource.None),
+            offered?.Source ?? (releases.Configured ? AgentBinarySource.Configuration : AgentBinarySource.None),
             Text(offered?.Version),
             Text(Newer(bundled?.Version, offered?.Version)));
     }
@@ -58,26 +59,25 @@ internal sealed class ReleaseUploads(
             Text(Newer(bundled?.Version, offered?.Version)));
     }
 
-    // The returned view is what GET /api/settings/agent reads from now on. Other administrators' pages get it from the
-    // hub.
-    public async Task<(ReleaseUploadStatus Status, AgentBinaryView? View)> UploadAgentAsync(Stream content, Actor actor, CancellationToken cancellationToken)
+    // The returned view is what a read of the agent's settings returns from now on. Other administrators' pages get it
+    // from the hub.
+    public async Task<(ReleaseUploadStatus Status, AgentBinaryView? View)> UploadAgentAsync(
+        AgentUpload agent,
+        Stream content,
+        Actor actor,
+        CancellationToken cancellationToken)
     {
-        (ReleaseUploadStatus status, AgentRelease? release) = await releases.SaveAsync(content, cancellationToken).ConfigureAwait(false);
+        (ReleaseUploadStatus status, AgentRelease? release) = await StoreOf(agent).SaveAsync(content, cancellationToken).ConfigureAwait(false);
 
         if (release is null)
         {
             return (status, null);
         }
 
-        await AuditAsync(
-            AuditActions.AgentUploaded,
-            release.Sha256,
-            actor,
-            $"Uploaded the agent with SHA-256 {release.Sha256}, {release.Size} bytes. Netbooting machines run it from their next boot.",
-            cancellationToken).ConfigureAwait(false);
+        await AuditAsync(agent.UploadedAction, release.Sha256, actor, agent.UploadedDetail(release), cancellationToken).ConfigureAwait(false);
 
-        AgentBinaryView uploaded = await AgentAsync(cancellationToken).ConfigureAwait(false);
-        live.AgentChanged(uploaded);
+        AgentBinaryView uploaded = await AgentAsync(agent, cancellationToken).ConfigureAwait(false);
+        Push(agent, uploaded);
 
         return (status, uploaded);
     }
@@ -106,9 +106,11 @@ internal sealed class ReleaseUploads(
         return (status, uploaded);
     }
 
-    // Null when no agent was uploaded. Machines then get the one the server came with, or keep their boot image's.
-    public async Task<AgentBinaryView?> RemoveAgentAsync(Actor actor, CancellationToken cancellationToken)
+    // Null when no agent was uploaded. Machines then get the one the server came with, or keep the one they started
+    // with.
+    public async Task<AgentBinaryView?> RemoveAgentAsync(AgentUpload agent, Actor actor, CancellationToken cancellationToken)
     {
+        AgentReleaseStore releases = StoreOf(agent);
         StoredAgent? offered = await releases.OfferedAsync(cancellationToken).ConfigureAwait(false);
 
         if (offered?.Source != AgentBinarySource.Uploaded || !releases.RemoveUpload())
@@ -116,15 +118,11 @@ internal sealed class ReleaseUploads(
             return null;
         }
 
-        await AuditAsync(
-            AuditActions.AgentUploadRemoved,
-            offered.Release.Sha256,
-            actor,
-            $"Removed the uploaded agent with SHA-256 {offered.Release.Sha256}. From their next boot, netbooting machines run the agent the server came with, or their boot image's.",
-            cancellationToken).ConfigureAwait(false);
+        string sha256 = offered.Release.Sha256;
+        await AuditAsync(agent.RemovedAction, sha256, actor, agent.RemovedDetail(sha256), cancellationToken).ConfigureAwait(false);
 
-        AgentBinaryView now = await AgentAsync(cancellationToken).ConfigureAwait(false);
-        live.AgentChanged(now);
+        AgentBinaryView now = await AgentAsync(agent, cancellationToken).ConfigureAwait(false);
+        Push(agent, now);
 
         return now;
     }
@@ -158,6 +156,20 @@ internal sealed class ReleaseUploads(
     // The bundled version if it's the newer one. Null when either file carries no version.
     private static Version? Newer(Version? bundled, Version? offered) =>
         bundled is not null && offered is not null && bundled > offered ? bundled : null;
+
+    private AgentReleaseStore StoreOf(AgentUpload agent) => agent.IsLinux ? agents.Linux : agents.Windows;
+
+    private void Push(AgentUpload agent, AgentBinaryView view)
+    {
+        if (agent.IsLinux)
+        {
+            live.LinuxAgentChanged(view);
+        }
+        else
+        {
+            live.AgentChanged(view);
+        }
+    }
 
     private Task<AuditEvent?> LatestAsync(string action, CancellationToken cancellationToken) =>
         database.AuditEvents

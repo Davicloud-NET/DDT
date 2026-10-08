@@ -317,10 +317,11 @@ public sealed class LinuxBootEnvironmentTests : IDisposable
     }
 
     [Fact]
-    public void LooksAtTheFilesOnceForADescriptionAndNotAtEveryQuestion()
+    public async Task LooksAtTheFilesOnceForADescriptionAndNotAtEveryQuestion()
     {
         LinuxBootEnvironment environment = Environment();
         TestLinuxBoot.Write(environment.Folder);
+        await environment.CheckedAsync();
         Assert.True(environment.Available);
 
         // Gone behind the catalogue's back: a question does not look. The look netboot asks for every few seconds does.

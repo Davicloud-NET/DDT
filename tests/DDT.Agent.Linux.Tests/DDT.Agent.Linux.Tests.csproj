@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The tests of DDT.Agent.Linux. Made-up /sys, /proc and efivarfs trees stand in for a machine, so they run on
+       every system. Those that call the Linux kernel carry the trait Category=LinuxKernel and skip elsewhere. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>DDT.Agent.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DDT.Agent.Linux\DDT.Agent.Linux.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The fakes and other helpers of DDT.Agent.Core.Tests, so each exists once. Every file there that is not a test
+         class is one. -->
+    <Compile Include="..\DDT.Agent.Core.Tests\*.cs" Exclude="..\DDT.Agent.Core.Tests\*Tests.cs" LinkBase="Shared" />
+  </ItemGroup>
+
+</Project>

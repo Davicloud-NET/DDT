@@ -27,6 +27,7 @@
     <!-- The executables are all named ddt-agent. They and the tests reach the parts of a run that stay internal. -->
     <InternalsVisibleTo Include="ddt-agent" />
     <InternalsVisibleTo Include="DDT.Agent.Core.Tests" />
+    <InternalsVisibleTo Include="DDT.Agent.Linux.Tests" />
     <InternalsVisibleTo Include="DDT.Agent.Tests" />
   </ItemGroup>
 

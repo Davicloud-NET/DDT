@@ -12,7 +12,8 @@ for each artefact, with its copyright holders and licence, and [licenses/](licen
 licence texts. The container image carries LICENSE, NOTICE, this file and `licenses/` in
 `/app/legal`, and the web UI's About page links to them. The agent carries LICENSE, NOTICE, this
 file, `licenses/dotnet`, `licenses/wimlib` and `licenses/zstd`, and prints them with
-`ddt-agent --licenses`. The console in Windows PE carries LICENSE, NOTICE and the licence texts of
+`ddt-agent --licenses`. The agent for Linux does the same, with `licenses/gcc`, `licenses/musl` and
+`licenses/openssl` in place of `licenses/wimlib`. The console in Windows PE carries LICENSE, NOTICE and the licence texts of
 what it contains, and shows them on its licences view. The web bundle alone holds no licence files;
 its licences are in `licenses/web`, which the About page links to. The Linux boot environment holds
 none either; its texts are in `licenses/linux-boot`. Pass LICENSE, NOTICE, this file and
@@ -226,7 +227,8 @@ icons.
 ## The agent, `ddt-agent.exe`
 
 `build/Publish-Agent.ps1` publishes the agent as one NativeAOT executable. Besides DDT's own code,
-from `DDT.Agent`, `DDT.Core` and `DDT.Contracts`, it contains:
+from `DDT.Agent`, `DDT.Agent.Core`, `DDT.ConsoleProtocol`, `DDT.Core` and `DDT.Contracts`, it
+contains:
 
 - The .NET runtime and libraries, compiled ahead of time by
   `runtime.win-x64.Microsoft.DotNet.ILCompiler` from
@@ -291,6 +293,42 @@ changes, then use it in one of two ways:
    at your DLL and publish the agent again with `build/Publish-Agent.ps1`. The agent then carries
    your DLL and, as under 1, writes it out wherever no `libwim-15.dll` is next to it yet.
 
+## The agent for Linux, `ddt-agent`
+
+`build/Publish-LinuxAgent.ps1` publishes the agent for Linux as one static NativeAOT executable, in
+a container of the .NET SDK on Alpine Linux 3.24. It runs in the Linux boot environment, whose
+`ddt.img` holds it. Besides DDT's own code, from `DDT.Agent.Linux`, `DDT.Agent.Core`,
+`DDT.ConsoleProtocol`, `DDT.Core` and `DDT.Contracts`, it contains:
+
+- The .NET runtime and libraries, compiled ahead of time by
+  `runtime.linux-musl-x64.Microsoft.DotNet.ILCompiler` from
+  `Microsoft.NETCore.App.Runtime.NativeAOT.linux-musl-x64`. Copyright (c) .NET Foundation and
+  Contributors, MIT, text in [licenses/dotnet/LICENSE.TXT](licenses/dotnet/LICENSE.TXT). The code
+  by others in the runtime is listed in
+  [licenses/dotnet/THIRD-PARTY-NOTICES.TXT](licenses/dotnet/THIRD-PARTY-NOTICES.TXT), which is
+  also the notices file of runtime.linux-musl-x64.Microsoft.DotNet.ILCompiler 10.0.12, the version
+  the agent is compiled with.
+- `ZstdSharp.Port` 0.8.8 and the Zstandard 1.5.7 code it is ported from, as described for the server
+  above, which the agent unpacks raw disk images with.
+- OpenSSL 3.5, whose libcrypto and libssl the linker takes from Alpine's `openssl-libs-static`
+  package, so the agent's connection to the server needs no library of the machine. Copyright (c)
+  1998-2026 The OpenSSL Project Authors and Copyright (c) 1995-1998 Eric A. Young, Tim J. Hudson,
+  under the Apache License 2.0, text in
+  [licenses/openssl/LICENSE.txt](licenses/openssl/LICENSE.txt), from OpenSSL 3.5.9. DDT does not
+  change it. The agent gets the 3.5 release Alpine has on the day it is published, which was 3.5.9
+  when this was written.
+- musl 1.2.6, Alpine's C library, from its `musl-dev` package. Copyright (c) 2005-2020 Rich Felker,
+  et al., under the MIT licence, with parts by others under licences alike that
+  [licenses/musl/COPYRIGHT](licenses/musl/COPYRIGHT) names, the file of musl 1.2.6.
+- Support code of GCC 15.2, `libgcc`, which the linker adds. Copyright (C) Free Software
+  Foundation, Inc., under the GNU General Public License, version 3 or later, with the GCC Runtime
+  Library Exception 3.1, text in [licenses/gcc/COPYING.RUNTIME](licenses/gcc/COPYING.RUNTIME),
+  which lets a compiled program contain it under the program's own licence.
+
+The agent for Linux also carries LICENSE, NOTICE, this file and the texts in `licenses/dotnet`,
+`licenses/gcc`, `licenses/musl`, `licenses/openssl` and `licenses/zstd`. It prints its legal
+notices at start-up, and `ddt-agent --licenses` prints these texts.
+
 ## The console in Windows PE, `ddt-console.exe`
 
 `build/Publish-Console.ps1` publishes the graphical console the agent starts in Windows PE as one
@@ -352,7 +390,8 @@ loaders `shimx64.efi` and `grubx64.efi`, the kernel `vmlinuz`, and the initramfs
 compiles none of it. The loaders and the kernel are files of Debian packages as Debian signed them,
 and `base.img` packs files of Debian packages with DDT's own start scripts from
 `build/LinuxBoot/rootfs`: the kernel modules unpacked, the keymaps converted to the kernel's binary
-form, everything else as it is. `ddt.img`, the second initramfs, holds DDT's own agent.
+form, everything else as it is. `ddt.img`, the second initramfs, holds DDT's agent for Linux,
+described above.
 
 `build/LinuxBoot/packages.lock.json` pins every package by version and SHA-256 at one snapshot of
 Debian's archive, and `ddt-linux-boot.json` in the folder lists them with the folder's files.

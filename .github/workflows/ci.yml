@@ -117,11 +117,12 @@ jobs:
 
       # The server runs on Linux in its container, so its tests run here too. Some run only here: the PostgreSQL
       # tests, which start PostgreSQL in Docker, and the one of an administrator's intermediate certificate. The
-      # agent's library, DDT.Agent.Core, is the agent on every system, so its tests run here as well.
+      # agent's library, DDT.Agent.Core, is the agent on every system, so its tests run here as well. Those of the
+      # agent for Linux, DDT.Agent.Linux, run in both jobs, and the ones that call the Linux kernel only here.
       - name: Test
         run: |
           status=0
-          for project in DDT.Agent.Core.Tests DDT.Core.Tests DDT.Protocols.Tests DDT.Pxe.Tests DDT.Server.Tests; do
+          for project in DDT.Agent.Core.Tests DDT.Agent.Linux.Tests DDT.Core.Tests DDT.Protocols.Tests DDT.Pxe.Tests DDT.Server.Tests; do
             dotnet test --project "tests/$project" --no-build || status=1
           done
           exit $status

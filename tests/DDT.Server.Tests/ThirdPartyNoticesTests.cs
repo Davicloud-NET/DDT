@@ -7,7 +7,7 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// Every package whose code ends up in the server, the agent, the console or the web bundle must be named in
+// Every package whose code ends up in the server, an agent, the console or the web bundle must be named in
 // THIRD-PARTY-NOTICES.md, in backticks. Every package of the web bundle also needs its licence text in
 // licenses/web/THIRD-PARTY-LICENSES.txt, at the version in the lock file. That way a new or upgraded dependency can't
 // ship without its notice.
@@ -36,6 +36,8 @@ public sealed class ThirdPartyNoticesTests
         shipped.AddRange(await NuGetPackagesAsync(Path.Combine(root, "src", "DDT.Host", "obj", "project.assets.json"), cancellationToken));
         List<string> agent = await NuGetPackagesAsync(Path.Combine(root, "src", "DDT.Agent", "obj", "project.assets.json"), cancellationToken);
         shipped.AddRange(agent);
+        List<string> linuxAgent = await NuGetPackagesAsync(Path.Combine(root, "src", "DDT.Agent.Linux", "obj", "project.assets.json"), cancellationToken);
+        shipped.AddRange(linuxAgent);
         shipped.AddRange(await NuGetPackagesAsync(
             Path.Combine(root, "src", "DDT.MachineConsole", "obj", "project.assets.json"),
             cancellationToken,
@@ -46,6 +48,7 @@ public sealed class ThirdPartyNoticesTests
 
         // DDT.Agent.Core references it, so the agent's restore has to list what its library brings.
         Assert.Contains("ZstdSharp.Port", agent);
+        Assert.Contains("ZstdSharp.Port", linuxAgent);
         Assert.Contains("SkiaSharp.NativeAssets.Win32", shipped);
         Assert.Contains("react", shipped);
         Assert.Contains("vite", shipped);

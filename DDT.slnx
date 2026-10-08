@@ -12,6 +12,7 @@
   <Folder Name="/src/">
     <Project Path="src/DDT.Agent/DDT.Agent.csproj" />
     <Project Path="src/DDT.Agent.Core/DDT.Agent.Core.csproj" />
+    <Project Path="src/DDT.Agent.Linux/DDT.Agent.Linux.csproj" />
     <Project Path="src/DDT.AppHost/DDT.AppHost.csproj" />
     <Project Path="src/DDT.ConsoleProtocol/DDT.ConsoleProtocol.csproj" />
     <Project Path="src/DDT.Contracts/DDT.Contracts.csproj" />
@@ -29,6 +30,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/DDT.Agent.Core.Tests/DDT.Agent.Core.Tests.csproj" />
+    <Project Path="tests/DDT.Agent.Linux.Tests/DDT.Agent.Linux.Tests.csproj" />
     <Project Path="tests/DDT.Agent.Tests/DDT.Agent.Tests.csproj" />
     <Project Path="tests/DDT.Core.Tests/DDT.Core.Tests.csproj" />
     <Project Path="tests/DDT.E2E/DDT.E2E.csproj" />

@@ -58,13 +58,31 @@ public class DdtApplication : WebApplicationFactory<Program>
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        StartGate gate = new();
         builder.UseDefaultServiceProvider(provider =>
         {
             provider.ValidateScopes = true;
             provider.ValidateOnBuild = true;
         });
+        builder.ConfigureServices(services => services.AddSingleton<IHostLifetime>(gate));
 
-        return base.CreateHost(builder);
+        // The program starts the host on its own thread, and a start that fails disposes the host there. That thread
+        // waits at the gate until this one listens, so a failure arrives here as what the start failed with.
+        IHost host = builder.Build();
+        Task started;
+
+        try
+        {
+            started = host.StartAsync();
+        }
+        finally
+        {
+            gate.Open();
+        }
+
+        started.GetAwaiter().GetResult();
+
+        return host;
     }
 
     // Sign-in is rate limited per address, and every test client shares one address.

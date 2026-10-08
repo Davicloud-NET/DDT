@@ -19,10 +19,25 @@ public sealed class DryRunDiskPartitionerTests : IDisposable
 
     public void Dispose()
     {
+        File.Delete(FileRawDisks.PathFor(_root, 0));
+
         if (Directory.Exists(_root))
         {
             Directory.Delete(_root, recursive: true);
         }
+    }
+
+    // What a raw disk image wrote in an earlier dry run goes the way a real disk's partition table does.
+    [Fact]
+    public async Task CleaningDeletesTheFileThatStandsInForTheDisk()
+    {
+        LocalDisk disk = FakeDeploymentTools.Disk(0, sizeBytes: 1024 * 1024);
+        new FileRawDisk(FileRawDisks.PathFor(_root, 0), disk.SizeBytes, SparseFile.Make).Dispose();
+
+        IReadOnlyList<Guid> erased = await _partitioner.CleanAsync(disk, TestContext.Current.CancellationToken);
+
+        Assert.Empty(erased);
+        Assert.False(File.Exists(FileRawDisks.PathFor(_root, 0)));
     }
 
     [Fact]

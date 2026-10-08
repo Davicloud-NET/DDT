@@ -134,7 +134,7 @@ describe("approvalPlan", () => {
       rawImageName: "noble",
       rawImageBootCapability: "NotSigned",
       rawImageSignedUnder: null,
-      kind: "Windows",
+      kind: "Linux",
     } as const;
 
     expect(approvalPlan(machine, chosen, [linux])?.sequence).toBe(linux);

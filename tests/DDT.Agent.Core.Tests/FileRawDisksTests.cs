@@ -18,10 +18,10 @@ public sealed class FileRawDisksTests : IDisposable
     [Fact]
     public void StandsInForTheWholeDiskInSectorsOf512Bytes()
     {
-        LocalDisk disk = FakeDeploymentTools.Disk(0, sizeBytes: 64L * 1024 * 1024);
+        LocalDisk disk = FakeDeploymentTools.Disk(0, sizeBytes: 4L * 1024 * 1024);
         byte[] sector = Enumerable.Repeat((byte)0x5A, 512).ToArray();
 
-        using (IRawDisk raw = new FileRawDisks(_root, _log, SparseFile.Make).Open(disk))
+        using (IRawDisk raw = new FileRawDisks(_root, _log).Open(disk))
         {
             Assert.Equal((512, disk.SizeBytes), (raw.SectorSize, raw.Length));
             raw.Write(disk.SizeBytes - 512, sector);
@@ -40,13 +40,26 @@ public sealed class FileRawDisksTests : IDisposable
         Assert.Equal(sector, read);
     }
 
+    // A system that keeps a file whole unless told otherwise would set the whole length aside if it were asked later.
+    [Fact]
+    public void AsksTheSystemForASparseFileWhileTheFileIsStillEmpty()
+    {
+        LocalDisk disk = FakeDeploymentTools.Disk(0, sizeBytes: 1024 * 1024);
+        List<long> lengths = [];
+
+        new FileRawDisks(_root, _log, file => lengths.Add(RandomAccess.GetLength(file))).Open(disk).Dispose();
+
+        Assert.Equal([0], lengths);
+        Assert.Equal(disk.SizeBytes, new FileInfo(FileRawDisks.PathFor(_root, 0)).Length);
+    }
+
     [Fact]
     public async Task TheDryRunsCleanDeletesTheDisk()
     {
         LocalDisk disk = FakeDeploymentTools.Disk(0, sizeBytes: 1024 * 1024);
         new FileRawDisks(_root, _log).Open(disk).Dispose();
 
-        IReadOnlyList<Guid> erased = await new DryRunDiskPartitioner(_root, _log).CleanAsync(disk, TestContext.Current.CancellationToken);
+        IReadOnlyList<Guid> erased = await new DryRunDisks(_root, _log).CleanAsync(disk, TestContext.Current.CancellationToken);
 
         Assert.Empty(erased);
         Assert.False(File.Exists(FileRawDisks.PathFor(_root, 0)));

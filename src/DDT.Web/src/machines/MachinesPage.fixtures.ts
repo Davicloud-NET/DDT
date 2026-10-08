@@ -38,6 +38,7 @@ export const linux = sequenceSummary({
   stepCount: 2,
   rawImageName: "noble",
   rawImageBootCapability: "NotSigned",
+  kind: "Linux",
 });
 
 // A machine that registered and waits, as every machine starts.

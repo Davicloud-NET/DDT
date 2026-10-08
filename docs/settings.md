@@ -113,7 +113,10 @@ Some keys are not settings at all and never appear on the page:
   - decides which machines deploy unattended
   - runs code as SYSTEM on netbooting machines
 - Viewers keep GET /api/deployments/options (DeploymentEndpoints.cs:26). It returns three booleans
-  (DeploymentEndpoints.cs:33-39) and must stay limited to them once it reads the snapshot.
+  (DeploymentEndpoints.cs:33-39) and must stay limited to them once it reads the snapshot. Beside
+  them it carries the server's time, the boot environments the server can start and the certificate
+  authorities the Linux boot environment's shim is signed under, none of which comes from a
+  settings section.
 
 **Fields marked "Admin, re-auth".** These also need a fresh proof of identity, a re-auth token from
 section 6.
@@ -121,7 +124,8 @@ section 6.
 - The token needs the admin's password, and the TOTP code when the account has one.
 - An account without a local or directory password cannot change these fields.
 - The main reason is the agent upload. It turns an admin session into code that runs as SYSTEM on
-  every netbooting machine, and the agent checks only the size and hash announced by the same server
+  every netbooting machine, or as root where the machine starts the Linux boot environment, and the
+  agent checks only the size and hash announced by the same server
   (AgentUpdate.cs:128-135, README "Security model"). README's security model has to say this.
 
 **How a change applies.**
@@ -167,11 +171,14 @@ Domain:Controller is used only by the join account check on the page (POST
 check next to the fields it tests.
 
 ConsoleKeyboardLayout is the keyboard layout of the console in the Linux boot environment. The page
-offers the layouts that environment has keymaps for, which its description lists (LinuxBootReading.cs),
-and a save refuses any other. The server puts the name onto the kernel command line as `ddt.keymap`
-when it generates grub.cfg, so a change reaches a machine at its next netboot, and it sends the name
-in the registration answer to an agent in that environment as well, for the graphical console that
-follows. Windows PE keeps the layout its boot image was built with (section 4).
+offers the layouts that environment has keymaps for, which its description lists (LinuxBootReading.cs):
+us, uk, de, ch, fr, it and es. A save refuses what is no keymap name, and a name the environment of
+this server lacks (SettingsSaveChecks.cs). The server puts the name onto the kernel command line as
+`ddt.keymap` when it generates grub.cfg, or `us` where the environment lacks it, so a change reaches a
+machine at its next netboot. The `agent.json` it generates names the layout as well, which the agent
+shows at the sign-in. The registration answer to an agent in that environment carries the setting
+too, for the graphical console, which the Linux boot environment does not have yet. Windows PE keeps
+the layout its boot image was built with (section 4).
 
 The same page holds the console's logo, which is a file rather than a value of the section: a PNG of
 at most 512 KB and 2048 by 2048 pixels, uploaded as `PUT /api/settings/console-logo` (image/png) and
@@ -219,23 +226,57 @@ in progress (TftpListener.cs:72-80), and the page says so.
 LeaveDhcpPort leaves UDP 67 to a DHCP server on the same computer, so DDT answers on UDP 4011 alone and
 machines reach it once that DHCP server sends option 60, PXEClient. Where Microsoft's DHCP Server is
 installed DDT does this by itself (DhcpServerRole.cs). Without the setting, a DHCP port that does not
-bind is reported as a failed apply, and UDP 4011 and TFTP go on serving (PxeHost.cs).
+bind is reported as a failed apply, with the advice to turn the setting on, and UDP 4011 and TFTP go
+on serving (PxeHost.cs). A host whose interfaces are named in configuration does not start then.
 
-DefaultBootEnvironment decides what a 64-bit UEFI machine without a run starts. A machine with a run,
-or one that was asked to restart into the other boot environment, starts what that needs
-(BootChoices.cs, BootEnvironmentChoice.cs). Auto is Windows PE once a boot image is built, and the
-Linux boot environment until then, so a server that is upgraded keeps starting Windows PE. The Linux
-boot environment is named only while the server has its files, and never to a machine whose firmware
-has Secure Boot on and trusts none of the certificate authorities its shim is signed under.
+DefaultBootEnvironment decides what a 64-bit UEFI machine without a run starts from PXE. A machine
+with a run, or one that was asked to restart into the other boot environment no more than 15 minutes
+ago, starts what that needs (BootChoices.cs, BootEnvironmentChoice.cs). Auto is Windows PE once the
+boot directory holds the boot file of the X64Uefi boot target, which a built boot image brings, and
+the Linux boot environment until then, so a server that is upgraded keeps starting Windows PE. Other
+architectures and UEFI HTTP Boot keep their boot targets.
+
+The Linux boot environment is named only while the server can start it: the folder's files are what
+their description says (below), EnableTftp is on, and the server has a root certificate of DDT's own
+to hand to the machines. A machine with Secure Boot on whose firmware trusts none of the certificate
+authorities the shim is signed under is named the Windows PE boot file instead. The server takes that
+from the machine's last registration and only from a row that was approved once, so a row somebody
+merely registered keeps no machine out of Linux. It holds only where Windows PE can start: without
+it the machine is named the shim all the same. Where Linux is the default and the server cannot
+start it, machines without a run are named the Windows PE boot file, and the section's view carries
+the warning `pxe.linuxDefaultUnavailable` with the reason, which only informs.
 
 LinuxKernelArguments is added to the kernel command line of the Linux boot environment, for example
 `console=ttyS0,115200`. The words go into the grub.cfg DDT generates, which GRUB runs as a script on
 every machine, so each word may hold only letters, digits and `_ . : , = + / @ -`, and none may start
 with a hyphen (KernelArguments.cs). `init`, `rdinit`, `initrd`, `BOOT_IMAGE` and every word that starts
-with `ddt.` are refused, because DDT sets them itself; `ddt.shell` is the one exception, and opens a
-root shell at the machine, which a failed agent opens there as well. The field needs no fresh
-password: it runs no code of the administrator's, it only passes words to Debian's kernel and to DDT's
-own start scripts.
+with `ddt.` are refused, because DDT sets them itself; `ddt.shell` is the one exception, and opens the
+root shell on the machine's second screen and serial port from the start, which otherwise opens there
+once the agent has failed. The field needs no fresh password: it runs no code of the administrator's,
+it only passes words to Debian's kernel and to DDT's own start scripts.
+
+The Linux boot environment itself is no setting. A release puts it into the folder `linux-boot` next
+to the server's program files, and DDT:LinuxBoot:Path names another folder for a server run from
+source, as Start-DevHost.ps1 does (LinuxBootEnvironment.cs). The key is no page field, and the Server
+panel lists it with whether it is set. The Boot image page and `linux` in GET /api/boot-image say
+whether machines can be started in it, and otherwise why, as `problem` in English and `problemText`
+as a code with its values:
+
+- `linuxBoot.missing`: the folder holds no `ddt-linux-boot.json`.
+- `linuxBoot.noRoot`: the server has no root certificate of DDT's own to hand to the machines, as
+  when its certificate is an administrator's.
+- `linuxBoot.damaged`, with the file's `name` and a `reason`:
+
+| Reason | What the server found |
+|---|---|
+| unreadable | The description cannot be read: it is no JSON, larger than 1 MB, lists no file, lists a name twice, or lists a name that is no plain file name of at most 64 characters. |
+| incomplete | The description does not list one of `shimx64.efi`, `grubx64.efi`, `vmlinuz`, `base.img` and `ddt.img`. |
+| missing | A listed file is not there. |
+| size | A listed file has another size than the description says. |
+| signatures | The shim carries other signatures than the description says. |
+| hash | A listed file's SHA-256 is not the one the description names. The server compares them in the background after its first look, and before it serves anything from a folder that changed under an unchanged description. |
+| changed | Netboot was about to serve a listed file and found it gone or of another size or time than at the server's look. The environment stays unavailable until the next look, at most five seconds later, has read the folder again. |
+| other | A listed file cannot be read, or is a link. |
 
 How the page fills in these fields:
 
@@ -976,11 +1017,12 @@ ring, so it also works for the streamed agent upload.
 | POST /api/settings/certificate | Upload. Needs re-auth; a new root also needs `certificate.newRoot`. |
 | POST /api/settings/certificate/generate | Uses the stored server names. Needs re-auth and `certificate.newRoot`. |
 | POST /api/settings/certificate/confirm | Makes a provisional pair permanent. Accepted only from a connection that was served the new pair. |
-| GET /api/settings/agent | `{ sha256, size, uploadedUtc, uploadedBy, source }`. |
-| PUT /api/settings/agent/binary | Streamed application/octet-stream with a size limit and an MZ header check. Written to a temporary file, then renamed. Returns `{ sha256, size }` and audits `agent.uploaded` with the hash. Answers 409 while DDT:Agent:BinaryPath is set in configuration. Needs re-auth. |
+| GET /api/settings/agent | `{ sha256, size, uploadedUtc, uploadedBy, source, version, newerBundledVersion }`. `source` is Uploaded, Bundled, Configuration or None, and the values are null while there is no agent. |
+| PUT /api/settings/agent/binary | Streamed application/octet-stream of at most 128 MB with an MZ header check. Written to a temporary file, then renamed. Returns the view and audits `agent.uploaded` with the hash. Answers 409 while DDT:Agent:BinaryPath is set in configuration. Needs re-auth. |
+| DELETE /api/settings/agent/binary | Removes the upload and returns the view, audited as `agent.upload-removed`. 404 when nothing was uploaded. Needs no re-auth. |
 | GET /api/settings/agent/linux | The same view for the agent for Linux. `version` comes from the marker its build writes. |
 | PUT /api/settings/agent/linux/binary | As PUT /api/settings/agent/binary, with a check of the ELF header for a 64-bit x86-64 program in place of MZ. Audits `agent.linux.uploaded`. Answers 409 while DDT:Agent:LinuxBinaryPath is set in configuration. Needs re-auth. |
-| DELETE /api/settings/agent/linux/binary | Removes the upload, audited as `agent.linux.upload-removed`. 404 when nothing was uploaded. |
+| DELETE /api/settings/agent/linux/binary | Removes the upload and returns the view, audited as `agent.linux.upload-removed`. 404 when nothing was uploaded. Needs no re-auth. |
 | GET /api/settings/agent/console | The same view for the console: the SHA-256 of ddt-console.exe and the size of the three files. |
 | PUT /api/settings/agent/console | A zip of the console's three files, at the root or in one folder, each starting with MZ, at most 128 MB zipped and unpacked. Repacked to a temporary file, then renamed. Returns the view and audits `console.uploaded` with the hash of ddt-console.exe. Answers 409 while DDT:Agent:ConsolePath is set in configuration. Needs re-auth. |
 | GET /api/auth/external/providers | Anonymous. The enabled providers with their DisplayName, for the sign-in page. |

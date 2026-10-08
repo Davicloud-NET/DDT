@@ -1,0 +1,11 @@
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# busybox init of the DDT Linux boot environment. /init adds the serial port's shell when the machine has the port.
+# There is no ctrlaltdel line on purpose: the keys must not restart a machine whose disk is being written.
+
+::sysinit:/etc/init.d/rcS
+tty1::respawn:/usr/lib/ddt/session
+tty2::respawn:/usr/lib/ddt/shell
+::shutdown:/usr/bin/sync

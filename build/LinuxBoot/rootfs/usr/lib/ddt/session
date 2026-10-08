@@ -1,0 +1,98 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# The first screen of the DDT Linux boot environment: runs the agent. When the agent has ended it restarts the
+# machine, if the agent meant to, or offers a small menu.
+
+. /usr/lib/ddt/common.sh
+
+HOME=/root
+# busybox init hands out vt102 when the kernel's last console is a serial port.
+TERM=linux
+export HOME TERM
+
+# Ctrl+C and Ctrl+\ reach every program on this screen. The agent takes them as it likes; this script must stay,
+# or init would start the agent again without the menu.
+trap : INT QUIT
+
+# The kernel writes its messages over whatever the screen shows. dmesg still has them.
+dmesg -n 1
+
+# Keys pressed while the machine started would show on the screen and then be the agent's first input.
+quiet_keys() {
+    if stty -echo -icanon min 0 time 0 2> /dev/null; then
+        cat > /dev/null
+        stty sane -echo
+    fi
+}
+
+run_agent() {
+    if [ ! -x /ddt/ddt-agent ]; then
+        stage "agent: /ddt/ddt-agent is missing"
+        echo
+        echo "This boot environment has no DDT agent. The server did not send ddt.img, or the file is damaged."
+        return 127
+    fi
+    quiet_keys
+    stage "agent: starting"
+    (cd /ddt && exec ./ddt-agent)
+    code=$?
+    # The agent may have died with the keys in another mode.
+    stty sane 2> /dev/null
+    stage "agent: ended with code $code"
+    echo
+    echo "The DDT agent has ended with code $code."
+    return "$code"
+}
+
+# With these two codes the agent has restarted the machine itself. This is the net under it.
+restart_after_agent() {
+    echo "The computer restarts."
+    sleep 10
+    stage "session: the computer is still running after the agent's restart, restarting it"
+    sync
+    reboot -f
+    sleep 30
+}
+
+menu() {
+    while :; do
+        echo
+        echo "  1  Start the DDT agent again"
+        echo "  2  Open a shell"
+        echo "  3  Restart the computer"
+        echo "  4  Power off"
+        echo
+        printf "Your choice: "
+        read -r choice || choice=
+        case $choice in
+            1) return ;;
+            2) (cd /root && exec sh -l) ;;
+            3)
+                reboot
+                sleep 30
+                ;;
+            4)
+                poweroff
+                sleep 30
+                ;;
+        esac
+    done
+}
+
+while :; do
+    run_agent
+    case $? in
+        4 | 5) restart_after_agent ;;
+        0) ;;
+        *)
+            if ! shell_is_open; then
+                open_shell
+                echo "For a root shell, press Enter on the second screen (Alt+F2) or on the serial port."
+            fi
+            ;;
+    esac
+    menu
+done

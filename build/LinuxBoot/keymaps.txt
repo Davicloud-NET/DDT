@@ -1,0 +1,9 @@
+# Keyboard layouts of the text console: the name on the kernel command line (ddt.keymap), then the keymap
+# of Debian's console-data the build converts with loadkeys. Without dead keys: busybox loadkmap has no compose table.
+us      qwerty/us
+uk      qwerty/uk
+de      qwertz/de-latin1-nodeadkeys
+ch      qwertz/sg-latin1
+fr      azerty/fr-latin9
+it      qwerty/it
+es      qwerty/es

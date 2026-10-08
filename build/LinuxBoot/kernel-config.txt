@@ -1,0 +1,43 @@
+# What the DDT Linux boot environment needs built into the kernel, as lines of the kernel's config.
+# The build fails when one of them is missing. What may be a module is in modules.txt.
+
+# The initramfs and its compression
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_RD_ZSTD=y
+
+# What /init mounts and runs
+CONFIG_PROC_FS=y
+CONFIG_SYSFS=y
+CONFIG_DEVTMPFS=y
+CONFIG_TMPFS=y
+CONFIG_UNIX98_PTYS=y
+CONFIG_BINFMT_ELF=y
+CONFIG_BINFMT_SCRIPT=y
+
+# Modules, and their signatures under Secure Boot
+CONFIG_MODULES=y
+CONFIG_MODULE_SIG=y
+CONFIG_SECURITY_LOCKDOWN_LSM=y
+CONFIG_LOCK_DOWN_IN_EFI_SECURE_BOOT=y
+CONFIG_FW_LOADER=y
+
+# UEFI, the firmware's screen and the consoles
+CONFIG_EFI=y
+CONFIG_EFI_STUB=y
+CONFIG_FB_EFI=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_VT=y
+CONFIG_VT_CONSOLE=y
+CONFIG_SERIAL_8250_CONSOLE=y
+
+# Hardware facts the agent reads
+CONFIG_PCI=y
+CONFIG_ACPI=y
+CONFIG_DMI=y
+CONFIG_RTC_CLASS=y
+
+# Network
+CONFIG_NET=y
+CONFIG_INET=y
+CONFIG_IPV6=y
+CONFIG_UNIX=y

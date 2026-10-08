@@ -1,0 +1,85 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# Run once by busybox init before the agent starts: drivers, keyboard layout, clock, network and the server's name.
+
+. /usr/lib/ddt/common.sh
+
+# Loads the driver of every device the kernel knows, and goes on while those drivers bring up new devices.
+coldplug() {
+    known=
+    while :; do
+        found=$(find /sys/devices -name modalias -type f -exec cat {} + 2> /dev/null | sort -u)
+        if [ "$found" = "$known" ]; then
+            break
+        fi
+        # One alias per line, ended by a zero byte for xargs: the DMI alias has spaces in it.
+        echo "$found" | tr '\n' '\0' | xargs -0 modprobe -abq -- 2> /dev/null
+        known=$found
+    done
+}
+
+load_keymap() {
+    keymap=$(argument ddt.keymap)
+    case $keymap in
+        "" | *[!a-z0-9-]*) return ;;
+    esac
+    if [ -f "/usr/share/ddt/keymaps/$keymap.bmap" ] && loadkmap < "/usr/share/ddt/keymaps/$keymap.bmap"; then
+        stage "keyboard: layout $keymap"
+    else
+        stage "keyboard: no layout $keymap, staying with us"
+    fi
+}
+
+# A flat battery or a clock years off makes the server's certificate look not yet valid or expired. A clock within a
+# day stays: the server dates its certificates a day back, and ddt.time is as old as the download took.
+set_clock() {
+    server=$(argument ddt.time)
+    case $server in
+        "" | *[!0-9]*)
+            stage "clock: no ddt.time on the kernel command line, so a wrong hardware clock stays wrong"
+            return
+            ;;
+    esac
+    read -r uptime _ < /proc/uptime
+    server=$((server + ${uptime%%.*}))
+    off=$(($(date +%s) - server))
+    if [ "$off" -gt 86400 ] || [ "$off" -lt -86400 ]; then
+        date -s "@$server" > /dev/null
+        stage "clock: the hardware clock was $((off / 86400)) days from the server's time, set from ddt.time"
+    else
+        stage "clock: the hardware clock is $off s from the server's time, kept"
+    fi
+}
+
+# The server's name must be found without DNS, and in lower case: the agent asks for it so, and /etc/hosts is
+# compared by case.
+add_server_name() {
+    name=$(argument ddt.hostname | tr '[:upper:]' '[:lower:]')
+    address=$(argument ddt.hostip)
+    case $name in
+        "" | *[!a-z0-9.-]*) return ;;
+    esac
+    case $address in
+        "" | "$name" | *[!0-9a-fA-F.:]*) return ;;
+    esac
+    echo "$address $name" >> /etc/hosts
+    stage "server: $name is $address"
+}
+
+echo ddt > /proc/sys/kernel/hostname
+ip link set lo up
+
+stage "drivers: loading"
+# mdev stays and loads the drivers of what arrives later, such as USB devices.
+mdev -d
+coldplug
+stage "drivers: $(wc -l < /proc/modules) modules loaded"
+
+load_keymap
+set_clock
+/usr/lib/ddt/network
+add_server_name
+stage "start: done, the agent is next"

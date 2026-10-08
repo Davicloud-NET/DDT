@@ -1,0 +1,466 @@
+{
+  "snapshot": "20261006T203214Z",
+  "archive": "https://snapshot.debian.org/archive/debian",
+  "architecture": "amd64",
+  "toolsImage": "debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f",
+  "kernelRelease": "7.2.6+deb13-amd64",
+  "packages": [
+    {
+      "name": "shim-signed",
+      "version": "1.51~1+deb13u1+16.1-2~deb13u1",
+      "suite": "trixie",
+      "component": "main",
+      "path": "pool/main/s/shim-signed/shim-signed_1.51~1+deb13u1+16.1-2~deb13u1_amd64.deb",
+      "sha256": "3c802fa303c0e6bf126adee74028d1042e3120360d159c2c05181dc9b2f61005",
+      "size": 346976,
+      "use": "shimx64.efi, the first loader, signed by Microsoft",
+      "source": "shim-signed",
+      "sourceVersion": "1.51~1+deb13u1",
+      "builtUsing": [
+        {
+          "source": "shim",
+          "version": "16.1-2~deb13u1"
+        }
+      ]
+    },
+    {
+      "name": "grub-efi-amd64-signed",
+      "version": "1+2.12+9+deb13u2",
+      "suite": "trixie",
+      "component": "main",
+      "path": "pool/main/g/grub-efi-amd64-signed/grub-efi-amd64-signed_1+2.12+9+deb13u2_amd64.deb",
+      "sha256": "da8bb31308a3682a7d9343fc42bf7f603ad85bb5483eeb3ece23e2f1be2e9bbd",
+      "size": 1363392,
+      "use": "grubx64.efi, the network GRUB, signed by Debian",
+      "source": "grub-efi-amd64-signed",
+      "sourceVersion": "1+2.12+9+deb13u2",
+      "builtUsing": [
+        {
+          "source": "grub2",
+          "version": "2.12-9+deb13u2"
+        }
+      ]
+    },
+    {
+      "name": "linux-binary-7.2.6+deb13-amd64",
+      "version": "7.2.6-1~bpo13+1",
+      "suite": "trixie-backports",
+      "component": "main",
+      "path": "pool/main/l/linux-signed-amd64/linux-binary-7.2.6+deb13-amd64_7.2.6-1~bpo13+1_amd64.deb",
+      "sha256": "d0472104f28e03e2c29aebc2ded2f5a96d89be1a537f396319e606b41eabb6f6",
+      "size": 13964112,
+      "use": "vmlinuz, signed by Debian",
+      "source": "linux-signed-amd64",
+      "sourceVersion": "7.2.6+1~bpo13+1",
+      "builtUsing": [
+        {
+          "source": "linux",
+          "version": "7.2.6-1~bpo13+1"
+        }
+      ]
+    },
+    {
+      "name": "linux-modules-7.2.6+deb13-amd64",
+      "version": "7.2.6-1~bpo13+1",
+      "suite": "trixie-backports",
+      "component": "main",
+      "path": "pool/main/l/linux/linux-modules-7.2.6+deb13-amd64_7.2.6-1~bpo13+1_amd64.deb",
+      "sha256": "9656fed6af22f2db202d2312da75788c99f138f17085d580ffda6cbb759406c2",
+      "size": 158924828,
+      "use": "kernel modules in base.img",
+      "source": "linux",
+      "sourceVersion": "7.2.6-1~bpo13+1",
+      "builtUsing": []
+    },
+    {
+      "name": "linux-base-7.2.6+deb13-amd64",
+      "version": "7.2.6-1~bpo13+1",
+      "suite": "trixie-backports",
+      "component": "main",
+      "path": "pool/main/l/linux/linux-base-7.2.6+deb13-amd64_7.2.6-1~bpo13+1_amd64.deb",
+      "sha256": "850cd89ef8281e0af21396fbe8146f0c8d49ddf3f84d3ce845e050ac52111d81",
+      "size": 1034316,
+      "use": "the kernel's config, read at build time",
+      "source": "linux",
+      "sourceVersion": "7.2.6-1~bpo13+1",
+      "builtUsing": []
+    },
+    {
+      "name": "busybox-static",
+      "version": "1:1.37.0-6+b9",
+      "suite": "trixie",
+      "component": "main",
+      "path": "pool/main/b/busybox/busybox-static_1.37.0-6+b9_amd64.deb",
+      "sha256": "598a3fd92bdafc34cd81196b2952ad36e910e47a4ecf162f8ce5e8e262598e53",
+      "size": 955316,
+      "use": "the shell and tools in base.img",
+      "source": "busybox",
+      "sourceVersion": "1:1.37.0-6",
+      "builtUsing": [
+        {
+          "source": "glibc",
+          "version": "2.41-12+deb13u4"
+        }
+      ]
+    },
+    {
+      "name": "libc6",
+      "version": "2.41-12+deb13u4",
+      "suite": "trixie",
+      "component": "main",
+      "path": "pool/main/g/glibc/libc6_2.41-12+deb13u4_amd64.deb",
+      "sha256": "967aa62605721081c3eb2a17650611a792aa802d76a6511d1840242623d204c9",
+      "size": 2846580,
+      "use": "glibc in base.img, for the console",
+      "source": "glibc",
+      "sourceVersion": "2.41-12+deb13u4",
+      "builtUsing": []
+    },
+    {
+      "name": "ncurses-base",
+      "version": "6.5+20250216-2",
+      "suite": "trixie",
+      "component": "main",
+      "path": "pool/main/n/ncurses/ncurses-base_6.5+20250216-2_all.deb",
+      "sha256": "190e775260a38973c415a36ae99f33ad1b37ea6ca99929d7c5d53843fc23e914",
+      "size": 273216,
+      "use": "terminfo in base.img",
+      "source": "ncurses",
+      "sourceVersion": "6.5+20250216-2",
+      "builtUsing": []
+    },
+    {
+      "name": "console-data",
+      "version": "2:1.12-9",
+      "suite": "trixie",
+      "component": "main",
+      "path": "pool/main/c/console-data/console-data_1.12-9_all.deb",
+      "sha256": "3dcbb3d9b8e6659bb02a464e54cb30cf04c736f0be2dc35e07743c5e15de838f",
+      "size": 1062856,
+      "use": "keymaps in base.img",
+      "source": "console-data",
+      "sourceVersion": "2:1.12-9",
+      "builtUsing": [
+        {
+          "source": "unicode-data",
+          "version": "14.0.0-1"
+        }
+      ]
+    },
+    {
+      "name": "firmware-realtek",
+      "version": "20260810-1~bpo13+1",
+      "suite": "trixie-backports",
+      "component": "non-free-firmware",
+      "path": "pool/non-free-firmware/f/firmware-nonfree/firmware-realtek_20260810-1~bpo13+1_all.deb",
+      "sha256": "099d991c49e5b9dcbf67c677e9f387c45e1ba8804b05e41d4ffa4f5ad1db0000",
+      "size": 4021416,
+      "use": "network card firmware in base.img",
+      "source": "firmware-nonfree",
+      "sourceVersion": "20260810-1~bpo13+1",
+      "builtUsing": []
+    },
+    {
+      "name": "firmware-bnx2",
+      "version": "20260810-1~bpo13+1",
+      "suite": "trixie-backports",
+      "component": "non-free-firmware",
+      "path": "pool/non-free-firmware/f/firmware-nonfree/firmware-bnx2_20260810-1~bpo13+1_all.deb",
+      "sha256": "d309466238d492b0f3e56558f22a7e0e979ef547d85b793be4bfbeabfaf80cda",
+      "size": 170112,
+      "use": "network card firmware in base.img",
+      "source": "firmware-nonfree",
+      "sourceVersion": "20260810-1~bpo13+1",
+      "builtUsing": []
+    },
+    {
+      "name": "firmware-bnx2x",
+      "version": "20260810-1~bpo13+1",
+      "suite": "trixie-backports",
+      "component": "non-free-firmware",
+      "path": "pool/non-free-firmware/f/firmware-nonfree/firmware-bnx2x_20260810-1~bpo13+1_all.deb",
+      "sha256": "6a9f015db95064021253e66c6c187035c492fcf84a5a6884071b11d669de61eb",
+      "size": 1774440,
+      "use": "network card firmware in base.img",
+      "source": "firmware-nonfree",
+      "sourceVersion": "20260810-1~bpo13+1",
+      "builtUsing": []
+    },
+    {
+      "name": "firmware-misc-nonfree",
+      "version": "20260810-1~bpo13+1",
+      "suite": "trixie-backports",
+      "component": "non-free-firmware",
+      "path": "pool/non-free-firmware/f/firmware-nonfree/firmware-misc-nonfree_20260810-1~bpo13+1_all.deb",
+      "sha256": "647909b648e55e290bc0fdcd6639dba1754c53296221209273aa89f77a8041d8",
+      "size": 5814768,
+      "use": "network card firmware in base.img",
+      "source": "firmware-nonfree",
+      "sourceVersion": "20260810-1~bpo13+1",
+      "builtUsing": []
+    }
+  ],
+  "sources": [
+    {
+      "name": "busybox",
+      "version": "1:1.37.0-6",
+      "directory": "pool/main/b/busybox",
+      "files": [
+        {
+          "name": "busybox_1.37.0-6.dsc",
+          "size": 2279,
+          "sha256": "3ba2c096eef0c391f744f093edbe0df7b21ab118652487cc076818e92cb57e8e"
+        },
+        {
+          "name": "busybox_1.37.0.orig.tar.bz2",
+          "size": 2565764,
+          "sha256": "3311dff32e746499f4df0d5df04d7eb396382d7e108bb9250e7b519b837043a4"
+        },
+        {
+          "name": "busybox_1.37.0-6.debian.tar.xz",
+          "size": 65032,
+          "sha256": "10b2cd64b41c26ae134e1cd6135b68575bbe79356c20985f35e32f32a1746c34"
+        }
+      ]
+    },
+    {
+      "name": "console-data",
+      "version": "2:1.12-9",
+      "directory": "pool/main/c/console-data",
+      "files": [
+        {
+          "name": "console-data_1.12-9.dsc",
+          "size": 2651,
+          "sha256": "2c8000950bf3a213f1f24d06658e7572549b7eb8741e11571ec6d93741373747"
+        },
+        {
+          "name": "console-data_1.12.orig.tar.bz2",
+          "size": 494941,
+          "sha256": "f1a604f0254a2479e060d6d3d53c586e7a725e3c3c9d6f5711f053a6d8da600e"
+        },
+        {
+          "name": "console-data_1.12-9.debian.tar.xz",
+          "size": 85924,
+          "sha256": "71876bb81c7d2387298fffd48d50c142062f7b1c2de1f19b4592bd6a07a06e7c"
+        }
+      ]
+    },
+    {
+      "name": "firmware-nonfree",
+      "version": "20260810-1~bpo13+1",
+      "directory": "pool/non-free-firmware/f/firmware-nonfree",
+      "files": [
+        {
+          "name": "firmware-nonfree_20260810-1~bpo13+1.dsc",
+          "size": 4644,
+          "sha256": "5bd20c1c09f7d2048af403a7836bafcbfeef09423037e6b7bf77df8de33c5a0f"
+        },
+        {
+          "name": "firmware-nonfree_20260810-1~bpo13+1.debian.tar.xz",
+          "size": 826184,
+          "sha256": "59c705af8147c7dce0c439699cf42dd6bd7a89ab28e72e16b7453bc2c6401092"
+        }
+      ],
+      "leftOut": [
+        {
+          "name": "firmware-nonfree_20260810.orig.tar.xz",
+          "size": 358531136,
+          "sha256": "c2ae16d4f22f3aed547146ae486f48b14dd70e9cf86f08f640193326db5bc5ec"
+        }
+      ]
+    },
+    {
+      "name": "glibc",
+      "version": "2.41-12+deb13u4",
+      "directory": "pool/main/g/glibc",
+      "files": [
+        {
+          "name": "glibc_2.41-12+deb13u4.dsc",
+          "size": 7576,
+          "sha256": "0915324aa646bb99abfaa9aa6ecb734b30babd28454a3e51f3152912370fbd3e"
+        },
+        {
+          "name": "glibc_2.41.orig.tar.xz",
+          "size": 20323540,
+          "sha256": "f24aa441021121a79266f0d75242706cab8843a47901fefe74527491807f1998"
+        },
+        {
+          "name": "glibc_2.41-12+deb13u4.debian.tar.xz",
+          "size": 499524,
+          "sha256": "dda4153511bfd543502d18e5bc9323110996fe9c531f14ae3fad6eb17f027c7d"
+        }
+      ]
+    },
+    {
+      "name": "grub-efi-amd64-signed",
+      "version": "1+2.12+9+deb13u2",
+      "directory": "pool/main/g/grub-efi-amd64-signed",
+      "files": [
+        {
+          "name": "grub-efi-amd64-signed_1+2.12+9+deb13u2.dsc",
+          "size": 1218,
+          "sha256": "db42753007d3df83a3b2489883c612f20f14ceb387d76c076f2213fb03c37f09"
+        },
+        {
+          "name": "grub-efi-amd64-signed_1+2.12+9+deb13u2.tar.xz",
+          "size": 4796,
+          "sha256": "93f0131a788f3977ab866632449e3f2ae3e59757adf0fd93c96630a4ebef497e"
+        }
+      ]
+    },
+    {
+      "name": "grub2",
+      "version": "2.12-9+deb13u2",
+      "directory": "pool/main/g/grub2",
+      "files": [
+        {
+          "name": "grub2_2.12-9+deb13u2.dsc",
+          "size": 8103,
+          "sha256": "5d1cda92727de39518a94ce23e7e239077acdfa9a4694e71eba736dbd354391a"
+        },
+        {
+          "name": "grub2_2.12.orig.tar.xz",
+          "size": 6675608,
+          "sha256": "f3c97391f7c4eaa677a78e090c7e97e6dc47b16f655f04683ebd37bef7fe0faa"
+        },
+        {
+          "name": "grub2_2.12-9+deb13u2.debian.tar.xz",
+          "size": 1123180,
+          "sha256": "4d3c4689ee100466a36b6a5caa2477ef525fbc5b6ec27cb0319c83db7d9faf89"
+        }
+      ]
+    },
+    {
+      "name": "linux",
+      "version": "7.2.6-1~bpo13+1",
+      "directory": "pool/main/l/linux",
+      "files": [
+        {
+          "name": "linux_7.2.6-1~bpo13+1.dsc",
+          "size": 143262,
+          "sha256": "69128cc1b1620d8fba889c860137efb52e6676fb16097f0079fbfaddf8c96e86"
+        },
+        {
+          "name": "linux_7.2.6.orig.tar.xz",
+          "size": 163554268,
+          "sha256": "1819c494eeda2be08fdca1b4d4d8d669e5a4215395595503502aeb78d019882a"
+        },
+        {
+          "name": "linux_7.2.6-1~bpo13+1.debian.tar.xz",
+          "size": 1458812,
+          "sha256": "e9ededaf5d4f29ced0cfe828a710be861a19e76ef137e985954bee4b52a7d77c"
+        }
+      ]
+    },
+    {
+      "name": "linux-signed-amd64",
+      "version": "7.2.6+1~bpo13+1",
+      "directory": "pool/main/l/linux-signed-amd64",
+      "files": [
+        {
+          "name": "linux-signed-amd64_7.2.6+1~bpo13+1.dsc",
+          "size": 5520,
+          "sha256": "2a503f8ba987a16c2574d03d47464abd1edbe51482858f3f99cbccc25dde2112"
+        },
+        {
+          "name": "linux-signed-amd64_7.2.6+1~bpo13+1.tar.xz",
+          "size": 690384,
+          "sha256": "20256dc1c601f9e498739693131fe24a7bbbc3717ef1bce7a38f54c8cccc5e85"
+        }
+      ]
+    },
+    {
+      "name": "ncurses",
+      "version": "6.5+20250216-2",
+      "directory": "pool/main/n/ncurses",
+      "files": [
+        {
+          "name": "ncurses_6.5+20250216-2.dsc",
+          "size": 3890,
+          "sha256": "00539cc2bc6bb84be1b8a8a5decf606682e14b6f39b76b9aa090e65d2c2d4580"
+        },
+        {
+          "name": "ncurses_6.5+20250216.orig.tar.gz",
+          "size": 3774714,
+          "sha256": "b37baafa436e7133bb12a185cb8f60e1599b1947e9f0181c76f3190acf28b6eb"
+        },
+        {
+          "name": "ncurses_6.5+20250216.orig.tar.gz.asc",
+          "size": 729,
+          "sha256": "64f4d17923322176c44079f18f170e2164a59d551d7e4e9c1a6e4eebedc5dd6f"
+        },
+        {
+          "name": "ncurses_6.5+20250216-2.debian.tar.xz",
+          "size": 50420,
+          "sha256": "546930a8992ae3325d8c38378f290265d969cf6333cfae9648ac6d69e1e8a8a6"
+        }
+      ]
+    },
+    {
+      "name": "shim",
+      "version": "16.1-2~deb13u1",
+      "directory": "pool/main/s/shim",
+      "files": [
+        {
+          "name": "shim_16.1-2~deb13u1.dsc",
+          "size": 2713,
+          "sha256": "d5748139a9a7fdd8e4c1ecd89b0156c3d226b21d393be495c2a28575817a0b90"
+        },
+        {
+          "name": "shim_16.1.orig.tar.bz2",
+          "size": 2348998,
+          "sha256": "46319cd228d8f2c06c744241c0f342412329a7c630436fce7f82cf6936b1d603"
+        },
+        {
+          "name": "shim_16.1.orig.tar.bz2.asc",
+          "size": 833,
+          "sha256": "05086f18c1f44a779efc20898434398812a90163a33dbba9105af0e64f46bb97"
+        },
+        {
+          "name": "shim_16.1-2~deb13u1.debian.tar.xz",
+          "size": 58992,
+          "sha256": "2d33fb67f05793f48e5d7696c3cd64229a2275abd3a9d18aed9db2f137f0e641"
+        }
+      ]
+    },
+    {
+      "name": "shim-signed",
+      "version": "1.51~1+deb13u1",
+      "directory": "pool/main/s/shim-signed",
+      "files": [
+        {
+          "name": "shim-signed_1.51~1+deb13u1.dsc",
+          "size": 1963,
+          "sha256": "29b8f65c870cb2a735536355c092bb07348342c6a9b16165092435d3faf940d0"
+        },
+        {
+          "name": "shim-signed_1.51~1+deb13u1.tar.xz",
+          "size": 771352,
+          "sha256": "a9c614e6d69caf950359ac800c6df7125169f95b44073e378943b58935d4e400"
+        }
+      ]
+    },
+    {
+      "name": "unicode-data",
+      "version": "14.0.0-1",
+      "directory": "pool/main/u/unicode-data",
+      "files": [
+        {
+          "name": "unicode-data_14.0.0-1.dsc",
+          "size": 1794,
+          "sha256": "750465ab3867cfb764f9d1d5b2831372f700abdd4c9ef31f14ccfaa44988d695"
+        },
+        {
+          "name": "unicode-data_14.0.0.orig.tar.xz",
+          "size": 13804440,
+          "sha256": "379b760b7ce8a9a5644388c504f85ed8466eabe8a85b45bdfc3b585cf3ac9e4e"
+        },
+        {
+          "name": "unicode-data_14.0.0-1.debian.tar.xz",
+          "size": 3796,
+          "sha256": "4128633acd024773c147e545d30363e99722ad7d0197fa3bc80222b503491cd1"
+        }
+      ]
+    }
+  ]
+}

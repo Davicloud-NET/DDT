@@ -17,9 +17,6 @@ public static class LinuxBoot
     // On a file system in memory, which every start begins empty. The work directory holds a run's scripts.
     public const string RunDirectory = "/run/ddt";
 
-    public const string NoUpdateReason =
-        "This agent takes no newer agent from the server yet, so the one the Linux boot environment brought goes on.";
-
     private const string Root = "/";
 
     public static string WorkDirectory => Path.Combine(RunDirectory, "work");

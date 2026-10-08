@@ -18,7 +18,7 @@ AgentStartup startup = new(new AgentPlatform
 {
     BootEnvironment = AgentEnvironment.LinuxBoot,
     IsPublished = AgentBuild.IsPublished,
-    NoUpdateReason = LinuxBoot.NoUpdateReason,
+    ReleasePlatform = AgentPlatforms.LinuxX64,
     StartsGraphicalConsole = false,
     WriteStartupNotices = LinuxLegalNotices.WriteStartupNotices,
     WriteLicenses = LinuxLegalNotices.WriteLicenses,

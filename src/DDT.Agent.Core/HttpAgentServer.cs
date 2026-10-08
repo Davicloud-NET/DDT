@@ -55,6 +55,9 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         }
     }
 
+    // The agent's platform as AgentPlatforms names it. Null asks the frozen routes, which answer for Windows.
+    public string? ReleasePlatform { get; init; }
+
     // Called before the agent starts a newer one. WinPE's next start reuses the client ports, which would collide with
     // connections a restart left open on the server. Later requests open new connections.
     public void CloseConnections() => Interlocked.Exchange(ref _client, NewClient()).Dispose();
@@ -87,10 +90,16 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             cancellationToken);
 
     public Task<AgentRelease?> GetReleaseAsync(CancellationToken cancellationToken) =>
-        GetUnlessMissingAsync(AgentRoutes.Release, AgentJsonContext.Default.AgentRelease, cancellationToken);
+        GetUnlessMissingAsync(
+            ReleasePlatform is null ? AgentRoutes.Release : AgentRoutes.PlatformRelease(ReleasePlatform),
+            AgentJsonContext.Default.AgentRelease,
+            cancellationToken);
 
     public Task DownloadReleaseAsync(Stream destination, CancellationToken cancellationToken) =>
-        DownloadAsync(AgentRoutes.ReleaseBinary, destination, cancellationToken);
+        DownloadAsync(
+            ReleasePlatform is null ? AgentRoutes.ReleaseBinary : AgentRoutes.PlatformReleaseBinary(ReleasePlatform),
+            destination,
+            cancellationToken);
 
     public Task<ConsoleRelease?> GetConsoleReleaseAsync(CancellationToken cancellationToken) =>
         GetUnlessMissingAsync(AgentRoutes.ConsoleRelease, AgentJsonContext.Default.ConsoleRelease, cancellationToken);

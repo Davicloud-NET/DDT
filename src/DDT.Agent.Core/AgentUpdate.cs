@@ -42,7 +42,7 @@ public sealed class AgentUpdate(
         }
         catch (Exception exception)
         {
-            log.Warning($"Cannot switch to the new agent ({exception.Message}). Carrying on with the agent from the boot image.");
+            log.Warning($"Cannot switch to the new agent ({exception.Message}). {EnvironmentTexts.OwnAgent(agent.Environment)}");
             newAgent = null;
         }
 
@@ -66,9 +66,10 @@ public sealed class AgentUpdate(
             // DLL, a crash, or an option it doesn't know.
             if (exitCode is AgentExitCodes.ConfigurationError or < 0 or > AgentExitCodes.HighestAgentCode)
             {
+                string code = EnvironmentTexts.ExitCode(agent.Environment, exitCode);
                 log.Warning(newAgent is null
-                    ? $"The agent could not run again with the new console (exit code 0x{exitCode:X8}). Carrying on with the console from the boot image."
-                    : $"The new agent could not run (exit code 0x{exitCode:X8}). Carrying on with the agent from the boot image.");
+                    ? $"The agent could not run again with the new console (exit code {code}). Carrying on with the console from the boot image."
+                    : $"The new agent could not run (exit code {code}). {EnvironmentTexts.OwnAgent(agent.Environment)}");
 
                 return null;
             }
@@ -79,7 +80,7 @@ public sealed class AgentUpdate(
         {
             log.Warning(newAgent is null
                 ? $"Cannot start the agent again with the new console ({exception.Message}). Carrying on with the console from the boot image."
-                : $"Cannot switch to the new agent ({exception.Message}). Carrying on with the agent from the boot image.");
+                : $"Cannot switch to the new agent ({exception.Message}). {EnvironmentTexts.OwnAgent(agent.Environment)}");
 
             return null;
         }
@@ -115,7 +116,7 @@ public sealed class AgentUpdate(
             }
             catch (Exception exception) when (exception is HttpRequestException or JsonException)
             {
-                log.Warning($"Cannot ask the server for the current agent ({exception.Message}). Carrying on with the agent from the boot image.");
+                log.Warning($"Cannot ask the server for the current agent ({exception.Message}). {EnvironmentTexts.OwnAgent(agent.Environment)}");
 
                 return null;
             }
@@ -130,11 +131,17 @@ public sealed class AgentUpdate(
     {
         log.Information($"The server offers another agent, {release.Sha256[..12]}. Switching to it.");
 
-        string path = Path.Combine(agent.Directory, $"ddt-agent-{release.Sha256[..12].ToLowerInvariant()}.exe");
+        string path = Path.Combine(agent.Directory, EnvironmentTexts.DownloadedAgent(agent.Environment, release.Sha256));
 
         if (!await ReleaseFiles.HoldsAsync(path, release.Sha256, release.Size, cancellationToken).ConfigureAwait(false))
         {
             await ReleaseFiles.FetchAsync(path, release.Sha256, release.Size, server.DownloadReleaseAsync, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Windows starts any file named .exe. Every other system starts a file only when its mode says it is a program.
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
 
         return path;

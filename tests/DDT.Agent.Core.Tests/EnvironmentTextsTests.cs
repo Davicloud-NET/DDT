@@ -43,6 +43,9 @@ public sealed class EnvironmentTextsTests
             "The run goes on in the installed Windows, but the machine started Windows PE. Handing the run over again (2 of 3 times).",
             EnvironmentTexts.HandingOverAgain(environment, 2, 3));
         Assert.Equal("Windows PE", EnvironmentTexts.SecureBootTeller(environment));
+        Assert.Equal("Carrying on with the agent from the boot image.", EnvironmentTexts.OwnAgent(environment));
+        Assert.Equal("ddt-agent-0123456789ab.exe", EnvironmentTexts.DownloadedAgent(environment, "0123456789ABCDEF"));
+        Assert.Equal("0xC0000135", EnvironmentTexts.ExitCode(environment, unchecked((int)0xC0000135)));
         Assert.Equal(
             "The machine restarts without choosing where it starts next, so it comes back to Windows PE only if its boot order " +
             "starts from the network before the disk.",
@@ -96,6 +99,7 @@ public sealed class EnvironmentTextsTests
             EnvironmentTexts.BootOrderStays(LinuxBoot, "refused"),
             EnvironmentTexts.OtherDdtRoot(LinuxBoot),
             EnvironmentTexts.OtherIssuer(LinuxBoot, "CN=Example"),
+            EnvironmentTexts.OwnAgent(LinuxBoot),
         ];
 
         Assert.All(sentences, sentence => Assert.DoesNotContain("Windows", sentence, StringComparison.Ordinal));
@@ -107,6 +111,9 @@ public sealed class EnvironmentTextsTests
             "The run goes on in the installed Linux, but the machine started the Linux boot environment. Handing the run over again (1 of 3 times).",
             EnvironmentTexts.HandingOverAgain(LinuxBoot, 1, 3));
         Assert.Equal(EnvironmentTexts.LinuxDidNotStart, EnvironmentTexts.InstalledSystemDidNotStart(LinuxBoot));
+        Assert.Equal("Carrying on with the agent the Linux boot environment brought.", EnvironmentTexts.OwnAgent(LinuxBoot));
+        Assert.Equal("ddt-agent-0123456789ab", EnvironmentTexts.DownloadedAgent(LinuxBoot, "0123456789ABCDEF"));
+        Assert.Equal("139", EnvironmentTexts.ExitCode(LinuxBoot, 139));
     }
 
     // The constants other code and tests name are the Windows sentences.

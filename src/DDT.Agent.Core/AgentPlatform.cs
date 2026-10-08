@@ -18,6 +18,10 @@ public sealed record AgentPlatform
     // Why this executable takes no newer agent or console from the server. Null for one that does.
     public string? NoUpdateReason { get; init; }
 
+    // The executable's platform as AgentPlatforms names it, under which it asks for a newer agent. Null asks the
+    // routes that agents in boot images have always asked, which answer for Windows.
+    public string? ReleasePlatform { get; init; }
+
     // Whether the executable starts the graphical console beside it. One that does not keeps the text console.
     public bool StartsGraphicalConsole { get; init; } = true;
 

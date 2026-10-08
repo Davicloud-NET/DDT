@@ -49,6 +49,34 @@ public sealed class HttpAgentServerTests
         Assert.Equal(content, destination.ToArray());
     }
 
+    // The paths are literal on purpose: the server answers exactly these, and agents built long ago ask for them.
+    [Theory]
+    [InlineData(null, "/api/agents/release")]
+    [InlineData(AgentPlatforms.LinuxX64, "/api/agents/releases/linux-x64")]
+    [InlineData(AgentPlatforms.WindowsX64, "/api/agents/releases/windows-x64")]
+    public async Task AsksForTheAgentOfItsPlatformAndWithoutOneAsItAlwaysDid(string? platform, string path)
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        byte[] body = """{"sha256":"ab12","size":7}"""u8.ToArray();
+        byte[] content = RandomNumberGenerator.GetBytes(512);
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime) { ReleasePlatform = platform };
+        AgentRelease? release = await server.GetReleaseAsync(cancellationToken);
+
+        Assert.StartsWith($"GET {path} HTTP/1.1", await serving, StringComparison.Ordinal);
+        Assert.Equal(new AgentRelease("ab12", 7), release);
+
+        serving = AnswerAsync(listener, $"HTTP/1.1 200 OK\r\nContent-Length: {content.Length}\r\n", content, cancellationToken);
+        using MemoryStream destination = new();
+        await server.DownloadReleaseAsync(destination, cancellationToken);
+
+        Assert.StartsWith($"GET {path}/binary HTTP/1.1", await serving, StringComparison.Ordinal);
+        Assert.Equal(content, destination.ToArray());
+    }
+
     [Fact]
     public async Task AnyOtherRequestGivesUpAfterTheRequestTimeout()
     {

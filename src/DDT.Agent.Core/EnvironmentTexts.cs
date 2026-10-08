@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Globalization;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
@@ -93,6 +94,20 @@ public static class EnvironmentTexts
             "trusts. Build the boot image with Build-BootImage.ps1 -RootCertificatePath set to the root of the CA that " +
             "issued it, and have the server send the intermediate certificates after its own in the certificate file, " +
             "because the agent does not download them.";
+
+    // What an agent that takes no newer one goes on with. Windows PE's agent says it at the end of several lines.
+    public static string OwnAgent(AgentEnvironment environment) => IsLinux(environment)
+        ? "Carrying on with the agent the Linux boot environment brought."
+        : "Carrying on with the agent from the boot image.";
+
+    // The file a newer agent is downloaded to, beside this one. Windows starts a program only under a name with .exe.
+    public static string DownloadedAgent(AgentEnvironment environment, string sha256) => IsLinux(environment)
+        ? $"ddt-agent-{sha256[..12].ToLowerInvariant()}"
+        : $"ddt-agent-{sha256[..12].ToLowerInvariant()}.exe";
+
+    // Windows gives an exit code as an NTSTATUS, which is read in hexadecimal. Linux gives a number up to 255.
+    public static string ExitCode(AgentEnvironment environment, int exitCode) =>
+        IsLinux(environment) ? exitCode.ToString(CultureInfo.InvariantCulture) : $"0x{exitCode:X8}";
 
     private static bool IsLinux(AgentEnvironment environment) => environment == AgentEnvironment.LinuxBoot;
 }

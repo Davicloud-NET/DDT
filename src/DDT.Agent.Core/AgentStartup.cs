@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using DDT.Agent.Consoles;
 
@@ -43,7 +44,7 @@ public sealed class AgentStartup(AgentPlatform platform)
 
         string version = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "unknown";
 
-        using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate) { Environment = platform.BootEnvironment };
+        using HttpAgentServer server = ServerOf(options!.ServerUrl, options.RootCertificate);
 
         AgentLog log = new(TimeProvider.System, Console.Out);
         TextMachineConsole text = new(new ConsoleSignInPrompt(log, TimeProvider.System, options.KeyboardLayout), log);
@@ -74,6 +75,9 @@ public sealed class AgentStartup(AgentPlatform platform)
             ? await platform.DryRunAsync(agent, stop.Token).ConfigureAwait(false)
             : await platform.RunAsync(agent, stop.Token).ConfigureAwait(false);
     }
+
+    private HttpAgentServer ServerOf(Uri url, X509Certificate2? rootCertificate) =>
+        new(url, rootCertificate) { Environment = platform.BootEnvironment, ReleasePlatform = platform.ReleasePlatform };
 
     // Null for an executable that starts no graphical console, which says so of one --console names.
     private string? ConsolePathFor(AgentOptions options, AgentLog log)
@@ -142,7 +146,10 @@ public sealed class AgentStartup(AgentPlatform platform)
             relauncher,
             agent.Log,
             TimeProvider.System,
-            new RunningAgent(current, AppContext.BaseDirectory, args, agent.Options.ConsolePath is null ? agent.ConsolePath : null),
+            new RunningAgent(current, AppContext.BaseDirectory, args, agent.Options.ConsolePath is null ? agent.ConsolePath : null)
+            {
+                Environment = platform.BootEnvironment,
+            },
             agent.Status);
 
         return await update.RunAsync(cancellationToken).ConfigureAwait(false);

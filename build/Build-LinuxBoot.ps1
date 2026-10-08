@@ -20,7 +20,8 @@ Runs build/LinuxBoot/Dockerfile with Docker BuildKit and writes its result to ar
 
 DDT signs nothing here, so Secure Boot only sees Microsoft's and Debian's signatures. Every package is named in
 build/LinuxBoot/packages.lock.json by version and SHA-256, and the build takes them from snapshot.debian.org.
-The same lock gives the same base.img, byte for byte. Update-LinuxBootLock.ps1 moves the lock on.
+The same lock gives the same base.img, byte for byte, and the lock names its hash: the script warns when it built
+another one. Update-LinuxBootLock.ps1 moves the lock on.
 
 Needs Docker with the Linux engine and nothing else. It works without administrator rights.
 
@@ -34,8 +35,9 @@ Needs Docker with the Linux engine and nothing else. It works without administra
 param(
     [string] $Output,
 
-    # The folder that becomes /ddt in ddt.img. It must hold the agent as ddt-agent. Without it, ddt.img gets a
-    # placeholder that prints what it finds on the machine.
+    # The folder that becomes /ddt in ddt.img. It must hold the agent as ddt-agent, as Publish-LinuxAgent.ps1 writes
+    # it to artifacts/agent-linux. Without it, ddt.img gets a placeholder that prints what it finds on the machine,
+    # and no machine can be deployed from the result.
     [string] $AgentFolder,
 
     # Builds every stage again, which downloads the packages again.
@@ -89,4 +91,19 @@ foreach ($file in $manifest.files) {
     Write-Host ('  {0,-12} {1,7:N1} MB  {2}' -f $file.name, ($file.size / 1MB), $file.sha256)
 }
 
+if ($manifest.PSObject.Properties['agent']) {
+    Write-Host "ddt.img holds the agent $($manifest.agent.version), SHA-256 $($manifest.agent.sha256)."
+}
+else {
+    Write-Host 'ddt.img holds the placeholder, not an agent. Pass -AgentFolder for a boot environment that deploys machines.'
+}
+
 Write-Host "The shim is signed under: $($manifest.shimSignedUnder -join ', ')"
+
+# The lock names the base.img every build of it has to give. Another one means the build is not the same on every
+# computer, or that what base.img is made of changed and the lock has to follow.
+$built = ($manifest.files | Where-Object { $_.name -eq 'base.img' }).sha256
+if ($built -ne $lock.expected.baseImageSha256) {
+    Write-Warning ("base.img is not the one the lock expects, SHA-256 $($lock.expected.baseImageSha256). If its start scripts or " +
+        'lists changed, Update-LinuxBootLock.ps1 -BaseImageOnly writes the new hash into the lock.')
+}

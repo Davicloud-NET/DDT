@@ -5,9 +5,10 @@
 
 # Writes ddt-linux-boot.json: the boot environment's files, what it was built from and who signed the loaders.
 #
-#   manifest.py packages.lock.json <output folder>
+#   manifest.py packages.lock.json <output folder> [<agent>]
 #
-# The output folder holds the finished files and contents.json from assemble.py, which this replaces.
+# The output folder holds the finished files and contents.json from assemble.py, which this replaces. The agent
+# is the file that went into ddt.img as /ddt/ddt-agent.
 
 import json
 import os
@@ -24,6 +25,8 @@ FILES = ["shimx64.efi", "grubx64.efi", "vmlinuz", "base.img", "ddt.img"]
 SIGNED = ["shimx64.efi", "grubx64.efi", "vmlinuz"]
 TOOLS = ["kmod", "zstd", "libzstd1", "kbd", "python3", "xz-utils", "dpkg"]
 CERTIFICATE = re.compile(r"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----", re.DOTALL)
+# What the agent's build writes into the file, since an ELF file has no version resource.
+AGENT_VERSION = re.compile(rb"DDT-AGENT-VERSION:([0-9]+(?:\.[0-9]+){1,3})[\r\n]")
 
 
 # The Authenticode signatures of a PE file, each a PKCS #7 block in DER.
@@ -81,8 +84,17 @@ def tool_versions():
     return versions
 
 
+# The agent in ddt.img by its hash and its version, so a server can tell that it offers the same file. The
+# placeholder, which is no agent, has no version and is left out.
+def agent_entry(path):
+    with open(path, "rb") as source:
+        found = AGENT_VERSION.search(source.read())
+    return {"version": found.group(1).decode("ascii"), "size": os.path.getsize(path), "sha256": sha256_of(path)} if found else None
+
+
 def main():
     lock_path, folder = sys.argv[1], sys.argv[2]
+    agent = agent_entry(sys.argv[3]) if len(sys.argv) > 3 else None
     with open(lock_path, encoding="utf-8") as source:
         lock = json.load(source)
     contents_path = os.path.join(folder, "contents.json")
@@ -101,6 +113,8 @@ def main():
         "tools": tool_versions(),
         "baseImage": contents,
     }
+    if agent:
+        manifest["agent"] = agent
     with open(os.path.join(folder, "ddt-linux-boot.json"), "w", encoding="utf-8", newline="\n") as target:
         json.dump(manifest, target, indent=2)
         target.write("\n")

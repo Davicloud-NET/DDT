@@ -14,6 +14,10 @@ snapshot.debian.org holds there, the kernel release that Debian's kernel meta pa
 packages all of them were built from. Then it writes licenses/linux-boot again from the new packages: the
 copyright file of every source package, the licence texts those point to, and SOURCES.md.
 
+At the end it builds base.img from the lock and writes its SHA-256 into the lock, as the hash every build of that
+lock has to give. Continuous integration and a release compare their base.img with it, so a base.img that came
+out differently on another computer does not ship unnoticed.
+
 After it, build with Build-LinuxBoot.ps1 and test with Test-LinuxBoot.ps1 and on a machine. Where a package got
 another name, as the kernel's do with each release, THIRD-PARTY-NOTICES.md has to follow; LinuxBootNoticesTests
 says where.
@@ -26,16 +30,26 @@ Needs Docker with the Linux engine.
 The snapshot's time as snapshot.debian.org writes it, such as 20261006T203214Z. For a time between two snapshots
 the archive answers with the earlier one. Without it, the newest snapshot is taken.
 
+.PARAMETER BaseImageOnly
+Leaves the packages where they are and writes only base.img's hash into the lock again. For a change to what
+base.img is made of besides the packages: the start scripts in build/LinuxBoot/rootfs, the lists of modules and
+keymaps, or the scripts that assemble it.
+
 .EXAMPLE
 .\build\Update-LinuxBootLock.ps1
 
 .EXAMPLE
 .\build\Update-LinuxBootLock.ps1 -Snapshot 20261006T203214Z
+
+.EXAMPLE
+.\build\Update-LinuxBootLock.ps1 -BaseImageOnly
 #>
 [CmdletBinding()]
 param(
     [ValidatePattern('^\d{8}T\d{6}Z$')]
-    [string] $Snapshot
+    [string] $Snapshot,
+
+    [switch] $BaseImageOnly
 )
 
 Set-StrictMode -Version Latest
@@ -74,6 +88,26 @@ function Invoke-DockerStage {
     }
 }
 
+# Puts the hash into the lock where it stands, so the rest of the file stays byte for byte as lock.py wrote it.
+function Set-ExpectedBaseImage {
+    param(
+        [Parameter(Mandatory)][string] $LockPath,
+        [Parameter(Mandatory)][string] $Sha256
+    )
+
+    $text = [IO.File]::ReadAllText($LockPath)
+    $pattern = '("baseImageSha256":\s*")[0-9a-f]*(")'
+    if (-not [regex]::IsMatch($text, $pattern)) {
+        throw "$LockPath has no expected.baseImageSha256 to write base.img's hash into."
+    }
+
+    [IO.File]::WriteAllText($LockPath, [regex]::Replace($text, $pattern, "`${1}$Sha256`${2}"))
+}
+
+if ($BaseImageOnly -and $Snapshot) {
+    throw '-BaseImageOnly keeps the snapshot the lock is at. Pass one of the two.'
+}
+
 $repository = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).ProviderPath
 $context = Join-Path $PSScriptRoot 'LinuxBoot'
 $lockPath = Join-Path $context 'packages.lock.json'
@@ -83,18 +117,31 @@ if (-not $Snapshot) { $Snapshot = [DateTime]::UtcNow.ToString("yyyyMMdd'T'HHmmss
 
 $before = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json
 
-Invoke-DockerStage -Context $context -ToolsImage $before.toolsImage -Target 'lock' -Destination (Join-Path $work 'lock') `
-    -BuildArgument "SNAPSHOT=$Snapshot"
-Copy-Item -LiteralPath (Join-Path $work 'lock\packages.lock.json') -Destination $lockPath -Force
+if (-not $BaseImageOnly) {
+    Invoke-DockerStage -Context $context -ToolsImage $before.toolsImage -Target 'lock' -Destination (Join-Path $work 'lock') `
+        -BuildArgument "SNAPSHOT=$Snapshot"
+    Copy-Item -LiteralPath (Join-Path $work 'lock\packages.lock.json') -Destination $lockPath -Force
 
-# From the lock as it is now, so the packages this downloads are the ones the next build takes from the cache.
-Invoke-DockerStage -Context $context -ToolsImage $before.toolsImage -Target 'notices' -Destination (Join-Path $work 'notices')
-if (Test-Path -LiteralPath $licenses) { Remove-Item -LiteralPath $licenses -Recurse -Force }
-Copy-Item -LiteralPath (Join-Path $work 'notices') -Destination $licenses -Recurse
+    # From the lock as it is now, so the packages this downloads are the ones the next build takes from the cache.
+    Invoke-DockerStage -Context $context -ToolsImage $before.toolsImage -Target 'notices' -Destination (Join-Path $work 'notices')
+    if (Test-Path -LiteralPath $licenses) { Remove-Item -LiteralPath $licenses -Recurse -Force }
+    Copy-Item -LiteralPath (Join-Path $work 'notices') -Destination $licenses -Recurse
+}
+
+# With the placeholder in ddt.img, which base.img does not depend on.
+Invoke-DockerStage -Context $context -ToolsImage $before.toolsImage -Target 'export' -Destination (Join-Path $work 'build')
+$hash = (Get-FileHash -LiteralPath (Join-Path $work 'build\base.img') -Algorithm SHA256).Hash.ToLowerInvariant()
+Set-ExpectedBaseImage -LockPath $lockPath -Sha256 $hash
 Remove-Item -LiteralPath $work -Recurse -Force
 
 $after = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json
-Write-Host "The lock is at snapshot $($after.snapshot), kernel $($after.kernelRelease). $licenses is written again."
+if ($BaseImageOnly) {
+    Write-Host "The lock stays at snapshot $($after.snapshot), kernel $($after.kernelRelease)."
+}
+else {
+    Write-Host "The lock is at snapshot $($after.snapshot), kernel $($after.kernelRelease). $licenses is written again."
+}
+
 $versions = @{}
 foreach ($package in $before.packages) { $versions[$package.name] = $package.version }
 $changes = 0
@@ -110,3 +157,9 @@ foreach ($package in $after.packages) {
 }
 
 if ($changes -eq 0) { Write-Host '  No package changed.' }
+if ($before.expected.baseImageSha256 -eq $hash) {
+    Write-Host "  base.img is as the lock expected it, SHA-256 $hash."
+}
+else {
+    Write-Host "  base.img has SHA-256 $hash now, which the lock expects from here on. It was $($before.expected.baseImageSha256)."
+}

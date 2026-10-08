@@ -48,7 +48,7 @@ COPY manifest.py /src/
 COPY --from=agent / /agent/ddt/
 RUN python3 /src/mkcpio.py --mtime "$(cat /src/mtime)" /agent /tmp/ddt.cpio \
     && zstd -q -19 -T1 /tmp/ddt.cpio -o /out/ddt.img \
-    && python3 /src/manifest.py /src/packages.lock.json /out
+    && python3 /src/manifest.py /src/packages.lock.json /out /agent/ddt/ddt-agent
 
 FROM scratch AS export
 COPY --from=build /out/ /

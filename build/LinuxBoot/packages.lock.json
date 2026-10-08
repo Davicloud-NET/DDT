@@ -4,6 +4,9 @@
   "architecture": "amd64",
   "toolsImage": "debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f",
   "kernelRelease": "7.2.6+deb13-amd64",
+  "expected": {
+    "baseImageSha256": "403784cac734b6f96d6c6dfacba197af9d51d45d14a5f13c80a8b4e73ccb9e70"
+  },
   "packages": [
     {
       "name": "shim-signed",

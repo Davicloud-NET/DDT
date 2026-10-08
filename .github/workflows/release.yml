@@ -225,15 +225,15 @@ jobs:
           echo "$(jq --raw-output .agent.sha256 artifacts/linux-boot/ddt-linux-boot.json)  artifacts/agent-linux/ddt-agent" | sha256sum --check
 
       # The source packages of everything in the boot environment, each checked against the lock, with the list that
-      # is also in the server's legal folder. The archive is the same for the same lock: names in order, no owner, and
-      # the snapshot's time on every file.
+      # is also in the server's legal folder. The archive is the same for the same lock: names in order, no owner, one
+      # mode, and the snapshot's time on every file.
       - name: Collect the source code of the boot environment
         run: |
           sh build/LinuxBoot/sources.sh build/LinuxBoot/packages.lock.json artifacts/linux-boot-sources/files
           cmp artifacts/linux-boot-sources/files/SOURCES.md licenses/linux-boot/SOURCES.md
           snapshot=$(jq --raw-output .snapshot build/LinuxBoot/packages.lock.json | sed 's/^\(....\)\(..\)\(..\)T\(..\)\(..\)\(..\)Z$/\1-\2-\3 \4:\5:\6 UTC/')
           tar --create --file artifacts/linux-boot-sources/ddt-linux-boot-sources.tar --sort=name --owner=0 --group=0 --numeric-owner \
-            --mtime="$snapshot" --directory artifacts/linux-boot-sources/files .
+            --mode=u=rwX,go=rX --mtime="$snapshot" --directory artifacts/linux-boot-sources/files .
           ls -l artifacts/linux-boot-sources/ddt-linux-boot-sources.tar
 
       # For the MSI and, through it, the container image

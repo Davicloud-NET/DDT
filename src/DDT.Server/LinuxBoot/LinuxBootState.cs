@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Collections.Frozen;
 using DDT.Contracts.Images;
 using DDT.Contracts.Messages;
+using DDT.Pxe;
 
 namespace DDT.Server.LinuxBoot;
 
@@ -13,8 +15,8 @@ public sealed record LinuxBootState(string Folder, ServerMessage? Problem)
 {
     public bool Available => Problem is null;
 
-    // The names in Folder that netboot may serve.
-    public IReadOnlySet<string> Files { get; init; } = new HashSet<string>(StringComparer.Ordinal);
+    // The names in Folder that netboot may serve, each with what the file was when the server looked at it.
+    public IReadOnlyDictionary<string, BootFileStamp> Files { get; init; } = FrozenDictionary<string, BootFileStamp>.Empty;
 
     public string? Snapshot { get; init; }
 

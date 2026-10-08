@@ -6,12 +6,14 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DDT.Pxe;
 
 // Answers a boot file request for TFTP and the HTTP boot port alike: the Linux boot environment's files and the two
 // files generated for it by their exact names, and everything else from the boot directory. A name a client sends
-// reaches the file system only through a BootFileResolver.
+// reaches the file system only through a BootFileResolver, or as a name the environment's description lists.
 public sealed class BootFiles
 {
     public const string LinuxFolder = "linux";
@@ -32,9 +34,16 @@ public sealed class BootFiles
     private readonly int _httpBootPort;
     private readonly BootConnections _connections;
     private readonly TimeProvider _timeProvider;
-    private BootFileResolver? _bundle;
+    private readonly ILogger _logger;
+    private int _failing;
 
-    public BootFiles(BootFileResolver boot, ILinuxBootSite? linux, int httpBootPort, BootConnections connections, TimeProvider timeProvider)
+    public BootFiles(
+        BootFileResolver boot,
+        ILinuxBootSite? linux,
+        int httpBootPort,
+        BootConnections connections,
+        TimeProvider timeProvider,
+        ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(boot);
         ArgumentNullException.ThrowIfNull(connections);
@@ -45,22 +54,25 @@ public sealed class BootFiles
         _httpBootPort = httpBootPort;
         _connections = connections;
         _timeProvider = timeProvider;
+        _logger = logger ?? NullLogger.Instance;
     }
 
     // The boot directory, where a Windows PE build lies.
     public BootFileResolver Boot { get; }
 
+    // The Linux boot environment as the server has it ready, or null while none can be started.
+    public LinuxBootBundle? Linux => FromLinux(bundle => bundle);
+
     // Whether the Linux boot environment can be started now.
-    public bool LinuxAvailable => _linux?.Current is not null;
+    public bool LinuxAvailable => Linux is not null;
 
     public bool TryFind(string requested, BootRequest request, [NotNullWhen(true)] out BootContent? content)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         string? name = Normalized(requested);
-        LinuxBootBundle? bundle = name is null ? null : _linux?.Current;
 
-        if (name is not null && bundle is not null && (content = OfLinux(name, bundle, request)) is not null)
+        if (name is not null && (content = FromLinux(bundle => OfLinux(name, bundle, request))) is not null)
         {
             return true;
         }
@@ -73,7 +85,7 @@ public sealed class BootFiles
         }
 
         // A DHCP server that names the boot file only in option 67 makes shim ask for GRUB at the TFTP root.
-        content = name == Grub && bundle is not null ? FromBundle(Grub, bundle) : null;
+        content = name == Grub ? FromLinux(bundle => FromBundle(Grub, bundle)) : null;
 
         return content is not null;
     }
@@ -95,6 +107,33 @@ public sealed class BootFiles
     public static bool IsLinuxName(string? requested) =>
         Normalized(requested) is { } name && (name == GrubConfigName || name.StartsWith(LinuxFolder + "/", StringComparison.Ordinal));
 
+    // Asks the environment the server has ready. Whatever fails behind it, a machine must still get the answer it
+    // would get without the environment, so a failure counts as none. The log says so once until it works again.
+    private T? FromLinux<T>(Func<LinuxBootBundle, T?> ask)
+    {
+        try
+        {
+            T? answer = _linux?.Current is { } bundle ? ask(bundle) : default;
+
+            if (Interlocked.Exchange(ref _failing, 0) == 1)
+            {
+                PxeLog.LinuxBootAnswersAgain(_logger);
+            }
+
+            return answer;
+        }
+        catch (Exception exception)
+        {
+            // A boundary: every PXE request and every boot file read passes here, and silence starts no machine.
+            if (Interlocked.Exchange(ref _failing, 1) == 0)
+            {
+                PxeLog.LinuxBootFailed(_logger, exception);
+            }
+
+            return default;
+        }
+    }
+
     private BootContent? OfLinux(string name, LinuxBootBundle bundle, BootRequest request)
     {
         if (name == GrubConfigName)
@@ -114,8 +153,7 @@ public sealed class BootFiles
             return new MemoryBootContent(name, SiteArchive.Write(bundle, _timeProvider.GetUtcNow()));
         }
 
-        // Only what the environment's description lists, so nothing else in its folder is ever served.
-        return bundle.Files.Contains(file) ? FromBundle(file, bundle) : null;
+        return FromBundle(file, bundle);
     }
 
     // GRUB hangs in an HTTP read that meets a connection its start before left on the server. TFTP has none.
@@ -138,17 +176,10 @@ public sealed class BootFiles
         return new MemoryBootContent(GrubConfigName + note, Encoding.ASCII.GetBytes(text));
     }
 
-    // The same rules as for the boot directory: a real entry of the folder, and no link.
-    private FileBootContent? FromBundle(string file, LinuxBootBundle bundle)
-    {
-        BootFileResolver? resolver = Volatile.Read(ref _bundle);
-
-        if (resolver is null || !string.Equals(resolver.Root, Path.TrimEndingDirectorySeparator(Path.GetFullPath(bundle.Folder)), StringComparison.Ordinal))
-        {
-            resolver = new BootFileResolver(bundle.Folder);
-            Volatile.Write(ref _bundle, resolver);
-        }
-
-        return resolver.TryResolve(file, out FileInfo? found) ? new FileBootContent(found) : null;
-    }
+    // Only what the environment's description lists, by its exact name and from its folder itself, so nothing else in
+    // the folder is ever served and no marker in it leads elsewhere. The file is looked at when it is opened.
+    private static FileBootContent? FromBundle(string file, LinuxBootBundle bundle) =>
+        bundle.Files.TryGetValue(file, out BootFileStamp stamp)
+            ? new FileBootContent(new FileInfo(Path.Combine(bundle.Folder, file))) { Checked = stamp, Changed = () => bundle.Changed?.Invoke(file) }
+            : null;
 }

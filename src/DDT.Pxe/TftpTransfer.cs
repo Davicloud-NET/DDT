@@ -80,6 +80,9 @@ internal sealed class TftpTransfer
 
         try
         {
+            // Opening looks at the disk, which the loop that receives every machine's requests must not wait for.
+            await Task.Yield();
+
             using BootContentReader reader = _content.OpenRead();
 
             long fileLength = reader.Length;

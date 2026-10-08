@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Collections.Frozen;
 using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Builder;
@@ -21,6 +20,7 @@ public sealed class BootHttpLinuxTests : IAsyncLifetime
     private readonly byte[] _kernel = [.. Enumerable.Range(0, 70_000).Select(value => (byte)(value * 7))];
     private readonly FakeLinuxBootSite _site = new();
     private readonly TestClock _clock = new(DateTimeOffset.FromUnixTimeSeconds(1_791_460_800));
+    private readonly List<string> _changed = [];
 
     private WebApplication? _app;
 
@@ -33,10 +33,7 @@ public sealed class BootHttpLinuxTests : IAsyncLifetime
         await File.WriteAllBytesAsync(Path.Combine(bundle, "vmlinuz"), _kernel);
         await File.WriteAllTextAsync(Path.Combine(bundle, "ddt-linux-boot.json"), "{}");
 
-        _site.Current = new LinuxBootBundle(bundle, new[] { "vmlinuz" }.ToFrozenSet(StringComparer.Ordinal), new Uri("https://ddt-server.example.test:8443"), "root")
-        {
-            Keymap = "de",
-        };
+        _site.Current = TestBundle.Of(bundle, "vmlinuz") with { Keymap = "de", Changed = _changed.Add };
 
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -151,6 +148,63 @@ public sealed class BootHttpLinuxTests : IAsyncLifetime
         HttpContext context = await SendAsync(HttpMethods.Get, path);
 
         Assert.Equal(StatusCodes.Status404NotFound, context.Response.StatusCode);
+    }
+
+    // The server read the file once and found it to be the one its description names. What lies there now under the
+    // same name and with the same length may be anything, so it is not sent, and the server is told.
+    [Fact]
+    public async Task AFileThatWasReplacedAtTheSameSizeSinceItWasCheckedIsNotServed()
+    {
+        string kernel = Path.Combine(_root, "linux-boot", "vmlinuz");
+        await File.WriteAllBytesAsync(kernel, new byte[_kernel.Length], TestContext.Current.CancellationToken);
+        File.SetLastWriteTimeUtc(kernel, File.GetLastWriteTimeUtc(kernel) + TimeSpan.FromSeconds(2));
+
+        HttpContext context = await SendAsync(HttpMethods.Get, "/boot/linux/vmlinuz");
+
+        Assert.Equal(StatusCodes.Status404NotFound, context.Response.StatusCode);
+        Assert.Empty(await BodyOf(context));
+        Assert.Equal(["vmlinuz"], _changed);
+    }
+
+    [Fact]
+    public async Task AFileThatWasRemovedSinceItWasCheckedIsReportedGone()
+    {
+        File.Delete(Path.Combine(_root, "linux-boot", "vmlinuz"));
+
+        HttpContext context = await SendAsync(HttpMethods.Head, "/boot/linux/vmlinuz");
+
+        Assert.Equal(StatusCodes.Status404NotFound, context.Response.StatusCode);
+        Assert.Equal(["vmlinuz"], _changed);
+    }
+
+    // A boot image build leaves its files under builds with a marker beside them. The Linux folder has no such thing.
+    [Fact]
+    public async Task AMarkerInTheBundlesFolderLeadsNowhere()
+    {
+        string bundle = Path.Combine(_root, "linux-boot");
+        string other = Directory.CreateDirectory(Path.Combine(bundle, "builds", "other")).FullName;
+        await File.WriteAllBytesAsync(Path.Combine(other, "vmlinuz"), new byte[_kernel.Length], TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(bundle, "current"), "other", TestContext.Current.CancellationToken);
+
+        HttpContext context = await SendAsync(HttpMethods.Get, "/boot/linux/vmlinuz");
+
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+        Assert.Equal(_kernel, await BodyOf(context));
+        Assert.Empty(_changed);
+    }
+
+    // Windows PE's files are not checked by anyone, and a new boot image replaces them at any time.
+    [Fact]
+    public async Task AFileOfTheBootDirectoryIsServedAsItIsNow()
+    {
+        string bootManager = Path.Combine(_root, "boot", "x64", "bootmgfw.efi");
+        await File.WriteAllTextAsync(bootManager, "another boot manager", TestContext.Current.CancellationToken);
+
+        HttpContext context = await SendAsync(HttpMethods.Get, "/boot/x64/bootmgfw.efi");
+
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+        Assert.Equal("another boot manager", System.Text.Encoding.ASCII.GetString(await BodyOf(context)));
+        Assert.Empty(_changed);
     }
 
     [Fact]

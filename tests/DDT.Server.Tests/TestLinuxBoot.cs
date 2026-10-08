@@ -31,14 +31,7 @@ internal static class TestLinuxBoot
 
         foreach (string name in Names)
         {
-            byte[] content = name == "shimx64.efi" && shim is not null ? shim : Encoding.ASCII.GetBytes("test " + name);
-            Replace(Path.Combine(folder, name), content);
-            files.Add(new JsonObject
-            {
-                ["name"] = name,
-                ["size"] = content.Length,
-                ["sha256"] = Convert.ToHexStringLower(SHA256.HashData(content)),
-            });
+            files.Add(Listed(folder, name, name == "shimx64.efi" && shim is not null ? shim : Encoding.ASCII.GetBytes("test " + name)));
         }
 
         JsonObject manifest = new()
@@ -57,6 +50,21 @@ internal static class TestLinuxBoot
     }
 
     public static void Remove(string folder) => Retried(() => File.Delete(ManifestPath(folder)));
+
+    // Writes one more file into the folder and returns the entry that lists it.
+    public static JsonObject Listed(string folder, string name, string content) => Listed(folder, name, Encoding.ASCII.GetBytes(content));
+
+    private static JsonObject Listed(string folder, string name, byte[] content)
+    {
+        Replace(Path.Combine(folder, name), content);
+
+        return new JsonObject
+        {
+            ["name"] = name,
+            ["size"] = content.Length,
+            ["sha256"] = Convert.ToHexStringLower(SHA256.HashData(content)),
+        };
+    }
 
     // A file that already is what it should be is left alone, so tests that share a folder write it once.
     private static void Replace(string path, byte[] content)

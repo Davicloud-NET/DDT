@@ -68,6 +68,24 @@ internal static partial class PxeLog
     [LoggerMessage(EventId = 527, Level = LogLevel.Information, Message = "Linux boot environment: not offered, since {Reason}")]
     public static partial void NoLinuxBoot(ILogger logger, string reason);
 
+    [LoggerMessage(
+        EventId = 528,
+        Level = LogLevel.Error,
+        Message = "Asking for the Linux boot environment failed. Until it works again, machines are answered as if this server had none")]
+    public static partial void LinuxBootFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(EventId = 529, Level = LogLevel.Information, Message = "Asking for the Linux boot environment works again")]
+    public static partial void LinuxBootAnswersAgain(ILogger logger);
+
+    [LoggerMessage(
+        EventId = 530,
+        Level = LogLevel.Error,
+        Message = "Looking at the boot files failed. Until it works again, machines are answered from what the look before found")]
+    public static partial void BootFilesReadFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(EventId = 531, Level = LogLevel.Information, Message = "Looking at the boot files works again")]
+    public static partial void BootFilesReadAgain(ILogger logger);
+
     [LoggerMessage(EventId = 520, Level = LogLevel.Warning, Message = "Netboot is not served: {Reason}")]
     public static partial void Stopped(ILogger logger, string reason);
 

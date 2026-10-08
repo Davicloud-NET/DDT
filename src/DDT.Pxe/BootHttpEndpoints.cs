@@ -142,7 +142,7 @@ public static class BootHttpEndpoints
             return TypedResults.Bytes(generated.Bytes, ContentTypeFor(path));
         }
 
-        return content is FileBootContent file ? ServeFile(file.File, logger, context, client) : NotFound(logger, context, client, path);
+        return content is FileBootContent file ? ServeFile(file, logger, context, client) : NotFound(logger, context, client, path);
     }
 
     // The address the request arrived on is the one a generated file names as the server.
@@ -165,11 +165,12 @@ public static class BootHttpEndpoints
         return TypedResults.NotFound();
     }
 
-    private static IResult ServeFile(FileInfo file, ILogger logger, HttpContext context, string client)
+    private static IResult ServeFile(FileBootContent boot, ILogger logger, HttpContext context, string client)
     {
         // Not PhysicalFile, which opens without FileShare.Delete: on Windows a new boot image then can't move this
         // one aside while firmware downloads it.
-        FileStream content;
+        FileInfo file = boot.File;
+        FileStream? content = null;
 
         try
         {
@@ -183,6 +184,13 @@ public static class BootHttpEndpoints
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
+            boot.Unreadable();
+        }
+
+        // A file of the Linux boot environment is served only while it is still the one the server checked.
+        if (content is null || !boot.Fits(content.SafeFileHandle))
+        {
+            content?.Dispose();
             PxeLog.HttpBootNotFound(logger, context.Request.Method, context.Request.Path, client);
 
             return TypedResults.NotFound();

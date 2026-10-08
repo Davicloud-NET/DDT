@@ -5,6 +5,7 @@
 using System.Text.Json.Nodes;
 using DDT.Contracts.Images;
 using DDT.Contracts.Messages;
+using DDT.Pxe;
 using DDT.Server.LinuxBoot;
 using DDT.Server.Machines;
 using Microsoft.Extensions.Options;
@@ -75,7 +76,7 @@ public sealed class LinuxBootEnvironmentTests : IDisposable
         Assert.Equal("1.51~1+deb13u1+16.1-2~deb13u1", state.ShimVersion);
         Assert.Equal("1+2.12+9+deb13u2", state.GrubVersion);
         Assert.Equal(TestLinuxBoot.Keymaps, state.Keymaps);
-        Assert.Equal(TestLinuxBoot.Names.Order(), state.Files.Order());
+        Assert.Equal(TestLinuxBoot.Names.Order(), state.Files.Keys.Order());
         Assert.Equal(environment.Folder, state.Folder);
 
         // The test's shim is no program, so no certificate authority is known for it.
@@ -123,6 +124,10 @@ public sealed class LinuxBootEnvironmentTests : IDisposable
     [InlineData("""{"files":[{"name":"../ddt-key.pem","size":1,"sha256":"00"}]}""")]
     [InlineData("""{"files":[{"name":"sub/vmlinuz","size":1,"sha256":"00"}]}""")]
     [InlineData("""{"files":[{"size":1,"sha256":"00"}]}""")]
+    [InlineData("""{"files":[{"name":"","size":1,"sha256":"00"}]}""")]
+    [InlineData("""{"files":[{"name":"..","size":1,"sha256":"00"}]}""")]
+    [InlineData("""{"files":[{"name":"vmlinuz ","size":1,"sha256":"00"}]}""")]
+    [InlineData("""{"files":[{"name":"C:vmlinuz","size":1,"sha256":"00"}]}""")]
     public void ADescriptionThatCannotBeReadIsDamaged(string json)
     {
         LinuxBootEnvironment environment = Environment();
@@ -135,6 +140,79 @@ public sealed class LinuxBootEnvironmentTests : IDisposable
         Assert.Equal(ServerMessages.LinuxBootDamaged.Code, state.Problem?.Code);
         Assert.Equal("unreadable", Reason(state));
         Assert.Empty(state.Files);
+    }
+
+    // The description lists a handful of files and packages. One of a megabyte and more is not a release's.
+    [Theory]
+    [InlineData(1024 * 1024, true)]
+    [InlineData((1024 * 1024) + 1, false)]
+    public void ADescriptionOverAMegabyteIsNotRead(int length, bool read)
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder);
+        string json = File.ReadAllText(environment.ManifestPath);
+
+        // JSON takes white space after its last brace, so the description is the same one, only longer.
+        File.WriteAllText(environment.ManifestPath, json + new string(' ', length - json.Length));
+
+        Assert.Equal(length, new FileInfo(environment.ManifestPath).Length);
+        Assert.Equal(read, environment.Available);
+        Assert.Equal(read ? null : "unreadable", environment.Current.Problem?.Args["reason"]);
+    }
+
+    // Netboot serves a listed name to everyone, so a name is at most 64 characters of a small set, and listed once.
+    [Theory]
+    [InlineData(64, true)]
+    [InlineData(65, false)]
+    public void AListedNameMayHaveSixtyFourCharactersAndNotOneMore(int length, bool read)
+    {
+        LinuxBootEnvironment environment = Environment();
+        string name = new string('a', length - 4) + ".img";
+        TestLinuxBoot.Write(environment.Folder, change: manifest => ((JsonArray)manifest["files"]!).Add(TestLinuxBoot.Listed(environment.Folder, name, "one more initrd")));
+
+        Assert.Equal(read, environment.Available);
+        Assert.Equal(read ? null : "unreadable", environment.Current.Problem?.Args["reason"]);
+        Assert.Equal(read, environment.Current.Files.ContainsKey(name));
+    }
+
+    [Fact]
+    public void ADescriptionThatListsANameTwiceIsDamaged()
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder, change: manifest =>
+        {
+            JsonArray files = (JsonArray)manifest["files"]!;
+            files.Add(files[2]!.DeepClone());
+        });
+
+        Assert.False(environment.Available);
+        Assert.Equal("unreadable", Reason(environment.Current));
+        Assert.Empty(environment.Current.Files);
+    }
+
+    // A link could lead anywhere on the volume, and its target is not the release's file.
+    [Fact]
+    public void AListedFileThatIsALinkIsDamage()
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder);
+        string kernel = Path.Combine(environment.Folder, "vmlinuz");
+        string elsewhere = Path.Combine(_programFiles, "vmlinuz elsewhere");
+        File.Move(kernel, elsewhere);
+
+        try
+        {
+            File.CreateSymbolicLink(kernel, elsewhere);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Assert.Skip("This account may not create a symbolic link: " + exception.Message);
+        }
+
+        environment.Refresh();
+
+        Assert.False(environment.Available);
+        Assert.Equal("vmlinuz", environment.Current.Problem!.Args["name"]);
     }
 
     [Fact]
@@ -245,9 +323,137 @@ public sealed class LinuxBootEnvironmentTests : IDisposable
         TestLinuxBoot.Write(environment.Folder);
         Assert.True(environment.Available);
 
-        // Gone behind the catalogue's back: it finds out when the description changes, and netboot when it serves.
+        // Gone behind the catalogue's back: a question does not look. The look netboot asks for every few seconds does.
         File.Delete(Path.Combine(environment.Folder, "base.img"));
 
         Assert.True(environment.Available);
+        Assert.True(environment.Known.Available);
+
+        environment.Refresh();
+
+        Assert.False(environment.Available);
+        Assert.Equal("missing", Reason(environment.Current));
+        Assert.Equal("base.img", environment.Current.Problem!.Args["name"]);
+    }
+
+    // The description is unchanged, so only the file's own time tells. The folder is then read whole before a machine
+    // is started from it again, and found not to be what the description names.
+    [Fact]
+    public async Task AFileReplacedAtTheSameSizeUnderAnUnchangedDescriptionIsFoundAtTheNextLook()
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder);
+        await environment.CheckedAsync();
+        Assert.True(environment.Available);
+        string kernel = Path.Combine(environment.Folder, "vmlinuz");
+        string genuine = File.ReadAllText(kernel);
+        (long Length, DateTime WriteTimeUtc) description = (new FileInfo(environment.ManifestPath).Length, File.GetLastWriteTimeUtc(environment.ManifestPath));
+
+        File.WriteAllText(kernel, genuine.ToUpperInvariant());
+        File.SetLastWriteTimeUtc(kernel, File.GetLastWriteTimeUtc(kernel) + TimeSpan.FromSeconds(2));
+        environment.Refresh();
+
+        Assert.Equal(description, (new FileInfo(environment.ManifestPath).Length, File.GetLastWriteTimeUtc(environment.ManifestPath)));
+        Assert.False(environment.Available);
+        Assert.False(environment.Known.Available);
+        Assert.Equal("hash", Reason(environment.Current));
+        Assert.Contains("vmlinuz is not the file its description names", environment.Current.Problem!.Text, StringComparison.Ordinal);
+
+        // A folder that stays as it is is not read whole again at every look.
+        LinuxBootState damaged = environment.Current;
+        environment.Refresh();
+        Assert.Same(damaged, environment.Current);
+
+        // Put back, it is read again and found to be the release's file.
+        File.WriteAllText(kernel, genuine);
+        environment.Refresh();
+
+        Assert.True(environment.Available);
+        Assert.True(environment.Known.Available);
+    }
+
+    [Fact]
+    public void AFileRemovedUnderAnUnchangedDescriptionIsFoundAtTheNextLookAndSoIsItsReturn()
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder);
+        Assert.True(environment.Available);
+        string image = Path.Combine(environment.Folder, "ddt.img");
+        byte[] content = File.ReadAllBytes(image);
+
+        File.Delete(image);
+        environment.Refresh();
+
+        Assert.False(environment.Known.Available);
+        Assert.Equal("missing", Reason(environment.Known));
+
+        File.WriteAllBytes(image, content);
+        environment.Refresh();
+
+        Assert.True(environment.Known.Available);
+    }
+
+    // Netboot found the file changed in the moment it was to send it, which is sooner than the next look.
+    [Fact]
+    public async Task AFileNetbootFindsChangedMakesTheEnvironmentUnavailableAtOnceAndUntilItWasReadAgain()
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder);
+        await environment.CheckedAsync();
+        string kernel = Path.Combine(environment.Folder, "vmlinuz");
+        File.WriteAllText(kernel, File.ReadAllText(kernel).ToUpperInvariant());
+
+        environment.Changed("vmlinuz");
+
+        Assert.False(environment.Known.Available);
+        Assert.False(environment.Available);
+        Assert.Equal("changed", Reason(environment.Current));
+        Assert.Equal(
+            $"The Linux boot environment in {environment.Folder} is damaged: vmlinuz was replaced or removed after the server had checked it. " +
+            "Install this release of DDT again, which brings the folder anew.",
+            environment.Current.Problem!.Text);
+
+        environment.Refresh();
+
+        Assert.False(environment.Available);
+        Assert.Equal("hash", Reason(environment.Current));
+    }
+
+    // Only the file's time moved, as a copy of the folder leaves it. Read again, it is the same file as before.
+    [Fact]
+    public async Task AFileThatWasOnlyTouchedIsServedAgainOnceItWasReadAgain()
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder);
+        await environment.CheckedAsync();
+        string kernel = Path.Combine(environment.Folder, "vmlinuz");
+        BootFileStamp before = environment.Known.Files["vmlinuz"];
+
+        File.SetLastWriteTimeUtc(kernel, before.WriteTimeUtc + TimeSpan.FromMinutes(1));
+        environment.Changed("vmlinuz");
+        Assert.False(environment.Known.Available);
+
+        environment.Refresh();
+
+        Assert.True(environment.Known.Available);
+        Assert.Equal(before with { WriteTimeUtc = before.WriteTimeUtc + TimeSpan.FromMinutes(1) }, environment.Known.Files["vmlinuz"]);
+    }
+
+    // The packet loops ask for what is known. They must never be the ones to read the folder.
+    [Fact]
+    public void WhatIsKnownIsNotLookedUpAgainWhenTheDescriptionChanges()
+    {
+        LinuxBootEnvironment environment = Environment();
+        TestLinuxBoot.Write(environment.Folder);
+        Assert.True(environment.Known.Available);
+
+        TestLinuxBoot.Remove(environment.Folder);
+
+        Assert.True(environment.Known.Available);
+
+        environment.Refresh();
+
+        Assert.False(environment.Known.Available);
+        Assert.Equal(ServerMessages.LinuxBootMissing.Code, environment.Known.Problem?.Code);
     }
 }

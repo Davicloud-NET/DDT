@@ -10,7 +10,8 @@ namespace DDT.Pxe;
 // What the log says of a setup as its listeners start: the boot file of each kind of machine.
 internal static class PxeStartLog
 {
-    public static void BootTargets(ILogger logger, PxeSetup setup, ILinuxBootSite? linux)
+    // files is null for a host that knows of no Linux boot environment, which says nothing about one.
+    public static void BootTargets(ILogger logger, PxeSetup setup, BootFiles? files)
     {
         // A site DHCP server that names DDT in options 66 and 67 needs no boot targets at all.
         if (setup.ProxyDhcp.BootTargets.Count == 0 && setup.Options.EnableProxyDhcp)
@@ -29,16 +30,16 @@ internal static class PxeStartLog
             }
         }
 
-        if (linux is not null)
+        if (files is not null)
         {
-            LinuxBoot(logger, setup, linux);
+            LinuxBoot(logger, setup, files);
         }
     }
 
     // Which machine gets it is decided for each request. This says whether it is offered at all.
-    private static void LinuxBoot(ILogger logger, PxeSetup setup, ILinuxBootSite linux)
+    private static void LinuxBoot(ILogger logger, PxeSetup setup, BootFiles files)
     {
-        if (setup.LinuxProxyDhcp is null || linux.Current is not { } bundle)
+        if (setup.LinuxProxyDhcp is null || files.Linux is not { } bundle)
         {
             PxeLog.NoLinuxBoot(logger, setup.LinuxProxyDhcp is null ? "TFTP is off" : "this server has none that can be started");
 

@@ -13,6 +13,7 @@ using DDT.Contracts.Settings;
 using DDT.Pxe;
 using DDT.Server.Certificates;
 using DDT.Server.LinuxBoot;
+using DDT.Server.Machines;
 using DDT.Server.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -114,11 +115,13 @@ public sealed class LinuxBootPagesTests(BothEnvironmentsApplication application)
         SignedInClient administrator = await application.AdministratorAsync();
         LinuxBootSite site = application.Services.GetRequiredService<LinuxBootSite>();
         application.SetLinuxBoot(true);
+        site.Refresh();
 
         LinuxBootBundle plain = site.Current!;
 
         Assert.Equal(application.LinuxBootFolder, plain.Folder);
-        Assert.Equal(TestLinuxBoot.Names.Order(), plain.Files.Order());
+        Assert.Equal(TestLinuxBoot.Names.Order(), plain.Files.Keys.Order());
+        Assert.All(TestLinuxBoot.Names, name => Assert.Equal(new FileInfo(Path.Combine(plain.Folder, name)).Length, plain.Files[name].Length));
         Assert.Equal(new Uri(application.Services.GetRequiredService<ServerAddress>().Url), plain.ServerUrl);
         Assert.Equal(Uri.UriSchemeHttps, plain.ServerUrl.Scheme);
         Assert.Equal(TestLinuxBoot.Root, plain.RootCertificatePem);
@@ -145,19 +148,55 @@ public sealed class LinuxBootPagesTests(BothEnvironmentsApplication application)
         Assert.Equal(string.Empty, site.Current.KernelArguments);
     }
 
+    // Netboot asks from the loops that receive datagrams, so the answer is what the last look found. Netboot itself
+    // has the files looked at again every few seconds.
     [Fact]
-    public void NetbootIsHandedNothingWhileTheEnvironmentCannotBeStarted()
+    public void NetbootIsHandedNothingOnceALookFoundThatTheEnvironmentCannotBeStarted()
     {
+        LinuxBootSite site = application.Services.GetRequiredService<LinuxBootSite>();
+        application.SetLinuxBoot(true);
+        site.Refresh();
         application.SetLinuxBoot(false);
 
         try
         {
-            Assert.Null(application.Services.GetRequiredService<LinuxBootSite>().Current);
+            Assert.NotNull(site.Current);
+
+            site.Refresh();
+
+            Assert.Null(site.Current);
         }
         finally
         {
             application.SetLinuxBoot(true);
+            site.Refresh();
         }
+
+        Assert.NotNull(site.Current);
+    }
+
+    // What netboot finds when it opens a file reaches the catalogue through the bundle it was handed.
+    [Fact]
+    public void AFileNetbootFindsChangedTakesTheEnvironmentAwayUntilItWasReadAgain()
+    {
+        LinuxBootSite site = application.Services.GetRequiredService<LinuxBootSite>();
+        application.SetLinuxBoot(true);
+        site.Refresh();
+
+        try
+        {
+            site.Current!.Changed!("vmlinuz");
+
+            Assert.Null(site.Current);
+            Assert.False(application.Services.GetRequiredService<BootEnvironments>().Exists(AgentEnvironment.LinuxBoot));
+        }
+        finally
+        {
+            site.Refresh();
+        }
+
+        // The files are what the description names, as the look that read them again found.
+        Assert.NotNull(site.Current);
     }
 
     [Theory]

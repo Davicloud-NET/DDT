@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Collections.Frozen;
 using System.Net;
 using DDT.Contracts.Agents;
 using DDT.Protocols.Dhcp;
@@ -26,6 +25,8 @@ public sealed class ProxyDhcpChoiceTests : IDisposable
     private readonly FakeLinuxBootSite _site = new();
     private readonly FakeBootChoice _choice = new();
     private readonly TestClock _clock = new(DateTimeOffset.FromUnixTimeSeconds(1_791_460_800));
+    private readonly RecordedLog _log = new();
+    private NetbootChoice? _netboot;
 
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
@@ -35,8 +36,7 @@ public sealed class ProxyDhcpChoiceTests : IDisposable
         File.WriteAllText(Path.Combine(_root, "boot", "x64", "bootmgfw.efi"), "boot manager");
     }
 
-    private void LinuxIsThere() =>
-        _site.Current = new LinuxBootBundle(_root, FrozenSet<string>.Empty, new Uri("https://ddt-server.example.test:8443"), "root");
+    private void LinuxIsThere() => _site.Current = TestBundle.Of(_root);
 
     private ProxyDhcpHandler Handler(string preferred = "Auto", Action<PxeOptions>? configure = null)
     {
@@ -56,9 +56,13 @@ public sealed class ProxyDhcpChoiceTests : IDisposable
         configure?.Invoke(options);
 
         PxeSetup setup = PxeSetup.Create(options, map);
-        BootFiles files = new(setup.Files, _site, 8080, new BootConnections(_clock), _clock);
+        BootFiles files = new(setup.Files, _site, 8080, new BootConnections(_clock), _clock, _log.CreateLogger("netboot"));
+        _netboot = new NetbootChoice(setup, _choice, files);
 
-        return new ProxyDhcpHandler(setup.ProxyDhcp, map, null, new NetbootChoice(setup, _choice, files, _clock));
+        // As the host does before its listeners start.
+        _netboot.Refresh();
+
+        return new ProxyDhcpHandler(setup.ProxyDhcp, map, null, _netboot);
     }
 
     private static ProxyDhcpOutcome Discover(ProxyDhcpHandler handler, string fixture = "discover-uefi-x64-pxeclient") =>
@@ -298,19 +302,83 @@ public sealed class ProxyDhcpChoiceTests : IDisposable
         Assert.Equal(Shim, Named(outcome));
     }
 
-    // Every PXE request on the segment asks, so the files are looked at once in five seconds and not per datagram.
+    // Every PXE request on the segment asks, from the loop that receives them all. It never looks at the disk itself.
     [Fact]
-    public void LooksAtTheFilesAgainOnlyAfterFiveSeconds()
+    public void AnswersFromWhatTheLastLookAtTheFilesFound()
     {
         LinuxIsThere();
         ProxyDhcpHandler handler = Handler();
         Assert.Equal(Shim, Named(Discover(handler)));
 
         WindowsPEIsBuilt();
-        _clock.Advance(TimeSpan.FromSeconds(5));
+        _clock.Advance(TimeSpan.FromMinutes(10));
         Assert.Equal(Shim, Named(Discover(handler)));
 
-        _clock.Advance(TimeSpan.FromSeconds(1));
+        _netboot!.Refresh();
+        Assert.Equal(WindowsPE, Named(Discover(handler)));
+
+        Directory.Delete(Path.Combine(_root, "boot"), recursive: true);
+        Assert.Equal(WindowsPE, Named(Discover(handler)));
+
+        _netboot.Refresh();
+        Assert.Equal(Shim, Named(Discover(handler)));
+    }
+
+    // The Linux boot environment is asked in memory at every request, so one that goes away is gone at once.
+    [Fact]
+    public void ALinuxBootEnvironmentThatGoesAwayIsNoLongerNamedFromTheNextRequestOn()
+    {
+        LinuxIsThere();
+        ProxyDhcpHandler handler = Handler();
+        Assert.Equal(Shim, Named(Discover(handler)));
+
+        _site.Current = null;
+
+        Assert.Equal(WindowsPE, Named(Discover(handler)));
+    }
+
+    // Whatever goes wrong behind the question, every machine is still answered as it was before there was a Linux
+    // boot environment, and the log says so once and not for every datagram.
+    [Fact]
+    public void AnEnvironmentThatCannotBeAskedLeavesEveryMachineTheAnswerOfTheSettingsAndIsLoggedOnce()
+    {
+        WindowsPEIsBuilt();
+        LinuxIsThere();
+        ProxyDhcpHandler handler = Handler("Linux");
+        Assert.Equal(Shim, Named(Discover(handler)));
+
+        _site.Failure = new InvalidOperationException("The server's address cannot be read.");
+        _choice.Wish = new BootWish(AgentEnvironment.LinuxBoot, false);
+
+        foreach (int _ in Enumerable.Range(0, 5))
+        {
+            ProxyDhcpOutcome outcome = Discover(handler);
+
+            Assert.Equal(ProxyDhcpOutcomeKind.Replied, outcome.Kind);
+            Assert.Equal(WindowsPE, Named(outcome));
+        }
+
+        Assert.Single(_log.Messages, message => message.StartsWith("Error 528: Asking for the Linux boot environment failed.", StringComparison.Ordinal));
+
+        _site.Failure = null;
+        Assert.Equal(Shim, Named(Discover(handler)));
+        Assert.Equal(Shim, Named(Discover(handler)));
+        Assert.Single(_log.Messages, message => message.StartsWith("Information 529: ", StringComparison.Ordinal));
+
+        // A second streak is said again.
+        _site.Failure = new IOException("again");
+        Assert.Equal(WindowsPE, Named(Discover(handler)));
+        Assert.Equal(2, _log.Messages.Count(message => message.StartsWith("Error 528: ", StringComparison.Ordinal)));
+    }
+
+    // Without a boot image and without an answer about Linux, the machine is named the Windows file, as before.
+    [Fact]
+    public void AnEnvironmentThatCannotBeAskedDoesNotSilenceAMachineWithoutAWish()
+    {
+        LinuxIsThere();
+        ProxyDhcpHandler handler = Handler();
+        _site.Failure = new InvalidOperationException("no answer");
+
         Assert.Equal(WindowsPE, Named(Discover(handler)));
     }
 }

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Collections.Frozen;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -38,7 +37,7 @@ public sealed class BootPortConnectionsTests : IAsyncLifetime
     {
         await File.WriteAllBytesAsync(Path.Combine(_root, Large), new byte[LargeLength]);
         await File.WriteAllTextAsync(Path.Combine(_root, Small), "small");
-        _site.Current = new LinuxBootBundle(_root, new[] { Large, Small }.ToFrozenSet(StringComparer.Ordinal), new Uri("https://ddt-server.example.test:8443"), "root");
+        _site.Current = TestBundle.Of(_root, Large, Small);
 
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
         builder.Logging.SetMinimumLevel(LogLevel.Warning);

@@ -8,15 +8,15 @@ using DDT.Server.Settings;
 
 namespace DDT.Server.LinuxBoot;
 
-// What netboot serves and generates for the Linux boot environment: the release's files, and this server's address,
-// root certificate, keyboard layout and kernel arguments, each read as a machine asks.
+// What netboot serves and generates for the Linux boot environment: the release's files as the last look found them,
+// and this server's address, root certificate, keyboard layout and kernel arguments, each read as a machine asks.
 public sealed class LinuxBootSite(LinuxBootEnvironment environment, ServerAddress address, DdtSettings settings) : ILinuxBootSite
 {
     public LinuxBootBundle? Current
     {
         get
         {
-            LinuxBootState state = environment.Current;
+            LinuxBootState state = environment.Known;
 
             if (!state.Available || environment.RootCertificatePem is not { } root)
             {
@@ -31,7 +31,10 @@ public sealed class LinuxBootSite(LinuxBootEnvironment environment, ServerAddres
                 Keymap = keymap,
                 KeyboardLayout = LinuxKeyboardLayouts.Name(keymap),
                 KernelArguments = snapshot.Pxe?.LinuxKernelArguments ?? string.Empty,
+                Changed = environment.Changed,
             };
         }
     }
+
+    public void Refresh() => environment.Refresh();
 }

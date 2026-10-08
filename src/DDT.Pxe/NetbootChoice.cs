@@ -12,28 +12,25 @@ namespace DDT.Pxe;
 // environment's shim. Every other request keeps the boot targets of the settings.
 public sealed class NetbootChoice
 {
-    // How long a look at the files counts. The handler answers every PXE request on the segment.
-    private static readonly TimeSpan s_fresh = TimeSpan.FromSeconds(5);
-
     private readonly PxeSetup _setup;
     private readonly IBootChoice? _choice;
     private readonly BootFiles _files;
-    private readonly TimeProvider _timeProvider;
-    private Availability? _available;
 
-    public NetbootChoice(PxeSetup setup, IBootChoice? choice, BootFiles files, TimeProvider timeProvider)
+    // Until the files were looked at, Windows PE counts as there: the answer of the settings alone.
+    private volatile bool _windowsPE = true;
+
+    public NetbootChoice(PxeSetup setup, IBootChoice? choice, BootFiles files)
     {
         ArgumentNullException.ThrowIfNull(setup);
         ArgumentNullException.ThrowIfNull(files);
-        ArgumentNullException.ThrowIfNull(timeProvider);
 
         _setup = setup;
         _choice = choice;
         _files = files;
-        _timeProvider = timeProvider;
     }
 
-    // Null when the server can start no boot environment for this machine, so it gets no answer.
+    // Null when the server can start no boot environment for this machine, so it gets no answer. Called for every PXE
+    // request on the segment, from the loop that receives them, so it answers from memory alone.
     public ProxyDhcpConfiguration? For(DhcpMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);
@@ -44,15 +41,18 @@ public sealed class NetbootChoice
             return _setup.ProxyDhcp;
         }
 
-        Availability available = Available();
+        bool linux = _setup.LinuxProxyDhcp is not null && _files.LinuxAvailable;
 
-        return BootEnvironmentChoice.Decide(Wish(message), _setup.DefaultEnvironment, available.WindowsPE, available.Linux) switch
+        return BootEnvironmentChoice.Decide(Wish(message), _setup.DefaultEnvironment, _windowsPE, linux) switch
         {
             AgentEnvironment.LinuxBoot => _setup.LinuxProxyDhcp,
             AgentEnvironment.WindowsPE => _setup.ProxyDhcp,
             _ => null,
         };
     }
+
+    // Looks whether Windows PE can be started, which reads the boot directory. Netboot calls it in the background.
+    public void Refresh() => _windowsPE = WindowsPEStarts();
 
     private BootWish Wish(DhcpMessage message)
     {
@@ -76,24 +76,8 @@ public sealed class NetbootChoice
         }
     }
 
-    private Availability Available()
-    {
-        Availability? known = Volatile.Read(ref _available);
-        DateTimeOffset now = _timeProvider.GetUtcNow();
-
-        if (known is null || now - known.At > s_fresh || now < known.At)
-        {
-            known = new Availability(now, WindowsPEStarts(), _setup.LinuxProxyDhcp is not null && _files.LinuxAvailable);
-            Volatile.Write(ref _available, known);
-        }
-
-        return known;
-    }
-
     // The boot file of the settings is there, or another TFTP server is named for it, which DDT cannot look into.
     private bool WindowsPEStarts() =>
         _setup.ProxyDhcp.BootTargets.TryGetValue(ClientArchitecture.X64Uefi, out BootTarget? target)
         && (target.ServerAddress is not null || _files.Boot.TryResolve(target.BootFile, out _));
-
-    private sealed record Availability(DateTimeOffset At, bool WindowsPE, bool Linux);
 }

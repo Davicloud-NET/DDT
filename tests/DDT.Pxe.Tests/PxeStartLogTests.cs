@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Collections.Frozen;
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.Extensions.Primitives;
@@ -20,7 +19,7 @@ public sealed class PxeStartLogTests : IDisposable
     private readonly RecordedLog _log = new();
 
     public PxeStartLogTests() =>
-        _site.Current = new LinuxBootBundle(_boot, FrozenSet<string>.Empty, new Uri("https://ddt-server.example.test:8443"), "root");
+        _site.Current = TestBundle.Of(_boot);
 
     public void Dispose() => Directory.Delete(_boot, recursive: true);
 

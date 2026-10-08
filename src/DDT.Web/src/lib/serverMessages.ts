@@ -599,7 +599,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "linuxBoot.damaged": msg({
     context: "linuxBoot.damaged",
-    message: "The Linux boot environment in {folder} is damaged: {reason, select, unreadable {its description, {name}, cannot be read} incomplete {its description does not list {name}} missing {{name} is not there} size {{name} has another size than its description says} hash {{name} is not the file its description names} signatures {{name} carries other signatures than its description says} other {{name} cannot be read}}. Install this release of DDT again, which brings the folder anew.",
+    message: "The Linux boot environment in {folder} is damaged: {reason, select, unreadable {its description, {name}, cannot be read} incomplete {its description does not list {name}} missing {{name} is not there} size {{name} has another size than its description says} hash {{name} is not the file its description names} changed {{name} was replaced or removed after the server had checked it} signatures {{name} carries other signatures than its description says} other {{name} cannot be read}}. Install this release of DDT again, which brings the folder anew.",
   }),
   "linuxBoot.missing": msg({
     context: "linuxBoot.missing",

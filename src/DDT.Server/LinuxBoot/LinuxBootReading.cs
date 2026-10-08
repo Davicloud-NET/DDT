@@ -10,11 +10,13 @@ using DDT.Contracts.Messages;
 using DDT.Core.Boot;
 using DDT.Pxe;
 using DDT.Server.Images;
+using Microsoft.Win32.SafeHandles;
 
 namespace DDT.Server.LinuxBoot;
 
 // One look at the Linux boot environment's folder: what its description says and whether the files it lists are there
-// in their sizes. Whether each is the very file the description names is found out in the background.
+// in their sizes. Whether each is the very file the description names is found out by reading it, in the background
+// or, for a folder that changed under its description, before the look counts.
 internal sealed class LinuxBootReading
 {
     // The description lists every file and package, which stays far below this.
@@ -26,13 +28,20 @@ internal sealed class LinuxBootReading
     // Without any of these no machine starts: shim, GRUB, the kernel and the two initrds a release brings.
     private static readonly string[] s_needed = [BootFiles.Shim, BootFiles.Grub, GrubConfig.Kernel, "base.img", "ddt.img"];
 
-    private volatile LinuxBootState _state;
+    private readonly IReadOnlyList<ListedFile> _listed;
 
-    private LinuxBootReading(string folder, (long Length, DateTime WriteTimeUtc) stamp, LinuxBootState state)
+    // What each listed file was at this look, and null for one that was not there. A folder that differs has changed.
+    private readonly Dictionary<string, BootFileStamp?> _seen;
+    private volatile LinuxBootState _state;
+    private volatile bool _stale;
+
+    private LinuxBootReading(string folder, (long Length, DateTime WriteTimeUtc) stamp, LinuxBootState state, IReadOnlyList<ListedFile>? listed = null)
     {
         Folder = folder;
         Stamp = stamp;
         _state = state;
+        _listed = listed ?? [];
+        _seen = _listed.ToDictionary(file => file.Name, file => StampOf(Path.Combine(folder, file.Name)), StringComparer.Ordinal);
     }
 
     public string Folder { get; }
@@ -44,7 +53,8 @@ internal sealed class LinuxBootReading
 
     public Task Checked { get; private set; } = Task.CompletedTask;
 
-    public static LinuxBootReading Of(string folder, (long Length, DateTime WriteTimeUtc) stamp)
+    // verified reads every file before the look counts as usable, instead of afterwards in the background.
+    public static LinuxBootReading Of(string folder, (long Length, DateTime WriteTimeUtc) stamp, bool verified = false)
     {
         if (stamp.Length < 0)
         {
@@ -56,24 +66,44 @@ internal sealed class LinuxBootReading
             return new LinuxBootReading(folder, stamp, Damaged(folder, "unreadable", LinuxBootEnvironment.ManifestName));
         }
 
-        LinuxBootReading reading = new(folder, stamp, Describe(folder, manifest, files));
+        LinuxBootReading reading = new(folder, stamp, state: Describe(folder, manifest, files), files);
 
-        if (reading.State.Problem is null)
+        if (reading.State.Problem is not null)
         {
-            reading.Checked = Task.Run(() => reading.CheckHashesAsync(files));
+            return reading;
+        }
+
+        if (verified)
+        {
+            reading.CheckHashes();
+        }
+        else
+        {
+            reading.Checked = Task.Run(reading.CheckHashes);
         }
 
         return reading;
     }
 
-    // The files the description lists, or null when it lists none or names one that is no plain file name.
+    // A file netboot was about to serve is gone or no longer what it was. The next look reads every file again.
+    public void Changed(string name)
+    {
+        _state = Damaged(Folder, "changed", name);
+        _stale = true;
+    }
+
+    // Whether the folder is no longer what this look found: a listed file is gone, new, or of another length or time.
+    public bool Outdated() => _stale || _seen.Any(file => StampOf(Path.Combine(Folder, file.Key)) != file.Value);
+
+    // The files the description lists, or null when it lists none, one twice, or one that is no plain file name.
     private static List<ListedFile>? Listed(LinuxBootManifest manifest)
     {
         List<ListedFile> files = [];
+        HashSet<string> names = new(StringComparer.Ordinal);
 
         foreach (LinuxBootManifestFile file in manifest.Files ?? [])
         {
-            if (file.Name is not { } name || !IsFileName(name))
+            if (file.Name is not { } name || !IsFileName(name) || !names.Add(name))
             {
                 return null;
             }
@@ -90,7 +120,7 @@ internal sealed class LinuxBootReading
         {
             byte[] json = File.ReadAllBytes(Path.Combine(folder, LinuxBootEnvironment.ManifestName));
 
-            return JsonSerializer.Deserialize(json, LinuxBootJsonContext.Default.LinuxBootManifest);
+            return json.Length > MaxManifestBytes ? null : JsonSerializer.Deserialize(json, LinuxBootJsonContext.Default.LinuxBootManifest);
         }
         catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException)
         {
@@ -105,7 +135,9 @@ internal sealed class LinuxBootReading
             return Damaged(folder, "incomplete", notListed);
         }
 
-        if (FindUnfit(folder, files) is { } unfit)
+        Dictionary<string, BootFileStamp> stamps = new(StringComparer.Ordinal);
+
+        if (FindUnfit(folder, files, stamps) is { } unfit)
         {
             return unfit;
         }
@@ -121,7 +153,7 @@ internal sealed class LinuxBootReading
 
         return new LinuxBootState(folder, null)
         {
-            Files = files.Select(file => file.Name).ToFrozenSet(StringComparer.Ordinal),
+            Files = stamps.ToFrozenDictionary(StringComparer.Ordinal),
             Snapshot = manifest.Snapshot,
             KernelRelease = manifest.KernelRelease,
             ShimVersion = VersionOf(manifest, "shim-signed"),
@@ -137,8 +169,9 @@ internal sealed class LinuxBootReading
         && name is not ("." or "..")
         && name.All(character => char.IsAsciiLetterOrDigit(character) || character is '.' or '-' or '_');
 
-    // The first listed file that is not there or has another size, which costs no reading.
-    private static LinuxBootState? FindUnfit(string folder, List<ListedFile> files)
+    // The first listed file that is not there, is a link or has another size, which costs no reading. Else what each
+    // file is now goes into stamps.
+    private static LinuxBootState? FindUnfit(string folder, List<ListedFile> files, Dictionary<string, BootFileStamp> stamps)
     {
         foreach (ListedFile listed in files)
         {
@@ -151,10 +184,18 @@ internal sealed class LinuxBootReading
                     return Damaged(folder, "missing", listed.Name);
                 }
 
+                // A link could lead anywhere, and netboot serves a file of this folder to everyone.
+                if (file.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                {
+                    return Damaged(folder, "other", listed.Name);
+                }
+
                 if (file.Length != listed.Size)
                 {
                     return Damaged(folder, "size", listed.Name);
                 }
+
+                stamps[listed.Name] = new BootFileStamp(file.Length, file.LastWriteTimeUtc);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
@@ -163,6 +204,21 @@ internal sealed class LinuxBootReading
         }
 
         return null;
+    }
+
+    // Null for a file that is not there or cannot be looked at.
+    private static BootFileStamp? StampOf(string path)
+    {
+        try
+        {
+            FileInfo file = new(path);
+
+            return file.Exists ? new BootFileStamp(file.Length, file.LastWriteTimeUtc) : null;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     // Read from the shim's own signatures, as firmware does, with the code that judges uploaded disk images.
@@ -199,35 +255,55 @@ internal sealed class LinuxBootReading
     private static LinuxBootState Damaged(string folder, string reason, string name) =>
         new(folder, ServerMessages.LinuxBootDamaged.With("folder", folder, "reason", reason, "name", name));
 
-    // The first file whose content is not what the description names makes the whole environment damaged.
-    private async Task CheckHashesAsync(List<ListedFile> files)
+    // The first file whose content is not what the description names makes the whole environment damaged. Each file
+    // is served afterwards only while it still has the length and the time it had when it was read here.
+    private void CheckHashes()
     {
-        foreach (ListedFile listed in files)
+        Dictionary<string, BootFileStamp> read = new(StringComparer.Ordinal);
+
+        foreach (ListedFile listed in _listed)
         {
             try
             {
-                await using FileStream file = new(
+                using SafeFileHandle handle = File.OpenHandle(
                     Path.Combine(Folder, listed.Name),
                     FileMode.Open,
                     FileAccess.Read,
                     FileShare.Read | FileShare.Delete,
-                    81920,
-                    FileOptions.Asynchronous | FileOptions.SequentialScan);
-                string hash = Convert.ToHexString(await SHA256.HashDataAsync(file).ConfigureAwait(false));
+                    FileOptions.SequentialScan);
+                using FileStream file = new(handle, FileAccess.Read, 81920);
+                read[listed.Name] = new BootFileStamp(RandomAccess.GetLength(handle), File.GetLastWriteTimeUtc(handle));
 
-                if (!string.Equals(hash, listed.Sha256, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(Convert.ToHexString(SHA256.HashData(file)), listed.Sha256, StringComparison.OrdinalIgnoreCase))
                 {
-                    _state = Damaged(Folder, "hash", listed.Name);
+                    Fail(Damaged(Folder, "hash", listed.Name));
 
                     return;
                 }
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
-                _state = Damaged(Folder, "other", listed.Name);
+                Fail(Damaged(Folder, "other", listed.Name));
 
                 return;
             }
+        }
+
+        // A file that was replaced between the look and the reading is served as the one that was read.
+        LinuxBootState state = _state;
+
+        if (!_stale && state.Problem is null)
+        {
+            _state = state with { Files = read.ToFrozenDictionary(StringComparer.Ordinal) };
+        }
+    }
+
+    // What netboot found while the files were read stays: it is the newer finding.
+    private void Fail(LinuxBootState damaged)
+    {
+        if (!_stale)
+        {
+            _state = damaged;
         }
     }
 

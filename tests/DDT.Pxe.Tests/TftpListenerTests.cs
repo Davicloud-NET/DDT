@@ -3,7 +3,6 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Buffers.Binary;
-using System.Collections.Frozen;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -214,7 +213,7 @@ public sealed class TftpListenerTests : IDisposable
     [Fact]
     public async Task ServesTheGeneratedGrubConfigurationWithItsSize()
     {
-        _site.Current = new LinuxBootBundle(_root, FrozenSet<string>.Empty, new Uri("https://ddt-server.example.test:8443"), "root") { Keymap = "de" };
+        _site.Current = TestBundle.Of(_root) with { Keymap = "de" };
         await using TftpListener listener = Listener();
         using Socket client = Loopback.Client();
         byte[] request = [0, 1, .. "/grub/grub.cfg"u8, 0, .. "octet"u8, 0, .. "blksize"u8, 0, .. "1024"u8, 0, .. "tsize"u8, 0, .. "0"u8, 0];
@@ -251,6 +250,68 @@ public sealed class TftpListenerTests : IDisposable
 
         Assert.Equal(expected, Encoding.ASCII.GetString([.. received]));
         Assert.Contains("(tftp,127.0.0.1)/linux/vmlinuz", expected, StringComparison.Ordinal);
+    }
+
+    // Opening a file looks at the disk. Port 69 has one loop for every machine's requests, and it must not wait for that.
+    [Fact]
+    public async Task ASlowLookAtOneMachinesFileDoesNotHoldUpTheNextMachinesRequest()
+    {
+        using ManualResetEventSlim looking = new();
+        using ManualResetEventSlim release = new();
+        File.WriteAllText(Path.Combine(_root, "vmlinuz"), "kernel");
+
+        // The file is not what the server noted, so opening it tells the server, which here takes its time.
+        _site.Current = TestBundle.Of(_root) with
+        {
+            Files = new Dictionary<string, BootFileStamp> { ["vmlinuz"] = new BootFileStamp(1, DateTime.UnixEpoch) },
+            Changed = _ =>
+            {
+                looking.Set();
+                release.Wait(TimeSpan.FromSeconds(30));
+            },
+        };
+        await using TftpListener listener = Listener();
+        using Socket slow = Loopback.Client();
+        using Socket next = Loopback.Client();
+
+        try
+        {
+            await slow.SendToAsync(ReadRequest("linux/vmlinuz"), listener.LocalEndPoint);
+            Assert.True(looking.Wait(s_timeout, TestContext.Current.CancellationToken), "The file was never opened.");
+
+            await next.SendToAsync(Loopback.Fixture("Tftp", "rrq-wdsmgfw-blksize1456-window4"), listener.LocalEndPoint);
+            (byte[] Datagram, IPEndPoint From)? answered = await Loopback.ReceiveAsync(next, s_timeout);
+
+            Assert.NotNull(answered);
+            Assert.Equal((ushort)TftpOpcode.OptionAcknowledgement, Opcode(answered.Value.Datagram));
+            Assert.False(release.IsSet);
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        // The machine whose file is no longer the one that was checked is told, and gets none of it.
+        (byte[] Datagram, IPEndPoint From)? refused = await Loopback.ReceiveAsync(slow, s_timeout);
+
+        Assert.NotNull(refused);
+        Assert.Equal((ushort)TftpOpcode.Error, Opcode(refused.Value.Datagram));
+    }
+
+    [Fact]
+    public async Task SendsAFileOfTheLinuxBootEnvironmentThatIsStillWhatTheServerChecked()
+    {
+        File.WriteAllText(Path.Combine(_root, "vmlinuz"), "kernel");
+        _site.Current = TestBundle.Of(_root, "vmlinuz");
+        await using TftpListener listener = Listener();
+        using Socket client = Loopback.Client();
+
+        await client.SendToAsync(ReadRequest("linux/vmlinuz"), listener.LocalEndPoint);
+        (byte[] Datagram, IPEndPoint From)? data = await Loopback.ReceiveAsync(client, s_timeout);
+
+        Assert.NotNull(data);
+        Assert.Equal((ushort)TftpOpcode.Data, Opcode(data.Value.Datagram));
+        Assert.Equal("kernel", Encoding.ASCII.GetString(data.Value.Datagram.AsSpan(4)));
     }
 
     // shim and GRUB go on without these, so the client is told at once that there is no such file.

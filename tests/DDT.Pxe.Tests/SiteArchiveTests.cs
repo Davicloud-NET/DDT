@@ -16,7 +16,7 @@ public sealed class SiteArchiveTests
     private static readonly DateTimeOffset s_now = DateTimeOffset.FromUnixTimeSeconds(1_791_460_800);
 
     private static LinuxBootBundle Bundle() =>
-        new("/app/linux-boot", FrozenSet<string>.Empty, new Uri("https://ddt-server.example.test:8443"), Root) { KeyboardLayout = "German (de)" };
+        new("/app/linux-boot", FrozenDictionary<string, BootFileStamp>.Empty, new Uri("https://ddt-server.example.test:8443"), Root) { KeyboardLayout = "German (de)" };
 
     // The kernel unpacks it over the agent's folder, so it holds that folder and the one file, as root's.
     [Fact]

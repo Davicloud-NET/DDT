@@ -207,16 +207,23 @@ public sealed class PxeHost : IHostedService, IDisposable
     // could not be bound, when everything else could.
     private PxeBindException? Start(PxeSetup setup)
     {
-        BootFiles files = new(setup.Files, _source.Linux, setup.Options.HttpBootPort, _connections, _timeProvider);
+        BootFiles files = new(setup.Files, _source.Linux, setup.Options.HttpBootPort, _connections, _timeProvider, _logger);
+        NetbootChoice choice = new(setup, _source.Choice, files);
+        NetbootReader reader = new(_source.Linux, choice, _timeProvider, _logger);
         PxeBindException? dhcpPort = null;
+
+        // The first look at the files comes before any listener, and every later one in the background.
+        reader.Read();
 
         if (LogInterfaces(setup.Interfaces))
         {
-            PxeStartLog.BootTargets(_logger, setup, _source.Linux);
+            PxeStartLog.BootTargets(_logger, setup, _source.Linux is null ? null : files);
+            reader.Start();
+            _stops.Add(async () => await reader.DisposeAsync().ConfigureAwait(false));
 
             if (setup.Options.EnableProxyDhcp)
             {
-                dhcpPort = StartProxyDhcp(setup, files);
+                dhcpPort = StartProxyDhcp(setup, choice);
             }
 
             if (setup.Options.EnableTftp)
@@ -263,9 +270,9 @@ public sealed class PxeHost : IHostedService, IDisposable
         return true;
     }
 
-    private PxeBindException? StartProxyDhcp(PxeSetup setup, BootFiles files)
+    private PxeBindException? StartProxyDhcp(PxeSetup setup, NetbootChoice choice)
     {
-        ProxyDhcpHandler handler = new(setup.ProxyDhcp, setup.Interfaces, _connections, new NetbootChoice(setup, _source.Choice, files, _timeProvider));
+        ProxyDhcpHandler handler = new(setup.ProxyDhcp, setup.Interfaces, _connections, choice);
         PxeBindException? dhcpPort = null;
 
         // Microsoft's DHCP Server takes its address on this port for itself alone. That fails once DDT holds the port,

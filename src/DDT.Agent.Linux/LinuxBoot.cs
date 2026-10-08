@@ -21,10 +21,28 @@ public static class LinuxBoot
 
     public static string WorkDirectory => Path.Combine(RunDirectory, "work");
 
+    // The machine restarts only once the loop has ended, so the server has the last lines of its log, and however the
+    // loop ended: the server may have the run as done by then.
+    public static async Task<int> RunAsync(AgentLoop loop, LinuxRestart restart, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(loop);
+        ArgumentNullException.ThrowIfNull(restart);
+
+        try
+        {
+            return await loop.RunAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            restart.NowIfIssued();
+        }
+    }
+
     // Its resume token crosses a restart into Windows PE in the firmware, and comes back the same way.
     public static AgentLoop Loop(StartedAgent agent, LinuxRestart restart)
     {
         ArgumentNullException.ThrowIfNull(agent);
+        ArgumentNullException.ThrowIfNull(restart);
 
         AgentLog log = agent.Log;
         LinuxUefiVariables firmware = new(Root);
@@ -32,14 +50,16 @@ public static class LinuxBoot
         LinuxDisks disks = new(Root, rawDisks, log);
         LinuxBootRebooter rebooter = new(firmware, restart, log);
         HardwareMachineIdentityReader identity = new(new LinuxFirmwareTables(Root), new LinuxSystemHardware(Root), firmware, new LinuxSecureBoot(firmware));
+        ResumeCarrier carrier = new(firmware, AgentEnvironment.LinuxBoot, log);
         AgentMachine machine = new(identity, disks, new LocalRunLocator([]), agent.Version, AgentEnvironment.LinuxBoot)
         {
-            Switch = new EnvironmentSwitch(new ResumeCarrier(firmware, AgentEnvironment.LinuxBoot, log), rebooter),
+            Switch = new EnvironmentSwitch(carrier, rebooter),
         };
 
         SequenceRunner runner = Runner(agent, disks, rawDisks, new LinuxBootOrder(firmware, log), rebooter);
+        restart.Before = () => new LinuxMounts(Root, log).UnmountFrom(rawDisks.Opened);
 
-        return new AgentLoop(agent.Server, machine, agent.Status, runner, log, TimeProvider.System);
+        return new AgentLoop(agent.Server, machine, agent.Status, runner, log, TimeProvider.System) { GoesOn = () => rebooter.Withdraw(carrier) };
     }
 
     private static SequenceRunner Runner(StartedAgent agent, LinuxDisks disks, LinuxRawDisks rawDisks, LinuxBootOrder bootOrder, LinuxBootRebooter rebooter)

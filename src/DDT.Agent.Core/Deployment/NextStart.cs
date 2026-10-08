@@ -46,4 +46,25 @@ public sealed class NextStart(IUefiVariables variables, AgentLog log, AgentEnvir
             log.Warning($"The next start could not be set to this start's boot entry ({exception.Message}). {plainly}");
         }
     }
+
+    // Forgets a next start an earlier restart had set, so the boot order decides again, where a run put its disk first.
+    public void FromTheBootOrder()
+    {
+        try
+        {
+            if (variables.Read(BootNext) is null)
+            {
+                return;
+            }
+
+            variables.Delete(BootNext);
+            log.Information("The firmware was still to start once from the entry an earlier restart had named. That is taken back, so the next start follows the boot order.");
+        }
+        catch (DeploymentStepException exception)
+        {
+            log.Warning(
+                $"The firmware is still to start once from the entry an earlier restart had named, and that could not be taken back ({exception.Message}). " +
+                "The start after that one follows the boot order.");
+        }
+    }
 }

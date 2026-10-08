@@ -53,6 +53,9 @@ public sealed class AgentLoop
     // Shows the logo named in the registration on the graphical console. Null for the text console.
     public ConsoleLogo? Logo { get; init; }
 
+    // Called each time the loop registers again where it could have ended. Null where nothing waits for its end.
+    public Action? GoesOn { get; init; }
+
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
         int exitCode = await RunCoreAsync(cancellationToken).ConfigureAwait(false);
@@ -86,9 +89,14 @@ public sealed class AgentLoop
         {
             // After a refused token, never register again in a tight loop. Two agents fighting over one machine
             // would hammer the server otherwise.
-            if (!first && !await CancellableDelay.WaitAsync(AgentLimits.MinRetryDelay, _timeProvider, cancellationToken).ConfigureAwait(false))
+            if (!first)
             {
-                return AgentExitCodes.Stopped;
+                GoesOn?.Invoke();
+
+                if (!await CancellableDelay.WaitAsync(AgentLimits.MinRetryDelay, _timeProvider, cancellationToken).ConfigureAwait(false))
+                {
+                    return AgentExitCodes.Stopped;
+                }
             }
 
             first = false;

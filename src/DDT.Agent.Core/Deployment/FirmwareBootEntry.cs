@@ -20,6 +20,9 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
 
     private const string BootOrder = "BootOrder";
 
+    // Takes every other entry for an erased EFI system partition out of the firmware. Off, they stay, as in Windows PE.
+    public bool RemovesDeadEntries { get; init; }
+
     // diskpart gives every new partition a new GUID. So an entry for an EFI system partition the deployment erased is
     // reused rather than left behind as a dead entry.
     public void MakeFirst(EspPartition esp, string loaderPath, string description, IReadOnlyCollection<Guid> erasedPartitionIds)
@@ -47,7 +50,8 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
             entry = Create(esp, loaderPath, description);
         }
 
-        List<ushort> first = [entry, .. order.Where(number => number != entry).Distinct()];
+        List<ushort> dead = RemovesDeadEntries ? [.. DeadEntries(order, erasedPartitionIds).Where(number => number != entry)] : [];
+        List<ushort> first = [entry, .. order.Where(number => number != entry && !dead.Contains(number)).Distinct()];
         bool moved = !first.SequenceEqual(order);
 
         if (moved)
@@ -56,7 +60,20 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
         }
 
         Report(OptionName(entry), description, existing is not null, erased is not null, moved);
+
+        // After the order no longer names them, so the firmware never finds an entry there that is gone.
+        foreach (ushort number in dead)
+        {
+            variables.Delete(OptionName(number));
+            log.Information($"Removed firmware boot entry {OptionName(number)}, which pointed at an EFI system partition this deployment erased.");
+        }
     }
+
+    private List<ushort> DeadEntries(List<ushort> order, IReadOnlyCollection<Guid> erasedPartitionIds) =>
+    [
+        .. order.Distinct().Where(number => variables.Read(OptionName(number)) is { } option
+            && erasedPartitionIds.Any(id => EfiLoadOption.PointsAt(option, id, path: null))),
+    ];
 
     // The entry in the boot order that already starts the loader, or else the first one for an erased partition.
     private (ushort? Existing, ushort? Erased) FindEntries(

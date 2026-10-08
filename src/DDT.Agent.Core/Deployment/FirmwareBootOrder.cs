@@ -15,6 +15,9 @@ public sealed class FirmwareBootOrder(IUefiVariables variables, AgentLog log) : 
     // The boot environment that changes the order, for what putting it back keeps the machine from starting.
     public AgentEnvironment Environment { get; init; } = AgentEnvironment.WindowsPE;
 
+    // Whether entries for an erased EFI system partition beyond the one that is reused are removed.
+    public bool RemovesDeadEntries { get; init; }
+
     // A new run starts, so nothing an earlier run changed is ever put back.
     public void Forget() => _changes = null;
 
@@ -46,7 +49,7 @@ public sealed class FirmwareBootOrder(IUefiVariables variables, AgentLog log) : 
 
         UndoableUefiVariables changes = new(variables);
         _changes = changes;
-        new FirmwareBootEntry(changes, log).MakeFirst(esp(), loaderPath, description, erasedSystemPartitionIds);
+        new FirmwareBootEntry(changes, log) { RemovesDeadEntries = RemovesDeadEntries }.MakeFirst(esp(), loaderPath, description, erasedSystemPartitionIds);
     }
 
     public Task RestoreAsync(CancellationToken cancellationToken)

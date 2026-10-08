@@ -154,6 +154,9 @@ public sealed class ResumeCarrier(IVendorVariables variables, AgentEnvironment e
         return carried.ResumeToken;
     }
 
+    // A restart the token was put for does not happen, so the next start must not find it.
+    public void Withdraw() => Delete();
+
     private void Delete()
     {
         try

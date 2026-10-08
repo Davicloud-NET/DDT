@@ -44,12 +44,9 @@ static Task<int> DryRunAsync(StartedAgent agent, CancellationToken cancellationT
     return machine.RunAsync(cancellationToken);
 }
 
-// The machine restarts only once the loop has ended, so the server has the last lines of its log.
-static async Task<int> RunAsync(StartedAgent agent, CancellationToken cancellationToken)
+static Task<int> RunAsync(StartedAgent agent, CancellationToken cancellationToken)
 {
     LinuxRestart restart = new(agent.Log);
-    int exitCode = await LinuxBoot.Loop(agent, restart).RunAsync(cancellationToken).ConfigureAwait(false);
-    restart.NowIfIssued();
 
-    return exitCode;
+    return LinuxBoot.RunAsync(LinuxBoot.Loop(agent, restart), restart, cancellationToken);
 }

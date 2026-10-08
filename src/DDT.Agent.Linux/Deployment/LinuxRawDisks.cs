@@ -17,6 +17,10 @@ public sealed class LinuxRawDisks(string root, IBlockDevices devices, Action<Tim
     private const int Attempts = 20;
 
     private readonly Action<TimeSpan> _wait = wait ?? Thread.Sleep;
+    private readonly HashSet<string> _opened = new(StringComparer.Ordinal);
+
+    // The devices of the disks that were opened, which a script may have mounted something from since.
+    public IReadOnlyCollection<string> Opened => _opened;
 
     public IRawDisk Open(LocalDisk disk)
     {
@@ -33,6 +37,7 @@ public sealed class LinuxRawDisks(string root, IBlockDevices devices, Action<Tim
         }
 
         RequireSameDisk(disk, path, LinuxDiskModel.Of(Path.GetFileName(path), block), units * SizeUnit);
+        _opened.Add(path);
 
         return new LinuxRawDisk(OpenAlone(path), path, units * SizeUnit, (int)sectorSize, devices);
     }

@@ -107,6 +107,9 @@ internal static class TestAgents
             status,
             machine.Runner ?? Runner(server, tools, log, time, new TestRunnerOptions { Status = status }),
             log,
-            time);
+            time)
+        {
+            GoesOn = machine.GoesOn,
+        };
     }
 }

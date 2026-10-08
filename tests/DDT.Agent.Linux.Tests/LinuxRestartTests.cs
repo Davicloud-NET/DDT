@@ -67,6 +67,74 @@ public sealed class LinuxRestartTests : IDisposable
 
         Assert.Null(_variables.Read("BootNext"));
         Assert.True(restart.Issued);
+        Assert.Equal("", _console.ToString());
+    }
+
+    // A restart into the other boot environment that never happened left the network as the next start.
+    [Fact]
+    public async Task IntoTheInstalledSystemANextStartSetEarlierIsTakenBack()
+    {
+        _tree.WriteVariable("BootNext", LinuxUefiVariables.Global, 0x04, 0x00);
+
+        await new LinuxBootRebooter(_variables, Restart(), Log()).RebootAsync(RestartInto.InstalledSystem, TestContext.Current.CancellationToken);
+
+        Assert.Null(_variables.Read("BootNext"));
+        Assert.Contains(
+            "The firmware was still to start once from the entry an earlier restart had named. That is taken back, so the next start follows the boot order.",
+            _console.ToString(),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ANextStartThatCannotBeTakenBackIsSaidAndTheRestartIsIssuedAnyway()
+    {
+        _tree.WriteVariable("BootNext", LinuxUefiVariables.Global, 0x04, 0x00);
+        LinuxUefiVariables refusing = new(_tree.Root, _ => throw new IOException("Operation not permitted"));
+        LinuxRestart restart = Restart();
+
+        await new LinuxBootRebooter(refusing, restart, Log()).RebootAsync(RestartInto.InstalledSystem, TestContext.Current.CancellationToken);
+
+        Assert.True(restart.Issued);
+        Assert.Contains(
+            "The firmware is still to start once from the entry an earlier restart had named, and that could not be taken back " +
+            "(The firmware variable BootNext cannot be deleted (Operation not permitted).). The start after that one follows the boot order.",
+            _console.ToString(),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AWithdrawnRestartDoesNotHappenAndLeavesNothingInTheFirmware()
+    {
+        _tree.WriteVariable("BootCurrent", LinuxUefiVariables.Global, 0x04, 0x00);
+        _tree.WriteVariable("Boot0004", LinuxUefiVariables.Global, 1, 0, 0, 0, 0, 0, (byte)'N', 0, 0, 0);
+        LinuxRestart restart = Restart();
+        LinuxBootRebooter rebooter = new(_variables, restart, Log());
+        ResumeCarrier carrier = new(_variables, DDT.Contracts.Agents.AgentEnvironment.LinuxBoot, Log());
+        carrier.Put(DDT.Contracts.Agents.AgentEnvironment.WindowsPE, "resume-1");
+        await rebooter.RebootAsync(RestartInto.BootEnvironment, TestContext.Current.CancellationToken);
+
+        rebooter.Withdraw(carrier);
+        restart.NowIfIssued();
+
+        Assert.Equal(0, _kernelRestarts);
+        Assert.Null(_variables.Read("BootNext"));
+        Assert.Null(_variables.Read(ResumeCarrier.VariableName, ResumeCarrier.Vendor));
+        Assert.Contains("The agent goes on, so the restart it had issued does not happen.", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    // Nothing was issued, so nothing is taken back: a token another agent left is not this restart's.
+    [Fact]
+    public void WithdrawingWithoutARestartChangesNothing()
+    {
+        _tree.WriteVariable("BootNext", LinuxUefiVariables.Global, 0x04, 0x00);
+        ResumeCarrier carrier = new(_variables, DDT.Contracts.Agents.AgentEnvironment.LinuxBoot, Log());
+        carrier.Put(DDT.Contracts.Agents.AgentEnvironment.WindowsPE, "resume-1");
+
+        new LinuxBootRebooter(_variables, Restart(), Log()).Withdraw(carrier);
+
+        Assert.Equal([0x04, 0x00], _variables.Read("BootNext"));
+        Assert.NotNull(_variables.Read(ResumeCarrier.VariableName, ResumeCarrier.Vendor));
+        Assert.Equal("", _console.ToString());
     }
 
     [Fact]
@@ -122,5 +190,32 @@ public sealed class LinuxRestartTests : IDisposable
         restart.NowIfIssued();
 
         Assert.Contains("The machine could not restart itself (error 1, and reboot cannot be started).", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    // The kernel restarts without unmounting anything, so what holds the disks lets go first.
+    [Fact]
+    public void LetsGoOfTheDisksBeforeTheKernelRestartsAndRestartsAlsoWhenThatFails()
+    {
+        List<string> order = [];
+        LinuxRestart restart = new(Log(), () =>
+        {
+            order.Add("kernel");
+
+            return 1;
+        }, _ => true)
+        {
+            Before = () =>
+            {
+                order.Add("before");
+
+                throw new InvalidOperationException("The list of mounts is gone.");
+            },
+        };
+        restart.Issue();
+
+        restart.NowIfIssued();
+
+        Assert.Equal(["before", "kernel"], order);
+        Assert.Contains("The disks could not be let go of before the restart (The list of mounts is gone.).", _console.ToString(), StringComparison.Ordinal);
     }
 }

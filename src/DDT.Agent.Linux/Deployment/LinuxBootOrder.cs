@@ -7,10 +7,11 @@ using DDT.Contracts.Agents;
 namespace DDT.Agent.Deployment;
 
 // The firmware's boot order in the Linux boot environment. After a change it lists the firmware's entries for the
-// machine log, where Windows PE lists them with bcdedit.
+// machine log, where Windows PE lists them with bcdedit. Entries a run before left for a disk it erases are removed:
+// an image's own first start adds one more each time.
 public sealed class LinuxBootOrder(IUefiVariables variables, AgentLog log) : IBootOrder
 {
-    private readonly FirmwareBootOrder _bootOrder = new(variables, log) { Environment = AgentEnvironment.LinuxBoot };
+    private readonly FirmwareBootOrder _bootOrder = new(variables, log) { Environment = AgentEnvironment.LinuxBoot, RemovesDeadEntries = true };
 
     public async Task PutFirstAsync(
         EspPartition esp,

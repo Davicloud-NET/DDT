@@ -77,6 +77,35 @@ public sealed class LinuxBootOrderTests : IDisposable
         Assert.EndsWith("The firmware's boot order: Boot0000, Boot0001.", _console.ToString().Split(Environment.NewLine).Last(line => line.Contains("boot order:", StringComparison.Ordinal)), StringComparison.Ordinal);
     }
 
+    // The run before left its own entry, and the image it wrote added one at its first start. The disk is erased, so
+    // neither leads anywhere: one is used again, the other goes.
+    [Fact]
+    public async Task ASecondEntryForTheErasedDiskIsRemovedAndTheLogSaysSo()
+    {
+        Guid erased = Guid.Parse("7a6b5c4d-3e2f-4a1b-8c9d-0e1f2a3b4c5d");
+        EspPartition old = s_esp with { PartitionId = erased };
+        FirmwareOfAMachineThatStartedFromTheNetwork();
+        _tree.WriteVariable("Boot0002", LinuxUefiVariables.Global, EfiLoadOption.Build("debian-12", old, FirmwareBootEntry.FallbackLoaderPath));
+        _tree.WriteVariable("Boot0003", LinuxUefiVariables.Global, EfiLoadOption.Build("debian", old, @"\EFI\debian\shimx64.efi"));
+        _tree.WriteVariable("BootOrder", LinuxUefiVariables.Global, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00);
+        LinuxBootOrder order = new(_variables, new AgentLog(new ImmediateTimeProvider(), _console));
+
+        await order.PutFirstAsync(s_esp, FirmwareBootEntry.FallbackLoaderPath, "debian-13", [erased], TestContext.Current.CancellationToken);
+
+        Assert.Equal([0x03, 0x00, 0x00, 0x00, 0x01, 0x00], _variables.Read("BootOrder"));
+        Assert.Equal(EfiLoadOption.Build("debian-13", s_esp, FirmwareBootEntry.FallbackLoaderPath), _variables.Read("Boot0003"));
+        Assert.Null(_variables.Read("Boot0002"));
+        string console = _console.ToString();
+        Assert.Contains("Firmware boot entry Boot0003 pointed at the EFI system partition this deployment erased.", console, StringComparison.Ordinal);
+        Assert.Contains("Removed firmware boot entry Boot0002, which pointed at an EFI system partition this deployment erased.", console, StringComparison.Ordinal);
+        Assert.Contains("The firmware's boot order: Boot0003, Boot0000, Boot0001.", console, StringComparison.Ordinal);
+
+        // A run that fails after this gets all of it back.
+        await order.RestoreAsync(TestContext.Current.CancellationToken);
+        Assert.Equal([0x03, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00], _variables.Read("BootOrder"));
+        Assert.Equal(EfiLoadOption.Build("debian-12", old, FirmwareBootEntry.FallbackLoaderPath), _variables.Read("Boot0002"));
+    }
+
     // What other systems and firmware wrote can be anything. The list never fails the run for it.
     [Fact]
     public void DescribesWhatItCanOfEntriesItDoesNotKnow()

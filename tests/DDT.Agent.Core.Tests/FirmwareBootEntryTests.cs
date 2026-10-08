@@ -212,6 +212,76 @@ public sealed class FirmwareBootEntryTests
         Assert.Equal(["Boot0001"], _variables.Writes);
     }
 
+    // The first start of an image adds an entry of its own, so a disk that was deployed before leaves two dead ones.
+    [Fact]
+    public void RemovesEveryOtherEntryForAnErasedPartitionWhereThatIsAsked()
+    {
+        _variables.Values["Boot0000"] = EfiLoadOption.Build("debian", s_erasedEsp, @"\EFI\debian\shimx64.efi");
+        _variables.Values["Boot0001"] = Other("EFI Network");
+        _variables.Values["Boot0002"] = EfiLoadOption.Build("debian-13", s_erasedEsp, FirmwareBootEntry.FallbackLoaderPath);
+        _variables.Values["Boot0003"] = Windows(s_otherEsp);
+        _variables.Values["BootOrder"] = Order(0, 1, 2, 3);
+
+        new FirmwareBootEntry(_variables, _log) { RemovesDeadEntries = true }.MakeFirst(s_esp, FirmwareBootEntry.FallbackLoaderPath, "noble", s_erased);
+
+        Assert.Equal(EfiLoadOption.Build("noble", s_esp, FirmwareBootEntry.FallbackLoaderPath), _variables.Values["Boot0000"]);
+        Assert.False(_variables.Values.ContainsKey("Boot0002"));
+        Assert.Equal(Order(0, 1, 3), _variables.Values["BootOrder"]);
+
+        // The order stops naming the entry before the entry goes.
+        Assert.Equal(["Boot0000", "BootOrder"], _variables.Writes);
+        Assert.Equal(["Boot0002"], _variables.Deletes);
+    }
+
+    [Fact]
+    public void RemovesTheEntriesForAnErasedPartitionAlsoWhereOneForTheNewPartitionIsThere()
+    {
+        _variables.Values["Boot0000"] = EfiLoadOption.Build("debian", s_erasedEsp, @"\EFI\debian\shimx64.efi");
+        _variables.Values["Boot0001"] = EfiLoadOption.Build("noble", s_esp, FirmwareBootEntry.FallbackLoaderPath);
+        _variables.Values["Boot0002"] = EfiLoadOption.Build("debian-13", s_erasedEsp, FirmwareBootEntry.FallbackLoaderPath);
+        _variables.Values["BootOrder"] = Order(0, 1, 2);
+
+        new FirmwareBootEntry(_variables, _log) { RemovesDeadEntries = true }.MakeFirst(s_esp, FirmwareBootEntry.FallbackLoaderPath, "noble", s_erased);
+
+        Assert.Equal(Order(1), _variables.Values["BootOrder"]);
+        Assert.Equal(["Boot0000", "Boot0002"], _variables.Deletes);
+        Assert.Equal(["Boot0001"], _variables.Values.Keys.Where(name => name != "BootOrder"));
+    }
+
+    // Windows PE reuses one entry and leaves the rest, as it always has.
+    [Fact]
+    public void LeavesTheOtherEntriesForAnErasedPartitionUnlessAsked()
+    {
+        _variables.Values["Boot0000"] = Windows(s_erasedEsp);
+        _variables.Values["Boot0002"] = EfiLoadOption.Build("ubuntu", s_erasedEsp, @"\EFI\ubuntu\shimx64.efi");
+        _variables.Values["BootOrder"] = Order(0, 2);
+
+        new FirmwareBootEntry(_variables, _log).MakeFirst(s_esp, FirmwareBootEntry.WindowsLoaderPath, FirmwareBootEntry.WindowsDescription, s_erased);
+
+        Assert.Equal(Order(0, 2), _variables.Values["BootOrder"]);
+        Assert.Equal(["Boot0000"], _variables.Writes);
+        Assert.Empty(_variables.Deletes);
+    }
+
+    [Fact]
+    public void UndoPutsBackTheEntriesThatWereRemoved()
+    {
+        byte[] reused = EfiLoadOption.Build("debian", s_erasedEsp, @"\EFI\debian\shimx64.efi");
+        byte[] removed = EfiLoadOption.Build("debian-13", s_erasedEsp, FirmwareBootEntry.FallbackLoaderPath);
+        _variables.Values["Boot0000"] = reused;
+        _variables.Values["Boot0002"] = removed;
+        _variables.Values["BootOrder"] = Order(2, 0);
+        UndoableUefiVariables changes = new(_variables);
+
+        new FirmwareBootEntry(changes, _log) { RemovesDeadEntries = true }.MakeFirst(s_esp, FirmwareBootEntry.FallbackLoaderPath, "noble", s_erased);
+        Assert.Equal(Order(2), _variables.Values["BootOrder"]);
+        Assert.True(changes.Undo());
+
+        Assert.Equal(reused, _variables.Values["Boot0000"]);
+        Assert.Equal(removed, _variables.Values["Boot0002"]);
+        Assert.Equal(Order(2, 0), _variables.Values["BootOrder"]);
+    }
+
     private static byte[] Windows(EspPartition esp) => EfiLoadOption.Build(FirmwareBootEntry.WindowsDescription, esp, FirmwareBootEntry.WindowsLoaderPath);
 
     // Another disk's fallback loader, standing in for any entry that is not Windows Boot Manager on the new partition.

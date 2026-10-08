@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 namespace DDT.Agent.Deployment;
 
 // The restart of the Linux boot environment. The kernel restarts at once and for good, so the restart a run issues
-// is carried out when the agent ends, once the server has its last lines.
+// is carried out when the agent ends, once the server has its last lines, and not at all when the agent goes on.
 public sealed class LinuxRestart(AgentLog log, Func<int>? kernelRestart = null, Func<string, bool>? start = null)
 {
     public const string Tool = "reboot";
@@ -19,7 +19,19 @@ public sealed class LinuxRestart(AgentLog log, Func<int>? kernelRestart = null, 
     // A run or a change of the boot environment asked for the restart.
     public bool Issued { get; private set; }
 
+    // What lets go of the disks before the kernel restarts, which unmounts nothing itself.
+    public Action? Before { get; set; }
+
     public void Issue() => Issued = true;
+
+    // The agent goes on, so its end later restarts nothing. False when no restart was issued.
+    public bool Withdraw()
+    {
+        bool issued = Issued;
+        Issued = false;
+
+        return issued;
+    }
 
     // Returns only when nothing restarted the machine, or the tool that does has just been started. The start script
     // then restarts it, which the agent's exit code asks for.
@@ -29,6 +41,8 @@ public sealed class LinuxRestart(AgentLog log, Func<int>? kernelRestart = null, 
         {
             return;
         }
+
+        LetGo();
 
         int error = _kernelRestart();
 
@@ -40,6 +54,19 @@ public sealed class LinuxRestart(AgentLog log, Func<int>? kernelRestart = null, 
         }
 
         log.Error($"The machine could not restart itself (error {error}, and {Tool} cannot be started). The start script restarts it shortly, or restart it by hand.");
+    }
+
+    private void LetGo()
+    {
+        try
+        {
+            Before?.Invoke();
+        }
+        catch (Exception exception)
+        {
+            // Nothing may keep the machine from restarting, so the failure is said and not thrown on
+            log.Warning($"The disks could not be let go of before the restart ({exception.Message}).");
+        }
     }
 
     // Everything written reaches the disks first. Returns the error when the kernel is still running after the call.

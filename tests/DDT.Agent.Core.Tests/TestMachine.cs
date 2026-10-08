@@ -20,4 +20,7 @@ internal sealed record TestMachine(FakeDeploymentTools Tools, AgentLog Log, Time
     public AgentEnvironment Environment { get; init; } = AgentEnvironment.WindowsPE;
 
     public EnvironmentSwitch? Switch { get; init; }
+
+    // What the loop calls when it registers again where it could have ended.
+    public Action? GoesOn { get; init; }
 }

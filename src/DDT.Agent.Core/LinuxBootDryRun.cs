@@ -10,8 +10,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace DDT.Agent;
 
-// The machine a dry run stands in for when it starts the Linux boot environment. A file stands in for its disk, tools
-// and scripts only log, and nothing on this computer changes. The run ends in the boot environment.
+// A dry run's machine in the Linux boot environment. A file is its disk, and tools and scripts only log.
 public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer server, ConsoleStatus status, AgentLog log, TimeProvider timeProvider)
 {
     // Where the real boot environment keeps a due restart.

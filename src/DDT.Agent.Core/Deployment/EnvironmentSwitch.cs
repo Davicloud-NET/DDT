@@ -4,6 +4,5 @@
 
 namespace DDT.Agent.Deployment;
 
-// A machine's way into the other boot environment: what takes its resume token along, and what restarts it from the
-// network.
+// A machine's way into the other boot environment: what carries its resume token, and what restarts it.
 public sealed record EnvironmentSwitch(ResumeCarrier Carrier, IRebooter Rebooter);

@@ -16,8 +16,7 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// A machine that restarts into the other boot environment keeps its approval and its sign-in with its resume token, for
-// as long as the restart may take. Its UUID and MAC never keep them. What was picked before is offered first after.
+// What a machine keeps across a restart into the other boot environment with its resume token, and for how long.
 public sealed class EnvironmentResumeTests(BothEnvironmentsApplication application) : IClassFixture<BothEnvironmentsApplication>
 {
     private static readonly TimeSpan s_second = TimeSpan.FromSeconds(1);

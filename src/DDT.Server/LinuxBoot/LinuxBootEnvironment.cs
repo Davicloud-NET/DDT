@@ -9,7 +9,6 @@ using Microsoft.Extensions.Options;
 namespace DDT.Server.LinuxBoot;
 
 // The Linux boot environment a release puts next to the server: its loaders, kernel and initrds, with a description.
-// The description is read again only when its file changed, since every list of sequences asks.
 public sealed class LinuxBootEnvironment(IOptions<LinuxBootOptions> options, BundledReleases bundled)
 {
     public const string FolderName = "linux-boot";
@@ -47,6 +46,7 @@ public sealed class LinuxBootEnvironment(IOptions<LinuxBootOptions> options, Bun
         }
     }
 
+    // Read again only when the file changed, since every list of sequences asks.
     private bool Readable(FileInfo file)
     {
         lock (_lock)

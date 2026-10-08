@@ -8,8 +8,7 @@ using DDT.Contracts.Machines;
 
 namespace DDT.Agent;
 
-// The polling state of one registration. It holds the tokens, the state and sign-in as the server last reported them,
-// and when to poll next.
+// One registration's polling state: its tokens, what the server last reported, and when to poll next.
 internal sealed class PollState(AgentRegistrationResult registration, DeploymentTokens tokens)
 {
     public Guid MachineId { get; } = registration.MachineId;

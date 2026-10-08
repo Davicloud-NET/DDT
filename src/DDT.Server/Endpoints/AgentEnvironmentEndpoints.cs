@@ -15,8 +15,7 @@ using Microsoft.AspNetCore.Routing;
 
 namespace DDT.Server.Endpoints;
 
-// What a machine tells the server before it restarts into the other boot environment. It needs the machine's own
-// session token, in its current generation, like everything else an authorized machine asks for.
+// What a machine tells the server before it restarts into the other boot environment, with its own session token.
 public static class AgentEnvironmentEndpoints
 {
     public static RouteGroupBuilder MapAgentEnvironmentEndpoints(this RouteGroupBuilder group)

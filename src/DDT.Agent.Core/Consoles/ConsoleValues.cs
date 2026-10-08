@@ -39,7 +39,7 @@ public static class ConsoleValues
         _ => ConsoleStepState.Pending,
     };
 
-    // The console's protocol has no Linux phases yet, so every boot phase shows as its boot environment.
+    // The console's protocol has no Linux phases yet, so the Linux boot environment shows as Windows PE.
     public static ConsolePhase ToConsole(SequencePhase phase) =>
         SequenceKinds.IsBoot(phase) ? ConsolePhase.WindowsPE : ConsolePhase.Windows;
 

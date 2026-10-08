@@ -6,9 +6,7 @@ using DDT.Contracts.Images;
 
 namespace DDT.Contracts.Sequences;
 
-// A sequence with ProblemCount above zero is kept as a draft and can't run. The other members let a dialog say what
-// running it does without loading the whole document, including the raw disk image it writes, if any. Kind says which
-// boot environment starts it.
+// What lists and dialogs need of a sequence. With a ProblemCount above zero it is a draft and can't run.
 public sealed record SequenceSummary(
     Guid Id,
     string Name,

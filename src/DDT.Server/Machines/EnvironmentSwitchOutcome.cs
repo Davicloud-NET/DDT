@@ -4,8 +4,7 @@
 
 namespace DDT.Server.Machines;
 
-// Whether a machine's restart into the other boot environment was recorded. Refusal says why not, for the technician.
-// MayNotPick means nobody who may deploy is signed in at the machine.
+// Whether a machine's restart was recorded, or why not. MayNotPick: nobody who may deploy is signed in at it.
 public sealed record EnvironmentSwitchOutcome(string? Refusal, bool MayNotPick = false)
 {
     public static EnvironmentSwitchOutcome Recorded { get; } = new(Refusal: null);

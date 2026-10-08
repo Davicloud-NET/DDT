@@ -6,9 +6,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace DDT.Agent.Deployment;
 
-// The dry run's disks. Each is a file next to the dry run's root, as large as the disk it stands in for. The file
-// survives the run, whose root is deleted when the run ends, so the disk can be looked at afterwards. The next clean
-// deletes it. makeSparse is the system's way to keep the file sparse, where it needs one.
+// The dry run's disks. A file next to the root stands in for each, and stays until the next clean deletes it.
 public sealed class FileRawDisks(string root, AgentLog log, Action<SafeFileHandle>? makeSparse = null) : IRawDisks
 {
     public static string PathFor(string root, int diskNumber) =>

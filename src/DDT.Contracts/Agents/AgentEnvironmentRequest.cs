@@ -6,8 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace DDT.Contracts.Agents;
 
-// The boot environment a machine is about to restart into, and the sequence picked at it that needs that environment.
-// The server offers the sequence first once the machine is there. No run exists until it is picked again.
+// The boot environment a machine is about to restart into, and the sequence picked at it that starts there.
 public sealed record AgentEnvironmentRequest(
     AgentEnvironment Environment,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] Guid? SequenceId = null);

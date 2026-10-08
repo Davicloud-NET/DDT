@@ -6,8 +6,7 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Deployment;
 
-// For a boot environment that connects no shares. The validator refuses a share there, so this only fails a step that
-// names one anyway.
+// The share connector of a boot environment that connects none. It fails a step that names a share.
 public sealed class NoShares : IShareConnector
 {
     public const string Message = "This boot environment connects no shares, so a step that names one cannot run in it.";

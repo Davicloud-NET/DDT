@@ -9,8 +9,7 @@ using DDT.Server.Sequences;
 
 namespace DDT.Server.Machines;
 
-// A machine says that it restarts into the other boot environment, for a sequence picked at it that starts there.
-// Only the wish is recorded, with the sequence to offer first after the restart. No run is made and nothing is granted.
+// Records that a machine restarts into the other boot environment for a sequence picked at it. Nothing is granted.
 public sealed class EnvironmentSwitches(
     DdtDbContext database,
     SequenceChoices choices,

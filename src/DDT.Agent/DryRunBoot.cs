@@ -8,9 +8,7 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
-// The machine of a dry run through its boot environments. It starts the one the agent was asked for. When the agent
-// there restarts into the other one, it goes on there, with the resume token the agent left in the folder that stands
-// in for the machine's firmware.
+// A dry run's machine through its boot environments. It goes on in the other one when the agent restarts into it.
 public sealed class DryRunBoot(
     DryRunMachineOptions options,
     IAgentServer server,

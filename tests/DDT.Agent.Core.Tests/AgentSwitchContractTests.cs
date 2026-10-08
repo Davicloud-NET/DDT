@@ -9,8 +9,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// What the change of boot environment added to the agent's contracts. An agent or a server from before reads and
-// writes the same JSON as it always did.
+// What the change of boot environment added to the agent's contracts, which an older peer reads and writes as before.
 public sealed class AgentSwitchContractTests
 {
     private const string SequenceId = "0197a3c0-0000-7000-8000-00000000000d";

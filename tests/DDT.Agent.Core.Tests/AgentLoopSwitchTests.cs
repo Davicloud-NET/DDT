@@ -12,8 +12,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The agent on its way into the other boot environment, and after it: for a sequence picked at the machine, and for a
-// run a poll answer names. The firmware and what restarts the machine are fakes.
+// The agent on its way into the other boot environment and after it, with a fake firmware and a fake restart.
 public sealed class AgentLoopSwitchTests : IDisposable
 {
     private const string Restarts = "INFO  The machine restarts into the Linux boot environment, where it stays signed in and goes on.";

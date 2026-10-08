@@ -15,8 +15,7 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// What a machine is told about the sequences and the run of the other boot environment, on a server that can start
-// both: which it lists, when a poll tells it to restart, and that a pick there waits for the restart.
+// What a machine is told about sequences and a run of the other boot environment, on a server that can start both.
 public sealed class RunEnvironmentSwitchTests(BothEnvironmentsApplication application) : IClassFixture<BothEnvironmentsApplication>
 {
     private async Task<SequenceView> LinuxAsync()

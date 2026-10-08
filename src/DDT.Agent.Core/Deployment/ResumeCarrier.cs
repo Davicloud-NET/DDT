@@ -7,8 +7,7 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Deployment;
 
-// Takes the machine's resume token across a restart into the other boot environment, in a UEFI variable of DDT's own.
-// The agent that starts next takes it out again before it registers, so it is there for one restart only.
+// Takes the machine's resume token across one restart into the other boot environment, in a UEFI variable of DDT's own.
 public sealed class ResumeCarrier(IVendorVariables variables, AgentEnvironment environment, AgentLog log)
 {
     // Frozen, like the layout below: the agent of one boot environment writes what the other one's reads.

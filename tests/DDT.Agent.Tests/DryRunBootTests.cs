@@ -15,9 +15,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// A dry run whose machine changes its boot environment, put together the way the Windows program does: the agent
-// leaves its resume token in the folder that stands in for the firmware, "restarts", and goes on as the other boot
-// environment's agent in the same process, signed in as before.
+// A dry run whose machine changes its boot environment and goes on as the other one's agent, signed in as before.
 public sealed class DryRunBootTests : IDisposable
 {
     private const string GoesOnThere = "Dry run: the machine restarts into the Linux boot environment, which here starts its agent over there.";

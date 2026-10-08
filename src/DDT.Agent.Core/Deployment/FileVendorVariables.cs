@@ -4,8 +4,7 @@
 
 namespace DDT.Agent.Deployment;
 
-// Vendor variables as files in a folder, named as efivarfs names them. They stand in for the firmware of a dry run's
-// machine, which has none.
+// Vendor variables as files in a folder, named as efivarfs names them, for a dry run's machine without firmware.
 public sealed class FileVendorVariables(string folder) : IVendorVariables
 {
     public static string PathFor(string folder, string name, Guid vendor) => Path.Combine(folder, $"{name}-{vendor:D}");

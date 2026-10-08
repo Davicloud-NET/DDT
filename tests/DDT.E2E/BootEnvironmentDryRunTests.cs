@@ -13,9 +13,7 @@ using Xunit;
 
 namespace DDT.E2E;
 
-// Dry runs of a machine that gets from one boot environment into the other for its run, with the real host and the
-// published agent. The agent leaves its resume token in the dry run's stand-in for the firmware, "restarts" and goes on
-// as the other boot environment's agent. Nobody authorizes the machine a second time.
+// Dry runs of a machine that changes its boot environment for its run, with the real host and the published agent.
 [Trait("Category", "E2E")]
 [Collection(DryRunCollection.Name)]
 public sealed class BootEnvironmentDryRunTests(DryRunLab lab)

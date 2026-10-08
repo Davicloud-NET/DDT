@@ -6,8 +6,7 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Tests;
 
-// A firmware's vendor variables in memory. Calls lists what was asked of it, in order. A call throws the failure set
-// for it, as a firmware that refuses does.
+// A firmware's vendor variables in memory. Calls lists what was asked, and a call throws the failure set for it.
 internal sealed class FakeVendorVariables : IVendorVariables
 {
     public Dictionary<(string Name, Guid Vendor), byte[]> Values { get; } = [];

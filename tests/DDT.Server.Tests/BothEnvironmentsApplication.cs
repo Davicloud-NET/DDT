@@ -8,8 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DDT.Server.Tests;
 
-// A server that can start both boot environments: a boot image is built, and configuration names a folder with the
-// Linux boot environment. A test takes either away again. The clock moves only when a test advances it.
+// A server that can start both boot environments until a test takes one away. Only a test moves its clock.
 public sealed class BothEnvironmentsApplication : DdtApplication
 {
     private const string Manifest = """{"snapshot":"20261006T203214Z","kernelRelease":"7.2.6+deb13-amd64","files":{}}""";

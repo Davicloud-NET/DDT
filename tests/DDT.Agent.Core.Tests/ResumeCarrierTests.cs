@@ -9,8 +9,7 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The variable that takes a machine's resume token across a restart into the other boot environment. Its name, its
-// GUID and its bytes are what the agent of one boot environment writes and the other one's reads, so they never change.
+// The variable that carries a resume token into the other boot environment. Its name, GUID and bytes never change.
 public sealed class ResumeCarrierTests : IDisposable
 {
     private const string Token = "CfDJ8Kx-resume_token.0123456789";

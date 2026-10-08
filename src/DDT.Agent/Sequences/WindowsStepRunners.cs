@@ -6,8 +6,7 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Sequences;
 
-// The runners for every kind of step WinPE and the installed Windows run, from the machine's tools. A raw disk image
-// and its seed are the Linux boot environment's.
+// The runners for every kind of step WinPE and the installed Windows run, from the machine's tools.
 public sealed class WindowsStepRunners : IStepRunners
 {
     public required IAgentServer Server { get; init; }

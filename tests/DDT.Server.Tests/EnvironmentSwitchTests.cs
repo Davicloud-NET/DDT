@@ -18,8 +18,7 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// What a machine tells the server before it restarts into the other boot environment: who may say it, what the server
-// keeps of it and what it refuses. Nothing here makes a run.
+// What a machine tells the server before it restarts into the other boot environment. Nothing here makes a run.
 public sealed class EnvironmentSwitchTests(BothEnvironmentsApplication application) : IClassFixture<BothEnvironmentsApplication>
 {
     private const string Requested = "machine.environment-requested";

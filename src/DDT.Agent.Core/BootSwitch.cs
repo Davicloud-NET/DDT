@@ -9,9 +9,7 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
-// Gets the machine into the other boot environment, for a sequence that starts there. The newest resume token goes into
-// the firmware and the machine restarts from the network, so the agent there registers as the same, signed-in machine.
-// It tries once per start: a machine that comes back to where it was is not restarted again.
+// Restarts the machine into the other boot environment with its resume token in the firmware, once per start.
 internal sealed class BootSwitch(IAgentServer server, AgentMachine machine, ConsoleStatus status, AgentLog log)
 {
     private bool _taken;

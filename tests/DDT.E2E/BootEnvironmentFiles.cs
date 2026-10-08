@@ -4,9 +4,7 @@
 
 namespace DDT.E2E;
 
-// What makes the host take both boot environments for there: a boot image in its boot directory, and the description
-// of the Linux boot environment in the folder its configuration names. The host looks whenever it is asked, so they
-// are there from the moment this is made until it is disposed.
+// What makes the host take both boot environments for there, from the moment this is made until it is disposed.
 internal sealed class BootEnvironmentFiles : IDisposable
 {
     private readonly string _bootImage;

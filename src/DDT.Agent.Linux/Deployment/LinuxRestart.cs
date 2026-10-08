@@ -56,7 +56,8 @@ public sealed class LinuxRestart(AgentLog log, Func<int>? kernelRestart = null, 
         log.Error($"The machine could not restart itself (error {error}, and {Tool} cannot be started). The start script restarts it shortly, or restart it by hand.");
     }
 
-    private void LetGo()
+    // Asked for early as well, while the log still reaches the server. What is let go of then is not there later.
+    public void LetGo()
     {
         try
         {

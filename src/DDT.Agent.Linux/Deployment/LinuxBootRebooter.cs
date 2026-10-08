@@ -23,10 +23,14 @@ public sealed class LinuxBootRebooter(IUefiVariables variables, LinuxRestart res
             _next.FromTheBootOrder();
         }
 
+        // The loop still sends its last lines after this, so they say what was unmounted.
+        restart.LetGo();
         restart.Issue();
 
         return Task.CompletedTask;
     }
+
+    public void LetGo() => restart.LetGo();
 
     // The agent goes on after it issued a restart, as when the server refuses its token with the last lines. Nothing
     // set for that restart stays: not the restart, not the next start, not the token in the firmware.

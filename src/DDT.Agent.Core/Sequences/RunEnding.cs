@@ -56,6 +56,12 @@ internal sealed class RunEnding(
         log.Information(run.InInstalledSystem ? "The run is done. Sending the last log lines." : "The run is done. Sending the last log lines, then restarting.");
         status?.RunFinished();
 
+        // After the Done report the server takes no more lines, so what the restart lets go of is said before it.
+        if (!run.InInstalledSystem)
+        {
+            rebooter.LetGo();
+        }
+
         AgentRunReport done = run.Heartbeat.Snapshot(DeploymentState.Done);
         await EndRunAsync(run, run.Store.Files, done).ConfigureAwait(false);
 
@@ -93,6 +99,7 @@ internal sealed class RunEnding(
         log.Information(run.InInstalledSystem
             ? "Windows restarts, and the run goes on after the restart."
             : EnvironmentTexts.Restarts(run.Session.Environment, handingOver));
+        rebooter.LetGo();
 
         try
         {

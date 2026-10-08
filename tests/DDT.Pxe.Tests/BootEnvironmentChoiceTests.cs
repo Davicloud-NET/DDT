@@ -69,35 +69,46 @@ public sealed class BootEnvironmentChoiceTests
         Assert.Equal(expected, BootEnvironmentChoice.Decide(BootWish.None, preferred, windowsPE, linux));
     }
 
-    // Firmware that trusts none of the shim's certificate authorities with Secure Boot on would refuse the shim.
+    // Firmware that trusts none of the shim's certificate authorities with Secure Boot on would refuse the shim. So it
+    // is never named the shim where Windows PE can start instead.
     [Theory]
-    [InlineData(DefaultBootEnvironment.Auto, true, PE)]
-    [InlineData(DefaultBootEnvironment.Auto, false, PE)]
-    [InlineData(DefaultBootEnvironment.WindowsPE, true, PE)]
-    [InlineData(DefaultBootEnvironment.WindowsPE, false, PE)]
-    [InlineData(DefaultBootEnvironment.Linux, true, PE)]
-    [InlineData(DefaultBootEnvironment.Linux, false, PE)]
-    public void AMachineWhoseFirmwareRefusesTheShimIsNeverNamedIt(DefaultBootEnvironment preferred, bool windowsPE, AgentEnvironment expected)
+    [InlineData(DefaultBootEnvironment.Auto)]
+    [InlineData(DefaultBootEnvironment.WindowsPE)]
+    [InlineData(DefaultBootEnvironment.Linux)]
+    public void AMachineWhoseFirmwareRefusesTheShimIsNeverNamedItWhereWindowsPEStarts(DefaultBootEnvironment preferred)
     {
-        Assert.Equal(expected, BootEnvironmentChoice.Decide(new BootWish(null, LinuxRefused: true), preferred, windowsPE, linux: true));
+        Assert.Equal(PE, BootEnvironmentChoice.Decide(new BootWish(null, LinuxRefused: true), preferred, windowsPE: true, linux: true));
+        Assert.Equal(PE, BootEnvironmentChoice.Decide(new BootWish(Linux, LinuxRefused: true), preferred, windowsPE: true, linux: true));
+        Assert.Equal(PE, BootEnvironmentChoice.Decide(new BootWish(PE, LinuxRefused: true), preferred, windowsPE: true, linux: true));
     }
 
+    // What the server knows of the firmware may be stale, or made up by someone who registered as the machine. Where
+    // Windows PE cannot start, the shim costs nothing, and the agent it may start after all corrects the facts.
     [Theory]
-    [InlineData(true, PE)]
-    [InlineData(false, null)]
-    public void ALinuxRunOnAMachineWhoseFirmwareRefusesTheShimStartsWindowsPEOrNothing(bool windowsPE, AgentEnvironment? expected)
+    [InlineData(null, DefaultBootEnvironment.Auto, Linux)]
+    [InlineData(null, DefaultBootEnvironment.Linux, Linux)]
+    [InlineData(null, DefaultBootEnvironment.WindowsPE, PE)]
+    [InlineData(Linux, DefaultBootEnvironment.Auto, Linux)]
+    [InlineData(Linux, DefaultBootEnvironment.Linux, Linux)]
+    [InlineData(Linux, DefaultBootEnvironment.WindowsPE, Linux)]
+    [InlineData(PE, DefaultBootEnvironment.Auto, Linux)]
+    [InlineData(PE, DefaultBootEnvironment.Linux, Linux)]
+    [InlineData(PE, DefaultBootEnvironment.WindowsPE, Linux)]
+    public void AMachineWhoseFirmwareRefusesTheShimIsOfferedItAnywayWhereWindowsPECannotStart(
+        AgentEnvironment? wanted,
+        DefaultBootEnvironment preferred,
+        AgentEnvironment expected)
     {
-        foreach (DefaultBootEnvironment preferred in Enum.GetValues<DefaultBootEnvironment>())
-        {
-            Assert.Equal(expected, BootEnvironmentChoice.Decide(new BootWish(Linux, LinuxRefused: true), preferred, windowsPE, linux: true));
-        }
+        Assert.Equal(expected, BootEnvironmentChoice.Decide(new BootWish(wanted, LinuxRefused: true), preferred, windowsPE: false, linux: true));
     }
 
+    // The refusal changes nothing where there is no Linux boot environment to offer.
     [Fact]
-    public void AWindowsRunOnAMachineWhoseFirmwareRefusesTheShimGetsNoAnswerWithoutABootImage()
+    public void ARefusedMachineWithAWishAndNothingToStartStillGetsNoAnswer()
     {
-        Assert.Equal(PE, BootEnvironmentChoice.Decide(new BootWish(PE, LinuxRefused: true), DefaultBootEnvironment.Auto, windowsPE: true, linux: true));
-        Assert.Null(BootEnvironmentChoice.Decide(new BootWish(PE, LinuxRefused: true), DefaultBootEnvironment.Auto, windowsPE: false, linux: true));
+        Assert.Null(BootEnvironmentChoice.Decide(new BootWish(Linux, LinuxRefused: true), DefaultBootEnvironment.Auto, windowsPE: false, linux: false));
+        Assert.Null(BootEnvironmentChoice.Decide(new BootWish(PE, LinuxRefused: true), DefaultBootEnvironment.Auto, windowsPE: false, linux: false));
+        Assert.Equal(PE, BootEnvironmentChoice.Decide(new BootWish(null, LinuxRefused: true), DefaultBootEnvironment.Linux, windowsPE: false, linux: false));
     }
 
     // A run in the installed system names no boot environment, so the default applies as for no wish.

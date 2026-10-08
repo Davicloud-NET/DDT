@@ -46,6 +46,21 @@ public sealed class PendingSwitchTests
         Assert.Equal(open ? s_sequence : null, machine.PendingSequenceId);
     }
 
+    // A time ahead of the clock is left from before the clock was set back, or comes from a host with another clock.
+    [Theory]
+    [InlineData(1)]
+    [InlineData(15 * 60)]
+    [InlineData(24 * 60 * 60)]
+    public void ATimeInTheFutureOpensNoWindow(int secondsAhead)
+    {
+        Machine machine = Asked();
+        DateTimeOffset now = s_asked - TimeSpan.FromSeconds(secondsAhead);
+
+        Assert.False(PendingSwitch.IsOpen(machine, now));
+        Assert.False(PendingSwitch.IsOpen(s_asked, now));
+        Assert.False(PendingSwitch.Arrives(machine, AgentEnvironment.LinuxBoot, now));
+    }
+
     [Fact]
     public void AMachineThatWasNotAskedHasNothingToExpire()
     {

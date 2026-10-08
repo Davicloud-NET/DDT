@@ -141,6 +141,19 @@ public sealed class BootChoiceRefresherTests : IClassFixture<BothEnvironmentsApp
         Assert.Equal(new BootWish(null, refused), await WishAsync(machine));
     }
 
+    // Until someone approves it, a row is only what a registration from anywhere on the network claimed.
+    [Fact]
+    public async Task AMachineNobodyEverApprovedIsNotRefusedLinuxWhateverItsRegistrationSays()
+    {
+        using DeployingMachine machine = await DeployingMachine.RegisterAsync(_application, DeployingMachine.LinuxBoot(true, UefiCa.None));
+
+        Assert.Equal(BootWish.None, await WishAsync(machine));
+
+        (await (await _application.AdministratorAsync()).PostAsync($"/api/machines/{machine.Id}/approve")).EnsureSuccessStatusCode();
+
+        Assert.Equal(new BootWish(null, true), await WishAsync(machine));
+    }
+
     [Fact]
     public async Task AMachineIsFoundByItsUuidWhenAnotherAdapterAsks()
     {

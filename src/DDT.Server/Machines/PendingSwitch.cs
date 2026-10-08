@@ -18,8 +18,10 @@ public static class PendingSwitch
         return IsOpen(machine.NextEnvironmentUtc, now);
     }
 
-    // The same for the time alone, where the machine's row is not at hand.
-    public static bool IsOpen(DateTimeOffset? asked, DateTimeOffset now) => asked is { } at && now - at <= DeploymentLimits.EnvironmentSwitch;
+    // The same for the time alone, where the machine's row is not at hand. A time in the future is left from before
+    // the clock was set back, or comes from a host with another clock, and opens nothing.
+    public static bool IsOpen(DateTimeOffset? asked, DateTimeOffset now) =>
+        asked is { } at && at <= now && now - at <= DeploymentLimits.EnvironmentSwitch;
 
     // Whether a registration from the environment is the restart the machine was asked for, in time.
     public static bool Arrives(Machine machine, AgentEnvironment environment, DateTimeOffset now) =>

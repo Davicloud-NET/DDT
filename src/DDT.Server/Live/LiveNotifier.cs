@@ -72,7 +72,7 @@ public sealed partial class LiveNotifier(
         _machines.Push(summary.Id, () => PushAsync(summary));
 
         // What the machine starts from the network next may have changed with it.
-        bootChoices?.Changed();
+        bootChoices?.Changed(machine);
 
         if (deployment is not null)
         {
@@ -114,7 +114,7 @@ public sealed partial class LiveNotifier(
         ArgumentNullException.ThrowIfNull(machineIds);
 
         Guid[] removed = [.. machineIds];
-        bootChoices?.Changed();
+        bootChoices?.Removed(removed);
 
         foreach (Guid machineId in removed)
         {

@@ -123,21 +123,15 @@ public sealed class ProxyDhcpChoiceTests : IDisposable
         Assert.Equal(message.MachineIdentifier.Length == 17 ? message.MachineIdentifier[1..].ToArray() : [], asked.Uuid.ToArray());
     }
 
-    [Theory]
-    [InlineData(true, WindowsPE)]
-    [InlineData(false, WindowsPE)]
-    public void AMachineWhoseFirmwareRefusesTheShimIsNamedTheWindowsBootFileWhateverTheDefault(bool built, string expected)
+    [Fact]
+    public void AMachineWhoseFirmwareRefusesTheShimIsNamedTheWindowsBootFileWhateverTheDefault()
     {
-        if (built)
-        {
-            WindowsPEIsBuilt();
-        }
-
+        WindowsPEIsBuilt();
         LinuxIsThere();
         _choice.Wish = new BootWish(null, LinuxRefused: true);
 
-        Assert.Equal(expected, Named(Discover(Handler("Linux"))));
-        Assert.Equal(expected, Named(Discover(Handler("Auto"))));
+        Assert.Equal(WindowsPE, Named(Discover(Handler("Linux"))));
+        Assert.Equal(WindowsPE, Named(Discover(Handler("Auto"))));
     }
 
     [Fact]
@@ -150,19 +144,33 @@ public sealed class ProxyDhcpChoiceTests : IDisposable
         Assert.Equal(WindowsPE, Named(Discover(Handler())));
     }
 
+    // Without a boot image the Windows file is not there, and silence would keep the machine out for good: only its
+    // agent can correct what the server knows of its firmware. So it is named the shim, which costs nothing.
+    [Theory]
+    [InlineData(null, "Auto")]
+    [InlineData(null, "Linux")]
+    [InlineData(AgentEnvironment.LinuxBoot, "Auto")]
+    [InlineData(AgentEnvironment.LinuxBoot, "WindowsPE")]
+    [InlineData(AgentEnvironment.WindowsPE, "Auto")]
+    public void AMachineWhoseFirmwareRefusesTheShimIsNamedItAnywayWhenWindowsPECannotStart(AgentEnvironment? wanted, string preferred)
+    {
+        LinuxIsThere();
+        _choice.Wish = new BootWish(wanted, LinuxRefused: true);
+
+        ProxyDhcpOutcome outcome = Discover(Handler(preferred));
+
+        Assert.Equal(Shim, Named(outcome));
+        Assert.Equal(s_served, outcome.Reply!.NextServerAddress);
+    }
+
     // Neither can be started for it, so the firmware goes on to its next boot entry instead of a file that is refused.
     [Theory]
-    [InlineData(AgentEnvironment.LinuxBoot, true, true)]
-    [InlineData(AgentEnvironment.LinuxBoot, false, false)]
-    [InlineData(AgentEnvironment.WindowsPE, false, false)]
-    [InlineData(AgentEnvironment.WindowsPE, true, true)]
-    public void AMachineWhoseEnvironmentCannotBeStartedNorTheOtherGetsNoAnswer(AgentEnvironment wanted, bool bundle, bool refused)
+    [InlineData(AgentEnvironment.LinuxBoot, false)]
+    [InlineData(AgentEnvironment.WindowsPE, false)]
+    [InlineData(AgentEnvironment.LinuxBoot, true)]
+    [InlineData(AgentEnvironment.WindowsPE, true)]
+    public void AMachineWhoseEnvironmentCannotBeStartedNorTheOtherGetsNoAnswer(AgentEnvironment wanted, bool refused)
     {
-        if (bundle)
-        {
-            LinuxIsThere();
-        }
-
         _choice.Wish = new BootWish(wanted, refused);
 
         ProxyDhcpOutcome outcome = Discover(Handler());

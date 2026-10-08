@@ -17,4 +17,7 @@ public sealed record BootChoiceEntry(Guid? Uuid, IReadOnlyList<string> Macs)
     public DateTimeOffset? NextUtc { get; init; }
 
     public bool LinuxRefused { get; init; }
+
+    // Whether someone ever approved the machine. Until then anyone on the network could have registered the row.
+    public bool Approved { get; init; }
 }

@@ -84,8 +84,12 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
     {
         ArgumentNullException.ThrowIfNull(run);
 
-        return run.BootEnvironment ?? PhaseRules.StartsIn(await DefinitionAsync(run, cancellationToken).ConfigureAwait(false));
+        return run.BootEnvironment ?? await StartsInAsync(run.Id, cancellationToken).ConfigureAwait(false);
     }
+
+    // The same from the run's sequence alone, for a caller that has not read the run's row.
+    public async Task<AgentEnvironment> StartsInAsync(Guid runId, CancellationToken cancellationToken) =>
+        PhaseRules.StartsIn(await DefinitionAsync(runId, cancellationToken).ConfigureAwait(false));
 
     // The boot environment the machine restarts into for its assigned run, which starts there and not where the machine
     // is. Null unless its agent can change the environment and this server can start the other one.
@@ -182,13 +186,18 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
     }
 
     // The definition the run was given when it was assigned.
-    public async Task<SequenceDefinition> DefinitionAsync(Deployment run, CancellationToken cancellationToken)
+    public Task<SequenceDefinition> DefinitionAsync(Deployment run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
 
+        return DefinitionAsync(run.Id, cancellationToken);
+    }
+
+    private async Task<SequenceDefinition> DefinitionAsync(Guid runId, CancellationToken cancellationToken)
+    {
         DeploymentSnapshot snapshot = await database.DeploymentSnapshots
             .AsNoTracking()
-            .SingleAsync(s => s.DeploymentId == run.Id, cancellationToken)
+            .SingleAsync(s => s.DeploymentId == runId, cancellationToken)
             .ConfigureAwait(false);
 
         return SequenceDocuments.Read(snapshot.Definition);

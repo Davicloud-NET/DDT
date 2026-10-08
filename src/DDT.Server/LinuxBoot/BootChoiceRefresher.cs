@@ -17,8 +17,8 @@ using Microsoft.Extensions.Options;
 namespace DDT.Server.LinuxBoot;
 
 // Fills BootChoices from the database: every few seconds, which also covers a pxe host that is another process than
-// the one a machine changed in, and at once when a machine changes in this one. A read that fails leaves the list as
-// it was.
+// the one a machine changed in, and at once when what netboot reads of a machine changes in this one. A read that
+// fails leaves the list as it was.
 public sealed partial class BootChoiceRefresher(
     BootChoices choices,
     LinuxBootEnvironment linuxBoot,
@@ -29,7 +29,7 @@ public sealed partial class BootChoiceRefresher(
 {
     public static readonly TimeSpan Interval = TimeSpan.FromSeconds(5);
 
-    // Machines poll every few seconds, and each poll counts as a change. One read a second serves them all.
+    // A rollout changes many machines in the same moment. One read a second serves them all.
     private static readonly TimeSpan s_pause = TimeSpan.FromSeconds(1);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -86,7 +86,8 @@ public sealed partial class BootChoiceRefresher(
         }
     }
 
-    // Reads every machine with what its run and its pending restart say, and replaces the list in one step.
+    // Reads of every machine what netboot asks, and of every active run where it starts, and replaces the list in one
+    // step. Nothing else of a row is read, since a run's row holds its answers, values and variables.
     public async Task RefreshAsync(CancellationToken cancellationToken)
     {
         await using AsyncServiceScope scope = scopes.CreateAsyncScope();
@@ -105,21 +106,23 @@ public sealed partial class BootChoiceRefresher(
                 machine.ActiveDeploymentId,
                 machine.NextEnvironment,
                 machine.NextEnvironmentUtc,
+                Approved = machine.FirstApprovedUtc != null,
             })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        List<Deployment> runs = await database.Deployments
+        var runs = await database.Deployments
             .AsNoTracking()
             .Where(run => database.Machines.Any(machine => machine.ActiveDeploymentId == run.Id))
+            .Select(run => new { run.Id, run.BootEnvironment })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
         Dictionary<Guid, AgentEnvironment> starts = [];
 
         // A run from before the server kept its boot environment says it through its sequence.
-        foreach (Deployment run in runs)
+        foreach (var run in runs)
         {
-            starts[run.Id] = await queries.StartsInAsync(run, cancellationToken).ConfigureAwait(false);
+            starts[run.Id] = run.BootEnvironment ?? await queries.StartsInAsync(run.Id, cancellationToken).ConfigureAwait(false);
         }
 
         choices.Replace(machines.Select(machine => new BootChoiceEntry(
@@ -130,6 +133,7 @@ public sealed partial class BootChoiceRefresher(
             Next = machine.NextEnvironment,
             NextUtc = machine.NextEnvironmentUtc,
             LinuxRefused = machine.SecureBootEnabled == true && MicrosoftUefiCa.Untrusted(machine.TrustedUefiCas, shimSignedUnder),
+            Approved = machine.Approved,
         }));
     }
 

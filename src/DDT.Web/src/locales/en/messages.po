@@ -3666,12 +3666,12 @@ msgid "DHCP server"
 msgstr "DHCP server"
 
 #: src/machines/bootEnvironment.ts
-msgid "Did not start the Linux boot environment after two restarts"
-msgstr "Did not start the Linux boot environment after two restarts"
+msgid "Did not start the Linux boot environment after restarting"
+msgstr "Did not start the Linux boot environment after restarting"
 
 #: src/machines/bootEnvironment.ts
-msgid "Did not start Windows PE after two restarts"
-msgstr "Did not start Windows PE after two restarts"
+msgid "Did not start Windows PE after restarting"
+msgstr "Did not start Windows PE after restarting"
 
 #: src/settings/directory/DirectorySettings.tsx
 msgid "Directory"
@@ -10957,12 +10957,12 @@ msgid "This machine already has a run. Cancel it before assigning another sequen
 msgstr "This machine already has a run. Cancel it before assigning another sequence."
 
 #: src/machines/bootEnvironment.ts
-msgid "This machine did not start the Linux boot environment after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts the Linux boot environment."
-msgstr "This machine did not start the Linux boot environment after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts the Linux boot environment."
+msgid "This machine did not start the Linux boot environment after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts the Linux boot environment."
+msgstr "This machine did not start the Linux boot environment after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts the Linux boot environment."
 
 #: src/machines/bootEnvironment.ts
-msgid "This machine did not start Windows PE after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts Windows PE."
-msgstr "This machine did not start Windows PE after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts Windows PE."
+msgid "This machine did not start Windows PE after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts Windows PE."
+msgstr "This machine did not start Windows PE after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts Windows PE."
 
 #: src/machines/assign/AssignConsequences.tsx
 msgid "This machine has more than one disk. Sign in at it and choose the disk there."

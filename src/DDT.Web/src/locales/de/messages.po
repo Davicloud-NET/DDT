@@ -3666,12 +3666,12 @@ msgid "DHCP server"
 msgstr "DHCP-Server"
 
 #: src/machines/bootEnvironment.ts
-msgid "Did not start the Linux boot environment after two restarts"
-msgstr "Hat die Linux-Startumgebung nach zwei Neustarts nicht gestartet"
+msgid "Did not start the Linux boot environment after restarting"
+msgstr "Hat die Linux-Startumgebung trotz Neustart nicht gestartet"
 
 #: src/machines/bootEnvironment.ts
-msgid "Did not start Windows PE after two restarts"
-msgstr "Hat Windows PE nach zwei Neustarts nicht gestartet"
+msgid "Did not start Windows PE after restarting"
+msgstr "Hat Windows PE trotz Neustart nicht gestartet"
 
 #: src/settings/directory/DirectorySettings.tsx
 msgid "Directory"
@@ -10957,12 +10957,12 @@ msgid "This machine already has a run. Cancel it before assigning another sequen
 msgstr "Dieses Gerät hat bereits eine Ausführung. Brechen Sie sie ab, bevor Sie eine andere Tasksequenz zuweisen."
 
 #: src/machines/bootEnvironment.ts
-msgid "This machine did not start the Linux boot environment after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts the Linux boot environment."
-msgstr "Dieses Gerät hat die Linux-Startumgebung nach zwei Neustarts nicht gestartet, daher startet DDT es nicht mehr neu. Prüfen Sie, ob es per Netzwerk startet und ob ein DHCP-Server eine andere Startdatei nennt. {title} bleibt zugewiesen und beginnt, sobald das Gerät die Linux-Startumgebung startet."
+msgid "This machine did not start the Linux boot environment after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts the Linux boot environment."
+msgstr "Dieses Gerät hat die Linux-Startumgebung trotz Neustart nicht gestartet, daher startet DDT es nicht mehr neu. Prüfen Sie, ob es per Netzwerk startet und ob ein DHCP-Server eine andere Startdatei nennt. {title} bleibt zugewiesen und beginnt, sobald das Gerät die Linux-Startumgebung startet."
 
 #: src/machines/bootEnvironment.ts
-msgid "This machine did not start Windows PE after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts Windows PE."
-msgstr "Dieses Gerät hat Windows PE nach zwei Neustarts nicht gestartet, daher startet DDT es nicht mehr neu. Prüfen Sie, ob es per Netzwerk startet und ob ein DHCP-Server eine andere Startdatei nennt. {title} bleibt zugewiesen und beginnt, sobald das Gerät Windows PE startet."
+msgid "This machine did not start Windows PE after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts Windows PE."
+msgstr "Dieses Gerät hat Windows PE trotz Neustart nicht gestartet, daher startet DDT es nicht mehr neu. Prüfen Sie, ob es per Netzwerk startet und ob ein DHCP-Server eine andere Startdatei nennt. {title} bleibt zugewiesen und beginnt, sobald das Gerät Windows PE startet."
 
 #: src/machines/assign/AssignConsequences.tsx
 msgid "This machine has more than one disk. Sign in at it and choose the disk there."

@@ -90,7 +90,7 @@ describe("MachinePage", () => {
     );
 
     await screen.findByRole("heading", { name: "PC-042" });
-    expect(screen.queryByText(/after two restarts/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/after restarting/)).not.toBeInTheDocument();
 
     act(() => {
       hub?.push("machineChanged", {
@@ -102,7 +102,7 @@ describe("MachinePage", () => {
 
     expect(
       await screen.findByText(
-        "This machine did not start the Linux boot environment after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. Install Linux stays assigned and starts once the machine starts the Linux boot environment.",
+        "This machine did not start the Linux boot environment after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. Install Linux stays assigned and starts once the machine starts the Linux boot environment.",
       ),
     ).toBeInTheDocument();
 
@@ -117,7 +117,7 @@ describe("MachinePage", () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByText(/after two restarts/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/after restarting/)).not.toBeInTheDocument();
     });
   });
 

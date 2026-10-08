@@ -73,7 +73,7 @@ internal sealed class RestartOrders(DdtDbContext database, RunQueries queries, B
     }
 
     private static string GaveUp(AgentEnvironment starts) =>
-        $"The machine was restarted for it twice and did not start {PhaseRules.Name(starts)}, so it is not restarted again. " +
+        $"The machine did not start {PhaseRules.Name(starts)} after restarting, so it is not restarted again. " +
         "Check that it starts from the network and that no DHCP server names another boot file. " +
         $"The run stays assigned and starts once the machine starts {PhaseRules.Name(starts)}.";
 }

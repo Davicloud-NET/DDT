@@ -105,7 +105,7 @@ public sealed class MainViewModelTests
     [Fact]
     public void AMachineWhoseRunWaitsForAReasonShowsTheReasonInsteadOfAskingForASequence()
     {
-        const string Reason = "Install Ubuntu runs in the Linux boot environment and does not start in Windows PE. The machine was restarted for it twice.";
+        const string Reason = "Install Ubuntu runs in the Linux boot environment and does not start in Windows PE. The machine did not start it after restarting.";
         TestConsole console = new TestConsole().Show(Scenarios.State(ConsoleStage.WaitingForSequence));
         WaitingViewModel waiting = Assert.IsType<WaitingViewModel>(console.Model.Screen);
 

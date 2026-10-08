@@ -85,7 +85,7 @@ export interface MachineSummary {
   nextEnvironment?: AgentEnvironment | null;
   // Whether the machine's agent can restart into the other boot environment and stay signed in.
   changesBootEnvironment?: boolean | null;
-  // The boot environment the machine did not start after two restarts for its run. The server stopped, the run waits.
+  // The boot environment the machine did not start after restarting for its run. The server orders no more, the run waits.
   restartsFailed?: AgentEnvironment | null;
 }
 

@@ -145,7 +145,7 @@ describe("MachinesPage", () => {
       await screen.findByRole("link", { name: "PC-BIOS" });
       const stuck = within(row("PC-BIOS"));
       expect(stuck.getByText("Restarts into the Linux boot environment")).toBeInTheDocument();
-      expect(stuck.queryByText(/after two restarts/)).not.toBeInTheDocument();
+      expect(stuck.queryByText(/after restarting/)).not.toBeInTheDocument();
 
       act(() => {
         hub?.push("machineChanged", {
@@ -156,7 +156,7 @@ describe("MachinesPage", () => {
       });
 
       expect(
-        await stuck.findByText("Did not start the Linux boot environment after two restarts"),
+        await stuck.findByText("Did not start the Linux boot environment after restarting"),
       ).toBeInTheDocument();
       expect(stuck.queryByText(/^Restarts into/)).not.toBeInTheDocument();
       expect(stuck.getByText("Install Linux")).toBeInTheDocument();

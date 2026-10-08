@@ -66,9 +66,9 @@ export function environmentLine(machine: MachineSummary): string | null {
 export function restartsFailedLine(machine: MachineSummary): string | null {
   switch (machine.restartsFailed ?? null) {
     case "WindowsPE":
-      return t`Did not start Windows PE after two restarts`;
+      return t`Did not start Windows PE after restarting`;
     case "LinuxBoot":
-      return t`Did not start the Linux boot environment after two restarts`;
+      return t`Did not start the Linux boot environment after restarting`;
     default:
       return null;
   }
@@ -80,9 +80,9 @@ export function restartsFailedNotice(machine: MachineSummary): string | null {
 
   switch (machine.restartsFailed ?? null) {
     case "WindowsPE":
-      return t`This machine did not start Windows PE after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. ${title} stays assigned and starts once the machine starts Windows PE.`;
+      return t`This machine did not start Windows PE after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. ${title} stays assigned and starts once the machine starts Windows PE.`;
     case "LinuxBoot":
-      return t`This machine did not start the Linux boot environment after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. ${title} stays assigned and starts once the machine starts the Linux boot environment.`;
+      return t`This machine did not start the Linux boot environment after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. ${title} stays assigned and starts once the machine starts the Linux boot environment.`;
     default:
       return null;
   }

@@ -181,7 +181,7 @@ public sealed class AgentLoopSwitchTests : IDisposable
     [Fact]
     public async Task ARunThatWaitsForAReasonTheServerGivesIsSaidAtTheMachineOnceForEachReason()
     {
-        const string GaveUp = "Install Ubuntu runs in the Linux boot environment and does not start in Windows PE. The machine was restarted for it twice.";
+        const string GaveUp = "Install Ubuntu runs in the Linux boot environment and does not start in Windows PE. The machine did not start it after restarting.";
         const string NoEnvironment = "Install Ubuntu runs in the Linux boot environment and does not start in Windows PE. This server has none.";
         ScriptedAgentServer server = new ScriptedAgentServer()
             .OnRegister(_ => Registered())

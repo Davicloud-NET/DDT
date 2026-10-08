@@ -23,7 +23,7 @@ public sealed class RestartOrderTests(BothEnvironmentsApplication application) :
     private const string Requested = "machine.environment-requested";
 
     private const string GaveUp =
-        "The machine was restarted for it twice and did not start the Linux boot environment, so it is not restarted again. " +
+        "The machine did not start the Linux boot environment after restarting, so it is not restarted again. " +
         "Check that it starts from the network and that no DHCP server names another boot file. " +
         "The run stays assigned and starts once the machine starts the Linux boot environment.";
 

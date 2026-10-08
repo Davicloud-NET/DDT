@@ -3666,11 +3666,11 @@ msgid "DHCP server"
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
-msgid "Did not start the Linux boot environment after two restarts"
+msgid "Did not start the Linux boot environment after restarting"
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
-msgid "Did not start Windows PE after two restarts"
+msgid "Did not start Windows PE after restarting"
 msgstr ""
 
 #: src/settings/directory/DirectorySettings.tsx
@@ -10957,11 +10957,11 @@ msgid "This machine already has a run. Cancel it before assigning another sequen
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
-msgid "This machine did not start the Linux boot environment after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts the Linux boot environment."
+msgid "This machine did not start the Linux boot environment after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts the Linux boot environment."
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
-msgid "This machine did not start Windows PE after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts Windows PE."
+msgid "This machine did not start Windows PE after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts Windows PE."
 msgstr ""
 
 #: src/machines/assign/AssignConsequences.tsx

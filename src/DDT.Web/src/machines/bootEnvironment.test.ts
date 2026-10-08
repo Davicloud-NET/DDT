@@ -85,12 +85,12 @@ describe("a machine the server no longer restarts for its run", () => {
       restartsFailedLine(
         machineSummary({ agentEnvironment: "WindowsPE", restartsFailed: "LinuxBoot" }),
       ),
-    ).toBe("Did not start the Linux boot environment after two restarts");
+    ).toBe("Did not start the Linux boot environment after restarting");
     expect(
       restartsFailedLine(
         machineSummary({ agentEnvironment: "LinuxBoot", restartsFailed: "WindowsPE" }),
       ),
-    ).toBe("Did not start Windows PE after two restarts");
+    ).toBe("Did not start Windows PE after restarting");
   });
 
   it("says on its page what to look at and that the run stays assigned", () => {
@@ -103,7 +103,7 @@ describe("a machine the server no longer restarts for its run", () => {
         }),
       ),
     ).toBe(
-      "This machine did not start the Linux boot environment after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. Install Linux stays assigned and starts once the machine starts the Linux boot environment.",
+      "This machine did not start the Linux boot environment after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. Install Linux stays assigned and starts once the machine starts the Linux boot environment.",
     );
     expect(
       restartsFailedNotice(
@@ -114,7 +114,7 @@ describe("a machine the server no longer restarts for its run", () => {
         }),
       ),
     ).toBe(
-      "This machine did not start Windows PE after two restarts, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. Install Windows stays assigned and starts once the machine starts Windows PE.",
+      "This machine did not start Windows PE after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. Install Windows stays assigned and starts once the machine starts Windows PE.",
     );
   });
 

@@ -8,6 +8,7 @@ import { apiErrorFrom, apiFetch, apiGet, apiPost } from "@/lib/api";
 import { reauthenticationToken } from "@/settings/settings";
 
 import type { BootImageJob } from "./bootImageJob";
+import type { LinuxBootView } from "./linuxBoot";
 
 export interface BootImageDriver {
   packageId: string;
@@ -69,6 +70,8 @@ export interface BootImageView {
   job: BootImageJob | null;
   // Newest first.
   builds: BootImageStoredBuild[];
+  // The Linux boot environment, which comes with DDT. Missing from a server that does not say.
+  linux?: LinuxBootView | null;
 }
 
 export const bootImageQuery = queryOptions({

@@ -178,6 +178,10 @@ function libraryEvents(queryClient: QueryClient) {
       queryClient.setQueryData(bootImageQuery.queryKey, view);
       putJob(queryClient, view.job);
       setChecklistItem(queryClient, "bootImage", view.builds.length > 0);
+
+      if (view.linux !== null && view.linux !== undefined) {
+        setChecklistItem(queryClient, "linuxBoot", view.linux.available);
+      }
     },
     bootImageJobOutput: (output: BootImageJobOutput) => {
       appendJobOutput(queryClient, output);

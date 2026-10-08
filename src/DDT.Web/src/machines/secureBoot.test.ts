@@ -7,7 +7,13 @@ import { describe, expect, it } from "vitest";
 import type { SequenceSummary } from "@/sequences/sequences";
 import { machineSummary } from "@/test/builders";
 
-import { secureBootFact, secureBootLabel, secureBootRisk } from "./secureBoot";
+import {
+  linuxBootRefusal,
+  secureBootFact,
+  secureBootLabel,
+  secureBootRisk,
+  uefiCaCount,
+} from "./secureBoot";
 
 const linux: SequenceSummary = {
   id: "s1",
@@ -27,6 +33,57 @@ const linux: SequenceSummary = {
   rawImageSignedUnder: null,
   kind: "Linux",
 };
+
+describe("linuxBootRefusal", () => {
+  const both = "Microsoft2011, Microsoft2023";
+
+  it("says why a machine with Secure Boot on is not started in Linux when its firmware trusts none of the shim's CAs", () => {
+    const none = machineSummary({ secureBootEnabled: true, trustedUefiCas: "None" });
+    const newer = machineSummary({ secureBootEnabled: true, trustedUefiCas: "Microsoft2023" });
+
+    expect(linuxBootRefusal(none, both)).toBe(
+      "This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware trusts neither of Microsoft's third-party UEFI CAs 2011 and 2023, which sign the environment's first loader. Allow one of them in the firmware setup, or turn Secure Boot off there.",
+    );
+    expect(linuxBootRefusal(newer, "Microsoft2011")).toBe(
+      "This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware does not trust Microsoft's third-party UEFI CA 2011, which signs the environment's first loader. Allow it in the firmware setup, or turn Secure Boot off there.",
+    );
+  });
+
+  it("has nothing to say for a machine that starts it, or where nothing is known", () => {
+    const on = { secureBootEnabled: true } as const;
+
+    // The firmware trusts one of the two.
+    expect(
+      linuxBootRefusal(machineSummary({ ...on, trustedUefiCas: "Microsoft2011" }), both),
+    ).toBeNull();
+    expect(
+      linuxBootRefusal(machineSummary({ ...on, trustedUefiCas: "Microsoft2023" }), both),
+    ).toBeNull();
+    // Secure Boot is off, or the machine did not say.
+    expect(
+      linuxBootRefusal(machineSummary({ secureBootEnabled: false, trustedUefiCas: "None" }), both),
+    ).toBeNull();
+    expect(
+      linuxBootRefusal(machineSummary({ secureBootEnabled: null, trustedUefiCas: "None" }), both),
+    ).toBeNull();
+    // The machine did not say what its firmware trusts.
+    expect(linuxBootRefusal(machineSummary({ ...on, trustedUefiCas: null }), both)).toBeNull();
+    // The server has no Linux boot environment, found no CA for its shim, or does not say.
+    const none = machineSummary({ ...on, trustedUefiCas: "None" });
+    expect(linuxBootRefusal(none, null)).toBeNull();
+    expect(linuxBootRefusal(none, undefined)).toBeNull();
+    expect(linuxBootRefusal(none, "None")).toBeNull();
+  });
+});
+
+describe("uefiCaCount", () => {
+  it("counts the CAs a flags value names", () => {
+    expect(uefiCaCount(null)).toBe(0);
+    expect(uefiCaCount("None")).toBe(0);
+    expect(uefiCaCount("Microsoft2023")).toBe(1);
+    expect(uefiCaCount("Microsoft2011, Microsoft2023")).toBe(2);
+  });
+});
 
 describe("secureBootRisk", () => {
   it("has nothing to allow for a signed image, a Windows sequence, or a machine with Secure Boot off", () => {

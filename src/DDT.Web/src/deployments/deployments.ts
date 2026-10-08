@@ -170,6 +170,9 @@ export interface DeploymentOptionsView {
   // The boot environments the server can start a machine in. Servers from before the Linux boot environment leave it
   // out.
   bootEnvironments?: AgentEnvironment[] | null;
+  // The Microsoft third-party UEFI CAs the Linux boot environment's shim is signed under, as a flags value. A machine
+  // with Secure Boot on whose firmware trusts none of them is not started in it.
+  linuxShimSignedUnder?: string | null;
 }
 
 export interface DeploymentOptions extends DeploymentOptionsView {

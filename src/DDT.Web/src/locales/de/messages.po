@@ -1428,6 +1428,10 @@ msgstr "Eine Bedingung kann Gruppen höchstens {max} Ebenen tief verschachteln."
 msgid "A culture name. Left empty, the image's language."
 msgstr "Ein Kulturname. Leer gelassen, die Sprache des Images."
 
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "A DHCP server that names a boot file itself starts the same environment on every machine, and if it names another server's file, the Linux boot environment does not start at all."
+msgstr "Ein DHCP-Server, der selbst eine Startdatei nennt, startet auf jedem Gerät dieselbe Umgebung, und nennt er die Datei eines anderen Servers, startet die Linux-Startumgebung gar nicht."
+
 #: src/lib/serverMessages.ts
 msgctxt "user.displayNameTooLong"
 msgid "A display name can have at most {max} characters."
@@ -1492,6 +1496,10 @@ msgstr "Eine Geräterolle, die es nicht mehr gibt"
 msgctxt "rule.roleGone"
 msgid "A machine role this rule gives no longer exists. Take it out of the rule."
 msgstr "Eine Geräterolle, die diese Regel gibt, gibt es nicht mehr. Nehmen Sie sie aus der Regel heraus."
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "A machine with a run starts the boot environment its task sequence needs: Windows PE for Windows, the Linux boot environment for a Linux image. This setting decides for every other 64-bit UEFI machine."
+msgstr "Ein Gerät mit einer Ausführung startet die Startumgebung, die seine Tasksequenz braucht: Windows PE für Windows, die Linux-Startumgebung für ein Linux-Image. Für jedes andere 64-Bit-UEFI-Gerät entscheidet diese Einstellung."
 
 #: src/lib/serverMessages.ts
 msgctxt "model.manufacturerWhole"
@@ -2692,6 +2700,10 @@ msgstr "Zugelassene Relay-Agents"
 msgid "Authorizing machines"
 msgstr "Geräte autorisieren"
 
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Automatic: Windows PE once a boot image is built, Linux until then"
+msgstr "Automatisch: Windows PE, sobald ein Startimage erstellt ist, bis dahin Linux"
+
 #: src/about/AboutPage.tsx
 msgid "Back to DDT"
 msgstr "Zurück zu DDT"
@@ -2729,6 +2741,7 @@ msgstr "Boot"
 msgid "Boot directory"
 msgstr "Startverzeichnis"
 
+#: src/boot/LinuxEnvironment.tsx
 #: src/settings/networkBoot/BootFileField.tsx
 msgid "Boot file"
 msgstr "Startdatei"
@@ -3438,6 +3451,10 @@ msgstr "DDT beendet die Windows-Bereitstellungsdienste und verhindert, dass sie 
 msgid "DDT tells a netbooting machine its boot file, while the site's own DHCP server keeps handing out the addresses. Turn it off where every site's DHCP server names DDT and the boot file itself; DDT then listens on neither UDP 67 nor 4011."
 msgstr "DDT teilt einem per Netzwerk startenden Gerät seine Startdatei mit, während der eigene DHCP-Server des Standorts weiter die Adressen vergibt. Schalten Sie es aus, wo der DHCP-Server jedes Standorts DDT und die Startdatei selbst nennt; DDT lauscht dann weder auf UDP 67 noch auf 4011."
 
+#: src/settings/networkBoot/TransfersGroup.tsx
+msgid "DDT then answers on UDP 4011 alone, and machines find it there once that DHCP server sends option 60, PXEClient. Where Microsoft's DHCP Server is installed, DDT does this by itself."
+msgstr "DDT antwortet dann nur auf UDP 4011, und die Geräte finden es dort, sobald dieser DHCP-Server Option 60, PXEClient, sendet. Wo Microsofts DHCP-Server installiert ist, macht DDT das von selbst."
+
 #: src/settings/AgentPanel.tsx
 msgid "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key and restart DDT to upload the agent on this page."
 msgstr "DDT:Agent:BinaryPath benennt den Agent in der Konfiguration, daher kann er hier nicht hochgeladen werden. Entfernen Sie den Schlüssel und starten Sie DDT neu, um den Agent auf dieser Seite hochzuladen."
@@ -3468,6 +3485,10 @@ msgstr "DDT:Https:GenerateSelfSignedCertificate ist false, daher stellt DDT kein
 #: src/settings/certificate/CertificateFacts.tsx
 msgid "DDT's root, {root}"
 msgstr "Stammzertifikat von DDT, {root}"
+
+#: src/boot/LinuxEnvironment.tsx
+msgid "Debian packages as of"
+msgstr "Debian-Pakete vom"
 
 #: src/runs/flow/detailsText.ts
 msgid "Decided at {start} in {phase}, {into} into the run."
@@ -3915,10 +3936,12 @@ msgid "ends with"
 msgstr "endet auf"
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "English (United Kingdom)"
 msgstr "Englisch (Vereinigtes Königreich)"
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "English (United States)"
 msgstr "Englisch (USA)"
 
@@ -4239,6 +4262,10 @@ msgstr "Abgelaufen"
 msgid "Expires"
 msgstr "Läuft ab"
 
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Extra kernel arguments for Linux"
+msgstr "Zusätzliche Kernel-Argumente für Linux"
+
 #: src/sequences/steps/InjectDriversFields.tsx
 msgid "Fail when no driver package matches the model"
 msgstr "Fehlschlagen, wenn kein Treiberpaket zum Modell passt"
@@ -4470,6 +4497,7 @@ msgid "Found"
 msgstr "Gefunden"
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "French"
 msgstr "Französisch"
 
@@ -4563,10 +4591,12 @@ msgid "Generate certificate"
 msgstr "Zertifikat generieren"
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "German"
 msgstr "Deutsch"
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "German (Switzerland)"
 msgstr "Deutsch (Schweiz)"
 
@@ -4693,6 +4723,10 @@ msgstr "Gruppen und die Rollen, die sie geben"
 msgctxt "sequence.tooDeep"
 msgid "Groups, IFs and repeats can be nested at most {max} levels deep."
 msgstr "Gruppen, IFs und Wiederholungen lassen sich höchstens {max} Ebenen tief verschachteln."
+
+#: src/boot/LinuxEnvironment.tsx
+msgid "GRUB"
+msgstr "GRUB"
 
 #: src/runs/runs.ts
 msgid "Handed over to Windows; after Windows setup the agent continued there {took} later"
@@ -5011,6 +5045,10 @@ msgstr "Es kann hier Geräte in die Domäne aufnehmen."
 msgid "It cannot join machines here."
 msgstr "Es kann hier keine Geräte in die Domäne aufnehmen."
 
+#: src/boot/LinuxEnvironment.tsx
+msgid "It comes with DDT, so there is nothing to build. Task sequences that write a Linux image run in it, and Windows sequences run in Windows PE."
+msgstr "Sie kommt mit DDT, es gibt also nichts zu erstellen. Tasksequenzen, die ein Linux-Image schreiben, laufen in ihr, und Windows-Sequenzen laufen in Windows PE."
+
 #: src/inputs/inputs.ts
 msgid "It connects to shares on {hosts}."
 msgstr "Es verbindet Freigaben auf {hosts}."
@@ -5070,6 +5108,7 @@ msgid "It uploads one boot image, within a day. Download it again for the next b
 msgstr "Er lädt ein Startimage hoch, innerhalb eines Tages. Laden Sie ihn für den nächsten Build erneut herunter."
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "Italian"
 msgstr "Italienisch"
 
@@ -5093,6 +5132,10 @@ msgstr "Diese Firmware lädt die Startdatei über TFTP."
 msgctxt "settings.certificate.keyAlgorithm"
 msgid "Its key is neither RSA nor ECDSA."
 msgstr "Sein Schlüssel ist weder RSA noch ECDSA."
+
+#: src/boot/LinuxEnvironment.tsx
+msgid "Its source code is published with every release of DDT: <0>the source packages it was built from</0>."
+msgstr "Ihr Quellcode wird mit jedem Release von DDT veröffentlicht: <0>die Quellpakete, aus denen sie erstellt wurde</0>."
 
 #: src/settings/deploymentDefaults/DomainGroup.tsx
 msgid "Join account"
@@ -5144,6 +5187,10 @@ msgstr "Das gespeicherte behalten"
 msgid "Keeps the disk"
 msgstr "Behält den Datenträger"
 
+#: src/boot/LinuxEnvironment.tsx
+msgid "Kernel"
+msgstr "Kernel"
+
 #: src/settings/certificate/NotManageable.tsx
 msgid "Kestrel:Certificates:Default:Password is set in configuration, so the certificate is managed by hand and this page only reads it. To manage it here, keep the certificate and its key as PEM files without a password, name them in Kestrel:Certificates:Default:Path and KeyPath, remove the password, and restart DDT."
 msgstr "Kestrel:Certificates:Default:Password ist in der Konfiguration gesetzt, daher wird das Zertifikat von Hand verwaltet, und diese Seite liest es nur. Um es hier zu verwalten, legen Sie Zertifikat und Schlüssel als PEM-Dateien ohne Kennwort ab, benennen Sie sie in Kestrel:Certificates:Default:Path und KeyPath, entfernen Sie das Kennwort und starten Sie DDT neu."
@@ -5165,6 +5212,14 @@ msgstr "Tastatur"
 #: src/boot/LastBuild.tsx
 msgid "Keyboard layout"
 msgstr "Tastaturlayout"
+
+#: src/settings/deploymentDefaults/ConsoleLanguageGroup.tsx
+msgid "Keyboard layout in the Linux boot environment"
+msgstr "Tastaturlayout in der Linux-Startumgebung"
+
+#: src/boot/LinuxEnvironment.tsx
+msgid "Keyboard layouts"
+msgstr "Tastaturlayouts"
 
 #: src/settings/signIn/ClaimRolesGroup.tsx
 msgid "Keycloak and Authentik send group names or paths, Entra ID the object IDs of the groups."
@@ -5256,6 +5311,10 @@ msgstr "Nicht setzen"
 msgid "Leave page"
 msgstr "Seite verlassen"
 
+#: src/settings/networkBoot/TransfersGroup.tsx
+msgid "Leave UDP 67 to a DHCP server on this computer"
+msgstr "UDP 67 einem DHCP-Server auf diesem Computer überlassen"
+
 #: src/uploads/LeaveUploadDialog.tsx
 msgid "Leave while {file} is checked?"
 msgstr "Seite verlassen, während {file} geprüft wird?"
@@ -5324,6 +5383,7 @@ msgstr "Hell"
 msgid "Linked to {provider}"
 msgstr "Verknüpft mit {provider}"
 
+#: src/boot/LinuxEnvironment.tsx
 #: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/sequences/steps.ts
@@ -5540,6 +5600,10 @@ msgctxt "package.inUse"
 msgid "Machines are waiting to install this package or are installing it. Cancel those runs or let them finish, then delete it."
 msgstr "Geräte warten darauf, dieses Paket zu installieren, oder installieren es gerade. Brechen Sie diese Ausführungen ab oder lassen Sie sie fertig werden, und löschen Sie es dann."
 
+#: src/setup/SetupChecklist.tsx
+msgid "Machines netboot into the Linux boot environment, which comes with DDT. To install Windows, <0>build the boot image</0> as well."
+msgstr "Geräte starten per Netzwerk in die Linux-Startumgebung, die mit DDT kommt. Um Windows zu installieren, <0>erstellen Sie zusätzlich das Startimage</0>."
+
 #: src/packages/packages.ts
 msgid "Machines of {targets} no longer get these drivers from the Inject drivers step of {names}."
 msgstr "Geräte von {targets} erhalten diese Treiber nicht mehr über den Schritt „Treiber einbinden“ von {names}."
@@ -5580,9 +5644,17 @@ msgstr "Geräte, die ab jetzt per Netzwerk starten, führen den Agent aus, der m
 msgid "Machines that netboot from now on show the console this server came with. If it came with none, they show the console in their boot image."
 msgstr "Geräte, die ab jetzt per Netzwerk starten, zeigen die Konsole, die mit diesem Server geliefert wurde. Wurde keine mitgeliefert, zeigen sie die Konsole in ihrem Startimage."
 
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Machines that start the Linux boot environment load {file} over TFTP, whatever the boot target for 64-bit UEFI names."
+msgstr "Geräte, die die Linux-Startumgebung starten, laden {file} über TFTP, was auch immer das Startziel für 64-Bit-UEFI nennt."
+
 #: src/conditions/conditions.ts
 msgid "Machines where {condition} go along Then."
 msgstr "Geräte, bei denen {condition}, nehmen den Weg Dann."
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Machines without a run start"
+msgstr "Geräte ohne Ausführung starten"
 
 #: src/users/ConfirmUserAction.tsx
 msgid "Make a new password"
@@ -6455,6 +6527,7 @@ msgid "Not reached"
 msgstr "Nicht erreicht"
 
 #: src/boot/LastBuild.tsx
+#: src/boot/LinuxEnvironment.tsx
 msgid "Not recorded"
 msgstr "Nicht erfasst"
 
@@ -8315,6 +8388,10 @@ msgstr "Netzwerkfreigabe {number}"
 msgid "Share hosts it may connect to"
 msgstr "Hosts, mit deren Freigaben es sich verbinden darf"
 
+#: src/boot/LinuxEnvironment.tsx
+msgid "shim"
+msgstr "shim"
+
 #: src/machines/list/MachineList.tsx
 msgid "Show all machines"
 msgstr "Alle Geräte anzeigen"
@@ -8572,6 +8649,7 @@ msgid "Source code"
 msgstr "Quellcode"
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "Spanish"
 msgstr "Spanisch"
 
@@ -9717,6 +9795,10 @@ msgstr "Die Sprache von Windows PE"
 msgid "The language the console starts in, in Windows PE and in the installed Windows. Someone at the machine can switch with F5."
 msgstr "Die Sprache, in der die Konsole startet, in Windows PE und im installierten Windows. Am Gerät lässt sie sich mit F5 umschalten."
 
+#: src/settings/deploymentDefaults/ConsoleLanguageGroup.tsx
+msgid "The layout of the console when a machine starts the Linux boot environment. Windows PE has the layout its boot image was built with."
+msgstr "Das Layout der Konsole, wenn ein Gerät die Linux-Startumgebung startet. Windows PE hat das Layout, mit dem sein Startimage erstellt wurde."
+
 #: src/sequences/steps/WriteRawImageFields.tsx
 msgid "The library has no raw disk images yet. Upload a distribution's cloud image under <0>OS images</0>."
 msgstr "Die Bibliothek hat noch keine Raw-Datenträgerimages. Laden Sie das Cloud-Image einer Distribution unter <0>Betriebssystem-Images</0> hoch."
@@ -9728,6 +9810,10 @@ msgstr "Die Bibliothek hat noch keine Windows-Images. Laden Sie eine WIM-Datei u
 #: src/about/AboutPage.tsx
 msgid "The licences of the packages in this web interface"
 msgstr "Die Lizenzen der Pakete in dieser Weboberfläche"
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "The Linux boot environment"
+msgstr "Die Linux-Startumgebung"
 
 #: src/lib/serverMessages.ts
 msgctxt "linuxBoot.noRoot"
@@ -10769,6 +10855,14 @@ msgstr "Dieses Gerät hat keine zugewiesene oder laufende Ausführung. Laden Sie
 msgid "This machine has sent no log lines yet."
 msgstr "Dieses Gerät hat noch keine Protokollzeilen gesendet."
 
+#: src/machines/secureBoot.ts
+msgid "This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware does not trust {cas}, which signs the environment's first loader. Allow it in the firmware setup, or turn Secure Boot off there."
+msgstr "Dieses Gerät wird nicht in die Linux-Startumgebung gestartet: Secure Boot ist aktiviert, und seine Firmware vertraut {cas} nicht, mit der der erste Loader der Umgebung signiert ist. Lassen Sie diese Zertifizierungsstelle im Firmware-Setup zu, oder deaktivieren Sie Secure Boot dort."
+
+#: src/machines/secureBoot.ts
+msgid "This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware trusts neither of {cas}, which sign the environment's first loader. Allow one of them in the firmware setup, or turn Secure Boot off there."
+msgstr "Dieses Gerät wird nicht in die Linux-Startumgebung gestartet: Secure Boot ist aktiviert, und seine Firmware vertraut keiner von {cas}, mit denen der erste Loader der Umgebung signiert ist. Lassen Sie eine davon im Firmware-Setup zu, oder deaktivieren Sie Secure Boot dort."
+
 #: src/machines/MachinePage.tsx
 msgid "This machine was removed"
 msgstr "Dieses Gerät wurde entfernt"
@@ -11643,6 +11737,7 @@ msgstr "Windows-Image"
 #: src/machines/bootEnvironment.ts
 #: src/packages/PackageName.tsx
 #: src/sequences/steps.ts
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
 msgid "Windows PE"
 msgstr "Windows PE"
 
@@ -11655,6 +11750,10 @@ msgstr "Windows PE und Windows führen keine Shell-Skripte aus. Wählen Sie cmd 
 msgctxt "sequence.restartBeforePartition"
 msgid "Windows PE can restart only after the disk is partitioned, because the run's state is kept on the disk."
 msgstr "Windows PE kann erst neu starten, nachdem der Datenträger partitioniert ist, weil der Zustand der Ausführung auf dem Datenträger liegt."
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Windows PE or Linux"
+msgstr "Windows PE oder Linux"
 
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "Windows PE, before the hand-over"
@@ -11696,6 +11795,14 @@ msgstr "Mit seiner Domäne, als DOMÄNE\\Benutzer oder benutzer@corp.example."
 msgid "With PowerShell, for steps that run a script in Windows PE"
 msgstr "Mit PowerShell, für Schritte, die ein Skript in Windows PE ausführen"
 
+#: src/boot/LinuxSecureBootLine.tsx
+msgid "With Secure Boot on, a machine starts it when its firmware trusts {cas}. A machine whose firmware does not is not started in it."
+msgstr "Mit aktiviertem Secure Boot startet ein Gerät sie, wenn seine Firmware {cas} vertraut. Ein Gerät, dessen Firmware das nicht tut, wird nicht in ihr gestartet."
+
+#: src/boot/LinuxSecureBootLine.tsx
+msgid "With Secure Boot on, a machine starts it when its firmware trusts one of {cas}. A machine whose firmware trusts neither is not started in it."
+msgstr "Mit aktiviertem Secure Boot startet ein Gerät sie, wenn seine Firmware einer von {cas} vertraut. Ein Gerät, dessen Firmware keiner davon vertraut, wird nicht in ihr gestartet."
+
 #: src/sequences/builder/nodeDetail.ts
 msgid "With the join account of the deployment defaults"
 msgstr "Mit dem Beitrittskonto der Standardwerte der Bereitstellung"
@@ -11727,6 +11834,10 @@ msgstr "Ohne Regeln wählt ein Operator die Tasksequenz jedes Geräts. Fügen Si
 #: src/rules/list/NoRules.tsx
 msgid "Without rules an operator chooses the sequence of each machine. An administrator adds rules here."
 msgstr "Ohne Regeln wählt ein Operator die Tasksequenz jedes Geräts. Ein Administrator fügt hier Regeln hinzu."
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Words added to the kernel command line of the Linux boot environment, such as console=ttyS0,115200 for a serial console. Only letters, digits and _ . : , = + / @ - are taken."
+msgstr "Wörter, die an die Kernel-Befehlszeile der Linux-Startumgebung angehängt werden, etwa console=ttyS0,115200 für eine serielle Konsole. Angenommen werden nur Buchstaben, Ziffern und _ . : , = + / @ -."
 
 #: src/sequences/builder/inspector/NodeKeys.tsx
 msgid "Wrap {name} in a group"

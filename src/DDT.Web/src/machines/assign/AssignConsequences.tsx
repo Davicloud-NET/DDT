@@ -5,9 +5,9 @@
 import { Trans } from "@lingui/react/macro";
 
 import type { DeploymentOptionsView } from "@/deployments/deployments";
-import { startNotice } from "@/machines/bootEnvironment";
+import { startNotice, startsIn } from "@/machines/bootEnvironment";
 import { machineLabel, type MachineSummary } from "@/machines/machines";
-import type { SecureBootRisk } from "@/machines/secureBoot";
+import { linuxBootRefusal, type SecureBootRisk } from "@/machines/secureBoot";
 import type { SequenceSummary } from "@/sequences/sequences";
 import { Notice } from "@/ui/Notice";
 
@@ -42,6 +42,11 @@ export function AssignConsequences({
   const label = machineLabel(machine);
   const sequenceName = sequence?.name ?? "";
   const start = startNotice(machine, sequence, options?.bootEnvironments);
+  // A Linux sequence starts in the Linux boot environment, which this machine's firmware may refuse.
+  const refused =
+    sequence !== null && startsIn(sequence) === "LinuxBoot"
+      ? linuxBootRefusal(machine, options?.linuxShimSignedUnder)
+      : null;
 
   return (
     <div className="flex flex-col gap-2">
@@ -72,6 +77,7 @@ export function AssignConsequences({
           <p>{start.text}</p>
         )
       ) : null}
+      {refused !== null ? <Notice tone="attention">{refused}</Notice> : null}
       {sequence?.continuesInWindows === true ? (
         <p>
           <Trans>

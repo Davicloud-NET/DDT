@@ -23,7 +23,15 @@ export interface PxeSettings {
   authorisedRelayAgents: string[];
   // Keyed by client architecture, such as X64Uefi.
   bootTargets: Record<string, BootTargetSettings>;
+  // Leaves UDP 67 to a DHCP server on the same computer, so DDT answers on UDP 4011 alone.
+  leaveDhcpPort?: boolean;
+  // What a machine without a run starts. Missing from a server that knows only Windows PE.
+  defaultBootEnvironment?: DefaultBootEnvironment | null;
+  // Words added to the kernel command line of the Linux boot environment.
+  linuxKernelArguments?: string | null;
 }
+
+export type DefaultBootEnvironment = "Auto" | "WindowsPE" | "Linux";
 
 export type PxeForm = SettingsForm<PxeSettings>;
 

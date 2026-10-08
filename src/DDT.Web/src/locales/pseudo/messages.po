@@ -1428,6 +1428,10 @@ msgstr ""
 msgid "A culture name. Left empty, the image's language."
 msgstr ""
 
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "A DHCP server that names a boot file itself starts the same environment on every machine, and if it names another server's file, the Linux boot environment does not start at all."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "user.displayNameTooLong"
 msgid "A display name can have at most {max} characters."
@@ -1491,6 +1495,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "rule.roleGone"
 msgid "A machine role this rule gives no longer exists. Take it out of the rule."
+msgstr ""
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "A machine with a run starts the boot environment its task sequence needs: Windows PE for Windows, the Linux boot environment for a Linux image. This setting decides for every other 64-bit UEFI machine."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -2692,6 +2700,10 @@ msgstr ""
 msgid "Authorizing machines"
 msgstr ""
 
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Automatic: Windows PE once a boot image is built, Linux until then"
+msgstr ""
+
 #: src/about/AboutPage.tsx
 msgid "Back to DDT"
 msgstr ""
@@ -2729,6 +2741,7 @@ msgstr ""
 msgid "Boot directory"
 msgstr ""
 
+#: src/boot/LinuxEnvironment.tsx
 #: src/settings/networkBoot/BootFileField.tsx
 msgid "Boot file"
 msgstr ""
@@ -3438,6 +3451,10 @@ msgstr ""
 msgid "DDT tells a netbooting machine its boot file, while the site's own DHCP server keeps handing out the addresses. Turn it off where every site's DHCP server names DDT and the boot file itself; DDT then listens on neither UDP 67 nor 4011."
 msgstr ""
 
+#: src/settings/networkBoot/TransfersGroup.tsx
+msgid "DDT then answers on UDP 4011 alone, and machines find it there once that DHCP server sends option 60, PXEClient. Where Microsoft's DHCP Server is installed, DDT does this by itself."
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key and restart DDT to upload the agent on this page."
 msgstr ""
@@ -3467,6 +3484,10 @@ msgstr ""
 
 #: src/settings/certificate/CertificateFacts.tsx
 msgid "DDT's root, {root}"
+msgstr ""
+
+#: src/boot/LinuxEnvironment.tsx
+msgid "Debian packages as of"
 msgstr ""
 
 #: src/runs/flow/detailsText.ts
@@ -3915,10 +3936,12 @@ msgid "ends with"
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "English (United Kingdom)"
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "English (United States)"
 msgstr ""
 
@@ -4239,6 +4262,10 @@ msgstr ""
 msgid "Expires"
 msgstr ""
 
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Extra kernel arguments for Linux"
+msgstr ""
+
 #: src/sequences/steps/InjectDriversFields.tsx
 msgid "Fail when no driver package matches the model"
 msgstr ""
@@ -4470,6 +4497,7 @@ msgid "Found"
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "French"
 msgstr ""
 
@@ -4563,10 +4591,12 @@ msgid "Generate certificate"
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "German"
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "German (Switzerland)"
 msgstr ""
 
@@ -4692,6 +4722,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.tooDeep"
 msgid "Groups, IFs and repeats can be nested at most {max} levels deep."
+msgstr ""
+
+#: src/boot/LinuxEnvironment.tsx
+msgid "GRUB"
 msgstr ""
 
 #: src/runs/runs.ts
@@ -5011,6 +5045,10 @@ msgstr ""
 msgid "It cannot join machines here."
 msgstr ""
 
+#: src/boot/LinuxEnvironment.tsx
+msgid "It comes with DDT, so there is nothing to build. Task sequences that write a Linux image run in it, and Windows sequences run in Windows PE."
+msgstr ""
+
 #: src/inputs/inputs.ts
 msgid "It connects to shares on {hosts}."
 msgstr ""
@@ -5070,6 +5108,7 @@ msgid "It uploads one boot image, within a day. Download it again for the next b
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "Italian"
 msgstr ""
 
@@ -5092,6 +5131,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.keyAlgorithm"
 msgid "Its key is neither RSA nor ECDSA."
+msgstr ""
+
+#: src/boot/LinuxEnvironment.tsx
+msgid "Its source code is published with every release of DDT: <0>the source packages it was built from</0>."
 msgstr ""
 
 #: src/settings/deploymentDefaults/DomainGroup.tsx
@@ -5144,6 +5187,10 @@ msgstr ""
 msgid "Keeps the disk"
 msgstr ""
 
+#: src/boot/LinuxEnvironment.tsx
+msgid "Kernel"
+msgstr ""
+
 #: src/settings/certificate/NotManageable.tsx
 msgid "Kestrel:Certificates:Default:Password is set in configuration, so the certificate is managed by hand and this page only reads it. To manage it here, keep the certificate and its key as PEM files without a password, name them in Kestrel:Certificates:Default:Path and KeyPath, remove the password, and restart DDT."
 msgstr ""
@@ -5164,6 +5211,14 @@ msgstr ""
 #: src/boot/BuildPanel.tsx
 #: src/boot/LastBuild.tsx
 msgid "Keyboard layout"
+msgstr ""
+
+#: src/settings/deploymentDefaults/ConsoleLanguageGroup.tsx
+msgid "Keyboard layout in the Linux boot environment"
+msgstr ""
+
+#: src/boot/LinuxEnvironment.tsx
+msgid "Keyboard layouts"
 msgstr ""
 
 #: src/settings/signIn/ClaimRolesGroup.tsx
@@ -5256,6 +5311,10 @@ msgstr ""
 msgid "Leave page"
 msgstr ""
 
+#: src/settings/networkBoot/TransfersGroup.tsx
+msgid "Leave UDP 67 to a DHCP server on this computer"
+msgstr ""
+
 #: src/uploads/LeaveUploadDialog.tsx
 msgid "Leave while {file} is checked?"
 msgstr ""
@@ -5324,6 +5383,7 @@ msgstr ""
 msgid "Linked to {provider}"
 msgstr ""
 
+#: src/boot/LinuxEnvironment.tsx
 #: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/sequences/steps.ts
@@ -5540,6 +5600,10 @@ msgctxt "package.inUse"
 msgid "Machines are waiting to install this package or are installing it. Cancel those runs or let them finish, then delete it."
 msgstr ""
 
+#: src/setup/SetupChecklist.tsx
+msgid "Machines netboot into the Linux boot environment, which comes with DDT. To install Windows, <0>build the boot image</0> as well."
+msgstr ""
+
 #: src/packages/packages.ts
 msgid "Machines of {targets} no longer get these drivers from the Inject drivers step of {names}."
 msgstr ""
@@ -5580,8 +5644,16 @@ msgstr ""
 msgid "Machines that netboot from now on show the console this server came with. If it came with none, they show the console in their boot image."
 msgstr ""
 
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Machines that start the Linux boot environment load {file} over TFTP, whatever the boot target for 64-bit UEFI names."
+msgstr ""
+
 #: src/conditions/conditions.ts
 msgid "Machines where {condition} go along Then."
+msgstr ""
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Machines without a run start"
 msgstr ""
 
 #: src/users/ConfirmUserAction.tsx
@@ -6455,6 +6527,7 @@ msgid "Not reached"
 msgstr ""
 
 #: src/boot/LastBuild.tsx
+#: src/boot/LinuxEnvironment.tsx
 msgid "Not recorded"
 msgstr ""
 
@@ -8315,6 +8388,10 @@ msgstr ""
 msgid "Share hosts it may connect to"
 msgstr ""
 
+#: src/boot/LinuxEnvironment.tsx
+msgid "shim"
+msgstr ""
+
 #: src/machines/list/MachineList.tsx
 msgid "Show all machines"
 msgstr ""
@@ -8572,6 +8649,7 @@ msgid "Source code"
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "Spanish"
 msgstr ""
 
@@ -9717,6 +9795,10 @@ msgstr ""
 msgid "The language the console starts in, in Windows PE and in the installed Windows. Someone at the machine can switch with F5."
 msgstr ""
 
+#: src/settings/deploymentDefaults/ConsoleLanguageGroup.tsx
+msgid "The layout of the console when a machine starts the Linux boot environment. Windows PE has the layout its boot image was built with."
+msgstr ""
+
 #: src/sequences/steps/WriteRawImageFields.tsx
 msgid "The library has no raw disk images yet. Upload a distribution's cloud image under <0>OS images</0>."
 msgstr ""
@@ -9727,6 +9809,10 @@ msgstr ""
 
 #: src/about/AboutPage.tsx
 msgid "The licences of the packages in this web interface"
+msgstr ""
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "The Linux boot environment"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10769,6 +10855,14 @@ msgstr ""
 msgid "This machine has sent no log lines yet."
 msgstr ""
 
+#: src/machines/secureBoot.ts
+msgid "This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware does not trust {cas}, which signs the environment's first loader. Allow it in the firmware setup, or turn Secure Boot off there."
+msgstr ""
+
+#: src/machines/secureBoot.ts
+msgid "This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware trusts neither of {cas}, which sign the environment's first loader. Allow one of them in the firmware setup, or turn Secure Boot off there."
+msgstr ""
+
 #: src/machines/MachinePage.tsx
 msgid "This machine was removed"
 msgstr ""
@@ -11643,6 +11737,7 @@ msgstr ""
 #: src/machines/bootEnvironment.ts
 #: src/packages/PackageName.tsx
 #: src/sequences/steps.ts
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
 msgid "Windows PE"
 msgstr ""
 
@@ -11654,6 +11749,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.restartBeforePartition"
 msgid "Windows PE can restart only after the disk is partitioned, because the run's state is kept on the disk."
+msgstr ""
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Windows PE or Linux"
 msgstr ""
 
 #: src/sequences/steps/RunScriptFields.tsx
@@ -11696,6 +11795,14 @@ msgstr ""
 msgid "With PowerShell, for steps that run a script in Windows PE"
 msgstr ""
 
+#: src/boot/LinuxSecureBootLine.tsx
+msgid "With Secure Boot on, a machine starts it when its firmware trusts {cas}. A machine whose firmware does not is not started in it."
+msgstr ""
+
+#: src/boot/LinuxSecureBootLine.tsx
+msgid "With Secure Boot on, a machine starts it when its firmware trusts one of {cas}. A machine whose firmware trusts neither is not started in it."
+msgstr ""
+
 #: src/sequences/builder/nodeDetail.ts
 msgid "With the join account of the deployment defaults"
 msgstr ""
@@ -11726,6 +11833,10 @@ msgstr ""
 
 #: src/rules/list/NoRules.tsx
 msgid "Without rules an operator chooses the sequence of each machine. An administrator adds rules here."
+msgstr ""
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Words added to the kernel command line of the Linux boot environment, such as console=ttyS0,115200 for a serial console. Only letters, digits and _ . : , = + / @ - are taken."
 msgstr ""
 
 #: src/sequences/builder/inspector/NodeKeys.tsx

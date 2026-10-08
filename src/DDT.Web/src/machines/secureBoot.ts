@@ -93,6 +93,31 @@ function untrusted(trusted: string | null, signedUnder: string | null): boolean 
   );
 }
 
+// How many of the two CAs a flags value names. None for a value nobody knows.
+export function uefiCaCount(value: string | null): number {
+  return uefiCas(value)?.size ?? 0;
+}
+
+// Why netboot does not start this machine in the Linux boot environment: Secure Boot is on, and its firmware trusts
+// none of the CAs the environment's shim is signed under. Null when nothing is known to keep it from starting.
+// shimSignedUnder is what the server read from the shim, and undefined for a server that does not say.
+export function linuxBootRefusal(
+  machine: MachineSummary,
+  shimSignedUnder: string | null | undefined,
+): string | null {
+  const signedUnder = shimSignedUnder ?? null;
+
+  if (machine.secureBootEnabled !== true || !untrusted(machine.trustedUefiCas, signedUnder)) {
+    return null;
+  }
+
+  const cas = describeUefiCas(signedUnder);
+
+  return uefiCaCount(signedUnder) > 1
+    ? t`This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware trusts neither of ${cas}, which sign the environment's first loader. Allow one of them in the firmware setup, or turn Secure Boot off there.`
+    : t`This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware does not trust ${cas}, which signs the environment's first loader. Allow it in the firmware setup, or turn Secure Boot off there.`;
+}
+
 // "Microsoft's third-party UEFI CA 2011", "... CA 2023" or "... CAs 2011 and 2023".
 export function describeUefiCas(value: string | null): string {
   const years = [...(uefiCas(value) ?? [])].map((ca) => ca.replace("Microsoft", "")).sort();

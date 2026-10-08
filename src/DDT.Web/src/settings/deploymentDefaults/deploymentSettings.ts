@@ -10,6 +10,8 @@ export interface DeploymentSettings {
   locale: string | null;
   keyboard: string | null;
   consoleLanguage: string | null;
+  // The keyboard layout of the console in the Linux boot environment, by its keymap's name. Null is us.
+  consoleKeyboardLayout?: string | null;
   localAdministrator: { name: string };
   domain: {
     name: string | null;

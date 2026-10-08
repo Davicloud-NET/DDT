@@ -11,7 +11,7 @@ import { useIsAdministrator } from "@/auth/useIsAdministrator";
 import { Button } from "@/ui/Button";
 import { Panel } from "@/ui/Panel";
 
-import { checklistQuery, dismiss, isComplete, isDismissed } from "./checklist";
+import { canNetboot, checklistQuery, dismiss, isComplete, isDismissed } from "./checklist";
 import { ChecklistStep } from "./ChecklistStep";
 
 // The way from a new server to its first deployment, for administrators. Each step ticks itself when the server sees it
@@ -69,13 +69,24 @@ export function SetupChecklist({ dismissible = false }: { dismissible?: boolean 
             DDT answers netboot on, and see who else answers on this server.
           </Trans>
         </ChecklistStep>
-        <ChecklistStep done={checklist.bootImage}>
-          <Trans>
-            <Link to="/boot/image" className="underline">
-              Build the boot image
-            </Link>{" "}
-            that machines netboot into.
-          </Trans>
+        <ChecklistStep done={canNetboot(checklist)}>
+          {checklist.bootImage || checklist.linuxBoot !== true ? (
+            <Trans>
+              <Link to="/boot/image" className="underline">
+                Build the boot image
+              </Link>{" "}
+              that machines netboot into.
+            </Trans>
+          ) : (
+            <Trans>
+              Machines netboot into the Linux boot environment, which comes with DDT. To install
+              Windows,{" "}
+              <Link to="/boot/image" className="underline">
+                build the boot image
+              </Link>{" "}
+              as well.
+            </Trans>
+          )}
         </ChecklistStep>
         <ChecklistStep done={checklist.image}>
           <Trans>

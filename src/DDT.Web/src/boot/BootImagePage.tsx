@@ -22,12 +22,14 @@ import { BuildPanel } from "./BuildPanel";
 import { BuildState } from "./BuildState";
 import { JobPanel } from "./JobPanel";
 import { LastBuild } from "./LastBuild";
+import { LinuxEnvironment } from "./LinuxEnvironment";
 import { ReplacedAnchor } from "./ReplacedAnchor";
 import { StoredBuilds } from "./StoredBuilds";
 import { WindowsPEDrivers } from "./WindowsPEDrivers";
 
 // The WinPE boot image that machines netboot into. Shows what the served build has in it and whether it still fits the
-// server, and builds it again: on a Windows server at a button, elsewhere with a command for a Windows PC.
+// server, and builds it again: on a Windows server at a button, elsewhere with a command for a Windows PC. Below it,
+// the Linux boot environment, which comes with DDT.
 export function BootImagePage() {
   const live = useLiveStatus();
   const boot = useQuery({ ...bootImageQuery, ...liveListOptions(live) });
@@ -64,6 +66,9 @@ export function BootImagePage() {
           )}
           {boot.data.job === null ? null : <JobPanel job={boot.data.job} now={now} />}
           {boot.data.builds.length > 1 ? <StoredBuilds view={boot.data} now={now} /> : null}
+          {boot.data.linux === null || boot.data.linux === undefined ? null : (
+            <LinuxEnvironment linux={boot.data.linux} />
+          )}
         </>
       ) : null}
     </Page>

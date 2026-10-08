@@ -32,7 +32,7 @@ internal static class TestLinuxBoot
         foreach (string name in Names)
         {
             byte[] content = name == "shimx64.efi" && shim is not null ? shim : Encoding.ASCII.GetBytes("test " + name);
-            File.WriteAllBytes(Path.Combine(folder, name), content);
+            Replace(Path.Combine(folder, name), content);
             files.Add(new JsonObject
             {
                 ["name"] = name,
@@ -53,10 +53,37 @@ internal static class TestLinuxBoot
             ["baseImage"] = new JsonObject { ["keymaps"] = new JsonArray([.. Keymaps.Select(keymap => (JsonNode)keymap)]) },
         };
         change?.Invoke(manifest);
-        File.WriteAllText(ManifestPath(folder), manifest.ToJsonString());
+        Retried(() => File.WriteAllText(ManifestPath(folder), manifest.ToJsonString()));
     }
 
-    public static void Remove(string folder) => File.Delete(ManifestPath(folder));
+    public static void Remove(string folder) => Retried(() => File.Delete(ManifestPath(folder)));
+
+    // A file that already is what it should be is left alone, so tests that share a folder write it once.
+    private static void Replace(string path, byte[] content)
+    {
+        if (!File.Exists(path) || !File.ReadAllBytes(path).AsSpan().SequenceEqual(content))
+        {
+            Retried(() => File.WriteAllBytes(path, content));
+        }
+    }
+
+    // The catalogue checks the files in the background, and on Windows a file it still reads cannot be written.
+    private static void Retried(Action write)
+    {
+        for (int attempt = 0; ; attempt++)
+        {
+            try
+            {
+                write();
+
+                return;
+            }
+            catch (IOException) when (attempt < 500)
+            {
+                Thread.Sleep(10);
+            }
+        }
+    }
 
     // The catalogue of a folder, with a root to hand out unless a test takes it away.
     public static LinuxBootEnvironment Environment(string folder, Func<string?>? root = null) =>

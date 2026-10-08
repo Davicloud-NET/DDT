@@ -232,9 +232,10 @@ on serving (PxeHost.cs). A host whose interfaces are named in configuration does
 DefaultBootEnvironment decides what a 64-bit UEFI machine without a run starts from PXE. A machine
 with a run, or one that was asked to restart into the other boot environment no more than 15 minutes
 ago, starts what that needs (BootChoices.cs, BootEnvironmentChoice.cs). Auto is Windows PE once the
-boot directory holds the boot file of the X64Uefi boot target, which a built boot image brings, and
-the Linux boot environment until then, so a server that is upgraded keeps starting Windows PE. Other
-architectures and UEFI HTTP Boot keep their boot targets.
+boot directory holds the boot file of the X64Uefi boot target, which a built boot image brings, or
+once that target names another server (NetbootChoice.cs), and the Linux boot environment until then,
+so a server that is upgraded keeps starting Windows PE. Other architectures and UEFI HTTP Boot keep
+their boot targets.
 
 The Linux boot environment is named only while the server can start it: the folder's files are what
 their description says (below), EnableTftp is on, and the server has a root certificate of DDT's own

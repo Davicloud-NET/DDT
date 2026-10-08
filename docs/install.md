@@ -729,7 +729,9 @@ generates around `agent.json`: its address, its root certificate and the console
 layout. Together about 36 MB. The kernel command line names the adapter GRUB booted from, the
 server's time, name and address, the keyboard layout, and the words of `LinuxKernelArguments`.
 The start scripts load the drivers, set the keyboard layout and a clock that is more than ten
-minutes off, ask DHCP on that adapter and start the agent on the first screen.
+minutes off, ask DHCP on that adapter and start the agent on the first screen. When the agent ends
+without restarting the machine, a menu offers to start it again, a shell, a restart or power off.
+Left alone, the menu starts the agent again after 60 seconds, three times, and then stays.
 
 **HTTP first, TFTP second.** shim, GRUB and `grub.cfg` come over TFTP. The kernel and the
 initramfs files come over HTTP from the boot port, 8080 unless `DDT:Pxe:HttpBootPort` names

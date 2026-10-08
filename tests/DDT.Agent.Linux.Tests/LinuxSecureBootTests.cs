@@ -17,7 +17,7 @@ public sealed class LinuxSecureBootTests : IDisposable
 
     public void Dispose() => _tree.Dispose();
 
-    private LinuxSecureBoot SecureBoot() => new(new LinuxUefiVariables(_tree.Root, _ => { }));
+    private LinuxSecureBoot SecureBoot() => new(_tree.Firmware());
 
     [Theory]
     [InlineData(1, true)]

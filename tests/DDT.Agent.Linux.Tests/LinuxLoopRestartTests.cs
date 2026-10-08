@@ -32,7 +32,7 @@ public sealed class LinuxLoopRestartTests : IDisposable
     public LinuxLoopRestartTests()
     {
         Directory.CreateDirectory(_tree.Variables);
-        _firmware = new LinuxUefiVariables(_tree.Root, _ => { });
+        _firmware = _tree.Firmware();
         _tree.WriteVariable("BootCurrent", LinuxUefiVariables.Global, 0x03, 0x00);
         _tree.WriteVariable("Boot0003", LinuxUefiVariables.Global, 1, 0, 0, 0, 0, 0, (byte)'N', 0, 0, 0);
 

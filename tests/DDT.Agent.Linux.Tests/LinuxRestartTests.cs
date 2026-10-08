@@ -19,7 +19,7 @@ public sealed class LinuxRestartTests : IDisposable
     public LinuxRestartTests()
     {
         Directory.CreateDirectory(_tree.Variables);
-        _variables = new LinuxUefiVariables(_tree.Root, _ => { });
+        _variables = _tree.Firmware();
     }
 
     public void Dispose() => _tree.Dispose();
@@ -89,7 +89,7 @@ public sealed class LinuxRestartTests : IDisposable
     public async Task ANextStartThatCannotBeTakenBackIsSaidAndTheRestartIsIssuedAnyway()
     {
         _tree.WriteVariable("BootNext", LinuxUefiVariables.Global, 0x04, 0x00);
-        LinuxUefiVariables refusing = new(_tree.Root, _ => throw new IOException("Operation not permitted"));
+        LinuxUefiVariables refusing = new(_tree.Root, _ => throw new IOException("Operation not permitted"), _tree.Efivarfs.Open);
         LinuxRestart restart = Restart();
 
         await new LinuxBootRebooter(refusing, restart, Log()).RebootAsync(RestartInto.InstalledSystem, TestContext.Current.CancellationToken);

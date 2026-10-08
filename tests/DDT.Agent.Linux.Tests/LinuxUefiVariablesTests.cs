@@ -21,7 +21,7 @@ public sealed class LinuxUefiVariablesTests : IDisposable
     public LinuxUefiVariablesTests()
     {
         Directory.CreateDirectory(_tree.Variables);
-        _variables = new LinuxUefiVariables(_tree.Root, path => _madeMutable.Add(Path.GetFileName(path)));
+        _variables = _tree.Firmware(path => _madeMutable.Add(Path.GetFileName(path)));
     }
 
     public void Dispose() => _tree.Dispose();
@@ -125,14 +125,44 @@ public sealed class LinuxUefiVariablesTests : IDisposable
         Assert.Null(_variables.Read("DdtResume", ResumeCarrier.Vendor));
     }
 
-    // A value shorter than the one before must not keep the old one's end: the file holds exactly the new content.
+    // The kernel takes each write for the whole variable, so a value must go out in one, attributes and all. Nothing
+    // may ask the file for its length or a place in it, which efivarfs does not have.
     [Fact]
-    public void AShorterValueReplacesALongerOne()
+    public void AVariableIsOneWriteAndAShorterValueReplacesALongerOne()
     {
         _variables.Write("BootOrder", [1, 0, 2, 0, 3, 0]);
         _variables.Write("BootOrder", [3, 0]);
 
         Assert.Equal([3, 0], _variables.Read("BootOrder"));
+        Assert.Equal(2, _tree.Efivarfs.Writes[LinuxUefiVariables.FileName("BootOrder", LinuxUefiVariables.Global)]);
+        Assert.Equal([0x07, 0x00, 0x00, 0x00, 0x03, 0x00], _tree.ReadVariableFile("BootOrder", LinuxUefiVariables.Global));
+    }
+
+    // Without clearing the flag the second write of a variable of DDT's own is refused, as on a machine.
+    [Fact]
+    public void TheKernelRefusesToChangeAVendorsVariableThatWasNotMadeMutable()
+    {
+        LinuxUefiVariables forgetful = new(_tree.Root, _ => { }, _tree.Efivarfs.Open);
+        forgetful.Write("DdtResume", ResumeCarrier.Vendor, [1]);
+
+        DeploymentStepException refusal = Assert.Throws<DeploymentStepException>(() => forgetful.Write("DdtResume", ResumeCarrier.Vendor, [2]));
+
+        Assert.Equal("The firmware variable DdtResume cannot be written (Operation not permitted).", refusal.Message);
+        Assert.Equal([1], forgetful.Read("DdtResume", ResumeCarrier.Vendor));
+
+        // The boot variables of the specification stay mutable.
+        forgetful.Write("BootNext", [1, 0]);
+        forgetful.Write("BootNext", [2, 0]);
+    }
+
+    // The kernel checks a boot entry before the firmware gets it.
+    [Fact]
+    public void SaysWhenTheKernelRefusesWhatIsNoBootEntry()
+    {
+        DeploymentStepException refusal = Assert.Throws<DeploymentStepException>(() => _variables.Write("Boot0009", [1, 2, 3]));
+
+        Assert.Equal("The firmware variable Boot0009 cannot be written (Invalid argument).", refusal.Message);
+        Assert.Null(_variables.Read("Boot0009"));
     }
 
     [Fact]
@@ -155,11 +185,13 @@ public sealed class LinuxUefiVariablesTests : IDisposable
     public void SaysThatTheVariableStoreIsFull()
     {
         _tree.WriteVariable("BootOrder", LinuxUefiVariables.Global, 0, 0);
-        LinuxUefiVariables full = new(_tree.Root, _ => throw new IOException("No space left on device", 28));
-        LinuxUefiVariables denied = new(_tree.Root, _ => throw new UnauthorizedAccessException("Operation not permitted"));
+        LinuxUefiVariables denied = new(_tree.Root, _ => throw new UnauthorizedAccessException("Operation not permitted"), _tree.Efivarfs.Open);
+        _tree.Efivarfs.WriteFailure = new IOException("No space left on device", 28);
 
-        DeploymentStepException refusal = Assert.Throws<DeploymentStepException>(() => full.Write("BootOrder", [1, 0]));
+        DeploymentStepException refusal = Assert.Throws<DeploymentStepException>(() => _variables.Write("BootOrder", [1, 0]));
         DeploymentStepException other = Assert.Throws<DeploymentStepException>(() => denied.Write("BootOrder", [1, 0]));
+
+        Assert.Equal([0, 0], _variables.Read("BootOrder"));
 
         Assert.Equal(
             "The firmware variable BootOrder cannot be written: the firmware's variable store is full. Delete boot entries nobody " +
@@ -174,8 +206,8 @@ public sealed class LinuxUefiVariablesTests : IDisposable
     {
         _tree.WriteVariable(ResumeCarrier.VariableName, ResumeCarrier.Vendor, 9);
         StringWriter console = new();
-        LinuxUefiVariables full = new(_tree.Root, _ => throw new IOException("No space left on device", 28));
-        ResumeCarrier carrier = new(full, AgentEnvironment.LinuxBoot, new AgentLog(new ImmediateTimeProvider(), console));
+        _tree.Efivarfs.WriteFailure = new IOException("No space left on device", 28);
+        ResumeCarrier carrier = new(_variables, AgentEnvironment.LinuxBoot, new AgentLog(new ImmediateTimeProvider(), console));
 
         Assert.False(carrier.Put(AgentEnvironment.WindowsPE, "resume-1"));
         Assert.Contains("the firmware's variable store is full", console.ToString(), StringComparison.Ordinal);

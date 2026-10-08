@@ -13,6 +13,9 @@ internal sealed class LinuxTree : IDisposable
 
     public string Variables => Path.Combine(Root, "sys", "firmware", "efi", "efivars");
 
+    // What makes the folder of the variables behave as efivarfs does.
+    public FakeEfivarfs Efivarfs { get; } = new();
+
     public LinuxTree() => Directory.CreateDirectory(Root);
 
     public string PathOf(params string[] parts) => Path.Combine([Root, .. parts]);
@@ -31,6 +34,16 @@ internal sealed class LinuxTree : IDisposable
     // A firmware variable as efivarfs shows it: the attributes, then the value.
     public string WriteVariable(string name, Guid vendor, params byte[] value) =>
         Write([0x07, 0x00, 0x00, 0x00, .. value], "sys", "firmware", "efi", "efivars", LinuxUefiVariables.FileName(name, vendor));
+
+    // The firmware's variables as the agent reaches them. madeMutable hears of each variable before it is made mutable.
+    public LinuxUefiVariables Firmware(Action<string>? madeMutable = null) => new(
+        Root,
+        path =>
+        {
+            madeMutable?.Invoke(path);
+            Efivarfs.MakeMutable(path);
+        },
+        Efivarfs.Open);
 
     public byte[] ReadVariableFile(string name, Guid vendor) => File.ReadAllBytes(Path.Combine(Variables, LinuxUefiVariables.FileName(name, vendor)));
 

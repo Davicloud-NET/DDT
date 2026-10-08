@@ -7,8 +7,10 @@ using System.Buffers.Binary;
 namespace DDT.Agent.Deployment;
 
 // The UEFI variables through efivarfs: one file per variable, named <name>-<vendor GUID>, whose first four bytes are
-// the variable's attributes. efivarfs takes a variable in one write and cannot seek.
-public sealed class LinuxUefiVariables(string root, Action<string>? makeMutable = null) : IUefiVariables, IVendorVariables
+// the variable's attributes. efivarfs takes a variable in one write and cannot seek. open is how a variable's file is
+// opened, for the tests, whose folder has to behave the same.
+public sealed class LinuxUefiVariables(string root, Action<string>? makeMutable = null, Func<string, FileAccess, Stream>? open = null)
+    : IUefiVariables, IVendorVariables
 {
     // EFI_GLOBAL_VARIABLE, under which BootOrder, Boot#### and SecureBoot live.
     public static readonly Guid Global = new("8be4df61-93ca-11d2-aa0d-00e098032b8c");
@@ -29,6 +31,7 @@ public sealed class LinuxUefiVariables(string root, Action<string>? makeMutable 
 
     // The kernel makes a variable immutable unless the UEFI specification names it, as it does the boot variables.
     private readonly Action<string> _makeMutable = makeMutable ?? ImmutableFlag.Clear;
+    private readonly Func<string, FileAccess, Stream> _open = open ?? Open;
 
     public string Directory { get; } = Path.Combine(root, "sys", "firmware", "efi", "efivars");
 
@@ -72,7 +75,7 @@ public sealed class LinuxUefiVariables(string root, Action<string>? makeMutable 
                 return null;
             }
 
-            using FileStream file = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, bufferSize: 0);
+            using Stream file = _open(path, FileAccess.Read);
             byte[] content = ReadAll(file, name);
 
             return content.Length <= AttributesLength ? [] : content[AttributesLength..];
@@ -100,16 +103,9 @@ public sealed class LinuxUefiVariables(string root, Action<string>? makeMutable 
                 _makeMutable(path);
             }
 
-            // Not truncated first: the variable changes with the one write, or not at all.
-            using FileStream file = new(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, bufferSize: 0);
+            // The one write is the whole variable: efivarfs gives the file its length, and nothing asks for a place in it.
+            using Stream file = _open(path, FileAccess.Write);
             file.Write(content);
-
-            // efivarfs gives the file the write's length and cannot seek. A plain file in its place can, and keeps the
-            // end of a longer value.
-            if (file.CanSeek && file.Length > content.Length)
-            {
-                file.SetLength(content.Length);
-            }
         }
         catch (IOException exception) when (exception.HResult == NoSpace)
         {
@@ -143,7 +139,13 @@ public sealed class LinuxUefiVariables(string root, Action<string>? makeMutable 
         }
     }
 
-    private static byte[] ReadAll(FileStream file, string name)
+    // Not truncated when opened for a write: the variable changes with the one write, or not at all. No buffer, so a
+    // write is the kernel's write.
+    private static FileStream Open(string path, FileAccess access) => access == FileAccess.Read
+        ? new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, bufferSize: 0)
+        : new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, bufferSize: 0);
+
+    private static byte[] ReadAll(Stream file, string name)
     {
         using MemoryStream content = new();
         byte[] buffer = new byte[4096];

@@ -5,7 +5,7 @@
 # Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 # Builds the DDT Linux boot environment from the Debian packages in packages.lock.json, with this folder as context.
-# build/Build-LinuxBoot.ps1 takes the stage export.
+# build/Build-LinuxBoot.ps1 takes the stage export, build/Update-LinuxBootLock.ps1 the stages lock and notices.
 
 # The image's tools shape base.img's bytes, so the lock names it by digest and there is no default.
 # busybox runs here to list its applets, which needs --platform linux/amd64.
@@ -52,3 +52,21 @@ RUN python3 /src/mkcpio.py --mtime "$(cat /src/mtime)" /agent /tmp/ddt.cpio \
 
 FROM scratch AS export
 COPY --from=build /out/ /
+
+# The lock again, for the snapshot of Debian's archive that SNAPSHOT names.
+FROM tools AS relock
+ARG SNAPSHOT
+COPY fetch.py lock.py /src/
+RUN python3 /src/lock.py /src/packages.lock.json "${SNAPSHOT:?}" /out/packages.lock.json
+
+FROM scratch AS lock
+COPY --from=relock /out/ /
+
+# What licenses/linux-boot holds: the copyright files of the lock's packages and the list of their sources.
+FROM packages AS copyrights
+COPY copyrights.py sources.sh /src/
+RUN python3 /src/copyrights.py /src/packages.lock.json /packages /out \
+    && sh /src/sources.sh --no-download /src/packages.lock.json /out
+
+FROM scratch AS notices
+COPY --from=copyrights /out/ /

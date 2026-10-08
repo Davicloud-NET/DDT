@@ -33,6 +33,7 @@ public sealed class BootHttpEndpointsTests : IAsyncLifetime
 
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
+        builder.Services.AddBootPortRouting(BootPort);
         builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
         builder.Services.AddAuthorization(options =>
             options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
@@ -148,6 +149,7 @@ public sealed class BootHttpEndpointsTests : IAsyncLifetime
     [InlineData("/")]
     [InlineData("/index.html")]
     [InlineData("/boot")]
+    [InlineData("/boot/image")]
     [InlineData("/health")]
     public async Task AnswersNothingButBootFilesOnTheBootPort(string path)
     {
@@ -162,7 +164,21 @@ public sealed class BootHttpEndpointsTests : IAsyncLifetime
     {
         HttpContext context = await SendAsync(HttpMethods.Get, "/boot/x64/bootmgfw.efi", port: HttpsPort);
 
-        Assert.Equal(StatusCodes.Status404NotFound, context.Response.StatusCode);
+        // The web's own answer to a path it does not know, here the sign-in redirect of deny by default. Never the file.
+        Assert.Equal(StatusCodes.Status302Found, context.Response.StatusCode);
+        Assert.Null(context.Response.ContentLength);
+    }
+
+    // The web has pages under /boot. A browser that loads one of them asks the web port for its path.
+    [Theory]
+    [InlineData("/boot")]
+    [InlineData("/boot/image")]
+    [InlineData("/boot/network")]
+    public async Task APageOfTheWebWhosePathBeginsWithBootIsTheWebsOwnOnTheHttpsPort(string path)
+    {
+        HttpContext context = await SendAsync(HttpMethods.Get, path, port: HttpsPort);
+
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
     }
 
     [Fact]

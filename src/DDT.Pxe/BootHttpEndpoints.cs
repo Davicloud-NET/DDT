@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 
@@ -15,6 +16,14 @@ namespace DDT.Pxe;
 
 public static class BootHttpEndpoints
 {
+    // Leaves paths under /boot to the web's own routes on every port but the boot port.
+    public static IServiceCollection AddBootPortRouting(this IServiceCollection services, int bootPort)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        return services.AddSingleton<MatcherPolicy>(new BootPortEndpointPolicy(bootPort));
+    }
+
     // Goes after routing and before static files, the SPA fallback and authorization. It compares the endpoint, not a
     // path prefix, to keep boot files on the cleartext boot port and everything else off it. The destination address
     // decides, not the arrival interface. A client routed to a served address reaches files that are public by design.

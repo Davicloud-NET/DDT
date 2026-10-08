@@ -42,6 +42,7 @@ public static class PxeHostingExtensions
             endpoint => endpoint.ListenOptions.Use(next => BootPortConnections.Track(next, connections))));
 
         builder.Services.TryAddSingleton(TimeProvider.System);
+        builder.Services.AddBootPortRouting(bootstrap.HttpBootPort);
         builder.Services.AddSingleton(bootstrap);
         builder.Services.AddSingleton(connections);
         builder.Services.AddSingleton(provider => new PxeHost(

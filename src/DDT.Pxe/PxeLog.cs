@@ -59,6 +59,15 @@ internal static partial class PxeLog
         Message = "ProxyDHCP does not answer broadcasts, while UDP {BootServerPort} and TFTP go on serving: {Reason}")]
     public static partial void DhcpPortNotBound(ILogger logger, int bootServerPort, string reason);
 
+    [LoggerMessage(
+        EventId = 526,
+        Level = LogLevel.Information,
+        Message = "Linux boot environment: Tftp {BootFile} from {Folder}. Machines without a run start {Default}")]
+    public static partial void LinuxBoot(ILogger logger, string bootFile, string folder, string @default);
+
+    [LoggerMessage(EventId = 527, Level = LogLevel.Information, Message = "Linux boot environment: not offered, since {Reason}")]
+    public static partial void NoLinuxBoot(ILogger logger, string reason);
+
     [LoggerMessage(EventId = 520, Level = LogLevel.Warning, Message = "Netboot is not served: {Reason}")]
     public static partial void Stopped(ILogger logger, string reason);
 

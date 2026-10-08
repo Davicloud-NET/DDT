@@ -212,7 +212,7 @@ public sealed class PxeHost : IHostedService, IDisposable
 
         if (LogInterfaces(setup.Interfaces))
         {
-            LogBootTargets(setup);
+            PxeStartLog.BootTargets(_logger, setup, _source.Linux);
 
             if (setup.Options.EnableProxyDhcp)
             {
@@ -362,25 +362,5 @@ public sealed class PxeHost : IHostedService, IDisposable
 
         _stops.Add(listener.StopAsync);
         PxeLog.Listening(_logger, protocol, port);
-    }
-
-    private void LogBootTargets(PxeSetup setup)
-    {
-        // A site DHCP server that names DDT in options 66 and 67 needs no boot targets at all.
-        if (setup.ProxyDhcp.BootTargets.Count == 0 && setup.Options.EnableProxyDhcp)
-        {
-            PxeLog.NoBootTargets(_logger);
-        }
-
-        foreach (BootTarget target in setup.ProxyDhcp.BootTargets.Values)
-        {
-            PxeLog.BootTarget(_logger, target.Architecture, target.Method, target.BootFile);
-
-            // A missing boot manager is the commonest cause of "DHCP works, nothing boots".
-            if (target.Method == BootMethod.Tftp && target.ServerAddress is null && !setup.Files.TryResolve(target.BootFile, out _))
-            {
-                PxeLog.BootFileMissing(_logger, target.Architecture, target.BootFile, setup.Files.Serving);
-            }
-        }
     }
 }

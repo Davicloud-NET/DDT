@@ -11,7 +11,8 @@ planned, and proper documentation arrives with M12. Everyone who takes part foll
 Open an issue with the bug report form. A report that DDT can act on says:
 
 - the commit you built DDT from, and where the server runs: the container image, or from source;
-- the machine, if one is involved: its make and model, and whether Secure Boot is on;
+- the machine, if one is involved: its make and model, whether Secure Boot is on, and which boot
+  environment it started, Windows PE or the Linux one;
 - what happened and what you expected, and the steps that lead there;
 - the machine's log from the web UI, and the host's log around the time. Until the documentation
   exists,
@@ -70,10 +71,12 @@ The CI workflow in [.github/workflows/ci.yml](.github/workflows/ci.yml) runs on 
 |---|---|
 | Windows | `dotnet build DDT.slnx`, `dotnet format whitespace DDT.slnx --verify-no-changes`, `Invoke-ScriptAnalyzer -Path build -Recurse` from the PSScriptAnalyzer module, and `dotnet test --solution DDT.slnx -- --filter-not-trait "Category=E2E" --ignore-exit-code 8` |
 | Linux | the tests of `DDT.Agent.Core`, `DDT.Agent.Linux`, `DDT.Core`, `DDT.Protocols`, `DDT.Pxe` and `DDT.Server`, with PostgreSQL and SQL Server in Docker |
+| Linux agent (`linux-agent`) | the agent for Linux published in its container, as `build/Publish-LinuxAgent.ps1` does it; a check that the file is static and carries its version; its licences printed in an empty container; and the end-to-end test for Linux with that file |
+| Linux boot environment (`linux-boot`) | the environment built around that agent, as `build/Build-LinuxBoot.ps1 -AgentFolder` does it; `base.img` compared with the hash the lock names; `shellcheck` over the start scripts; and the result booted in QEMU with Secure Boot on, as `build/Test-LinuxBoot.ps1` does it |
 | End to end | `dotnet test --project tests/DDT.E2E`, which needs the Visual C++ build tools |
 | Web client | from `src/DDT.Web`: `npm ci`, `npm run lint`, `npm run format`, `npm run build` and `npm test` |
 | Web screenshots | from `src/DDT.Web`: `npm run screens`, in Microsoft Edge on Windows |
-| Container image | `docker build -f build/Dockerfile .`, then the server started in the image |
+| Container image | `docker build -f build/Dockerfile .` with the files of the two Linux jobs in `artifacts/bundle`, then the server started in the image, which has to offer them, and `build/install.sh` |
 
 The server's tests run on Linux as well as on Windows because the server runs on Linux in its
 container. So do the tests of `DDT.Agent.Core`, the part of the agent that is the same on every
@@ -89,6 +92,62 @@ on Windows stay as they are:
 ```bash
 git archive HEAD | docker run -i --rm mcr.microsoft.com/dotnet/sdk:10.0-noble bash -c "mkdir /src && cd /src && tar -x && dotnet build DDT.slnx -p:EnableWindowsTargeting=true && dotnet test --project tests/DDT.Server.Tests"
 ```
+
+The same line runs the tests of the agent for Linux with `tests/DDT.Agent.Linux.Tests` in the
+place of the server's. There the tests that call the kernel run too. Those that need a loop device
+run only when the container is started with `--privileged`, and say why they skip without it.
+
+**A test that needs a database skips where it finds none.** With Docker stopped the PostgreSQL
+tests skip, and the run is green without them. So after touching a migration or the model, run
+the server's tests with Docker running: a migration that fails on PostgreSQL shows only then.
+
+### The agent for Linux and the Linux boot environment
+
+Both are built in containers, because NativeAOT does not compile from Windows for Linux and the
+boot environment is made of Debian packages. Docker Desktop with the Linux engine is all a
+Windows PC needs, without administrator rights:
+
+```powershell
+.\build\Publish-LinuxAgent.ps1
+.\build\Build-LinuxBoot.ps1 -AgentFolder .\artifacts\agent-linux
+.\build\Test-LinuxBoot.ps1
+```
+
+- `Publish-LinuxAgent.ps1` writes `artifacts\agent-linux\ddt-agent`, one static file.
+- `Build-LinuxBoot.ps1` writes `artifacts\linux-boot`: the loaders, the kernel, `base.img`,
+  `ddt.img` and their description. `-AgentFolder` puts the agent into `ddt.img`. Without it
+  `ddt.img` gets a placeholder, and no machine can be deployed from the result.
+- `Test-LinuxBoot.ps1` boots that folder in QEMU with OVMF and Secure Boot on and checks what the
+  start scripts and the agent do, in a privileged container, because QEMU needs `/dev/kvm`.
+  `-Check` runs some of the checks alone.
+
+`build\Start-DevHost.ps1` serves both from where the scripts wrote them, and
+`build\Build-Installer.ps1` takes them into the MSI when they are there. `build/Dockerfile` takes
+them from `artifacts/bundle`, as `linux-boot/` and `ddt-agent-linux-x64`.
+
+**The end-to-end tests on Linux** run with an agent they are handed, since they cannot start the
+container that publishes it. `DDT_E2E_AGENT` names the file, and the job `linux-agent` runs the
+part for Linux, a dry run of a Linux sequence:
+
+```bash
+DDT_E2E_AGENT=$PWD/artifacts/agent-linux/ddt-agent dotnet test --project tests/DDT.E2E -- --filter-trait "Agent=Linux" --fail-skips on
+```
+
+On Windows the variable names a `ddt-agent.exe` to run in place of the one the tests publish, and
+the test for Linux skips.
+
+**The lock.** `build/LinuxBoot/packages.lock.json` pins every Debian package of the boot
+environment by version and SHA-256, their source packages, the packages of the image that builds
+it, and the SHA-256 of the `base.img` they give. A build on any computer has to give that
+`base.img`, and CI and a release compare.
+
+- `.\build\Update-LinuxBootLock.ps1` moves the lock to a newer snapshot of Debian's archive, and
+  writes `licenses/linux-boot` and the hash of `base.img` again. It takes only package indexes
+  that Debian signed. Afterwards build, run `Test-LinuxBoot.ps1`, and try a machine.
+- `.\build\Update-LinuxBootLock.ps1 -BaseImageOnly` leaves the packages and writes only the hash.
+  Run it after a change to what `base.img` is made of besides the packages: the start scripts in
+  `build/LinuxBoot/rootfs`, the lists of modules and keymaps, or the scripts that assemble it.
+  Without it the job `linux-boot` fails at the comparison.
 
 ### Tests that only fail in CI
 
@@ -121,12 +180,27 @@ what it asks for:
   ```
 
   The build enforces it for C#, and `SourceHeaderTests` for TypeScript, JavaScript, CSS, XAML,
-  PowerShell and Python.
+  PowerShell, Python, shell scripts and Dockerfiles.
 - **Third-party notices.** A package whose code ends up in the server, the agent, the console or
   the web bundle is named in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), and its licence text
   is in [licenses/](licenses). For the web bundle, `npm run licences` writes
   `licenses/web/THIRD-PARTY-LICENSES.txt` from the installed packages. NuGet versions are set only
   in [Directory.Packages.props](Directory.Packages.props).
+- **The Linux boot environment's lock, notices, sources and release.** They have to say the same,
+  because a release that ships the environment's programs has to ship their source code and
+  licences with them:
+  - `LinuxBootNoticesTests`: every package and source package of the lock is named in
+    THIRD-PARTY-NOTICES.md, has its copyright file in `licenses/linux-boot`, and is listed in
+    `licenses/linux-boot/SOURCES.md`. After a kernel update the packages have other names, and the
+    test says where the notices have to follow.
+  - `LinuxAgentNoticesTests`: what `build/Dockerfile.agent-linux` links into the agent, with its
+    versions, is what the notices name.
+  - `LinuxBootReleaseTests` read the two workflows: a release puts the environment into the MSI
+    and the image under the names the server looks for, publishes the sources beside both, and
+    the notices and `build/release-notes.md` say where; the release's job that builds the Linux
+    files has no secret and no cache; both workflows compare `base.img` with the lock; CI's
+    `shellcheck` line names every shell script of the environment; and every action is pinned by
+    its commit.
 - **Generated files.** The web theme and the console's resources come from
   `src/DDT.Design/tokens.json` through `npm run tokens`. The web's catalog of server messages comes
   from the server's through its tests and `npm run messages`. Tests on both sides fail while a

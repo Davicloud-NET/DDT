@@ -181,7 +181,8 @@ Every text a person reads goes through Lingui: `t`, `plural` and `msg` from `@li
 - Tests run in English.
 
 German texts use the formal "Sie" and Microsoft's terms: Gerät, Tasksequenz, Bereitstellung, Image, Treiber,
-Datenträger, Ausführung for a run, Freigabe for an approval.
+Datenträger, Ausführung for a run, Freigabe for an approval, Startimage for the boot image, Startumgebung for a
+boot environment and Linux-Startumgebung for the Linux one.
 
 ### What the server says
 

@@ -11,6 +11,13 @@ namespace DDT.Server.Tests;
 // A server that can start both boot environments until a test takes one away. Only a test moves its clock.
 public sealed class BothEnvironmentsApplication : DdtApplication
 {
+    // Both are there before the host is made, so a test that takes one away before its first request keeps it away.
+    public BothEnvironmentsApplication()
+    {
+        SetLinuxBoot(true);
+        SetBootImage(true);
+    }
+
     public ManualTimeProvider Clock { get; } = new();
 
     public string LinuxBootFolder { get; } = Directory.CreateTempSubdirectory("ddt-linux-boot-").FullName;
@@ -37,8 +44,6 @@ public sealed class BothEnvironmentsApplication : DdtApplication
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        SetLinuxBoot(true);
-        SetBootImage(true);
         builder.UseSetting("DDT:LinuxBoot:Path", LinuxBootFolder);
 
         // The test host serves no HTTPS, so it has no root of its own. Machines are handed this one.

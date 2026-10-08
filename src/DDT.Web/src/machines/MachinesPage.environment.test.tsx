@@ -18,10 +18,13 @@ import {
   assigning,
   fact,
   installLinuxId,
+  label,
+  modelRule,
   now,
   open,
   openAssign,
   row,
+  waiting,
 } from "./MachinesPage.fixtures";
 
 const installLinux = sequenceSummary({
@@ -33,6 +36,27 @@ const installLinux = sequenceSummary({
 
 const restartsFirst =
   "Install Linux runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first.";
+
+const staysAssigned =
+  "Install Linux runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it.";
+
+// A waiting machine in Windows PE whose rule chooses Install Linux, with the approval dialog open.
+async function openApproval(bootEnvironments: ("WindowsPE" | "LinuxBoot")[]): Promise<HTMLElement> {
+  const machine = waiting({ agentEnvironment: "WindowsPE" });
+
+  await open([machine], {
+    [`GET /api/machines/${machine.id}/sequence`]: {
+      body: modelRule({ sequenceId: installLinuxId, sequenceName: "Install Linux" }),
+    },
+    "GET /api/sequences": { body: [installLinux] },
+    "GET /api/deployments/options": {
+      body: deploymentOptions({ serverUtc: now.toISOString(), bootEnvironments }),
+    },
+  });
+  press(await screen.findByRole("button", { name: "Approve" }));
+
+  return screen.findByRole("dialog", { name: `Approve ${label}?` });
+}
 
 describe("MachinesPage", () => {
   describe("boot environments", () => {
@@ -146,13 +170,27 @@ describe("MachinesPage", () => {
 
       const dialog = await openAssign();
 
-      expect(
-        await within(dialog).findByText(
-          "Install Linux runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it.",
-        ),
-      ).toBeInTheDocument();
+      expect(await within(dialog).findByText(staysAssigned)).toBeInTheDocument();
       expect(within(dialog).queryByText(restartsFirst)).not.toBeInTheDocument();
       await assignable(dialog);
+    });
+
+    it("tells before an approval that runs a rule's sequence that the machine restarts first", async () => {
+      const dialog = await openApproval(["WindowsPE", "LinuxBoot"]);
+
+      expect(within(dialog).getByText(/also runs Install Linux on it/)).toBeInTheDocument();
+      expect(await within(dialog).findByText(restartsFirst)).toBeInTheDocument();
+      expect(within(dialog).queryByText(staysAssigned)).not.toBeInTheDocument();
+    });
+
+    it("warns before such an approval when the server cannot start that boot environment", async () => {
+      const dialog = await openApproval(["WindowsPE"]);
+
+      expect(await within(dialog).findByText(staysAssigned)).toBeInTheDocument();
+      expect(within(dialog).queryByText(restartsFirst)).not.toBeInTheDocument();
+      expect(
+        within(dialog).getByRole("button", { name: "Approve and run Install Linux" }),
+      ).toBeEnabled();
     });
 
     it("says nothing about boot environments where the machine waits in the one the sequence starts in", async () => {

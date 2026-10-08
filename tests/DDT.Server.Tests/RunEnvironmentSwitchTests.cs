@@ -6,6 +6,7 @@ using System.Net;
 using System.Security.Cryptography;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
 using DDT.Server.Authentication;
 using DDT.Server.Images;
@@ -30,6 +31,18 @@ public sealed class RunEnvironmentSwitchTests(BothEnvironmentsApplication applic
         Image image = await application.SeedImageAsync(RandomNumberGenerator.GetBytes(4096));
 
         return await (await application.AdministratorAsync()).CreatedSequenceAsync(SequenceRequests.Minimal(image.Id));
+    }
+
+    // A Linux sequence that needs no name, which a rule chooses for the machine.
+    private async Task<SequenceView> RuledAsync(DeployingMachine machine)
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        Image image = await application.SeedRawImageAsync(RandomNumberGenerator.GetBytes(4096), name: $"noble {Guid.NewGuid():N}");
+        SequenceView linux = await administrator.CreatedSequenceAsync(SequenceRequests.Definition(
+            new WriteRawImageStep { Id = Guid.NewGuid(), Name = "Write the disk", ImageId = image.Id }));
+        await administrator.CreatedRuleAsync(RuleRequests.MacRule(linux.Id, machine.Registration.PrimaryMac));
+
+        return linux;
     }
 
     // A machine approved on the web, whose agent registered as change makes it.
@@ -188,6 +201,23 @@ public sealed class RunEnvironmentSwitchTests(BothEnvironmentsApplication applic
         Assert.Equal(AgentEnvironment.LinuxBoot, (await machine.NextAsync()).RestartInto);
     }
 
+    // The snapshot cannot be read here, so an answer shows that the run was not built for a machine that only waits.
+    [Fact]
+    public async Task APollReadsNothingOfARunThatStartsInTheOtherEnvironment()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await ApprovedAsync(WindowsPE());
+        DeploymentSummary run = await administrator.AssignedAsync(machine.Id, (await LinuxAsync()).Id, "LINUX-45");
+        await application.QueryAsync(database => database.DeploymentSnapshots
+            .Where(s => s.DeploymentId == run.Id)
+            .ExecuteUpdateAsync(update => update.SetProperty(s => s.Definition, "not a sequence"), TestContext.Current.CancellationToken));
+
+        AgentNextResult next = await machine.NextAsync();
+
+        Assert.Null(next.Run);
+        Assert.Equal(AgentEnvironment.LinuxBoot, next.RestartInto);
+    }
+
     [Fact]
     public async Task APollNamesNoRestartToAnAgentThatCannotChangeTheEnvironment()
     {
@@ -218,6 +248,87 @@ public sealed class RunEnvironmentSwitchTests(BothEnvironmentsApplication applic
             "The machine restarts into the Linux boot environment first. Choose the sequence again, and it does.",
             await TestDatabase.TitleAsync(refused));
         Assert.Null((await application.MachineAsync(machine.Id)).ActiveDeploymentId);
+    }
+
+    // The picker goes away once a run is assigned on the web, so only a pick already on its way gets this answer.
+    [Fact]
+    public async Task APickAtAMachineWhoseRunStartsInTheOtherEnvironmentSaysWhereItStarts()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
+        using DeployingMachine elsewhere = await DeployingMachine.SignedInAsync(application, operatorName, WindowsPE());
+        using DeployingMachine here = await DeployingMachine.SignedInAsync(application, operatorName, WindowsPE());
+        SequenceView windows = await WindowsAsync();
+        await administrator.AssignedAsync(elsewhere.Id, (await LinuxAsync()).Id, "LINUX-44");
+        await administrator.AssignedAsync(here.Id, windows.Id);
+
+        async Task<string?> RefusalAsync(DeployingMachine machine)
+        {
+            HttpResponseMessage refused = await machine.Agent.PickRunAsync(machine.Id, machine.Token, new AgentRunRequest(windows.Id, 0, null));
+            Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+
+            return await TestDatabase.TitleAsync(refused);
+        }
+
+        Assert.Equal("This machine already has a run. It starts once the agent asks the server again.", await RefusalAsync(here));
+        Assert.Equal(
+            "This machine already has a run, which runs in the Linux boot environment. " +
+            "The machine restarts into the Linux boot environment once the agent asks the server again.",
+            await RefusalAsync(elsewhere));
+        application.SetLinuxBoot(false);
+
+        try
+        {
+            Assert.Equal(
+                "This machine already has a run, which runs in the Linux boot environment and does not start in Windows PE. " +
+                "This server has no Linux boot environment to start. A release of DDT brings it in the folder linux-boot next to the server.",
+                await RefusalAsync(elsewhere));
+        }
+        finally
+        {
+            application.SetLinuxBoot(true);
+        }
+    }
+
+    // The approval that took the rule's sequence belongs to this start of the machine. The resume token keeps both.
+    [Fact]
+    public async Task ARunARuleChoseStaysWithTheMachineThatRestartsForIt()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await DeployingMachine.RegisterAsync(application, WindowsPE());
+        SequenceView linux = await RuledAsync(machine);
+
+        DeploymentSummary run = (await RegisteredMachine.ReadAsync<MachineSummary>(await administrator.ApproveAsync(machine.Id, linux.Id))).Deployment!;
+        AgentNextResult inWindowsPE = await machine.NextAsync();
+        AgentRegistrationResult registered = await machine.RestartIntoAsync(AgentEnvironment.LinuxBoot);
+
+        Assert.Equal(DeploymentSource.Rule, run.Source);
+        Assert.Null(inWindowsPE.Run);
+        Assert.Equal(AgentEnvironment.LinuxBoot, inWindowsPE.RestartInto);
+        Assert.Equal(MachineState.Approved, registered.State);
+        Assert.Equal(run.Id, Assert.IsType<AgentRun>((await machine.NextAsync()).Run).Id);
+    }
+
+    // The machine starts over as after any restart without its token. Approved again, it is where the run starts.
+    [Fact]
+    public async Task ARunARuleChoseEndsWhenTheTokenIsLostOnTheWayAndIsApprovedAgainWhereItStarts()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await DeployingMachine.RegisterAsync(application, WindowsPE());
+        SequenceView linux = await RuledAsync(machine);
+        DeploymentSummary run = (await RegisteredMachine.ReadAsync<MachineSummary>(await administrator.ApproveAsync(machine.Id, linux.Id))).Deployment!;
+        await machine.NextAsync();
+
+        AgentRegistrationResult registered = await machine.RestartIntoAsync(AgentEnvironment.LinuxBoot, carried: false);
+
+        Assert.Equal(MachineState.Pending, registered.State);
+        Assert.Equal(DeploymentState.Cancelled, (await administrator.RunAsync(run.Id)).Summary.State);
+
+        DeploymentSummary again = (await RegisteredMachine.ReadAsync<MachineSummary>(await administrator.ApproveAsync(machine.Id, linux.Id))).Deployment!;
+        AgentNextResult inLinuxBoot = await machine.NextAsync();
+
+        Assert.Equal(again.Id, Assert.IsType<AgentRun>(inLinuxBoot.Run).Id);
+        Assert.Null(inLinuxBoot.RestartInto);
     }
 
     [Fact]

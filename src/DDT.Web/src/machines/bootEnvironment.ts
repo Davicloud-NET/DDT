@@ -78,8 +78,8 @@ export function environmentFacts(machine: MachineSummary): { label: string; valu
   ];
 }
 
-// What the assign dialog says when the sequence starts in the other boot environment than the one the machine waits
-// in. A warning when the server cannot start that one, so the machine could not get there.
+// What the assign and approval dialogs say when the sequence starts in the other boot environment than the one the
+// machine waits in. A warning when the server cannot start that one, so the machine could not get there.
 export interface StartNotice {
   warning: boolean;
   text: string;

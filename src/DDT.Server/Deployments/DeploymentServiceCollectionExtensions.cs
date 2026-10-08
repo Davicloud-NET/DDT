@@ -26,6 +26,7 @@ public static class DeploymentServiceCollectionExtensions
         services.AddScoped<SequenceChoices>();
         services.AddScoped<NewRuns>();
         services.AddScoped<RunAssignments>();
+        services.AddScoped<PickRefusals>();
         services.AddScoped<SequencePicks>();
         services.AddScoped<WaitingRuns>();
         services.AddScoped<RunTermination>();

@@ -20,7 +20,7 @@ public sealed class SequencePicks(
     NewRuns newRuns,
     SequenceChoices choices,
     SequenceResolver resolver,
-    BootEnvironments environments,
+    PickRefusals refusals,
     TimeProvider timeProvider)
 {
     public async Task<DeploymentDecision> PickAsync(
@@ -36,7 +36,7 @@ public sealed class SequencePicks(
         {
             return DeploymentDecision.Conflict(machine.ActiveDeploymentId is null
                 ? "Only an operator or administrator signed in at this machine can choose a sequence. Start the machine from the network again and sign in."
-                : "This machine already has a run. It starts once the agent asks the server again.");
+                : await refusals.HasRunAsync(machine, cancellationToken).ConfigureAwait(false));
         }
 
         TaskSequence? sequence = await newRuns.LoadAsync(request.SequenceId, cancellationToken).ConfigureAwait(false);
@@ -53,7 +53,7 @@ public sealed class SequencePicks(
             return DeploymentDecision.Conflict(problem);
         }
 
-        if (OtherEnvironment(machine, checkedSequence) is { } restartFirst)
+        if (refusals.OtherEnvironment(machine, checkedSequence) is { } restartFirst)
         {
             return restartFirst;
         }
@@ -77,24 +77,6 @@ public sealed class SequencePicks(
         };
 
         return await CreateAsync(run, resolution, request.DiskNumber, cancellationToken).ConfigureAwait(false);
-    }
-
-    // A run is only made where it starts. The machine restarts into the other boot environment first and picks there,
-    // so nothing but its approval, its sign-in and the pick crosses the restart. Checked before the agent's version,
-    // since a newer agent in this boot environment would not run the sequence either.
-    private DeploymentDecision? OtherEnvironment(Machine machine, CheckedSequence sequence)
-    {
-        if (PhaseRules.Starts(machine.AgentEnvironment, sequence.Definition))
-        {
-            return null;
-        }
-
-        AgentEnvironment needed = PhaseRules.StartsIn(sequence.Definition);
-        string where = $"{sequence.Sequence.Name} runs in {PhaseRules.Name(needed)}, and this machine started {PhaseRules.Name(machine.AgentEnvironment)}.";
-
-        return DeploymentDecision.Conflict(environments.ReachableFrom(machine) == needed
-            ? $"{where} The machine restarts into {PhaseRules.Name(needed)} first. Choose the sequence again, and it does."
-            : $"{where} Choose one of the sequences the machine lists.");
     }
 
     // Refuses a pick if the sequence changed after the agent showed its list, so the list no longer fits.

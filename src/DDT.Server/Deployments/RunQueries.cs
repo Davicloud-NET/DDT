@@ -68,14 +68,23 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
             return null;
         }
 
-        AgentRun handed = await AgentRunAsync(machine, run, cancellationToken).ConfigureAwait(false);
-
-        if (run.State == DeploymentState.Assigned && !PhaseRules.Starts(machine.AgentEnvironment, handed.Sequence))
+        // Asked first, since a machine that waits in the other environment polls for as long as it waits there.
+        if (run.State == DeploymentState.Assigned && await StartsInAsync(run, cancellationToken).ConfigureAwait(false) != machine.AgentEnvironment)
         {
             return null;
         }
 
+        AgentRun handed = await AgentRunAsync(machine, run, cancellationToken).ConfigureAwait(false);
+
         return machine.SequenceVersion >= handed.Sequence.Version ? handed : null;
+    }
+
+    // The boot environment the run starts in. A run from before the server kept it says it through its sequence.
+    public async Task<AgentEnvironment> StartsInAsync(Deployment run, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(run);
+
+        return run.BootEnvironment ?? PhaseRules.StartsIn(await DefinitionAsync(run, cancellationToken).ConfigureAwait(false));
     }
 
     // The boot environment the machine restarts into for its assigned run, which starts there and not where the machine
@@ -90,9 +99,7 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
             return null;
         }
 
-        // A run from before the column says it through its sequence.
-        AgentEnvironment starts = run.BootEnvironment
-            ?? PhaseRules.StartsIn(await DefinitionAsync(run, cancellationToken).ConfigureAwait(false));
+        AgentEnvironment starts = await StartsInAsync(run, cancellationToken).ConfigureAwait(false);
 
         return starts != machine.AgentEnvironment && environments.ReachableFrom(machine) == starts ? starts : null;
     }

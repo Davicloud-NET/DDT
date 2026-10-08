@@ -1,4 +1,8 @@
 # syntax=docker/dockerfile:1
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
 ARG DOTNET_SDK=mcr.microsoft.com/dotnet/sdk:10.0-noble
 ARG DOTNET_RUNTIME=mcr.microsoft.com/dotnet/aspnet:10.0-noble
 ARG NODE=node:24-trixie-slim

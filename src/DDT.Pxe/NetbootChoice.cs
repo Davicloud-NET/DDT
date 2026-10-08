@@ -50,6 +50,9 @@ public sealed class NetbootChoice
         };
     }
 
+    // What the last look found: whether Windows PE can be started, which is what Auto decides by.
+    public bool CanStartWindowsPE => _windowsPE;
+
     // Looks whether Windows PE can be started, which reads the boot directory. Netboot calls it in the background.
     public void Refresh() => _windowsPE = WindowsPEStarts();
 

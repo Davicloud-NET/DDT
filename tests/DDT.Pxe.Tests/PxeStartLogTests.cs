@@ -13,6 +13,7 @@ namespace DDT.Pxe.Tests;
 public sealed class PxeStartLogTests : IDisposable
 {
     private const string Offered = "Information 526: Linux boot environment: Tftp linux/shimx64.efi from ";
+    private const string BootManager = "x64/bootmgfw.efi";
 
     private readonly string _boot = Directory.CreateTempSubdirectory("ddt-pxe-start-log-").FullName;
     private readonly FakeLinuxBootSite _site = new();
@@ -40,7 +41,22 @@ public sealed class PxeStartLogTests : IDisposable
         DefaultBootEnvironment = preferred,
     };
 
-    private async Task<string[]> StartAsync(PxeOptions options, bool catalogue = true)
+    // The boot target a new server has, which a boot image build brings the file of.
+    private PxeOptions WithBootTarget(string preferred, string? server = null)
+    {
+        PxeOptions options = Options(tftp: true, preferred);
+        options.BootTargets["X64Uefi"] = new BootTargetOptions { Method = "Tftp", BootFile = BootManager, ServerAddress = server };
+
+        return options;
+    }
+
+    private void ABootImageIsBuilt()
+    {
+        Directory.CreateDirectory(Path.Combine(_boot, "x64"));
+        File.WriteAllText(Path.Combine(_boot, BootManager), "boot manager");
+    }
+
+    private async Task<string[]> StartAsync(PxeOptions options, bool catalogue = true, string about = "Linux boot environment:")
     {
         PxeListenerBinding binding = new(IPAddress.Loopback, FreePort(), FreePort(), FreePort(), configured => new NetworkInterfaceMap(configured, [Loopback.Interface]));
         PxeHostSource source = new(
@@ -55,18 +71,78 @@ public sealed class PxeStartLogTests : IDisposable
         await host.StartAsync(TestContext.Current.CancellationToken);
         await host.StopAsync(TestContext.Current.CancellationToken);
 
-        return [.. _log.Messages.Where(message => message.Contains("Linux boot environment", StringComparison.Ordinal))];
+        return [.. _log.Messages.Where(message => message.Contains(about, StringComparison.Ordinal))];
     }
 
+    // What is said of the boot manager's file, when it is said at all.
+    private Task<string[]> StartForBootManagerAsync(PxeOptions options) => StartAsync(options, about: $" names {BootManager}");
+
     [Theory]
-    [InlineData("Auto", "Windows PE once a boot image is built, and it until then")]
+    [InlineData("Auto", "it until a boot image is built")]
     [InlineData("WindowsPE", "Windows PE")]
     [InlineData("Linux", "it")]
     public async Task SaysWhereTheLinuxBootEnvironmentIsServedFromAndWhatMachinesWithoutARunStart(string preferred, string expected)
     {
-        string[] lines = await StartAsync(Options(tftp: true, preferred));
+        string[] lines = await StartAsync(WithBootTarget(preferred));
 
         Assert.Equal([$"{Offered}{_boot}. Machines without a run start {expected}"], lines);
+    }
+
+    [Fact]
+    public async Task SaysThatAutoStartsWindowsPEOnceABootImageIsThere()
+    {
+        ABootImageIsBuilt();
+
+        string[] lines = await StartAsync(WithBootTarget("Auto"));
+
+        Assert.Equal([$"{Offered}{_boot}. Machines without a run start Windows PE, since a boot image is there"], lines);
+    }
+
+    // DDT cannot look into another TFTP server, and names Windows PE to it as before.
+    [Fact]
+    public async Task SaysThatAutoStartsWindowsPEWhereItsBootTargetNamesAnotherServer()
+    {
+        string[] lines = await StartAsync(WithBootTarget("Auto", server: "192.0.2.7"));
+
+        Assert.Equal([$"{Offered}{_boot}. Machines without a run start Windows PE, since its boot target names another server"], lines);
+    }
+
+    [Theory]
+    [InlineData("Auto")]
+    [InlineData("Linux")]
+    public async Task OnlyInformsOfAMissingBootManagerWhileMachinesStartTheLinuxBootEnvironment(string preferred)
+    {
+        string[] lines = await StartForBootManagerAsync(WithBootTarget(preferred));
+
+        Assert.Equal(
+            [$"Information 532: Boot target X64Uefi names {BootManager}, which comes with the boot image. Until one is built, machines start the Linux boot environment"],
+            lines);
+    }
+
+    [Fact]
+    public async Task WarnsOfAMissingBootManagerThatMachinesWithoutARunAreNamed()
+    {
+        string[] lines = await StartForBootManagerAsync(WithBootTarget("WindowsPE"));
+
+        Assert.Equal([$"Warning 504: Boot target X64Uefi names {BootManager}, which is not in {_boot}"], lines);
+    }
+
+    [Fact]
+    public async Task WarnsOfAMissingBootManagerWhereNoLinuxBootEnvironmentIsOffered()
+    {
+        _site.Current = null;
+
+        string[] lines = await StartForBootManagerAsync(WithBootTarget("Auto"));
+
+        Assert.Equal([$"Warning 504: Boot target X64Uefi names {BootManager}, which is not in {_boot}"], lines);
+    }
+
+    [Fact]
+    public async Task SaysNothingOfABootManagerThatIsThere()
+    {
+        ABootImageIsBuilt();
+
+        Assert.Empty(await StartForBootManagerAsync(WithBootTarget("Auto")));
     }
 
     [Fact]

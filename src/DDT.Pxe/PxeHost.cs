@@ -219,7 +219,7 @@ public sealed class PxeHost : IHostedService, IDisposable
             reader.Read();
             reader.Start();
             _stops.Add(async () => await reader.DisposeAsync().ConfigureAwait(false));
-            PxeStartLog.BootTargets(_logger, setup, _source.Linux is null ? null : files);
+            PxeStartLog.BootTargets(_logger, setup, _source.Linux is null ? null : files, choice.CanStartWindowsPE);
 
             if (setup.Options.EnableProxyDhcp)
             {

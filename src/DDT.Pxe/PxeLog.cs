@@ -30,6 +30,13 @@ internal static partial class PxeLog
     [LoggerMessage(EventId = 504, Level = LogLevel.Warning, Message = "Boot target {Architecture} names {BootFile}, which is not in {BootDirectory}")]
     public static partial void BootFileMissing(ILogger logger, ClientArchitecture architecture, string bootFile, string bootDirectory);
 
+    [LoggerMessage(
+        EventId = 532,
+        Level = LogLevel.Information,
+        Message = "Boot target {Architecture} names {BootFile}, which comes with the boot image. " +
+            "Until one is built, machines start the Linux boot environment")]
+    public static partial void BootFileAwaitsBootImage(ILogger logger, ClientArchitecture architecture, string bootFile);
+
     [LoggerMessage(EventId = 505, Level = LogLevel.Warning, Message = "No boot targets are configured, so every PXE client is ignored")]
     public static partial void NoBootTargets(ILogger logger);
 

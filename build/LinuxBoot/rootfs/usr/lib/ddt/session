@@ -4,7 +4,7 @@
 # Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 # The first screen of the DDT Linux boot environment: runs the agent. When the agent has ended it restarts the
-# machine, if the agent meant to, or offers a small menu.
+# machine, if the agent meant to, or offers a small menu. A menu nobody answers starts the agent again a few times.
 
 . /usr/lib/ddt/common.sh
 
@@ -14,17 +14,31 @@ TERM=linux
 export HOME TERM
 
 # Ctrl+C and Ctrl+\ reach every program on this screen. The agent takes them as it likes; this script must stay,
-# or init would start the agent again without the menu.
-trap : INT QUIT
+# or init would start the agent again without the menu. At the menu they show that somebody is there.
+interrupted=0
+trap 'interrupted=1' INT QUIT
 
 # The kernel writes its messages over whatever the screen shows. dmesg still has them.
 dmesg -n 1
 
-# Keys pressed while the machine started would show on the screen and then be the agent's first input.
+# A machine nobody sits at must not stay at the menu for good, so without a choice the agent starts again after
+# this many seconds, and so many times. The file is for tests, which do not wait a minute.
+menu_wait=60
+again_left=3
+if [ -r /etc/ddt/menu-wait ]; then
+    read -r wanted < /etc/ddt/menu-wait
+    case $wanted in
+        "" | 0* | *[!0-9]* | ????*) ;;
+        *) menu_wait=$wanted ;;
+    esac
+fi
+
+# Keys pressed while the machine started would show on the screen and then be the agent's first input. Without
+# ixon, Ctrl+S does not hold the screen, and with it a run that writes to it.
 quiet_keys() {
     if stty -echo -icanon min 0 time 0 2> /dev/null; then
         cat > /dev/null
-        stty sane -echo
+        stty sane -echo -ixon
     fi
 }
 
@@ -57,7 +71,46 @@ restart_after_agent() {
     sleep 30
 }
 
+times() {
+    if [ "$1" = 1 ]; then
+        echo "once more"
+    else
+        echo "$1 more times"
+    fi
+}
+
+# Asks for a choice. While nobody has chosen since the agent ended, and the agent may still start again by itself,
+# the question waits only so long. Returns 1 when nobody chose in time.
+ask() {
+    if [ "$attended" = 1 ]; then
+        printf "Your choice: "
+        read -r choice || choice=
+        return 0
+    fi
+    if [ "$again_left" = 0 ]; then
+        echo "The DDT agent has started again by itself as often as it does. This menu stays until somebody chooses."
+        printf "Your choice: "
+        read -r choice || choice=
+        return 0
+    fi
+    echo "If nobody chooses within $menu_wait seconds, the DDT agent starts again. That happens $(times "$again_left"), then this menu stays."
+    printf "Your choice: "
+    interrupted=0
+    # The shell of busybox, which this environment has, reads with a limit of time. The one POSIX describes does not.
+    # shellcheck disable=SC3045
+    read -r -t "$menu_wait" choice
+    answered=$?
+    # Ctrl+C ends the question as the time does, and is a key all the same.
+    if [ "$interrupted" = 1 ]; then
+        choice=
+        return 0
+    fi
+    return "$answered"
+}
+
 menu() {
+    # A choice shows that somebody is there, who decides from then on.
+    attended=0
     while :; do
         echo
         echo "  1  Start the DDT agent again"
@@ -65,8 +118,14 @@ menu() {
         echo "  3  Restart the computer"
         echo "  4  Power off"
         echo
-        printf "Your choice: "
-        read -r choice || choice=
+        if ! ask; then
+            again_left=$((again_left - 1))
+            echo
+            echo "Nobody chose within $menu_wait seconds, so the DDT agent starts again."
+            stage "session: nobody chose at the menu within $menu_wait s, starting the agent again; starts by itself left: $again_left"
+            return
+        fi
+        attended=1
         case $choice in
             1) return ;;
             2) (cd /root && exec sh -l) ;;

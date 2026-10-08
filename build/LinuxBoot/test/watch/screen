@@ -17,6 +17,10 @@ done
 while :; do
     sleep 2
     size=$(stty -F /dev/tty1 size 2> /dev/null) || continue
-    # The kernel hands the screen out as one line of all its rows. size is "rows columns".
-    fold -w "${size#* }" /dev/vcs1 | sed -e 's/ *$//' -e '/^$/d' -e 's/^/screen: /' > /dev/ttyS0
+    # The kernel hands the screen out as one line of all its rows. size is "rows columns". The last row has no line
+    # end, and what the start scripts write next must not be taken for part of it.
+    {
+        fold -w "${size#* }" /dev/vcs1 | sed -e 's/ *$//' -e '/^$/d' -e 's/^/screen: /'
+        echo
+    } > /dev/ttyS0
 done

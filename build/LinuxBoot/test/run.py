@@ -51,6 +51,24 @@ def placeholder(name, boot, out, arguments="", **options):
     return Machine(name, boot, out, arguments, extra, **options)
 
 
+# The same with the watcher, which copies the first screen to the serial port and runs before /init.
+def watched_placeholder(name, boot, out, arguments="", more=(), **options):
+    return Machine(name, boot, out, arguments, extra + [watch_archive()] + list(more), init="/ddt-test/init", **options)
+
+
+# What the first screen showed, each line once, without the watcher's mark.
+def screen_lines(machine):
+    seen = []
+    for line in machine.lines("screen: "):
+        if line[8:] not in seen:
+            seen.append(line[8:])
+    return seen
+
+
+def types(machine, text):
+    machine.keys(*(list(text) + ["ret"]))
+
+
 # The firmware loads shim, shim loads GRUB, GRUB loads the kernel and its initramfs files.
 def chain(boot, out):
     machine = placeholder("chain", boot, out)
@@ -87,7 +105,8 @@ def chain(boot, out):
           "shell is %s, no prompt on the serial port" % machine.fact("shell"))
 
 
-# The menu an agent that failed leaves takes its keys from the first screen: 1 starts the agent again, 4 powers off.
+# The menu an agent that failed leaves takes its keys from the first screen: 1 starts the agent again, 3 restarts
+# the machine, 2 opens a shell and 4 powers off.
 def menu(boot, out):
     machine = placeholder("menu", boot, out)
     machine.start(SCREEN)
@@ -102,13 +121,67 @@ def menu(boot, out):
           machine.facts("shell") == ["closed", "open"], "shell was %s" % ", then ".join(machine.facts("shell")))
     if again is not None:
         time.sleep(1)
-        machine.keys("4", "ret")
+        machine.keys("3", "ret")
+    restarted = machine.wait("(?s)" + ".*".join([ended] * 3), 120) if again is not None else None
+    # The machine has run for a shorter time when the agent starts after a restart than at its start before.
+    running = [float(seconds) for seconds in machine.facts("uptime")]
+    check("menu: 3 restarts the machine", restarted is not None and len(running) == 3 and running[2] < running[1],
+          "the agent started %s s after the kernel did" % ", ".join("%.1f" % seconds for seconds in running))
+    # Nothing but a shell knows the word, and the menu's own way to power off is another key.
+    if restarted is not None:
+        time.sleep(1)
+        machine.keys("2", "ret")
+        time.sleep(1.5)
+        types(machine, "poweroff")
     try:
         machine.process.wait(timeout=30)
-        check("menu: 4 powers the machine off", True, "QEMU ended %.1f s after power-on" % machine.seconds())
+        check("menu: 2 opens a shell on the first screen", restarted is not None,
+              "poweroff typed there, and QEMU ended %.1f s after power-on" % machine.seconds())
     except subprocess.TimeoutExpired:
-        check("menu: 4 powers the machine off", False, "the machine is still on")
+        check("menu: 2 opens a shell on the first screen", False, "the machine is still on")
     machine.stop()
+
+
+# A machine nobody sits at: the agent has ended, nobody chooses, and the agent starts again by itself, three times.
+# Then the menu stays, and still takes a key. The test's wait is 5 s, a machine's is 60.
+def unattended(boot, out):
+    tree = os.path.join(WORK, "menu-wait-tree")
+    shutil.rmtree(tree, ignore_errors=True)
+    os.makedirs(os.path.join(tree, "etc", "ddt"))
+    with open(os.path.join(tree, "etc", "ddt", "menu-wait"), "w", encoding="utf-8", newline="\n") as file:
+        file.write("5\n")
+    short = os.path.join(WORK, "menu-wait.cpio")
+    archive(tree, short)
+    machine = watched_placeholder("unattended", boot, out, more=[short])
+    machine.start(SCREEN)
+    started = "ddt: agent: starting"
+    fourth = machine.wait("(?s)" + ".*".join([started] * 4), 180)
+    said = [line for line in screen_lines(machine) if "If nobody chooses within" in line]
+    check("unattended: the menu says what happens without a choice, and when", bool(said)
+          and "within 5 seconds, the DDT agent starts again. That happens 3 more times, then this menu stays." in said[0],
+          said[0] if said else machine.tail())
+    stays = machine.wait("screen: The DDT agent has started again by itself as often as it does. This menu stays until somebody chooses.", 60)
+    time.sleep(15)
+    count = machine.count(started)
+    check("unattended: without a choice the agent starts again three times, then the menu stays",
+          fourth is not None and stays is not None and count == 4 and machine.process.poll() is None,
+          "the agent ran %d times, the last start %.1f s after power-on, and not again in the 15 s after the menu said it stays; %s" % (
+              count, fourth or 0, " | ".join(machine.lines("ddt: session:"))))
+    machine.keys("4", "ret")
+    try:
+        machine.process.wait(timeout=30)
+        off = True
+    except subprocess.TimeoutExpired:
+        off = False
+    machine.stop()
+    check("unattended: the menu that stays still takes a key", off, "4 powered the machine off" if off else machine.tail())
+
+    machine = watched_placeholder("unattended-default", boot, out)
+    machine.start(SCREEN)
+    machine.wait("screen: If nobody chooses within", 150)
+    machine.stop()
+    said = [line for line in screen_lines(machine) if "If nobody chooses within" in line]
+    check("unattended: a machine waits 60 seconds", bool(said) and "within 60 seconds" in said[0], said[0] if said else machine.tail())
 
 
 # Secure Boot is not just switched on, it refuses what is not signed.
@@ -212,6 +285,88 @@ def clock(boot, out):
           "%s; the agent's clock is in %d" % (line, year))
 
 
+    # A machine that ran Windows keeps local time in its hardware clock: two hours ahead here.
+    ahead = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(time.time() + 7200))
+    machine = placeholder("clock-local-time", boot, out)
+    machine.start(SCREEN + ["-rtc", "base=" + ahead])
+    machine.wait(re.escape(DONE), 150)
+    machine.stop()
+    line = (machine.lines("ddt: clock:") or [machine.tail()])[0]
+    date = int(machine.fact("date") or 0)
+    check("clock: a hardware clock two hours ahead is set from ddt.time", re.search(r"was 1(19|20) minutes .* set from ddt.time", line) is not None
+          and abs(date - time.time()) < 300, "%s; the agent's clock is %d s from this computer's" % (line, date - time.time()))
+
+
+# What a kernel command line written by hand can hold must not stop the start: a time the shell would read as octal,
+# a keymap that leads out of its folder, a server name with a command in it.
+def hostile(boot, out):
+    words = 'ddt.time=08 ddt.keymap=../../../etc/passwd "ddt.hostname=a;b" ddt.hostip=%s' % SERVER
+    machine = placeholder("hostile", boot, out, words, server_time=False, keymap=None)
+    machine.start(SCREEN)
+    seconds = machine.wait(re.escape(DONE), 150)
+    machine.stop()
+    stages = machine.lines("ddt: ")
+    check("hostile: the start reaches the agent with words on the command line that are not what they should be",
+          seconds is not None and "ddt: start: done, the agent is next" in stages and "ddt.hostname=a;b" in machine.fact("cmdline"),
+          "the agent started %.1f s after power-on; command line: %s" % (seconds or 0, machine.fact("cmdline")))
+    clock_line = (machine.lines("ddt: clock:") or [machine.tail()])[0]
+    check("hostile: ddt.time=08 is no time and changes no clock", "is no time" in clock_line and abs(int(machine.fact("date") or 0) - time.time()) < 300,
+          clock_line)
+    check("hostile: a keymap outside its folder is not loaded", not machine.lines("ddt: keyboard:"),
+          "no keyboard line among: " + " | ".join(stages))
+    check("hostile: a server name that is no name is not written", machine.fact("hosts").count(";") == 2 and not machine.lines("ddt: server:"),
+          "/etc/hosts: " + machine.fact("hosts"))
+
+    machine = placeholder("hostile-zeros", boot, out, "ddt.time=000%d" % int(time.time()), server_time=False)
+    machine.start(SCREEN + OLD_CLOCK)
+    machine.wait(re.escape(DONE), 150)
+    machine.stop()
+    line = (machine.lines("ddt: clock:") or [machine.tail()])[0]
+    date = int(machine.fact("date") or 0)
+    check("hostile: a time with leading zeros is read as the time it is", "set from ddt.time" in line and abs(date - time.time()) < 300,
+          "%s; the agent's clock is %d s from this computer's" % (line, date - time.time()))
+
+
+# A controller that shows its disk late: the disk goes away when the drivers are loaded and comes back two seconds
+# later. The start waits until the list of disks has stayed the same for three seconds, so the agent finds it. A
+# disk that takes longer than those three seconds after the last change is missed, as before.
+def disks(boot, out):
+    machine = watched_placeholder("disks", boot, out, "ddt.test=disk")
+    machine.start(SCREEN)
+    machine.wait(re.escape(DONE), 150)
+    machine.stop()
+    moved = machine.lines("disk: ")
+    settled = (machine.lines("ddt: disks:") or [machine.tail()])[0]
+    found = [disk for disk in machine.listed("disk") if disk.startswith("disk nvme0n1")]
+    check("disks: the start waits for a disk that comes late", len(moved) == 2 and bool(found) and "1 listed, and the list stayed so for" in settled,
+          "%s; %s; the agent found: %s" % (" and ".join(moved), settled, found[0] if found else "no nvme0n1"))
+
+    machine = placeholder("disks-there", boot, out)
+    machine.start(SCREEN)
+    machine.wait(re.escape(DONE), 150)
+    machine.stop()
+    stages = machine.lines("ddt: ")
+    settled = (machine.lines("ddt: disks:") or [machine.tail()])[0]
+    check("disks: a machine whose disks are there waits no longer than three seconds for them",
+          re.search(r"1 listed, and the list stayed so for [3-6] s", settled) is not None, "%s; %s" % (settled, " | ".join(stages[-4:])))
+
+
+# An SD card in a reader of the PC's own. Windows calls its media removable. The kernel does not, which is why the
+# agent tells such a card by its kind and leaves it out. Should a kernel ever say otherwise, this says so first.
+def card(boot, out):
+    machine = placeholder("card", boot, out, "ddt.hook=card")
+    image = os.path.join(machine.folder, "card.img")
+    with open(image, "wb") as file:
+        file.truncate(32 << 30)
+    machine.start(SCREEN + ["-device", "sdhci-pci", "-drive", "if=none,id=card,format=raw,file=" + image, "-device", "sd-card,drive=card"])
+    machine.wait("card: listed", 150)
+    machine.stop()
+    cards = machine.lines("card: mmcblk")
+    check("card: the kernel shows an SD card in a built-in reader as a disk whose media is not removable",
+          len(cards) == 1 and " removable=0 " in cards[0] and " type=SD " in cards[0] and "size=%d " % ((32 << 30) // 512) in cards[0],
+          cards[0] if cards else machine.tail())
+
+
 # The server's name from the kernel command line is found without a name server, in lower case.
 def server(boot, out):
     machine = placeholder("server", boot, out, "ddt.hostname=DDT-Server.Example.Test ddt.hostip=%s ddt.hook=server" % SERVER)
@@ -256,17 +411,19 @@ def session(boot, out):
           "the agent ran %d times" % machine.count("ddt: agent: starting"))
 
 
-# An agent that ends with the code for a restart and leaves the machine running: the session restarts it.
+# An agent that ends with a code for a restart and leaves the machine running: the session restarts it. Code 5 is
+# a restart in the middle of a run, code 4 the one after a run that is done.
 def restart(boot, out):
-    machine = placeholder("restart", boot, out, "ddt.hook=restart")
-    machine.start(SCREEN)
-    ended = machine.wait("ddt: agent: ended with code 5", 150)
-    back = machine.wait("(?s)%s.*%s" % (re.escape(READY), re.escape(READY)), 90) if ended is not None else None
-    machine.stop()
-    net = machine.lines("ddt: session:")
-    check("restart: after the agent's exit code 5 the session restarts the machine", back is not None and bool(net),
-          "the agent ended %.1f s after power-on and ran again at %.1f s; %s" % (ended, back, net[0]) if back is not None and net
-          else machine.tail())
+    for code, hook in [(5, "restart"), (4, "deployed")]:
+        machine = placeholder("restart-%d" % code, boot, out, "ddt.hook=" + hook)
+        machine.start(SCREEN)
+        ended = machine.wait("ddt: agent: ended with code %d" % code, 150)
+        back = machine.wait("(?s)%s.*%s" % (re.escape(READY), re.escape(READY)), 90) if ended is not None else None
+        machine.stop()
+        net = machine.lines("ddt: session:")
+        check("restart: after the agent's exit code %d the session restarts the machine" % code, back is not None and bool(net),
+              "the agent ended %.1f s after power-on and ran again at %.1f s; %s" % (ended, back, net[0]) if back is not None and net
+              else machine.tail())
 
 
 # Keys pressed while the machine starts are neither shown nor left for the agent to read.
@@ -348,6 +505,7 @@ def agent(boot, out):
     asked = machine.wait("screen: .*Cannot reach the server to ask for the current agent", 90) if noticed is not None else None
     # An agent that gave up would end within moments of its first question.
     ended = machine.wait("ddt: agent: ended", 5)
+    held = hold_the_screen(machine) if asked is not None else None
     machine.stop()
     screen = [line[8:] for line in machine.lines("screen: ")]
     check("agent: the agent from ddt.img starts on the first screen", noticed is not None,
@@ -357,6 +515,55 @@ def agent(boot, out):
           question[0] if question else machine.tail())
     check("agent: it stays and asks again", asked is not None and ended is None and machine.count("ddt: agent: starting") == 1,
           "started %d time, not ended %.1f s after power-on" % (machine.count("ddt: agent: starting"), machine.seconds()))
+    check("agent: Scroll Lock and Ctrl+S do not hold its screen", held is not None and held[1] > held[0],
+          "%d lines of the agent before the keys, %d within a minute after them" % held if held is not None else "the agent never asked")
+
+
+# Both keys stop what a terminal shows until another key lets it go on, and a program that writes to it waits.
+# The agent asks the server again and again, so its screen gets new lines as long as nothing holds it.
+def hold_the_screen(machine):
+    def asked():
+        return len([line for line in screen_lines(machine) if "Cannot reach the server" in line])
+
+    before = asked()
+    machine.keys("scroll_lock", "ctrl-s")
+    end = time.monotonic() + 60
+    while time.monotonic() < end and asked() < before + 2:
+        time.sleep(1)
+    return before, asked()
+
+
+# A machine whose network card Linux has no driver for, although the firmware started it from that card: the agent
+# says so in plain words and waits. An adapter on USB that is plugged in then gets an address, and the agent goes on.
+def adapter(boot, out):
+    late = ["-device", "qemu-xhci,id=usb", "-netdev", "user,id=late,net=10.0.5.0/24"]
+    # ignore_loglevel shows on the serial port what the start scripts say after the start, which only the kernel's
+    # log has then.
+    machine = Machine("adapter", boot, out, "module_blacklist=virtio_net ignore_loglevel", initrds=[watch_archive()], init="/ddt-test/init")
+    machine.start(SCREEN + late)
+    said = machine.wait("screen: .*Linux shows no network adapter on this machine", 150)
+    screen = screen_lines(machine)
+    trace = [line for line in screen if "Unhandled exception" in line or "   at " in line]
+    start = machine.lines("ddt: network:")
+    check("adapter: without a network adapter the agent says what is wrong and what to do", said is not None and not trace
+          and any("Connect a USB network adapter or a dock" in line for line in screen),
+          " ".join(line for line in screen if "WARN" in line or "adapter" in line)[:400] if said is not None else machine.tail())
+    check("adapter: the start says that Linux shows no adapter and goes on looking", "ddt: network: Linux shows no network adapter, still looking" in start,
+          " | ".join(start) or machine.tail())
+    if said is not None:
+        machine.monitor("device_add usb-net,netdev=late,id=latecard,bus=usb.0")
+    found = machine.wait("screen: .*Linux shows a network adapter now", 60) if said is not None else None
+    lease = machine.wait("ddt: network: lease 10[.]0[.]5[.]", 60) if found is not None else None
+    asked = machine.wait("screen: .*Cannot reach the server to ask for the current agent", 120) if found is not None else None
+    ended = machine.count("ddt: agent: ended")
+    machine.stop()
+    screen = screen_lines(machine)
+    now = [line for line in screen if "Linux shows a network adapter now" in line]
+    question = [line for line in screen if "Cannot reach the server" in line]
+    check("adapter: when an adapter is plugged in the agent goes on and asks the server", found is not None and asked is not None and ended == 0,
+          "%s | %s" % (now[0], question[0]) if now and question else machine.tail())
+    leased = [line.strip() for line in machine.text().splitlines() if "ddt: network: lease" in line]
+    check("adapter: the adapter that came late gets its address", lease is not None, leased[0] if leased else machine.tail())
 
 
 # One more initramfs file for the agent check: the watcher that copies the first screen to the serial port.
@@ -399,16 +606,21 @@ def main():
     known = {
         "chain": lambda: chain(boot, out),
         "menu": lambda: menu(boot, out),
+        "unattended": lambda: unattended(boot, out),
         "tampered": lambda: tampered(boot, out),
         "hardware": lambda: hardware(boot, out),
         "variables": lambda: variables(boot, out),
         "clock": lambda: clock(boot, out),
+        "hostile": lambda: hostile(boot, out),
+        "disks": lambda: disks(boot, out),
+        "card": lambda: card(boot, out),
         "server": lambda: server(boot, out),
         "session": lambda: session(boot, out),
         "restart": lambda: restart(boot, out),
         "keys": lambda: keys(boot, out),
         "shell": lambda: shell(boot, out),
         "agent": lambda: agent(boot, out),
+        "adapter": lambda: adapter(boot, out),
     }
     for name in arguments.checks or list(known):
         if name not in known:

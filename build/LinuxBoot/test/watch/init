@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-# The first program in the agent check, which names it with rdinit= in /init's place: starts the watcher of the
-# first screen and goes on with /init, so everything after is the start of any machine.
+# The first program in the checks that name it with rdinit= in /init's place: starts the watcher of the first screen
+# and what takes a disk away for the disks check, and goes on with /init, so everything after is the start of any
+# machine.
 
 PATH=/usr/bin
 export PATH
@@ -13,4 +14,5 @@ export PATH
 mkdir -p /dev
 mknod /dev/null c 1 3
 /ddt-test/screen &
+/ddt-test/disk &
 exec /init

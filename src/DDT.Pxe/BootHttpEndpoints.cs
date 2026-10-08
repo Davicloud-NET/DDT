@@ -3,8 +3,10 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Globalization;
+using System.Net;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
@@ -55,7 +57,15 @@ public static class BootHttpEndpoints
 
     // Maps both GET and HEAD. UEFI HTTP Boot sends HEAD first, and a HEAD that matches no endpoint falls through to the
     // deny by default policy. That turns it into a redirect the firmware refuses to follow.
-    public static IEndpointConventionBuilder MapBootFiles(this IEndpointRouteBuilder endpoints, BootFileResolver files)
+    public static IEndpointConventionBuilder MapBootFiles(this IEndpointRouteBuilder endpoints, BootFiles files)
+    {
+        ArgumentNullException.ThrowIfNull(files);
+
+        return endpoints.MapBootFiles(() => files);
+    }
+
+    // files is asked at every request, so the port serves what the listeners were last started with. Null serves nothing.
+    public static IEndpointConventionBuilder MapBootFiles(this IEndpointRouteBuilder endpoints, Func<BootFiles?> files)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         ArgumentNullException.ThrowIfNull(files);
@@ -64,23 +74,56 @@ public static class BootHttpEndpoints
             .MapMethods(
                 "/boot/{**path}",
                 [HttpMethods.Get, HttpMethods.Head],
-                (string? path, HttpContext context, ILoggerFactory loggerFactory) => Serve(files, path, context, loggerFactory))
+                (string? path, HttpContext context, ILoggerFactory loggerFactory) => Serve(files(), path, context, loggerFactory))
             .WithMetadata(new BootEndpointMarker())
             .AllowAnonymous();
     }
 
-    private static IResult Serve(BootFileResolver files, string? path, HttpContext context, ILoggerFactory loggerFactory)
+    private static IResult Serve(BootFiles? files, string? path, HttpContext context, ILoggerFactory loggerFactory)
     {
         ILogger logger = loggerFactory.CreateLogger(typeof(BootHttpEndpoints));
         string client = context.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
 
-        if (path is null || !files.TryResolve(path, out FileInfo? file))
+        if (files is null || path is null || RequestOf(context) is not { } request || !files.TryFind(path, request, out BootContent? content))
         {
-            PxeLog.HttpBootNotFound(logger, context.Request.Method, context.Request.Path, client);
-
-            return TypedResults.NotFound();
+            return NotFound(logger, context, client, path);
         }
 
+        if (content is MemoryBootContent generated)
+        {
+            PxeLog.HttpBoot(logger, context.Request.Method, context.Request.Path, client);
+
+            // GRUB reads a file whose length it was told, so the answer carries Content-Length and is not chunked.
+            return TypedResults.Bytes(generated.Bytes, ContentTypeFor(path));
+        }
+
+        return content is FileBootContent file ? ServeFile(file.File, logger, context, client) : NotFound(logger, context, client, path);
+    }
+
+    // The address the request arrived on is the one a generated file names as the server.
+    private static BootRequest? RequestOf(HttpContext context) =>
+        context.Connection.LocalIpAddress is { } local
+            ? new BootRequest(Version4(local), Version4(context.Connection.RemoteIpAddress ?? IPAddress.None))
+            : null;
+
+    private static IPAddress Version4(IPAddress address) => address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address;
+
+    private static NotFound NotFound(ILogger logger, HttpContext context, string client, string? path)
+    {
+        if (BootFiles.Normalized(path) is { } name && BootProbes.IsProbe(name))
+        {
+            PxeLog.HttpBootProbe(logger, context.Request.Method, context.Request.Path, client);
+        }
+        else
+        {
+            PxeLog.HttpBootNotFound(logger, context.Request.Method, context.Request.Path, client);
+        }
+
+        return TypedResults.NotFound();
+    }
+
+    private static IResult ServeFile(FileInfo file, ILogger logger, HttpContext context, string client)
+    {
         // Not PhysicalFile, which opens without FileShare.Delete: on Windows a new boot image then can't move this
         // one aside while firmware downloads it.
         FileStream content;

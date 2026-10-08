@@ -26,6 +26,7 @@ public sealed class PxeHost : IHostedService, IDisposable
     private readonly List<Func<Task>> _stops = [];
     private readonly CancellationTokenSource _stopping = new();
     private PxeSetup? _applied;
+    private BootFiles? _files;
     private long _version = -1;
     private IDisposable? _subscription;
 
@@ -45,6 +46,9 @@ public sealed class PxeHost : IHostedService, IDisposable
     // The setup whose listeners are running. The HTTP boot gate reads it on every request. Null while nothing is
     // served.
     public PxeSetup? Applied => Volatile.Read(ref _applied);
+
+    // What TFTP and the HTTP boot port answer from, for the setup that is running. Null while nothing is served.
+    public BootFiles? Files => Volatile.Read(ref _files);
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -68,7 +72,7 @@ public sealed class PxeHost : IHostedService, IDisposable
         try
         {
             await StopListenersAsync().ConfigureAwait(false);
-            Volatile.Write(ref _applied, null);
+            Serve(null, null);
         }
         finally
         {
@@ -97,7 +101,7 @@ public sealed class PxeHost : IHostedService, IDisposable
             if (desired.Options is null)
             {
                 await StopListenersAsync().ConfigureAwait(false);
-                Volatile.Write(ref _applied, null);
+                Serve(null, null);
                 PxeLog.Stopped(_logger, desired.Refusal?.Text ?? "nothing is configured");
                 result = new PxeApplyResult(desired.Version, desired.Refusal is null, desired.Refusal?.Text, null, desired.Refusal);
             }
@@ -137,18 +141,18 @@ public sealed class PxeHost : IHostedService, IDisposable
         }
 
         await StopListenersAsync().ConfigureAwait(false);
-        Volatile.Write(ref _applied, null);
+        Serve(null, null);
 
         try
         {
             Start(next);
-            Volatile.Write(ref _applied, next);
 
             return new PxeApplyResult(desired.Version, true, null, next.Interfaces);
         }
         catch (InvalidOperationException failure)
         {
             await StopListenersAsync().ConfigureAwait(false);
+            Serve(null, null);
             PxeLog.ApplyFailed(_logger, failure.Message);
 
             if (previous is not null)
@@ -156,12 +160,12 @@ public sealed class PxeHost : IHostedService, IDisposable
                 try
                 {
                     Start(previous);
-                    Volatile.Write(ref _applied, previous);
                     PxeLog.RolledBack(_logger);
                 }
                 catch (InvalidOperationException again)
                 {
                     await StopListenersAsync().ConfigureAwait(false);
+                    Serve(null, null);
                     PxeLog.ApplyFailed(_logger, again.Message);
                 }
             }
@@ -191,26 +195,35 @@ public sealed class PxeHost : IHostedService, IDisposable
         }
     }
 
+    // The setup counts as applied once its listeners run, also when it serves no interface.
     private void Start(PxeSetup setup)
     {
-        if (!LogInterfaces(setup.Interfaces))
+        BootFiles files = new(setup.Files, _source.Linux, setup.Options.HttpBootPort, _timeProvider);
+
+        if (LogInterfaces(setup.Interfaces))
         {
-            return;
+            LogBootTargets(setup);
+
+            if (setup.Options.EnableProxyDhcp)
+            {
+                StartProxyDhcp(setup);
+            }
+
+            if (setup.Options.EnableTftp)
+            {
+                StartTftp(setup, files);
+            }
+
+            PxeLog.HttpBootListening(_logger, setup.Options.HttpBootPort, setup.Files.Root);
         }
 
-        LogBootTargets(setup);
+        Serve(setup, files);
+    }
 
-        if (setup.Options.EnableProxyDhcp)
-        {
-            StartProxyDhcp(setup);
-        }
-
-        if (setup.Options.EnableTftp)
-        {
-            StartTftp(setup);
-        }
-
-        PxeLog.HttpBootListening(_logger, setup.Options.HttpBootPort, setup.Files.Root);
+    private void Serve(PxeSetup? setup, BootFiles? files)
+    {
+        Volatile.Write(ref _files, files);
+        Volatile.Write(ref _applied, setup);
     }
 
     // False when no interface is served, which leaves nothing to start.
@@ -268,13 +281,13 @@ public sealed class PxeHost : IHostedService, IDisposable
         Bind(bootServer, "PXE boot server", "bootServer", _binding.BootServerPort);
     }
 
-    private void StartTftp(PxeSetup setup)
+    private void StartTftp(PxeSetup setup, BootFiles files)
     {
         PxeOptions options = setup.Options;
         TftpListener tftp = new(
             new IPEndPoint(_binding.Address, _binding.TftpPort),
             setup.Interfaces,
-            setup.Files,
+            files,
             new TftpServing(setup.TftpLimits, options.MaxConcurrentTftpTransfers, options.TftpSinglePort),
             _timeProvider,
             _loggerFactory.CreateLogger<TftpListener>());

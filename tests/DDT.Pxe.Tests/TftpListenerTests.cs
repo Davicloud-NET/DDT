@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Buffers.Binary;
+using System.Collections.Frozen;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -17,6 +18,8 @@ public sealed class TftpListenerTests : IDisposable
     private static readonly TimeSpan s_timeout = TimeSpan.FromSeconds(5);
 
     private readonly string _root = Path.Combine(Path.GetTempPath(), "ddt-tftp-" + Guid.NewGuid().ToString("N"));
+    private readonly FakeLinuxBootSite _site = new();
+    private readonly TestClock _clock = new(DateTimeOffset.FromUnixTimeSeconds(1_791_460_800));
     private readonly byte[] _content;
 
     public TftpListenerTests()
@@ -37,7 +40,7 @@ public sealed class TftpListenerTests : IDisposable
         TftpListener listener = new(
             Loopback.AnyPort,
             map ?? Loopback.Map(),
-            new BootFileResolver(_root),
+            new BootFiles(new BootFileResolver(_root), _site, 8080, _clock),
             new TftpServing(TftpLimits.Default, MaxTransfers: 8, singlePort),
             TimeProvider.System,
             NullLogger<TftpListener>.Instance);
@@ -205,6 +208,67 @@ public sealed class TftpListenerTests : IDisposable
         Assert.Equal((ushort)TftpOpcode.Error, Opcode(reply.Value.Datagram));
         Assert.Equal((ushort)TftpErrorCode.FileNotFound, BinaryPrimitives.ReadUInt16BigEndian(reply.Value.Datagram.AsSpan(2)));
         Assert.Null(await Loopback.ReceiveAsync(client, TimeSpan.FromMilliseconds(300)));
+    }
+
+    // GRUB asks with a leading slash, block size 1024 and tsize, and without a window size.
+    [Fact]
+    public async Task ServesTheGeneratedGrubConfigurationWithItsSize()
+    {
+        _site.Current = new LinuxBootBundle(_root, FrozenSet<string>.Empty, new Uri("https://ddt-server.example.test:8443"), "root") { Keymap = "de" };
+        await using TftpListener listener = Listener();
+        using Socket client = Loopback.Client();
+        byte[] request = [0, 1, .. "/grub/grub.cfg"u8, 0, .. "octet"u8, 0, .. "blksize"u8, 0, .. "1024"u8, 0, .. "tsize"u8, 0, .. "0"u8, 0];
+        string expected = GrubConfig.Write(new GrubConfigValues(IPAddress.Loopback, 8080, _clock.GetUtcNow())
+        {
+            Keymap = "de",
+            HostName = "ddt-server.example.test",
+        });
+
+        await client.SendToAsync(request, listener.LocalEndPoint);
+
+        (byte[] Datagram, IPEndPoint From)? optionAck = await Loopback.ReceiveAsync(client, s_timeout);
+        Assert.NotNull(optionAck);
+        Assert.Equal((ushort)TftpOpcode.OptionAcknowledgement, Opcode(optionAck.Value.Datagram));
+        string options = Encoding.ASCII.GetString(optionAck.Value.Datagram, 2, optionAck.Value.Datagram.Length - 2);
+        Assert.Contains("blksize\u00001024\u0000", options, StringComparison.Ordinal);
+        Assert.Contains($"tsize\u0000{expected.Length}\u0000", options, StringComparison.Ordinal);
+
+        IPEndPoint server = optionAck.Value.From;
+        await client.SendToAsync(Ack(0), server);
+        List<byte> received = [];
+
+        for (ushort block = 1; ; block++)
+        {
+            byte[] data = await ReceiveDataAsync(client, server, block);
+            received.AddRange(data.AsSpan(4));
+            await client.SendToAsync(Ack(block), server);
+
+            if (data.Length - 4 < 1024)
+            {
+                break;
+            }
+        }
+
+        Assert.Equal(expected, Encoding.ASCII.GetString([.. received]));
+        Assert.Contains("(tftp,127.0.0.1)/linux/vmlinuz", expected, StringComparison.Ordinal);
+    }
+
+    // shim and GRUB go on without these, so the client is told at once that there is no such file.
+    [Theory]
+    [InlineData("linux/revocations_sbat.efi")]
+    [InlineData("/grub/x86_64-efi/command.lst")]
+    public async Task AnswersFileNotFoundToAProbeOfShimOrGrub(string fileName)
+    {
+        await using TftpListener listener = Listener();
+        using Socket client = Loopback.Client();
+
+        await client.SendToAsync(ReadRequest(fileName), listener.LocalEndPoint);
+
+        (byte[] Datagram, IPEndPoint From)? reply = await Loopback.ReceiveAsync(client, s_timeout);
+
+        Assert.NotNull(reply);
+        Assert.Equal((ushort)TftpOpcode.Error, Opcode(reply.Value.Datagram));
+        Assert.Equal((ushort)TftpErrorCode.FileNotFound, BinaryPrimitives.ReadUInt16BigEndian(reply.Value.Datagram.AsSpan(2)));
     }
 
     [Fact]

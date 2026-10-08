@@ -18,7 +18,7 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
 
     private readonly IPEndPoint _bindTo;
     private readonly NetworkInterfaceMap _interfaces;
-    private readonly BootFileResolver _files;
+    private readonly BootFiles _files;
     private readonly TftpServing _serving;
     private readonly TftpTransferServices _transferServices;
     private readonly ILogger _logger;
@@ -34,7 +34,7 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
     public TftpListener(
         IPEndPoint bindTo,
         NetworkInterfaceMap interfaces,
-        BootFileResolver files,
+        BootFiles files,
         TftpServing serving,
         TimeProvider timeProvider,
         ILogger<TftpListener> logger)
@@ -187,17 +187,30 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
             return;
         }
 
-        if (!_files.TryResolve(request.FileName, out FileInfo? file))
+        if (!_files.TryFind(request.FileName, new BootRequest(localAddress, client.Address), out BootContent? content))
         {
-            PxeLog.TftpNotFound(_logger, request.FileName, client);
+            LogNotFound(request.FileName, client);
             using ITftpTransport refusal = CreateTransport(socket, localAddress, client);
             await SendErrorAsync(refusal, TftpErrorCode.FileNotFound, "File not found", cancellationToken).ConfigureAwait(false);
 
             return;
         }
 
-        PxeLog.TftpRead(_logger, request.FileName, client, file.FullName);
-        StartTransfer(CreateTransport(socket, localAddress, client), client, file, request, cancellationToken);
+        PxeLog.TftpRead(_logger, request.FileName, client, content.Description);
+        StartTransfer(CreateTransport(socket, localAddress, client), client, content, request, cancellationToken);
+    }
+
+    // shim and GRUB ask for a handful of files at every start that DDT does not have, and go on without them.
+    private void LogNotFound(string requested, IPEndPoint client)
+    {
+        if (BootFiles.Normalized(requested) is { } name && BootProbes.IsProbe(name))
+        {
+            PxeLog.TftpProbe(_logger, requested, client);
+        }
+        else
+        {
+            PxeLog.TftpNotFound(_logger, requested, client);
+        }
     }
 
     // In single port mode every datagram from a client with a running transfer goes to it, except a new read request.
@@ -234,11 +247,11 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
     private void StartTransfer(
         ITftpTransport transport,
         IPEndPoint client,
-        FileInfo file,
+        BootContent content,
         TftpReadRequest request,
         CancellationToken cancellationToken)
     {
-        TftpTransfer transfer = new(transport, client, file, request, _transferServices, cancellationToken);
+        TftpTransfer transfer = new(transport, client, content, request, _transferServices, cancellationToken);
 
         _transfers[transfer] = client;
 

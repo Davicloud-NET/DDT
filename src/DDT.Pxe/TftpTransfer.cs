@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Sockets;
 using DDT.Protocols.Tftp;
 using Microsoft.Extensions.Logging;
-using Microsoft.Win32.SafeHandles;
 
 namespace DDT.Pxe;
 
@@ -19,7 +18,7 @@ internal sealed class TftpTransfer
 
     private readonly ITftpTransport _transport;
     private readonly IPEndPoint _client;
-    private readonly FileInfo _file;
+    private readonly BootContent _content;
     private readonly TftpReadRequest _request;
     private readonly TftpLimits _limits;
     private readonly TimeProvider _timeProvider;
@@ -32,14 +31,14 @@ internal sealed class TftpTransfer
     public TftpTransfer(
         ITftpTransport transport,
         IPEndPoint client,
-        FileInfo file,
+        BootContent content,
         TftpReadRequest request,
         TftpTransferServices services,
         CancellationToken stopping)
     {
         _transport = transport;
         _client = client;
-        _file = file;
+        _content = content;
         _request = request;
         _limits = services.Limits;
         _timeProvider = services.TimeProvider;
@@ -81,10 +80,9 @@ internal sealed class TftpTransfer
 
         try
         {
-            // FileShare.Delete: a new boot image can move this one aside while it's being sent. Windows refuses otherwise.
-            using SafeFileHandle handle = File.OpenHandle(_file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
+            using BootContentReader reader = _content.OpenRead();
 
-            long fileLength = RandomAccess.GetLength(handle);
+            long fileLength = reader.Length;
             TftpReadSession session = new(_request, fileLength, _limits, _timeProvider);
 
             // Sized for the largest datagram the session can ask for: a data block, or an OACK that is
@@ -96,7 +94,7 @@ internal sealed class TftpTransfer
 
             while (true)
             {
-                deadline = await ApplyAsync(step, handle, send, deadline, cancellationToken).ConfigureAwait(false);
+                deadline = await ApplyAsync(step, reader, send, deadline, cancellationToken).ConfigureAwait(false);
 
                 if (step.State is TftpSessionState.Completed or TftpSessionState.Failed)
                 {
@@ -119,7 +117,7 @@ internal sealed class TftpTransfer
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or SocketException or ObjectDisposedException)
         {
-            PxeLog.TftpError(_logger, _file.FullName, _client, exception);
+            PxeLog.TftpError(_logger, _content.Description, _client, exception);
             await TrySendErrorAsync(TftpErrorCode.NotDefined, "Read failed").ConfigureAwait(false);
         }
         finally
@@ -131,7 +129,7 @@ internal sealed class TftpTransfer
 
     private async Task<DateTimeOffset?> ApplyAsync(
         TftpStep step,
-        SafeFileHandle handle,
+        BootContentReader reader,
         byte[] send,
         DateTimeOffset? deadline,
         CancellationToken cancellationToken)
@@ -146,7 +144,7 @@ internal sealed class TftpTransfer
 
                 case TftpSendData data:
                     TftpPacket.TryWriteDataHeader(send, data.Block);
-                    await ReadExactAsync(handle, send.AsMemory(TftpPacket.HeaderLength, data.Length), data.FileOffset, cancellationToken)
+                    await reader.ReadAsync(send.AsMemory(TftpPacket.HeaderLength, data.Length), data.FileOffset, cancellationToken)
                         .ConfigureAwait(false);
                     await SendAsync(send.AsMemory(0, TftpPacket.HeaderLength + data.Length), cancellationToken).ConfigureAwait(false);
                     break;
@@ -224,30 +222,6 @@ internal sealed class TftpTransfer
         }
     }
 
-    // RandomAccess may return fewer bytes than asked for, and a short DATA block is the protocol's end
-    // of transfer signal, so one short read would silently truncate boot.wim.
-    private static async Task ReadExactAsync(
-        SafeFileHandle handle,
-        Memory<byte> destination,
-        long offset,
-        CancellationToken cancellationToken)
-    {
-        int total = 0;
-
-        while (total < destination.Length)
-        {
-            int read = await RandomAccess.ReadAsync(handle, destination[total..], offset + total, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (read == 0)
-            {
-                throw new IOException("The boot file became shorter during the transfer.");
-            }
-
-            total += read;
-        }
-    }
-
     private async Task TrySendErrorAsync(TftpErrorCode code, string message)
     {
         byte[] packet = new byte[TftpPacket.HeaderLength + message.Length + 1];
@@ -273,7 +247,7 @@ internal sealed class TftpTransfer
             case TftpFailure.None:
                 PxeLog.TftpCompleted(
                     _logger,
-                    _file.FullName,
+                    _content.Description,
                     _client,
                     fileLength,
                     session.Negotiated.BlockSize,
@@ -281,13 +255,13 @@ internal sealed class TftpTransfer
                     (long)elapsed.TotalMilliseconds);
                 break;
             case TftpFailure.ClientAborted:
-                PxeLog.TftpAborted(_logger, _client, _file.FullName, session.AcknowledgedBlock);
+                PxeLog.TftpAborted(_logger, _client, _content.Description, session.AcknowledgedBlock);
                 break;
             case TftpFailure.ClientGone when !_clientAnswered:
-                PxeLog.TftpUnanswered(_logger, _client, _file.FullName);
+                PxeLog.TftpUnanswered(_logger, _client, _content.Description);
                 break;
             default:
-                PxeLog.TftpFailed(_logger, _file.FullName, _client, session.Failure, session.AcknowledgedBlock);
+                PxeLog.TftpFailed(_logger, _content.Description, _client, session.Failure, session.AcknowledgedBlock);
                 break;
         }
     }

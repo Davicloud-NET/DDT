@@ -66,6 +66,6 @@ public static class PxeHostingExtensions
 
         // While no interface is served the gate answers 404 to everything on the boot port.
         app.UseBootListenerIsolation(bootstrap.HttpBootPort, () => host.Applied?.Interfaces);
-        app.MapBootFiles(bootstrap.Files);
+        app.MapBootFiles(() => host.Files);
     }
 }

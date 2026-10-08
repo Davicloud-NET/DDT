@@ -8,4 +8,8 @@ namespace DDT.Pxe;
 
 // How the host learns what to serve, when that changes, and where each result goes. DDT.Pxe knows nothing about the
 // settings store. The host wires these up to it.
-public sealed record PxeHostSource(Func<PxeDesiredSetup> Desired, Func<IChangeToken> Changed, Func<PxeApplyResult, Task> Applied);
+public sealed record PxeHostSource(Func<PxeDesiredSetup> Desired, Func<IChangeToken> Changed, Func<PxeApplyResult, Task> Applied)
+{
+    // The Linux boot environment the server came with. Null for a host that knows of none.
+    public ILinuxBootSite? Linux { get; init; }
+}

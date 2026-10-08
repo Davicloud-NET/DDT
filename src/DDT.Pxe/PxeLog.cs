@@ -149,9 +149,16 @@ internal static partial class PxeLog
     [LoggerMessage(EventId = 608, Level = LogLevel.Debug, Message = "{Client} never answered the TFTP transfer of {Path}")]
     public static partial void TftpUnanswered(ILogger logger, IPEndPoint client, string path);
 
+    // shim and GRUB ask for these at every start, and go on without them.
+    [LoggerMessage(EventId = 609, Level = LogLevel.Debug, Message = "TFTP read of {Requested} by {Client} refused: a file shim or GRUB only looks for")]
+    public static partial void TftpProbe(ILogger logger, string requested, IPEndPoint client);
+
     [LoggerMessage(EventId = 700, Level = LogLevel.Information, Message = "HTTP boot {Method} {Path} by {Client}")]
     public static partial void HttpBoot(ILogger logger, string method, string path, string? client);
 
     [LoggerMessage(EventId = 701, Level = LogLevel.Information, Message = "HTTP boot {Method} {Path} by {Client} refused: no such file in the boot directory")]
     public static partial void HttpBootNotFound(ILogger logger, string method, string path, string? client);
+
+    [LoggerMessage(EventId = 702, Level = LogLevel.Debug, Message = "HTTP boot {Method} {Path} by {Client} refused: a file shim or GRUB only looks for")]
+    public static partial void HttpBootProbe(ILogger logger, string method, string path, string? client);
 }

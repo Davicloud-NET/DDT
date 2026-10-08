@@ -605,6 +605,10 @@ Done, the helper and the button:
   name, runs the script, and copies the result into `boot\builds\<name>`. The image carries the
   agent and console the release came with, not an uploaded one, which machines get at netboot
   anyway (section 4.2).
+- The helper reads the store and the boot directory from `ddt.ini` once, as it starts
+  (src/DDT.Host/Helper/HelperPaths.cs), and so does the server. After a change of `DDT:StorePath`
+  there, restart the service `DDTHelper` together with `DDT`: a helper left running builds the next
+  boot image into the store it started with.
 - A build's name is its start in UTC, `20261001-100000`. The file `boot\current` names the build
   that TFTP and HTTP boot serve (src/DDT.Pxe/BootBuilds.cs); without it they serve the boot
   directory itself, as before, so a build copied there by hand keeps working and shows in the list
@@ -748,6 +752,11 @@ minutes after an HTTP read that did not end, or while the server's own system st
 connection between the machine and the boot port, it writes `grub.cfg` for TFTP alone. That is why
 a machine that was reset during a load takes TFTP for a few minutes, and the log line of its
 `grub.cfg` says so.
+
+The server's system also keeps a connection in its list for a while after it was closed in good
+order: Windows for two minutes, Linux for one. So a machine that starts again within that time
+after a start that loaded over HTTP is given TFTP for that one start, with nothing wrong. It costs
+one to three seconds, as measured on Hyper-V.
 
 **From one environment into the other.** A machine that started one environment can run a sequence
 of the other. At the machine, the list shows such a sequence with a note that the machine restarts

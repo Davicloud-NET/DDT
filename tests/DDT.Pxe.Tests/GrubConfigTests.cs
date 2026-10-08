@@ -126,6 +126,31 @@ public sealed class GrubConfigTests
         Assert.DoesNotContain("\nreboot", text, StringComparison.Ordinal);
     }
 
+    // GRUB's own words mean something only where a command begins. After the kernel's name each is one more argument
+    // of the linux command, so each must reach the file as it stands: not quoted, not dropped, and on no line of its own.
+    [Fact]
+    public void GrubsOwnWordsAmongTheArgumentsReachTheFileAsPlainWordsOfTheKernelsLine()
+    {
+        const string Keywords =
+            "if then else elif fi for in do done while until case esac select function time menuentry submenu boot exit linux set echo sleep true false";
+        string[] plain = GrubConfig.Write(Values() with { KernelArguments = null }).Split('\n');
+
+        string[] lines = GrubConfig.Write(Values() with { KernelArguments = Keywords }).Split('\n');
+
+        Assert.All(KernelArguments.Split(Keywords), word => Assert.True(KernelArguments.IsWord(word) && !KernelArguments.IsReserved(word), word));
+        Assert.Equal(plain.Length, lines.Length);
+
+        for (int index = 0; index < lines.Length; index++)
+        {
+            bool kernel = plain[index].StartsWith("if linux ", StringComparison.Ordinal);
+
+            // Every other line is the same script as without them, so none of the words began a command.
+            Assert.Equal(kernel ? plain[index].Replace(" ; then", $" {Keywords} ; then", StringComparison.Ordinal) : plain[index], lines[index]);
+        }
+
+        Assert.Equal(2, lines.Count(line => line.EndsWith($" ddt.hostip=10.77.0.1 {Keywords} ; then", StringComparison.Ordinal)));
+    }
+
     [Fact]
     public void WritesTheAdministratorsWordsAfterItsOwn()
     {

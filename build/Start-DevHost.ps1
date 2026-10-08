@@ -20,6 +20,9 @@ Serves artifacts\agent\ddt-agent.exe from Publish-Agent.ps1 as the agent every n
 switches to. It also serves artifacts\ddt-console.zip from Publish-Console.ps1 as the console the agent
 shows. That way a published change reaches the test machine at its next boot without a new boot image.
 
+Points the server at the Linux boot environment in artifacts\linux-boot, when Build-LinuxBoot.ps1 has
+built one there.
+
 Prints the -ServerUrl and -RootCertificatePath to build the boot image with.
 
 .PARAMETER Interface
@@ -74,6 +77,12 @@ $arguments = @(
     "--DDT:Agent:BinaryPath=$(Join-Path $repository 'artifacts\agent\ddt-agent.exe')"
     "--DDT:Agent:ConsolePath=$(Join-Path $repository 'artifacts\ddt-console.zip')"
 )
+
+# A release has the Linux boot environment next to the server. From source it is where Build-LinuxBoot.ps1 put it.
+$linuxBoot = Join-Path $repository 'artifacts\linux-boot'
+if (Test-Path -LiteralPath (Join-Path $linuxBoot 'ddt-linux-boot.json')) {
+    $arguments += "--DDT:LinuxBoot:Path=$linuxBoot"
+}
 
 Write-Host "Build the boot image with -ServerUrl https://${name}:$Port -RootCertificatePath $root"
 

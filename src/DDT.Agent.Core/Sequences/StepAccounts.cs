@@ -19,10 +19,10 @@ public sealed class StepAccounts(
     AgentLog log,
     TimeProvider timeProvider)
 {
-    public const string RunAsInWindowsPE =
-        "A script runs as an account only in Windows, after the hand-over, but this agent was asked to run one in Windows PE.";
-
     public const string NoRunAsAccount = "The server sent no account for this script to run as. Assign the sequence again.";
+
+    public static string RunAsInBoot(SequencePhase phase) =>
+        $"A script runs as an account only in Windows, after the hand-over, but this agent was asked to run one in {AgentEnvironments.OfBootPhase(phase)}.";
 
     public static bool Uses(SequenceStep step)
     {
@@ -51,7 +51,7 @@ public sealed class StepAccounts(
 
         if (runsAs && SequenceKinds.IsBoot(context.Phase))
         {
-            return StepResult.Failed(RunAsInWindowsPE);
+            return StepResult.Failed(RunAsInBoot(context.Phase));
         }
 
         // The server only hands out a step's accounts once it knows the step is running.

@@ -327,7 +327,7 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind)
             // A boot environment has no accounts to log on with. A script there runs as SYSTEM, or as root.
             if (script.Phase != SequencePhase.Windows)
             {
-                problems.Add("runAs", ServerMessages.SequenceRunAsWindowsOnly.With());
+                problems.Add("runAs", ServerMessages.SequenceRunAsWindowsOnly.With("phase", script.Phase));
             }
 
             names.CheckAccount(script.RunAs, "runAs", problems.Add);

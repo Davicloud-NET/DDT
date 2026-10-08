@@ -90,7 +90,7 @@ public sealed class StepAccounts(DdtDbContext database, RunQueries queries, Step
         }
 
         // It could use no share's account, so it gets none.
-        if (machine.AgentEnvironment == AgentEnvironment.LinuxBoot)
+        if (machine.AgentEnvironment == AgentEnvironment.LinuxBoot && step.Shares is { Count: > 0 })
         {
             return "The Linux boot environment connects no shares, so it gets no account for one.";
         }

@@ -1590,8 +1590,8 @@ msgstr "A script can have at most {max} KiB."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.runAsWindowsOnly"
-msgid "A script runs as an account only in Windows. In Windows PE it runs as SYSTEM."
-msgstr "A script runs as an account only in Windows. In Windows PE it runs as SYSTEM."
+msgid "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} other {In Windows PE it runs as SYSTEM.}}"
+msgstr "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} other {In Windows PE it runs as SYSTEM.}}"
 
 #: src/tokens/TokenSecret.tsx
 msgid "A script sends it in the Authorization header: Bearer, a space, then the token. It has the role {tokenRole}, and never more rights than your account has."
@@ -7562,6 +7562,10 @@ msgstr "Restarts the machine"
 msgid "Restarts the machine, and the sequence goes on with the step after {name}. In Windows PE this needs a partitioned disk, where the run's state is kept."
 msgstr "Restarts the machine, and the sequence goes on with the step after {name}. In Windows PE this needs a partitioned disk, where the run's state is kept."
 
+#: src/sequences/steps/RebootFields.tsx
+msgid "Restarts the machine, and the sequence goes on with the step after {name}. The Linux boot environment keeps the run's state in memory, so a sequence that writes a raw disk image cannot restart."
+msgstr "Restarts the machine, and the sequence goes on with the step after {name}. The Linux boot environment keeps the run's state in memory, so a sequence that writes a raw disk image cannot restart."
+
 #: src/app/palette/Palette.tsx
 msgid "Results"
 msgstr "Results"
@@ -7779,8 +7783,8 @@ msgid "Runs"
 msgstr "Runs"
 
 #: src/sequences/steps/ScriptIntro.tsx
-msgid "Runs as root in the Linux boot environment, before the disk image starts. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
-msgstr "Runs as root in the Linux boot environment, before the disk image starts. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
+msgid "Runs as root in the Linux boot environment, before the machine starts from the disk image. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
+msgstr "Runs as root in the Linux boot environment, before the machine starts from the disk image. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
 
 #: src/sequences/steps/ScriptIntro.tsx
 msgid "Runs as SYSTEM on the machine. Everyone who can sign in to DDT can read the script, so it must hold no passwords."

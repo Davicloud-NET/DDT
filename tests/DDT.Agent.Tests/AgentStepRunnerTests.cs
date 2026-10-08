@@ -24,15 +24,19 @@ public sealed class AgentStepRunnerTests
         Assert.Equal(StepResult.RebootRequired(), result);
     }
 
-    [Fact]
-    public async Task JoiningTheDomainFailsInWindowsPE()
+    [Theory]
+    [InlineData(SequencePhase.WindowsPE, "Windows PE")]
+    [InlineData(SequencePhase.LinuxBoot, "the Linux boot environment")]
+    public async Task JoiningTheDomainFailsInABootEnvironmentWhichTheFailureNames(SequencePhase phase, string name)
     {
         JoinDomainStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000a7"), Name = "Join" };
         using WindowsStepRunnerFixture run = new([step]);
 
-        StepResult result = await run.Steps.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
+        StepResult result = await run.Steps.RunAsync(step, run.Context(phase), TestContext.Current.CancellationToken);
 
-        Assert.Equal(StepResult.Failed(AgentStepRunner.JoinDomainInWindowsPE), result);
+        Assert.Equal(
+            StepResult.Failed($"Joining the domain runs in Windows, after the hand-over, but this agent was asked to run it in {name}."),
+            result);
     }
 
     [Fact]

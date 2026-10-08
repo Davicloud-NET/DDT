@@ -201,7 +201,10 @@ public sealed class SequenceValidatorValueTests
     {
         RunScriptStep inWindowsPE = Script(SequencePhase.WindowsPE) with { RunAs = new AccountReference(s_accountId, null) };
 
-        AssertOnly(Validate(Definition(Partition(), inWindowsPE)), inWindowsPE, "runAs", "sequence.runAsWindowsOnly");
+        IReadOnlyList<SequenceProblem> problems = Validate(Definition(Partition(), inWindowsPE));
+
+        AssertOnly(problems, inWindowsPE, "runAs", "sequence.runAsWindowsOnly");
+        Assert.Equal("A script runs as an account only in Windows. In Windows PE it runs as SYSTEM.", problems[0].Message);
     }
 
     [Fact]

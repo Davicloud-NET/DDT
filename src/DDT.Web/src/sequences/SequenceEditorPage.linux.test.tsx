@@ -137,6 +137,24 @@ describe("SequenceEditorPage, a Linux sequence", () => {
     }, saveWait);
   });
 
+  it("says of a restart that the Linux boot environment cannot restart during the run", async () => {
+    const restart = { ...newStep("reboot", "r"), name: "Restart" };
+    const definition = { version: 4, steps: [newStep("writeRawImage", "w"), restart] };
+
+    serve(administrator, linuxView(shell, { definition, stepPhases: ["LinuxBoot", "LinuxBoot"] }), {
+      step: "r",
+    });
+
+    await opened("Install Linux");
+
+    expect(
+      screen.getByText(
+        "Restarts the machine, and the sequence goes on with the step after Restart. The Linux boot environment keeps the run's state in memory, so a sequence that writes a raw disk image cannot restart.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/In Windows PE this needs a partitioned disk/)).toBeNull();
+  });
+
   it("draws no hand-over line under a script that was stored for Windows PE", async () => {
     serve(administrator, linuxView(forWindowsPE, stored));
 

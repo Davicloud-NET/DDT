@@ -329,7 +329,7 @@
   "sequence.restartAfterRestart": "A restart step restarts anyway, so it cannot restart again after it.",
   "sequence.restartBeforePartition": "Windows PE can restart only after the disk is partitioned, because the run's state is kept on the disk.",
   "sequence.restartWithRawImage": "A sequence that writes a raw disk image keeps its state in memory, so the Linux boot environment cannot restart during it.",
-  "sequence.runAsWindowsOnly": "A script runs as an account only in Windows. In Windows PE it runs as SYSTEM.",
+  "sequence.runAsWindowsOnly": "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} other {In Windows PE it runs as SYSTEM.}}",
   "sequence.scriptEmpty": "Enter the script.",
   "sequence.scriptInterpreter": "Choose cmd, PowerShell or the shell.",
   "sequence.scriptPhase": "Choose where the script runs.",

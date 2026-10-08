@@ -17,7 +17,7 @@ internal static class ScriptRules
     // stateInMemory is a boot phase before any partition. A restart there loses the run, and a package has no place.
     public static void Check(RunScriptStep script, SequenceKind kind, bool stateInMemory, Action<string?, ServerMessage> add)
     {
-        CheckWhere(script, kind, add);
+        bool fits = CheckWhere(script, kind, add);
 
         if (string.IsNullOrWhiteSpace(script.Script))
         {
@@ -35,7 +35,13 @@ internal static class ScriptRules
 
         CheckExitCodes(script, stateInMemory, add);
 
-        if (stateInMemory && script.PackageId is not null)
+        // These name the boot environment of the sequence's kind, which a script in the other kind's phase is not in.
+        if (!stateInMemory || !fits)
+        {
+            return;
+        }
+
+        if (script.PackageId is not null)
         {
             add(
                 "packageId",
@@ -44,14 +50,15 @@ internal static class ScriptRules
                     : ServerMessages.SequencePackageBeforePartition.With());
         }
 
-        if (stateInMemory && script.RebootExitCodes is { Count: > 0 })
+        if (script.RebootExitCodes is { Count: > 0 })
         {
             add("rebootExitCodes", (kind == SequenceKind.Linux ? ServerMessages.SequenceRestartWithRawImage : ServerMessages.SequenceRestartBeforePartition).With());
         }
     }
 
     // A phase of the other kind is the one thing to change, so the interpreter is only judged in a phase that fits.
-    private static void CheckWhere(RunScriptStep script, SequenceKind kind, Action<string?, ServerMessage> add)
+    // False for such a phase.
+    private static bool CheckWhere(RunScriptStep script, SequenceKind kind, Action<string?, ServerMessage> add)
     {
         if (!Enum.IsDefined(script.Phase))
         {
@@ -61,7 +68,7 @@ internal static class ScriptRules
         {
             add("phase", ServerMessages.SequenceLinuxPhaseWithoutRawImage.With());
 
-            return;
+            return false;
         }
 
         if (!Enum.IsDefined(script.Interpreter))
@@ -72,6 +79,8 @@ internal static class ScriptRules
         {
             add("interpreter", (kind == SequenceKind.Linux ? ServerMessages.SequenceLinuxNeedsShell : ServerMessages.SequenceShellNeedsLinux).With());
         }
+
+        return true;
     }
 
     private static void CheckExitCodes(RunScriptStep script, bool stateInMemory, Action<string?, ServerMessage> add)

@@ -73,6 +73,22 @@ public sealed class SequenceValidatorLinuxTests
         AssertOnly(Validate(Partition(), linuxCmd), linuxCmd, "phase", "sequence.linuxPhaseWithoutRawImage");
     }
 
+    // Windows PE's rules before Partition wait until the script's phase is one of this sequence.
+    [Fact]
+    public void SaysNothingOfWindowsPEAboutALinuxPhaseBeforeTheDiskIsPartitioned()
+    {
+        RunScriptStep early = Shell() with { PackageId = Guid.NewGuid(), RebootExitCodes = [194] };
+        RunScriptStep inWindowsPE = early with { Id = Guid.NewGuid(), Phase = SequencePhase.WindowsPE, Interpreter = ScriptInterpreter.Cmd };
+
+        AssertOnly(Validate(early, Partition()), early, "phase", "sequence.linuxPhaseWithoutRawImage");
+        Assert.Equal(
+            [
+                (inWindowsPE.Id, "packageId", "sequence.packageBeforePartition"),
+                (inWindowsPE.Id, "rebootExitCodes", "sequence.restartBeforePartition"),
+            ],
+            Said(Validate(inWindowsPE, Partition())));
+    }
+
     [Fact]
     public void WritesOneRawImageEveryTime()
     {
@@ -166,7 +182,10 @@ public sealed class SequenceValidatorLinuxTests
     {
         RunScriptStep script = Shell() with { RunAs = new AccountReference(Guid.NewGuid(), null) };
 
-        AssertOnly(Validate(WriteRawImage(), script), script, "runAs", "sequence.runAsWindowsOnly");
+        IReadOnlyList<SequenceProblem> problems = Validate(WriteRawImage(), script);
+
+        AssertOnly(problems, script, "runAs", "sequence.runAsWindowsOnly");
+        Assert.Equal("A script runs as an account only in Windows. In the Linux boot environment it runs as root.", problems[0].Message);
     }
 
     [Fact]

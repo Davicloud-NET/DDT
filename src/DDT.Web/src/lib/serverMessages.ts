@@ -1331,7 +1331,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.runAsWindowsOnly": msg({
     context: "sequence.runAsWindowsOnly",
-    message: "A script runs as an account only in Windows. In Windows PE it runs as SYSTEM.",
+    message: "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} other {In Windows PE it runs as SYSTEM.}}",
   }),
   "sequence.scriptEmpty": msg({
     context: "sequence.scriptEmpty",

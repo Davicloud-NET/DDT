@@ -164,15 +164,19 @@ public sealed class StepAccountsTests
         Assert.DoesNotContain(run.Server.Calls, call => call.StartsWith("run-accounts", StringComparison.Ordinal));
     }
 
-    [Fact]
-    public async Task RunAsIsRefusedInWindowsPEBeforeAnyAccountIsFetched()
+    [Theory]
+    [InlineData(SequencePhase.WindowsPE, "Windows PE")]
+    [InlineData(SequencePhase.LinuxBoot, "the Linux boot environment")]
+    public async Task RunAsIsRefusedInABootEnvironmentBeforeAnyAccountIsFetched(SequencePhase phase, string name)
     {
-        RunScriptStep step = Script(SequencePhase.WindowsPE, runAs: new AccountReference(Guid.NewGuid(), null));
+        RunScriptStep step = Script(phase, runAs: new AccountReference(Guid.NewGuid(), null));
         using WindowsStepRunnerFixture run = new([step]);
 
-        StepResult result = await run.Steps.RunAsync(step, run.Context(), TestContext.Current.CancellationToken);
+        StepResult result = await run.Steps.RunAsync(step, run.Context(phase), TestContext.Current.CancellationToken);
 
-        Assert.Equal(StepResult.Failed(StepAccounts.RunAsInWindowsPE), result);
+        Assert.Equal(
+            StepResult.Failed($"A script runs as an account only in Windows, after the hand-over, but this agent was asked to run one in {name}."),
+            result);
         Assert.Empty(run.Server.Calls);
         Assert.Empty(run.ToolRunner.Calls);
     }

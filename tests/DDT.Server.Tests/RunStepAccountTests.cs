@@ -305,6 +305,38 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
         Assert.Single(await SecretReadsAsync(run.Id));
     }
 
+    // The validator lets no such step into a run of the Linux boot environment, so this is its agent on a Windows run.
+    [Fact]
+    public async Task TheLinuxBootEnvironmentIsRefusedForWhatTheStepUses()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        AccountView account = await administrator.CreatedAccountAsync(Request() with { Hosts = ["files.corp.example"], RunAs = true });
+        AccountReference reference = new(account.Id, null);
+
+        async Task<string?> RefusalAsync(RunScriptStep script)
+        {
+            (DeployingMachine machine, AgentRun run, _) = await AssignedAsync(null, script);
+            using DeployingMachine held = machine;
+            await machine.ReportOkAsync(run.Id, Reached(run, 2, SequencePhase.Windows));
+            string token = (await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
+                machine.Registration with { RunToken = machine.RunToken, Environment = AgentEnvironment.LinuxBoot }))).Token!;
+
+            return await RefusedAsync(await machine.Agent.RunAccountsAsync(machine.Id, token, run.Id, script.Id));
+        }
+
+        ShareConnection share = new(@"\\files.corp.example\drivers", reference);
+
+        Assert.Equal(
+            "A script runs as an account in Windows, and this agent registered from the Linux boot environment.",
+            await RefusalAsync(Script(SequencePhase.Windows, reference)));
+        Assert.Equal(
+            "The Linux boot environment connects no shares, so it gets no account for one.",
+            await RefusalAsync(Script(SequencePhase.Windows, null, share)));
+        Assert.Equal(
+            "The Linux boot environment connects no shares, so it gets no account for one.",
+            await RefusalAsync(Script(SequencePhase.Windows, reference, share)));
+    }
+
     // The run keeps its own copy of the sequence, so an edit after the assignment sends no account anywhere else.
     // The account given for the run only goes where its input said when it was given.
     [Fact]

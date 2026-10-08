@@ -18,10 +18,10 @@ public sealed class AgentStepRunner(
     AgentLog log,
     TimeProvider timeProvider) : IStepRunner
 {
-    public const string JoinDomainInWindowsPE =
-        "Joining the domain runs in Windows, after the hand-over, but this agent was asked to run it in Windows PE.";
-
     public const string UnknownKind = "This agent cannot run this kind of step.";
+
+    public static string JoinDomainInBoot(SequencePhase phase) =>
+        $"Joining the domain runs in Windows, after the hand-over, but this agent was asked to run it in {AgentEnvironments.OfBootPhase(phase)}.";
 
     public async Task<StepResult> RunAsync(SequenceStep step, StepContext context, CancellationToken cancellationToken)
     {
@@ -79,7 +79,7 @@ public sealed class AgentStepRunner(
 
         if (step is JoinDomainStep && SequenceKinds.IsBoot(context.Phase))
         {
-            return StepResult.Failed(JoinDomainInWindowsPE);
+            return StepResult.Failed(JoinDomainInBoot(context.Phase));
         }
 
         return runners.FirstOrDefault(runner => runner.Runs(step)) is { } kind

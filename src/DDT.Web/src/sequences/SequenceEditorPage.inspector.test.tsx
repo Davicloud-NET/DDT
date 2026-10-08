@@ -21,6 +21,7 @@ import {
   view,
 } from "./SequenceEditorPage.fixtures";
 import type { SequenceProblem } from "./sequences";
+import { newStep } from "./steps";
 
 describe("SequenceEditorPage", () => {
   afterEach(() => {
@@ -158,6 +159,23 @@ describe("SequenceEditorPage", () => {
     ).toHaveAccessibleDescription(
       "Without one, and without a default, it has to be answered when the sequence is assigned or approved on the web, and a run chosen at the machine or started by a rule fails at its start.",
     );
+  });
+
+  it("says of a restart that Windows PE needs a partitioned disk for it", async () => {
+    const restart = { ...newStep("reboot", "r"), name: "Restart" };
+    const definition = { version: 1, steps: [newStep("partition", "p"), restart] };
+
+    serve(administrator, view({ definition, stepPhases: ["WindowsPE", "WindowsPE"] }), {
+      step: "r",
+    });
+
+    await opened();
+
+    expect(
+      screen.getByText(
+        "Restarts the machine, and the sequence goes on with the step after Restart. In Windows PE this needs a partitioned disk, where the run's state is kept.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("renames a variable everywhere it is used", async () => {

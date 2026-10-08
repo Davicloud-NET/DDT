@@ -18,8 +18,8 @@ export function ScriptIntro({ step }: { step: RunScriptStep }) {
         </Trans>
       ) : step.phase === "LinuxBoot" ? (
         <Trans>
-          Runs as root in the Linux boot environment, before the disk image starts. Everyone who can
-          sign in to DDT can read the script, so it must hold no passwords.
+          Runs as root in the Linux boot environment, before the machine starts from the disk image.
+          Everyone who can sign in to DDT can read the script, so it must hold no passwords.
         </Trans>
       ) : (
         <Trans>

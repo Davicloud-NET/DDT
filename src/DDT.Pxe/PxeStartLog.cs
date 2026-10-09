@@ -42,7 +42,7 @@ internal static class PxeStartLog
     // A missing boot manager is the commonest cause of "DHCP works, nothing boots", unless the shim is named instead.
     private static void BootFileMissing(ILogger logger, PxeSetup setup, BootTarget target, bool linux)
     {
-        if (linux && target.Architecture == ClientArchitecture.X64Uefi && setup.DefaultEnvironment != DefaultBootEnvironment.WindowsPE)
+        if (linux && NoBootImage(setup) && target.Architecture == ClientArchitecture.X64Uefi && setup.DefaultEnvironment != DefaultBootEnvironment.WindowsPE)
         {
             PxeLog.BootFileAwaitsBootImage(logger, target.Architecture, target.BootFile);
         }
@@ -66,11 +66,15 @@ internal static class PxeStartLog
         {
             DefaultBootEnvironment.Linux => "it",
             DefaultBootEnvironment.WindowsPE => "Windows PE",
-            _ when !windowsPE => "it until a boot image is built",
+            _ when !windowsPE && NoBootImage(setup) => "it until a boot image is built",
+            _ when !windowsPE => "it, since the file Windows PE's boot target names is not there",
             _ when NamesAnotherServer(setup) => "Windows PE, since its boot target names another server",
             _ => "Windows PE, since a boot image is there",
         });
     }
+
+    // A build puts the default boot manager there. With it there, a missing file is a wrong name, not a missing build.
+    private static bool NoBootImage(PxeSetup setup) => !setup.Files.TryResolve(PxeSetup.DefaultBootFile, out _);
 
     // DDT cannot look into another TFTP server, so no boot image of its own stands behind that Windows PE.
     private static bool NamesAnotherServer(PxeSetup setup) =>

@@ -137,6 +137,21 @@ public sealed class PxeStartLogTests : IDisposable
         Assert.Equal([$"Warning 504: Boot target X64Uefi names {BootManager}, which is not in {_boot}"], lines);
     }
 
+    // A boot image is there, so the name is what is wrong, and no build will bring that file.
+    [Fact]
+    public async Task WarnsOfABootTargetThatNamesAFileABuiltBootImageDoesNotHave()
+    {
+        ABootImageIsBuilt();
+        PxeOptions options = WithBootTarget("Auto");
+        options.BootTargets["X64Uefi"].BootFile = "x64/mistyped.efi";
+
+        string[] missing = await StartAsync(options, about: " names x64/mistyped.efi");
+        string[] offered = _log.Messages.Where(message => message.Contains("Linux boot environment:", StringComparison.Ordinal)).ToArray();
+
+        Assert.Equal([$"Warning 504: Boot target X64Uefi names x64/mistyped.efi, which is not in {_boot}"], missing);
+        Assert.Equal([$"{Offered}{_boot}. Machines without a run start it, since the file Windows PE's boot target names is not there"], offered);
+    }
+
     [Fact]
     public async Task SaysNothingOfABootManagerThatIsThere()
     {

@@ -7,12 +7,13 @@ namespace DDT.Server.Machines;
 public static class LastSeen
 {
     // A poll or a report only records that the machine was seen. A write and a push per machine every ten seconds would
-    // show an operator nothing new. Returns true if the machine changed and needs saving.
-    public static bool Record(Machine machine, DateTimeOffset now, string? address)
+    // show an operator nothing new. Returns true if the machine changed and needs saving. Exact is for the last word
+    // before a silence the machine announces, a restart, which a page counts that silence from.
+    public static bool Record(Machine machine, DateTimeOffset now, string? address, bool exact = false)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
-        if (now - machine.LastSeenUtc < MachineLogLimits.LastSeenResolution && address == machine.LastSeenAddress)
+        if (!exact && now - machine.LastSeenUtc < MachineLogLimits.LastSeenResolution && address == machine.LastSeenAddress)
         {
             return false;
         }

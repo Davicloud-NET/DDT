@@ -79,7 +79,7 @@ internal sealed class RunReportSaves(
 
         IReadOnlyList<DeploymentStep> changedSteps = RunReports.ChangedSteps(database);
         bool variablesChanged = RunReports.VariablesChanged(database, run);
-        LastSeen.Record(machine, timeProvider.GetUtcNow(), address);
+        LastSeen.Record(machine, timeProvider.GetUtcNow(), address, exact: reported.Report.Activity == RunActivity.Restarting);
 
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 

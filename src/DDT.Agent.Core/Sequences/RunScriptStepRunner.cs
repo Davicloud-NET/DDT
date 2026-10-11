@@ -193,6 +193,9 @@ public sealed class RunScriptStepRunner(
 
         string outputs = Path.Combine(scripts, step.Id.ToString("D") + StepFiles.VariablesExtension);
         Leftovers.Wipe(outputs, log);
+
+        // What could not be removed would count for this visit, so the step fails on it here
+        File.Delete(outputs);
         environment[VariablesOut] = outputs;
 
         return outputs;

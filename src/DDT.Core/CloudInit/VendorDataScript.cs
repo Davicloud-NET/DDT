@@ -12,7 +12,10 @@ public static class VendorDataScript
 {
     public const string ResourceName = "cloud-init/vendor-data.sh";
 
-    public static string Text { get; } = Unix(Read());
+    private static string? s_text;
+
+    // Read at the first use, so a build that lacks the file says so where the script is asked for.
+    public static string Text => s_text ??= Unix(Read());
 
     // As it goes onto the seed. The shell takes a carriage return as part of a word, and #! must be the first bytes.
     public static byte[] Bytes() => Encoding.UTF8.GetBytes(Text);

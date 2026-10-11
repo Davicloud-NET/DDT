@@ -138,12 +138,13 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
             && (state.Cursor is not { } cursor || nodes.Any(node => node.Id == cursor.NodeId));
     }
 
-    // The token goes first. Without it, the rest can no longer act as the machine.
+    // The token goes first. Without it, the rest can no longer act as the machine. Each is overwritten, because a
+    // deleted file's bytes stay on the disk.
     public void Discard()
     {
-        Leftovers.Delete(TokenPath, log);
-        Leftovers.Delete(StatePath, log);
-        Leftovers.Delete(FinalReportPath, log);
+        Leftovers.Wipe(TokenPath, log);
+        Leftovers.Wipe(StatePath, log);
+        Leftovers.Wipe(FinalReportPath, log);
         Leftovers.Delete(Path.Combine(runDirectory, "run"), log);
     }
 

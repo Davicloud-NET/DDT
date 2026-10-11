@@ -12,6 +12,12 @@ public static class VendorDataScript
 {
     public const string ResourceName = "cloud-init/vendor-data.sh";
 
+    // The script's own line, by which the agent knows a copy of it when it removes itself.
+    public const string Marker = "# DDT: goes on with this machine's task sequence. Written by the DDT agent, removed when the run ends.";
+
+    // A script is small, so a larger file is none of DDT's.
+    private const int MaxBytes = 64 * 1024;
+
     private static string? s_text;
 
     // Read at the first use, so a build that lacks the file says so where the script is asked for.
@@ -27,6 +33,10 @@ public static class VendorDataScript
 
         return text.TrimStart('﻿').Replace("\r\n", "\n", StringComparison.Ordinal);
     }
+
+    // Whether content is this script, as the seed holds it or as cloud-init copied it.
+    public static bool IsOurs(ReadOnlySpan<byte> content) =>
+        content.Length <= MaxBytes && content.IndexOf(Encoding.ASCII.GetBytes(Marker)) >= 0;
 
     private static string Read()
     {

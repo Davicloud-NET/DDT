@@ -252,7 +252,6 @@ public sealed class SequenceValidatorLinuxTests
         Assert.Empty(Validate(WriteRawImage(), WriteSeed()));
         Assert.Equal(
             [
-                (cmd.Id, "rebootAfter", "sequence.restartWithRawImage"),
                 (cmd.Id, "phase", "sequence.windowsScriptInLinux"),
                 (powerShell.Id, "phase", "sequence.windowsScriptInLinux"),
                 (again.Id, null, "sequence.oneSeed"),
@@ -314,6 +313,24 @@ public sealed class SequenceValidatorLinuxTests
             shell,
             "phase",
             "sequence.linuxPhaseWithoutRawImage");
+    }
+
+    // Its restart would be judged by a phase it is not in: the boot environment's, where no restart is allowed.
+    [Fact]
+    public void SaysNothingOfTheRestartAfterAStepOfTheOtherKind()
+    {
+        JoinDomainStep join = JoinDomain() with { RebootAfter = true };
+        RunScriptStep inWindows = Script(SequencePhase.Windows) with { RebootAfter = true };
+        RunScriptStep inLinuxBoot = Shell() with { RebootAfter = true };
+        RunScriptStep inLinux = InLinux() with { RebootAfter = true };
+
+        AssertOnly(Validate(WriteRawImage(), WriteSeed(), join), join, null, "sequence.windowsWithRawImage");
+        AssertOnly(Validate(WriteRawImage(), inWindows), inWindows, "phase", "sequence.windowsWithRawImage");
+        AssertOnly(Validate(inLinuxBoot, Partition(), ApplyImage()), inLinuxBoot, "phase", "sequence.linuxPhaseWithoutRawImage");
+        AssertOnly(Validate(inLinux, Partition(), ApplyImage()), inLinux, "phase", "sequence.linuxPhaseWithoutRawImage");
+
+        // A step of the sequence's own kind is still told that it cannot restart there.
+        AssertOnly(Validate(WriteRawImage(), inLinuxBoot), inLinuxBoot, "rebootAfter", "sequence.restartWithRawImage");
     }
 
     [Fact]

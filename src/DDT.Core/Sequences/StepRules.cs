@@ -55,12 +55,12 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind)
     {
         bool otherKind = OtherKind(place.Required);
 
+        // A step of the other kind has no place among this kind's phases, so neither its order nor its restart is judged.
         if (!otherKind)
         {
             PhaseOrder.Check(place, kind, message => problems.Add(PhaseField(step), message));
+            CheckRestartAfterStep(step, place, problems);
         }
-
-        CheckRestartAfterStep(step, place, problems);
 
         if (place.InRepeat && RunsOnce(step))
         {

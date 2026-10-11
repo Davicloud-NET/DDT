@@ -58,6 +58,9 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
     // The agent's platform as AgentPlatforms names it. Null asks the frozen routes, which answer for Windows.
     public string? ReleasePlatform { get; init; }
 
+    // How the server's name becomes the addresses of a connection, and where the newest connection went.
+    public ServerLookup Lookup { get; init; } = new();
+
     // The clock the deadlines of a request and of a download run on. The connect timeout is the handler's own.
     public TimeProvider TimeProvider { get; init; } = TimeProvider.System;
 
@@ -245,7 +248,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             UseProxy = false,
             ConnectTimeout = _connectTimeout,
             PooledConnectionLifetime = TimeSpan.FromMinutes(2),
-            ConnectCallback = ServerConnection.ConnectAsync,
+            ConnectCallback = (context, cancellationToken) => ServerConnection.ConnectAsync(context, Lookup, cancellationToken),
         };
 
         _tls?.Apply(handler.SslOptions);

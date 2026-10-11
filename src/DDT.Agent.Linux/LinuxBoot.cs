@@ -103,7 +103,11 @@ public static class LinuxBoot
             BootOrder = bootOrder,
             Rebooter = rebooter,
             RestartMarker = new FileRestartMarker(RunDirectory, log, dryRun: false),
-            HandOver = new LinuxHandOver(rawDisks, AgentPath, agent.Options.ForInstalledSystem(), log) { LetGo = rebooter.LetGo },
+            HandOver = new LinuxHandOver(rawDisks, AgentPath, agent.Options.ForInstalledSystem(), log)
+            {
+                LetGo = rebooter.LetGo,
+                ServerAddress = () => agent.Server.Lookup.ReachedAt,
+            },
             Log = log,
             TimeProvider = TimeProvider.System,
             Options = options,

@@ -17,7 +17,7 @@ public sealed class LinuxShareConnector(IMounts mounts, string directory, AgentL
     public const string FileSystem = "cifs";
 
     // Looks a host's name up. The kernel resolves none without a helper, so it gets the address.
-    public Func<string, CancellationToken, Task<IPAddress[]>> Resolve { get; init; } = Dns.GetHostAddressesAsync;
+    public Func<string, CancellationToken, Task<IPAddress[]>> Resolve { get; init; } = new NameLookup().AddressesAsync;
 
     // The running kernel's release, for the message of one without CIFS.
     public Func<string> Kernel { get; init; } = () => Environment.OSVersion.Version.ToString();

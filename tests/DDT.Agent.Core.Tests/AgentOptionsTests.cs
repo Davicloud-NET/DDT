@@ -107,6 +107,28 @@ public sealed class AgentOptionsTests
         }
     }
 
+    // The hand-over to an installed Linux adds the address at which the boot environment reached the server.
+    [Theory]
+    [InlineData("10.77.0.1", "10.77.0.1")]
+    [InlineData("fd00::17", "fd00::17")]
+    [InlineData("not an address", null)]
+    public void ReadsTheServersAddressFromAnAgentJsonThatNamesOne(string written, string? read)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"agent-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, $$"""{ "serverUrl": "https://ddt.example:7152", "serverAddress": "{{written}}" }""");
+
+        try
+        {
+            Assert.True(AgentOptions.TryParse(["--config", path], out AgentOptions? options, out string error), error);
+            Assert.Equal(read is null ? null : System.Net.IPAddress.Parse(read), options!.ServerAddress);
+            Assert.Null(options.ForInstalledSystem().ServerAddress);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public void TurnsDownAnArgumentWithoutItsValue()
     {

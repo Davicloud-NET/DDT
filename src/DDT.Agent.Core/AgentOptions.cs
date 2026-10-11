@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
@@ -42,6 +43,9 @@ public sealed record AgentOptions(
     // Starts this console instead of the ddt-console.exe beside the agent, even in a dry run or with input redirected.
     public string? ConsolePath { get; init; }
 
+    // The address agent.json gives for the server beside its name. Null when it gives none.
+    public IPAddress? ServerAddress { get; init; }
+
     // The agent.json a hand-over stages for the installed system. It only holds what it takes to reach the server.
     public AgentConfiguration ForInstalledSystem() => new(ServerUrl.AbsoluteUri, RootCertificate?.ExportCertificatePem(), null);
 
@@ -72,6 +76,7 @@ public sealed record AgentOptions(
             DryRunSecureBoot = parsed.DryRunSecureBoot,
             DryRunEnvironment = parsed.DryRunEnvironment,
             ConsolePath = parsed.ConsolePath,
+            ServerAddress = parsed.ServerAddress,
         };
 
         return true;
@@ -176,6 +181,7 @@ public sealed record AgentOptions(
             parsed.Server ??= file?.ServerUrl;
             parsed.RootPem ??= file?.RootCertificate;
             parsed.KeyboardLayout = file?.KeyboardLayout;
+            parsed.ServerAddress = IPAddress.TryParse(file?.ServerAddress, out IPAddress? address) ? address : null;
 
             return true;
         }
@@ -256,6 +262,8 @@ public sealed record AgentOptions(
         public string? RootPem { get; set; }
 
         public string? KeyboardLayout { get; set; }
+
+        public IPAddress? ServerAddress { get; set; }
 
         public string? ConsolePath { get; set; }
 

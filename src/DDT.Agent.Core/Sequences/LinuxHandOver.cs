@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Net;
 using System.Text.Json;
 using DDT.Agent.Deployment;
 using DDT.Contracts.Sequences;
@@ -31,6 +32,9 @@ public sealed class LinuxHandOver(IRawDisks disks, string agentPath, AgentConfig
 
     // Lets go of the disk before it is opened alone. A script may have left a partition of it mounted.
     public Action? LetGo { get; init; }
+
+    // The address this agent's connection reached the server at. The installed Linux may not find the server's name.
+    public Func<IPAddress?>? ServerAddress { get; init; }
 
     public static string TooLargeMessage(long shortBytes) =>
         $"The agent and the run's files are {ByteSize.Format(shortBytes)} too large for the cloud-init seed of " +
@@ -94,7 +98,9 @@ public sealed class LinuxHandOver(IRawDisks disks, string agentPath, AgentConfig
             .. found.Files,
             .. LinuxAgentFiles.ForSeed(
                 agent,
-                JsonSerializer.SerializeToUtf8Bytes(configuration, AgentConfigurationJsonContext.Default.AgentConfiguration),
+                JsonSerializer.SerializeToUtf8Bytes(
+                    configuration with { ServerAddress = ServerAddress?.Invoke()?.ToString() },
+                    AgentConfigurationJsonContext.Default.AgentConfiguration),
                 RunFiles.StateContent(state),
                 RunFiles.TokenContent(token)),
         ];

@@ -47,6 +47,22 @@ public sealed class LinuxHandOverSeedTests : IDisposable
         Assert.Contains("local-hostname: \"PC-042\"", kept.Files.MetaData, StringComparison.Ordinal);
     }
 
+    // The installed Linux asks a DNS for the server's name, which the boot environment had from the server itself.
+    [Fact]
+    public async Task TellsTheInstalledLinuxAtWhichAddressItReachedTheServer()
+    {
+        SequenceState state = await SeededAsync();
+        System.Net.IPAddress? reached = null;
+        LinuxHandOver handOver = new(Run.RawDisks, _seeded.AgentPath, TestAgents.Configuration, Run.Log) { ServerAddress = () => reached };
+        reached = System.Net.IPAddress.Parse("10.77.0.1");
+
+        handOver.Stage(Run.Session, state);
+
+        Assert.Equal(
+            """{"serverUrl":"https://ddt.example:8443/","rootCertificate":"-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n","serverAddress":"10.77.0.1"}""",
+            TestSeed.Read(Disk).Text(LinuxAgentFiles.SeedConfiguration));
+    }
+
     [Fact]
     public async Task PutsTheAgentItsSettingsAndTheRunBesideTheAdministratorsFiles()
     {

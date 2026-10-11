@@ -5,6 +5,7 @@
 namespace DDT.Agent;
 
 // The agent.json that Build-BootImage.ps1 writes next to the agent. KeyboardLayout is the boot image's layout, shown
-// at the sign-in. The format is frozen. Newer agents read the files of older builds, so fields stay optional and keep
-// their names.
-public sealed record AgentConfiguration(string? ServerUrl, string? RootCertificate, string? KeyboardLayout);
+// at the sign-in. ServerAddress is where the Linux boot environment reached the server, for an installed Linux that
+// cannot look its name up. The format is frozen. Newer agents read the files of older builds, so fields stay optional
+// and keep their names.
+public sealed record AgentConfiguration(string? ServerUrl, string? RootCertificate, string? KeyboardLayout, string? ServerAddress = null);

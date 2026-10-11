@@ -79,7 +79,11 @@ public static class LinuxPhaseService
             return AgentExitCodes.Stopped;
         }
 
-        using HttpAgentServer server = new(options.ServerUrl, options.RootCertificate) { Environment = AgentEnvironment.Linux };
+        using HttpAgentServer server = new(options.ServerUrl, options.RootCertificate)
+        {
+            Environment = AgentEnvironment.Linux,
+            Lookup = new ServerLookup { Names = new NameLookup(), Known = options.ServerAddress, Log = log },
+        };
         LinuxShareConnector shares = new(mounts, paths.Shares, log) { Kernel = KernelRelease };
         shares.DisconnectLeftovers();
         LinuxUefiVariables firmware = new(paths.Root);

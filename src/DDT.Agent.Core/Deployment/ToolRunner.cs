@@ -33,6 +33,9 @@ public sealed class ToolRunner(
     // Sets the process's file mode mask and returns the one before. Null where a tool starts with the agent's own.
     public Func<int, int>? FileModeMask { get; init; }
 
+    // Tools that say what they did on their error output, as systemctl does. Their lines there are no warnings.
+    public IReadOnlySet<string> PlainErrorOutput { get; init; } = new HashSet<string>(StringComparer.Ordinal);
+
     public async Task<IReadOnlyList<string>> RunAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(fileName);
@@ -50,7 +53,7 @@ public sealed class ToolRunner(
             lines.Add(line);
             log.Information(line);
         });
-        Task errors = ToolOutput.ForwardAsync(process.StandardError.BaseStream, decoder, log.Warning);
+        Task errors = ToolOutput.ForwardAsync(process.StandardError.BaseStream, decoder, PlainErrorOutput.Contains(tool) ? log.Information : log.Warning);
 
         try
         {
@@ -69,13 +72,11 @@ public sealed class ToolRunner(
         int exitCode = process.ExitCode;
         log.Information(string.Create(
             CultureInfo.InvariantCulture,
-            $"{tool} ended with exit code 0x{exitCode:X8} after {elapsed.TotalSeconds:0.0} s."));
+            $"{tool} ended with exit code {ExitCodeText(exitCode)} after {elapsed.TotalSeconds:0.0} s."));
 
         if (exitCode != 0)
         {
-            throw new DeploymentStepException(string.Create(
-                CultureInfo.InvariantCulture,
-                $"{tool} failed with exit code 0x{exitCode:X8}. Its output is in the machine log."));
+            throw new DeploymentStepException($"{tool} failed with exit code {ExitCodeText(exitCode)}. Its output is in the machine log.");
         }
 
         return lines;
@@ -165,6 +166,10 @@ public sealed class ToolRunner(
 
         return new ProcessToolProcess(process, log, tool, Strays?.WatchFrom(process.Id));
     }
+
+    // As the system's own tools write it: Windows names its errors by their hexadecimal number, Linux counts to 255.
+    public static string ExitCodeText(int exitCode) =>
+        OperatingSystem.IsWindows() ? string.Create(CultureInfo.InvariantCulture, $"0x{exitCode:X8}") : exitCode.ToString(CultureInfo.InvariantCulture);
 
     public static string CommandLine(string fileName, IReadOnlyList<string> arguments)
     {

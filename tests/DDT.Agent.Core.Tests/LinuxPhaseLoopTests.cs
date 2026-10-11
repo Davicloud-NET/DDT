@@ -82,7 +82,7 @@ public sealed class LinuxPhaseLoopTests : IDisposable
             "Step Script 1 begins.",
             "The run is done. Sending the last log lines.",
             "The run is over here, so the agent removes itself.",
-            "The agent is removed from this Linux, but for what a line above says stays.",
+            LinuxAgentRemoval.Removed,
         ];
         Assert.Equal(expected, _linux.Lines().Where(expected.Contains));
     }
@@ -165,7 +165,7 @@ public sealed class LinuxPhaseLoopTests : IDisposable
         {
             if (fileName == LinuxPhaseRebooter.Systemctl)
             {
-                throw new DeploymentStepException("systemctl failed with exit code 0x00000001. Its output is in the machine log.");
+                throw new DeploymentStepException("systemctl failed with exit code 1. Its output is in the machine log.");
             }
 
             server.Stop.Cancel();

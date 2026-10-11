@@ -96,9 +96,6 @@ internal sealed class RunEnding(
     {
         bool handingOver = !run.InInstalledSystem && into == RestartInto.InstalledSystem;
         run.Heartbeat.Activity = RunActivity.Restarting;
-        log.Information(run.InInstalledSystem
-            ? EnvironmentTexts.InstalledSystemRestarts(run.Session.Environment)
-            : EnvironmentTexts.Restarts(run.Session.Environment, handingOver));
         rebooter.LetGo();
 
         try
@@ -122,6 +119,11 @@ internal sealed class RunEnding(
         {
             log.Warning($"The server could not be told of the restart ({LogText.OneLine(exception)}). The machine restarts anyway.");
         }
+
+        // Only now: a run the server stopped meanwhile has refused the report above, and does not restart.
+        log.Information(run.InInstalledSystem
+            ? EnvironmentTexts.InstalledSystemRestarts(run.Session.Environment)
+            : EnvironmentTexts.Restarts(run.Session.Environment, handingOver));
 
         if (!await FlushAllAsync(run.Heartbeat, cancellationToken).ConfigureAwait(false) && handingOver)
         {

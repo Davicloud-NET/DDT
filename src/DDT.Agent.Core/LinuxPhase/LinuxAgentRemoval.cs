@@ -21,9 +21,14 @@ public sealed class LinuxAgentRemoval(LinuxAgentPaths paths, IMountedSeeds seeds
     // What the hand-over put on the seed that says something of the run. The program beside them does not.
     private static readonly string[] s_seedFiles = [LinuxAgentFiles.SeedToken, LinuxAgentFiles.SeedState, LinuxAgentFiles.SeedConfiguration];
 
+    public const string Removed = "The agent is removed from this Linux.";
+
+    public const string RemovedButFor = "The agent is removed from this Linux, but for what the lines above say stays.";
+
     public async Task RemoveAsync(CancellationToken cancellationToken)
     {
         log.Information("The run is over here, so the agent removes itself.");
+        int troubles = log.Troubles;
 
         RunFiles.In(paths.State, log).Discard();
         RemoveFromSeeds();
@@ -36,7 +41,7 @@ public sealed class LinuxAgentRemoval(LinuxAgentPaths paths, IMountedSeeds seeds
         DeleteEmpty(paths.Program);
         RemoveFromRunFolder();
 
-        log.Information("The agent is removed from this Linux, but for what a line above says stays.");
+        log.Information(log.Troubles == troubles ? Removed : RemovedButFor);
     }
 
     // The agent, its settings and the run's state as the hand-over put them there, and the script cloud-init ran.

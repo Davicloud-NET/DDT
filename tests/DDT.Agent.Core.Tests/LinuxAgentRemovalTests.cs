@@ -93,7 +93,7 @@ public sealed class LinuxAgentRemovalTests : IDisposable
         Assert.Equal([CloudInitSeed.MetaData, CloudInitSeed.UserData], Directory.GetFileSystemEntries(Seed).Select(Path.GetFileName).Order());
         Assert.Equal(["part-002"], Directory.GetFiles(_paths.VendorScripts).Select(Path.GetFileName));
         Assert.Empty(Warnings());
-        Assert.EndsWith("INFO  The agent is removed from this Linux, but for what a line above says stays." + Environment.NewLine, _console.ToString(), StringComparison.Ordinal);
+        Assert.EndsWith($"INFO  {LinuxAgentRemoval.Removed}" + Environment.NewLine, _console.ToString(), StringComparison.Ordinal);
     }
 
     // A DDT server on the same system keeps its store in a folder of the same name, and that is none of the agent's.
@@ -116,13 +116,16 @@ public sealed class LinuxAgentRemovalTests : IDisposable
                 $"{_paths.Program} holds what the agent did not put there, so the folder stays.",
             ],
             Warnings());
+
+        // Only now does the last line say that something stays.
+        Assert.EndsWith($"INFO  {LinuxAgentRemoval.RemovedButFor}" + Environment.NewLine, _console.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task OnlyWarnsWhenTheSeedCannotBeMountedOrSystemdDoesNotAnswer()
     {
         await InstallAsync();
-        _tools.Answer = (_, _) => throw new DeploymentStepException("systemctl failed with exit code 0x00000001. Its output is in the machine log.");
+        _tools.Answer = (_, _) => throw new DeploymentStepException("systemctl failed with exit code 1. Its output is in the machine log.");
 
         await RemoveAsync(new FolderSeeds());
 
@@ -133,8 +136,8 @@ public sealed class LinuxAgentRemovalTests : IDisposable
         Assert.Equal(
             [
                 "No cloud-init seed could be mounted, so the folder ddt and vendor-data stay on it. They hold the agent and its script.",
-                "systemctl disable ddt-agent.service did not work (systemctl failed with exit code 0x00000001. Its output is in the machine log.). Run it by hand.",
-                "systemctl daemon-reload did not work (systemctl failed with exit code 0x00000001. Its output is in the machine log.). Run it by hand.",
+                "systemctl disable ddt-agent.service did not work (systemctl failed with exit code 1. Its output is in the machine log.). Run it by hand.",
+                "systemctl daemon-reload did not work (systemctl failed with exit code 1. Its output is in the machine log.). Run it by hand.",
             ],
             Warnings());
     }

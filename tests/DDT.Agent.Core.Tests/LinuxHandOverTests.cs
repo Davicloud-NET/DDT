@@ -142,6 +142,9 @@ public sealed class LinuxHandOverTests : IDisposable
             StringComparison.Ordinal);
         Assert.Contains(LinuxHandOver.GoesOnMessage, console, StringComparison.Ordinal);
         Assert.Contains("The machine restarts into the installed Linux, where the agent goes on with the run.", console, StringComparison.Ordinal);
+
+        // The server has that sentence before the machine goes down.
+        Assert.Contains(server.SentLines, line => line.Message.StartsWith("The machine restarts into the installed Linux", StringComparison.Ordinal));
     }
 
     // As Windows PE names Windows around its hand-over. The server takes the installed phase from the boot environment
@@ -353,6 +356,9 @@ public sealed class LinuxHandOverTests : IDisposable
         Assert.Equal([Firmware, "restore"], _tools.Calls[^2..]);
         Assert.Null(RestartDue());
         AssertSeedAsItsStepWroteIt();
+
+        // Nothing has said that the machine restarts, since it does not.
+        Assert.DoesNotContain("The machine restarts into the installed Linux", _console.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

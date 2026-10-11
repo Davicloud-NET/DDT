@@ -113,6 +113,35 @@ public sealed class LinuxScriptKernelTests : IDisposable
         Assert.Empty(Sleeping(_time));
     }
 
+    // Linux counts a program's exit code to 255, and nobody there reads it as a hexadecimal number.
+    [Fact]
+    public async Task SaysAToolsExitCodeAsLinuxWritesIt()
+    {
+        Assert.SkipUnless(OperatingSystem.IsLinux(), "This test calls the Linux kernel.");
+        ToolRunner tools = new(_log, TimeProvider.System, Latin1Output.Decode);
+
+        DeploymentStepException failure = await Assert.ThrowsAsync<DeploymentStepException>(
+            () => tools.RunAsync("/bin/sh", ["-c", "exit 3"], TestContext.Current.CancellationToken));
+
+        Assert.Equal("sh failed with exit code 3. Its output is in the machine log.", failure.Message);
+        Assert.Contains(Lines(), line => line.StartsWith("INFO  sh ended with exit code 3 after ", StringComparison.Ordinal));
+    }
+
+    // systemctl says "Removed ..." on its error output when all went well. That is no warning.
+    [Fact]
+    public async Task TakesTheErrorOutputOfAToolThatSaysWhatItDidThereAsPlainLines()
+    {
+        Assert.SkipUnless(OperatingSystem.IsLinux(), "This test calls the Linux kernel.");
+        ToolRunner plain = new(_log, TimeProvider.System, Latin1Output.Decode) { PlainErrorOutput = new HashSet<string>(StringComparer.Ordinal) { "sh" } };
+        ToolRunner other = new(_log, TimeProvider.System, Latin1Output.Decode);
+
+        await plain.RunAsync("/bin/sh", ["-c", "echo Removed the link. >&2"], TestContext.Current.CancellationToken);
+        await other.RunAsync("/bin/sh", ["-c", "echo Something is wrong. >&2"], TestContext.Current.CancellationToken);
+
+        Assert.Contains("INFO  Removed the link.", Lines());
+        Assert.Contains("WARN  Something is wrong.", Lines());
+    }
+
     // The unit gives the agent a mask that leaves a new file to root alone. A script's files are for whom it means them.
     [Fact]
     public async Task AToolStartsWithARootShellsFileModeMaskAndTheAgentKeepsItsOwn()

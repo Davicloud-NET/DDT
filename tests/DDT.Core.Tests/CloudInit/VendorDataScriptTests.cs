@@ -50,7 +50,7 @@ public sealed class VendorDataScriptTests
     [Fact]
     public void TakesOutWhatACheckOutOnWindowsMayPutIn()
     {
-        Assert.Equal("#!/bin/sh\nset -eu\n", VendorDataScript.Unix("﻿#!/bin/sh\r\nset -eu\r\n"));
+        Assert.Equal("#!/bin/sh\nset -eu\n", VendorDataScript.Unix("\uFEFF#!/bin/sh\r\nset -eu\r\n"));
         Assert.Equal(VendorDataScript.Text, VendorDataScript.Unix(VendorDataScript.Text.Replace("\n", "\r\n", StringComparison.Ordinal)));
     }
 

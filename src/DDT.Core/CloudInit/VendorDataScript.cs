@@ -31,7 +31,7 @@ public static class VendorDataScript
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        return text.TrimStart('﻿').Replace("\r\n", "\n", StringComparison.Ordinal);
+        return text.TrimStart('\uFEFF').Replace("\r\n", "\n", StringComparison.Ordinal);
     }
 
     // Whether content is this script, as the seed holds it or as cloud-init copied it.

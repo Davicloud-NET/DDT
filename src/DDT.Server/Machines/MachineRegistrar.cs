@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Machines;
 
-// Registers the agent of a netbooting machine, or of the service in its installed Windows, and hands out its tokens.
+// Registers the agent of a netbooting machine, or of the service in its installed system, and hands out its tokens.
 public sealed class MachineRegistrar(
     DdtDbContext database,
     MachineTokenService tokens,

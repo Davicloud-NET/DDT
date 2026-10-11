@@ -234,9 +234,9 @@ public sealed class MachineArrivals(
         }
     }
 
-    // An agent that restarted during its run, in WinPE or as the service in Windows, continues it with the run token it
-    // kept on disk. The token must be from the current generation. The generation isn't bumped, so the agent's other
-    // tokens stay valid.
+    // An agent that restarted during its run, in WinPE or as the service in Windows or Linux, continues it with the run
+    // token it kept on disk. The token must be from the current generation. The generation isn't bumped, so the agent's
+    // other tokens stay valid.
     private bool ContinuesRun(NormalisedRegistration registration, Machine machine, Deployment? active) =>
         tokens.ValidateRunToken(registration.RunToken) is { } payload
         && payload.MachineId == machine.Id

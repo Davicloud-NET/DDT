@@ -34,8 +34,8 @@ public sealed class Machine
 
     public string? AgentVersion { get; set; }
 
-    // From the last registration: the highest sequence version its agent runs, and whether it runs in Windows PE or as
-    // the service in the installed Windows.
+    // From the last registration: the highest sequence version its agent runs, and whether it runs in a boot
+    // environment or as the service in the installed Windows or Linux.
     public int SequenceVersion { get; set; }
 
     public AgentEnvironment AgentEnvironment { get; set; }

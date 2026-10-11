@@ -11,6 +11,6 @@ public enum RegistrationRefusal
     // A new machine, while too many machines nobody approved are waiting.
     TooManyWaiting,
 
-    // The service in Windows has no run to continue, so it removes itself.
+    // The service in the installed Windows or Linux has no run to continue, so it removes itself.
     NothingToContinue,
 }

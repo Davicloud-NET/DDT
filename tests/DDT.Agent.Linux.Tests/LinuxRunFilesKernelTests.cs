@@ -76,10 +76,11 @@ public sealed class LinuxRunFilesKernelTests : IDisposable
         return place;
     }
 
-    // What the volume holds once everything written is on it, also in blocks no file owns.
+    // What the volume holds once everything written is on it, also in blocks no file owns. Only this volume is
+    // written out: the system's other file systems are none of the test's.
     private byte[] Raw()
     {
-        Assert.Equal(0, LoopDisk.Run("sync").ExitCode);
+        Assert.Equal(0, LoopDisk.Run("sync", "-f", Path.Combine(_folder, "root")).ExitCode);
 
         return File.ReadAllBytes(Image);
     }

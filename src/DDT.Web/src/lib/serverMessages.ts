@@ -117,6 +117,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "computerName.empty",
     message: "Enter a computer name.",
   }),
+  "computerName.endsWithHyphen": msg({
+    context: "computerName.endsWithHyphen",
+    message: "A computer name cannot end with a hyphen.",
+  }),
   "computerName.startsWithHyphen": msg({
     context: "computerName.startsWithHyphen",
     message: "A computer name cannot start with a hyphen.",

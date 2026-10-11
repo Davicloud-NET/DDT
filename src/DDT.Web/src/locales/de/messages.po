@@ -1437,6 +1437,11 @@ msgid "A computer name cannot consist of digits only."
 msgstr "Ein Computername darf nicht nur aus Ziffern bestehen."
 
 #: src/lib/serverMessages.ts
+msgctxt "computerName.endsWithHyphen"
+msgid "A computer name cannot end with a hyphen."
+msgstr "Ein Computername darf nicht mit einem Bindestrich enden."
+
+#: src/lib/serverMessages.ts
 msgctxt "computerName.startsWithHyphen"
 msgid "A computer name cannot start with a hyphen."
 msgstr "Ein Computername darf nicht mit einem Bindestrich beginnen."

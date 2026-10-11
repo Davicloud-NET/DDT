@@ -16,6 +16,7 @@ public sealed class ComputerNamesTests
     [InlineData("A")]
     [InlineData("ws1")]
     [InlineData("0042-PC")]
+    [InlineData("PC--42")]
     [InlineData("ABCDEFGHIJKLMNO")]
     public void AcceptsAValidName(string name)
     {
@@ -29,6 +30,8 @@ public sealed class ComputerNamesTests
     [InlineData("ABCDEFGHIJKLMNOP", "A computer name can have at most 15 characters.")]
     [InlineData("12345", "A computer name cannot consist of digits only.")]
     [InlineData("-PC42", "A computer name cannot start with a hyphen.")]
+    [InlineData("PC42-", "A computer name cannot end with a hyphen.")]
+    [InlineData("-", "A computer name cannot start with a hyphen.")]
     public void RefusesAnInvalidNameWithASentence(string name, string expected)
     {
         Assert.False(ComputerNames.IsValid(name, out string error));

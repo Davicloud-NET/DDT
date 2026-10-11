@@ -19,8 +19,8 @@ public static class ComputerNames
         return error.Length == 0;
     }
 
-    // Only the characters a DNS host name can contain, because on a domain the name becomes one. An invalid name fails
-    // Windows setup in the specialize pass, after DDT has already reported the deployment as done.
+    // Only what a DNS host name label can be, because on a domain the name becomes one. An invalid name fails Windows
+    // setup in the specialize pass, after DDT has reported the deployment as done, and cloud-init keeps localhost.
     public static ServerMessage? Problem(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -50,6 +50,6 @@ public static class ComputerNames
             return ServerMessages.ComputerNameStartsWithHyphen.With();
         }
 
-        return null;
+        return name[^1] == '-' ? ServerMessages.ComputerNameEndsWithHyphen.With() : null;
     }
 }

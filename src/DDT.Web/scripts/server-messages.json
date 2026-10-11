@@ -26,6 +26,7 @@
   "computerName.characters": "A computer name can hold only the letters A to Z, digits and hyphens.",
   "computerName.digitsOnly": "A computer name cannot consist of digits only.",
   "computerName.empty": "Enter a computer name.",
+  "computerName.endsWithHyphen": "A computer name cannot end with a hyphen.",
   "computerName.startsWithHyphen": "A computer name cannot start with a hyphen.",
   "computerName.tooLong": "A computer name can have at most {max} characters.",
   "deployment.alreadyHasRun": "This machine already has a run. Cancel it before assigning another sequence.",

@@ -200,4 +200,8 @@ public static partial class ServerMessages
     public static readonly MessageTemplate ComputerNameStartsWithHyphen = Define(
         "computerName.startsWithHyphen",
         "A computer name cannot start with a hyphen.");
+
+    public static readonly MessageTemplate ComputerNameEndsWithHyphen = Define(
+        "computerName.endsWithHyphen",
+        "A computer name cannot end with a hyphen.");
 }

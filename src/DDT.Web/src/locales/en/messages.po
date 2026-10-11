@@ -1437,6 +1437,11 @@ msgid "A computer name cannot consist of digits only."
 msgstr "A computer name cannot consist of digits only."
 
 #: src/lib/serverMessages.ts
+msgctxt "computerName.endsWithHyphen"
+msgid "A computer name cannot end with a hyphen."
+msgstr "A computer name cannot end with a hyphen."
+
+#: src/lib/serverMessages.ts
 msgctxt "computerName.startsWithHyphen"
 msgid "A computer name cannot start with a hyphen."
 msgstr "A computer name cannot start with a hyphen."

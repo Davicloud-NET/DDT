@@ -83,7 +83,7 @@ public sealed class LinuxPhaseLoopBuilder
             StepRunners = new LinuxStepRunners { Tools = Tools, Scripts = Scripts, Log = Log, TimeProvider = TimeProvider, Options = options },
             BootOrder = new NoBootOrder(),
             Rebooter = rebooter,
-            RestartMarker = new FileRestartMarker(Paths.Run, Log, DryRun),
+            RestartMarker = new NoBootRestart(),
             HandOver = new NoHandOver(),
             Log = Log,
             TimeProvider = TimeProvider,

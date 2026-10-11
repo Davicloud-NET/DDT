@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Text;
-
 namespace DDT.Agent.Deployment;
 
 // What Linux has mounted on a folder or below it. Deleting the folder with all it holds would delete the files of what
@@ -24,7 +22,7 @@ internal static class MountsBelow
             return null;
         }
 
-        if (Real(directory) is not { } real || Lines(list) is not { } lines)
+        if (RealPath.Of(directory) is not { } real || Lines(list) is not { } lines)
         {
             return Unknown;
         }
@@ -46,7 +44,7 @@ internal static class MountsBelow
             return [];
         }
 
-        return Real(directory) is { } real && Lines(list) is { } lines ? In(lines, real) : null;
+        return RealPath.Of(directory) is { } real && Lines(list) is { } lines ? In(lines, real) : null;
     }
 
     // lines are the kernel's, which names a place by where it really is. So directory must hold no link.
@@ -76,18 +74,5 @@ internal static class MountsBelow
         {
             return null;
         }
-    }
-
-    // The folder's path with every link in it followed. Null when there is no such folder.
-    private static string? Real(string directory)
-    {
-        byte[] resolved = new byte[LinuxFileNativeMethods.MaxPath];
-
-        if (LinuxFileNativeMethods.realpath(directory, ref resolved[0]) == 0)
-        {
-            return null;
-        }
-
-        return Encoding.UTF8.GetString(resolved, 0, Math.Max(0, Array.IndexOf(resolved, (byte)0)));
     }
 }

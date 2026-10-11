@@ -43,7 +43,7 @@ public sealed class LinuxPhaseServiceTests : IDisposable
         Put(certificate, "the server's own");
         Put(_paths.Unit, "[Unit]");
 
-        int exitCode = await LinuxPhaseService.RunAsync(_paths, _output, "/home/someone/ddt-agent", TestContext.Current.CancellationToken);
+        int exitCode = await LinuxPhaseService.RunAsync(new LinuxPhaseMachine(_paths, _output, "/home/someone/ddt-agent"), TestContext.Current.CancellationToken);
 
         Assert.Equal(AgentExitCodes.Stopped, exitCode);
         Assert.EndsWith($"WARN  {LinuxPhaseService.NoSettings(_paths.Configuration)}", Assert.Single(Lines()), StringComparison.Ordinal);
@@ -57,7 +57,7 @@ public sealed class LinuxPhaseServiceTests : IDisposable
     {
         Put(_paths.Configuration, "{\"serverUrl\":\"http://not-https.example\"}");
 
-        int exitCode = await LinuxPhaseService.RunAsync(_paths, _output, _paths.Agent, TestContext.Current.CancellationToken);
+        int exitCode = await LinuxPhaseService.RunAsync(new LinuxPhaseMachine(_paths, _output, _paths.Agent), TestContext.Current.CancellationToken);
 
         Assert.Equal(AgentExitCodes.Stopped, exitCode);
         string line = Assert.Single(Lines());

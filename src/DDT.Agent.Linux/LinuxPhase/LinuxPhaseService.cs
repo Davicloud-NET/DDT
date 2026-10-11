@@ -30,24 +30,24 @@ public static class LinuxPhaseService
         using PosixSignalRegistration terminate = PosixSignalRegistration.Create(PosixSignal.SIGTERM, signal => Stop(signal, stop));
         using PosixSignalRegistration interrupt = PosixSignalRegistration.Create(PosixSignal.SIGINT, signal => Stop(signal, stop));
 
-        return await RunAsync(LinuxAgentPaths.Machine, Console.Out, Environment.ProcessPath, stop.Token).ConfigureAwait(false);
+        return await RunAsync(LinuxPhaseMachine.Own(), stop.Token).ConfigureAwait(false);
     }
 
     // After the removal any exit code but 0 would leave a failed unit that has no file, so a finished run and a
     // restart end the unit like a stop.
-    internal static async Task<int> RunAsync(LinuxAgentPaths paths, TextWriter output, string? processPath, CancellationToken cancellationToken)
+    internal static async Task<int> RunAsync(LinuxPhaseMachine machine, CancellationToken cancellationToken)
     {
-        if (!File.Exists(paths.Configuration))
-        {
-            return await EndWithoutSettingsAsync(paths, output, processPath).ConfigureAwait(false);
-        }
+        bool hasSettings = File.Exists(machine.Paths.Configuration);
 
-        using JournalAndFile writer = new(output, LogFile(paths));
+        // Without its settings the agent may be on a system that is not its own, where it makes no file either.
+        using JournalAndFile writer = new(machine.Output, hasSettings ? LogFile(machine.Paths) : null);
         AgentLog log = new(TimeProvider.System, writer, datedLines: true);
 
         try
         {
-            int exitCode = await GoOnAsync(paths, log, cancellationToken).ConfigureAwait(false);
+            int exitCode = hasSettings
+                ? await GoOnAsync(machine, log, cancellationToken).ConfigureAwait(false)
+                : await EndWithoutSettingsAsync(machine, log).ConfigureAwait(false);
 
             return exitCode is AgentExitCodes.Deployed or AgentExitCodes.Restarting ? AgentExitCodes.Stopped : exitCode;
         }
@@ -60,13 +60,15 @@ public static class LinuxPhaseService
         }
     }
 
-    private static async Task<int> GoOnAsync(LinuxAgentPaths paths, AgentLog log, CancellationToken cancellationToken)
+    private static async Task<int> GoOnAsync(LinuxPhaseMachine machine, AgentLog log, CancellationToken cancellationToken)
     {
+        LinuxAgentPaths paths = machine.Paths;
+
         // Before anything that takes time: a restart the user-data asked for may stop the agent within a second.
         CloudInitFiles cloudInit = new(paths.Root);
         new FirstStartNote(cloudInit, paths.FirstStart, log).Take();
 
-        LibcMounts mounts = new();
+        IMounts mounts = machine.Mounts ?? new LibcMounts();
         LinuxSeeds seeds = new(mounts, paths, log);
 
         // Before the server: a token left on the seed is one more copy of what acts as this machine.
@@ -79,58 +81,82 @@ public static class LinuxPhaseService
             return AgentExitCodes.Stopped;
         }
 
-        using HttpAgentServer server = new(options.ServerUrl, options.RootCertificate)
-        {
-            Environment = AgentEnvironment.Linux,
-            Lookup = new ServerLookup { Names = new NameLookup(), Known = options.ServerAddress, Log = log },
-        };
         LinuxShareConnector shares = new(mounts, paths.Shares, log) { Kernel = KernelRelease };
         shares.DisconnectLeftovers();
-        LinuxUefiVariables firmware = new(paths.Root);
+        IAgentServer server = machine.Connect?.Invoke(options) ?? Server(options, log);
 
-        InstalledPhaseLoop loop = new LinuxPhaseLoopBuilder
+        try
         {
-            Server = server,
-            IdentityReader = new HardwareMachineIdentityReader(new LinuxFirmwareTables(paths.Root), new LinuxSystemHardware(paths.Root), firmware, new LinuxSecureBoot(firmware)),
-            Paths = paths,
-            Tools = Tools(paths, log),
-            Scripts = new ShellScriptLauncher { Environment = LinuxShell.Environment(Environment.GetEnvironmentVariable) },
-            Shares = shares,
-            Seeds = seeds,
-            CloudInit = cloudInit,
-            RestartMarker = new LinuxRestartMarker(paths.Run, log),
-            FreeSpace = new LinuxFreeSpace(),
-            Log = log,
-            TimeProvider = TimeProvider.System,
-            AgentVersion = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "unknown",
-        }.Build();
+            InstalledPhaseLoop loop = new LinuxPhaseLoopBuilder
+            {
+                Server = server,
+                IdentityReader = machine.Identity ?? Identity(paths),
+                Paths = paths,
+                Tools = Tools(machine, log),
+                Scripts = new ShellScriptLauncher { Environment = LinuxShell.Environment(Environment.GetEnvironmentVariable) },
+                Shares = shares,
+                Seeds = seeds,
+                CloudInit = cloudInit,
+                RestartMarker = new LinuxRestartMarker(paths.Run, log),
+                FreeSpace = new LinuxFreeSpace(),
+                Log = log,
+                TimeProvider = TimeProvider.System,
+                AgentVersion = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "unknown",
+            }.Build();
 
-        return await loop.RunAsync(cancellationToken).ConfigureAwait(false);
+            return await loop.RunAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            (server as IDisposable)?.Dispose();
+        }
     }
 
     // A removal that was cut off leaves the unit and this program without their settings. The agent the unit starts
-    // finishes it. An agent started from elsewhere touches nothing.
-    private static async Task<int> EndWithoutSettingsAsync(LinuxAgentPaths paths, TextWriter output, string? processPath)
+    // finishes it. An agent started from elsewhere touches nothing. The program is known by where it really is:
+    // /usr/local may be a link.
+    private static async Task<int> EndWithoutSettingsAsync(LinuxPhaseMachine machine, AgentLog log)
     {
-        AgentLog log = new(TimeProvider.System, output, datedLines: true);
+        LinuxAgentPaths paths = machine.Paths;
         log.Warning(NoSettings(paths.Configuration));
 
-        if (string.Equals(processPath, paths.Agent, StringComparison.Ordinal))
+        if (RealPath.Same(machine.ProcessPath, paths.Agent))
         {
-            LinuxSeeds seeds = new(new LibcMounts(), paths, log);
-            await new LinuxAgentRemoval(paths, seeds, Tools(paths, log), log).RemoveAsync(CancellationToken.None).ConfigureAwait(false);
+            LinuxSeeds seeds = new(machine.Mounts ?? new LibcMounts(), paths, log);
+            await new LinuxAgentRemoval(paths, seeds, Tools(machine, log), log).RemoveAsync(CancellationToken.None).ConfigureAwait(false);
         }
 
         return AgentExitCodes.Stopped;
     }
 
-    // What a script left running goes when its step is stopped, as in the boot environment. The unit's file mode mask
-    // is the agent's alone.
-    private static ToolRunner Tools(LinuxAgentPaths paths, AgentLog log) => new(log, TimeProvider.System, Latin1Output.Decode)
+    // The name is looked up as an installed Linux needs it, with the address the boot environment used to fall back on.
+    private static HttpAgentServer Server(AgentOptions options, AgentLog log) => new(options.ServerUrl, options.RootCertificate)
     {
-        Strays = new LinuxStrayProcesses(paths.Root, log, Environment.ProcessId) { Adopts = LinuxStrayProcesses.Adopt() },
-        FileModeMask = OperatingSystem.IsLinux() ? FileModeMask.Set : null,
+        Environment = AgentEnvironment.Linux,
+        Lookup = new ServerLookup { Names = new NameLookup(), Known = options.ServerAddress, Log = log },
     };
+
+    private static HardwareMachineIdentityReader Identity(LinuxAgentPaths paths)
+    {
+        LinuxUefiVariables firmware = new(paths.Root);
+
+        return new HardwareMachineIdentityReader(new LinuxFirmwareTables(paths.Root), new LinuxSystemHardware(paths.Root), firmware, new LinuxSecureBoot(firmware));
+    }
+
+    // What a script left running goes when its step is stopped, as in the boot environment. The unit's file mode mask
+    // is the agent's alone, and systemctl says on its error output what it did.
+    private static IToolRunner Tools(LinuxPhaseMachine machine, AgentLog log)
+    {
+        bool onLinux = OperatingSystem.IsLinux();
+        ToolRunner tools = new(log, TimeProvider.System, Latin1Output.Decode)
+        {
+            Strays = new LinuxStrayProcesses(machine.Paths.Root, log, Environment.ProcessId) { Adopts = onLinux && LinuxStrayProcesses.Adopt() },
+            FileModeMask = onLinux ? FileModeMask.Set : null,
+            PlainErrorOutput = new HashSet<string>(StringComparer.Ordinal) { LinuxPhaseRebooter.Systemctl },
+        };
+
+        return machine.Tools?.Invoke(tools) ?? tools;
+    }
 
     // Null when the file cannot be opened, as on a disk that is full. The journal still gets every line. The file is
     // root's alone, because a script's output may hold what only root should read.

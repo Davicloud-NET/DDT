@@ -8,7 +8,6 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
-using DDT.Core.CloudInit;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -146,13 +145,12 @@ public sealed class LinuxDryRunMachineTests : IDisposable
         Assert.Contains(server.RunReports, report => report.Variables?.GetValueOrDefault("Installed") == "yes on LINUX-01");
         Assert.Contains(server.RunReports, report => report is { Phase: SequencePhase.Linux, Activity: RunActivity.Restarting, State: DeploymentState.Running });
 
-        // The root held the installed Linux and is gone with the run. The disk stays to be looked at, as it was handed
-        // over but for the run's token, which the script wipes on a real seed. No byte of it is left in the file.
+        // The root held the installed Linux and is gone with the run. The disk stays to be looked at. Its seed is the
+        // administrator's again, as the agent's removal leaves a real one, and no byte of the run's token is in the file.
         Assert.False(Directory.Exists(_root));
         using FileStream disk = new(FileRawDisks.PathFor(_root, 0), FileMode.Open, FileAccess.Read, FileShare.Read);
         TestSeed seed = TestSeed.Read(disk);
-        Assert.Equal(["ddt-agent", "agent.json", "state.json"], seed.Names(LinuxAgentFiles.SeedFolder));
-        Assert.Equal(["meta-data", "user-data", "vendor-data", "ddt"], seed.Names());
+        Assert.Equal(["meta-data", "user-data"], seed.Names());
         Assert.False(seed.Holds("run-token-1"));
     }
 

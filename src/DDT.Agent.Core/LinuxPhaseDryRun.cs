@@ -17,7 +17,7 @@ namespace DDT.Agent;
 public sealed class LinuxPhaseDryRun(DryRunMachineOptions options, Func<AgentOptions, IAgentServer> connect, AgentLog log, TimeProvider timeProvider)
 {
     private readonly LinuxAgentPaths _paths = new(Path.Combine(options.Root, "linux"));
-    private readonly DryRunSeed _seed = new(Path.Combine(options.Root, "linux-seed"), log, timeProvider);
+    private readonly DryRunSeed _seed = new(Path.Combine(options.Root, "linux-seed"), FileRawDisks.PathFor(options.Root, DryRunDisks.Disk.Number), log, timeProvider);
 
     // How this computer counts the free space of a path.
     public required IFreeSpace FreeSpace { get; init; }
@@ -27,7 +27,7 @@ public sealed class LinuxPhaseDryRun(DryRunMachineOptions options, Func<AgentOpt
         await LocalRun.LoadAsync(_paths.State, log, CancellationToken.None).ConfigureAwait(false) is { State.Phase: SequencePhase.Linux };
 
     // Plays the first start of the installed Linux after a hand-over. False when the disk holds no run to go on with.
-    public bool Install() => _seed.Install(FileRawDisks.PathFor(options.Root, DryRunDisks.Disk.Number), _paths);
+    public bool Install() => _seed.Install(_paths);
 
     // One start of the unit. The staged agent.json has to name the server.
     public async Task<int> RunAsync(CancellationToken cancellationToken)

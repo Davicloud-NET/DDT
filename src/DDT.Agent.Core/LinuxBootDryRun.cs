@@ -26,7 +26,7 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
     // Without it the fake machine cannot change its boot environment.
     public IVendorVariables? Firmware { get; init; }
 
-    public Task<int> RunAsync(CancellationToken cancellationToken)
+    public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
         log.Information("Dry run: the fake machine started the Linux boot environment, which runs the sequences that write a raw disk image.");
 
@@ -37,12 +37,42 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
             disks,
             new LocalRunLocator([]),
             options.AgentVersion,
-            AgentEnvironment.LinuxBoot)
+            AgentEnvironment.LinuxBoot);
+        BootReturnOutcome returned = await ReturnAsync(machine, rebooter, cancellationToken).ConfigureAwait(false);
+
+        if (returned.ExitCode is { } exitCode)
+        {
+            return exitCode;
+        }
+
+        machine = machine with
         {
             Switch = Firmware is null ? null : new EnvironmentSwitch(new ResumeCarrier(Firmware, AgentEnvironment.LinuxBoot, log), rebooter),
+            StartsOver = returned.StartsOver,
+            ResumeToken = returned.ResumeToken,
         };
 
-        return new AgentLoop(server, machine, status, Runner(disks, rebooter), log, timeProvider).RunAsync(cancellationToken);
+        return await new AgentLoop(server, machine, status, Runner(disks, rebooter), log, timeProvider).RunAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    // What the boot environment does first on a machine whose disk holds a run that was handed over. A fake machine
+    // that has written no disk yet has none, and the look must not make the file.
+    private async Task<BootReturnOutcome> ReturnAsync(AgentMachine machine, DryRunRebooter rebooter, CancellationToken cancellationToken)
+    {
+        if (!File.Exists(FileRawDisks.PathFor(options.Root, DryRunDisks.Disk.Number)))
+        {
+            return BootReturnOutcome.GoesOn;
+        }
+
+        LinuxBootReturn returns = new(server, machine, status, log, timeProvider)
+        {
+            Seeds = new HandedOverSeeds(new FileRawDisks(options.Root, log, MakeSparse), log, timeProvider),
+            Keys = new ConsoleKeyWait(timeProvider),
+            DiskStart = new DryRunDiskStart(log),
+            Restart = () => rebooter.RebootAsync(RestartInto.InstalledSystem, CancellationToken.None),
+        };
+
+        return await returns.RunAsync(cancellationToken).ConfigureAwait(false);
     }
 
     // The root stands in for the agent's directory, which the run's end deletes.

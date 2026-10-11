@@ -6,17 +6,22 @@ using System.Text.Json;
 
 namespace DDT.Agent.LinuxPhase;
 
-// Puts into the run's log how cloud-init ended: its errors as warnings, and the end of what it printed. Nothing here
-// fails the run, because the image's set-up is the administrator's and may be meant to end that way.
+// Puts into the run's log how cloud-init ended: its own errors and warnings, and where its output is. No line of the
+// output itself, where cloud-init can print passwords it made. Nothing here fails the run, because the image's
+// set-up is the administrator's and may be meant to end that way.
 internal static class CloudInitReport
 {
     public const int MaxWarnings = 20;
 
     public const string UnreadableResult = "cloud-init's result cannot be read, so the errors it ended with are not known.";
 
+    public const string OutputStays =
+        $"What cloud-init and its scripts printed is in /{CloudInitFiles.OutputPath} on the machine. It is not sent to the " +
+        "server, because cloud-init can print passwords there.";
+
     private const int MaxMessageLength = 500;
 
-    public static void Write(string result, string? status, IReadOnlyList<string> output, AgentLog log)
+    public static void Write(string result, string? status, AgentLog log)
     {
         log.Information("cloud-init has finished at this start.");
 
@@ -32,17 +37,7 @@ internal static class CloudInitReport
             log.Warning($"cloud-init reported {warnings.Count - MaxWarnings} more. cloud-init status --long lists them on the machine.");
         }
 
-        if (output.Count == 0)
-        {
-            return;
-        }
-
-        log.Information($"The end of /{CloudInitFiles.OutputPath}:");
-
-        foreach (string line in output)
-        {
-            log.Information($"cloud-init: {line}");
-        }
+        log.Information(OutputStays);
     }
 
     // v1.errors of result.json, which is what made cloud-init end with an error.

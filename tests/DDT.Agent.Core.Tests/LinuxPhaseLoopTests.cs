@@ -225,6 +225,7 @@ public sealed class LinuxPhaseLoopTests : IDisposable
         Assert.DoesNotContain(waiting.Steps, step => step.StepId == script.Id && step.State != StepState.Pending);
         Assert.Empty(_linux.Tools.Calls);
 
+        _linux.Put(_linux.Paths.At(CloudInitFiles.OutputPath), "Set the following 'random' passwords\nubuntu:Xk7-made-up-by-cloud-init\n");
         _linux.Put(_linux.Paths.At(CloudInitFiles.ResultPath), """{ "v1": { "datasource": "DataSourceNoCloud", "errors": [] } }""");
         await time.AdvanceUntilAsync(LinuxPhaseProfile.PollInterval, () => running.IsCompleted);
 
@@ -233,10 +234,16 @@ public sealed class LinuxPhaseLoopTests : IDisposable
         [
             "Waiting for cloud-init, which sets this Linux up at its first start: cloud-init is still running. The run goes on after it.",
             "cloud-init has finished at this start.",
+            CloudInitReport.OutputStays,
             "The wait for cloud-init is over, and the run goes on.",
             "Step Script 1 begins.",
         ];
         Assert.Equal(expected, _linux.Lines().Where(expected.Contains));
+
+        // What cloud-init printed stays on the machine: the server's log of the run gets no line of it.
+        Assert.Contains(server.SentLines, line => line.Message == CloudInitReport.OutputStays);
+        Assert.DoesNotContain(server.SentLines, line => line.Message.Contains("Xk7", StringComparison.Ordinal) || line.Message.Contains("'random'", StringComparison.Ordinal));
+        Assert.DoesNotContain(_linux.Lines(), line => line.Contains("Xk7", StringComparison.Ordinal) || line.Contains("'random'", StringComparison.Ordinal));
     }
 
     // A zip carries no modes, so every file of a package can be started. The package goes with its step.

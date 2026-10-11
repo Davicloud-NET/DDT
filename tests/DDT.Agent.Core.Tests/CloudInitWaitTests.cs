@@ -27,6 +27,9 @@ public sealed class CloudInitWaitTests : IDisposable
           "stage": null } }
         """;
 
+    // The line that says where cloud-init's output is, in place of the output.
+    private const string OutputStays = $"INFO  {CloudInitReport.OutputStays}";
+
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"ddt-cloud-init-{Guid.NewGuid():N}");
     private readonly ManualTimeProvider _time = new();
     private readonly StringWriter _console = new();
@@ -87,7 +90,7 @@ public sealed class CloudInitWaitTests : IDisposable
         _time.Advance(TimeSpan.FromSeconds(1));
         Assert.Null(wait.Pending());
         Assert.True(File.Exists(Marker));
-        Assert.Equal(["INFO  cloud-init has finished at this start."], Lines());
+        Assert.Equal(["INFO  cloud-init has finished at this start.", OutputStays], Lines());
     }
 
     [Fact]
@@ -96,7 +99,6 @@ public sealed class CloudInitWaitTests : IDisposable
         Put(CloudInitFiles.EnabledPath);
         Put(CloudInitFiles.ResultPath, Failed);
         Put(CloudInitFiles.StatusPath, Degraded);
-        Put(CloudInitFiles.OutputPath, "Cloud-init v. 25.1.4 running 'modules:final'\n\u001b[0mDDT: ddt-agent.service is started.\r\n\nCloud-init v. 25.1.4 finished\n");
         CloudInitWait wait = Wait();
 
         Assert.Equal(CloudInitWait.Settling, wait.Pending());
@@ -108,12 +110,50 @@ public sealed class CloudInitWaitTests : IDisposable
                 "INFO  cloud-init has finished at this start.",
                 "WARN  cloud-init ended with an error: ('scripts-user', RuntimeError('Runparts: 1 failures (runcmd) in 1 attempted commands'))",
                 "WARN  cloud-init WARNING: cloud-config failed schema validation! You may run 'sudo cloud-init schema --system' to check the details.",
-                "INFO  The end of /var/log/cloud-init-output.log:",
-                "INFO  cloud-init: Cloud-init v. 25.1.4 running 'modules:final'",
-                "INFO  cloud-init:  [0mDDT: ddt-agent.service is started.",
-                "INFO  cloud-init: Cloud-init v. 25.1.4 finished",
+                OutputStays,
             ],
             Lines());
+    }
+
+    // cloud-init prints there what its modules and the administrator's scripts print, such as a password it made for
+    // a user. Operators read the run's log, so the log names the file and holds no line of it.
+    [Fact]
+    public async Task SendsNoLineOfWhatCloudInitPrintedAndSaysWhereItIs()
+    {
+        string[] printed =
+        [
+            "Cloud-init v. 25.1.4 running 'modules:final'",
+            "Set the following 'random' passwords",
+            "ubuntu:Xk7-made-up-by-cloud-init",
+            "DDT: ddt-agent.service is started.",
+            "Cloud-init v. 25.1.4 finished at Sun, 11 Oct 2026 12:03:23 +0000.",
+        ];
+        Put(CloudInitFiles.EnabledPath);
+        Put(CloudInitFiles.ResultPath, Failed);
+        Put(CloudInitFiles.StatusPath, Degraded);
+        Put(CloudInitFiles.OutputPath, string.Join('\n', printed) + "\n");
+        AgentLog log = new(_time, _console);
+        CloudInitWait wait = new(new CloudInitFiles(_root), Marker, log, _time);
+
+        Assert.Equal(CloudInitWait.Settling, wait.Pending());
+        _time.Advance(CloudInitWait.Settle);
+        Assert.Null(wait.Pending());
+
+        ScriptedAgentServer server = new();
+
+        while (log.QueuedLines > 0)
+        {
+            await log.FlushAsync(server, Guid.NewGuid(), "session", TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(
+            "What cloud-init and its scripts printed is in /var/log/cloud-init-output.log on the machine. It is not sent to the server, " +
+            "because cloud-init can print passwords there.",
+            server.SentLines[^1].Message);
+        Assert.Equal(4, server.SentLines.Count);
+        Assert.All(printed, line => Assert.DoesNotContain(server.SentLines, sent => sent.Message.Contains(line, StringComparison.Ordinal)));
+        Assert.All(printed, line => Assert.DoesNotContain(line, _console.ToString(), StringComparison.Ordinal));
+        Assert.DoesNotContain("Xk7", _console.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -128,7 +168,7 @@ public sealed class CloudInitWaitTests : IDisposable
         _time.Advance(CloudInitWait.Settle);
         Assert.Null(wait.Pending());
 
-        Assert.Equal(["INFO  cloud-init has finished at this start.", $"WARN  {CloudInitReport.UnreadableResult}"], Lines());
+        Assert.Equal(["INFO  cloud-init has finished at this start.", $"WARN  {CloudInitReport.UnreadableResult}", OutputStays], Lines());
     }
 
     // The spike's user-data: power_state with delay 1, which stopped the unit 56 s after cloud-init had finished.
@@ -151,6 +191,7 @@ public sealed class CloudInitWaitTests : IDisposable
         Assert.Equal(
             [
                 "INFO  cloud-init has finished at this start.",
+                OutputStays,
                 "INFO  The user-data restarts or powers off this machine (power_state: reboot), so the run waits for that before its next step, for 3 min 30 s at most.",
                 "WARN  The machine has not restarted 3 min 30 s after cloud-init finished, though its user-data asked for it (power_state: reboot). " +
                     "The run goes on, and a restart that still comes stops the step that runs then.",
@@ -207,6 +248,7 @@ public sealed class CloudInitWaitTests : IDisposable
         Assert.Equal(
             [
                 "INFO  cloud-init has finished at this start.",
+                OutputStays,
                 "INFO  The user-data's restart (power_state: reboot) came at an earlier start of this Linux, so the run does not wait for it again.",
             ],
             Lines());
@@ -229,16 +271,5 @@ public sealed class CloudInitWaitTests : IDisposable
         Assert.Null(Wait().Pending());
         Assert.Null(first.Pending());
         Assert.Empty(Lines());
-    }
-
-    [Fact]
-    public void ReadsOnlyTheEndOfALongOutput()
-    {
-        Put(CloudInitFiles.OutputPath, string.Concat(Enumerable.Range(1, 40_000).Select(number => $"line {number}\n")));
-
-        IReadOnlyList<string> tail = new CloudInitFiles(_root).OutputTail(3);
-
-        Assert.Equal(["line 39998", "line 39999", "line 40000"], tail);
-        Assert.Empty(new CloudInitFiles(Path.Combine(_root, "nowhere")).OutputTail(3));
     }
 }

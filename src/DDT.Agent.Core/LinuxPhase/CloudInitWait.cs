@@ -14,8 +14,6 @@ public sealed class CloudInitWait(ICloudInit cloudInit, string markerPath, Agent
     // A reboot in runcmd stopped the unit up to 2.7 s after cloud-init had finished, and nothing announces it.
     public static readonly TimeSpan Settle = TimeSpan.FromSeconds(12);
 
-    public const int OutputLines = 100;
-
     public const string StillRunning = "cloud-init is still running";
 
     public const string RestartComes = "cloud-init has finished, and the machine restarts or powers off as its user-data asked";
@@ -54,7 +52,7 @@ public sealed class CloudInitWait(ICloudInit cloudInit, string markerPath, Agent
             }
 
             _finished = timeProvider.GetTimestamp();
-            CloudInitReport.Write(result, cloudInit.Status(), cloudInit.OutputTail(OutputLines), log);
+            CloudInitReport.Write(result, cloudInit.Status(), log);
 
             if (_laterStart == true && AnnouncedRestart.Read(cloudInit.Configuration(), null, timeProvider.GetUtcNow()) is { } spent)
             {

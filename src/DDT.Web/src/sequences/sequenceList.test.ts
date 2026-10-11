@@ -208,7 +208,13 @@ describe("the sequence list", () => {
           stepPhases: ["LinuxBoot", "LinuxBoot", "Linux"],
         }),
       ),
-    ).toMatchObject({ kind: "Linux", continuesInLinux: true, continuesInWindows: false });
+    ).toMatchObject({
+      kind: "Linux",
+      continuesInLinux: true,
+      continuesInWindows: false,
+      // The version the server stored it with, which the assign dialog holds against the machine's agent.
+      version: 5,
+    });
   });
 
   // A group and an IF have no phase of their own among the top-level steps, and may hold the step that decides.

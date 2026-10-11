@@ -6,6 +6,7 @@ using System.Net;
 using System.Security.Cryptography;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -144,5 +145,26 @@ public sealed class InstalledLinuxVersionTests(BothEnvironmentsApplication appli
         Assert.Equal(AgentEnvironment.LinuxBoot, next.RestartInto);
         Assert.Null(next.WaitReason);
         Assert.Equal(1, (await StoredAsync(assigned.Id)).RestartsOrdered);
+    }
+
+    // With both, a dialog on the web says before the assignment what the poll says after it.
+    [Fact]
+    public async Task TellsTheWebTheVersionASequenceNeedsAndTheOneAMachinesAgentRuns()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        SequenceView installed = await SequenceAsync();
+        SequenceView bootOnly = await SequenceAsync(installedSteps: false);
+        using DeployingMachine old = await ApprovedInWindowsPEAsync(BootOnlyVersion);
+        using DeployingMachine current = await ApprovedInWindowsPEAsync(SequenceDefinition.CurrentVersion);
+
+        IReadOnlyList<SequenceSummary> sequences =
+            await RegisteredMachine.ReadAsync<IReadOnlyList<SequenceSummary>>(await administrator.GetAsync(SequenceRequests.Sequences));
+        IReadOnlyList<MachineSummary> machines =
+            await RegisteredMachine.ReadAsync<IReadOnlyList<MachineSummary>>(await administrator.GetAsync("/api/machines"));
+
+        Assert.Equal(5, Assert.Single(sequences, sequence => sequence.Id == installed.Id).Version);
+        Assert.Equal(4, Assert.Single(sequences, sequence => sequence.Id == bootOnly.Id).Version);
+        Assert.Equal(BootOnlyVersion, Assert.Single(machines, machine => machine.Id == old.Id).SequenceVersion);
+        Assert.Equal(SequenceDefinition.CurrentVersion, Assert.Single(machines, machine => machine.Id == current.Id).SequenceVersion);
     }
 }

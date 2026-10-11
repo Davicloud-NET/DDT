@@ -40,4 +40,6 @@ public sealed record MachineSummary(
     // Whether the machine's agent can restart into the other boot environment and stay signed in.
     bool? ChangesBootEnvironment = null,
     // The boot environment the machine did not start after restarting for its run. The server orders no more, and the run waits.
-    AgentEnvironment? RestartsFailed = null);
+    AgentEnvironment? RestartsFailed = null,
+    // The newest sequence version the machine's agent said it runs when it last registered.
+    int? SequenceVersion = null);

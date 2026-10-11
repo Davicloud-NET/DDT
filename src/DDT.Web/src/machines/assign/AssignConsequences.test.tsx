@@ -52,6 +52,44 @@ describe("what assigning a Linux sequence says", () => {
     expect(screen.queryByText(inWindows)).not.toBeInTheDocument();
   });
 
+  // The server orders no restart for a run the machine's agent could not start in the other boot environment either.
+  it("promises no restart of a machine whose agent is too old for the sequence", () => {
+    renderConsequences(
+      { continuesInLinux: true, version: 5 },
+      { agentEnvironment: "WindowsPE", sequenceVersion: 4 },
+    );
+
+    expect(
+      screen.getByText(
+        "Install Linux runs in the Linux boot environment and needs a newer agent than this machine runs, so the machine is not restarted for it. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/The machine restarts into/)).not.toBeInTheDocument();
+  });
+
+  it("says that the run does not start where the machine waits with an agent too old for it", () => {
+    renderConsequences({ continuesInLinux: true, version: 5 }, { sequenceVersion: 4 });
+
+    expect(
+      screen.getByText(
+        "Install Linux needs a newer agent than this machine runs, so it does not start. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("restarts a machine whose agent runs the sequence", () => {
+    renderConsequences(
+      { continuesInLinux: true, version: 5 },
+      { agentEnvironment: "WindowsPE", sequenceVersion: 5 },
+    );
+
+    expect(
+      screen.getByText(
+        "Install Linux runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   // A run that failed in the installed Linux left the machine there, and the server restarts none from there.
   it("promises no restart of a machine that last registered from the installed Linux", () => {
     renderConsequences({ continuesInLinux: true }, { state: "Failed", agentEnvironment: "Linux" });

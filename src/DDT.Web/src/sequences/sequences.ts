@@ -270,6 +270,8 @@ export interface SequenceSummary {
   rawImageSignedUnder: string | null;
   kind: SequenceKind;
   continuesInLinux: boolean;
+  // The sequence version an agent has to run to be handed a run of it. An older server leaves it out or sends 0.
+  version?: number;
 }
 
 // SequenceDefinition.CurrentVersion: the highest version this page knows, and the one it writes. The server stores

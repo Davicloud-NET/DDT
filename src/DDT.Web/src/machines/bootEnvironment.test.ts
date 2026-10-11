@@ -182,6 +182,66 @@ describe("what assigning says about where a sequence starts", () => {
     ).toBe(false);
   });
 
+  // The server hands such an agent no run of the sequence and orders no restart that would end at the same agent.
+  describe("with an agent older than the sequence needs", () => {
+    const installed = sequenceSummary({ name: "Install Linux", kind: "Linux", version: 5 });
+    const old = { sequenceVersion: 4 } as const;
+    const staysAssigned =
+      "The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.";
+
+    it("promises no restart into the boot environment the sequence runs in", () => {
+      expect(startNotice({ ...inWindowsPE, ...old }, installed, both)).toEqual({
+        warning: true,
+        text: `Install Linux runs in the Linux boot environment and needs a newer agent than this machine runs, so the machine is not restarted for it. ${staysAssigned}`,
+      });
+      expect(
+        startNotice({ ...inLinuxBoot, sequenceVersion: 2 }, { ...windows, version: 3 }, both),
+      ).toEqual({
+        warning: true,
+        text: `Install Windows runs in Windows PE and needs a newer agent than this machine runs, so the machine is not restarted for it. ${staysAssigned}`,
+      });
+    });
+
+    it("says that the run does not start where the machine already waits", () => {
+      expect(startNotice({ ...inLinuxBoot, ...old }, installed, both)).toEqual({
+        warning: true,
+        text: `Install Linux needs a newer agent than this machine runs, so it does not start. ${staysAssigned}`,
+      });
+    });
+
+    it("says nothing new of an agent that runs the sequence, or where the server names no version", () => {
+      const current = { sequenceVersion: 5 } as const;
+
+      expect(startNotice({ ...inLinuxBoot, ...current }, installed, both)).toBeNull();
+      expect(startNotice({ ...inWindowsPE, ...current }, installed, both)?.warning).toBe(false);
+      expect(
+        startNotice({ ...inLinuxBoot, ...old }, { ...installed, version: 4 }, both),
+      ).toBeNull();
+      expect(startNotice(inLinuxBoot, installed, both)).toBeNull();
+      expect(startNotice({ ...inLinuxBoot, sequenceVersion: null }, installed, both)).toBeNull();
+      expect(startNotice({ ...inWindowsPE, ...old }, linux, both)?.warning).toBe(false);
+      expect(startNotice({ ...inWindowsPE, ...old }, { ...linux, version: 0 }, both)?.warning).toBe(
+        false,
+      );
+    });
+
+    it("leaves a machine that waits nowhere to the server's agent at its next start", () => {
+      const done = machineSummary({ state: "Done", agentEnvironment: "LinuxBoot", ...old });
+
+      expect(startNotice(done, installed, both)).toBeNull();
+    });
+
+    it("says first what the server cannot start, and what an agent too old to restart cannot do", () => {
+      expect(startNotice({ ...inWindowsPE, ...old }, installed, ["WindowsPE"])?.text).toMatch(
+        /which this server does not have/,
+      );
+      expect(
+        startNotice({ ...inWindowsPE, ...old, changesBootEnvironment: false }, installed, both)
+          ?.text,
+      ).toMatch(/with an agent too old to restart into it/);
+    });
+  });
+
   it("warns when the server cannot start the boot environment the sequence runs in", () => {
     expect(startNotice(inWindowsPE, linux, ["WindowsPE"])).toEqual({
       warning: true,

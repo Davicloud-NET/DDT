@@ -90,6 +90,7 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
             SequenceChecks.RawImage(definition, references)?.BootCapability,
             SequenceChecks.RawImage(definition, references)?.SignedUnder,
             SequenceKinds.Of(definition),
-            SequenceChecks.ContinuesInLinux(definition));
+            SequenceChecks.ContinuesInLinux(definition),
+            definition.Version);
     }
 }

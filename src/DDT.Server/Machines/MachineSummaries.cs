@@ -43,6 +43,7 @@ public static class MachineSummaries
             machine.AgentEnvironment,
             machine.NextEnvironment,
             machine.SequenceVersion >= PhaseRules.SwitchVersion,
-            PendingSwitch.GaveUp(machine, deployment));
+            PendingSwitch.GaveUp(machine, deployment),
+            machine.SequenceVersion);
     }
 }

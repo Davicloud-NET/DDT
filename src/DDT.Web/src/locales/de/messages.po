@@ -878,6 +878,14 @@ msgid "{name} looks like a password or another secret, and everyone who can sign
 msgstr "{name} sieht nach einem Kennwort oder einem anderen Geheimnis aus, und alle, die sich bei DDT anmelden können, können die Werte von Tasksequenzen und Ausführungen lesen. Bewahren Sie es in einem Konto auf, gespeichert oder für die Ausführung abgefragt, das nur der Schritt erhält, der es verwendet."
 
 #: src/machines/bootEnvironment.ts
+msgid "{name} needs a newer agent than this machine runs, so it does not start. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent."
+msgstr "{name} braucht einen neueren Agent, als dieses Gerät ausführt, und beginnt daher nicht. Die Ausführung bleibt zugewiesen und beginnt, sobald das Gerät erneut per Netzwerk gestartet wird und dabei den Agent des Servers erhält."
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in the Linux boot environment and needs a newer agent than this machine runs, so the machine is not restarted for it. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent."
+msgstr "{name} läuft in der Linux-Startumgebung und braucht einen neueren Agent, als dieses Gerät ausführt, daher wird das Gerät dafür nicht neu gestartet. Die Ausführung bleibt zugewiesen und beginnt, sobald das Gerät erneut per Netzwerk gestartet wird und dabei den Agent des Servers erhält."
+
+#: src/machines/bootEnvironment.ts
 msgid "{name} runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."
 msgstr "{name} läuft in der Linux-Startumgebung, und dieses Gerät hat Windows PE mit einem Agent gestartet, der zu alt ist, um dorthin neu zu starten. Die Ausführung bleibt zugewiesen und beginnt, sobald das Gerät erneut per Netzwerk gestartet wird."
 
@@ -888,6 +896,10 @@ msgstr "{name} läuft in der Linux-Startumgebung, und dieses Gerät hat Windows 
 #: src/machines/bootEnvironment.ts
 msgid "{name} runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it."
 msgstr "{name} läuft in der Linux-Startumgebung, die dieser Server nicht hat. Die Ausführung bleibt zugewiesen und beginnt erst, wenn der Server sie hat."
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in Windows PE and needs a newer agent than this machine runs, so the machine is not restarted for it. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent."
+msgstr "{name} läuft in Windows PE und braucht einen neueren Agent, als dieses Gerät ausführt, daher wird das Gerät dafür nicht neu gestartet. Die Ausführung bleibt zugewiesen und beginnt, sobald das Gerät erneut per Netzwerk gestartet wird und dabei den Agent des Servers erhält."
 
 #: src/machines/bootEnvironment.ts
 msgid "{name} runs in Windows PE, and this machine started the Linux boot environment with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."

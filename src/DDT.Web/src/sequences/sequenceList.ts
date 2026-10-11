@@ -200,6 +200,7 @@ export function summaryOf(view: SequenceView, previous?: SequenceSummary): Seque
     rawImageBootCapability: writesRaw ? (previous?.rawImageBootCapability ?? null) : null,
     rawImageSignedUnder: writesRaw ? (previous?.rawImageSignedUnder ?? null) : null,
     kind: kindOfNodes(nodes),
+    version: view.definition.version,
   };
 }
 

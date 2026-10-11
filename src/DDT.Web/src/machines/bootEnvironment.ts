@@ -125,9 +125,18 @@ function waitsInBootEnvironment(machine: MachineSummary): boolean {
   );
 }
 
-// Null when there is nothing to say: the machine waits where the sequence starts, or it waits nowhere and netboot
-// starts it there the next time. existing are the boot environments the server can start, and undefined for a server
-// that does not say.
+// Whether the agent the machine waits with is too old for the sequence. The server then hands it no run of it and
+// does not restart it for one. False where the server names no versions.
+function agentTooOld(machine: MachineSummary, sequence: SequenceSummary): boolean {
+  const runs = machine.sequenceVersion ?? null;
+  const needs = sequence.version ?? 0;
+
+  return runs !== null && needs > 0 && runs < needs;
+}
+
+// Null when there is nothing to say: the machine waits where the sequence starts with an agent that runs it, or it
+// waits nowhere and netboot starts it there the next time, with the server's agent. existing are the boot
+// environments the server can start, and undefined for a server that does not say.
 export function startNotice(
   machine: MachineSummary,
   sequence: SequenceSummary | null,
@@ -142,8 +151,17 @@ export function startNotice(
   const needed = startsIn(sequence);
   const name = sequence.name;
 
-  if (started === needed || !waitsInBootEnvironment(machine)) {
+  if (!waitsInBootEnvironment(machine)) {
     return null;
+  }
+
+  if (started === needed) {
+    return agentTooOld(machine, sequence)
+      ? {
+          warning: true,
+          text: t`${name} needs a newer agent than this machine runs, so it does not start. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.`,
+        }
+      : null;
   }
 
   if (!existing.includes(needed)) {
@@ -164,6 +182,17 @@ export function startNotice(
         needed === "LinuxBoot"
           ? t`${name} runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again.`
           : t`${name} runs in Windows PE, and this machine started the Linux boot environment with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again.`,
+    };
+  }
+
+  // As the server decides it: a restart would end at the same agent, which cannot run the sequence.
+  if (agentTooOld(machine, sequence)) {
+    return {
+      warning: true,
+      text:
+        needed === "LinuxBoot"
+          ? t`${name} runs in the Linux boot environment and needs a newer agent than this machine runs, so the machine is not restarted for it. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.`
+          : t`${name} runs in Windows PE and needs a newer agent than this machine runs, so the machine is not restarted for it. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.`,
     };
   }
 

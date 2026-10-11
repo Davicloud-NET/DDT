@@ -79,6 +79,23 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
         return machine.SequenceVersion >= handed.Sequence.Version ? handed : null;
     }
 
+    // Why an assigned run does not start where it should: the agent there is too old for its sequence. Null otherwise.
+    public async Task<string?> TooOldAsync(Machine machine, Deployment run, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(run);
+
+        if (run.State != DeploymentState.Assigned || await StartsInAsync(run, cancellationToken).ConfigureAwait(false) != machine.AgentEnvironment)
+        {
+            return null;
+        }
+
+        return machine.SequenceVersion >= (await DefinitionAsync(run, cancellationToken).ConfigureAwait(false)).Version
+            ? null
+            : $"{run.Title} needs a newer agent than this machine runs, so it does not start. It stays assigned until the machine " +
+              "registers with an agent that runs it. A machine started from the network takes the server's agent.";
+    }
+
     // The boot environment the run starts in. A run from before the server kept it says it through its sequence.
     public async Task<AgentEnvironment> StartsInAsync(Deployment run, CancellationToken cancellationToken)
     {

@@ -42,11 +42,11 @@ public sealed class MachineArrivals(
         Continuation continuation = machine is null ? Continuation.None : Continues(registration, machine, active, now);
 
         // The service in an installed system only ever continues a run. Starting over would make the machine Pending,
-        // and an approval would then hand boot steps to a running Windows. So the service changes nothing and removes
-        // itself.
+        // and an approval would then hand boot steps to a running Windows or Linux. So the service changes nothing and
+        // removes itself.
         if (!SequenceKinds.IsBoot(SequenceKinds.Phase(registration.Environment)) && !continuation.Resumes && continuation.Continued is null)
         {
-            RegistrationLog.NothingToContinue(logger, machine?.Id, address ?? "unknown");
+            RegistrationLog.NothingToContinue(logger, registration.Environment, machine?.Id, address ?? "unknown");
 
             return Arrival.Refused(RegistrationRefusal.NothingToContinue);
         }

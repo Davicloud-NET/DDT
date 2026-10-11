@@ -81,6 +81,10 @@ public static class SequenceChecks
     // Whether some path through the sequence continues in Windows.
     public static bool ContinuesInWindows(SequenceDefinition definition) => InWindows(NodePhases(definition));
 
+    // The same for the installed Linux, where the seed carries the agent.
+    public static bool ContinuesInLinux(SequenceDefinition definition) =>
+        NodePhases(definition).Any(node => node.Phases.Contains(SequencePhase.Linux));
+
     // Why a sequence needs a computer name, or null if it doesn't. It joins the domain under that name, a cloud-init
     // seed names the machine with it, or it declares the ComputerName variable. A join or a seed on any branch counts.
     public static ServerMessage? ComputerNameUse(SequenceDefinition definition)

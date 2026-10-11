@@ -16,6 +16,6 @@ internal static partial class RegistrationLog
     [LoggerMessage(EventId = 440, Level = LogLevel.Information, Message = "Machine {MachineId} continued run {RunId} from {Address} in {Environment}")]
     public static partial void Continued(ILogger logger, Guid machineId, Guid runId, string address, AgentEnvironment environment);
 
-    [LoggerMessage(EventId = 441, Level = LogLevel.Warning, Message = "Refused the DDT service in Windows on machine {MachineId} from {Address}: it has no run to continue, so it removes itself")]
-    public static partial void NothingToContinue(ILogger logger, Guid? machineId, string address);
+    [LoggerMessage(EventId = 441, Level = LogLevel.Warning, Message = "Refused the DDT service in {Environment} on machine {MachineId} from {Address}: it has no run to continue, so it removes itself")]
+    public static partial void NothingToContinue(ILogger logger, AgentEnvironment environment, Guid? machineId, string address);
 }

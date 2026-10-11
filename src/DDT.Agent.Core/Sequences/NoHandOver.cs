@@ -14,7 +14,5 @@ public sealed class NoHandOver : IHandOver
     Task IHandOver.HandOverAsync(SequenceRun run, RunBootOrder bootOrder, CancellationToken cancellationToken) =>
         Task.FromException(new DeploymentStepException(Message));
 
-    void IHandOver.Withdraw(SequenceRun run)
-    {
-    }
+    bool IHandOver.Withdraw(SequenceRun run, HandOverEnd end) => false;
 }

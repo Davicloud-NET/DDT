@@ -136,8 +136,9 @@ internal sealed class RunEnding(
             cancellationToken).ConfigureAwait(false);
     }
 
-    // The state and answer file stay, and the registration with the run token decides what happens to them. Until then
-    // the machine starts from the network.
+    // The run's own files stay, the state and the answer file, and the registration with the run token decides what
+    // happens to them. Until then the machine starts from the network. What a hand-over staged elsewhere, as on a
+    // Linux seed, is the phase runner's to take back.
     public async Task<RunResult> TokenRejectedAsync(SequenceRun run)
     {
         await bootOrder.RestoreAsync(run).ConfigureAwait(false);

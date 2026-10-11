@@ -107,7 +107,7 @@ public sealed class LinuxHandOverChangedSeedTests : IDisposable
         LinuxHandOver handOver = _seeded.HandOver();
         handOver.Stage(Run.Session, state);
 
-        handOver.Withdraw(Run.Session);
+        Assert.True(handOver.Withdraw(Run.Session, HandOverEnd.Failed));
 
         TestSeed after = TestSeed.Read(Disk);
         Assert.Equal(changed, after.Bytes);
@@ -140,7 +140,7 @@ public sealed class LinuxHandOverChangedSeedTests : IDisposable
         handOver.Stage(Run.Session, state);
         Assert.Equal(0x0BADF00Du, TestSeed.Read(Disk).Volume.SerialNumber);
 
-        handOver.Withdraw(Run.Session);
+        handOver.Withdraw(Run.Session, HandOverEnd.Failed);
         Assert.Equal(0x0BADF00Du, TestSeed.Read(Disk).Volume.SerialNumber);
     }
 

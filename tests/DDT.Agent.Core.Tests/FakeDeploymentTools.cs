@@ -49,8 +49,14 @@ internal sealed class FakeDeploymentTools
     // Runs when Windows is put first in the boot order, before FailAt is checked.
     public Action? PuttingWindowsFirst { get; set; }
 
+    // Runs when a disk image is put first in the boot order, before FailAt is checked.
+    public Action? PuttingImageFirst { get; set; }
+
     // When set, putting Windows or a disk image first completes FirmwareStarted once it is recorded and then waits for it.
     public TaskCompletionSource? FirmwareGate { get; set; }
+
+    // The real boot order writes the firmware's variables whatever stops the run meanwhile. When set, so does this one.
+    public bool FirmwareIgnoresStop { get; set; }
 
     public TaskCompletionSource FirmwareStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -186,12 +192,13 @@ internal sealed class FakeDeploymentTools
         IReadOnlyCollection<Guid> erasedSystemPartitionIds,
         CancellationToken cancellationToken)
     {
+        PuttingImageFirst?.Invoke();
         Record("firmware", $" {description} {loaderPath} on partition {esp.PartitionNumber}");
         FirmwareStarted.TrySetResult();
 
         if (FirmwareGate is { } gate)
         {
-            await gate.Task.WaitAsync(cancellationToken);
+            await gate.Task.WaitAsync(FirmwareIgnoresStop ? CancellationToken.None : cancellationToken);
         }
     }
 

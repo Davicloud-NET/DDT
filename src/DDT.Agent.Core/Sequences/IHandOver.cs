@@ -10,6 +10,7 @@ public interface IHandOver
     // Internal, like the run and its boot order.
     internal Task HandOverAsync(SequenceRun run, RunBootOrder bootOrder, CancellationToken cancellationToken);
 
-    // For a run that failed: takes back what a hand-over staged outside the run's own files. Never throws.
-    internal void Withdraw(SequenceRun run);
+    // For a run that ended here: takes back what a hand-over staged outside the run's own files. Never throws. True
+    // when there was such a thing, so the installed system has no run to go on with and must not start for one.
+    internal bool Withdraw(SequenceRun run, HandOverEnd end);
 }

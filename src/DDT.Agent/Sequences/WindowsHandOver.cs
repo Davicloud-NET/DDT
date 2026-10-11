@@ -38,10 +38,9 @@ public sealed class WindowsHandOver(
             cancellationToken).ConfigureAwait(false);
     }
 
-    // The run's end discards its state and token, and the service removes itself when it finds none.
-    void IHandOver.Withdraw(SequenceRun run)
-    {
-    }
+    // All it staged is among the run's own files on the Windows volume. A run that may go on needs them there, and
+    // the end of one that is over discards them. The service removes itself when it finds none.
+    bool IHandOver.Withdraw(SequenceRun run, HandOverEnd end) => false;
 
     public async Task StageAsync(RunSession session, FileRunStateStore store, SequenceState state, CancellationToken cancellationToken)
     {

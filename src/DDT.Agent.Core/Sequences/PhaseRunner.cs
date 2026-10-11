@@ -157,8 +157,11 @@ internal sealed class PhaseRunner(
         bool restartDue,
         CancellationToken cancellationToken)
     {
+        // However the run ends here, what a hand-over staged outside its own files goes first: the Linux boot
+        // environment keeps a run in memory, so no later start of it could take the run up from a seed.
         if (cancellationToken.IsCancellationRequested)
         {
+            handOver.Withdraw(run, HandOverEnd.Stopped);
             await bootOrder.RestoreAsync(run).ConfigureAwait(false);
             log.Warning(EnvironmentTexts.Stopped(run.Session.Environment));
 
@@ -181,6 +184,8 @@ internal sealed class PhaseRunner(
 
         if (failure is AgentTokenRejectedException)
         {
+            handOver.Withdraw(run, HandOverEnd.TokenRejected);
+
             return await ending.TokenRejectedAsync(run).ConfigureAwait(false);
         }
 
@@ -193,19 +198,33 @@ internal sealed class PhaseRunner(
         {
             SequenceOutcome.Completed => await ending.FinishAsync(run, cancellationToken).ConfigureAwait(false),
             SequenceOutcome.RebootRequired => await ending.RestartAsync(run, run.SamePhase, cancellationToken).ConfigureAwait(false),
-            SequenceOutcome.PhaseChangeRequired => await ending.RestartAsync(run, RestartInto.InstalledSystem, cancellationToken).ConfigureAwait(false),
+            SequenceOutcome.PhaseChangeRequired => await RestartIntoInstalledAsync(run, cancellationToken).ConfigureAwait(false),
             SequenceOutcome.Stopped => new RunResult(RunOutcome.Stopped),
             _ => await FailAsync(run, error ?? "The run failed.", cancellationToken).ConfigureAwait(false),
         };
     }
 
-    // The run is over, also where a hand-over staged it for the installed system. A stopped run and one whose token
-    // was refused may still go on, so theirs stays.
+    // The run is over, also where a hand-over staged it for the installed system.
     private Task<RunResult> FailAsync(SequenceRun run, string error, CancellationToken cancellationToken)
     {
-        handOver.Withdraw(run);
+        handOver.Withdraw(run, HandOverEnd.Failed);
 
         return ending.FailAsync(run, error, cancellationToken);
+    }
+
+    // Only the restart was left of the hand-over. Where it does not come, a hand-over that staged the run outside the
+    // run's own files takes it back, and the machine then must not start the installed system for it.
+    private async Task<RunResult> RestartIntoInstalledAsync(SequenceRun run, CancellationToken cancellationToken)
+    {
+        RunResult result = await ending.RestartAsync(run, RestartInto.InstalledSystem, cancellationToken).ConfigureAwait(false);
+
+        if (result.Outcome is RunOutcome.Stopped or RunOutcome.TokenRejected
+            && handOver.Withdraw(run, result.Outcome == RunOutcome.Stopped ? HandOverEnd.Stopped : HandOverEnd.TokenRejected))
+        {
+            await bootOrder.RestoreAsync(run).ConfigureAwait(false);
+        }
+
+        return result;
     }
 
     private static bool IsSet(SequenceState state, string variable) =>

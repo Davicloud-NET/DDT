@@ -169,7 +169,7 @@ public sealed class LinuxHandOverSeedTests : IDisposable
         Assert.Equal(writes, Disk.Writes.Count);
 
         // Taking back what was never put there changes nothing either.
-        HandOver().Withdraw(Run.Session);
+        Assert.False(HandOver().Withdraw(Run.Session, HandOverEnd.Failed));
         Assert.Equal(writes, Disk.Writes.Count);
     }
 

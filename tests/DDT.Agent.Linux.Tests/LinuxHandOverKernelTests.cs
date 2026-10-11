@@ -212,7 +212,7 @@ public sealed class LinuxHandOverKernelTests : IDisposable
             disk.Unmount(place);
         });
 
-        _handOver?.Withdraw(_run.Session);
+        _handOver?.Withdraw(_run.Session, HandOverEnd.Failed);
 
         TestSeed seed = ReadSeed(loop);
         string after = Path.Combine(_folder, "seed");
@@ -229,7 +229,7 @@ public sealed class LinuxHandOverKernelTests : IDisposable
         (LoopDisk loop, _) = await HandOverAsync();
         Assert.True(ReadSeed(loop).Holds(StepRunnerFixture.RunToken));
 
-        _handOver?.Withdraw(_run.Session);
+        _handOver?.Withdraw(_run.Session, HandOverEnd.Failed);
 
         TestSeed seed = ReadSeed(loop);
         string place = Path.Combine(_folder, "seed");

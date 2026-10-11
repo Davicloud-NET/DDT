@@ -13,7 +13,8 @@ namespace DDT.Agent.Tests;
 
 // An 8 MiB raw disk image laid out like a distribution's cloud image, and the file the server stores for it. It has an
 // EFI system partition at 1 MiB with \EFI\BOOT\BOOTX64.EFI, a root partition whose first 2 MiB are random, and the
-// backup table at the image's end. tail adds bytes that aren't a whole sector.
+// backup table at the image's end. tail adds bytes that aren't a whole sector. Without systemPartition the first
+// partition is of another type, as in an image that only a BIOS starts.
 internal sealed class TestRawImage
 {
     public const long Sectors = 16384;
@@ -24,11 +25,11 @@ internal sealed class TestRawImage
     public static readonly Guid ImageId = Guid.Parse("0193a4b2-0000-7000-8000-00000000d001");
     public static readonly Guid EspId = Guid.Parse("0193a4b2-0000-4000-8000-00000000d0e5");
 
-    public TestRawImage(int seed = 1, int tail = 0)
+    public TestRawImage(int seed = 1, int tail = 0, bool systemPartition = true)
     {
         Random random = new(seed);
         Layout = GptLayout.Create(Sectors, Guid.Parse("0193a4b2-0000-4000-8000-00000000d0d1"))
-            .WithPartition(GptPartitionTypes.EfiSystem, EspId, "EFI", EspFirst, EspFirst + EspSectors - 1)
+            .WithPartition(systemPartition ? GptPartitionTypes.EfiSystem : GptPartitionTypes.BasicData, EspId, "EFI", EspFirst, EspFirst + EspSectors - 1)
             .WithPartition(GptPartitionTypes.LinuxFileSystem, Guid.Parse("0193a4b2-0000-4000-8000-00000000d0f5"), "root", EspFirst + EspSectors, Sectors - 2048);
 
         byte[] disk = new byte[(Sectors * GptLayout.SectorSize) + tail];

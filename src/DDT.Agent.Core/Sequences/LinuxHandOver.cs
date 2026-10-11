@@ -37,8 +37,25 @@ public sealed class LinuxHandOver(IRawDisks disks, string agentPath, AgentConfig
         $"A step changed the cloud-init seed after it was written: {changes}. The seed keeps the files it holds now, and the " +
         "agent goes beside them.";
 
+    // What a run's token left on the seed means, by how the run ended here. The server takes it for this run alone.
+    public static string LeftoverMessage(HandOverEnd end) => end switch
+    {
+        HandOverEnd.Failed =>
+            "The server takes that token only for this run, which has failed. If the machine starts from this disk, the agent " +
+            "there finds no run to go on with and removes itself.",
+        HandOverEnd.Stopped =>
+            "The server takes that token for as long as it runs this run. If the machine starts from this disk before the " +
+            "server has ended the run, the installed Linux goes on with it. After that the agent there finds no run and removes itself.",
+        _ =>
+            "The server takes that token only while it runs this run, which it has most likely ended. If the machine starts " +
+            "from this disk, the agent there removes itself, or goes on with the run should the server still run it.",
+    };
+
     async Task IHandOver.HandOverAsync(SequenceRun run, RunBootOrder bootOrder, CancellationToken cancellationToken)
     {
+        // A run that was stopped, or that the server ended, is not put on the seed in the first place.
+        cancellationToken.ThrowIfCancellationRequested();
+
         SequenceState handedOver = run.State with { Phase = SequencePhase.Linux };
         Stage(run.Session, handedOver);
         await bootOrder.PutRawImageFirstAsync(run, cancellationToken).ConfigureAwait(false);
@@ -47,7 +64,7 @@ public sealed class LinuxHandOver(IRawDisks disks, string agentPath, AgentConfig
         await run.Store.SaveAsync(handedOver, CancellationToken.None).ConfigureAwait(false);
     }
 
-    void IHandOver.Withdraw(SequenceRun run) => Withdraw(run.Session);
+    bool IHandOver.Withdraw(SequenceRun run, HandOverEnd end) => Withdraw(run.Session, end);
 
     // Puts the agent and the run, as state says it goes on, onto the seed this run wrote. Nothing is written unless
     // all of it fits.
@@ -94,15 +111,15 @@ public sealed class LinuxHandOver(IRawDisks disks, string agentPath, AgentConfig
         log.Information(GoesOnMessage);
     }
 
-    // Writes the seed again as the hand-over found it, so a run that failed leaves no token and no agent on the disk.
-    // Never throws.
-    public void Withdraw(RunSession session)
+    // Writes the seed again as the hand-over found it, so a run that ended here leaves no token and no agent on the
+    // disk. Never throws. False when no hand-over had put the run on a seed.
+    public bool Withdraw(RunSession session, HandOverEnd end)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         if (session is not { Seed: { Found: { } found } seed, Disk: { } disk })
         {
-            return;
+            return false;
         }
 
         try
@@ -115,12 +132,15 @@ public sealed class LinuxHandOver(IRawDisks disks, string agentPath, AgentConfig
             session.Seed = seed with { Found = null };
             log.Information(WithdrawnMessage);
         }
-        catch (Exception exception) when (exception is DeploymentStepException or IOException or UnauthorizedAccessException)
+        catch (Exception exception)
         {
+            // Whatever fails here is said and not thrown on: the run's end still has to restore the boot order and tell the server.
             log.Warning(
                 $"The agent and the run's token could not be taken off the cloud-init seed of disk {disk.Number} again " +
-                $"({exception.Message}). The server takes that token only for this run.");
+                $"({LogText.OneLine(exception)}). {LeftoverMessage(end)}");
         }
+
+        return true;
     }
 
     // The running agent, not the boot environment's, because it may have updated itself to a newer one.

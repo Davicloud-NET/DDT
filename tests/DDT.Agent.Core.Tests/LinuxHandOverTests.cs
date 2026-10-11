@@ -15,7 +15,7 @@ namespace DDT.Agent.Tests;
 
 // A run in the Linux boot environment that reaches its first step in the installed Linux: what the runner does
 // around the hand-over, what it tells the server and in which order, and what a hand-over that does not end well
-// leaves on the disk. The runner takes version 5 here, which no agent says it runs yet.
+// leaves on the disk: nothing of the run, however it ended.
 public sealed class LinuxHandOverTests : IDisposable
 {
     private const string RunToken = "run-token-never-logged";
@@ -71,13 +71,13 @@ public sealed class LinuxHandOverTests : IDisposable
         _console.Dispose();
     }
 
-    private AgentRun Run() =>
+    private AgentRun Run(TestRawImage image) =>
         new(
             TestRuns.RunId,
             DeploymentState.Assigned,
             "Install Linux",
             new SequenceDefinition(SequenceDefinition.CurrentVersion, [s_write, s_seed, s_installed]),
-            [_image.RunImage()],
+            [image.RunImage()],
             [],
             null,
             "LINUX-01");
@@ -91,7 +91,7 @@ public sealed class LinuxHandOverTests : IDisposable
         return server;
     }
 
-    private Task<RunResult> RunAsync(ScriptedAgentServer server, TimeProvider? time = null)
+    private Task<RunResult> RunAsync(ScriptedAgentServer server, TimeProvider? time = null, TestRawImage? image = null)
     {
         time ??= new ImmediateTimeProvider();
         AgentLog log = new(time, _console);
@@ -103,7 +103,7 @@ public sealed class LinuxHandOverTests : IDisposable
             HeartbeatInterval = time is ManualTimeProvider ? TimeSpan.FromSeconds(10) : null,
             HandOver = new LinuxHandOver(_disks, _agentPath, TestAgents.Configuration, log),
         };
-        RunRequest request = new(s_machineId, Run(), null, null, new DeploymentTokens("session-0", "resume-0"), new DryRunMachineIdentityReader(1).Read());
+        RunRequest request = new(s_machineId, Run(image ?? _image), null, null, new DeploymentTokens("session-0", "resume-0"), new DryRunMachineIdentityReader(1).Read());
 
         return TestAgents.Runner(server, _tools, log, time, options).RunAsync(request, server.Stop.Token);
     }
@@ -215,9 +215,34 @@ public sealed class LinuxHandOverTests : IDisposable
         Assert.Contains(LinuxHandOver.WithdrawnMessage, _console.ToString(), StringComparison.Ordinal);
     }
 
-    // An operator stopped the run while it was handed over. Nothing may be left for the installed Linux to go on with.
+    // The disk takes no write when the run is to come off it. The boot order goes back and the server hears of the
+    // failure all the same, and the log says what the token that stays is still good for.
     [Fact]
-    public async Task ARunTheServerEndsDuringTheHandOverIsTakenOffTheSeed()
+    public async Task ARunThatCannotBeTakenOffTheSeedStillPutsTheBootOrderBackAndReportsItsFailure()
+    {
+        _tools.FailAt = "firmware";
+        _tools.PuttingImageFirst = () => _disks.Disks[0].FailNextWriteAfter = 0;
+        ScriptedAgentServer server = Server();
+
+        RunResult result = await RunAsync(server);
+
+        Assert.Equal(new RunResult(RunOutcome.Failed), result);
+        Assert.Equal((DeploymentState.Failed, "The scripted step failed."), (server.RunReports[^1].State, server.RunReports[^1].Error));
+        Assert.Equal([Firmware, "restore"], _tools.Calls[^2..]);
+        Assert.Null(RestartDue());
+        Assert.Equal(RunToken, Seed().Text(LinuxAgentFiles.SeedToken));
+        Assert.Contains(
+            "The agent and the run's token could not be taken off the cloud-init seed of disk 0 again (The device is not ready.). " +
+            LinuxHandOver.LeftoverMessage(HandOverEnd.Failed),
+            _console.ToString(),
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(RunToken, _console.ToString(), StringComparison.Ordinal);
+    }
+
+    // The server answers 409 where the run is no longer the machine's, or its report names a phase it may not. That
+    // fails the run here. A run an operator stops is answered with a 401, as in the next test.
+    [Fact]
+    public async Task ARunWhoseReportTheServerRefusesDuringTheHandOverFailsAndIsTakenOffTheSeed()
     {
         ManualTimeProvider time = new();
         _tools.FirmwareGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -237,9 +262,11 @@ public sealed class LinuxHandOverTests : IDisposable
         AssertSeedAsItsStepWroteIt();
     }
 
-    // Like the state on a Windows volume: the registration with the run's token decides, and the run may go on.
+    // A stop on the web, a rejected machine and a run the server gave up all end the machine's tokens, so the next
+    // report gets a 401. Nothing may be left for the installed Linux to go on with: this boot environment keeps a run
+    // in memory, so no start of it could take the run up again.
     [Fact]
-    public async Task ARefusedTokenDuringTheHandOverPutsTheBootOrderBackAndKeepsTheRunOnTheSeed()
+    public async Task ARunTheServerEndsDuringTheHandOverIsTakenOffTheSeed()
     {
         ManualTimeProvider time = new();
         _tools.FirmwareGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -247,18 +274,89 @@ public sealed class LinuxHandOverTests : IDisposable
 
         Task<RunResult> run = RunAsync(server, time);
         await _tools.FirmwareStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(RunToken, Seed().Text(LinuxAgentFiles.SeedToken));
         server.AnswerRunReports = (_, _) => throw new AgentTokenRejectedException();
         await time.AdvanceUntilAsync(TimeSpan.FromSeconds(10), () => run.IsCompleted);
 
         Assert.Equal(RunOutcome.TokenRejected, (await run).Outcome);
         Assert.Equal([Firmware, "restore"], _tools.Calls[^2..]);
         Assert.Null(RestartDue());
-        Assert.Equal(RunToken, Seed().Text(LinuxAgentFiles.SeedToken));
+        AssertSeedAsItsStepWroteIt();
+        Assert.Contains(LinuxHandOver.WithdrawnMessage, _console.ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain(server.RunReports, report => report.State != DeploymentState.Running);
     }
 
+    // The real boot order writes the firmware's variables to their end whatever happens meanwhile. So a machine whose
+    // run the server ended then has the disk first and its state saved as handed over, and ends here.
     [Fact]
-    public async Task AStopDuringTheHandOverPutsTheBootOrderBackAndKeepsTheRunOnTheSeed()
+    public async Task ARunTheServerEndsWhileTheDiskIsPutFirstIsTakenOffTheSeedOnceThatIsDone()
+    {
+        ManualTimeProvider time = new();
+        _tools.FirmwareGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _tools.FirmwareIgnoresStop = true;
+        ScriptedAgentServer server = Server();
+
+        Task<RunResult> run = RunAsync(server, time);
+        await _tools.FirmwareStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+        int reported = server.RunReports.Count;
+        server.AnswerRunReports = (_, _) => throw new AgentTokenRejectedException();
+        await time.AdvanceUntilAsync(TimeSpan.FromSeconds(10), () => server.RunReports.Count > reported);
+        Assert.False(run.IsCompleted);
+        _tools.FirmwareGate.SetResult();
+
+        Assert.Equal(RunOutcome.TokenRejected, (await run.WaitAsync(TestContext.Current.CancellationToken)).Outcome);
+        Assert.Equal([Firmware, "restore"], _tools.Calls[^2..]);
+        Assert.Null(RestartDue());
+        AssertSeedAsItsStepWroteIt();
+    }
+
+    // The same with a report the server refuses: the run fails after its state was saved as handed over, and says so
+    // in the phase it had reached.
+    [Fact]
+    public async Task ARunThatFailsOnceItsHandOverIsDoneIsTakenOffTheSeedAndReportedAsFailed()
+    {
+        ManualTimeProvider time = new();
+        _tools.FirmwareGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _tools.FirmwareIgnoresStop = true;
+        ScriptedAgentServer server = Server();
+
+        Task<RunResult> run = RunAsync(server, time);
+        await _tools.FirmwareStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+        int reported = server.RunReports.Count;
+        server.AnswerRunReports = (report, token) => report.State == DeploymentState.Running
+            ? throw new AgentRequestException("409", "This run is no longer running.", HttpStatusCode.Conflict)
+            : new AgentRunReportResult(token, "resume", null);
+        await time.AdvanceUntilAsync(TimeSpan.FromSeconds(10), () => server.RunReports.Count > reported);
+        _tools.FirmwareGate.SetResult();
+
+        Assert.Equal(new RunResult(RunOutcome.Failed), await run.WaitAsync(TestContext.Current.CancellationToken));
+        AgentRunReport failed = server.RunReports[^1];
+        Assert.Equal((DeploymentState.Failed, "This run is no longer running.", SequencePhase.Linux), (failed.State, failed.Error, failed.Phase));
+        Assert.Equal([Firmware, "restore"], _tools.Calls[^2..]);
+        Assert.Null(RestartDue());
+        AssertSeedAsItsStepWroteIt();
+    }
+
+    // The hand-over itself went through, and the server refuses the report of the restart that would follow it.
+    [Fact]
+    public async Task ARestartTheServerNoLongerTakesTheReportOfDoesNotHappenAndTheRunComesOffTheSeed()
+    {
+        ScriptedAgentServer server = Server();
+        server.AnswerRunReports = (report, token) => report.Activity == RunActivity.Restarting
+            ? throw new AgentTokenRejectedException()
+            : new AgentRunReportResult(token, ResumeToken, RunToken);
+
+        RunResult result = await RunAsync(server);
+
+        Assert.Equal(RunOutcome.TokenRejected, result.Outcome);
+        Assert.Equal(SequencePhase.Linux, server.RunReports[^1].Phase);
+        Assert.Equal([Firmware, "restore"], _tools.Calls[^2..]);
+        Assert.Null(RestartDue());
+        AssertSeedAsItsStepWroteIt();
+    }
+
+    [Fact]
+    public async Task AnAgentStoppedDuringTheHandOverPutsTheBootOrderBackAndTakesTheRunOffTheSeed()
     {
         _tools.FirmwareGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         ScriptedAgentServer server = Server();
@@ -270,8 +368,59 @@ public sealed class LinuxHandOverTests : IDisposable
         Assert.Equal(new RunResult(RunOutcome.Stopped), await run);
         Assert.Equal([Firmware, "restore"], _tools.Calls[^2..]);
         Assert.Null(RestartDue());
-        Assert.Equal(RunToken, Seed().Text(LinuxAgentFiles.SeedToken));
+        AssertSeedAsItsStepWroteIt();
+        Assert.Contains(
+            "The agent was stopped. The Linux boot environment keeps a run's state in memory, so the run does not go on after a restart.",
+            _console.ToString(),
+            StringComparison.Ordinal);
         Assert.DoesNotContain(server.RunReports, report => report.State != DeploymentState.Running);
+    }
+
+    // Stopped with the disk already first and the restart about to be reported. The machine must not start a Linux
+    // that has no run to go on with, so the boot order goes back here too.
+    [Fact]
+    public async Task AnAgentStoppedWhileItReportsTheRestartPutsTheBootOrderBackAndTakesTheRunOffTheSeed()
+    {
+        ScriptedAgentServer server = Server();
+        server.AnswerRunReports = (report, token) =>
+        {
+            if (report.Activity != RunActivity.Restarting)
+            {
+                return new AgentRunReportResult(token, ResumeToken, RunToken);
+            }
+
+            server.Stop.Cancel();
+
+            throw new OperationCanceledException(server.Stop.Token);
+        };
+
+        RunResult result = await RunAsync(server);
+
+        Assert.Equal(new RunResult(RunOutcome.Stopped), result);
+        Assert.Equal([Firmware, "restore"], _tools.Calls[^2..]);
+        Assert.Null(RestartDue());
+        AssertSeedAsItsStepWroteIt();
+    }
+
+    // An image only a BIOS starts gets no boot entry. The run is handed over all the same, on the seed.
+    [Fact]
+    public async Task AnImageWithoutAnEfiSystemPartitionIsHandedOverWithoutABootEntry()
+    {
+        TestRawImage image = new(systemPartition: false);
+        ScriptedAgentServer server = image.Serve(new ScriptedAgentServer());
+        server.AnswerRunReports = (_, _) => new AgentRunReportResult(SessionToken, ResumeToken, RunToken);
+
+        RunResult result = await RunAsync(server, image: image);
+
+        Assert.Equal(new RunResult(RunOutcome.Restarting), result);
+        Assert.Equal(["list", "clean 0", "reboot"], _tools.Calls);
+        Assert.Equal(RunToken, Seed().Text(LinuxAgentFiles.SeedToken));
+        Assert.Equal(SequencePhase.Linux, server.RunReports[^1].Phase);
+        Assert.Contains(
+            "The disk image has no EFI system partition, so the machine gets no boot entry for it and starts it only if its " +
+            "firmware tries the disk. Set its boot order to start the disk first.",
+            _console.ToString(),
+            StringComparison.Ordinal);
     }
 
     private void AssertSeedAsItsStepWroteIt()

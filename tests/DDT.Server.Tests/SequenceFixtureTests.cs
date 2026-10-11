@@ -121,8 +121,9 @@ public sealed class SequenceFixtureTests
             Kinds(maximumVersion: 2).Union([nameof(WriteRawImageStep), nameof(WriteCloudInitSeedStep)]).Order(StringComparer.Ordinal),
             built);
 
+        // The script in the installed Linux is what needs version 5.
         SequenceDefinition definition = new SequenceDefinition(1, steps).Normalised();
-        Assert.Equal(4, definition.Version);
+        Assert.Equal(5, definition.Version);
 
         await MatchFixtureAsync("every-step.sequence.json", definition, "the steps built here");
     }

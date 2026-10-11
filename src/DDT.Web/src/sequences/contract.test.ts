@@ -66,7 +66,7 @@ function expectMirrored(kind: string, sent: object, mirror: object) {
 }
 
 // Every phase, kind of input and place to ask. If the server adds one, this fails to compile.
-const phases = { WindowsPE: true, Windows: true, LinuxBoot: true } satisfies Record<
+const phases = { WindowsPE: true, Windows: true, LinuxBoot: true, Linux: true } satisfies Record<
   SequencePhase,
   true
 >;
@@ -134,7 +134,7 @@ describe("the sequence mirror", () => {
     expect(Object.keys(everyStep).sort()).toEqual(["steps", "version"]);
     expect(Object.keys(everyNode).sort()).toEqual(["inputs", "steps", "variables", "version"]);
     // The server stores a sequence with the lowest version it needs: 1 for Windows alone, 3 for a tree, 4 with a raw
-    // disk image.
+    // disk image and 5 with a step in the installed Linux.
     expect(fixture.definition.version).toBe(1);
     expect(everyStep.version).toBe(SEQUENCE_VERSION);
     expect(everyNode.version).toBe(3);

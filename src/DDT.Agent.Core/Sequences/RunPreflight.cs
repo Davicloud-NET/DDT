@@ -59,6 +59,14 @@ internal sealed class RunPreflight(
     // The server checked the sequence when it was saved. This checks it against what this agent can run.
     private static void CheckSequence(AgentRun run)
     {
+        // The server hands out nothing newer. If it did, the run would fail at the first step this agent cannot run.
+        if (run.Sequence.RequiredVersion() is var needed && needed > SupportedSequences.Version)
+        {
+            throw new DeploymentStepException(
+                $"{run.SequenceName} has steps of version {needed}, and this agent runs sequences up to version {SupportedSequences.Version}. " +
+                "Start the machine from the network again, so it gets the server's agent. Nothing was erased.");
+        }
+
         if (SequenceValidator.Validate(run.Sequence) is [var problem, ..])
         {
             throw new DeploymentStepException($"{run.SequenceName} cannot run: {problem.Message} Correct the sequence and assign it again.");

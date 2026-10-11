@@ -176,10 +176,28 @@ public sealed class LinuxRunTests : IDisposable
         Assert.Empty(_toolRunner.Calls);
         Assert.Equal(
             "Install Linux cannot run: This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for " +
-            "the shell and let it run in the Linux boot environment. Correct the sequence and assign it again.",
+            "the shell and let it run in the Linux boot environment or in the installed Linux. Correct the sequence and assign it again.",
             oldServer.RunReports[^1].Error);
-        Assert.StartsWith("Install Linux cannot run: A sequence that writes a raw disk image keeps its state in memory", restartServer.RunReports[^1].Error, StringComparison.Ordinal);
+        Assert.StartsWith("Install Linux cannot run: The Linux boot environment keeps the run's state in memory", restartServer.RunReports[^1].Error, StringComparison.Ordinal);
         Assert.StartsWith("Install Linux cannot run: The Linux boot environment has no partition to unpack a package on", packageServer.RunReports[^1].Error, StringComparison.Ordinal);
+    }
+
+    // The server hands this agent no such run. One that arrived anyway would fail at the hand-over, with the disk written.
+    [Fact]
+    public async Task RefusesARunWithStepsInTheInstalledLinuxBeforeTheDiskIsTouched()
+    {
+        RunScriptStep installed = s_script with { Id = Guid.NewGuid(), Phase = SequencePhase.Linux };
+
+        (RunResult result, ScriptedAgentServer server, _) = await RunAsync(Run(steps: [s_write, s_seed, installed]));
+
+        Assert.Equal(4, SupportedSequences.Version);
+        Assert.Equal(RunOutcome.Failed, result.Outcome);
+        Assert.Empty(_tools.Calls);
+        Assert.Empty(_disks.Disks);
+        Assert.Equal(
+            "Install Linux has steps of version 5, and this agent runs sequences up to version 4. Start the machine from the network " +
+            "again, so it gets the server's agent. Nothing was erased.",
+            server.RunReports[^1].Error);
     }
 
     [Fact]

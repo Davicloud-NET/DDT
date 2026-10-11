@@ -26,6 +26,8 @@ function phaseChoice(phase: SequencePhase): string {
       return t`Windows, after the hand-over`;
     case "LinuxBoot":
       return t`Linux boot environment`;
+    case "Linux":
+      return t`Installed Linux`;
   }
 }
 

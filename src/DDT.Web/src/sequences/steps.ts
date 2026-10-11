@@ -56,6 +56,7 @@ const phaseLabels: Record<SequencePhase, MessageDescriptor> = {
   WindowsPE: msg`Windows PE`,
   Windows: msg`Windows`,
   LinuxBoot: msg`Linux boot environment`,
+  Linux: msg`Installed Linux`,
 };
 
 export function phaseLabel(phase: SequencePhase): string {

@@ -14,6 +14,7 @@ public static class AgentEnvironments
     {
         AgentEnvironment.WindowsPE => "Windows PE",
         AgentEnvironment.LinuxBoot => "the Linux boot environment",
+        AgentEnvironment.Linux => "the installed Linux",
         _ => "the installed Windows",
     };
 

@@ -9,8 +9,8 @@ using static DDT.Core.Tests.Sequences.TreeSteps;
 
 namespace DDT.Core.Tests.Sequences;
 
-// A sequence that writes a raw disk image is a Linux sequence. It runs in the Linux boot environment, with shell
-// scripts, and has no steps of a Windows installation.
+// A sequence that writes a raw disk image is a Linux sequence. It starts in the Linux boot environment, with shell
+// scripts, and has no steps of a Windows installation. SequenceValidatorInstalledLinuxTests cover where it goes on.
 public sealed class SequenceValidatorLinuxTests
 {
     private static readonly ShareConnection s_share = new(@"\\files.corp.example\drivers", new AccountReference(Guid.NewGuid(), null));
@@ -71,6 +71,14 @@ public sealed class SequenceValidatorLinuxTests
         // The phase is the one thing to change, whatever the interpreter.
         AssertOnly(Validate(Partition(), linux), linux, "phase", "sequence.linuxPhaseWithoutRawImage");
         AssertOnly(Validate(Partition(), linuxCmd), linuxCmd, "phase", "sequence.linuxPhaseWithoutRawImage");
+
+        // The installed Linux is no place for it either, and no seed is asked of a sequence that writes no image.
+        RunScriptStep installed = InLinux();
+        IReadOnlyList<SequenceProblem> problems = Validate(Partition(), ApplyImage(), installed);
+        AssertOnly(problems, installed, "phase", "sequence.linuxPhaseWithoutRawImage");
+        Assert.Equal(
+            "The Linux boot environment and the installed Linux only run sequences that write a raw disk image. Choose Windows PE or Windows.",
+            problems[0].Message);
     }
 
     // Windows PE's rules before Partition wait until the script's phase is one of this sequence.
@@ -210,7 +218,7 @@ public sealed class SequenceValidatorLinuxTests
             ],
             Said(linux.Warnings));
         Assert.Equal(
-            "This sequence writes a raw disk image, so its phase is LinuxBoot and never WindowsPE.",
+            "This sequence writes a raw disk image, so its phase is LinuxBoot or Linux and never WindowsPE.",
             linux.Warnings[0].Message);
         AssertOnly(
             SequenceValidator.Analyse(Definition(Partition(), windows)).Warnings,
@@ -268,7 +276,7 @@ public sealed class SequenceValidatorLinuxTests
         Assert.All(Enumerable.Range(0, definition.Steps.Count), index => Assert.Equal(SequencePhase.LinuxBoot, SequencePhases.Of(definition, index)));
     }
 
-    // A script that is refused still shows the phase it names.
+    // A script that is refused still shows the phase it names, and the steps after it stay where the sequence is.
     [Fact]
     public void ListsTheWindowsPhaseARefusedScriptNames()
     {
@@ -282,9 +290,30 @@ public sealed class SequenceValidatorLinuxTests
                 $"{old.Id} WindowsPE",
                 $"{analysis.NodePhases[1].NodeId} LinuxBoot",
                 $"{inWindows.Id} Windows",
-                $"{after.Id} Windows",
+                $"{after.Id} LinuxBoot",
             ],
             analysis.NodePhases.Select(node => $"{node.NodeId} {string.Join(", ", node.Phases)}"));
+    }
+
+    // The step of the other kind is the one thing to change. What comes after it is judged as if it were not there.
+    [Fact]
+    public void SaysNothingMoreAboutTheStepsAfterAStepOfTheOtherKind()
+    {
+        RunScriptStep inWindows = Script(SequencePhase.Windows);
+        RunScriptStep inLinux = InLinux();
+        RunScriptStep shell = Shell();
+
+        AssertOnly(Validate(WriteRawImage(), inWindows, Shell(), WriteSeed()), inWindows, "phase", "sequence.windowsWithRawImage");
+        AssertOnly(
+            Validate(Partition(), ApplyImage(), inLinux, Script(SequencePhase.WindowsPE)),
+            inLinux,
+            "phase",
+            "sequence.linuxPhaseWithoutRawImage");
+        AssertOnly(
+            Validate(Partition(), ApplyImage(), Script(SequencePhase.Windows), shell),
+            shell,
+            "phase",
+            "sequence.linuxPhaseWithoutRawImage");
     }
 
     [Fact]

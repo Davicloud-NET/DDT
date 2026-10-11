@@ -110,5 +110,6 @@ public static class EnvironmentTexts
     public static string ExitCode(AgentEnvironment environment, int exitCode) =>
         IsLinux(environment) ? exitCode.ToString(CultureInfo.InvariantCulture) : $"0x{exitCode:X8}";
 
-    private static bool IsLinux(AgentEnvironment environment) => environment == AgentEnvironment.LinuxBoot;
+    // The installed Linux runs the same executable. Its own sentences come with the agent that runs there.
+    private static bool IsLinux(AgentEnvironment environment) => environment is AgentEnvironment.LinuxBoot or AgentEnvironment.Linux;
 }

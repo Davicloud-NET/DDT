@@ -433,9 +433,22 @@ public sealed class ConsoleSeamTests : IDisposable
     [Fact]
     public void GivesEveryActivityOfARunItsConsoleActivity()
     {
-        foreach (RunActivity activity in Enum.GetValues<RunActivity>())
+        foreach (RunActivity activity in Enum.GetValues<RunActivity>().Except([RunActivity.WaitingForCloudInit]))
         {
             Assert.Equal(activity.ToString(), ConsoleValues.ToConsole(activity).ToString());
         }
+
+        // The protocol has no word for the wait for cloud-init before its version 4.
+        Assert.Equal(ConsoleActivity.Preparing, ConsoleValues.ToConsole(RunActivity.WaitingForCloudInit));
+    }
+
+    [Theory]
+    [InlineData(SequencePhase.WindowsPE, ConsolePhase.WindowsPE)]
+    [InlineData(SequencePhase.LinuxBoot, ConsolePhase.WindowsPE)]
+    [InlineData(SequencePhase.Windows, ConsolePhase.Windows)]
+    [InlineData(SequencePhase.Linux, ConsolePhase.Windows)]
+    public void ShowsALinuxPhaseAsTheWindowsPhaseOfItsRole(SequencePhase phase, ConsolePhase shown)
+    {
+        Assert.Equal(shown, ConsoleValues.ToConsole(phase));
     }
 }

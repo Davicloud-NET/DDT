@@ -114,7 +114,7 @@ public sealed class LinuxBootDryRunTests : IDisposable
 
         Assert.Equal(AgentExitCodes.Deployed, exitCode);
         Assert.Equal(AgentEnvironment.LinuxBoot, Assert.Single(server.Registrations).Environment);
-        Assert.Equal(SequenceDefinition.CurrentVersion, server.Registrations[0].SequenceVersion);
+        Assert.Equal(4, server.Registrations[0].SequenceVersion);
         Assert.All(server.RunReports, report => Assert.Equal(SequencePhase.LinuxBoot, report.Phase));
         Assert.Equal(DeploymentState.Done, server.RunReports[^1].State);
         Assert.Equal(Enumerable.Repeat(StepState.Done, 3), server.RunReports[^1].Steps.Select(step => step.State));

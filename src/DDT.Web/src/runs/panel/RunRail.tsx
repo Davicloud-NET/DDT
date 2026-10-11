@@ -30,6 +30,8 @@ function PhaseLabel({ phase }: { phase: SequencePhase }) {
       return <Trans>In the installed Windows</Trans>;
     case "LinuxBoot":
       return <Trans>In the Linux boot environment</Trans>;
+    case "Linux":
+      return <Trans>In the installed Linux</Trans>;
   }
 }
 

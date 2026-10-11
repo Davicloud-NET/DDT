@@ -141,7 +141,7 @@ public sealed record AgentOptions(
         }
     }
 
-    // A run starts in a boot environment, so the installed Windows is none a dry run can start.
+    // A run starts in a boot environment, so an installed system is none a dry run can start.
     private static AgentEnvironment? BootEnvironment(string name) =>
         Enum.GetValues<AgentEnvironment>()
             .Where(environment => SequenceKinds.IsBoot(SequenceKinds.Phase(environment)))

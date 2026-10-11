@@ -11,4 +11,6 @@ public enum SequencePhase
     Windows,
     // The netbooted Linux that writes a Linux sequence's disk. Version 4.
     LinuxBoot,
+    // The installed Linux, where a Linux sequence goes on. Version 5.
+    Linux,
 }

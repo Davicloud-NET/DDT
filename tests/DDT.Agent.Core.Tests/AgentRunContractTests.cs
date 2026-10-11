@@ -46,7 +46,7 @@ public sealed class AgentRunContractTests
             null,
             "1.0",
             RunToken: "run-token",
-            SequenceVersion: SequenceDefinition.CurrentVersion,
+            SequenceVersion: 4,
             Environment: AgentEnvironment.Windows,
             SecureBootEnabled: true,
             TrustedUefiCas: UefiCa.Microsoft2011 | UefiCa.Microsoft2023,

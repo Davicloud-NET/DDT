@@ -5,7 +5,7 @@
 namespace DDT.Core.Sequences;
 
 // What a sequence does at most once per run, and what later steps rely on. ImageEveryTime means an image was applied
-// by a step that has no conditions itself. Windows needs that.
+// by a step that has no conditions itself. Windows needs that. SeedEveryTime means the same of the seed, for Linux.
 [Flags]
 internal enum Happened
 {
@@ -17,5 +17,6 @@ internal enum Happened
     DomainJoined = 16,
     RawImageWritten = 32,
     SeedWritten = 64,
-    All = 127,
+    SeedEveryTime = 128,
+    All = 255,
 }

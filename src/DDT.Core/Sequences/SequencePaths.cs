@@ -59,13 +59,10 @@ internal sealed class SequencePaths
 
     private static int Bit(SequencePhase phase) => 1 << (int)phase;
 
-    private static PhaseSet Of(SequencePhase phase) => SequenceKinds.IsBoot(phase) ? PhaseSet.Boot : PhaseSet.Installed;
-
-    // The kind's phases for the roles. Only a Windows step takes a Linux sequence out of its boot phase, and that
-    // step is refused.
+    // The kind's phases for the roles.
     private int In(PhaseSet roles) =>
         ((roles & PhaseSet.Boot) != 0 ? Bit(SequenceKinds.BootPhase(_kind)) : 0)
-        | ((roles & PhaseSet.Installed) != 0 ? Bit(SequenceKinds.InstalledPhase(_kind) ?? SequencePhase.Windows) : 0);
+        | ((roles & PhaseSet.Installed) != 0 ? Bit(SequenceKinds.InstalledPhase(_kind)) : 0);
 
     // A node's own conditions are its list and its When. An IF's Test and a repeat's Until don't count.
     private static bool HasOwnConditions(SequenceStep step) => step.Conditions is not { Count: 0 } || step.When is not null;
@@ -81,7 +78,7 @@ internal sealed class SequencePaths
         WriteUnattendStep => Happened.UnattendWritten,
         JoinDomainStep => Happened.DomainJoined,
         WriteRawImageStep => Happened.RawImageWritten,
-        WriteCloudInitSeedStep => Happened.SeedWritten,
+        WriteCloudInitSeedStep => Happened.SeedWritten | (HasOwnConditions(step) || step.ContinueOnError ? Happened.None : Happened.SeedEveryTime),
         _ => Happened.None,
     };
 
@@ -129,8 +126,12 @@ internal sealed class SequencePaths
     {
         // The engine changes the phase before it looks at the conditions, so a skipped step changes it too.
         SequencePhase? required = step.RequiredPhase is { } phase && Enum.IsDefined(phase) ? phase : null;
-        PhaseSet runsIn = required is { } own ? Of(own) : input.Current;
-        PathState entered = input.Enter(required);
+
+        // A step of the other kind is refused for that alone, so the paths go on as if it were not there.
+        bool otherKind = _rules.OtherKind(required);
+        SequencePhase? entering = otherKind ? null : required;
+        PhaseSet runsIn = entering is { } own ? PhaseOrder.Role(own) : input.Current;
+        PathState entered = input.Enter(entering);
 
         if (!_silent)
         {
@@ -138,7 +139,7 @@ internal sealed class SequencePaths
             _rules.CheckLeaf(step, new StepPlace(input, required, runsIn, inRepeat), problems);
         }
 
-        PathState output = entered.With(_rules.InstallsWindows(step, required) ? Happened.None : Establishes(step));
+        PathState output = entered.With(otherKind ? Happened.None : Establishes(step));
         bool everyTime = RunsEveryTime(step);
 
         if (!everyTime && (HasOwnConditions(step) || step.ContinueOnError))

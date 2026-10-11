@@ -23,4 +23,5 @@ public sealed record SequenceSummary(
     string? RawImageName = null,
     ImageBootCapability? RawImageBootCapability = null,
     UefiCa? RawImageSignedUnder = null,
-    SequenceKind Kind = SequenceKind.Windows);
+    SequenceKind Kind = SequenceKind.Windows,
+    bool ContinuesInLinux = false);

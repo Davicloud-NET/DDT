@@ -546,9 +546,14 @@ msgid "{kind, select, if {This IF has no steps in Then or Else} repeat {This rep
 msgstr "{kind, select, if {This IF has no steps in Then or Else} repeat {This repeat has no steps} other {This group has no steps}}, so it does nothing."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.phaseChangeInRepeat"
+msgid "{kind, select, Linux {A run cannot change between the Linux boot environment and the installed Linux inside a repeat.} other {A run cannot change between Windows PE and Windows inside a repeat.}} Move this step, or the steps before it, out of the repeat."
+msgstr "{kind, select, Linux {A run cannot change between the Linux boot environment and the installed Linux inside a repeat.} other {A run cannot change between Windows PE and Windows inside a repeat.}} Move this step, or the steps before it, out of the repeat."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.phaseValueOtherKindWarning"
-msgid "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}"
-msgstr "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}"
+msgid "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot or Linux and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}"
+msgstr "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot or Linux and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}"
 
 #: src/runs/steps/RunStepItem.tsx
 msgid "{kind}, {phase}"
@@ -1619,11 +1624,6 @@ msgctxt "rule.conditionTooLarge"
 msgid "A rule's condition can have at most {tests} tests, with groups nested at most {depth} deep."
 msgstr "A rule's condition can have at most {tests} tests, with groups nested at most {depth} deep."
 
-#: src/lib/serverMessages.ts
-msgctxt "sequence.phaseChangeInRepeat"
-msgid "A run cannot change between Windows PE and Windows inside a repeat. Move this step, or the steps before it, out of the repeat."
-msgstr "A run cannot change between Windows PE and Windows inside a repeat. Move this step, or the steps before it, out of the repeat."
-
 #: src/runs/RunHistoryPage.tsx
 msgid "A run starts when a machine is assigned a task sequence, is approved with the one a rule chose, or someone chooses one at the machine."
 msgstr "A run starts when a machine is assigned a task sequence, is approved with the one a rule chose, or someone chooses one at the machine."
@@ -1635,8 +1635,8 @@ msgstr "A script can have at most {max} KiB."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.runAsWindowsOnly"
-msgid "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} other {In Windows PE it runs as SYSTEM.}}"
-msgstr "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} other {In Windows PE it runs as SYSTEM.}}"
+msgid "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} Linux {In the installed Linux it runs as root.} other {In Windows PE it runs as SYSTEM.}}"
+msgstr "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} Linux {In the installed Linux it runs as root.} other {In Windows PE it runs as SYSTEM.}}"
 
 #: src/tokens/TokenSecret.tsx
 msgid "A script sends it in the Authorization header: Bearer, a space, then the token. It has the role {tokenRole}, and never more rights than your account has."
@@ -1719,14 +1719,14 @@ msgid "A sequence that is gone"
 msgstr "A sequence that is gone"
 
 #: src/lib/serverMessages.ts
-msgctxt "sequence.restartWithRawImage"
-msgid "A sequence that writes a raw disk image keeps its state in memory, so the Linux boot environment cannot restart during it."
-msgstr "A sequence that writes a raw disk image keeps its state in memory, so the Linux boot environment cannot restart during it."
-
-#: src/lib/serverMessages.ts
 msgctxt "sequence.shellExitCodes"
 msgid "A shell script ends with an exit code from 0 to 255."
 msgstr "A shell script ends with an exit code from 0 to 255."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.shellRebootExitCodes"
+msgid "A shell script ends with an exit code from 0 to 255. For a restart use 194, which is what a shell makes of exit 3010."
+msgstr "A shell script ends with an exit code from 0 to 255. For a restart use 194, which is what a shell makes of exit 3010."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.tooManyShares"
@@ -1737,6 +1737,16 @@ msgstr "A step can connect at most {max} shares."
 msgctxt "sequence.tooManyConditions"
 msgid "A step can have at most {max} conditions."
 msgstr "A step can have at most {max} conditions."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.linuxNeedsSeed"
+msgid "A step in the installed Linux needs an earlier step that writes the cloud-init seed, without conditions and without going on when it fails. The seed takes DDT's agent into the installed Linux."
+msgstr "A step in the installed Linux needs an earlier step that writes the cloud-init seed, without conditions and without going on when it fails. The seed takes DDT's agent into the installed Linux."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.linuxNeedsSeedOnEveryPath"
+msgid "A step in the installed Linux needs the cloud-init seed written before it on every path through the sequence, and on some path no step writes it."
+msgstr "A step in the installed Linux needs the cloud-init seed written before it on every path through the sequence, and on some path no step writes it."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.windowsNeedsImage"
@@ -4898,6 +4908,10 @@ msgid "In the image"
 msgstr "In the image"
 
 #: src/runs/panel/RunRail.tsx
+msgid "In the installed Linux"
+msgstr "In the installed Linux"
+
+#: src/runs/panel/RunRail.tsx
 msgid "In the installed Windows"
 msgstr "In the installed Windows"
 
@@ -4995,6 +5009,11 @@ msgstr "Install Windows"
 #: src/images/ImageFacts.tsx
 msgid "Installed"
 msgstr "Installed"
+
+#: src/sequences/steps.ts
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "Installed Linux"
+msgstr "Installed Linux"
 
 #: src/machines/bootEnvironment.ts
 msgid "Installed Windows"
@@ -7736,8 +7755,8 @@ msgid "Restarts the machine, and the sequence goes on with the step after {name}
 msgstr "Restarts the machine, and the sequence goes on with the step after {name}. In Windows PE this needs a partitioned disk, where the run's state is kept."
 
 #: src/sequences/steps/RebootFields.tsx
-msgid "Restarts the machine, and the sequence goes on with the step after {name}. The Linux boot environment keeps the run's state in memory, so a sequence that writes a raw disk image cannot restart."
-msgstr "Restarts the machine, and the sequence goes on with the step after {name}. The Linux boot environment keeps the run's state in memory, so a sequence that writes a raw disk image cannot restart."
+msgid "Restarts the machine, and the sequence goes on with the step after {name}. The Linux boot environment keeps the run's state in memory, so a restart is only possible in the installed Linux."
+msgstr "Restarts the machine, and the sequence goes on with the step after {name}. The Linux boot environment keeps the run's state in memory, so a restart is only possible in the installed Linux."
 
 #: src/app/palette/Palette.tsx
 msgid "Results"
@@ -8924,6 +8943,11 @@ msgid "Steps cannot set {name}. Let steps set it where the variable is declared.
 msgstr "Steps cannot set {name}. Let steps set it where the variable is declared."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.linuxBootAfterLinux"
+msgid "Steps in the Linux boot environment come first, and an earlier step already runs in the installed Linux."
+msgstr "Steps in the Linux boot environment come first, and an earlier step already runs in the installed Linux."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.windowsPEAfterWindows"
 msgid "Steps in Windows PE come first, and an earlier step already runs in Windows."
 msgstr "Steps in Windows PE come first, and an earlier step already runs in Windows."
@@ -9926,19 +9950,29 @@ msgid "The Linux boot environment"
 msgstr "The Linux boot environment"
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.linuxPhaseWithoutRawImage"
+msgid "The Linux boot environment and the installed Linux only run sequences that write a raw disk image. Choose Windows PE or Windows."
+msgstr "The Linux boot environment and the installed Linux only run sequences that write a raw disk image. Choose Windows PE or Windows."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.linuxNeedsShell"
+msgid "The Linux boot environment and the installed Linux run only shell scripts. Choose the shell and rewrite the script for it."
+msgstr "The Linux boot environment and the installed Linux run only shell scripts. Choose the shell and rewrite the script for it."
+
+#: src/lib/serverMessages.ts
 msgctxt "linuxBoot.noRoot"
 msgid "The Linux boot environment cannot be started, because this server has no root certificate of its own to hand to the machines: its certificate comes from an administrator. A machine in that environment trusts the server only through the root it is handed. Let DDT issue the server's certificate, or start machines in Windows PE."
 msgstr "The Linux boot environment cannot be started, because this server has no root certificate of its own to hand to the machines: its certificate comes from an administrator. A machine in that environment trusts the server only through the root it is handed. Let DDT issue the server's certificate, or start machines in Windows PE."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.sharesNotInLinuxBoot"
-msgid "The Linux boot environment cannot connect shares. Remove them from this step."
-msgstr "The Linux boot environment cannot connect shares. Remove them from this step."
+msgid "The Linux boot environment cannot connect shares. Only a step in the installed Linux can have them."
+msgstr "The Linux boot environment cannot connect shares. Only a step in the installed Linux can have them."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.packageWithRawImage"
-msgid "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one."
-msgstr "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one."
+msgid "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one. A script in the installed Linux can."
+msgstr "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one. A script in the installed Linux can."
 
 #: src/lib/serverMessages.ts
 msgctxt "linuxBoot.damaged"
@@ -9946,19 +9980,14 @@ msgid "The Linux boot environment in {folder} is damaged: {reason, select, unrea
 msgstr "The Linux boot environment in {folder} is damaged: {reason, select, unreadable {its description, {name}, cannot be read} incomplete {its description does not list {name}} missing {{name} is not there} size {{name} has another size than its description says} hash {{name} is not the file its description names} changed {{name} was replaced or removed after the server had checked it} signatures {{name} carries other signatures than its description says} other {{name} cannot be read}}. Install this release of DDT again, which brings the folder anew."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.restartWithRawImage"
+msgid "The Linux boot environment keeps the run's state in memory, so it cannot restart during a run. The installed Linux can."
+msgstr "The Linux boot environment keeps the run's state in memory, so it cannot restart during a run. The installed Linux can."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.deployment.keyboardLayoutUnknown"
 msgid "The Linux boot environment of this server has no keyboard layout ''{value}''. It has {layouts}."
 msgstr "The Linux boot environment of this server has no keyboard layout ''{value}''. It has {layouts}."
-
-#: src/lib/serverMessages.ts
-msgctxt "sequence.linuxPhaseWithoutRawImage"
-msgid "The Linux boot environment only runs sequences that write a raw disk image. Choose Windows PE or Windows."
-msgstr "The Linux boot environment only runs sequences that write a raw disk image. Choose Windows PE or Windows."
-
-#: src/lib/serverMessages.ts
-msgctxt "sequence.linuxNeedsShell"
-msgid "The Linux boot environment runs only shell scripts. Choose the shell and rewrite the script for it."
-msgstr "The Linux boot environment runs only shell scripts. Choose the shell and rewrite the script for it."
 
 #: src/log/LogStatusBar.tsx
 msgid "The live connection is down. New lines appear once it is back."
@@ -11025,8 +11054,8 @@ msgstr "This run"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.windowsScriptInLinux"
-msgid "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment."
-msgstr "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment."
+msgid "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment or in the installed Linux."
+msgstr "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment or in the installed Linux."
 
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "This sequence declares no variables or inputs yet."

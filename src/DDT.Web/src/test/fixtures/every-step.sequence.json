@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "steps": [
     {
       "kind": "partition",
@@ -269,9 +269,72 @@
       "rebootAfter": false
     },
     {
+      "kind": "runScript",
+      "phase": "Linux",
+      "interpreter": "Cmd",
+      "script": "exit 0",
+      "packageId": "0193a4b2-0000-7000-8000-0000000000b1",
+      "timeoutMinutes": 30,
+      "successExitCodes": [
+        0,
+        1
+      ],
+      "rebootExitCodes": [
+        3010,
+        1641
+      ],
+      "id": "00000000-0000-4000-8000-000000000016",
+      "name": "Script Linux Cmd",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "runScript",
+      "phase": "Linux",
+      "interpreter": "PowerShell",
+      "script": "exit 0",
+      "packageId": "0193a4b2-0000-7000-8000-0000000000b1",
+      "timeoutMinutes": 30,
+      "successExitCodes": [
+        0,
+        1
+      ],
+      "rebootExitCodes": [
+        3010,
+        1641
+      ],
+      "id": "00000000-0000-4000-8000-000000000017",
+      "name": "Script Linux PowerShell",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "runScript",
+      "phase": "Linux",
+      "interpreter": "Shell",
+      "script": "exit 0",
+      "packageId": "0193a4b2-0000-7000-8000-0000000000b1",
+      "timeoutMinutes": 30,
+      "successExitCodes": [
+        0,
+        1
+      ],
+      "rebootExitCodes": [
+        3010,
+        1641
+      ],
+      "id": "00000000-0000-4000-8000-000000000018",
+      "name": "Script Linux Shell",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
       "kind": "writeRawImage",
       "imageId": "0193a4b2-0000-7000-8000-0000000000a1",
-      "id": "00000000-0000-4000-8000-000000000016",
+      "id": "00000000-0000-4000-8000-000000000019",
       "name": "Write raw",
       "conditions": [],
       "continueOnError": false,
@@ -282,7 +345,7 @@
       "metaData": "instance-id: \"{{SmbiosUuid}}\"\n",
       "userData": "#cloud-config\nhostname: \"{{ComputerName}}\"\n",
       "networkConfig": "version: 2\n",
-      "id": "00000000-0000-4000-8000-000000000017",
+      "id": "00000000-0000-4000-8000-000000000020",
       "name": "Seed",
       "conditions": [],
       "continueOnError": false,

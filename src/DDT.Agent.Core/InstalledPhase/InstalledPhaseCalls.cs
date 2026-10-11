@@ -4,6 +4,7 @@
 
 using System.Net;
 using DDT.Agent.Deployment;
+using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
 
@@ -124,7 +125,7 @@ internal sealed class InstalledPhaseCalls(
         identity.SerialNumber,
         options.AgentVersion,
         RunToken: runToken,
-        SequenceVersion: SequenceDefinition.CurrentVersion,
+        SequenceVersion: SupportedSequences.Version,
         Environment: options.Profile.Environment,
         SecureBootEnabled: identity.SecureBootEnabled,
         TrustedUefiCas: identity.TrustedUefiCas,

@@ -116,6 +116,21 @@ public sealed class EnvironmentTextsTests
         Assert.Equal("139", EnvironmentTexts.ExitCode(LinuxBoot, 139));
     }
 
+    // As the installed Windows speaks like Windows PE. The agent that runs there brings what it says differently.
+    [Fact]
+    public void TheInstalledLinuxSpeaksLikeTheLinuxBootEnvironment()
+    {
+        const AgentEnvironment Linux = AgentEnvironment.Linux;
+
+        Assert.Equal(EnvironmentTexts.LinuxUsage, EnvironmentTexts.Usage(Linux));
+        Assert.Equal("ddt-agent-0123456789ab", EnvironmentTexts.DownloadedAgent(Linux, "0123456789ABCDEF"));
+        Assert.Equal("139", EnvironmentTexts.ExitCode(Linux, 139));
+        Assert.Equal("this machine's firmware", EnvironmentTexts.SecureBootTeller(Linux));
+        Assert.Equal("the installed Linux", AgentEnvironments.Name(Linux));
+        Assert.Equal("the installed Windows", AgentEnvironments.Name(AgentEnvironment.Windows));
+        Assert.Equal(("installed Linux", "Linux boot environment", "Windows"), (LogText.Phase("Linux"), LogText.Phase("LinuxBoot"), LogText.Phase("Windows")));
+    }
+
     // An NVMe disk behind a controller in RAID or RST mode is no device Linux sees, whatever drivers it has.
     [Fact]
     public void WithoutADiskTheLinuxBootEnvironmentNamesTheControllerModeThatHidesOne() =>

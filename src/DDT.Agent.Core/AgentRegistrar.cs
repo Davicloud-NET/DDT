@@ -4,8 +4,8 @@
 
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
+using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
-using DDT.Contracts.Sequences;
 
 namespace DDT.Agent;
 
@@ -89,7 +89,7 @@ internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, 
             resumeToken,
             eligibleDisks,
             runToken,
-            SequenceDefinition.CurrentVersion,
+            SupportedSequences.Version,
             machine.Environment,
             SecureBootEnabled: identity.SecureBootEnabled,
             TrustedUefiCas: identity.TrustedUefiCas,

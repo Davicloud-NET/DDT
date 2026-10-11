@@ -30,7 +30,7 @@ const rewrite: SequenceProblem = {
   stepId: "s",
   field: "phase",
   message:
-    "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment.",
+    "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment or in the installed Linux.",
   code: "sequence.windowsScriptInLinux",
 };
 
@@ -149,7 +149,7 @@ describe("SequenceEditorPage, a Linux sequence", () => {
 
     expect(
       screen.getByText(
-        "Restarts the machine, and the sequence goes on with the step after Restart. The Linux boot environment keeps the run's state in memory, so a sequence that writes a raw disk image cannot restart.",
+        "Restarts the machine, and the sequence goes on with the step after Restart. The Linux boot environment keeps the run's state in memory, so a restart is only possible in the installed Linux.",
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/In Windows PE this needs a partitioned disk/)).toBeNull();

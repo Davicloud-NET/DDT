@@ -19,7 +19,8 @@ public static class PhaseRules
     {
         AgentEnvironment.WindowsPE => phase is SequencePhase.WindowsPE or SequencePhase.Windows,
         AgentEnvironment.Windows => phase == SequencePhase.Windows,
-        AgentEnvironment.LinuxBoot => phase == SequencePhase.LinuxBoot,
+        AgentEnvironment.LinuxBoot => phase is SequencePhase.LinuxBoot or SequencePhase.Linux,
+        AgentEnvironment.Linux => phase == SequencePhase.Linux,
         _ => false,
     };
 
@@ -42,6 +43,7 @@ public static class PhaseRules
     {
         AgentEnvironment.WindowsPE => "Windows PE",
         AgentEnvironment.LinuxBoot => "the Linux boot environment",
+        AgentEnvironment.Linux => "the installed Linux",
         _ => "Windows",
     };
 
@@ -56,6 +58,7 @@ public static class PhaseRules
     {
         SequencePhase.Windows => AgentEnvironment.Windows,
         SequencePhase.LinuxBoot => AgentEnvironment.LinuxBoot,
+        SequencePhase.Linux => AgentEnvironment.Linux,
         _ => AgentEnvironment.WindowsPE,
     };
 
@@ -63,6 +66,7 @@ public static class PhaseRules
     {
         SequencePhase.WindowsPE => "Windows PE",
         SequencePhase.LinuxBoot => "Linux boot environment",
+        SequencePhase.Linux => "installed Linux",
         _ => "Windows",
     };
 }

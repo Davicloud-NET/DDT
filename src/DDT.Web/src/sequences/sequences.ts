@@ -10,8 +10,9 @@ import type { ImageBootCapability } from "@/images/images";
 
 import type { ConditionNode, StepCondition } from "./sequenceConditions";
 
-// LinuxBoot (version 4) is the netbooted Linux that writes a Linux sequence's disk.
-export type SequencePhase = "WindowsPE" | "Windows" | "LinuxBoot";
+// LinuxBoot (version 4) is the netbooted Linux that writes a Linux sequence's disk. Linux (version 5) is the installed
+// Linux, where such a sequence goes on.
+export type SequencePhase = "WindowsPE" | "Windows" | "LinuxBoot" | "Linux";
 
 // Shell (version 4) runs in the Linux phases only.
 export type ScriptInterpreter = "Cmd" | "PowerShell" | "Shell";
@@ -272,7 +273,7 @@ export interface SequenceSummary {
 
 // SequenceDefinition.CurrentVersion: the highest version this page knows, and the one it writes. The server stores
 // each sequence with the lowest version it needs.
-export const SEQUENCE_VERSION = 4;
+export const SEQUENCE_VERSION = 5;
 
 // Every problem keeps the sequence from running. Warnings don't.
 export interface SequenceProblem {

@@ -94,7 +94,7 @@ public sealed class StoredLinuxSequenceTests(DdtApplication application) : IClas
             view.Problems.Select(problem => (problem.StepId!.Value, problem.Field, problem.Code)));
         Assert.Equal(
             "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in " +
-            "the Linux boot environment.",
+            "the Linux boot environment or in the installed Linux.",
             view.Problems[0].Message);
         Assert.Equal(SequencePhase.WindowsPE, Assert.IsType<RunScriptStep>(view.Definition.Steps[0]).Phase);
 

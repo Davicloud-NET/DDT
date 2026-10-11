@@ -144,6 +144,41 @@ public sealed class LinuxPhaseKernelTests : IDisposable
         Assert.Equal(["meta-data", "user-data", "vendor-data", "ddt"], Read(loop).Volume.List("").Select(entry => entry.Name));
     }
 
+    // What the kernel says of a seed the agent mounted: no device and no program that runs as another user counts
+    // there, and its files are root's alone.
+    [Fact]
+    public void MountsASeedForRootAloneWithoutDevicesOrProgramsOfAnotherUser()
+    {
+        Seed();
+        string[] options = [];
+        string fileMode = "";
+
+        new LinuxSeeds(_mounts, Paths, _log).Each(seed =>
+        {
+            string[] line = File.ReadAllLines(MountsBelow.List).Select(mounted => mounted.Split(' ')).Last(fields => fields[1] == seed);
+            options = line[3].Split(',');
+            fileMode = LoopDisk.Run("stat", "-c", "%a", Path.Combine(seed, CloudInitSeed.UserData)).Output;
+        });
+
+        Assert.Contains("nosuid", options);
+        Assert.Contains("nodev", options);
+        Assert.Contains("fmask=0077", options);
+        Assert.Contains("dmask=0077", options);
+        Assert.Equal("700", fileMode);
+    }
+
+    // The place a share is mounted at is root's alone before anything is mounted there.
+    [Fact]
+    public void MakesAPlaceForAShareThatOnlyRootEnters()
+    {
+        LoopDisk.SkipUnlessLinux();
+        string place = Path.Combine(_folder, "shares", "0193", "1");
+
+        LinuxConnectedShares.Create(place);
+
+        Assert.Equal("700", LoopDisk.Run("stat", "-c", "%a", place).Output);
+    }
+
     // The call itself, with a password that holds commas. Nothing listens here, so the kernel answers that the port
     // is closed, or that it has no CIFS where a container cannot load the module.
     [Fact]

@@ -46,6 +46,9 @@ internal sealed class LinuxConnectedShares(IMounts mounts, AgentLog log) : IConn
         }
     }
 
+    // EINVAL and ENOENT: nothing is mounted there, or the place is gone. The step's script has disconnected it itself.
+    private static bool WasDisconnected(int error) => error is 22 or 2;
+
     // Disconnects in reverse order. A share that stays mounted only warns, because the step's result is decided.
     public ValueTask DisposeAsync()
     {
@@ -64,6 +67,11 @@ internal sealed class LinuxConnectedShares(IMounts mounts, AgentLog log) : IConn
             if (error == 0)
             {
                 log.Information($"Disconnected {unc}.");
+                RemoveEmpty(target);
+            }
+            else if (WasDisconnected(error))
+            {
+                log.Information($"{unc} was no longer connected when the step ended.");
                 RemoveEmpty(target);
             }
             else

@@ -38,10 +38,21 @@ public sealed class LinuxShareConnectorTests : IDisposable
 
     private string Place(int number) => Path.Combine(_directory, s_step.ToString("D"), $"{number}");
 
+    // What each name resolves to. A name that is not here cannot be found.
+    private static readonly Dictionary<string, string[]> s_names = new(StringComparer.Ordinal)
+    {
+        ["files.example.test"] = ["fd00::17", "10.0.2.2"],
+        ["three.example.test"] = ["fd00::17", "10.0.2.2", "10.0.2.3"],
+        ["six.example.test"] = ["2001:db8::10"],
+        ["link.example.test"] = ["fe80::1%3"],
+        ["mapped.example.test"] = ["::ffff:10.0.2.9"],
+        ["none.example.test"] = [],
+    };
+
     private LinuxShareConnector Connector() => new(_mounts, _directory, _log)
     {
-        Resolve = (host, _) => host == "files.example.test"
-            ? Task.FromResult<IPAddress[]>([IPAddress.Parse("fd00::17"), IPAddress.Parse("10.0.2.2")])
+        Resolve = (host, _) => s_names.TryGetValue(host, out string[]? addresses)
+            ? Task.FromResult<IPAddress[]>([.. addresses.Select(IPAddress.Parse)])
             : Task.FromException<IPAddress[]>(new SocketException((int)SocketError.HostNotFound)),
         Kernel = () => "6.8.0-139-generic",
     };
@@ -118,6 +129,92 @@ public sealed class LinuxShareConnectorTests : IDisposable
     }
 
     [Fact]
+    public async Task SaysThatAHostsNameHasNoAddressAndMountsNothing()
+    {
+        DeploymentStepException failure = await Assert.ThrowsAsync<DeploymentStepException>(
+            () => ConnectAsync(new AgentShareConnection(@"\\none.example.test\drivers", "ddt", Password)));
+
+        Assert.Equal(@"The name none.example.test of \\none.example.test\drivers has no address, so the share cannot be connected.", failure.Message);
+        Assert.Empty(_mounts.Calls);
+    }
+
+    // The kernel reads an IPv6 address without brackets, and a link's number after a percent sign.
+    [Theory]
+    [InlineData("six.example.test", "ip=2001:db8::10,")]
+    [InlineData("link.example.test", "ip=fe80::1%3,")]
+    [InlineData("mapped.example.test", "ip=10.0.2.9,")]
+    [InlineData("fd00::99", "ip=fd00::99,")]
+    public async Task GivesTheKernelAnIPv6AddressAsItReadsOne(string host, string option)
+    {
+        await using IConnectedShares shares = await ConnectAsync(new AgentShareConnection($@"\\{host}\drivers", "ddt", "x"));
+
+        Assert.StartsWith(option, Assert.Single(_mounts.Options), StringComparison.Ordinal);
+        Assert.Equal($"mount cifs //{host}/drivers at {Place(1)}", _mounts.Calls[0]);
+    }
+
+    // A server with several addresses, of which the machine reaches only the last.
+    [Fact]
+    public async Task TriesAHostsNextAddressWhenOneDoesNotAnswer()
+    {
+        _mounts.AddressErrors["10.0.2.2"] = 113;
+        _mounts.AddressErrors["10.0.2.3"] = 111;
+
+        await using IConnectedShares shares = await ConnectAsync(new AgentShareConnection(@"\\three.example.test\drivers", "ddt", Password));
+
+        Assert.Equal(["ip=10.0.2.2,", "ip=10.0.2.3,", "ip=fd00::17,"], _mounts.Options.Select(options => options[..(options.IndexOf(',', StringComparison.Ordinal) + 1)]));
+        Assert.Equal([Place(1)], shares.LocalPaths);
+        Assert.Contains("three.example.test does not answer at 10.0.2.2 (error 113), so 10.0.2.3 is tried.", _console.ToString(), StringComparison.Ordinal);
+        Assert.Contains("three.example.test does not answer at 10.0.2.3 (error 111), so fd00::17 is tried.", _console.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Pa55", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task NamesEveryAddressItTriedWhenTheHostAnswersAtNone()
+    {
+        _mounts.Errors["//three.example.test/drivers"] = 113;
+
+        DeploymentStepException failure = await Assert.ThrowsAsync<DeploymentStepException>(
+            () => ConnectAsync(new AgentShareConnection(@"\\three.example.test\drivers", "ddt", Password)));
+
+        Assert.Equal(
+            @"\\three.example.test\drivers could not be connected: three.example.test (10.0.2.2, 10.0.2.3, fd00::17) cannot be reached from this machine (error 113).",
+            failure.Message);
+        Assert.Equal(3, _mounts.Options.Count);
+    }
+
+    // The server took the connection and refused the account. Another of its addresses would only lock the account.
+    [Fact]
+    public async Task TriesNoOtherAddressOnceTheServerHasAnswered()
+    {
+        _mounts.Errors["//three.example.test/drivers"] = 13;
+
+        await Assert.ThrowsAsync<DeploymentStepException>(() => ConnectAsync(new AgentShareConnection(@"\\three.example.test\drivers", "ddt", Password)));
+
+        Assert.Single(_mounts.Options);
+    }
+
+    // A Linux with SELinux splits the options at every comma and keeps these words for itself. What follows one is
+    // then in the kernel's log, so no mount is tried, and the sentence names the part and never what it holds.
+    [Theory]
+    [InlineData("ddt", "Pa55,context=system_u:object_r:x", "password")]
+    [InlineData("ddt", "Pa55,,fscontext=x", "password")]
+    [InlineData("ddt", "Pa55,seclabel", "password")]
+    [InlineData(@"CORP\dd,defcontext=t", "Pa55", "user name")]
+    [InlineData(@"CO,rootcontext=RP\ddt", "Pa55", "domain")]
+    public async Task RefusesAnAccountAKernelWithSeLinuxWouldReadAnOptionOutOf(string userName, string password, string part)
+    {
+        DeploymentStepException failure = await Assert.ThrowsAsync<DeploymentStepException>(
+            () => ConnectAsync(new AgentShareConnection(@"\\10.0.2.2\drivers", userName, password)));
+
+        Assert.StartsWith($@"The {part} of the account for \\10.0.2.2\drivers holds a comma followed by context=, fscontext=,", failure.Message, StringComparison.Ordinal);
+        Assert.EndsWith("so the share is not connected. Use an account without it.", failure.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Pa55", failure.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("system_u", failure.ToString(), StringComparison.Ordinal);
+        Assert.Empty(_mounts.Calls);
+        Assert.False(Directory.Exists(_directory));
+    }
+
+    [Fact]
     public async Task RefusesAnAccountTheMountCallCannotCarryWithoutNamingItsPassword()
     {
         DeploymentStepException failure = await Assert.ThrowsAsync<DeploymentStepException>(
@@ -162,11 +259,31 @@ public sealed class LinuxShareConnectorTests : IDisposable
     {
         IConnectedShares shares = await ConnectAsync(new AgentShareConnection(@"\\10.0.2.2\one", "ddt", "x"));
         File.WriteAllText(Path.Combine(Place(1), "a file of the share"), "kept");
-        _mounts.Unmount(Place(1), detach: true);
+        _mounts.UnmountErrors[Place(1)] = 16;
 
         await shares.DisposeAsync();
 
         Assert.True(File.Exists(Path.Combine(Place(1), "a file of the share")));
-        Assert.Contains($@"\\10.0.2.2\one could not be disconnected from {Place(1)} (error 22).", _console.ToString(), StringComparison.Ordinal);
+        Assert.Contains(
+            $@"WARN  \\10.0.2.2\one could not be disconnected from {Place(1)} (error 16). It stays mounted until Linux restarts.",
+            _console.ToString(),
+            StringComparison.Ordinal);
+    }
+
+    // A script that ends with umount "$DDT_SHARE_1" has done what the agent was about to do.
+    [Fact]
+    public async Task AShareItsScriptDisconnectedIsNoFailureAndItsPlaceGoes()
+    {
+        IConnectedShares shares = await ConnectAsync(new AgentShareConnection(@"\\10.0.2.2\one", "ddt", "x"), new AgentShareConnection(@"\\10.0.2.2\two", "ddt", "x"));
+        _mounts.Unmount(Place(1), detach: false);
+        _mounts.Unmount(Place(2), detach: false);
+        Directory.Delete(Place(2));
+
+        await shares.DisposeAsync();
+
+        Assert.False(Directory.Exists(Path.Combine(_directory, s_step.ToString("D"))));
+        Assert.Contains(@"INFO  \\10.0.2.2\one was no longer connected when the step ended.", _console.ToString(), StringComparison.Ordinal);
+        Assert.Contains(@"INFO  \\10.0.2.2\two was no longer connected when the step ended.", _console.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("WARN", _console.ToString(), StringComparison.Ordinal);
     }
 }

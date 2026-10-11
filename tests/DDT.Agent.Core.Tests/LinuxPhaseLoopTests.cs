@@ -247,6 +247,35 @@ public sealed class LinuxPhaseLoopTests : IDisposable
         Assert.DoesNotContain(_linux.Lines(), line => line.Contains("Xk7", StringComparison.Ordinal) || line.Contains("'random'", StringComparison.Ordinal));
     }
 
+    // A restart with a share still mounted would cut the server's connection without a word.
+    [Fact]
+    public async Task DisconnectsAStepsSharesBeforeItRestartsLinuxForTheStep()
+    {
+        RunScriptStep script = LinuxPhaseFixture.Script(1) with { Shares = [new ShareConnection(@"\\files.example.test\drivers", new AccountReference(Guid.NewGuid(), null))] };
+        AgentRun run = LinuxPhaseFixture.Run(script, LinuxPhaseFixture.Script(2));
+        await _linux.HandOverAsync(run);
+        ScriptedAgentServer server = Server(run)
+            .OnRunStepAccounts(_ => new AgentStepAccounts(null, [new AgentShareConnection(@"\\files.example.test\drivers", "ddt", "made-up")]));
+        string place = Path.Combine(_linux.Paths.Shares, $"{script.Id:D}", "1");
+        List<string> mountsAtTheRestart = [];
+        _linux.Tools.AnswerExitCode = (_, _, _) => 194;
+        _linux.Tools.Answer = (fileName, arguments) =>
+        {
+            if (fileName == LinuxPhaseRebooter.Systemctl && arguments is ["reboot"])
+            {
+                mountsAtTheRestart.AddRange(_linux.Mounts.Calls);
+                server.Stop.Cancel();
+            }
+
+            return [];
+        };
+
+        Assert.Equal(AgentExitCodes.Restarting, await _linux.RunAsync(server));
+
+        Assert.Equal([$"mount cifs //files.example.test/drivers at {place}", $"unmount {place} detached"], mountsAtTheRestart);
+        Assert.False(Directory.Exists(place));
+    }
+
     // Linux has restarted for the run. Its own wait for cloud-init is long over, and cloud-init runs once more what
     // it runs at every start. The next step waits for that, and nothing of the first start's wait is said again.
     [Fact]

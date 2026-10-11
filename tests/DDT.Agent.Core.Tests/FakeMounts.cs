@@ -7,7 +7,8 @@ using DDT.Agent.Deployment;
 namespace DDT.Agent.Tests;
 
 // Stands in for the kernel's mount calls. Every call goes into Calls, without the options, which Options keeps apart.
-// Errors answers a mount by its source, and whatever is not mounted answers an unmount with EINVAL, as the kernel does.
+// Errors answers a mount by its source, AddressErrors by the address in its options, UnmountErrors an unmount by its
+// place. Whatever is not mounted answers an unmount with EINVAL, as the kernel does.
 internal sealed class FakeMounts : IMounts
 {
     public const int NotMounted = 22;
@@ -18,6 +19,10 @@ internal sealed class FakeMounts : IMounts
     private readonly HashSet<string> _mounted = new(StringComparer.Ordinal);
 
     public Dictionary<string, int> Errors { get; } = new(StringComparer.Ordinal);
+
+    public Dictionary<string, int> AddressErrors { get; } = new(StringComparer.Ordinal);
+
+    public Dictionary<string, int> UnmountErrors { get; } = new(StringComparer.Ordinal);
 
     // Runs once a mount worked, with its source and its place, to put there what the file system holds.
     public Action<string, string>? Mounted { get; set; }
@@ -51,7 +56,8 @@ internal sealed class FakeMounts : IMounts
             _calls.Add($"mount {fileSystem} {source} at {target}");
             _options.Add(options);
 
-            if (Errors.TryGetValue(source, out int error))
+            if (Errors.TryGetValue(source, out int error)
+                || (options.StartsWith("ip=", StringComparison.Ordinal) && AddressErrors.TryGetValue(options.Split(',')[0][3..], out error)))
             {
                 return error;
             }
@@ -68,6 +74,11 @@ internal sealed class FakeMounts : IMounts
     {
         lock (_lock)
         {
+            if (UnmountErrors.TryGetValue(target, out int error))
+            {
+                return error;
+            }
+
             if (!_mounted.Remove(target))
             {
                 return NotMounted;

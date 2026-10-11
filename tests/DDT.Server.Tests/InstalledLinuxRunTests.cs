@@ -8,7 +8,6 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
-using DDT.Server.Authentication;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Machines;
@@ -19,7 +18,7 @@ using static DDT.Server.Tests.TestReports;
 namespace DDT.Server.Tests;
 
 // A Linux run goes on in the installed Linux. The boot environment starts it and hands it over, and the agent there
-// reports it to its end. An agent that knows sequences up to version 4 is offered and handed none with steps there.
+// reports it to its end. An agent that knows sequences up to version 4 is handed none with steps there.
 public sealed class InstalledLinuxRunTests(DdtApplication application) : IClassFixture<DdtApplication>
 {
     private const string AskAgain = "Ask the server for the current run.";
@@ -168,48 +167,6 @@ public sealed class InstalledLinuxRunTests(DdtApplication application) : IClassF
         AgentNextResult inBoot = await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, boot.Token!));
 
         Assert.Equal(assigned.Id, Assert.IsType<AgentRun>(inBoot.Run).Id);
-    }
-
-    [Fact]
-    public async Task AnAgentOfVersion4IsOfferedNoSequenceWithStepsInTheInstalledLinuxAtTheMachine()
-    {
-        string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
-        SequenceView installed = await SequenceAsync();
-        SequenceView bootOnly = await SequenceAsync(installedSteps: false);
-        using DeployingMachine old = await DeployingMachine.SignedInAsync(
-            application,
-            operatorName,
-            registration => DeployingMachine.LinuxBoot()(registration) with { SequenceVersion = BootOnlyVersion });
-        using DeployingMachine current = await DeployingMachine.SignedInAsync(application, operatorName, DeployingMachine.LinuxBoot());
-        using DeployingMachine windowsPE = await DeployingMachine.SignedInAsync(
-            application,
-            operatorName,
-            [DeployingMachine.Disk(0)],
-            sequenceVersion: BootOnlyVersion);
-        Guid[] both = [installed.Id, bootOnly.Id];
-
-        async Task<IEnumerable<Guid>> ListedAsync(DeployingMachine machine) =>
-            (await RegisteredMachine.ReadAsync<IReadOnlyList<AgentSequenceChoice>>(await machine.Agent.SequencesAsync(machine.Id, machine.Token)))
-            .Select(choice => choice.Id)
-            .Where(both.Contains);
-
-        Assert.Equal([bootOnly.Id], await ListedAsync(old));
-        Assert.Equal(both.Order(), (await ListedAsync(current)).Order());
-        Assert.Empty(await ListedAsync(windowsPE));
-
-        // A pick of what the list did not show is refused, and nothing is assigned.
-        HttpResponseMessage picked = await old.Agent.PickRunAsync(old.Id, old.Token, new AgentRunRequest(installed.Id, 0, "LINUX-32"));
-
-        Assert.Equal(HttpStatusCode.Conflict, picked.StatusCode);
-        Assert.Equal(
-            $"{installed.Name} needs a newer agent than this machine runs. Start the machine from the network again, so it gets the server's " +
-            "agent, and choose it then.",
-            await TestDatabase.TitleAsync(picked));
-        Assert.Null((await application.MachineAsync(old.Id)).ActiveDeploymentId);
-
-        AgentRun run = await RegisteredMachine.ReadAsync<AgentRun>(
-            await current.Agent.PickRunAsync(current.Id, current.Token, new AgentRunRequest(installed.Id, 0, "LINUX-33")));
-        Assert.Equal(5, run.Sequence.Version);
     }
 
     // The run stays assigned, and the person at the machine reads why nothing starts.

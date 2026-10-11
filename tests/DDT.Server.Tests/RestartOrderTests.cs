@@ -221,6 +221,30 @@ public sealed class RestartOrderTests(BothEnvironmentsApplication application) :
         Assert.Null(arrived.WaitReason);
     }
 
+    // Such a machine polls for as long as it stands there. The snapshot cannot be read here, so the answer shows that
+    // the run's sequence is not read for it each time.
+    [Fact]
+    public async Task AMachineTheServerNoLongerRestartsIsToldWhyWithoutItsRunBeingRead()
+    {
+        (DeployingMachine machine, DeploymentSummary run) = await WithLinuxRunAsync();
+        using DeployingMachine owned = machine;
+
+        foreach (int _ in Enumerable.Range(0, 2))
+        {
+            Assert.Equal(AgentEnvironment.LinuxBoot, (await machine.NextAsync()).RestartInto);
+            await machine.RestartIntoAsync(AgentEnvironment.WindowsPE);
+        }
+
+        await application.QueryAsync(database => database.DeploymentSnapshots
+            .Where(s => s.DeploymentId == run.Id)
+            .ExecuteUpdateAsync(update => update.SetProperty(s => s.Definition, "not a sequence"), TestContext.Current.CancellationToken));
+
+        AgentNextResult stopped = await machine.NextAsync();
+
+        Assert.Null(stopped.RestartInto);
+        Assert.Equal($"{Where(run)} {GaveUp}", stopped.WaitReason);
+    }
+
     // The agent's own guard refuses a second restart in one start, or the agent cannot restart the machine at all. It
     // goes on polling, which an agent that restarts never does.
     [Fact]

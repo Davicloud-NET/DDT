@@ -206,6 +206,19 @@ describe("what assigning says about where a sequence starts", () => {
     expect(startNotice(done, linux, ["WindowsPE"])).toBeNull();
   });
 
+  // Its run failed or was stopped there. It started no boot environment, and the server restarts none from there.
+  it("promises no restart of a machine that last registered from an installed system", () => {
+    for (const state of ["Failed", "Approved"] as const) {
+      const inLinux = machineSummary({ state, agentEnvironment: "Linux" });
+      const inWindows = machineSummary({ state, agentEnvironment: "Windows" });
+
+      expect(startNotice(inLinux, linux, both)).toBeNull();
+      expect(startNotice(inLinux, windows, both)).toBeNull();
+      expect(startNotice(inWindows, linux, both)).toBeNull();
+      expect(startNotice(inWindows, windows, both)).toBeNull();
+    }
+  });
+
   it("says nothing before a sequence is chosen, or for a server that names no environments", () => {
     expect(startNotice(inWindowsPE, null, both)).toBeNull();
     expect(startNotice(inWindowsPE, linux, undefined)).toBeNull();

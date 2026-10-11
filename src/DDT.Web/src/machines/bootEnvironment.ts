@@ -113,9 +113,13 @@ export interface StartNotice {
   text: string;
 }
 
-// A machine in one of these states sits in the boot environment it started, where its agent waits for a run.
+// A machine in one of these states sits in the boot environment it started, where its agent waits for a run. One
+// that last registered from an installed system is in neither, and the server restarts none from there.
 function waitsInBootEnvironment(machine: MachineSummary): boolean {
+  const started = machine.agentEnvironment;
+
   return (
+    (started === "WindowsPE" || started === "LinuxBoot") &&
     !isActive(machine.deployment) &&
     (machine.state === "Pending" || machine.state === "Approved" || machine.state === "Failed")
   );

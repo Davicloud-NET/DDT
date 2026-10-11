@@ -155,8 +155,8 @@ Who helps with what:
 
 DDT is young, and what it publishes for now are pre-releases. It has deployed Windows to Hyper-V
 test machines and netbooted real hardware. The Linux boot environment is newer: it has deployed
-Debian to Hyper-V and QEMU virtual machines with Secure Boot on, and has not run on real hardware
-yet. Treat all of it as a preview.
+Debian to Hyper-V and QEMU virtual machines and to one laptop, with Secure Boot on. Treat all of it
+as a preview.
 
 | | Milestone | |
 |---|---|---|

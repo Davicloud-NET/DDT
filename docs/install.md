@@ -940,12 +940,26 @@ the Linux boot environment started without ProxyDHCP.
 
 No Secure Boot setting of Hyper-V starts both the Windows boot manager and the shim: the template
 Microsoft UEFI Certificate Authority refuses the first, the template Microsoft Windows the second.
-So the change of boot environment ran with Secure Boot off. With Secure Boot on it is shown in
-halves only: the Linux boot environment wrote the variable under one template, and Windows PE read
-and deleted it under the other, the template changed while the machine was off.
+So the change of boot environment ran there with Secure Boot off, and with Secure Boot on only in
+halves: the Linux boot environment wrote the variable under one template, and Windows PE read and
+deleted it under the other, the template changed while the machine was off.
 
-Not tried yet: a physical PC, a firmware that trusts only Microsoft's 2023 CA, and the change of
-boot environment on one firmware with Secure Boot on, which needs a PC that trusts both.
+Tried on one physical PC, a Lenovo ThinkPad L15 Gen 1 with firmware of 2021 and Secure Boot on. Its
+firmware trusts Microsoft's third-party CA of 2011 and not the one of 2023. The network's router
+was the DHCP server, and DDT answered beside it as ProxyDHCP from a Windows 11 PC. The Linux boot
+environment reached the agent 25 seconds after DDT's offer. GRUB loaded the kernel and the initrds
+at about 4 MB a second, over HTTP and over TFTP alike. A Debian 13 cloud image was written to the
+NVMe disk in 12 seconds. The boot entry that had pointed at the erased EFI system partition was
+used again and put first, and Debian started, after a cold start too. Reset in the HTTP read of
+`base.img`, the machine was given TFTP at its next start and loaded without a wait. Windows PE
+started 29 seconds after the offer, and the server knew one machine with the same facts from both
+environments. The change of boot environment ran there with Secure Boot on, both ways: 57 seconds
+after a Linux sequence was picked in Windows PE the Linux agent arrived, approved, and 56 seconds
+after a Windows sequence was picked in the Linux boot environment Windows PE arrived and ran it.
+The firmware started the network entry that `BootNext` named each time, and neither `BootNext` nor
+`DdtResume` was left afterwards.
+
+Not tried yet: a PC of another make, and a firmware that trusts only Microsoft's 2023 CA.
 
 Hyper-V's Default Switch does not stand in for a network here. Its DHCP is Windows' connection
 sharing, and on the test host it answered no machine on the switch any more from the moment DDT,

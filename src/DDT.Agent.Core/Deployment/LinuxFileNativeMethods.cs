@@ -32,6 +32,10 @@ internal static partial class LinuxFileNativeMethods
     [LibraryImport("libc", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial int statx(SafeFileHandle file, string path, int flags, uint mask, out Status status);
 
+    // Gives a file a second name, which shares its bytes with the first.
+    [LibraryImport("libc", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
+    internal static partial int link(string existing, string added);
+
     // Writes the path without any link in it into resolved, which holds MaxPath bytes. Null when there is no such path.
     [LibraryImport("libc", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial nint realpath(string path, ref byte resolved);

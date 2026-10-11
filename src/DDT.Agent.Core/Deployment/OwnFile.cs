@@ -6,10 +6,23 @@ using System.Runtime.InteropServices;
 
 namespace DDT.Agent.Deployment;
 
-// A file the agent wrote itself, opened to overwrite its bytes. A script that ran as root may have put anything in
-// its place, so on Linux only a regular file with this one name is written to, and never what a link points to.
+// A file the agent writes for itself: made root's alone, and opened again to overwrite its bytes. A script that ran as
+// root may have put anything in its place, so on Linux only a regular file with this one name is written to.
 internal static class OwnFile
 {
+    // The file is its owner's alone from the moment it exists, where the system has such modes.
+    public static FileStreamOptions Private(FileMode mode, FileOptions options = FileOptions.None)
+    {
+        FileStreamOptions file = new() { Mode = mode, Access = FileAccess.Write, Share = FileShare.None, Options = options };
+
+        if (!OperatingSystem.IsWindows())
+        {
+            file.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        }
+
+        return file;
+    }
+
     // Null when the path holds nothing to overwrite: no file, a link, a pipe, a socket, a device, or a second name
     // of a file. Opening a pipe would wait for ever, and a second name shares its bytes with the first.
     public static FileStream? OpenToOverwrite(string path)

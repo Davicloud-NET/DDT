@@ -11,15 +11,14 @@ using DDT.Core.Sequences;
 namespace DDT.Agent.Sequences;
 
 // A run's files in the run folder of its directory. state.json uses Format 1 for a list and Format 2 for a tree. token
-// holds the run token, a secret that's never logged. Each file is replaced through a temporary file written through to
-// disk, so a power loss leaves the old file or the new one, never part of one.
+// holds the run token, a secret that's never logged. FileReplacement saves each, so a power loss leaves a whole file.
 public sealed class RunFiles(string runDirectory, AgentLog log)
 {
     public string StatePath => Path.Combine(runDirectory, "run", "state.json");
 
     public string TokenPath => Path.Combine(runDirectory, "run", "token");
 
-    // In the installed Windows, the report of how the run ended, which stays with the token until the server has it.
+    // In the installed system, the report of how the run ended, which stays with the token until the server has it.
     public string FinalReportPath => Path.Combine(runDirectory, "run", "final-report.json");
 
     // A run's directory under root: DDT on a Windows volume such as C:\, and the root itself where the agent has a
@@ -41,12 +40,23 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
         return Encoding.ASCII.GetBytes(token);
     }
 
-    public Task SaveStateAsync(SequenceState state, CancellationToken cancellationToken) => ReplaceAsync(StatePath, StateContent(state), cancellationToken);
+    public Task SaveStateAsync(SequenceState state, CancellationToken cancellationToken) =>
+        FileReplacement.ReplaceAsync(StatePath, StateContent(state), log, cancellationToken);
 
-    public Task SaveTokenAsync(string token, CancellationToken cancellationToken) => ReplaceAsync(TokenPath, TokenContent(token), cancellationToken);
+    public Task SaveTokenAsync(string token, CancellationToken cancellationToken) =>
+        FileReplacement.ReplaceAsync(TokenPath, TokenContent(token), log, cancellationToken);
 
     public Task SaveFinalReportAsync(AgentRunReport report, CancellationToken cancellationToken) =>
-        ReplaceAsync(FinalReportPath, JsonSerializer.SerializeToUtf8Bytes(report, AgentJsonContext.Default.AgentRunReport), cancellationToken);
+        FileReplacement.ReplaceAsync(FinalReportPath, JsonSerializer.SerializeToUtf8Bytes(report, AgentJsonContext.Default.AgentRunReport), log, cancellationToken);
+
+    // Overwrites and removes what a save that was cut off left behind. For the agent's start, while nothing saves.
+    public void Sweep()
+    {
+        foreach (string path in (string[])[TokenPath, StatePath, FinalReportPath])
+        {
+            FileReplacement.Sweep(path, log);
+        }
+    }
 
     // Null when there's none. Also null, after a warning, when it can't be read.
     public async Task<AgentRunReport?> LoadFinalReportAsync(CancellationToken cancellationToken)
@@ -142,25 +152,10 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
     // deleted file's bytes stay on the disk.
     public void Discard()
     {
+        Sweep();
         Leftovers.Wipe(TokenPath, log);
         Leftovers.Wipe(StatePath, log);
         Leftovers.Wipe(FinalReportPath, log);
         Leftovers.Delete(Path.Combine(runDirectory, "run"), log);
-    }
-
-    private static async Task ReplaceAsync(string path, byte[] content, CancellationToken cancellationToken)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        string temporary = path + ".tmp";
-
-        FileStream file = new(temporary, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 4096, FileOptions.WriteThrough);
-
-        await using (file.ConfigureAwait(false))
-        {
-            await file.WriteAsync(content, cancellationToken).ConfigureAwait(false);
-            file.Flush(flushToDisk: true);
-        }
-
-        File.Move(temporary, path, overwrite: true);
     }
 }

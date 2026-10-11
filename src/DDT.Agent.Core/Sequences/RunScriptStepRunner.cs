@@ -120,9 +120,10 @@ public sealed class RunScriptStepRunner(
                 Leftovers.Delete(package, log);
             }
 
+            // The script may have set a secret there
             if (outputs is not null)
             {
-                Leftovers.Delete(outputs, log);
+                Leftovers.Wipe(outputs, log);
             }
         }
 
@@ -179,7 +180,7 @@ public sealed class RunScriptStepRunner(
 
     // Only a sequence with variables that steps may set has somewhere for the script's variables to go. A file left by
     // an earlier visit of the step, in a repeat or before a restart, must not count for this visit.
-    private static string? PrepareOutputs(
+    private string? PrepareOutputs(
         RunScriptStep step,
         string scripts,
         IReadOnlyList<VariableDeclaration> settable,
@@ -191,7 +192,7 @@ public sealed class RunScriptStepRunner(
         }
 
         string outputs = Path.Combine(scripts, step.Id.ToString("D") + StepFiles.VariablesExtension);
-        File.Delete(outputs);
+        Leftovers.Wipe(outputs, log);
         environment[VariablesOut] = outputs;
 
         return outputs;

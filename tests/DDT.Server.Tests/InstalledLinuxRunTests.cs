@@ -76,6 +76,33 @@ public sealed class InstalledLinuxRunTests(DdtApplication application) : IClassF
         Assert.Equal((SequenceKind.Linux, false, false), (ends.Kind, ends.ContinuesInLinux, ends.ContinuesInWindows));
     }
 
+    // A group and an IF have no phase of their own in the step list, so the list alone would not show it.
+    [Fact]
+    public async Task SaysThatASequenceGoesOnInTheInstalledLinuxWhenOnlyANestedStepRunsThere()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        Image image = await application.SeedRawImageAsync(RandomNumberGenerator.GetBytes(4096), name: $"noble {Guid.NewGuid():N}");
+        GroupStep group = new() { Id = Guid.NewGuid(), Name = "Set up", Steps = [SequenceRequests.InLinux()] };
+        IfStep branch = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "If a laptop",
+            Test = new TestCondition(MachineVariableNames.Model, ConditionOperator.Matches, "Latitude*"),
+            Then = [],
+            Else = [SequenceRequests.InLinux()],
+        };
+        SequenceView grouped = await administrator.CreatedSequenceAsync(SequenceRequests.LinuxWithInstalledSteps(image.Id, group));
+        SequenceView branched = await administrator.CreatedSequenceAsync(SequenceRequests.LinuxWithInstalledSteps(image.Id, branch));
+
+        IReadOnlyList<SequenceSummary> summaries =
+            await RegisteredMachine.ReadAsync<IReadOnlyList<SequenceSummary>>(await administrator.GetAsync(SequenceRequests.Sequences));
+
+        Assert.All([grouped, branched], view => Assert.Empty(view.Problems));
+        Assert.All([grouped, branched], view => Assert.Equal(5, view.Definition.Version));
+        Assert.True(Assert.Single(summaries, summary => summary.Id == grouped.Id).ContinuesInLinux);
+        Assert.True(Assert.Single(summaries, summary => summary.Id == branched.Id).ContinuesInLinux);
+    }
+
     [Fact]
     public async Task TheLinuxBootEnvironmentHandsTheRunOverAndTheInstalledLinuxReportsItToTheEnd()
     {

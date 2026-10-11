@@ -95,11 +95,22 @@ public sealed class SequenceValidatorInstalledLinuxTests
         Assert.Empty(Validate(WriteRawImage(), WriteSeed(), If([InLinux()], [InLinux()]), Pause(), Reboot()));
     }
 
+    // Whatever path reaches the step passed the seed, and a path that skips both ends in the boot environment.
+    [Fact]
+    public void AcceptsTheSeedAndAStepInTheInstalledLinuxTogetherOnOnePath()
+    {
+        Assert.Empty(Validate(WriteRawImage(), Group(WriteSeed(), InLinux()) with { When = ThinkPad }));
+        Assert.Empty(Validate(WriteRawImage(), Group(WriteSeed(), InLinux()) with { Conditions = [s_onOneModel] }));
+        Assert.Empty(Validate(WriteRawImage(), If([WriteSeed(), InLinux()])));
+        Assert.Empty(Validate(WriteRawImage(), If([WriteSeed(), InLinux()], [Shell()])));
+    }
+
     [Fact]
     public void RefusesAStepOfTheLinuxBootEnvironmentAfterTheInstalledLinux()
     {
         RunScriptStep late = Shell();
         RunScriptStep afterABranch = Shell();
+        RunScriptStep afterASkip = Shell();
         WriteCloudInitSeedStep lateSeed = WriteSeed();
 
         IReadOnlyList<SequenceProblem> problems = Validate(WriteRawImage(), WriteSeed(), InLinux(), late);
@@ -109,6 +120,13 @@ public sealed class SequenceValidatorInstalledLinuxTests
             "Steps in the Linux boot environment come first, and an earlier step already runs in the installed Linux.",
             problems[0].Message);
         AssertOnly(Validate(WriteRawImage(), WriteSeed(), If([InLinux()]), afterABranch), afterABranch, "phase", "sequence.linuxBootAfterLinux");
+
+        // A step that is skipped changes the phase too, because the engine changes it before it looks at the conditions.
+        AssertOnly(
+            Validate(WriteRawImage(), WriteSeed(), InLinux() with { When = ThinkPad }, afterASkip),
+            afterASkip,
+            "phase",
+            "sequence.linuxBootAfterLinux");
         Assert.Contains((lateSeed.Id, null, "sequence.linuxBootAfterLinux"), Said(Validate(WriteRawImage(), WriteSeed(), InLinux(), lateSeed)));
         Assert.Empty(Validate(Shell(), WriteRawImage(), Shell(), WriteSeed(), Shell(), InLinux(), InLinux()));
     }

@@ -13,9 +13,9 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The seed a hand-over leaves, as the kernel of the installed Linux reads it. The image, its seed and the hand-over go
-// through the disk's device onto a loop device, and the kernel mounts the result. Needs root and the right to make
-// such devices, and skips without them.
+// The seed a hand-over leaves, as the kernel of the installed Linux reads it, and as a later start of the boot
+// environment finds it once that kernel wrote to it. The image, its seed and the hand-over go through the disk's
+// device onto a loop device, and the kernel mounts the result. Needs root and the right to make such devices.
 [Trait("Category", "LinuxKernel")]
 public sealed class LinuxHandOverKernelTests : IDisposable
 {
@@ -132,6 +132,28 @@ public sealed class LinuxHandOverKernelTests : IDisposable
 
     private static string?[] Names(string folder) => [.. Directory.GetFileSystemEntries(folder).Select(Path.GetFileName).Order(StringComparer.Ordinal)];
 
+    // The look a start of the boot environment takes at the disk, through its device.
+    private HandedOverSeeds Seeds() => new(Disks(), _run.Log, _run.Time);
+
+    // What the agent's script does to the token once the unit is installed, with the installed Linux's own tools. The
+    // unmount writes the volume out. With delete false, power was lost between the two commands.
+    private void WipeTokenAsTheScriptDoes(LoopDisk loop, bool delete = true)
+    {
+        string place = Path.Combine(_folder, "installed");
+        string token = Path.Combine(place, LinuxAgentFiles.SeedToken);
+        loop.Mount(SeedPartition, place, "-o", "rw,umask=077");
+        string size = new FileInfo(token).Length.ToString(CultureInfo.InvariantCulture);
+
+        Assert.Equal(0, LoopDisk.Run("dd", "if=/dev/zero", $"of={token}", $"bs={size}", "count=1", "conv=notrunc,fsync").ExitCode);
+
+        if (delete)
+        {
+            File.Delete(token);
+        }
+
+        loop.Unmount(place);
+    }
+
     [Fact]
     public async Task TheKernelReadsTheSeedWithTheAgentOnItAsDdtsOwnReaderDoes()
     {
@@ -224,6 +246,66 @@ public sealed class LinuxHandOverKernelTests : IDisposable
         Assert.False(seed.Holds(StepRunnerFixture.RunToken));
         Assert.Equal(["meta-data", "network-config", "notes.txt", "user-data"], Names(after));
         Assert.Equal("kept", await File.ReadAllTextAsync(Path.Combine(after, "notes.txt"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ALaterStartOfTheBootEnvironmentFindsTheRunAndItsTokenThroughTheDisksDevice()
+    {
+        (LoopDisk loop, SequenceState state) = await HandOverAsync();
+
+        HandedOverSeed seed = Assert.Single(Seeds().Find([loop.Disk]));
+
+        Assert.False(seed.IsTaken);
+        Assert.Equal((StepRunnerFixture.RunToken, state.RunId, SeedPartition), (seed.Token, seed.RunId, seed.Partition.Number));
+        Assert.Equal(TestRawImage.EspId, seed.SystemPartition?.PartitionId);
+        Assert.DoesNotContain(await _run.SentLinesAsync(), line => line.Message.Contains("could not be looked at", StringComparison.Ordinal));
+    }
+
+    // The kernel's FAT driver marks the entry deleted and frees its cluster, which DDT's reader has to take as gone.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task OnceTheInstalledLinuxWipedTheTokenTheRunCountsAsTakenOver(bool deleted)
+    {
+        (LoopDisk loop, SequenceState state) = await HandOverAsync();
+        WipeTokenAsTheScriptDoes(loop, deleted);
+
+        HandedOverSeed seed = Assert.Single(Seeds().Find([loop.Disk]));
+
+        Assert.True(seed.IsTaken);
+        Assert.Null(seed.Token);
+        Assert.Equal(state.RunId, seed.RunId);
+        Assert.False(ReadSeed(loop).Holds(StepRunnerFixture.RunToken));
+    }
+
+    // A start over at the machine, or a run the server no longer knows: the seed is the administrator's again, and the
+    // installed Linux still finds it by its label and serial number.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TakesTheRunOffASeedTheInstalledLinuxWroteToAndTheKernelReadsTheRest(bool taken)
+    {
+        (LoopDisk loop, _) = await HandOverAsync();
+        uint serial = ReadSeed(loop).Volume.SerialNumber;
+
+        if (taken)
+        {
+            WipeTokenAsTheScriptDoes(loop);
+        }
+
+        Assert.True(Seeds().TakeOff(Assert.Single(Seeds().Find([loop.Disk]))));
+
+        TestSeed seed = ReadSeed(loop);
+        Assert.False(seed.Holds(StepRunnerFixture.RunToken));
+        Assert.Empty(Seeds().Find([loop.Disk]));
+        string after = Path.Combine(_folder, "seed");
+        loop.Mount(seed.Partition.Number, after, "-o", "ro");
+        Assert.Equal(["meta-data", "network-config", "user-data"], Names(after));
+        Assert.Equal(s_seed.UserData, await File.ReadAllTextAsync(Path.Combine(after, CloudInitSeed.UserData), TestContext.Current.CancellationToken));
+
+        string device = loop.PartitionDevice(seed.Partition.Number);
+        Assert.Equal((0, CloudInitSeed.Label), LoopDisk.Run("blkid", "-p", "-o", "value", "-s", "LABEL", device));
+        Assert.Equal((0, string.Create(CultureInfo.InvariantCulture, $"{serial >> 16:X4}-{serial & 0xFFFF:X4}")), LoopDisk.Run("blkid", "-p", "-o", "value", "-s", "UUID", device));
     }
 
     // The same sequence without steps in the installed Linux ends well, because the restart unmounts. So does this one.

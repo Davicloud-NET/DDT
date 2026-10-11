@@ -178,6 +178,27 @@ public sealed class LinuxAgentRemovalTests : IDisposable
         Assert.Empty(Warnings());
     }
 
+    // A start over at the machine, or a run the server ended, had the boot environment take the run off the seed
+    // before this Linux started again. Its agent finds no token to repair, and its removal misses nothing there.
+    [Fact]
+    public async Task ASeedTheBootEnvironmentAlreadyClearedNeedsNoRepairAndIsLeftAsItIs()
+    {
+        await InstallAsync();
+        File.Delete(Path.Combine(Seed, CloudInitSeed.VendorData));
+        Directory.Delete(Path.Combine(Seed, LinuxAgentFiles.SeedFolder), recursive: true);
+        FolderSeeds seeds = new(Seed);
+
+        Assert.False(new SeedTokenRepair(seeds, _log).Run());
+        await RemoveAsync(seeds);
+
+        Assert.Empty(Warnings());
+        Assert.Equal([CloudInitSeed.MetaData, CloudInitSeed.UserData], Directory.GetFileSystemEntries(Seed).Select(Path.GetFileName).Order(StringComparer.Ordinal));
+        Assert.False(File.Exists(_paths.Agent));
+        Assert.False(File.Exists(_paths.Unit));
+        Assert.False(Directory.Exists(_paths.State));
+        Assert.EndsWith(LinuxAgentRemoval.Removed, _console.ToString().TrimEnd(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task TheTokenRepairTakesATokenOffTheSeedAndSaysSo()
     {

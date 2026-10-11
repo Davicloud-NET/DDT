@@ -1,0 +1,53 @@
+{
+  "key": "install-linux",
+  "name": "Install Linux",
+  "description": "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine, then runs a script in the installed Linux.",
+  "definition": {
+    "version": 5,
+    "steps": [
+      {
+        "kind": "writeRawImage",
+        "imageId": "00000000-0000-0000-0000-000000000000",
+        "id": "00000000-0000-4000-8000-000000000001",
+        "name": "Write the disk image",
+        "conditions": [],
+        "continueOnError": false,
+        "rebootAfter": false
+      },
+      {
+        "kind": "writeCloudInitSeed",
+        "metaData": "instance-id: \"{{SmbiosUuid}}\"\nlocal-hostname: \"{{ComputerName}}\"\n",
+        "userData": "#cloud-config\n# Every viewer of DDT can read this. Put in public keys, and passwords only hashed.\n# \"default\" is the image's own user, such as ubuntu or debian. The keys below are for it.\nusers:\n  - default\n# ssh_authorized_keys:\n#   - ssh-ed25519 AAAA... name@example.org\n",
+        "networkConfig": null,
+        "id": "00000000-0000-4000-8000-000000000002",
+        "name": "Write the cloud-init seed",
+        "conditions": [],
+        "continueOnError": false,
+        "rebootAfter": false
+      },
+      {
+        "kind": "runScript",
+        "phase": "Linux",
+        "interpreter": "Shell",
+        "script": "# Runs as root in the installed Linux, once cloud-init has finished. Replace it with what the machine needs.\necho \"The run goes on in $(uname -sr) on $(hostname), as $(id -un).\"\n",
+        "packageId": null,
+        "timeoutMinutes": 60,
+        "successExitCodes": [
+          0
+        ],
+        "rebootExitCodes": [
+          194
+        ],
+        "id": "00000000-0000-4000-8000-000000000003",
+        "name": "Say where the run goes on",
+        "conditions": [],
+        "continueOnError": false,
+        "rebootAfter": false
+      }
+    ]
+  },
+  "nameCode": "template.installLinux",
+  "nameArgs": {},
+  "descriptionCode": "template.installLinuxDescription",
+  "descriptionArgs": {}
+}

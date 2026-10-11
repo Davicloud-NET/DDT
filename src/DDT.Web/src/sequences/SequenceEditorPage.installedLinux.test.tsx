@@ -112,6 +112,36 @@ describe("SequenceEditorPage, a step in the installed Linux", () => {
     expect(screen.queryByText(/2 warnings/)).not.toBeInTheDocument();
   });
 
+  // Before the seed it starts in the Linux boot environment, which the test of a Linux sequence holds.
+  it("starts a new script after the seed in the installed Linux, with 194 to ask for a restart", async () => {
+    const boot = script("LinuxBoot", []);
+    const { saves } = serve(
+      administrator,
+      linuxView(boot, {
+        definition: {
+          version: 4,
+          steps: [boot, newStep("writeRawImage", "w"), newStep("writeCloudInitSeed", "c")],
+        },
+        stepPhases: ["LinuxBoot", "LinuxBoot", "LinuxBoot"],
+      }),
+      { step: "c" },
+    );
+
+    await opened("Install Linux");
+    press(screen.getByRole("button", { name: "Add a step after Write the cloud-init seed" }));
+    press(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Run script" }));
+
+    await waitFor(() => {
+      expect(saves.at(-1)?.definition.steps[3]).toMatchObject({
+        kind: "runScript",
+        phase: "Linux",
+        interpreter: "Shell",
+        rebootExitCodes: [194],
+      });
+    }, saveWait);
+    expect(saves.at(-1)?.definition.version).toBe(5);
+  });
+
   it("gives a script 194 to ask for a restart with when it moves to the installed Linux", async () => {
     const { saves } = serve(administrator, linuxView(script("LinuxBoot", [])), { step: "s" });
 

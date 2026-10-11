@@ -25,6 +25,11 @@ public static class SequenceTemplates
         "# ssh_authorized_keys:\n" +
         "#   - ssh-ed25519 AAAA... name@example.org\n";
 
+    // A sample of a step in the installed Linux, to be replaced. Its line lands in the run's log.
+    public const string LinuxScript =
+        "# Runs as root in the installed Linux, once cloud-init has finished. Replace it with what the machine needs.\n" +
+        "echo \"The run goes on in $(uname -sr) on $(hostname), as $(id -un).\"\n";
+
     // Templates for installing Windows and its Linux counterpart. Without a domain, the Windows run ends in WinPE and
     // restarts into setup. With one, it continues in Windows to join, and restarts for the join. imageId is the chosen
     // image, if any.
@@ -64,6 +69,15 @@ public static class SequenceTemplates
                             Name = "Write the cloud-init seed",
                             MetaData = LinuxMetaData,
                             UserData = LinuxUserData,
+                        },
+                        new RunScriptStep
+                        {
+                            Id = Guid.NewGuid(),
+                            Name = "Say where the run goes on",
+                            Phase = SequencePhase.Linux,
+                            Interpreter = ScriptInterpreter.Shell,
+                            Script = LinuxScript,
+                            RebootExitCodes = [194],
                         },
                     ]).Normalised()),
         ];

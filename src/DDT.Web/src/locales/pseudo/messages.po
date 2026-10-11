@@ -12153,7 +12153,7 @@ msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "template.installLinuxDescription"
-msgid "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine."
+msgid "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine, then runs a script in the installed Linux."
 msgstr ""
 
 #: src/sequences/steps/WriteUnattendFields.tsx

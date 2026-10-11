@@ -80,6 +80,19 @@ export function inPhase(phase: SequencePhase): string {
 export const defaultMetaData =
   'instance-id: "{{SmbiosUuid}}"\nlocal-hostname: "{{ComputerName}}"\n';
 
+// What the server's install-linux template starts with. cloud-init's schema check takes it, where it calls a
+// document with the header alone an empty cloud config.
+export const defaultUserData = [
+  "#cloud-config",
+  "# Every viewer of DDT can read this. Put in public keys, and passwords only hashed.",
+  '# "default" is the image\'s own user, such as ubuntu or debian. The keys below are for it.',
+  "users:",
+  "  - default",
+  "# ssh_authorized_keys:",
+  "#   - ssh-ed25519 AAAA... name@example.org",
+  "",
+].join("\n");
+
 // The placeholders the agent fills in the seed files, as {{Name}}.
 export const seedPlaceholders = [
   "ComputerName",
@@ -259,7 +272,7 @@ export function newStep(
         ...common,
         kind,
         metaData: defaultMetaData,
-        userData: "#cloud-config\n",
+        userData: defaultUserData,
         networkConfig: null,
       };
     case "setVariable":

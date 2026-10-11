@@ -544,7 +544,7 @@
   "stepAccount.tooManyHosts": "An account can name at most {max} servers.",
   "stepAccount.userNameForm": "Enter the user name with its domain, as DOMAIN\\user or user@corp.example, in at most {max} characters.",
   "template.installLinux": "Install Linux",
-  "template.installLinuxDescription": "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine.",
+  "template.installLinuxDescription": "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine, then runs a script in the installed Linux.",
   "template.installWindows": "Install Windows",
   "template.installWindowsDescription": "Partitions the disk, applies an image, adds the drivers for the machine's model and writes the answer file.",
   "template.installWindowsJoinDescription": "Partitions the disk, applies an image, adds the drivers for the machine's model and writes the answer file, then joins the domain in Windows.",

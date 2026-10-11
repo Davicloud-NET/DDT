@@ -37,7 +37,8 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate TemplateInstallLinuxDescription = Define(
         "template.installLinuxDescription",
-        "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine.");
+        "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine, then runs a " +
+        "script in the installed Linux.");
 
     // Task sequences: the requests that save them.
 

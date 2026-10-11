@@ -147,15 +147,45 @@ public sealed class SequenceRawImageTests(DdtApplication application) : IClassFi
             await ReadAsync<IReadOnlyList<SequenceTemplate>>(await administrator.GetAsync($"{SequenceRequests.Sequences}/templates")),
             template => template.Key == SequenceTemplates.InstallLinuxKey);
 
-        Assert.Equal(4, linux.Definition.Version);
+        Assert.Equal(5, linux.Definition.Version);
         Assert.Equal(Guid.Empty, Assert.IsType<WriteRawImageStep>(linux.Definition.Steps[0]).ImageId);
         WriteCloudInitSeedStep seed = Assert.IsType<WriteCloudInitSeedStep>(linux.Definition.Steps[1]);
         Assert.Equal(SequenceTemplates.LinuxMetaData, seed.MetaData);
         Assert.Equal(SequenceTemplates.LinuxUserData, seed.UserData);
         Assert.Null(seed.NetworkConfig);
 
-        // Only the image is missing.
-        Assert.Equal("imageId", Assert.Single((await ValidateAsync(linux.Definition)).Problems).Field);
+        // Only the image is missing, and the seed's user-data lets the run go on in the installed Linux.
+        SequenceValidation validation = await ValidateAsync(linux.Definition);
+        Assert.Equal("imageId", Assert.Single(validation.Problems).Field);
+        Assert.Empty(validation.Warnings);
+        Assert.Empty(validation.Notes ?? []);
+    }
+
+    // A sample to replace: one line for the run's log, from a script that restarts the machine with exit code 194.
+    [Fact]
+    public async Task TheInstallLinuxTemplateGoesOnWithASampleScriptInTheInstalledLinux()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+
+        SequenceTemplate linux = Assert.Single(
+            await ReadAsync<IReadOnlyList<SequenceTemplate>>(await administrator.GetAsync($"{SequenceRequests.Sequences}/templates")),
+            template => template.Key == SequenceTemplates.InstallLinuxKey);
+        RunScriptStep sample = Assert.IsType<RunScriptStep>(Assert.Single(linux.Definition.Steps.Skip(2)));
+
+        Assert.Equal(
+            (SequencePhase.Linux, ScriptInterpreter.Shell, "Say where the run goes on"),
+            (sample.Phase, sample.Interpreter, sample.Name));
+        Assert.Equal([0], sample.SuccessExitCodes);
+        Assert.Equal([194], sample.RebootExitCodes);
+        Assert.Null(sample.PackageId);
+        Assert.Equal(
+            "# Runs as root in the installed Linux, once cloud-init has finished. Replace it with what the machine needs.\n" +
+            "echo \"The run goes on in $(uname -sr) on $(hostname), as $(id -un).\"\n",
+            sample.Script);
+        Assert.Equal(
+            "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine, then runs a " +
+            "script in the installed Linux.",
+            linux.Description);
     }
 
     // cloud-init 25 and 26 end "degraded" on a key with an empty list, and on user-data that holds comments alone.

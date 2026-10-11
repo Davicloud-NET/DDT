@@ -2191,7 +2191,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "template.installLinuxDescription": msg({
     context: "template.installLinuxDescription",
-    message: "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine.",
+    message: "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine, then runs a script in the installed Linux.",
   }),
   "template.installWindows": msg({
     context: "template.installWindows",

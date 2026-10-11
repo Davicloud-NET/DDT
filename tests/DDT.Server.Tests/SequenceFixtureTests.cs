@@ -40,6 +40,24 @@ public sealed class SequenceFixtureTests
         await MatchFixtureAsync("install-windows.sequence.json", fixedIds, "the template");
     }
 
+    // The web starts a new seed step and a new script after it as this template has them.
+    [Fact]
+    public async Task TheWebFixtureIsTheInstallLinuxTemplate()
+    {
+        SequenceTemplate template = Assert.Single(
+            SequenceTemplates.All(domainConfigured: false, administratorConfigured: false, s_imageId),
+            template => template.Key == SequenceTemplates.InstallLinuxKey);
+        SequenceTemplate fixedIds = template with
+        {
+            Definition = template.Definition with
+            {
+                Steps = [.. template.Definition.Steps.Select((step, index) => step with { Id = StepId(index) })],
+            },
+        };
+
+        await MatchFixtureAsync("install-linux.sequence.json", fixedIds, "the template");
+    }
+
     // Every kind of step a flat document can hold, plus a script in every phase with every interpreter.
     private static List<SequenceStep> EveryKindOfStep()
     {

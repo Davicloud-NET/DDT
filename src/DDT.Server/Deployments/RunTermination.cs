@@ -107,7 +107,8 @@ public sealed class RunTermination(DdtDbContext database, RunQueries queries, Ti
         ArgumentNullException.ThrowIfNull(machine);
         ArgumentNullException.ThrowIfNull(running);
 
-        string error = $"The agent has not been in contact since {machine.LastSeenUtc:u} and could no longer resume the run.";
+        string error = HandOvers.NeverCalled(machine, running)
+            ?? $"The agent has not been in contact since {machine.LastSeenUtc:u} and could no longer resume the run.";
 
         await FailAsync(machine, running, Actor.Nobody, error, cancellationToken).ConfigureAwait(false);
         machine.State = MachineState.Failed;

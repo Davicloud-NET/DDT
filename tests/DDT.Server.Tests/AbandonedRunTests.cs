@@ -111,6 +111,38 @@ public sealed class AbandonedRunTests(ManualClockApplication application) : ICla
         Assert.Equal(MachineState.Pending, again.State);
     }
 
+    // No agent was ever in contact from there, so the end names the hand-over and what keeps a Linux from calling.
+    [Fact]
+    public async Task ALinuxRunWhoseInstalledLinuxNeverCalledSaysSoWhenItFails()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await DeployingMachine.RegisterAsync(application, DeployingMachine.LinuxBoot());
+        (await administrator.PostAsync($"/api/machines/{machine.Id}/approve")).EnsureSuccessStatusCode();
+        await machine.NextAsync();
+        Image image = await application.SeedRawImageAsync(RandomNumberGenerator.GetBytes(4096), name: $"noble {Guid.NewGuid():N}");
+        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.LinuxWithInstalledSteps(image.Id));
+
+        await administrator.AssignedAsync(machine.Id, sequence.Id, "LINUX-39");
+        AgentRun run = (await machine.NextAsync()).Run!;
+        StepRunState[] written = [Step(run.Sequence.Steps[0], StepState.Done), Step(run.Sequence.Steps[1], StepState.Done)];
+        await machine.ReportOkAsync(
+            run.Id,
+            Report(DeploymentState.Running, written) with { Phase = SequencePhase.Linux, Activity = RunActivity.Restarting });
+
+        DateTimeOffset handedOver = (await administrator.RunAsync(run.Id)).Summary.UpdatedUtc;
+        await LastSeenAsync(machine.Id, s_canNoLongerResume);
+        Assert.Equal(1, await SweepAsync());
+
+        DeploymentView failed = await administrator.RunAsync(run.Id);
+
+        Assert.Equal(DeploymentState.Failed, failed.Summary.State);
+        Assert.Equal(
+            $"The installed Linux has not called since the run was handed over at {handedOver:u}, and the run could no longer go on. " +
+            "The machine did not start from its disk, or cloud-init did not install DDT's agent there.",
+            failed.Summary.Error);
+        Assert.Equal(MachineState.Failed, (await application.MachineAsync(machine.Id)).State);
+    }
+
     // Open Machines pages show the run as failed. A page that shows the machine also shows its step as failed.
     [Fact]
     public async Task TheFailureIsPushedAsForAnyOtherEnd()

@@ -100,7 +100,7 @@ public sealed class LinuxPhaseKernelTests : IDisposable
         Assert.False(Holds(bytes, Token));
         Assert.Equal(["ddt-agent", "agent.json", "state.json"], volume.List(LinuxAgentFiles.SeedFolder).Select(entry => entry.Name));
         Assert.Equal(["meta-data", "user-data", "vendor-data", "ddt"], volume.List("").Select(entry => entry.Name));
-        Assert.Empty(MountsBelow.Of(_folder));
+        Assert.Null(MountsBelow.Holding(_folder));
         Assert.Contains(SeedTokenRepair.Repaired, _console.ToString(), StringComparison.Ordinal);
     }
 
@@ -117,7 +117,7 @@ public sealed class LinuxPhaseKernelTests : IDisposable
         Assert.False(Holds(bytes, Token));
         Assert.False(Holds(bytes, "0193a4b2-0000-7000-8000-0000000000f1"));
         Assert.Equal(["systemctl disable ddt-agent.service", "systemctl daemon-reload"], tools.Calls);
-        Assert.Empty(MountsBelow.Of(_folder));
+        Assert.Null(MountsBelow.Holding(_folder));
         Assert.DoesNotContain("WARN", _console.ToString(), StringComparison.Ordinal);
     }
 

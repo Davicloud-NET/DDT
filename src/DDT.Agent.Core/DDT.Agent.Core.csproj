@@ -5,6 +5,8 @@
   <PropertyGroup>
     <RootNamespace>DDT.Agent</RootNamespace>
     <IsAotCompatible>true</IsAotCompatible>
+    <!-- Required by the LibraryImport source generator. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

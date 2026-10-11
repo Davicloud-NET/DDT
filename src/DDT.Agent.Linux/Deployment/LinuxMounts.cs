@@ -2,15 +2,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 
 namespace DDT.Agent.Deployment;
 
 // The file systems mounted from a disk, as the kernel lists them, and their unmounting before the machine restarts.
 // unmount returns 0 or the error.
-public sealed partial class LinuxMounts(string root, AgentLog log, Func<string, int>? unmount = null)
+public sealed class LinuxMounts(string root, AgentLog log, Func<string, int>? unmount = null)
 {
     private readonly Func<string, int> _unmount = unmount ?? Unmount;
 
@@ -46,9 +44,9 @@ public sealed partial class LinuxMounts(string root, AgentLog log, Func<string, 
         {
             string[] fields = line.Split(' ');
 
-            if (fields.Length >= 2 && disks.Any(disk => IsOn(Unescape(fields[0]), disk)))
+            if (fields.Length >= 2 && disks.Any(disk => IsOn(MountList.Unescape(fields[0]), disk)))
             {
-                found.Add((Unescape(fields[0]), Unescape(fields[1])));
+                found.Add((MountList.Unescape(fields[0]), MountList.Unescape(fields[1])));
             }
         }
 
@@ -79,13 +77,6 @@ public sealed partial class LinuxMounts(string root, AgentLog log, Func<string, 
             && (name == diskName || Directory.Exists(Path.Combine(root, "sys", "block", diskName, name)));
     }
 
-    // The list writes a space, a tab, a line end and a backslash as a backslash and three octal digits.
-    private static string Unescape(string field) =>
-        Escape().Replace(field, match => ((char)Convert.ToInt32(match.Groups[1].Value, 8)).ToString(CultureInfo.InvariantCulture));
-
     private static int Unmount(string target) =>
         RestartNativeMethods.umount2(target, 0) == 0 ? 0 : Marshal.GetLastPInvokeError();
-
-    [GeneratedRegex(@"\\([0-7]{3})")]
-    private static partial Regex Escape();
 }

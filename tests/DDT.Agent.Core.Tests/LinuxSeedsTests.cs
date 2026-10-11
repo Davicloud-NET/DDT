@@ -115,8 +115,12 @@ public sealed class LinuxSeedsTests : IDisposable
 
         Assert.Equal(
             ["/var/lib/ddt/packages/0193/my disk", "/var/lib/ddt/packages/0193/share"],
-            MountsBelow.In(lines, "/var/lib/ddt/packages/"));
+            MountsBelow.In(lines, "/var/lib/ddt/packages/0193/"));
         Assert.Equal(3, MountsBelow.In(lines, "/var/lib/ddt").Count);
         Assert.Empty(MountsBelow.In(lines, "/var/lib/ddt/scripts"));
+
+        // What is mounted on the folder itself counts too: its files are the mounted file system's.
+        Assert.Equal(["/var/lib/ddt/packages/0193/share"], MountsBelow.In(lines, "/var/lib/ddt/packages/0193/share"));
+        Assert.Equal(6, MountsBelow.In(lines, "/").Count);
     }
 }

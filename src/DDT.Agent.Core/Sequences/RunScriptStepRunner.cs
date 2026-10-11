@@ -82,7 +82,7 @@ public sealed class RunScriptStepRunner(
         }
 
         string directory = session.RunDirectory ?? workDirectory;
-        string scripts = Path.Combine(directory, "scripts");
+        string scripts = Path.Combine(directory, StepFiles.ScriptsFolder);
 
         if (account is not null)
         {
@@ -159,9 +159,9 @@ public sealed class RunScriptStepRunner(
             throw new DeploymentStepException(NoPlaceForPackage(context.Phase));
         }
 
-        string package = Path.Combine(directory, "packages", step.Id.ToString("D"));
+        string package = Path.Combine(directory, StepFiles.PackagesFolder, step.Id.ToString("D"));
         await downloads
-            .UnpackAsync(content, Path.Combine(directory, "cache"), package, new ScaledProgress(context.Progress, 0, 10), cancellationToken)
+            .UnpackAsync(content, Path.Combine(directory, StepFiles.CacheFolder), package, new ScaledProgress(context.Progress, 0, 10), cancellationToken)
             .ConfigureAwait(false);
         launcher.Unpacked(package);
         account?.Admit(package);
@@ -190,7 +190,7 @@ public sealed class RunScriptStepRunner(
             return null;
         }
 
-        string outputs = Path.Combine(scripts, step.Id.ToString("D") + ".variables");
+        string outputs = Path.Combine(scripts, step.Id.ToString("D") + StepFiles.VariablesExtension);
         File.Delete(outputs);
         environment[VariablesOut] = outputs;
 

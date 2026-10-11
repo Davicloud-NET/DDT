@@ -14,9 +14,12 @@ namespace DDT.Agent.LinuxPhase;
 // removed stays and is said. The agent then has to end with exit code 0, or systemd keeps a failed unit without a file.
 public sealed class LinuxAgentRemoval(LinuxAgentPaths paths, IMountedSeeds seeds, IToolRunner tools, AgentLog log) : IAgentRemoval
 {
-    // What the agent keeps beside the run's own files. A folder is only deleted when nothing else is left in it,
-    // because a DDT server on the same system keeps its store under the same name.
-    private static readonly string[] s_ownFolders = ["scripts", "packages", "cache"];
+    // The agent's own folders beside the run's files, which go with all they hold. The state and program folders
+    // above them go only when empty, because a DDT server on the same system keeps its store under the same name.
+    private static readonly string[] s_ownFolders = [StepFiles.ScriptsFolder, StepFiles.PackagesFolder, StepFiles.CacheFolder];
+
+    // What the hand-over put on the seed that says something of the run. The program beside them does not.
+    private static readonly string[] s_seedFiles = [LinuxAgentFiles.SeedToken, LinuxAgentFiles.SeedState, LinuxAgentFiles.SeedConfiguration];
 
     public async Task RemoveAsync(CancellationToken cancellationToken)
     {
@@ -41,7 +44,12 @@ public sealed class LinuxAgentRemoval(LinuxAgentPaths paths, IMountedSeeds seeds
     {
         int mounted = seeds.Each(seed =>
         {
-            Leftovers.WipeAll(Path.Combine(seed, LinuxAgentFiles.SeedFolder), log);
+            foreach (string file in s_seedFiles)
+            {
+                Leftovers.Wipe(Path.Combine(seed, file), log);
+            }
+
+            Leftovers.Delete(Path.Combine(seed, LinuxAgentFiles.SeedFolder), log);
             DeleteScript(Path.Combine(seed, CloudInitSeed.VendorData));
         });
 
@@ -88,14 +96,16 @@ public sealed class LinuxAgentRemoval(LinuxAgentPaths paths, IMountedSeeds seeds
         }
     }
 
-    // A script's text and what a script left behind may hold what only root should read, so files are overwritten.
+    // A script's text, the variables it set and the log may hold what only root should read, so those are overwritten.
+    // What a script left in its folder is deleted as it is: a link there may point anywhere.
     private void RemoveState()
     {
         string run = RunFiles.DirectoryIn(paths.State);
+        WipeStepFiles(Path.Combine(run, StepFiles.ScriptsFolder));
 
         foreach (string folder in s_ownFolders)
         {
-            Leftovers.WipeAll(Path.Combine(run, folder), log);
+            Leftovers.Delete(Path.Combine(run, folder), log);
         }
 
         if (run != paths.State)
@@ -103,9 +113,29 @@ public sealed class LinuxAgentRemoval(LinuxAgentPaths paths, IMountedSeeds seeds
             DeleteEmpty(run);
         }
 
+        Leftovers.Wipe(paths.LogFile, log);
         Leftovers.Delete(Path.GetDirectoryName(paths.LogFile) ?? paths.LogFile, log);
         Leftovers.Delete(paths.Configuration, log);
         DeleteEmpty(paths.State);
+    }
+
+    // The files the agent wrote for a step, which it knows by the step's id in their names.
+    private void WipeStepFiles(string scripts)
+    {
+        try
+        {
+            if (Directory.Exists(scripts))
+            {
+                foreach (string file in Directory.GetFiles(scripts).Where(StepFiles.IsOwn))
+                {
+                    Leftovers.Wipe(file, log);
+                }
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            log.Warning($"{scripts} could not be read to overwrite the scripts in it ({exception.Message}).");
+        }
     }
 
     // /run is empty again after the next start, so what stays here only stays until then.

@@ -80,7 +80,7 @@ public sealed class ShellScriptLauncher(bool dryRun = false) : IScriptLauncher
     {
         ArgumentNullException.ThrowIfNull(step);
 
-        string file = Path.Combine(directory, step.Id.ToString("D") + ".sh");
+        string file = Path.Combine(directory, step.Id.ToString("D") + StepFiles.ShellExtension);
         string text = Text(step.Script);
 
         // A file from an earlier turn of the step would keep the mode it has.

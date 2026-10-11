@@ -34,10 +34,12 @@ public sealed class LinuxDryRunMachine(
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
         LinuxPhaseDryRun installed = new(options, connect, log, timeProvider) { FreeSpace = FreeSpace };
+        DryRunNetboot netboot = options.Agent.DryRunNetboot;
 
         while (true)
         {
-            bool inLinux = await installed.HoldsRunAsync().ConfigureAwait(false);
+            bool holdsRun = await installed.HoldsRunAsync().ConfigureAwait(false);
+            bool inLinux = holdsRun && netboot != DryRunNetboot.OnceInLinux;
             int exitCode = inLinux
                 ? await installed.RunAsync(cancellationToken).ConfigureAwait(false)
                 : await Boot().RunAsync(cancellationToken).ConfigureAwait(false);
@@ -47,17 +49,32 @@ public sealed class LinuxDryRunMachine(
                 return exitCode;
             }
 
-            // The boot environment restarts only to hand a run over, which the seed on the disk then holds.
-            if (!inLinux && !installed.Install())
+            // The boot environment restarts only for a run it handed over, which the seed on the disk then holds.
+            if (netboot == DryRunNetboot.Always && !inLinux)
+            {
+                log.Information("Dry run: the installed Linux never runs the agent's script, and the machine starts from the network again.");
+
+                continue;
+            }
+
+            if (!holdsRun && !installed.Install())
             {
                 return exitCode;
             }
 
-            log.Information(inLinux
-                ? "Dry run: the machine restarts, which here starts its agent over."
-                : "Dry run: the machine restarts into the installed Linux, which here starts its agent over there.");
+            // Once is once: the fake machine's next start comes from its disk.
+            netboot = holdsRun ? DryRunNetboot.Never : netboot;
+            log.Information(Says(inLinux, holdsRun, netboot));
         }
     }
+
+    private static string Says(bool inLinux, bool heldRun, DryRunNetboot netboot) => (inLinux, heldRun, netboot) switch
+    {
+        (true, _, _) => "Dry run: the machine restarts, which here starts its agent over.",
+        (false, false, DryRunNetboot.OnceInLinux) =>
+            "Dry run: the machine restarts into the installed Linux, which takes the run over, and then starts from the network once more.",
+        _ => "Dry run: the machine restarts into the installed Linux, which here starts its agent over there.",
+    };
 
     private LinuxBootDryRun Boot() => new(options, server, status, log, timeProvider)
     {

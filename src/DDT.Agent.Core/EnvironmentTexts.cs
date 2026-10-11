@@ -15,7 +15,8 @@ public static class EnvironmentTexts
 {
     public const string LinuxUsage =
         "Usage: ddt-agent [--config <agent.json>] [--server <https url>] [--root-certificate <pem file>] " +
-        "[--no-update] [--dry-run [--dry-run-id <number>] [--dry-run-secure-boot]], or ddt-agent --licenses";
+        "[--no-update] [--dry-run [--dry-run-id <number>] [--dry-run-secure-boot] [--dry-run-netboot <OnceInLinux|Always>]], " +
+        "or ddt-agent --licenses";
 
     public const string LinuxNoDisk =
         "No internal disk was found. The Linux boot environment may have no driver for this PC's storage controller, or the " +

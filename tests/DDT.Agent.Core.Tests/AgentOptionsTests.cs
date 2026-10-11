@@ -77,6 +77,27 @@ public sealed class AgentOptionsTests
         Assert.Contains("[--dry-run-environment <WindowsPE|LinuxBoot>]", AgentOptions.Usage, StringComparison.Ordinal);
     }
 
+    // What a dry run's machine does after a hand-over to the installed Linux, for either executable.
+    [Fact]
+    public void ReadsHowADryRunsMachineStartsAfterAHandOverToLinux()
+    {
+        string[] dryRun = ["--server", "https://ddt.example:7152", "--dry-run"];
+
+        Assert.True(AgentOptions.TryParse(dryRun, out AgentOptions? plain, out string error), error);
+        Assert.True(AgentOptions.TryParse([.. dryRun, "--dry-run-netboot", "OnceInLinux"], out AgentOptions? once, out error), error);
+        Assert.True(AgentOptions.TryParse([.. dryRun, "--dry-run-netboot", "always"], AgentEnvironment.LinuxBoot, out AgentOptions? always, out error), error);
+        Assert.False(AgentOptions.TryParse([.. dryRun, "--dry-run-netboot", "2"], out _, out string number));
+        Assert.False(AgentOptions.TryParse(["--server", "https://ddt.example:7152", "--dry-run-netboot", "Always"], AgentEnvironment.LinuxBoot, out _, out string alone));
+
+        Assert.Equal(
+            (DryRunNetboot.Never, DryRunNetboot.OnceInLinux, DryRunNetboot.Always),
+            (plain!.DryRunNetboot, once!.DryRunNetboot, always!.DryRunNetboot));
+        Assert.StartsWith("Unknown or invalid argument --dry-run-netboot.", number, StringComparison.Ordinal);
+        Assert.Equal($"--dry-run-netboot goes with --dry-run. {EnvironmentTexts.LinuxUsage}", alone);
+        Assert.Contains("[--dry-run-netboot <OnceInLinux|Always>]", AgentOptions.Usage, StringComparison.Ordinal);
+        Assert.Contains("[--dry-run-netboot <OnceInLinux|Always>]", EnvironmentTexts.LinuxUsage, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void NamesAGraphicalConsoleOnlyWhenAsked()
     {

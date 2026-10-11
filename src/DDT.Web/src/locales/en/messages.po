@@ -2301,7 +2301,7 @@ msgstr "An account can name at most {max} servers."
 msgid "An account for this run only, which DDT uses and never shows or hands to a script."
 msgstr "An account for this run only, which DDT uses and never shows or hands to a script."
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "An account in the installed Windows, signed in for the script alone."
 msgstr "An account in the installed Windows, signed in for the script alone."
 
@@ -6848,15 +6848,15 @@ msgctxt "machine.cannotBeRemoved"
 msgid "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
 msgstr "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Only a script in Windows runs as an account; in the installed Linux it runs as root."
 msgstr "Only a script in Windows runs as an account; in the installed Linux it runs as root."
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Only a script in Windows runs as an account; in the Linux boot environment it runs as root."
 msgstr "Only a script in Windows runs as an account; in the Linux boot environment it runs as root."
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM."
 msgstr "Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM."
 
@@ -7873,7 +7873,7 @@ msgstr "Role of a new account"
 msgid "Role that {key} gives"
 msgstr "Role that {key} gives"
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "root"
 msgstr "root"
 
@@ -7931,7 +7931,7 @@ msgid "Rules reordered"
 msgstr "Rules reordered"
 
 #: src/accounts/list/AccountsTable.tsx
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Run as"
 msgstr "Run as"
 
@@ -9090,7 +9090,7 @@ msgstr "Such as OU=Workstations,DC=example,DC=com. Empty takes the default from 
 msgid "Swedish"
 msgstr "Swedish"
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "SYSTEM"
 msgstr "SYSTEM"
 

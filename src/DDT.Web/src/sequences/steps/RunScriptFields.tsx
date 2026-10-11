@@ -5,7 +5,6 @@
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 
-import { AccountSetting } from "../builder/AccountSetting";
 import { ChoiceSetting } from "../fields/ChoiceSetting";
 import type { Choice } from "../fields/fieldBase";
 import { TextSetting } from "../fields/TextSetting";
@@ -16,6 +15,7 @@ import type { KindFieldsProps } from "./kindFields";
 import { ScriptIntro } from "./ScriptIntro";
 import { ScriptPackageSetting } from "./ScriptPackageSetting";
 import { ScriptResultFields } from "./ScriptResultFields";
+import { ScriptRunAsSetting } from "./ScriptRunAsSetting";
 
 // Where a script runs, as the choice names it.
 function phaseChoice(phase: SequencePhase): string {
@@ -60,7 +60,6 @@ export function RunScriptFields({
   const interpreters: Choice[] = withOwn(scriptInterpreters(sequence), step.interpreter).map(
     (interpreter) => ({ id: interpreter, label: interpreterLabel(interpreter) }),
   );
-  const root = kindOfPhase(step.phase) === "Linux" ? t`root` : t`SYSTEM`;
 
   // A phase of the other kind takes the interpreter that kind runs. The script has to be rewritten for it anyway.
   const changePhase = (phase: SequencePhase) => {
@@ -89,36 +88,7 @@ export function RunScriptFields({
         }}
       />
       {step.phase === "Windows" || (step.runAs ?? null) !== null ? (
-        <AccountSetting
-          label={<Trans>Run as</Trans>}
-          field="runAs"
-          findings={findings}
-          className="sm:col-span-2"
-          use="runAs"
-          noneLabel={root}
-          hint={
-            step.phase === "Windows" ? (
-              <Trans>An account in the installed Windows, signed in for the script alone.</Trans>
-            ) : step.phase === "LinuxBoot" ? (
-              <Trans>
-                Only a script in Windows runs as an account; in the Linux boot environment it runs
-                as root.
-              </Trans>
-            ) : step.phase === "Linux" ? (
-              <Trans>
-                Only a script in Windows runs as an account; in the installed Linux it runs as root.
-              </Trans>
-            ) : (
-              <Trans>
-                Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM.
-              </Trans>
-            )
-          }
-          value={step.runAs ?? null}
-          onChange={(runAs) => {
-            onChange({ runAs }, true);
-          }}
-        />
+        <ScriptRunAsSetting step={step} findings={findings} onChange={onChange} />
       ) : null}
       <ChoiceSetting
         label={<Trans>Interpreter</Trans>}

@@ -1741,7 +1741,7 @@ msgstr "Ein Schritt darf höchstens {max} Bedingungen haben."
 #: src/lib/serverMessages.ts
 msgctxt "sequence.linuxNeedsSeed"
 msgid "A step in the installed Linux needs an earlier step that writes the cloud-init seed, without conditions and without going on when it fails. The seed takes DDT's agent into the installed Linux."
-msgstr "Ein Schritt im installierten Linux braucht einen früheren Schritt, der den cloud-init-Seed schreibt, ohne Bedingungen und ohne bei einem Fehler fortzufahren. Der Seed bringt den Agenten von DDT ins installierte Linux."
+msgstr "Ein Schritt im installierten Linux braucht einen früheren Schritt, der den cloud-init-Seed schreibt, ohne Bedingungen und ohne bei einem Fehler fortzufahren. Der Seed bringt den Agent von DDT ins installierte Linux."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.linuxNeedsSeedOnEveryPath"
@@ -2301,7 +2301,7 @@ msgstr "Ein Konto kann höchstens {max} Server nennen."
 msgid "An account for this run only, which DDT uses and never shows or hands to a script."
 msgstr "Ein Konto nur für diese Ausführung, das DDT verwendet und nie anzeigt oder an ein Skript weitergibt."
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "An account in the installed Windows, signed in for the script alone."
 msgstr "Ein Konto im installierten Windows, nur für das Skript angemeldet."
 
@@ -6848,15 +6848,15 @@ msgctxt "machine.cannotBeRemoved"
 msgid "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
 msgstr "Nur ein abgelehntes Gerät oder ein wartendes Gerät, das nie freigegeben wurde und keine zugewiesene Ausführung hat, kann entfernt werden."
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Only a script in Windows runs as an account; in the installed Linux it runs as root."
 msgstr "Nur ein Skript in Windows läuft als Konto; im installierten Linux läuft es als root."
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Only a script in Windows runs as an account; in the Linux boot environment it runs as root."
 msgstr "Nur ein Skript in Windows läuft als Konto; in der Linux-Startumgebung läuft es als root."
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM."
 msgstr "Nur ein Skript in Windows läuft als Konto; in Windows PE läuft es als SYSTEM."
 
@@ -7873,7 +7873,7 @@ msgstr "Rolle eines neuen Kontos"
 msgid "Role that {key} gives"
 msgstr "Rolle, die {key} gibt"
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "root"
 msgstr "root"
 
@@ -7931,7 +7931,7 @@ msgid "Rules reordered"
 msgstr "Regeln neu geordnet"
 
 #: src/accounts/list/AccountsTable.tsx
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Run as"
 msgstr "Ausführen als"
 
@@ -9090,7 +9090,7 @@ msgstr "Etwa OU=Workstations,DC=example,DC=com. Leer gilt der Standard von der S
 msgid "Swedish"
 msgstr "Schwedisch"
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "SYSTEM"
 msgstr "SYSTEM"
 

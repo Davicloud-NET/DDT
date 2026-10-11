@@ -2301,7 +2301,7 @@ msgstr ""
 msgid "An account for this run only, which DDT uses and never shows or hands to a script."
 msgstr ""
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "An account in the installed Windows, signed in for the script alone."
 msgstr ""
 
@@ -6848,15 +6848,15 @@ msgctxt "machine.cannotBeRemoved"
 msgid "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
 msgstr ""
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Only a script in Windows runs as an account; in the installed Linux it runs as root."
 msgstr ""
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Only a script in Windows runs as an account; in the Linux boot environment it runs as root."
 msgstr ""
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM."
 msgstr ""
 
@@ -7873,7 +7873,7 @@ msgstr ""
 msgid "Role that {key} gives"
 msgstr ""
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "root"
 msgstr ""
 
@@ -7931,7 +7931,7 @@ msgid "Rules reordered"
 msgstr ""
 
 #: src/accounts/list/AccountsTable.tsx
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Run as"
 msgstr ""
 
@@ -9090,7 +9090,7 @@ msgstr ""
 msgid "Swedish"
 msgstr ""
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "SYSTEM"
 msgstr ""
 

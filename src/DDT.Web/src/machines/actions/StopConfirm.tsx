@@ -43,9 +43,8 @@ export function StopConfirm({
   );
 }
 
-// A run in a boot environment may have written part of the disk. In the installed system, the agent runs as a
-// service. It learns of the stop at its next contact with the server and removes itself, and the system stays as far
-// as the run got.
+// A run in a boot environment may have written part of the disk. In the installed system the agent learns of the
+// stop at its next contact with the server and removes itself, and the system stays as far as the run got.
 function stopConsequence(machine: MachineSummary): string {
   const label = machineLabel(machine);
 

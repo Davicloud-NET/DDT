@@ -23,9 +23,18 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
     // Takes every other entry for an erased EFI system partition out of the firmware. Off, they stay, as in Windows PE.
     public bool RemovesDeadEntries { get; init; }
 
+    // The entry in the boot order that starts the loader on the partition, by its number. Null when none does.
+    public ushort? Find(EspPartition esp, string loaderPath)
+    {
+        ArgumentNullException.ThrowIfNull(esp);
+        ArgumentException.ThrowIfNullOrEmpty(loaderPath);
+
+        return FindEntries(ReadOrder(variables.Read(BootOrder)), esp, loaderPath, []).Existing;
+    }
+
     // diskpart gives every new partition a new GUID. So an entry for an EFI system partition the deployment erased is
-    // reused rather than left behind as a dead entry.
-    public void MakeFirst(EspPartition esp, string loaderPath, string description, IReadOnlyCollection<Guid> erasedPartitionIds)
+    // reused rather than left behind as a dead entry. Returns the entry's number.
+    public ushort MakeFirst(EspPartition esp, string loaderPath, string description, IReadOnlyCollection<Guid> erasedPartitionIds)
     {
         ArgumentNullException.ThrowIfNull(esp);
         ArgumentException.ThrowIfNullOrEmpty(loaderPath);
@@ -66,6 +75,8 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
         {
             Remove(OptionName(number));
         }
+
+        return entry;
     }
 
     // The loader is first by now, so an entry the firmware keeps is only said.
@@ -157,7 +168,7 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
         throw new DeploymentStepException($"Every firmware boot entry number is in use, so no entry for {description} can be added.");
     }
 
-    private static string OptionName(ushort number) => string.Create(CultureInfo.InvariantCulture, $"Boot{number:X4}");
+    public static string OptionName(ushort number) => string.Create(CultureInfo.InvariantCulture, $"Boot{number:X4}");
 
     // An array of UINT16. A stray last byte is ignored.
     private static List<ushort> ReadOrder(byte[]? value)

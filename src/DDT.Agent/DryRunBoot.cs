@@ -9,6 +9,7 @@ using DDT.Contracts.Agents;
 namespace DDT.Agent;
 
 // A dry run's machine through its boot environments. It goes on in the other one when the agent restarts into it.
+// The installed Linux is played with the Linux boot environment, as the installed Windows is with Windows PE.
 public sealed class DryRunBoot(
     DryRunMachineOptions options,
     IAgentServer server,
@@ -46,7 +47,7 @@ public sealed class DryRunBoot(
     {
         if (environment == AgentEnvironment.LinuxBoot)
         {
-            LinuxBootDryRun linux = new(options, server, status, log, timeProvider)
+            LinuxDryRunMachine linux = new(options, server, connect, status, log, timeProvider)
             {
                 FreeSpace = new DriveFreeSpace(),
                 MakeSparse = SparseFile.Make,

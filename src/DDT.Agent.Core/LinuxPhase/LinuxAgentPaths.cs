@@ -46,6 +46,7 @@ public sealed record LinuxAgentPaths(string Root)
     {
         ArgumentNullException.ThrowIfNull(path);
 
-        return Path.Combine(Root, path.TrimStart('/'));
+        // A folder on Windows stands in for the root in tests and dry runs, where a path has other separators.
+        return Path.GetFullPath(Path.Combine(Root, path.TrimStart('/')));
     }
 }

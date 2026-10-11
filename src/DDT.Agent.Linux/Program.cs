@@ -40,8 +40,9 @@ AgentStartup startup = new(new AgentPlatform
 
 return await startup.RunAsync(args).ConfigureAwait(false);
 
-// A dry run stands in for a machine that started the Linux boot environment. A file is its disk, and nothing on this
-// computer is changed. It cannot go on in Windows PE, which only the agent for Windows stands in for.
+// A dry run stands in for a machine that started the Linux boot environment and goes on in the installed Linux. A
+// file is its disk, and nothing on this computer is changed. It cannot go on in Windows PE, which only the agent for
+// Windows stands in for.
 static Task<int> DryRunAsync(StartedAgent agent, CancellationToken cancellationToken)
 {
     DryRunMachineOptions options = new(
@@ -51,7 +52,16 @@ static Task<int> DryRunAsync(StartedAgent agent, CancellationToken cancellationT
         RunHeartbeat.DefaultInterval,
         agent.Version);
 
-    LinuxBootDryRun machine = new(options, agent.Server, agent.Status, agent.Log, TimeProvider.System) { FreeSpace = new LinuxFreeSpace() };
+    LinuxDryRunMachine machine = new(
+        options,
+        agent.Server,
+        staged => new HttpAgentServer(staged.ServerUrl, staged.RootCertificate) { Environment = AgentEnvironment.Linux },
+        agent.Status,
+        agent.Log,
+        TimeProvider.System)
+    {
+        FreeSpace = new LinuxFreeSpace(),
+    };
 
     return machine.RunAsync(cancellationToken);
 }

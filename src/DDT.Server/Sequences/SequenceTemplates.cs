@@ -15,11 +15,15 @@ public static class SequenceTemplates
     // cloud-init runs its first-boot modules once per instance id, and names the machine after local-hostname.
     public const string LinuxMetaData = "instance-id: \"{{SmbiosUuid}}\"\nlocal-hostname: \"{{ComputerName}}\"\n";
 
-    // The image's default user, such as ubuntu or debian, gets the keys listed here.
+    // cloud-init warns of an empty list and of a document with comments alone, so users names its own default.
     public const string LinuxUserData =
         "#cloud-config\n" +
         "# Every viewer of DDT can read this. Put in public keys, and passwords only hashed.\n" +
-        "ssh_authorized_keys: []\n";
+        "# \"default\" is the image's own user, such as ubuntu or debian. The keys below are for it.\n" +
+        "users:\n" +
+        "  - default\n" +
+        "# ssh_authorized_keys:\n" +
+        "#   - ssh-ed25519 AAAA... name@example.org\n";
 
     // Templates for installing Windows and its Linux counterpart. Without a domain, the Windows run ends in WinPE and
     // restarts into setup. With one, it continues in Windows to join, and restarts for the join. imageId is the chosen

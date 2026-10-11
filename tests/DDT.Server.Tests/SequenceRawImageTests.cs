@@ -151,9 +151,23 @@ public sealed class SequenceRawImageTests(DdtApplication application) : IClassFi
         Assert.Equal(Guid.Empty, Assert.IsType<WriteRawImageStep>(linux.Definition.Steps[0]).ImageId);
         WriteCloudInitSeedStep seed = Assert.IsType<WriteCloudInitSeedStep>(linux.Definition.Steps[1]);
         Assert.Equal(SequenceTemplates.LinuxMetaData, seed.MetaData);
+        Assert.Equal(SequenceTemplates.LinuxUserData, seed.UserData);
         Assert.Null(seed.NetworkConfig);
 
         // Only the image is missing.
         Assert.Equal("imageId", Assert.Single((await ValidateAsync(linux.Definition)).Problems).Field);
+    }
+
+    // cloud-init 25 and 26 end "degraded" on a key with an empty list, and on user-data that holds comments alone.
+    [Fact]
+    public void TheInstallLinuxTemplatesUserDataHoldsAKeyAndNoEmptyList()
+    {
+        string[] lines = SequenceTemplates.LinuxUserData.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+        Assert.Equal("#cloud-config", lines[0]);
+        Assert.Equal(["users:", "  - default"], lines.Where(line => !line.StartsWith('#')));
+        Assert.Equal(["# ssh_authorized_keys:", "#   - ssh-ed25519 AAAA... name@example.org"], lines[^2..]);
+        Assert.DoesNotContain("[]", SequenceTemplates.LinuxUserData, StringComparison.Ordinal);
+        Assert.EndsWith("\n", SequenceTemplates.LinuxUserData, StringComparison.Ordinal);
     }
 }

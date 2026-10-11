@@ -10,7 +10,7 @@ import { apiGet } from "@/lib/api";
 import { machineRolesQuery } from "@/roles/roles";
 import { rulesQuery } from "@/rules/rules";
 import type { FactView } from "@/sequences/sequenceConditions";
-import type { InputDeclaration, VariableDeclaration } from "@/sequences/sequences";
+import type { InputDeclaration, SequenceKind, VariableDeclaration } from "@/sequences/sequences";
 import type { NamedValue } from "@/values/values";
 
 import { subjectsOf, type Subject } from "./conditionSubjects";
@@ -42,11 +42,13 @@ export interface ConditionData {
 export function useConditionData(declared: {
   variables: readonly VariableDeclaration[];
   inputs: readonly InputDeclaration[];
+  // The sequence's kind, which decides the phases a condition is offered. None for a rule or a machine role.
+  kind?: SequenceKind | undefined;
 }): ConditionData {
   const facts = useQuery(factsQuery);
   const rules = useQuery({ ...rulesQuery, staleTime: 5 * 60_000 });
   const roles = useQuery({ ...machineRolesQuery, staleTime: 5 * 60_000 });
-  const { variables, inputs } = declared;
+  const { variables, inputs, kind } = declared;
   // A dependency of the memo, so the labels follow a change of language.
   const locale = useLingui().i18n.locale;
 
@@ -66,9 +68,10 @@ export function useConditionData(declared: {
         valueNames: ruleValues.map((value) => value.name),
         variables,
         inputs,
+        kind,
       }),
       ruleValues,
       locale,
     };
-  }, [facts.data, rules.data, roles.data, variables, inputs, locale]);
+  }, [facts.data, rules.data, roles.data, variables, inputs, kind, locale]);
 }

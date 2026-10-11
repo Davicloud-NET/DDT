@@ -9,18 +9,21 @@ import { accountsQuery } from "@/accounts/accounts";
 import { sameName } from "@/conditions/conditionSubjects";
 import { useConditionData } from "@/conditions/subjects";
 
-import type { InputDeclaration, VariableDeclaration } from "../sequences";
+import { sequenceKind } from "../sequenceKinds";
+import type { InputDeclaration, SequenceStep, VariableDeclaration } from "../sequences";
 import type { BuilderData } from "./builderData";
 import { sampleValues, templateNames } from "./templateValues";
 
-// The builder's data for the sequence's declarations, read once for the page.
+// The builder's data for the sequence's declarations, read once for the page. A rule or a machine role has no steps.
 export function useBuilderData(declared: {
   variables: readonly VariableDeclaration[];
   inputs: readonly InputDeclaration[];
+  steps?: readonly SequenceStep[];
 }): BuilderData {
-  const { subjects, ruleValues } = useConditionData(declared);
+  const { variables, inputs, steps } = declared;
+  const kind = useMemo(() => (steps === undefined ? undefined : sequenceKind(steps)), [steps]);
+  const { subjects, ruleValues } = useConditionData({ variables, inputs, kind });
   const accounts = useQuery({ ...accountsQuery, staleTime: 5 * 60_000 });
-  const { variables, inputs } = declared;
 
   return useMemo(() => {
     const names = templateNames(variables, inputs, ruleValues);

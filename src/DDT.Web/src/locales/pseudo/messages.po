@@ -5029,7 +5029,6 @@ msgstr ""
 msgid "Installed"
 msgstr ""
 
-#: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/sequences/steps.ts
 msgid "Installed Linux"
@@ -5477,7 +5476,6 @@ msgid "Linked to {provider}"
 msgstr ""
 
 #: src/boot/LinuxEnvironment.tsx
-#: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/sequences/steps.ts
 msgid "Linux boot environment"
@@ -11928,7 +11926,6 @@ msgstr ""
 msgid "Whole numbers, separated by commas."
 msgstr ""
 
-#: src/conditions/conditionSubjects.ts
 #: src/sequences/steps.ts
 msgid "Windows"
 msgstr ""
@@ -11957,7 +11954,6 @@ msgstr ""
 msgid "Windows image"
 msgstr ""
 
-#: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/packages/PackageName.tsx
 #: src/sequences/steps.ts

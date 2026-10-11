@@ -7,7 +7,14 @@ import { msg, t } from "@lingui/core/macro";
 
 import { factLabel } from "@/machines/facts";
 import type { FactType, FactView } from "@/sequences/sequenceConditions";
-import type { InputDeclaration, VariableDeclaration } from "@/sequences/sequences";
+import { scriptPhases } from "@/sequences/sequenceKinds";
+import type {
+  InputDeclaration,
+  SequenceKind,
+  SequencePhase,
+  VariableDeclaration,
+} from "@/sequences/sequences";
+import { phaseLabel } from "@/sequences/steps";
 
 // The run's own values: whether the last step failed, and the last script's exit code.
 const runVariables: ReadonlySet<string> = new Set(["LastStepFailed", "LastExitCode"]);
@@ -89,30 +96,30 @@ function kindOfFact(fact: FactView): ValueKind {
   return kinds[fact.type];
 }
 
-function choicesOfFact(name: string): ValueChoice[] {
+const allPhases: readonly SequencePhase[] = ["WindowsPE", "Windows", "LinuxBoot", "Linux"];
+
+// A sequence is offered the phases its kind runs in. A rule and a run's path know no kind, and name all four.
+function choicesOfFact(name: string, kind: SequenceKind | undefined): ValueChoice[] {
   if (name === "DeviceKind") {
     return deviceKinds.map(([value, label]) => ({ value, label: i18n._(label) }));
   }
 
   if (name === "Phase") {
-    return [
-      { value: "WindowsPE", label: t`Windows PE` },
-      { value: "Windows", label: t`Windows` },
-      { value: "LinuxBoot", label: t`Linux boot environment` },
-      { value: "Linux", label: t`Installed Linux` },
-    ];
+    const phases = kind === undefined ? allPhases : scriptPhases(kind);
+
+    return phases.map((phase) => ({ value: phase, label: phaseLabel(phase) }));
   }
 
   return [];
 }
 
-export function factSubjects(facts: readonly FactView[]): Subject[] {
+export function factSubjects(facts: readonly FactView[], kind?: SequenceKind): Subject[] {
   return facts.map((fact) => ({
     name: fact.name,
     label: factLabel(fact.name),
     section: runVariables.has(fact.name) ? "run" : "machine",
     kind: kindOfFact(fact),
-    choices: choicesOfFact(fact.name),
+    choices: choicesOfFact(fact.name, kind),
     note: null,
   }));
 }
@@ -150,19 +157,21 @@ export function sameName(a: string, b: string): boolean {
 
 // Every subject a condition in the sequence can test, each name once, in the picker's order: facts, the run's values,
 // names that rules and roles set, then the sequence's variables and inputs. An Account input doesn't set a value, so
-// it isn't a subject.
+// it isn't a subject. kind is the sequence's, where the conditions are a sequence's.
 export function subjectsOf({
   facts,
   valueNames,
   variables,
   inputs,
+  kind,
 }: {
   facts: readonly FactView[];
   valueNames: readonly string[];
   variables: readonly VariableDeclaration[];
   inputs: readonly InputDeclaration[];
+  kind?: SequenceKind | undefined;
 }): Subject[] {
-  const subjects = factSubjects(facts);
+  const subjects = factSubjects(facts, kind);
   const add = (subject: Subject) => {
     if (!subjects.some((other) => sameName(other.name, subject.name))) {
       subjects.push(subject);

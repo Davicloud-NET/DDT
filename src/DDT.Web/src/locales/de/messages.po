@@ -5029,7 +5029,6 @@ msgstr "Windows installieren"
 msgid "Installed"
 msgstr "Installiert"
 
-#: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/sequences/steps.ts
 msgid "Installed Linux"
@@ -5477,7 +5476,6 @@ msgid "Linked to {provider}"
 msgstr "Verknüpft mit {provider}"
 
 #: src/boot/LinuxEnvironment.tsx
-#: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/sequences/steps.ts
 msgid "Linux boot environment"
@@ -11928,7 +11926,6 @@ msgstr "Ganze Zahlen von 0 bis 255, durch Kommas getrennt."
 msgid "Whole numbers, separated by commas."
 msgstr "Ganze Zahlen, durch Kommas getrennt."
 
-#: src/conditions/conditionSubjects.ts
 #: src/sequences/steps.ts
 msgid "Windows"
 msgstr "Windows"
@@ -11957,7 +11954,6 @@ msgstr "Die Windows-Bereitstellungsdienste laufen auf diesem Computer und belege
 msgid "Windows image"
 msgstr "Windows-Image"
 
-#: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/packages/PackageName.tsx
 #: src/sequences/steps.ts

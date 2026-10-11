@@ -5029,7 +5029,6 @@ msgstr "Install Windows"
 msgid "Installed"
 msgstr "Installed"
 
-#: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/sequences/steps.ts
 msgid "Installed Linux"
@@ -5477,7 +5476,6 @@ msgid "Linked to {provider}"
 msgstr "Linked to {provider}"
 
 #: src/boot/LinuxEnvironment.tsx
-#: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/sequences/steps.ts
 msgid "Linux boot environment"
@@ -11928,7 +11926,6 @@ msgstr "Whole numbers from 0 to 255, separated by commas."
 msgid "Whole numbers, separated by commas."
 msgstr "Whole numbers, separated by commas."
 
-#: src/conditions/conditionSubjects.ts
 #: src/sequences/steps.ts
 msgid "Windows"
 msgstr "Windows"
@@ -11957,7 +11954,6 @@ msgstr "Windows Deployment Services runs on this computer and holds UDP 69 and 4
 msgid "Windows image"
 msgstr "Windows image"
 
-#: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/packages/PackageName.tsx
 #: src/sequences/steps.ts

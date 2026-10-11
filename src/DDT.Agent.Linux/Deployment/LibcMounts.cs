@@ -19,7 +19,7 @@ public sealed class LibcMounts : IMounts
             : Error();
 
     public int Unmount(string target, bool detach) =>
-        RestartNativeMethods.umount2(target, detach ? MountNativeMethods.Detach : 0) == 0 ? 0 : Error();
+        MountNativeMethods.umount2(target, detach ? MountNativeMethods.Detach : 0) == 0 ? 0 : Error();
 
     private static int Error() => Marshal.GetLastPInvokeError() is not 0 and int error ? error : Unknown;
 }

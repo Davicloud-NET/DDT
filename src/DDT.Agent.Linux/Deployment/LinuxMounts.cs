@@ -78,5 +78,5 @@ public sealed class LinuxMounts(string root, AgentLog log, Func<string, int>? un
     }
 
     private static int Unmount(string target) =>
-        RestartNativeMethods.umount2(target, 0) == 0 ? 0 : Marshal.GetLastPInvokeError();
+        MountNativeMethods.umount2(target, 0) == 0 ? 0 : Marshal.GetLastPInvokeError();
 }

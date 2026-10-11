@@ -97,7 +97,7 @@ public sealed class InstalledLinuxDryRunTests(DryRunLab lab)
         Guid runId = (await lab.AssignAsync(machine.Id, assignment, cancellationToken)).Deployment!.Id;
 
         // The download takes far longer than the gap until the agent's next call, which learns of the stop.
-        await agent.WaitForDownloadAsync(lab.LargeFiles.Sha256, s_runTimeout, cancellationToken, agent.LinuxCache);
+        await agent.WaitForDownloadAsync(lab.LargeFiles.Sha256, agent.LinuxCache, s_runTimeout, cancellationToken);
         DeploymentSummary stopped = (await lab.Api.SendAsync(
             HttpMethod.Delete,
             $"api/machines/{machine.Id:D}/deployments/current",

@@ -48,9 +48,22 @@ public sealed class LinuxSeeds(IMounts mounts, LinuxAgentPaths paths, AgentLog l
             }
         }
 
-        LinuxConnectedShares.RemoveEmpty(target);
+        RemovePlace(target);
 
         return mounted;
+    }
+
+    // The agent's place for a seed goes once nothing is mounted there. The folder above it is not a seed's to remove.
+    private static void RemovePlace(string target)
+    {
+        try
+        {
+            Directory.Delete(target, recursive: false);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // Not there, or still mounted: /run is empty again after the next start
+        }
     }
 
     // The device the system's label link names, then every partition whose boot sector carries the label.

@@ -78,12 +78,16 @@ internal sealed class AgentProcess : IAsyncDisposable
         return new AgentProcess(process, output, agent.DryRunId);
     }
 
+    // Into the installed Windows' cache.
+    public Task WaitForDownloadAsync(string sha256, TimeSpan timeout, CancellationToken cancellationToken) =>
+        WaitForDownloadAsync(sha256, WindowsCache, timeout, cancellationToken);
+
     // Returns while the file with this hash is downloading into the run's cache, in either phase. The step that
     // downloads it runs until the download is done. Polled often, so even a quick download is seen. cache is where the
-    // run downloads to, the installed Windows' unless a test names another.
-    public async Task WaitForDownloadAsync(string sha256, TimeSpan timeout, CancellationToken cancellationToken, string? cache = null)
+    // run downloads to.
+    public async Task WaitForDownloadAsync(string sha256, string cache, TimeSpan timeout, CancellationToken cancellationToken)
     {
-        string part = Path.Combine(cache ?? WindowsCache, $"{sha256}.part");
+        string part = Path.Combine(cache, $"{sha256}.part");
 
         await Eventually.WaitAsync(
             new Expectation($"Agent {DryRunId}'s download of {part}", timeout, () => Output.Tail())

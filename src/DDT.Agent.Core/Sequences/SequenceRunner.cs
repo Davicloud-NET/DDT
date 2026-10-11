@@ -6,8 +6,8 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Runs a task sequence in WinPE, or continues it in the installed Windows, and resumes a run found on disk. It never
-// throws. It reports every failure, because if the agent crashes, the one from the boot image takes over.
+// Runs a task sequence in a boot environment, or continues it in the installed system, and resumes a run found on
+// disk. It never throws. It reports every failure, because if the agent crashes, the one from the boot image takes over.
 public sealed class SequenceRunner
 {
     public const string NoDiskMessage =

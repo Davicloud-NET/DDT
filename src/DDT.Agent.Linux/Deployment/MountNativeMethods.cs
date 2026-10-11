@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace DDT.Agent.Deployment;
 
-// What mounting a file system needs of libc.
+// What mounting a file system and taking it away again need of libc.
 internal static partial class MountNativeMethods
 {
     // MS_NOSUID and MS_NODEV of sys/mount.h.
@@ -19,4 +19,7 @@ internal static partial class MountNativeMethods
     // data is the file system's own options as text, which the kernel copies.
     [LibraryImport("libc", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial int mount(string source, string target, string fileSystemType, nuint flags, string data);
+
+    [LibraryImport("libc", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
+    internal static partial int umount2(string target, int flags);
 }

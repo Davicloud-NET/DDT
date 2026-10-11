@@ -182,22 +182,20 @@ public sealed class LinuxRunTests : IDisposable
         Assert.StartsWith("Install Linux cannot run: The Linux boot environment has no partition to unpack a package on", packageServer.RunReports[^1].Error, StringComparison.Ordinal);
     }
 
-    // The server hands this agent no such run. One that arrived anyway would fail at the hand-over, with the disk written.
+    // The agent says version 5, so the server hands it such a run, and the boot environment asks for the hand-over at
+    // the first step in the installed Linux.
     [Fact]
-    public async Task RefusesARunWithStepsInTheInstalledLinuxBeforeTheDiskIsTouched()
+    public async Task TakesARunWithStepsInTheInstalledLinuxAndHandsItOverAfterTheSeed()
     {
         RunScriptStep installed = s_script with { Id = Guid.NewGuid(), Phase = SequencePhase.Linux };
 
         (RunResult result, ScriptedAgentServer server, _) = await RunAsync(Run(steps: [s_write, s_seed, installed]));
 
-        Assert.Equal(4, SupportedSequences.Version);
-        Assert.Equal(RunOutcome.Failed, result.Outcome);
-        Assert.Empty(_tools.Calls);
-        Assert.Empty(_disks.Disks);
-        Assert.Equal(
-            "Install Linux has steps of version 5, and this agent runs sequences up to version 4. Start the machine from the network " +
-            "again, so it gets the server's agent. Nothing was erased.",
-            server.RunReports[^1].Error);
+        Assert.Equal(5, SupportedSequences.Version);
+        Assert.Equal(RunOutcome.Restarting, result.Outcome);
+        Assert.Equal(["list", "clean 0", "hand over", "reboot"], _tools.Calls);
+        Assert.Empty(_toolRunner.Calls);
+        Assert.Equal((DeploymentState.Running, RunActivity.Restarting), (server.RunReports[^1].State, server.RunReports[^1].Activity));
     }
 
     [Fact]

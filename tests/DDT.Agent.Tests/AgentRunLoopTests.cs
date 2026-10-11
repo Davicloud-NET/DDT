@@ -73,7 +73,7 @@ public sealed class AgentRunLoopTests : IDisposable
         AgentRegistration registration = Assert.Single(server.Registrations);
         Assert.Equal([_tools.Disks[0].ToAgentDisk(), new AgentDisk(2, "Test disk 2", _tools.Disks[1].SizeBytes, "Nvme", 3)], registration.Disks);
         // Version 5 is the installed Linux, which no agent runs yet.
-        Assert.Equal(4, registration.SequenceVersion);
+        Assert.Equal(5, registration.SequenceVersion);
         Assert.Equal(AgentEnvironment.WindowsPE, registration.Environment);
         Assert.Null(registration.RunToken);
         Assert.False(registration.SecureBootEnabled);

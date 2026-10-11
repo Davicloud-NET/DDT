@@ -16,8 +16,7 @@ internal sealed class RunPreflight(
     RunDiskChoice disks,
     IReadOnlyList<IPreflightCheck> platformChecks,
     AgentLog log,
-    TimeProvider timeProvider,
-    int sequenceVersion)
+    TimeProvider timeProvider)
 {
     public async Task CheckAsync(RunSession session, LocalDisk? confirmedDisk, CancellationToken cancellationToken)
     {
@@ -61,10 +60,10 @@ internal sealed class RunPreflight(
     private void CheckSequence(AgentRun run)
     {
         // The server hands out nothing newer. If it did, the run would fail at the first step this agent cannot run.
-        if (run.Sequence.RequiredVersion() is var needed && needed > sequenceVersion)
+        if (run.Sequence.RequiredVersion() is var needed && needed > SupportedSequences.Version)
         {
             throw new DeploymentStepException(
-                $"{run.SequenceName} has steps of version {needed}, and this agent runs sequences up to version {sequenceVersion}. " +
+                $"{run.SequenceName} has steps of version {needed}, and this agent runs sequences up to version {SupportedSequences.Version}. " +
                 "Start the machine from the network again, so it gets the server's agent. Nothing was erased.");
         }
 

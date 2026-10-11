@@ -35,7 +35,6 @@ internal static class TestAgents
         SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun)
         {
             Environment = options.Environment ?? AgentEnvironment.WindowsPE,
-            SequenceVersion = options.SequenceVersion ?? SupportedSequences.Version,
         };
 
         return new SequenceRunnerBuilder

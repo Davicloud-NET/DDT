@@ -85,8 +85,7 @@ public sealed class LinuxBootDryRunTests : IDisposable
         return server;
     }
 
-    // sequenceVersion is the newest version the fake machine's runner takes, where a test raises it.
-    private LinuxBootDryRun Machine(ScriptedAgentServer server, int sequenceVersion = SupportedSequences.Version)
+    private LinuxBootDryRun Machine(ScriptedAgentServer server)
     {
         AgentLog log = new(new ImmediateTimeProvider(), _console);
         AgentOptions options = new(new Uri("https://ddt.example:8443/"), null, DryRun: true, DryRunId: 7, NoUpdate: false, KeyboardLayout: null)
@@ -103,7 +102,6 @@ public sealed class LinuxBootDryRunTests : IDisposable
         {
             FreeSpace = new DriveFreeSpace(),
             MakeSparse = SparseFile.Make,
-            SequenceVersion = sequenceVersion,
         };
     }
 
@@ -120,7 +118,7 @@ public sealed class LinuxBootDryRunTests : IDisposable
 
         Assert.Equal(AgentExitCodes.Deployed, exitCode);
         Assert.Equal(AgentEnvironment.LinuxBoot, Assert.Single(server.Registrations).Environment);
-        Assert.Equal(4, server.Registrations[0].SequenceVersion);
+        Assert.Equal(5, server.Registrations[0].SequenceVersion);
         Assert.All(server.RunReports, report => Assert.Equal(SequencePhase.LinuxBoot, report.Phase));
         Assert.Equal(DeploymentState.Done, server.RunReports[^1].State);
         Assert.Equal(Enumerable.Repeat(StepState.Done, 3), server.RunReports[^1].Steps.Select(step => step.State));
@@ -160,8 +158,8 @@ public sealed class LinuxBootDryRunTests : IDisposable
         Assert.DoesNotContain(lines, line => line.Contains("Windows PE", StringComparison.Ordinal) || line.Contains("diskpart", StringComparison.Ordinal));
     }
 
-    // The same hand-over as on a machine, onto the file that stands in for the disk. The dry run ends where the machine
-    // would start the installed Linux, and its agent still says version 4, so only a raised runner gets this far.
+    // The same hand-over as on a machine, onto the file that stands in for the disk. This part of the dry run ends
+    // where the machine would start the installed Linux.
     [Fact]
     public async Task HandsARunWithStepsInTheInstalledLinuxOverOnTheSeedOfTheFileThatIsItsDisk()
     {
@@ -177,10 +175,10 @@ public sealed class LinuxBootDryRunTests : IDisposable
         await File.WriteAllBytesAsync(AgentPath, agent, TestContext.Current.CancellationToken);
         ScriptedAgentServer server = Server(Run(s_write, s_seed, installed));
 
-        int exitCode = await Machine(server, sequenceVersion: 5).RunAsync(server.Stop.Token);
+        int exitCode = await Machine(server).RunAsync(server.Stop.Token);
 
         Assert.Equal(AgentExitCodes.Restarting, exitCode);
-        Assert.Equal(4, Assert.Single(server.Registrations).SequenceVersion);
+        Assert.Equal(5, Assert.Single(server.Registrations).SequenceVersion);
         AgentRunReport last = server.RunReports[^1];
         Assert.Equal((DeploymentState.Running, SequencePhase.Linux, RunActivity.Restarting), (last.State, last.Phase, last.Activity));
         Assert.Equal([StepState.Done, StepState.Done], last.Steps.Select(step => step.State));

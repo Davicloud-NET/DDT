@@ -36,9 +36,6 @@ internal sealed record TestRunnerOptions
     // The hand-over of a system. Null is one that only goes into the tools' journal.
     public IHandOver? HandOver { get; init; }
 
-    // The newest sequence version the runner takes. Null is the one the agent says it runs.
-    public int? SequenceVersion { get; init; }
-
     // What the script launcher adds to every script's environment.
     public IReadOnlyDictionary<string, string>? ScriptEnvironment { get; init; }
 

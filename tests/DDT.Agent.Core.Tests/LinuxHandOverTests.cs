@@ -91,7 +91,7 @@ public sealed class LinuxHandOverTests : IDisposable
         return server;
     }
 
-    private Task<RunResult> RunAsync(ScriptedAgentServer server, TimeProvider? time = null, int sequenceVersion = 5)
+    private Task<RunResult> RunAsync(ScriptedAgentServer server, TimeProvider? time = null)
     {
         time ??= new ImmediateTimeProvider();
         AgentLog log = new(time, _console);
@@ -100,7 +100,6 @@ public sealed class LinuxHandOverTests : IDisposable
             RawDisks = _disks,
             Environment = AgentEnvironment.LinuxBoot,
             ToolRunner = _toolRunner,
-            SequenceVersion = sequenceVersion,
             HeartbeatInterval = time is ManualTimeProvider ? TimeSpan.FromSeconds(10) : null,
             HandOver = new LinuxHandOver(_disks, _agentPath, TestAgents.Configuration, log),
         };
@@ -197,20 +196,6 @@ public sealed class LinuxHandOverTests : IDisposable
             Assert.DoesNotContain(secret, console, StringComparison.Ordinal);
             Assert.All(server.SentLines, line => Assert.DoesNotContain(secret, line.Message, StringComparison.Ordinal));
         }
-    }
-
-    // The agents say version 4 until the one in the installed Linux exists, so the server hands them no such run.
-    [Fact]
-    public async Task AnAgentThatSaysVersion4StillRefusesTheRunBeforeTheDiskIsTouched()
-    {
-        ScriptedAgentServer server = Server();
-
-        RunResult result = await RunAsync(server, sequenceVersion: SupportedSequences.Version);
-
-        Assert.Equal(RunOutcome.Failed, result.Outcome);
-        Assert.Empty(_tools.Calls);
-        Assert.Empty(_disks.Disks);
-        Assert.StartsWith("Install Linux has steps of version 5, and this agent runs sequences up to version 4.", server.RunReports[^1].Error, StringComparison.Ordinal);
     }
 
     [Fact]

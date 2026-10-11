@@ -11,7 +11,7 @@ if ! command -v systemctl >/dev/null || [ ! -d /run/systemd/system ]; then
 fi
 seed=/run/ddt-seed
 mkdir -p "$seed"
-trap 'code=$?; umount "$seed" 2>/dev/null; rmdir "$seed" 2>/dev/null; [ "$code" -eq 0 ] || say "the agent could not be installed (exit code $code), so the run does not go on in this Linux." >&2' EXIT
+trap 'code=$?; umount "$seed" 2>/dev/null || true; rmdir "$seed" 2>/dev/null || true; [ "$code" -eq 0 ] || say "the agent could not be installed (exit code $code), so the run does not go on in this Linux." >&2' EXIT
 # The seed the run was handed over on is the CIDATA volume that holds the run's token.
 found=
 for device in /dev/disk/by-label/CIDATA $(blkid -t LABEL=CIDATA -o device 2>/dev/null || true); do

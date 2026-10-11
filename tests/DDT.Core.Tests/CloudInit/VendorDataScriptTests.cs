@@ -88,6 +88,41 @@ public sealed class VendorDataScriptTests
         Assert.DoesNotContain("cloud", unit, StringComparison.Ordinal);
     }
 
+    // The lines the tries on real images went through: the exit trap and the search for the seed that holds the run.
+    [Fact]
+    public void FindsTheSeedByItsTokenAndLetsGoOfItHoweverTheScriptEnds()
+    {
+        const string Tried =
+            """
+            seed=/run/ddt-seed
+            mkdir -p "$seed"
+            trap 'code=$?; umount "$seed" 2>/dev/null || true; rmdir "$seed" 2>/dev/null || true; [ "$code" -eq 0 ] || say "the agent could not be installed (exit code $code), so the run does not go on in this Linux." >&2' EXIT
+            # The seed the run was handed over on is the CIDATA volume that holds the run's token.
+            found=
+            for device in /dev/disk/by-label/CIDATA $(blkid -t LABEL=CIDATA -o device 2>/dev/null || true); do
+                [ -b "$device" ] || continue
+                mount -t vfat -o rw,umask=077 "$device" "$seed" 2>/dev/null || continue
+                if [ -f "$seed/ddt/token" ]; then
+                    found=$device
+                    break
+                fi
+                umount "$seed"
+            done
+            if [ -z "$found" ]; then
+                say "no seed holds a run to go on with, so nothing was installed."
+                exit 0
+            fi
+            """;
+        string[] tried = Tried.ReplaceLineEndings("\n").Split('\n');
+        List<string> lines = [.. Lines];
+        int start = lines.IndexOf($"seed={LinuxAgentFiles.SeedMount}");
+
+        Assert.Equal(tried, lines[start..(start + tried.Length)]);
+
+        // Under set -e a command that fails inside the trap ends it, so neither may fail where nothing is mounted.
+        Assert.Equal(2, tried[2].Split(" 2>/dev/null || true;").Length - 1);
+    }
+
     // A machine that loses power in between must never be left with the token gone and no agent to start.
     [Fact]
     public void WipesTheTokenOnlyOnceTheAgentIsInstalledForGood()

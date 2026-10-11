@@ -142,4 +142,19 @@ public sealed class LinuxHandOverWithdrawTests : IDisposable
         Assert.Equal(writes, Disk.Writes.Count);
         Assert.False(_seeded.Kept.HoldsRun);
     }
+
+    // A script may leave a partition of the disk mounted. The boot environment unmounts it for the restart, and the
+    // hand-over needs the disk alone before that.
+    [Fact]
+    public async Task LetsGoOfTheDiskBeforeItOpensIt()
+    {
+        SequenceState state = await _seeded.SeededAsync();
+        BusyDisks busy = new(Run.RawDisks) { Busy = true };
+        LinuxHandOver handOver = new(busy, _seeded.AgentPath, TestAgents.Configuration, Run.Log) { LetGo = () => busy.Busy = false };
+
+        handOver.Stage(Run.Session, state);
+
+        Assert.Equal(StepRunnerFixture.RunToken, TestSeed.Read(Disk).Text(LinuxAgentFiles.SeedToken));
+        Assert.Equal(1, busy.Opened);
+    }
 }

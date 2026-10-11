@@ -74,8 +74,8 @@ public sealed class LinuxHandOverKernelTests : IDisposable
 
     // The image and its seed, written by their steps to a loop device, and the run handed over on it. Returns the loop
     // device and the state that was staged. script does to the disk what a step between the seed and the hand-over
-    // would.
-    private async Task<(LoopDisk Loop, SequenceState State)> HandOverAsync(Action<LoopDisk>? script = null)
+    // would, and with letGo the hand-over unmounts what that left mounted, as the boot environment's does.
+    private async Task<(LoopDisk Loop, SequenceState State)> HandOverAsync(Action<LoopDisk>? script = null, bool letGo = false)
     {
         LoopDisk.SkipUnlessLinux();
 
@@ -112,7 +112,10 @@ public sealed class LinuxHandOverKernelTests : IDisposable
             script(loop);
         }
 
-        _handOver = new LinuxHandOver(disks, agentPath, TestAgents.Configuration, _run.Log);
+        _handOver = new LinuxHandOver(disks, agentPath, TestAgents.Configuration, _run.Log)
+        {
+            LetGo = letGo ? () => new LinuxMounts("/", _run.Log).UnmountFrom(disks.Opened) : null,
+        };
         _handOver.Stage(_run.Session, state);
         loop.MakePartitionDevices();
 
@@ -221,6 +224,41 @@ public sealed class LinuxHandOverKernelTests : IDisposable
         Assert.False(seed.Holds(StepRunnerFixture.RunToken));
         Assert.Equal(["meta-data", "network-config", "notes.txt", "user-data"], Names(after));
         Assert.Equal("kept", await File.ReadAllTextAsync(Path.Combine(after, "notes.txt"), TestContext.Current.CancellationToken));
+    }
+
+    // The same sequence without steps in the installed Linux ends well, because the restart unmounts. So does this one.
+    [Fact]
+    public async Task UnmountsWhatAScriptLeftMountedBeforeItTakesTheDiskAlone()
+    {
+        string place = Path.Combine(_folder, "script");
+
+        (LoopDisk loop, _) = await HandOverAsync(
+            script: disk =>
+            {
+                disk.Mount(SeedPartition, place);
+                File.WriteAllText(Path.Combine(place, "notes.txt"), "kept");
+            },
+            letGo: true);
+
+        TestSeed seed = ReadSeed(loop);
+        Assert.Equal("kept", seed.Text("notes.txt"));
+        Assert.Equal(StepRunnerFixture.RunToken, seed.Text(LinuxAgentFiles.SeedToken));
+        Assert.DoesNotContain($" {place} ", await File.ReadAllTextAsync("/proc/self/mounts", TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Contains(
+            await _run.SentLinesAsync(),
+            line => line.Message == $"Unmounted {place}, which was still mounted from {loop.PartitionDevice(seed.Partition.Number)}, before the restart.");
+    }
+
+    [Fact]
+    public async Task WithoutThatADiskWithAMountedPartitionCannotBeTaken()
+    {
+        string place = Path.Combine(_folder, "script");
+
+        DeploymentStepException failure = await Assert.ThrowsAsync<DeploymentStepException>(
+            () => HandOverAsync(script: disk => disk.Mount(SeedPartition, place)));
+
+        Assert.EndsWith("is in use: a file system on it is mounted, or a RAID or volume group holds it. Nothing was written to it.", failure.Message, StringComparison.Ordinal);
+        Assert.False(_run.Session.Seed?.HoldsRun);
     }
 
     [Fact]

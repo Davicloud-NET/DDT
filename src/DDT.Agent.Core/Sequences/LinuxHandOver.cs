@@ -29,6 +29,9 @@ public sealed class LinuxHandOver(IRawDisks disks, string agentPath, AgentConfig
     public const string WithdrawnMessage =
         "The agent and the run's token are off the cloud-init seed again, which is as it was before the hand-over.";
 
+    // Lets go of the disk before it is opened alone. A script may have left a partition of it mounted.
+    public Action? LetGo { get; init; }
+
     public static string TooLargeMessage(long shortBytes) =>
         $"The agent and the run's files are {ByteSize.Format(shortBytes)} too large for the cloud-init seed of " +
         $"{ByteSize.Format(CloudInitSeed.SizeBytes)}, so the run cannot go on in the installed Linux. Nothing was written to the seed.";
@@ -80,6 +83,7 @@ public sealed class LinuxHandOver(IRawDisks disks, string agentPath, AgentConfig
 
         string token = session.Tokens.RunToken ?? throw new DeploymentStepException(NoTokenMessage);
         byte[] agent = ReadAgent();
+        LetGo?.Invoke();
 
         using IRawDisk raw = disks.Open(disk);
 

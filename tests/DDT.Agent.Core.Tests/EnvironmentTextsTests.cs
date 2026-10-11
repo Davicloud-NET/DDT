@@ -131,6 +131,33 @@ public sealed class EnvironmentTextsTests
         Assert.Equal(("installed Linux", "Linux boot environment", "Windows"), (LogText.Phase("Linux"), LogText.Phase("LinuxBoot"), LogText.Phase("Windows")));
     }
 
+    // Windows keeps its words. The Linux boot environment keeps a run in memory, so a stop there ends the run, while
+    // the installed Linux goes on with it at the agent's next start.
+    [Fact]
+    public void EachSystemSaysWhatAStopARestartAndAStepOfTheBootEnvironmentMeanThere()
+    {
+        foreach (AgentEnvironment windows in (AgentEnvironment[])[AgentEnvironment.WindowsPE, AgentEnvironment.Windows])
+        {
+            Assert.Equal(
+                "The agent was stopped. The run's state stays on the disk, so the run goes on after a restart if the server still runs it.",
+                EnvironmentTexts.Stopped(windows));
+            Assert.Equal("Windows restarts, and the run goes on after the restart.", EnvironmentTexts.InstalledSystemRestarts(windows));
+            Assert.Equal(SequenceRunner.WindowsPEAfterWindowsMessage, EnvironmentTexts.BootStepAfterInstalled(windows));
+        }
+
+        Assert.Equal(
+            "The agent was stopped. The Linux boot environment keeps a run's state in memory, so the run does not go on after a restart.",
+            EnvironmentTexts.Stopped(AgentEnvironment.LinuxBoot));
+        Assert.Equal(
+            "The agent was stopped. The run's state stays on the disk, so the run goes on when the agent starts again, if the server still runs it.",
+            EnvironmentTexts.Stopped(AgentEnvironment.Linux));
+        Assert.Equal("Linux restarts, and the run goes on after the restart.", EnvironmentTexts.InstalledSystemRestarts(AgentEnvironment.Linux));
+        Assert.Equal(
+            "A step that runs in the Linux boot environment follows the steps in the installed Linux, and the run cannot go back to the boot " +
+            "environment. Move the step before the first step in the installed Linux, then run the sequence again.",
+            EnvironmentTexts.BootStepAfterInstalled(AgentEnvironment.Linux));
+    }
+
     // An NVMe disk behind a controller in RAID or RST mode is no device Linux sees, whatever drivers it has.
     [Fact]
     public void WithoutADiskTheLinuxBootEnvironmentNamesTheControllerModeThatHidesOne() =>

@@ -47,6 +47,11 @@ public static class PhaseRules
         _ => "Windows",
     };
 
+    // What the agent of an installed system reads when it has no run to go on with. Linux has no DDT service.
+    public static string NothingToContinue(AgentEnvironment environment) => environment == AgentEnvironment.Linux
+        ? "This machine has no run for the DDT agent in the installed Linux to continue. The agent removes itself."
+        : "This machine has no run for the DDT service to continue. The service removes itself.";
+
     // Why the agent's report is refused, or null when it may report the phase.
     public static string? ReportRefusal(AgentEnvironment environment, SequencePhase phase) =>
         MayReport(environment, phase)

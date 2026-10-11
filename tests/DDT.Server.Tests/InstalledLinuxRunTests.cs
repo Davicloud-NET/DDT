@@ -159,7 +159,7 @@ public sealed class InstalledLinuxRunTests(DdtApplication application) : IClassF
         HttpResponseMessage refused = await machine.Agent.RegisterAsync(machine.Registration with { Environment = AgentEnvironment.Linux });
 
         Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
-        Assert.Equal("This machine has no run for the DDT service to continue. The service removes itself.", await TestDatabase.TitleAsync(refused));
+        Assert.Equal("This machine has no run for the DDT agent in the installed Linux to continue. The agent removes itself.", await TestDatabase.TitleAsync(refused));
 
         Machine after = await application.MachineAsync(machine.Id);
         Assert.Equal((before.State, before.TokenGeneration, before.AgentEnvironment), (after.State, after.TokenGeneration, after.AgentEnvironment));

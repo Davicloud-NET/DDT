@@ -12,6 +12,7 @@ import { nodePhasesOf } from "./problems";
 import { sequenceEdits } from "./sequenceEdits";
 import {
   bootPhase,
+  connectsShares,
   installedPhase,
   isBootPhase,
   kindOfNodes,
@@ -22,7 +23,7 @@ import {
   sequenceKind,
 } from "./sequenceKinds";
 import type { GroupStep, IfStep, SequenceStep } from "./sequences";
-import { interpreterLabel, interpreters, newStep, phaseLabel } from "./steps";
+import { inPhase, interpreterLabel, interpreters, newStep, phaseLabel } from "./steps";
 
 const raw = newStep("writeRawImage", "w");
 const seed = newStep("writeCloudInitSeed", "c");
@@ -82,6 +83,25 @@ describe("a sequence's kind", () => {
     expect(phaseLabel("LinuxBoot")).toBe("Linux boot environment");
     expect(phaseLabel("Linux")).toBe("Installed Linux");
     expect(interpreters.map(interpreterLabel)).toEqual(["cmd", "PowerShell", "Shell"]);
+  });
+
+  // A label is a name on its own. A sentence needs the article, and in German another preposition.
+  it("names each phase as a sentence says where something runs", () => {
+    expect((["WindowsPE", "Windows", "LinuxBoot", "Linux"] as const).map(inPhase)).toEqual([
+      "in Windows PE",
+      "in Windows",
+      "in the Linux boot environment",
+      "in the installed Linux",
+    ]);
+  });
+
+  it("connects shares for a step in Windows or in the installed Linux alone", () => {
+    expect(connectsShares("Linux", ["Linux"])).toBe(true);
+    expect(connectsShares("Linux", ["LinuxBoot"])).toBe(false);
+    // A step that may run in either is in the boot environment on some path.
+    expect(connectsShares("Linux", ["LinuxBoot", "Linux"])).toBe(false);
+    expect(connectsShares("Windows", ["WindowsPE"])).toBe(true);
+    expect(connectsShares("Windows", ["WindowsPE", "Windows"])).toBe(true);
   });
 });
 

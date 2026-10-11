@@ -10,7 +10,7 @@ import { EditorLock } from "../editorLock";
 import { TextSetting } from "../fields/TextSetting";
 import type { Findings } from "../problems";
 import type { SequenceEdit, StepPatch } from "../sequenceEdits";
-import { isBootPhase } from "../sequenceKinds";
+import { connectsShares } from "../sequenceKinds";
 import type { SequenceKind, SequencePhase, SequenceStep } from "../sequences";
 import { StepFields } from "../steps/StepFields";
 import { isContainer } from "../steps";
@@ -37,16 +37,6 @@ interface NodeInspectorProps {
   onWrap: () => void;
   onUnwrap: () => void;
   onShift: (by: -1 | 1) => void;
-}
-
-// The Linux boot environment connects no shares. A step that may run there only shows those it still has, to remove
-// them.
-function connectsShares(
-  sequence: SequenceKind,
-  node: SequenceStep,
-  phases: readonly SequencePhase[],
-): boolean {
-  return sequence !== "Linux" || !phases.some(isBootPhase) || (node.shares ?? []).length > 0;
 }
 
 // The node chosen in the flow, with everything it does. Alt+Up or Alt+Down in its fields moves it within its list,
@@ -109,7 +99,8 @@ export function NodeInspector({
         </div>
       )}
       <NodeConditions node={node} findings={findings} onEdit={onEdit} change={change} />
-      {container || !connectsShares(sequence, node, phases) ? null : (
+      {/* A step that cannot connect shares only shows those it still has, to remove them. */}
+      {container || !(connectsShares(sequence, phases) || (node.shares ?? []).length > 0) ? null : (
         <SharesSetting
           shares={node.shares ?? []}
           findings={findings}

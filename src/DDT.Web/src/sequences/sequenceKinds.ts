@@ -42,6 +42,12 @@ export function scriptPhases(kind: SequenceKind): readonly SequencePhase[] {
   return kind === "Linux" ? ["LinuxBoot", "Linux"] : ["WindowsPE", "Windows"];
 }
 
+// Whether a step that may run in the phases can connect shares. The Linux boot environment connects none, so a step
+// that may run there cannot, even if it may also run in the installed Linux.
+export function connectsShares(kind: SequenceKind, phases: readonly SequencePhase[]): boolean {
+  return kind !== "Linux" || !phases.some(isBootPhase);
+}
+
 // The exit codes that ask for a restart, as a new script in the phase has them. The Linux boot environment cannot
 // restart, and a shell makes 194 of exit 3010.
 export function restartCodes(phase: SequencePhase): number[] {

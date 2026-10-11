@@ -125,8 +125,8 @@ function waitsInBootEnvironment(machine: MachineSummary): boolean {
   );
 }
 
-// Whether the agent the machine waits with is too old for the sequence. The server then hands it no run of it and
-// does not restart it for one. False where the server names no versions.
+// Whether the agent the machine waits with is too old for the sequence. The server then hands it no run of it where
+// the machine waits. False where the server names no versions.
 function agentTooOld(machine: MachineSummary, sequence: SequenceSummary): boolean {
   const runs = machine.sequenceVersion ?? null;
   const needs = sequence.version ?? 0;
@@ -185,17 +185,7 @@ export function startNotice(
     };
   }
 
-  // As the server decides it: a restart would end at the same agent, which cannot run the sequence.
-  if (agentTooOld(machine, sequence)) {
-    return {
-      warning: true,
-      text:
-        needed === "LinuxBoot"
-          ? t`${name} runs in the Linux boot environment and needs a newer agent than this machine runs, so the machine is not restarted for it. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.`
-          : t`${name} runs in Windows PE and needs a newer agent than this machine runs, so the machine is not restarted for it. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.`,
-    };
-  }
-
+  // Also with an agent too old for the sequence: the restart starts the server's agent in the other environment.
   return {
     warning: false,
     text:

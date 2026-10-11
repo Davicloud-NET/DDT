@@ -16,10 +16,6 @@ namespace DDT.Server.Deployments;
 // The run a machine has, and the run as its agent receives it.
 public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSettings settings)
 {
-    // What a run that waits for a newer agent is told, after the sentence that says why it waits.
-    public const string StaysAssigned =
-        "It stays assigned until the machine registers with an agent that runs it. A machine started from the network takes the server's agent.";
-
     public async Task<Deployment?> ActiveAsync(Machine machine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -94,18 +90,10 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
             return null;
         }
 
-        return await NeedsNewerAgentAsync(machine, run, cancellationToken).ConfigureAwait(false)
-            ? $"{run.Title} needs a newer agent than this machine runs, so it does not start. {StaysAssigned}"
-            : null;
-    }
-
-    // Whether the machine's agent is too old for the run's sequence, wherever the run starts.
-    public async Task<bool> NeedsNewerAgentAsync(Machine machine, Deployment run, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(machine);
-        ArgumentNullException.ThrowIfNull(run);
-
-        return machine.SequenceVersion < (await DefinitionAsync(run, cancellationToken).ConfigureAwait(false)).Version;
+        return machine.SequenceVersion >= (await DefinitionAsync(run, cancellationToken).ConfigureAwait(false)).Version
+            ? null
+            : $"{run.Title} needs a newer agent than this machine runs, so it does not start. It stays assigned until the machine " +
+              "registers with an agent that runs it. A machine started from the network takes the server's agent.";
     }
 
     // The boot environment the run starts in. A run from before the server kept it says it through its sequence.

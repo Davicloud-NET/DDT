@@ -18,14 +18,11 @@ using Xunit;
 namespace DDT.Server.Tests;
 
 // An agent that knows sequences up to version 4, on a server that can start both boot environments: it is offered no
-// sequence with steps in the installed Linux, and Windows PE is not restarted for a run of one.
+// sequence with steps in the installed Linux, and Windows PE is restarted for a run of one, into the server's agent.
 public sealed class InstalledLinuxVersionTests(BothEnvironmentsApplication application) : IClassFixture<BothEnvironmentsApplication>
 {
     // The version the agents of the Linux boot environment's first release say they run.
     private const int BootOnlyVersion = 4;
-
-    private const string StaysAssigned =
-        "It stays assigned until the machine registers with an agent that runs it. A machine started from the network takes the server's agent.";
 
     private async Task<SequenceView> SequenceAsync(bool installedSteps = true)
     {
@@ -123,14 +120,47 @@ public sealed class InstalledLinuxVersionTests(BothEnvironmentsApplication appli
         Assert.Equal(5, run.Sequence.Version);
     }
 
-    // The restart would cost the machine its Windows PE, and the agent it arrives at could not run the sequence either.
+    // The restart is the cure: the Linux boot environment's agent comes from the server and updates itself first.
     [Fact]
-    public async Task AnAgentOfVersion4InWindowsPEIsNotRestartedForARunWithStepsInTheInstalledLinuxAndIsToldWhy()
+    public async Task AnAgentOfVersion4InWindowsPEIsRestartedForARunWithStepsInTheInstalledLinux()
     {
         SignedInClient administrator = await application.AdministratorAsync();
         using DeployingMachine machine = await ApprovedInWindowsPEAsync(BootOnlyVersion);
         DeploymentSummary assigned = await administrator.AssignedAsync(machine.Id, (await SequenceAsync()).Id, "LINUX-36");
         string subject = machine.Id.ToString("D");
+
+        AgentNextResult next = await machine.NextAsync();
+
+        Assert.Null(next.Run);
+        Assert.Equal(AgentEnvironment.LinuxBoot, next.RestartInto);
+        Assert.Null(next.WaitReason);
+
+        Deployment stored = await StoredAsync(assigned.Id);
+        Assert.Equal((DeploymentState.Assigned, 1), (stored.State, stored.RestartsOrdered));
+        Assert.Equal(AgentEnvironment.LinuxBoot, (await application.MachineAsync(machine.Id)).NextEnvironment);
+        Assert.True(await application.QueryAsync(database => database.AuditEvents.AnyAsync(
+            e => e.SubjectId == subject && e.Action == "machine.environment-requested",
+            TestContext.Current.CancellationToken)));
+
+        // The agent that starts there says 5 and gets the run.
+        AgentRegistrationResult arrived = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
+            machine.Registration with { Environment = AgentEnvironment.LinuxBoot, ResumeToken = machine.ResumeToken, SequenceVersion = 5 }));
+        AgentNextResult handed = await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, arrived.Token!));
+
+        Assert.Equal(assigned.Id, Assert.IsType<AgentRun>(handed.Run).Id);
+        Assert.Null(handed.WaitReason);
+    }
+
+    // Where the run starts, a restart brings no other agent, so the machine waits there and its console says why.
+    [Fact]
+    public async Task AnAgentThatStillSaysVersion4InTheLinuxBootEnvironmentWaitsThereAndIsNotRestartedAgain()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await ApprovedInWindowsPEAsync(BootOnlyVersion);
+        DeploymentSummary assigned = await administrator.AssignedAsync(machine.Id, (await SequenceAsync()).Id, "LINUX-46");
+
+        Assert.Equal(AgentEnvironment.LinuxBoot, (await machine.NextAsync()).RestartInto);
+        await machine.RestartIntoAsync(AgentEnvironment.LinuxBoot);
 
         foreach (int _ in Enumerable.Range(0, 2))
         {
@@ -139,26 +169,13 @@ public sealed class InstalledLinuxVersionTests(BothEnvironmentsApplication appli
             Assert.Null(next.Run);
             Assert.Null(next.RestartInto);
             Assert.Equal(
-                $"{assigned.Title} runs in the Linux boot environment and does not start in Windows PE. It also needs a newer agent than " +
-                $"this machine runs, so the machine is not restarted for it. {StaysAssigned}",
+                $"{assigned.Title} needs a newer agent than this machine runs, so it does not start. It stays assigned until the machine " +
+                "registers with an agent that runs it. A machine started from the network takes the server's agent.",
                 next.WaitReason);
         }
 
-        Deployment stored = await StoredAsync(assigned.Id);
-        Assert.Equal((DeploymentState.Assigned, 0), (stored.State, stored.RestartsOrdered));
+        Assert.Equal(DeploymentState.Assigned, (await StoredAsync(assigned.Id)).State);
         Assert.Null((await application.MachineAsync(machine.Id)).NextEnvironment);
-        Assert.False(await application.QueryAsync(database => database.AuditEvents.AnyAsync(
-            e => e.SubjectId == subject && e.Action == "machine.environment-requested",
-            TestContext.Current.CancellationToken)));
-
-        // Windows PE with an agent that says 5 is restarted for the same run.
-        AgentRegistrationResult newer = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
-            machine.Registration with { ResumeToken = machine.ResumeToken, SequenceVersion = 5 }));
-        AgentNextResult restarted = await RegisteredMachine.ReadAsync<AgentNextResult>(await machine.Agent.NextAsync(machine.Id, newer.Token!));
-
-        Assert.Equal(AgentEnvironment.LinuxBoot, restarted.RestartInto);
-        Assert.Null(restarted.WaitReason);
-        Assert.Equal(1, (await StoredAsync(assigned.Id)).RestartsOrdered);
     }
 
     // What the first release of the Linux boot environment could run still gets its restart.

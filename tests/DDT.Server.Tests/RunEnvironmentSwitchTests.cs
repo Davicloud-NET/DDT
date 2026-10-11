@@ -200,15 +200,13 @@ public sealed class RunEnvironmentSwitchTests(BothEnvironmentsApplication applic
         Assert.Equal(AgentEnvironment.LinuxBoot, (await machine.NextAsync()).RestartInto);
     }
 
-    // The poll that orders the restart reads the sequence once, for the version the agent has to run. After it the
-    // snapshot cannot be read, so an answer shows that nothing of the run is read or built for a machine that waits.
+    // The snapshot cannot be read here, so an answer shows that the run was not built for a machine that only waits.
     [Fact]
-    public async Task APollReadsNothingOfARunThatStartsInTheOtherEnvironmentOnceItsRestartIsOrdered()
+    public async Task APollReadsNothingOfARunThatStartsInTheOtherEnvironment()
     {
         SignedInClient administrator = await application.AdministratorAsync();
         using DeployingMachine machine = await ApprovedAsync(WindowsPE());
         DeploymentSummary run = await administrator.AssignedAsync(machine.Id, (await LinuxAsync()).Id, "LINUX-45");
-        Assert.Equal(AgentEnvironment.LinuxBoot, (await machine.NextAsync()).RestartInto);
         await application.QueryAsync(database => database.DeploymentSnapshots
             .Where(s => s.DeploymentId == run.Id)
             .ExecuteUpdateAsync(update => update.SetProperty(s => s.Definition, "not a sequence"), TestContext.Current.CancellationToken));

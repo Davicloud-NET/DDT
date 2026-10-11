@@ -52,8 +52,8 @@ describe("what assigning a Linux sequence says", () => {
     expect(screen.queryByText(inWindows)).not.toBeInTheDocument();
   });
 
-  // The server orders no restart for a run the machine's agent could not start in the other boot environment either.
-  it("promises no restart of a machine whose agent is too old for the sequence", () => {
+  // The restart starts the server's agent in the Linux boot environment, whatever the agent in Windows PE runs.
+  it("restarts a machine in the other boot environment whose agent is too old for the sequence", () => {
     renderConsequences(
       { continuesInLinux: true, version: 5 },
       { agentEnvironment: "WindowsPE", sequenceVersion: 4 },
@@ -61,10 +61,10 @@ describe("what assigning a Linux sequence says", () => {
 
     expect(
       screen.getByText(
-        "Install Linux runs in the Linux boot environment and needs a newer agent than this machine runs, so the machine is not restarted for it. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.",
+        "Install Linux runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first.",
       ),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/The machine restarts into/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/needs a newer agent/)).not.toBeInTheDocument();
   });
 
   it("says that the run does not start where the machine waits with an agent too old for it", () => {

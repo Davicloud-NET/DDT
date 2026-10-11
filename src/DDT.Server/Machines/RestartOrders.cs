@@ -12,9 +12,6 @@ namespace DDT.Server.Machines;
 // Orders the restarts for a run of the other boot environment, and stops after two that did not get the machine there.
 internal sealed class RestartOrders(DdtDbContext database, RunQueries queries, BootEnvironments environments)
 {
-    private const string TooOld =
-        $"It also needs a newer agent than this machine runs, so the machine is not restarted for it. {RunQueries.StaysAssigned}";
-
     // Nothing here saves. Netboot may never start the machine there: a BIOS, a DHCP server that names the boot file.
     public async Task<RestartOrder> ForAsync(Machine machine, Deployment run, string? address, DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -54,13 +51,7 @@ internal sealed class RestartOrders(DdtDbContext database, RunQueries queries, B
             return new RestartOrder(null, $"{where} {GaveUp(starts)}", open);
         }
 
-        // As the list at the machine leaves such a sequence out: the restart would end at an agent that cannot run it.
-        // Asked last, because it reads the run's sequence, and a machine that only waits here polls on and on.
-        if (await queries.NeedsNewerAgentAsync(machine, run, cancellationToken).ConfigureAwait(false))
-        {
-            return new RestartOrder(null, $"{where} {TooOld}", false);
-        }
-
+        // Whatever sequence version the agent here runs: the other boot environment's agent comes from the server.
         Order(machine, run, starts, Actor.OfMachine(machine.Id, address), now);
 
         return new RestartOrder(starts, null, true);

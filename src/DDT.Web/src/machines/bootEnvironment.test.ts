@@ -182,30 +182,28 @@ describe("what assigning says about where a sequence starts", () => {
     ).toBe(false);
   });
 
-  // The server hands such an agent no run of the sequence and orders no restart that would end at the same agent.
+  // The server hands such an agent no run of the sequence, and restarts it into the other environment's own agent.
   describe("with an agent older than the sequence needs", () => {
     const installed = sequenceSummary({ name: "Install Linux", kind: "Linux", version: 5 });
     const old = { sequenceVersion: 4 } as const;
-    const staysAssigned =
-      "The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.";
 
-    it("promises no restart into the boot environment the sequence runs in", () => {
+    it("promises the restart into the boot environment the sequence runs in, as with any agent", () => {
       expect(startNotice({ ...inWindowsPE, ...old }, installed, both)).toEqual({
-        warning: true,
-        text: `Install Linux runs in the Linux boot environment and needs a newer agent than this machine runs, so the machine is not restarted for it. ${staysAssigned}`,
+        warning: false,
+        text: "Install Linux runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first.",
       });
       expect(
         startNotice({ ...inLinuxBoot, sequenceVersion: 2 }, { ...windows, version: 3 }, both),
       ).toEqual({
-        warning: true,
-        text: `Install Windows runs in Windows PE and needs a newer agent than this machine runs, so the machine is not restarted for it. ${staysAssigned}`,
+        warning: false,
+        text: "Install Windows runs in Windows PE, and this machine started the Linux boot environment. The machine restarts into Windows PE first.",
       });
     });
 
     it("says that the run does not start where the machine already waits", () => {
       expect(startNotice({ ...inLinuxBoot, ...old }, installed, both)).toEqual({
         warning: true,
-        text: `Install Linux needs a newer agent than this machine runs, so it does not start. ${staysAssigned}`,
+        text: "Install Linux needs a newer agent than this machine runs, so it does not start. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.",
       });
     });
 

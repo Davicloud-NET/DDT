@@ -882,10 +882,6 @@ msgid "{name} needs a newer agent than this machine runs, so it does not start. 
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
-msgid "{name} runs in the Linux boot environment and needs a newer agent than this machine runs, so the machine is not restarted for it. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent."
-msgstr ""
-
-#: src/machines/bootEnvironment.ts
 msgid "{name} runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."
 msgstr ""
 
@@ -895,10 +891,6 @@ msgstr ""
 
 #: src/machines/bootEnvironment.ts
 msgid "{name} runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it."
-msgstr ""
-
-#: src/machines/bootEnvironment.ts
-msgid "{name} runs in Windows PE and needs a newer agent than this machine runs, so the machine is not restarted for it. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent."
 msgstr ""
 
 #: src/machines/bootEnvironment.ts

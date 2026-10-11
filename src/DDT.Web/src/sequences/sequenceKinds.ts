@@ -27,14 +27,25 @@ export function isBootPhase(phase: SequencePhase): boolean {
   return phase === "WindowsPE" || phase === "LinuxBoot";
 }
 
+// Where a run of the kind goes on after the hand-over.
+export function installedPhase(kind: SequenceKind): SequencePhase {
+  return kind === "Linux" ? "Linux" : "Windows";
+}
+
 // The kind whose sequences run in the phase.
 export function kindOfPhase(phase: SequencePhase): SequenceKind {
-  return phase === "LinuxBoot" ? "Linux" : "Windows";
+  return phase === "LinuxBoot" || phase === "Linux" ? "Linux" : "Windows";
 }
 
 // The phases a script of the kind can run in, in the order a run meets them.
 export function scriptPhases(kind: SequenceKind): readonly SequencePhase[] {
-  return kind === "Linux" ? ["LinuxBoot"] : ["WindowsPE", "Windows"];
+  return kind === "Linux" ? ["LinuxBoot", "Linux"] : ["WindowsPE", "Windows"];
+}
+
+// The exit codes that ask for a restart, as a new script in the phase has them. The Linux boot environment cannot
+// restart, and a shell makes 194 of exit 3010.
+export function restartCodes(phase: SequencePhase): number[] {
+  return phase === "LinuxBoot" ? [] : phase === "Linux" ? [194] : [3010];
 }
 
 // What runs a script of the kind. The first is what a new script starts with.

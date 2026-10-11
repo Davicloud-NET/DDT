@@ -30,7 +30,7 @@ export function runDetail(machine: MachineSummary, now: number): string | null {
       return assignedBy(run);
 
     case "Running": {
-      const activity = activityLabel(run.activity);
+      const activity = activityLabel(run.activity, run.phase);
 
       if (activity !== null) {
         const contact = relativeTime(machine.lastSeenUtc, now);

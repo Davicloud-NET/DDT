@@ -111,6 +111,51 @@ describe("runTimeline", () => {
 
     expect(entries.at(-1)?.text).toBe("The hand-over to Windows began");
   });
+
+  it("shows the hand-over of a Linux run to the installed Linux", () => {
+    const linux = { ...run, title: "Install Linux", state: "Running" as const, finishedUtc: null };
+    const written = step(0, {
+      phase: "LinuxBoot",
+      startedUtc: "2026-09-16T10:01:00Z",
+      finishedUtc: "2026-09-16T10:10:00Z",
+    });
+    const began = runTimeline(
+      null,
+      linux,
+      [written, step(1, { phase: "Linux", state: "Pending" })],
+      null,
+    );
+    const continued = runTimeline(
+      null,
+      linux,
+      [written, step(1, { phase: "Linux", state: "Running", startedUtc: "2026-09-16T10:11:30Z" })],
+      null,
+    );
+
+    expect(began.at(-1)?.text).toBe("The hand-over to the installed Linux began");
+    expect(continued.at(-1)?.text).toBe(
+      "Handed over to the installed Linux; the agent continued there 1 min 30 s later",
+    );
+  });
+
+  // A run that ends in the Linux boot environment hands nothing over.
+  it("shows no hand-over between steps of the Linux boot environment", () => {
+    const entries = runTimeline(
+      null,
+      { ...run, state: "Running", finishedUtc: null },
+      [
+        step(0, {
+          phase: "LinuxBoot",
+          startedUtc: "2026-09-16T10:01:00Z",
+          finishedUtc: "2026-09-16T10:10:00Z",
+        }),
+        step(1, { phase: "LinuxBoot", state: "Running", startedUtc: "2026-09-16T10:10:01Z" }),
+      ],
+      null,
+    );
+
+    expect(entries.map((entry) => entry.key)).not.toContain("handover-s0");
+  });
 });
 
 describe("runPercent", () => {

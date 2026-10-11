@@ -2206,6 +2206,10 @@ msgid "After {after}"
 msgstr "After {after}"
 
 #: src/machines/assign/AssignConsequences.tsx
+msgid "After the disk image is written, the run goes on in the installed Linux, where the agent runs as a service until the run ends."
+msgstr "After the disk image is written, the run goes on in the installed Linux, where the agent runs as a service until the run ends."
+
+#: src/machines/assign/AssignConsequences.tsx
 msgid "After the image is applied, the run goes on in the installed Windows, where the agent runs as a service until the run ends."
 msgstr "After the image is applied, the run goes on in the installed Windows, where the agent runs as a service until the run ends."
 
@@ -4744,6 +4748,10 @@ msgid "Go to…"
 msgstr "Go to…"
 
 #: src/sequences/sequenceList.ts
+msgid "goes on in the installed Linux"
+msgstr "goes on in the installed Linux"
+
+#: src/sequences/sequenceList.ts
 msgid "goes on in the installed Windows"
 msgstr "goes on in the installed Windows"
 
@@ -4789,8 +4797,16 @@ msgid "GRUB"
 msgstr "GRUB"
 
 #: src/runs/runs.ts
+msgid "Handed over to the installed Linux; the agent continued there {took} later"
+msgstr "Handed over to the installed Linux; the agent continued there {took} later"
+
+#: src/runs/runs.ts
 msgid "Handed over to Windows; after Windows setup the agent continued there {took} later"
 msgstr "Handed over to Windows; after Windows setup the agent continued there {took} later"
+
+#: src/deployments/deployments.ts
+msgid "Handing over to the installed Linux"
+msgstr "Handing over to the installed Linux"
 
 #: src/deployments/deployments.ts
 msgid "Handing over to Windows"
@@ -4911,22 +4927,25 @@ msgstr "In the image"
 msgid "In the installed Linux"
 msgstr "In the installed Linux"
 
+#: src/sequences/flow/HandoverLine.tsx
+msgid "In the installed Linux, after the hand-over"
+msgstr "In the installed Linux, after the hand-over"
+
 #: src/runs/panel/RunRail.tsx
 msgid "In the installed Windows"
 msgstr "In the installed Windows"
 
-#: src/runs/flow/HandoverLine.tsx
-#: src/sequences/builder/canvas/CanvasBackdrop.tsx
+#: src/sequences/flow/HandoverLine.tsx
 msgid "In the installed Windows, after the hand-over"
 msgstr "In the installed Windows, after the hand-over"
 
 #: src/runs/panel/RunRail.tsx
+#: src/sequences/flow/HandoverLine.tsx
 msgid "In the Linux boot environment"
 msgstr "In the Linux boot environment"
 
-#: src/runs/flow/HandoverLine.tsx
 #: src/runs/panel/RunRail.tsx
-#: src/sequences/builder/canvas/CanvasBackdrop.tsx
+#: src/sequences/flow/HandoverLine.tsx
 msgid "In Windows PE"
 msgstr "In Windows PE"
 
@@ -5010,10 +5029,15 @@ msgstr "Install Windows"
 msgid "Installed"
 msgstr "Installed"
 
+#: src/conditions/conditionSubjects.ts
+#: src/machines/bootEnvironment.ts
 #: src/sequences/steps.ts
-#: src/sequences/steps/RunScriptFields.tsx
 msgid "Installed Linux"
 msgstr "Installed Linux"
+
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "Installed Linux, after the hand-over"
+msgstr "Installed Linux, after the hand-over"
 
 #: src/machines/bootEnvironment.ts
 msgid "Installed Windows"
@@ -5456,9 +5480,12 @@ msgstr "Linked to {provider}"
 #: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/sequences/steps.ts
-#: src/sequences/steps/RunScriptFields.tsx
 msgid "Linux boot environment"
 msgstr "Linux boot environment"
+
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "Linux boot environment, before the hand-over"
+msgstr "Linux boot environment, before the hand-over"
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.pxe.linuxDefaultUnavailable"
@@ -6224,6 +6251,10 @@ msgid "No contact for {silentFor}, as the machine restarts."
 msgstr "No contact for {silentFor}, as the machine restarts."
 
 #: src/runs/panel/RunActivity.tsx
+msgid "No contact for {silentFor}. The installed Linux starts before the agent goes on there, which can take a while."
+msgstr "No contact for {silentFor}. The installed Linux starts before the agent goes on there, which can take a while."
+
+#: src/runs/panel/RunActivity.tsx
 msgid "No contact for {silentFor}. Windows setup runs before the agent starts again, which can take a while."
 msgstr "No contact for {silentFor}. Windows setup runs before the agent starts again, which can take a while."
 
@@ -6818,6 +6849,10 @@ msgstr "Only a driver package can go into the Windows PE boot image."
 msgctxt "machine.cannotBeRemoved"
 msgid "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
 msgstr "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
+
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "Only a script in Windows runs as an account; in the installed Linux it runs as root."
+msgstr "Only a script in Windows runs as an account; in the installed Linux it runs as root."
 
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "Only a script in Windows runs as an account; in the Linux boot environment it runs as root."
@@ -7610,6 +7645,10 @@ msgid "Removed. Machines that start the Linux boot environment from now on no lo
 msgstr "Removed. Machines that start the Linux boot environment from now on no longer get that agent."
 
 #: src/deployments/deployments.ts
+msgid "Removing the agent from Linux"
+msgstr "Removing the agent from Linux"
+
+#: src/deployments/deployments.ts
 msgid "Removing the agent from Windows"
 msgstr "Removing the agent from Windows"
 
@@ -7973,6 +8012,10 @@ msgstr "Running since {start} in {phase}, for {took}."
 #: src/runs/history/RunHistoryTable.tsx
 msgid "Runs"
 msgstr "Runs"
+
+#: src/sequences/steps/ScriptIntro.tsx
+msgid "Runs as root in the installed Linux, after the machine started from the disk image. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
+msgstr "Runs as root in the installed Linux, after the machine started from the disk image. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
 
 #: src/sequences/steps/ScriptIntro.tsx
 msgid "Runs as root in the Linux boot environment, before the machine starts from the disk image. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
@@ -9811,6 +9854,10 @@ msgid "The GUID partition table of the disk image is damaged. The file ends insi
 msgstr "The GUID partition table of the disk image is damaged. The file ends inside the partition table."
 
 #: src/runs/runs.ts
+msgid "The hand-over to the installed Linux began"
+msgstr "The hand-over to the installed Linux began"
+
+#: src/runs/runs.ts
 msgid "The hand-over to Windows began"
 msgstr "The hand-over to Windows began"
 
@@ -10076,6 +10123,10 @@ msgstr "The machine reported no value."
 #: src/sequences/steps/ScriptResultFields.tsx
 msgid "The machine restarts and the sequence goes on with the next step."
 msgstr "The machine restarts and the sequence goes on with the next step."
+
+#: src/sequences/steps/ScriptResultFields.tsx
+msgid "The machine restarts and the sequence goes on with the next step. A shell makes 194 of exit 3010."
+msgstr "The machine restarts and the sequence goes on with the next step. A shell makes 194 of exit 3010."
 
 #: src/sequences/builder/inspector/FailureSettings.tsx
 msgid "The machine restarts once the step is done."
@@ -11121,6 +11172,10 @@ msgid "This step can run only once in a run, so it cannot be inside a repeat."
 msgstr "This step can run only once in a run, so it cannot be inside a repeat."
 
 #: src/machines/actions/StopConfirm.tsx
+msgid "This stops the run on {label}, which runs in its installed Linux. The agent there stops at its next contact with the server and removes itself; Linux stays installed as it is, with the steps done so far."
+msgstr "This stops the run on {label}, which runs in its installed Linux. The agent there stops at its next contact with the server and removes itself; Linux stays installed as it is, with the steps done so far."
+
+#: src/machines/actions/StopConfirm.tsx
 msgid "This stops the run on {label}, which runs in its installed Windows. The agent there stops at its next contact with the server and removes itself; Windows stays installed as it is, with the steps done so far."
 msgstr "This stops the run on {label}, which runs in its installed Windows. The agent there stops at its next contact with the server and removes itself; Windows stays installed as it is, with the steps done so far."
 
@@ -11706,6 +11761,10 @@ msgstr "Waiting"
 #: src/deployments/deployments.ts
 msgid "Waiting for answers"
 msgstr "Waiting for answers"
+
+#: src/deployments/deployments.ts
+msgid "Waiting for cloud-init"
+msgstr "Waiting for cloud-init"
 
 #: src/deployments/deployments.ts
 msgid "Waiting for Windows setup"

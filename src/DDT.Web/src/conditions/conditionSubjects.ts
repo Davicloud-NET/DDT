@@ -99,6 +99,7 @@ function choicesOfFact(name: string): ValueChoice[] {
       { value: "WindowsPE", label: t`Windows PE` },
       { value: "Windows", label: t`Windows` },
       { value: "LinuxBoot", label: t`Linux boot environment` },
+      { value: "Linux", label: t`Installed Linux` },
     ];
   }
 

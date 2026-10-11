@@ -9,7 +9,7 @@ import { AccountSetting } from "../builder/AccountSetting";
 import { ChoiceSetting } from "../fields/ChoiceSetting";
 import type { Choice } from "../fields/fieldBase";
 import { TextSetting } from "../fields/TextSetting";
-import { kindOfPhase, scriptInterpreters, scriptPhases } from "../sequenceKinds";
+import { kindOfPhase, restartCodes, scriptInterpreters, scriptPhases } from "../sequenceKinds";
 import type { RunScriptStep, ScriptInterpreter, SequencePhase } from "../sequences";
 import { interpreterLabel } from "../steps";
 import type { KindFieldsProps } from "./kindFields";
@@ -25,10 +25,20 @@ function phaseChoice(phase: SequencePhase): string {
     case "Windows":
       return t`Windows, after the hand-over`;
     case "LinuxBoot":
-      return t`Linux boot environment`;
+      return t`Linux boot environment, before the hand-over`;
     case "Linux":
-      return t`Installed Linux`;
+      return t`Installed Linux, after the hand-over`;
   }
+}
+
+// The restart codes that follow a script to another phase: the ones it has, unless they are what its phase gave it.
+function movedCodes(step: RunScriptStep, phase: SequencePhase): number[] {
+  const given = restartCodes(step.phase);
+  const untouched =
+    step.rebootExitCodes.length === given.length &&
+    step.rebootExitCodes.every((code, index) => code === given[index]);
+
+  return untouched ? restartCodes(phase) : step.rebootExitCodes;
 }
 
 // What the sequence's kind offers, and the step's own value while it is another, so it shows next to its problem.
@@ -50,14 +60,19 @@ export function RunScriptFields({
   const interpreters: Choice[] = withOwn(scriptInterpreters(sequence), step.interpreter).map(
     (interpreter) => ({ id: interpreter, label: interpreterLabel(interpreter) }),
   );
-  const root = step.phase === "LinuxBoot" ? t`root` : t`SYSTEM`;
+  const root = kindOfPhase(step.phase) === "Linux" ? t`root` : t`SYSTEM`;
 
   // A phase of the other kind takes the interpreter that kind runs. The script has to be rewritten for it anyway.
   const changePhase = (phase: SequencePhase) => {
     const [first] = scriptInterpreters(kindOfPhase(phase));
     const fits = scriptInterpreters(kindOfPhase(phase)).includes(step.interpreter);
+    const rebootExitCodes = movedCodes(step, phase);
 
-    onChange(fits || first === undefined ? { phase } : { phase, interpreter: first });
+    onChange(
+      fits || first === undefined
+        ? { phase, rebootExitCodes }
+        : { phase, rebootExitCodes, interpreter: first },
+    );
   };
 
   return (
@@ -88,6 +103,10 @@ export function RunScriptFields({
               <Trans>
                 Only a script in Windows runs as an account; in the Linux boot environment it runs
                 as root.
+              </Trans>
+            ) : step.phase === "Linux" ? (
+              <Trans>
+                Only a script in Windows runs as an account; in the installed Linux it runs as root.
               </Trans>
             ) : (
               <Trans>

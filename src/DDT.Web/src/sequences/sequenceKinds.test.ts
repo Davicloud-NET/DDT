@@ -12,9 +12,11 @@ import { nodePhasesOf } from "./problems";
 import { sequenceEdits } from "./sequenceEdits";
 import {
   bootPhase,
+  installedPhase,
   isBootPhase,
   kindOfNodes,
   kindOfPhase,
+  restartCodes,
   scriptInterpreters,
   scriptPhases,
   sequenceKind,
@@ -52,12 +54,15 @@ describe("a sequence's kind", () => {
     expect(kindOfPhase("WindowsPE")).toBe("Windows");
     expect(kindOfPhase("Windows")).toBe("Windows");
     expect(kindOfPhase("LinuxBoot")).toBe("Linux");
-    expect((["WindowsPE", "Windows", "LinuxBoot"] as const).filter(isBootPhase)).toEqual([
+    expect(kindOfPhase("Linux")).toBe("Linux");
+    expect((["WindowsPE", "Windows", "LinuxBoot", "Linux"] as const).filter(isBootPhase)).toEqual([
       "WindowsPE",
       "LinuxBoot",
     ]);
+    expect(installedPhase("Windows")).toBe("Windows");
+    expect(installedPhase("Linux")).toBe("Linux");
     expect(scriptPhases("Windows")).toEqual(["WindowsPE", "Windows"]);
-    expect(scriptPhases("Linux")).toEqual(["LinuxBoot"]);
+    expect(scriptPhases("Linux")).toEqual(["LinuxBoot", "Linux"]);
     expect(scriptInterpreters("Windows")).toEqual(["Cmd", "PowerShell"]);
     expect(scriptInterpreters("Linux")).toEqual(["Shell"]);
     expect([...scriptInterpreters("Windows"), ...scriptInterpreters("Linux")]).toEqual(
@@ -65,8 +70,17 @@ describe("a sequence's kind", () => {
     );
   });
 
-  it("names the Linux boot environment and the shell", () => {
+  // 194 is what a shell makes of exit 3010, and the Linux boot environment cannot restart.
+  it("gives a script the restart codes of the phase it runs in", () => {
+    expect(restartCodes("WindowsPE")).toEqual([3010]);
+    expect(restartCodes("Windows")).toEqual([3010]);
+    expect(restartCodes("LinuxBoot")).toEqual([]);
+    expect(restartCodes("Linux")).toEqual([194]);
+  });
+
+  it("names the Linux boot environment, the installed Linux and the shell", () => {
     expect(phaseLabel("LinuxBoot")).toBe("Linux boot environment");
+    expect(phaseLabel("Linux")).toBe("Installed Linux");
     expect(interpreters.map(interpreterLabel)).toEqual(["cmd", "PowerShell", "Shell"]);
   });
 });

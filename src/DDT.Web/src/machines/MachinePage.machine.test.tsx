@@ -132,6 +132,16 @@ describe("MachinePage", () => {
       consequence:
         "This stops the run on PC-042, which runs in its installed Windows. The agent there stops at its next contact with the server and removes itself; Windows stays installed as it is, with the steps done so far.",
     },
+    {
+      phase: "LinuxBoot" as const,
+      consequence:
+        "This stops the run on PC-042. Its disk is left half written; assign a sequence again to deploy it.",
+    },
+    {
+      phase: "Linux" as const,
+      consequence:
+        "This stops the run on PC-042, which runs in its installed Linux. The agent there stops at its next contact with the server and removes itself; Linux stays installed as it is, with the steps done so far.",
+    },
   ])("says what stopping a run in $phase leaves behind", async ({ phase, consequence }) => {
     const current = run({ phase });
     await open(

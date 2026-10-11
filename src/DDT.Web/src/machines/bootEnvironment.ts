@@ -16,6 +16,8 @@ export function environmentName(environment: AgentEnvironment): string {
       return t`Linux boot environment`;
     case "Windows":
       return t`Installed Windows`;
+    case "Linux":
+      return t`Installed Linux`;
   }
 }
 

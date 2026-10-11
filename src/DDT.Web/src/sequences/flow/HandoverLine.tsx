@@ -4,8 +4,17 @@
 
 import { Trans } from "@lingui/react/macro";
 
-// The line between WinPE and the installed Windows. It's drawn above the node whose top edge is at top.
-export function HandoverLine({ top, width }: { top: number; width: number }) {
+import type { SequenceKind } from "../sequences";
+
+interface HandoverLineProps {
+  // The top edge of the node the line is drawn above.
+  top: number;
+  width: number;
+  kind: SequenceKind;
+}
+
+// The line between a sequence's boot environment and the installed system it goes on in.
+export function HandoverLine({ top, width, kind }: HandoverLineProps) {
   return (
     <div aria-hidden="true">
       <div
@@ -16,13 +25,21 @@ export function HandoverLine({ top, width }: { top: number; width: number }) {
         className="absolute type-small whitespace-nowrap text-muted"
         style={{ left: -44, top: top - 44 }}
       >
-        <Trans>In Windows PE</Trans>
+        {kind === "Linux" ? (
+          <Trans>In the Linux boot environment</Trans>
+        ) : (
+          <Trans>In Windows PE</Trans>
+        )}
       </span>
       <span
         className="absolute type-small whitespace-nowrap text-muted"
         style={{ left: -44, top: top - 16 }}
       >
-        <Trans>In the installed Windows, after the hand-over</Trans>
+        {kind === "Linux" ? (
+          <Trans>In the installed Linux, after the hand-over</Trans>
+        ) : (
+          <Trans>In the installed Windows, after the hand-over</Trans>
+        )}
       </span>
     </div>
   );

@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import type { FlowLayout } from "@/sequences/flow/flowGeometry";
+import { isBootPhase } from "@/sequences/sequenceKinds";
 import type { FlowNodeState } from "@/ui/FlowNode";
 import type { MinimapItem } from "@/ui/Minimap";
 
@@ -30,16 +31,19 @@ export function branchOf(node: PathNode): "then" | "else" | null {
         : null;
 }
 
-// The first top-level node the run reached in the installed Windows, after top-level nodes in WinPE. The flow draws
-// the line between the phases above it. Null if the run hasn't handed over, or the line wouldn't run across the
-// flow.
+// The first top-level node the run reached in the installed system, after top-level nodes in its boot environment.
+// The flow draws the line between the phases above it. Null if the run hasn't handed over, or the line wouldn't run
+// across the flow.
 export function handover(path: RunPath): string | null {
   const top = path.nodes.filter((node) => node.entry.parent === null);
-  const index = top.findIndex((node) => node.step?.phase === "Windows");
+  const installed = (node: PathNode) => {
+    const phase = node.step?.phase;
 
-  return index > 0 && top.slice(0, index).every((node) => node.step?.phase !== "Windows")
-    ? (top[index]?.node.id ?? null)
-    : null;
+    return phase !== undefined && !isBootPhase(phase);
+  };
+  const index = top.findIndex(installed);
+
+  return index > 0 ? (top[index]?.node.id ?? null) : null;
 }
 
 export function minimapItems(layout: FlowLayout, path: RunPath): MinimapItem[] {

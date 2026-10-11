@@ -53,7 +53,7 @@ export function MachinePanel({
   const steps =
     detail.view?.summary.id === run?.id && detail.view ? railFromView(detail.view) : null;
   const rail = steps ?? (run === null ? [] : railFromSummary(run));
-  const activity = run === null ? null : activityLabel(run.activity);
+  const activity = run === null ? null : activityLabel(run.activity, run.phase);
   const running = run?.state === "Running";
   const signedInBy = machine.signedInBy;
   const tag = machineTag(machine);

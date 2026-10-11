@@ -39,7 +39,7 @@ export function RunActivity({ run, view, path, lastSeenUtc, now }: RunActivityPr
     running === null
       ? null
       : (view?.artifacts.find((candidate) => candidate.stepId === running.node.id) ?? null);
-  const activity = activityLabel(run.activity);
+  const activity = activityLabel(run.activity, run.phase);
   const after = currentStepLabel(run);
   const silentFor = formatDuration(now - Date.parse(lastSeenUtc));
 
@@ -70,6 +70,11 @@ export function RunActivity({ run, view, path, lastSeenUtc, now }: RunActivityPr
         <span className="type-small text-ink-2">
           {run.activity === "Restarting" ? (
             <Trans>No contact for {silentFor}, as the machine restarts.</Trans>
+          ) : run.phase === "LinuxBoot" || run.phase === "Linux" ? (
+            <Trans>
+              No contact for {silentFor}. The installed Linux starts before the agent goes on there,
+              which can take a while.
+            </Trans>
           ) : (
             <Trans>
               No contact for {silentFor}. Windows setup runs before the agent starts again, which

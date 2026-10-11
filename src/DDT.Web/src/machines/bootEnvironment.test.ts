@@ -24,10 +24,10 @@ const linux = sequenceSummary({ name: "Install Linux", kind: "Linux" });
 describe("the boot environment of a machine", () => {
   it("names each environment an agent registers from", () => {
     expect(
-      (["WindowsPE", "LinuxBoot", "Windows"] as const).map((environment) =>
+      (["WindowsPE", "LinuxBoot", "Windows", "Linux"] as const).map((environment) =>
         environmentName(environment),
       ),
-    ).toEqual(["Windows PE", "Linux boot environment", "Installed Windows"]);
+    ).toEqual(["Windows PE", "Linux boot environment", "Installed Windows", "Installed Linux"]);
   });
 
   it("starts a sequence that writes a raw disk image in the Linux boot environment", () => {

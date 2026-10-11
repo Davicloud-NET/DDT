@@ -45,6 +45,7 @@ function summary(overrides: Partial<SequenceSummary> = {}): SequenceSummary {
     rawImageBootCapability: null,
     rawImageSignedUnder: null,
     kind: "Windows",
+    continuesInLinux: false,
     ...overrides,
   };
 }
@@ -146,6 +147,11 @@ describe("the sequence list", () => {
       "goes on in the installed Windows",
       "needs a computer name",
     ]);
+    expect(sequenceFacts(summary({ rawImageName: "noble", continuesInLinux: true }))).toEqual([
+      "Erases the disk",
+      "writes noble",
+      "goes on in the installed Linux",
+    ]);
     expect(sequenceFacts(summary({ erasesDisk: false }))).toEqual(["Keeps the disk"]);
     expect(findingCounts(0, 0)).toBeNull();
     expect(findingCounts(2, 1)).toBe("2 problems, 1 warning");
@@ -184,7 +190,19 @@ describe("the sequence list", () => {
       rawImageName: "noble",
       rawImageBootCapability: "NotSigned",
       kind: "Linux",
+      continuesInLinux: false,
     });
+    expect(
+      summaryOf(
+        view({
+          definition: {
+            version: 5,
+            steps: [newStep("writeRawImage", "w"), seed, newStep("runScript", "s", "Linux")],
+          },
+          stepPhases: ["LinuxBoot", "LinuxBoot", "Linux"],
+        }),
+      ),
+    ).toMatchObject({ kind: "Linux", continuesInLinux: true, continuesInWindows: false });
   });
 
   it("puts a saved copy into the list in the server's order, and never an older one over a newer", () => {

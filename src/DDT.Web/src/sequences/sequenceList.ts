@@ -147,6 +147,7 @@ export function sequenceFacts(sequence: SequenceSummary): string[] {
     sequence.erasesDisk ? t`Erases the disk` : t`Keeps the disk`,
     ...(image !== null ? [t`writes ${image}`] : []),
     ...(sequence.continuesInWindows ? [t`goes on in the installed Windows`] : []),
+    ...(sequence.continuesInLinux ? [t`goes on in the installed Linux`] : []),
     ...(sequence.needsComputerName ? [t`needs a computer name`] : []),
   ];
 }
@@ -188,6 +189,7 @@ export function summaryOf(view: SequenceView, previous?: SequenceSummary): Seque
           )),
     ),
     continuesInWindows: view.stepPhases.includes("Windows"),
+    continuesInLinux: view.stepPhases.includes("Linux"),
     updatedUtc: view.updatedUtc,
     updatedBy: view.updatedBy,
     rawImageName: writesRaw ? (previous?.rawImageName ?? null) : null,

@@ -87,6 +87,14 @@ export function AssignConsequences({
           </Trans>
         </p>
       ) : null}
+      {sequence?.continuesInLinux === true ? (
+        <p>
+          <Trans>
+            After the disk image is written, the run goes on in the installed Linux, where the agent
+            runs as a service until the run ends.
+          </Trans>
+        </p>
+      ) : null}
       {sequence !== null && sequence.warningCount > 0 ? <p>{warningsText(sequence)}</p> : null}
       <p className="type-small text-muted">{hardwareText(machine)}</p>
       {erases && severalDisks ? (

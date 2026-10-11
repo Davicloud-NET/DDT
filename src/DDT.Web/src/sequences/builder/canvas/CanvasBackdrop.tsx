@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { Trans } from "@lingui/react/macro";
-
 import { FlowFrame } from "@/ui/FlowFrame";
 import { FlowWires } from "@/ui/FlowWires";
 
 import type { FlowLayout } from "../../flow/flowGeometry";
+import { HandoverLine } from "../../flow/HandoverLine";
+import { sequenceKind } from "../../sequenceKinds";
 import type { SequencePhase, SequenceStep } from "../../sequences";
 import { handover } from "./handover";
 
@@ -32,7 +32,9 @@ export function CanvasBackdrop({ layout, steps, phases }: CanvasBackdropProps) {
         />
       ))}
 
-      {handBox === undefined ? null : <HandoverLine width={layout.width} y={handBox.y} />}
+      {handBox === undefined ? null : (
+        <HandoverLine top={handBox.y} width={layout.width} kind={sequenceKind(steps)} />
+      )}
 
       <FlowWires
         width={layout.width}
@@ -41,28 +43,5 @@ export function CanvasBackdrop({ layout, steps, phases }: CanvasBackdropProps) {
         arrows={layout.arrows}
       />
     </>
-  );
-}
-
-function HandoverLine({ width, y }: { width: number; y: number }) {
-  return (
-    <div aria-hidden="true">
-      <div
-        className="absolute border-t-[1.5px] border-dashed border-control"
-        style={{ left: -48, width: width + 96, top: y - 22 }}
-      />
-      <span
-        className="absolute type-small whitespace-nowrap text-muted"
-        style={{ left: -44, top: y - 44 }}
-      >
-        <Trans>In Windows PE</Trans>
-      </span>
-      <span
-        className="absolute type-small whitespace-nowrap text-muted"
-        style={{ left: -44, top: y - 16 }}
-      >
-        <Trans>In the installed Windows, after the hand-over</Trans>
-      </span>
-    </div>
   );
 }

@@ -67,6 +67,23 @@ public sealed class FatVolumeTests
         Assert.True(volume.Find(@"EFI\BOOT")!.IsDirectory);
     }
 
+    [Theory]
+    [InlineData(1024 * 1024, null)]
+    [InlineData(64 * 1024 * 1024, null)]
+    [InlineData(40 * 1024 * 1024, FatType.Fat32)]
+    public void CountsTheClustersTheBuilderLeftFreeAndReadsTheSerialNumber(long size, FatType? asked)
+    {
+        FatVolumeBuilder builder = EspBuilder(size, asked);
+        long free = builder.FreeBytes();
+
+        FatVolume volume = Open(builder.Build());
+
+        Assert.Equal(0x1234ABCDu, volume.SerialNumber);
+        Assert.Equal(free, volume.FreeBytes);
+        Assert.InRange(free, size / 2, size - s_loader.Length);
+        Assert.Equal(0, free % volume.ClusterBytes);
+    }
+
     // FAT12 packs two entries into three bytes, so chains that start on an even and on an odd cluster must both
     // survive.
     [Fact]
@@ -215,6 +232,7 @@ public sealed class FatVolumeTests
         FatVolumeBuilder builder = new(1024 * 1024, "ESP", 1, s_timestamp);
         builder.AddFile("BIG", new byte[2 * 1024 * 1024]);
 
+        Assert.True(builder.FreeBytes() < 0);
         Assert.Throws<InvalidOperationException>(builder.Build);
         Assert.Throws<InvalidOperationException>(new FatVolumeBuilder(1024 * 1024, "cidata.old", 1, s_timestamp).Build);
         Assert.Throws<InvalidOperationException>(new FatVolumeBuilder(1024 * 1024, "ESP", 1, s_timestamp) { Type = FatType.Fat32 }.Build);

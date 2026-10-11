@@ -81,6 +81,12 @@ public sealed class FatVolumeBuilder(long sizeBytes, string label, uint serialNu
 
         NameEntries(_root);
         uint next = AllocateClusters(boot, clusterBytes);
+
+        if (next - 2 > boot.ClusterCount)
+        {
+            throw new InvalidOperationException("The files do not fit on the volume.");
+        }
+
         WriteEntries(_root, parentCluster: 0, isRoot: true, clusterBytes);
 
         boot = boot with
@@ -107,6 +113,15 @@ public sealed class FatVolumeBuilder(long sizeBytes, string label, uint serialNu
         WriteData(volume, _root, boot.FirstDataSector * SectorSize, clusterBytes);
 
         return volume;
+    }
+
+    // What the volume has left with the files added so far, in whole clusters. Negative when they do not fit.
+    public long FreeBytes()
+    {
+        FatBootSector boot = Layout();
+        NameEntries(_root);
+
+        return (boot.ClusterCount - (AllocateClusters(boot, boot.ClusterBytes) - 2L)) * boot.ClusterBytes;
     }
 
     private static FatBuildNode? Child(FatBuildNode directory, string name) =>
@@ -236,7 +251,7 @@ public sealed class FatVolumeBuilder(long sizeBytes, string label, uint serialNu
 
         Allocate(_root, clusterBytes, ref next);
 
-        return next - 2 > boot.ClusterCount ? throw new InvalidOperationException("The files do not fit on the volume.") : next;
+        return next;
     }
 
     private static void Allocate(FatBuildNode directory, int clusterBytes, ref uint next)

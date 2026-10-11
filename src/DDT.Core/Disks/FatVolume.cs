@@ -33,6 +33,7 @@ public sealed class FatVolume
     {
         _stream = stream;
         Type = boot.Type;
+        SerialNumber = boot.SerialNumber;
         ClusterBytes = boot.ClusterBytes;
         _clusterCount = boot.ClusterCount;
         _fat = fat;
@@ -46,8 +47,27 @@ public sealed class FatVolume
 
     public int ClusterBytes { get; }
 
+    // The boot sector's, which Linux shows as the volume's UUID. 0 when the sector has none.
+    public uint SerialNumber { get; }
+
     // Read from the root directory's volume label entry, or else from the boot sector. Null when the volume has none.
     public string? Label { get; private set; }
+
+    // The clusters no chain uses, as Linux's df counts what is available.
+    public long FreeBytes
+    {
+        get
+        {
+            long free = 0;
+
+            for (uint cluster = 2; cluster < _clusterCount + 2; cluster++)
+            {
+                free += _fat.Get(cluster) == 0 ? 1 : 0;
+            }
+
+            return free * ClusterBytes;
+        }
+    }
 
     // Opens the volume at offset, which is length bytes long. Throws InvalidDataException when it isn't a FAT volume
     // DDT can read.

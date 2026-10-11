@@ -27,6 +27,9 @@ internal static partial class DeploymentLog
     [LoggerMessage(EventId = 955, Level = LogLevel.Warning, Message = "Deployment {DeploymentId} of {Title} failed on machine {MachineId} before it started: {Error}")]
     public static partial void FailedBeforeStart(ILogger logger, Guid deploymentId, string title, Guid machineId, string? error);
 
+    [LoggerMessage(EventId = 962, Level = LogLevel.Warning, Message = "Deployment {DeploymentId} of {Title} failed on machine {MachineId}, at none of its steps: {Error}")]
+    public static partial void FailedAtNoStep(ILogger logger, Guid deploymentId, string title, Guid machineId, string? error);
+
     // Called after a successful save, so the log never claims a change that lost a race. Before is null for a new
     // deployment.
     public static void Changed(ILogger logger, Deployment deployment, DeploymentState? before)
@@ -51,6 +54,9 @@ internal static partial class DeploymentLog
                 break;
             case DeploymentState.Failed when deployment.StartedUtc is null:
                 FailedBeforeStart(logger, deployment.Id, deployment.Title, deployment.MachineId, deployment.Error);
+                break;
+            case DeploymentState.Failed when deployment.CurrentStepName is null:
+                FailedAtNoStep(logger, deployment.Id, deployment.Title, deployment.MachineId, deployment.Error);
                 break;
             case DeploymentState.Failed:
                 Failed(logger, deployment.Id, deployment.Title, deployment.MachineId, deployment.CurrentStepName, deployment.Error);

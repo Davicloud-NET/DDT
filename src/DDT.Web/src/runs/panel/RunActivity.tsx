@@ -17,6 +17,7 @@ import { bootPhase, kindOfNodes } from "@/sequences/sequenceKinds";
 
 import type { RunPath } from "../runPath";
 import { CurrentStep } from "./CurrentStep";
+import { LinuxHandOverWait } from "./LinuxHandOverWait";
 
 interface RunActivityProps {
   run: DeploymentSummary;
@@ -24,12 +25,21 @@ interface RunActivityProps {
   path: RunPath | null;
   // The machine's last contact with the server.
   lastSeenUtc: string;
+  // Since when a Linux run waits for the installed Linux's first call after its hand-over. Null otherwise.
+  handedOverUtc?: string | null;
   now: number;
 }
 
 // A running run that isn't waiting for anyone. Shows the step it's on, or what the agent does between steps and
 // how long the machine has been silent while it restarts.
-export function RunActivity({ run, view, path, lastSeenUtc, now }: RunActivityProps) {
+export function RunActivity({
+  run,
+  view,
+  path,
+  lastSeenUtc,
+  handedOverUtc = null,
+  now,
+}: RunActivityProps) {
   const current = path?.current ?? null;
   const running =
     current?.state === "running" && current.step !== null && current.entry.number !== null
@@ -54,6 +64,10 @@ export function RunActivity({ run, view, path, lastSeenUtc, now }: RunActivityPr
         now={now}
       />
     );
+  }
+
+  if (handedOverUtc !== null) {
+    return <LinuxHandOverWait sinceUtc={handedOverUtc} after={after} now={now} />;
   }
 
   return (

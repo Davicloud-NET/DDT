@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Agents;
+using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using DDT.Core.Machines;
 using DDT.Server.Deployments;
 
@@ -44,6 +47,16 @@ public static class MachineSummaries
             machine.NextEnvironment,
             machine.SequenceVersion >= PhaseRules.SwitchVersion,
             PendingSwitch.GaveUp(machine, deployment),
-            machine.SequenceVersion);
+            machine.SequenceVersion,
+            HandedOver(machine, deployment));
     }
+
+    // The boot environment's last report says that it restarts into the installed system, and nothing registered from
+    // there since. A run's reports stop with that restart, so its last change is the hand-over.
+    private static DateTimeOffset? HandedOver(Machine machine, Deployment? run) =>
+        run is { State: DeploymentState.Running, Activity: RunActivity.Restarting, CurrentPhase: { } phase }
+        && !SequenceKinds.IsBoot(phase)
+        && SequenceKinds.IsBoot(SequenceKinds.Phase(machine.AgentEnvironment))
+            ? run.UpdatedUtc
+            : null;
 }

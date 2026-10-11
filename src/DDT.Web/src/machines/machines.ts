@@ -89,6 +89,8 @@ export interface MachineSummary {
   restartsFailed?: AgentEnvironment | null;
   // The newest sequence version the machine's agent said it runs when it last registered.
   sequenceVersion?: number | null;
+  // When the boot environment handed the machine's run over to the installed system, until the agent there calls.
+  handedOverUtc?: string | null;
 }
 
 // A hardware model as the machine's firmware reports it. Comparisons ignore case and runs of spaces. A null

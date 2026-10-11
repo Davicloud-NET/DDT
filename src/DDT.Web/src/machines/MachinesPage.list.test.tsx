@@ -274,6 +274,77 @@ describe("MachinesPage", () => {
       expect(within(row("PC-NONE")).getByText("No sequence assigned")).toBeInTheDocument();
     });
 
+    // The boot environment handed the run over, and nothing has come from the installed Linux since.
+    it("says in the row and beside it since when a Linux run waits for the installed Linux", async () => {
+      vi.useFakeTimers({ toFake: ["Date"], now });
+
+      const handedOver = (seconds: number) =>
+        deploymentSummary({
+          title: "Install Linux",
+          stepCount: 3,
+          state: "Running",
+          stepIndex: 1,
+          stepName: "Write the cloud-init seed",
+          phase: "Linux",
+          activity: "Restarting",
+          startedUtc: secondsBefore(seconds + 30),
+          updatedUtc: secondsBefore(seconds),
+        });
+
+      await open(
+        [
+          machineSummary({
+            id: "m1",
+            assignedName: "PC-HANDED-OVER",
+            state: "Deploying",
+            agentEnvironment: "LinuxBoot",
+            lastSeenUtc: secondsBefore(150),
+            handedOverUtc: secondsBefore(120),
+            deployment: handedOver(120),
+          }),
+          machineSummary({
+            id: "m2",
+            assignedName: "PC-SILENT",
+            state: "Deploying",
+            agentEnvironment: "LinuxBoot",
+            lastSeenUtc: secondsBefore(930),
+            handedOverUtc: secondsBefore(900),
+            deployment: handedOver(900),
+          }),
+          // The agent there called, and a step asked for this restart.
+          machineSummary({
+            id: "m3",
+            assignedName: "PC-IN-LINUX",
+            state: "Deploying",
+            agentEnvironment: "Linux",
+            lastSeenUtc: secondsBefore(60),
+            handedOverUtc: null,
+            deployment: handedOver(60),
+          }),
+        ],
+        {},
+        { path: "/machines?selected=m1" },
+      );
+
+      expect(
+        within(await screen.findByRole("row", { name: /^PC-HANDED-OVER/ })).getByText(
+          "Handed over 2 minutes ago, no call from the installed Linux yet",
+        ),
+      ).toBeInTheDocument();
+      expect(
+        within(row("PC-SILENT")).getByText(
+          "Handed over 15 minutes ago, still no call from the installed Linux",
+        ),
+      ).toBeInTheDocument();
+      expect(
+        within(row("PC-IN-LINUX")).getByText("Restarting, last contact 1 minute ago"),
+      ).toBeInTheDocument();
+
+      const panel = within(screen.getByRole("complementary", { name: "PC-HANDED-OVER" }));
+      expect(panel.getByText("Waiting for the installed Linux")).toBeInTheDocument();
+      expect(panel.queryByText("Restarting")).not.toBeInTheDocument();
+    });
+
     it("puts the machines that need someone first", async () => {
       await open([
         machineSummary({ id: "m1", assignedName: "PC-DONE", state: "Done" }),

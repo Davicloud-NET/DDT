@@ -42,4 +42,6 @@ public sealed record MachineSummary(
     // The boot environment the machine did not start after restarting for its run. The server orders no more, and the run waits.
     AgentEnvironment? RestartsFailed = null,
     // The newest sequence version the machine's agent said it runs when it last registered.
-    int? SequenceVersion = null);
+    int? SequenceVersion = null,
+    // When the boot environment handed the machine's run over to the installed system, until the agent there calls.
+    DateTimeOffset? HandedOverUtc = null);

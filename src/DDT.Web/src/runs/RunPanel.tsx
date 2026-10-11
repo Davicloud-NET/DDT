@@ -29,12 +29,14 @@ interface RunPanelProps {
   view: DeploymentView | null;
   // The machine's last contact with the server.
   lastSeenUtc: string;
+  // Since when a Linux run waits for the installed Linux's first call after its hand-over. Null otherwise.
+  handedOverUtc?: string | null;
   now: number;
 }
 
 // Where a run is and for how long: its state, the step it is on with that step's percentage in large type, and
 // the rail of the steps on its path.
-export function RunPanel({ run, view, lastSeenUtc, now }: RunPanelProps) {
+export function RunPanel({ run, view, lastSeenUtc, handedOverUtc = null, now }: RunPanelProps) {
   const { i18n } = useLingui();
   const locale = formattingLocale();
   const path =
@@ -68,7 +70,14 @@ export function RunPanel({ run, view, lastSeenUtc, now }: RunPanelProps) {
       {allowance !== null ? <p className="type-small text-attention-text">{allowance}</p> : null}
 
       {run.state === "Running" && !isWaiting(run) ? (
-        <RunActivity run={run} view={view} path={path} lastSeenUtc={lastSeenUtc} now={now} />
+        <RunActivity
+          run={run}
+          view={view}
+          path={path}
+          lastSeenUtc={lastSeenUtc}
+          handedOverUtc={handedOverUtc}
+          now={now}
+        />
       ) : null}
 
       {run.state === "Assigned" ? (

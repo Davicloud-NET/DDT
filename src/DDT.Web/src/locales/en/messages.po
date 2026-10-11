@@ -2233,6 +2233,7 @@ msgstr "Administrator"
 msgid "Advertise boot server discovery"
 msgstr "Advertise boot server discovery"
 
+#: src/runs/panel/LinuxHandOverWait.tsx
 #: src/runs/panel/RunActivity.tsx
 msgid "After {after}"
 msgstr "After {after}"
@@ -4833,6 +4834,18 @@ msgstr "Groups, IFs and repeats can be nested at most {max} levels deep."
 msgid "GRUB"
 msgstr "GRUB"
 
+#: src/machines/list/runDetail.ts
+msgid "Handed over {ago}, no call from the installed Linux yet"
+msgstr "Handed over {ago}, no call from the installed Linux yet"
+
+#: src/machines/list/runDetail.ts
+msgid "Handed over {ago}, still no call from the installed Linux"
+msgstr "Handed over {ago}, still no call from the installed Linux"
+
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "Handed over {when}, {ago} ago. The installed Linux has not called yet."
+msgstr "Handed over {when}, {ago} ago. The installed Linux has not called yet."
+
 #: src/runs/runs.ts
 msgid "Handed over to the installed Linux; the agent continued there {took} later"
 msgstr "Handed over to the installed Linux; the agent continued there {took} later"
@@ -5235,6 +5248,10 @@ msgstr "It no longer exists on the server, so nothing more is saved."
 #: src/machines/MachinePage.tsx
 msgid "It registers as a new machine at its next netboot."
 msgstr "It registers as a new machine at its next netboot."
+
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "It starts first, and cloud-init sets it up before DDT's agent starts there. Packages it installs take their time."
+msgstr "It starts first, and cloud-init sets it up before DDT's agent starts there. Packages it installs take their time."
 
 #: src/machines/assign/assignText.ts
 msgid "It stays waiting until someone signs in at it or it netboots from a zero touch network."
@@ -9250,6 +9267,10 @@ msgstr "That code is not valid. Check the time on the device generating it."
 msgid "That did not work."
 msgstr "That did not work."
 
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "That is longer than a first start usually takes. It may still be installing packages. Otherwise the machine did not start from its disk, the image has no cloud-init or no systemd, the user-data keeps cloud-init from running DDT's script, or that script failed. Look at the machine's own screen, and in the installed Linux at <0>{output}</0> and <1>{journal}</1>."
+msgstr "That is longer than a first start usually takes. It may still be installing packages. Otherwise the machine did not start from its disk, the image has no cloud-init or no systemd, the user-data keeps cloud-init from running DDT's script, or that script failed. Look at the machine's own screen, and in the installed Linux at <0>{output}</0> and <1>{journal}</1>."
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.linuxAgent.notExecutable"
 msgid "That is not a 64-bit Linux program for x86-64. Upload ddt-agent as Publish-LinuxAgent.ps1 builds it, or ddt-agent-linux-x64 from a DDT release."
@@ -11821,6 +11842,11 @@ msgstr "Waiting for answers"
 #: src/deployments/deployments.ts
 msgid "Waiting for cloud-init"
 msgstr "Waiting for cloud-init"
+
+#: src/deployments/handOver.ts
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "Waiting for the installed Linux"
+msgstr "Waiting for the installed Linux"
 
 #: src/deployments/deployments.ts
 msgid "Waiting for Windows setup"

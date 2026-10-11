@@ -145,6 +145,45 @@ describe("MachinePage", () => {
     expect(failed.queryByText(/The run went on/)).not.toBeInTheDocument();
   });
 
+  // The boot environment's last report is all the server has, until the agent registers from the installed Linux.
+  it("says since when a Linux run waits for the installed Linux, until a push says that it called", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now });
+
+    const handedOver = run({
+      phase: "Linux",
+      activity: "Restarting",
+      updatedUtc: "2026-09-16T10:04:00Z",
+    });
+    const waiting = machine({
+      agentEnvironment: "LinuxBoot",
+      handedOverUtc: "2026-09-16T10:04:00Z",
+      deployment: handedOver,
+    });
+    const { hub } = await open(answers([waiting], [handedOver], [view({ summary: handedOver })]));
+
+    expect(await screen.findByText("Waiting for the installed Linux")).toBeInTheDocument();
+    expect(
+      screen.getByText(/, 2 min 0 s ago\. The installed Linux has not called yet\.$/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/^No contact/)).not.toBeInTheDocument();
+
+    const called = run({
+      phase: "Linux",
+      activity: "WaitingForCloudInit",
+      updatedUtc: "2026-09-16T10:06:00Z",
+    });
+
+    act(() => {
+      hub?.push(
+        "machineChanged",
+        machine({ agentEnvironment: "Linux", handedOverUtc: null, deployment: called }),
+      );
+    });
+
+    expect(await screen.findByText("Waiting for cloud-init")).toBeInTheDocument();
+    expect(screen.queryByText("Waiting for the installed Linux")).not.toBeInTheDocument();
+  });
+
   it("moves a step on when the server pushes its change, and never back", async () => {
     const { hub } = await open(answers([machine()], [run()], [view()]));
 

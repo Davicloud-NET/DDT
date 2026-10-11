@@ -180,6 +180,44 @@ public sealed class InstalledLinuxRunTests(DdtApplication application) : IClassF
         Assert.Equal(MachineState.Done, (await application.MachineAsync(machine.Id)).State);
     }
 
+    // After the hand-over nothing may ever come: vendor data switched off, an image without cloud-init, a machine that
+    // does not start from its disk. So the web is told since when the run waits for the installed Linux's first call.
+    [Fact]
+    public async Task SaysWhenARunWasHandedOverUntilTheInstalledLinuxCalls()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await ApprovedInLinuxBootAsync();
+        DeploymentSummary assigned = await administrator.AssignedAsync(machine.Id, (await SequenceAsync()).Id, "LINUX-38");
+        AgentRun run = Assert.IsType<AgentRun>((await machine.NextAsync()).Run);
+        StepRunState[] written = [Step(run.Sequence.Steps[0], StepState.Done), Step(run.Sequence.Steps[1], StepState.Done)];
+
+        async Task<MachineSummary> ShownAsync() => Assert.Single(
+            await RegisteredMachine.ReadAsync<IReadOnlyList<MachineSummary>>(await administrator.GetAsync("/api/machines")),
+            shown => shown.Id == machine.Id);
+
+        await machine.ReportOkAsync(run.Id, InLinuxBoot(Report(DeploymentState.Running, written) with { Activity = RunActivity.HandingOver }));
+        Assert.Null((await ShownAsync()).HandedOverUtc);
+
+        await machine.ReportOkAsync(run.Id, InLinux(Report(DeploymentState.Running, written) with { Activity = RunActivity.Restarting }));
+        MachineSummary handedOver = await ShownAsync();
+
+        Assert.Equal(AgentEnvironment.LinuxBoot, handedOver.AgentEnvironment);
+        Assert.Equal((await administrator.RunAsync(assigned.Id)).Summary.UpdatedUtc, handedOver.HandedOverUtc);
+        Assert.Equal((RunActivity.Restarting, SequencePhase.Linux), (handedOver.Deployment?.Activity, handedOver.Deployment?.Phase));
+
+        // The agent's first call from the installed Linux is its registration.
+        AgentRegistrationResult installed = await InstalledAsync(machine);
+        Assert.Null((await ShownAsync()).HandedOverUtc);
+
+        // A restart a step asked for there is no hand-over.
+        (await machine.Agent.RunReportAsync(
+            machine.Id,
+            installed.Token!,
+            run.Id,
+            InLinux(Report(DeploymentState.Running, written) with { Activity = RunActivity.Restarting }))).EnsureSuccessStatusCode();
+        Assert.Null((await ShownAsync()).HandedOverUtc);
+    }
+
     // Like the service in Windows: starting over would hand the boot environment's steps to a running Linux.
     [Fact]
     public async Task AnAgentInTheInstalledLinuxWithNothingToContinueChangesNothing()

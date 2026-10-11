@@ -5,6 +5,7 @@
 import { t } from "@lingui/core/macro";
 
 import { activityLabel, assignedBy, isSilentActivity } from "@/deployments/deployments";
+import { isOverdue, linuxHandOver } from "@/deployments/handOver";
 import { formatDuration } from "@/lib/format";
 import { relativeTime } from "@/lib/relativeTime";
 import type { MachineSummary } from "@/machines/machines";
@@ -30,6 +31,17 @@ export function runDetail(machine: MachineSummary, now: number): string | null {
       return assignedBy(run);
 
     case "Running": {
+      const handedOver = linuxHandOver(machine);
+
+      // Nothing may ever come from the installed Linux, so the row says since when it is awaited.
+      if (handedOver !== null) {
+        const ago = relativeTime(handedOver, now);
+
+        return isOverdue(handedOver, now)
+          ? t`Handed over ${ago}, still no call from the installed Linux`
+          : t`Handed over ${ago}, no call from the installed Linux yet`;
+      }
+
       const activity = activityLabel(run.activity, run.phase);
 
       if (activity !== null) {

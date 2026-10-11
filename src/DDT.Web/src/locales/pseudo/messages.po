@@ -2233,6 +2233,7 @@ msgstr ""
 msgid "Advertise boot server discovery"
 msgstr ""
 
+#: src/runs/panel/LinuxHandOverWait.tsx
 #: src/runs/panel/RunActivity.tsx
 msgid "After {after}"
 msgstr ""
@@ -4833,6 +4834,18 @@ msgstr ""
 msgid "GRUB"
 msgstr ""
 
+#: src/machines/list/runDetail.ts
+msgid "Handed over {ago}, no call from the installed Linux yet"
+msgstr ""
+
+#: src/machines/list/runDetail.ts
+msgid "Handed over {ago}, still no call from the installed Linux"
+msgstr ""
+
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "Handed over {when}, {ago} ago. The installed Linux has not called yet."
+msgstr ""
+
 #: src/runs/runs.ts
 msgid "Handed over to the installed Linux; the agent continued there {took} later"
 msgstr ""
@@ -5234,6 +5247,10 @@ msgstr ""
 
 #: src/machines/MachinePage.tsx
 msgid "It registers as a new machine at its next netboot."
+msgstr ""
+
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "It starts first, and cloud-init sets it up before DDT's agent starts there. Packages it installs take their time."
 msgstr ""
 
 #: src/machines/assign/assignText.ts
@@ -9250,6 +9267,10 @@ msgstr ""
 msgid "That did not work."
 msgstr ""
 
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "That is longer than a first start usually takes. It may still be installing packages. Otherwise the machine did not start from its disk, the image has no cloud-init or no systemd, the user-data keeps cloud-init from running DDT's script, or that script failed. Look at the machine's own screen, and in the installed Linux at <0>{output}</0> and <1>{journal}</1>."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.linuxAgent.notExecutable"
 msgid "That is not a 64-bit Linux program for x86-64. Upload ddt-agent as Publish-LinuxAgent.ps1 builds it, or ddt-agent-linux-x64 from a DDT release."
@@ -11820,6 +11841,11 @@ msgstr ""
 
 #: src/deployments/deployments.ts
 msgid "Waiting for cloud-init"
+msgstr ""
+
+#: src/deployments/handOver.ts
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "Waiting for the installed Linux"
 msgstr ""
 
 #: src/deployments/deployments.ts

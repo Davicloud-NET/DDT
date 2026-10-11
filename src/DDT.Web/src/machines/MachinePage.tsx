@@ -7,6 +7,7 @@ import { IconChevronLeft } from "@tabler/icons-react";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
 
 import { isActive } from "@/deployments/deployments";
+import { linuxHandOver } from "@/deployments/handOver";
 import { useNow } from "@/lib/useNow";
 import { LogPanel } from "@/log/LogPanel";
 import { resolutionText } from "@/rules/rules";
@@ -91,6 +92,7 @@ export function MachinePage() {
           run={summary}
           view={view}
           lastSeenUtc={machine?.lastSeenUtc ?? summary.updatedUtc}
+          handedOverUtc={machine === null ? null : linuxHandOver(machine)}
           now={now}
         />
       ) : null}

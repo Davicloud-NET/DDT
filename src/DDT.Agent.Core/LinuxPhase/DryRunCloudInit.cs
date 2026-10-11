@@ -5,19 +5,13 @@
 namespace DDT.Agent.LinuxPhase;
 
 // A dry run's Linux was never started, so cloud-init does not run in it and nothing is waited for.
-public sealed class DryRunCloudInit(AgentLog log) : ICloudInit
+public sealed class DryRunCloudInit : ICloudInit
 {
-    public bool Enabled
-    {
-        get
-        {
-            log.Information(
-                $"Dry run: cloud-init counts as not running. In the installed Linux the agent would wait for /{CloudInitFiles.ResultPath}, " +
-                "and then for a restart the user-data asks for.");
+    public bool IsEnabled => false;
 
-            return false;
-        }
-    }
+    public string NotEnabled =>
+        $"Dry run: cloud-init counts as not running. In the installed Linux the agent would wait for /{CloudInitFiles.ResultPath}, " +
+        "and then for a restart the user-data asks for.";
 
     public string? Result() => null;
 

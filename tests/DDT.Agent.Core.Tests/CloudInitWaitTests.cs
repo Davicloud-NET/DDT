@@ -7,11 +7,10 @@ using Xunit;
 
 namespace DDT.Agent.Tests;
 
-// The wait for cloud-init in the installed Linux, over a folder that stands in for / with the files two real images
-// wrote: Debian 13 with cloud-init 25.1.4 and Ubuntu 24.04 with 26.1.
+// The wait for cloud-init at the first start of the installed Linux, over a folder that stands in for /.
 public sealed class CloudInitWaitTests : IDisposable
 {
-    private const string Clean = """{ "v1": { "datasource": "DataSourceNoCloud [seed=/dev/nvme0n1p2]", "errors": [] }}""";
+    private const string Clean = CloudInitRoot.Clean;
 
     private const string Failed =
         """{ "v1": { "datasource": "DataSourceNoCloud [seed=/dev/nvme0n1p2]", "errors": [ "('scripts-user', RuntimeError('Runparts: 1 failures (runcmd) in 1 attempted commands'))" ] }}""";
@@ -30,34 +29,17 @@ public sealed class CloudInitWaitTests : IDisposable
     // The line that says where cloud-init's output is, in place of the output.
     private const string OutputStays = $"INFO  {CloudInitReport.OutputStays}";
 
-    private readonly string _root = Path.Combine(Path.GetTempPath(), $"ddt-cloud-init-{Guid.NewGuid():N}");
-    private readonly ManualTimeProvider _time = new();
-    private readonly StringWriter _console = new();
+    private readonly CloudInitRoot _linux = new();
 
-    public void Dispose()
-    {
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+    public void Dispose() => _linux.Dispose();
 
-        _console.Dispose();
-    }
+    private string Marker => _linux.Marker;
 
-    private string Marker => Path.Combine(_root, "var", "lib", "ddt", "run", "cloud-init-waited");
+    private CloudInitWait Wait() => _linux.Wait();
 
-    private CloudInitWait Wait() => new(new CloudInitFiles(_root), Marker, new AgentLog(_time, _console), _time);
+    private void Put(string path, string content = "") => _linux.Put(path, content);
 
-    private void Put(string path, string content = "")
-    {
-        string file = Path.Combine(_root, path);
-        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
-        File.WriteAllText(file, content);
-    }
-
-    // What the log got, without each line's time.
-    private string[] Lines() =>
-        [.. _console.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Select(line => line[9..])];
+    private string[] Lines() => _linux.Lines();
 
     [Fact]
     public void DoesNotWaitWhereCloudInitDoesNotRunAtThisStart()
@@ -71,23 +53,25 @@ public sealed class CloudInitWaitTests : IDisposable
         Assert.True(File.Exists(Marker));
     }
 
+    // A runcmd may take as long as it likes: cloud-init's status shows that it runs, and the wait has no end.
     [Fact]
     public void WaitsForTheResultAndThenTheSettleTimeBeforeTheRunGoesOn()
     {
         Put(CloudInitFiles.EnabledPath);
+        Put(CloudInitFiles.StatusPath, """{ "v1": { "stage": "modules-final" } }""");
         CloudInitWait wait = Wait();
 
         Assert.Equal(CloudInitWait.StillRunning, wait.Pending());
-        _time.Advance(TimeSpan.FromMinutes(20));
+        _linux.Time.Advance(TimeSpan.FromMinutes(20));
         Assert.Equal(CloudInitWait.StillRunning, wait.Pending());
 
         Put(CloudInitFiles.ResultPath, Clean);
         Assert.Equal(CloudInitWait.Settling, wait.Pending());
-        _time.Advance(CloudInitWait.Settle - TimeSpan.FromSeconds(1));
+        _linux.Time.Advance(CloudInitWait.Settle - TimeSpan.FromSeconds(1));
         Assert.Equal(CloudInitWait.Settling, wait.Pending());
         Assert.False(File.Exists(Marker));
 
-        _time.Advance(TimeSpan.FromSeconds(1));
+        _linux.Time.Advance(TimeSpan.FromSeconds(1));
         Assert.Null(wait.Pending());
         Assert.True(File.Exists(Marker));
         Assert.Equal(["INFO  cloud-init has finished at this start.", OutputStays], Lines());
@@ -102,7 +86,7 @@ public sealed class CloudInitWaitTests : IDisposable
         CloudInitWait wait = Wait();
 
         Assert.Equal(CloudInitWait.Settling, wait.Pending());
-        _time.Advance(CloudInitWait.Settle);
+        _linux.Time.Advance(CloudInitWait.Settle);
         Assert.Null(wait.Pending());
 
         Assert.Equal(
@@ -132,11 +116,11 @@ public sealed class CloudInitWaitTests : IDisposable
         Put(CloudInitFiles.ResultPath, Failed);
         Put(CloudInitFiles.StatusPath, Degraded);
         Put(CloudInitFiles.OutputPath, string.Join('\n', printed) + "\n");
-        AgentLog log = new(_time, _console);
-        CloudInitWait wait = new(new CloudInitFiles(_root), Marker, log, _time);
+        AgentLog log = _linux.Log;
+        CloudInitWait wait = Wait();
 
         Assert.Equal(CloudInitWait.Settling, wait.Pending());
-        _time.Advance(CloudInitWait.Settle);
+        _linux.Time.Advance(CloudInitWait.Settle);
         Assert.Null(wait.Pending());
 
         ScriptedAgentServer server = new();
@@ -152,8 +136,8 @@ public sealed class CloudInitWaitTests : IDisposable
             server.SentLines[^1].Message);
         Assert.Equal(4, server.SentLines.Count);
         Assert.All(printed, line => Assert.DoesNotContain(server.SentLines, sent => sent.Message.Contains(line, StringComparison.Ordinal)));
-        Assert.All(printed, line => Assert.DoesNotContain(line, _console.ToString(), StringComparison.Ordinal));
-        Assert.DoesNotContain("Xk7", _console.ToString(), StringComparison.Ordinal);
+        Assert.All(printed, line => Assert.DoesNotContain(line, _linux.Console.ToString(), StringComparison.Ordinal));
+        Assert.DoesNotContain("Xk7", _linux.Console.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -165,7 +149,7 @@ public sealed class CloudInitWaitTests : IDisposable
         CloudInitWait wait = Wait();
 
         Assert.Equal(CloudInitWait.Settling, wait.Pending());
-        _time.Advance(CloudInitWait.Settle);
+        _linux.Time.Advance(CloudInitWait.Settle);
         Assert.Null(wait.Pending());
 
         Assert.Equal(["INFO  cloud-init has finished at this start.", $"WARN  {CloudInitReport.UnreadableResult}", OutputStays], Lines());
@@ -181,12 +165,12 @@ public sealed class CloudInitWaitTests : IDisposable
         CloudInitWait wait = Wait();
 
         Assert.Equal(CloudInitWait.RestartComes, wait.Pending());
-        _time.Advance(TimeSpan.FromSeconds(209));
+        _linux.Time.Advance(TimeSpan.FromSeconds(209));
         Assert.Equal(CloudInitWait.RestartComes, wait.Pending());
         Assert.False(File.Exists(Marker));
 
         // One minute of delay, cloud-init's 30 s, and the margin.
-        _time.Advance(TimeSpan.FromSeconds(1));
+        _linux.Time.Advance(TimeSpan.FromSeconds(1));
         Assert.Null(wait.Pending());
         Assert.Equal(
             [
@@ -208,68 +192,17 @@ public sealed class CloudInitWaitTests : IDisposable
         CloudInitWait wait = Wait();
         Assert.Equal(CloudInitWait.Settling, wait.Pending());
 
-        _time.Advance(TimeSpan.FromSeconds(4));
-        long usec = _time.GetUtcNow().AddSeconds(60).ToUnixTimeMilliseconds() * 1000;
+        _linux.Time.Advance(TimeSpan.FromSeconds(4));
+        long usec = _linux.Time.GetUtcNow().AddSeconds(60).ToUnixTimeMilliseconds() * 1000;
         Put(CloudInitFiles.ScheduledShutdownPath, $"USEC={usec}\nWARN_WALL=1\nMODE=reboot\n");
 
         Assert.Equal(CloudInitWait.RestartComes, wait.Pending());
-        _time.Advance(TimeSpan.FromSeconds(179));
+        _linux.Time.Advance(TimeSpan.FromSeconds(179));
         Assert.Equal(CloudInitWait.RestartComes, wait.Pending());
-        _time.Advance(TimeSpan.FromSeconds(1));
+        _linux.Time.Advance(TimeSpan.FromSeconds(1));
         Assert.Null(wait.Pending());
         Assert.Contains(
             "INFO  The user-data restarts or powers off this machine (a scheduled reboot), so the run waits for that before its next step, for 3 min 4 s at most.",
             Lines());
-    }
-
-    // cloud-init acts on power_state at its first start alone and keeps it in its configuration for good. The restart
-    // can come before the agent has seen that cloud-init finished, so the agent tells the starts apart by their ids.
-    [Fact]
-    public void DoesNotWaitAgainForAPowerStateThatRestartedTheMachineAtAnEarlierStart()
-    {
-        const string PowerState = """{ "power_state": { "delay": "now", "mode": "reboot" } }""";
-        Put(CloudInitFiles.EnabledPath);
-        Put(CloudInitFiles.StartIdPath, "8f2c6f6e-0f5c-4d43-9d1d-4a1f0e0c2a01\n");
-        Assert.Equal(CloudInitWait.StillRunning, Wait().Pending());
-
-        // The agent is started again at the same start of Linux, as after an error: the restart is still to come.
-        Put(CloudInitFiles.ResultPath, Clean);
-        Put(CloudInitFiles.ConfigurationPath, PowerState);
-        Assert.Equal(CloudInitWait.RestartComes, Wait().Pending());
-
-        // Linux has restarted. cloud-init finishes again, and its configuration still holds the power_state.
-        Put(CloudInitFiles.StartIdPath, "c1a59e44-7b1e-4f0a-8a53-2f3b0e7d9b02\n");
-        _console.GetStringBuilder().Clear();
-        CloudInitWait later = Wait();
-
-        Assert.Equal(CloudInitWait.Settling, later.Pending());
-        _time.Advance(CloudInitWait.Settle);
-        Assert.Null(later.Pending());
-        Assert.Equal(
-            [
-                "INFO  cloud-init has finished at this start.",
-                OutputStays,
-                "INFO  The user-data's restart (power_state: reboot) came at an earlier start of this Linux, so the run does not wait for it again.",
-            ],
-            Lines());
-    }
-
-    // After a restart the agent starts while cloud-init runs again, and the run must not wait for it a second time.
-    [Fact]
-    public void IsOverForTheRunOnceItWasOverAlsoAfterARestart()
-    {
-        Put(CloudInitFiles.EnabledPath);
-        Put(CloudInitFiles.ResultPath, Clean);
-        CloudInitWait first = Wait();
-        Assert.Equal(CloudInitWait.Settling, first.Pending());
-        _time.Advance(CloudInitWait.Settle);
-        Assert.Null(first.Pending());
-
-        File.Delete(Path.Combine(_root, CloudInitFiles.ResultPath));
-        _console.GetStringBuilder().Clear();
-
-        Assert.Null(Wait().Pending());
-        Assert.Null(first.Pending());
-        Assert.Empty(Lines());
     }
 }

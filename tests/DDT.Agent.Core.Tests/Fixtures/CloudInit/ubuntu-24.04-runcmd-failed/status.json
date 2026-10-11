@@ -1,0 +1,37 @@
+{
+ "v1": {
+  "datasource": "DataSourceNoCloud [seed=/dev/nvme0n1p2]",
+  "init": {
+   "errors": [],
+   "finished": 7.11,
+   "recoverable_errors": {},
+   "start": 6.22
+  },
+  "init-local": {
+   "errors": [],
+   "finished": 4.39,
+   "recoverable_errors": {},
+   "start": 4.07
+  },
+  "modules-config": {
+   "errors": [],
+   "finished": 8.79,
+   "recoverable_errors": {},
+   "start": 7.61
+  },
+  "modules-final": {
+   "errors": [
+    "('scripts_user', RuntimeError('Runparts: 1 failures (runcmd) in 1 attempted commands'))"
+   ],
+   "finished": 24.83,
+   "recoverable_errors": {
+    "WARNING": [
+     "Failed to run module scripts_user (scripts in /var/lib/cloud/instance/scripts)",
+     "Running module scripts_user (<module 'cloudinit.config.cc_scripts_user' from '/usr/lib/python3/dist-packages/cloudinit/config/cc_scripts_user.py'>) failed"
+    ]
+   },
+   "start": 9.46
+  },
+  "stage": null
+ }
+}

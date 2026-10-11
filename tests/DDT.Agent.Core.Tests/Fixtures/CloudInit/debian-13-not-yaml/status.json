@@ -1,0 +1,50 @@
+{
+ "v1": {
+  "datasource": "DataSourceNoCloud [seed=/dev/nvme0n1p2]",
+  "init": {
+   "errors": [],
+   "finished": 5.08,
+   "recoverable_errors": {
+    "WARNING": [
+     "Unexpected failure parsing userdata: while scanning for the next token\nfound character '\\t' that cannot start any token\n  in \"<byte string>\", line 4, column 1:\n    \tcontent: broken\n    ^",
+     "Failed at merging in cloud config part from part-001: empty cloud config",
+     "Failed loading yaml blob. Invalid format at line 4 column 1: \"while scanning for the next token\nfound character '\\t' that cannot start any token\n  in \"<unicode string>\", line 4, column 1:\n    \tcontent: broken\n    ^\""
+    ]
+   },
+   "start": 4.72
+  },
+  "init-local": {
+   "errors": [],
+   "finished": 3.3,
+   "recoverable_errors": {
+    "WARNING": [
+     "Unexpected failure parsing userdata: while scanning for the next token\nfound character '\\t' that cannot start any token\n  in \"<byte string>\", line 4, column 1:\n    \tcontent: broken\n    ^"
+    ]
+   },
+   "start": 2.98
+  },
+  "modules-config": {
+   "errors": [],
+   "finished": 5.29,
+   "recoverable_errors": {
+    "WARNING": [
+     "Unexpected failure parsing userdata: while scanning for the next token\nfound character '\\t' that cannot start any token\n  in \"<byte string>\", line 4, column 1:\n    \tcontent: broken\n    ^",
+     "Failed at merging in cloud config part from part-001: empty cloud config",
+     "Failed loading yaml blob. Invalid format at line 4 column 1: \"while scanning for the next token\nfound character '\\t' that cannot start any token\n  in \"<unicode string>\", line 4, column 1:\n    \tcontent: broken\n    ^\""
+    ]
+   },
+   "start": 5.2
+  },
+  "modules-final": {
+   "errors": [],
+   "finished": 5.97,
+   "recoverable_errors": {
+    "WARNING": [
+     "Unexpected failure parsing userdata: while scanning for the next token\nfound character '\\t' that cannot start any token\n  in \"<byte string>\", line 4, column 1:\n    \tcontent: broken\n    ^"
+    ]
+   },
+   "start": 5.37
+  },
+  "stage": null
+ }
+}

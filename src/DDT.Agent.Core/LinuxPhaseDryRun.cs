@@ -66,7 +66,7 @@ public sealed class LinuxPhaseDryRun(DryRunMachineOptions options, Func<AgentOpt
             Scripts = new ShellScriptLauncher(dryRun: true),
             Shares = new LinuxShareConnector(new DryRunMounts(log), _paths.Shares, log) { Resolve = NotLookedUp },
             Seeds = _seed,
-            CloudInit = new DryRunCloudInit(log),
+            CloudInit = new DryRunCloudInit(),
             RestartMarker = new DryRunLinuxRestartMarker(log),
             FreeSpace = FreeSpace,
             Log = log,

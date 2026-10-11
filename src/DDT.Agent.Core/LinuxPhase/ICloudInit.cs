@@ -7,8 +7,11 @@ namespace DDT.Agent.LinuxPhase;
 // What the installed Linux says of cloud-init at this start. Each text is a file's content, null when there is none.
 public interface ICloudInit
 {
-    // Whether cloud-init runs at this start. Its generator says so before any unit.
-    bool Enabled { get; }
+    // Whether cloud-init is to run at this start. Its generator says so before any unit.
+    bool IsEnabled { get; }
+
+    // What the log says where it is not, in place of a wait.
+    string NotEnabled => "cloud-init does not run at this start, so the run does not wait for it.";
 
     // result.json, which is there once cloud-init has finished at this start.
     string? Result();

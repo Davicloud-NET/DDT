@@ -9,37 +9,52 @@ namespace DDT.Agent.LinuxPhase;
 
 // The wait for cloud-init at the first start of the installed Linux, and for a restart its user-data asked for, so
 // neither cuts a step off. Once over, it is over for the run: the file at markerPath says so after a restart too.
-public sealed class CloudInitWait(ICloudInit cloudInit, string markerPath, AgentLog log, TimeProvider timeProvider) : ISetupProbe
+// At a later start only what cloud-init runs at every start is waited for, and not for long.
+public sealed class CloudInitWait(ICloudInit cloudInit, FirstStartNote firstStart, string markerPath, AgentLog log, TimeProvider timeProvider) : ISetupProbe
 {
     // A reboot in runcmd stopped the unit up to 2.7 s after cloud-init had finished, and nothing announces it.
     public static readonly TimeSpan Settle = TimeSpan.FromSeconds(12);
 
+    // From the agent's start: how long cloud-init may take to show that it runs, and at a later start to finish.
+    // On two images its first stage had written its status seconds before the unit started.
+    public static readonly TimeSpan StartLimit = TimeSpan.FromMinutes(2);
+
     public const string StillRunning = "cloud-init is still running";
+
+    public const string RunsAgain = "cloud-init runs again at this later start of Linux";
 
     public const string RestartComes = "cloud-init has finished, and the machine restarts or powers off as its user-data asked";
 
     public const string Settling = "cloud-init has finished, and a restart its user-data may have asked for gets a moment to come";
 
-    // Beside the marker, with the id of the start the agent first ran in.
-    public const string FirstStartFile = "cloud-init-first-start";
-
+    private readonly long _started = timeProvider.GetTimestamp();
     private long? _finished;
     private AnnouncedRestart? _announced;
-    private bool? _laterStart;
     private bool _over;
+
+    public static string NotRunning(TimeSpan waited) =>
+        $"cloud-init is enabled but has written no status {LogText.Duration(waited)} after the agent started, so its units do not " +
+        "run at this start of Linux. The run goes on without it.";
+
+    public static string StillRunsAgain(TimeSpan waited) =>
+        $"cloud-init has not finished {LogText.Duration(waited)} after the agent started at this later start of Linux. The run " +
+        "goes on beside what it still does.";
 
     public string? Pending()
     {
-        if (_over || File.Exists(markerPath))
+        if (_over)
         {
             return null;
         }
 
-        _laterStart ??= IsALaterStart();
-
-        if (!cloudInit.Enabled)
+        if (File.Exists(markerPath))
         {
-            log.Information("cloud-init does not run at this start, so the run does not wait for it.");
+            return AtALaterStart();
+        }
+
+        if (!cloudInit.IsEnabled)
+        {
+            log.Information(cloudInit.NotEnabled);
 
             return Over();
         }
@@ -48,13 +63,13 @@ public sealed class CloudInitWait(ICloudInit cloudInit, string markerPath, Agent
         {
             if (cloudInit.Result() is not { } result)
             {
-                return StillRunning;
+                return BeforeItFinished();
             }
 
             _finished = timeProvider.GetTimestamp();
             CloudInitReport.Write(result, cloudInit.Status(), log);
 
-            if (_laterStart == true && AnnouncedRestart.Read(cloudInit.Configuration(), null, timeProvider.GetUtcNow()) is { } spent)
+            if (firstStart.IsLaterStart && AnnouncedRestart.Read(cloudInit.Configuration(), null, timeProvider.GetUtcNow()) is { } spent)
             {
                 log.Information($"The user-data's restart ({spent.What}) came at an earlier start of this Linux, so the run does not wait for it again.");
             }
@@ -63,40 +78,46 @@ public sealed class CloudInitWait(ICloudInit cloudInit, string markerPath, Agent
         return AfterItFinished(timeProvider.GetElapsedTime(_finished.Value));
     }
 
-    // cloud-init acts on power_state once, at the start in which it also runs the agent's script. That is the agent's
-    // first start, so its id is noted. At every later start the power_state is still in the configuration and
-    // announces nothing. Without an id the start counts as the first, which only costs the wait.
-    private bool IsALaterStart()
+    // The run's wait is over. What cloud-init runs at every start still runs now, and a step should not run beside it.
+    private string? AtALaterStart()
     {
-        if (cloudInit.StartId() is not { } start)
-        {
-            return false;
-        }
+        TimeSpan waited = timeProvider.GetElapsedTime(_started);
 
-        string note = Path.Combine(Path.GetDirectoryName(markerPath) ?? ".", FirstStartFile);
-
-        try
+        if (cloudInit.IsEnabled && cloudInit.Result() is null)
         {
-            if (File.Exists(note))
+            if (waited < StartLimit)
             {
-                return File.ReadAllText(note).Trim() is { Length: > 0 } first && first != start;
+                return RunsAgain;
             }
 
-            Directory.CreateDirectory(Path.GetDirectoryName(note) ?? ".");
-            File.WriteAllText(note, start);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            log.Warning($"The start of Linux the agent first ran in could not be noted in {note} ({exception.Message}).");
+            log.Information(StillRunsAgain(waited));
         }
 
-        return false;
+        _over = true;
+
+        return null;
+    }
+
+    // The generator says enabled before any unit runs. User-data that disabled the units and restarted leaves no
+    // status at this start. A runcmd that never returns leaves one, and is waited for.
+    private string? BeforeItFinished()
+    {
+        TimeSpan waited = timeProvider.GetElapsedTime(_started);
+
+        if (cloudInit.Status() is not null || waited < StartLimit)
+        {
+            return StillRunning;
+        }
+
+        log.Information(NotRunning(waited));
+
+        return Over();
     }
 
     // A restart that is announced is waited for until it stops the agent, one that is not gets the settle time.
     private string? AfterItFinished(TimeSpan waited)
     {
-        string? configuration = _laterStart == true ? null : cloudInit.Configuration();
+        string? configuration = firstStart.IsLaterStart ? null : cloudInit.Configuration();
 
         if (_announced is null
             && AnnouncedRestart.Read(configuration, cloudInit.ScheduledShutdown(), timeProvider.GetUtcNow()) is { } announced)

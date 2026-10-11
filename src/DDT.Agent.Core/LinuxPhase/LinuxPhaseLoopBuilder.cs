@@ -56,7 +56,7 @@ public sealed class LinuxPhaseLoopBuilder
             Server = Server,
             IdentityReader = IdentityReader,
             Runner = Runner(rebooter),
-            Profile = LinuxPhaseProfile.With(new CloudInitWait(CloudInit, Paths.CloudInitWaited, Log, TimeProvider)),
+            Profile = LinuxPhaseProfile.With(new CloudInitWait(CloudInit, new FirstStartNote(CloudInit, Paths.FirstStart, Log), Paths.CloudInitWaited, Log, TimeProvider)),
             Rebooter = rebooter,
             RestartMarker = RestartMarker,
             Removal = Removal ?? new LinuxAgentRemoval(Paths, Seeds, Tools, Log),

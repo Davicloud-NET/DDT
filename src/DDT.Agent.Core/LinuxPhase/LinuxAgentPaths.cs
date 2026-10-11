@@ -26,6 +26,9 @@ public sealed record LinuxAgentPaths(string Root)
     // Among the run's files, so it goes with them.
     public string CloudInitWaited => Path.Combine(RunFiles.DirectoryIn(State), "run", "cloud-init-waited");
 
+    // Beside it, with the id of the start of Linux the agent first ran in.
+    public string FirstStart => Path.Combine(RunFiles.DirectoryIn(State), "run", "cloud-init-first-start");
+
     public string Program => At(LinuxAgentFiles.ProgramFolder);
 
     public string Agent => At(LinuxAgentFiles.Agent);

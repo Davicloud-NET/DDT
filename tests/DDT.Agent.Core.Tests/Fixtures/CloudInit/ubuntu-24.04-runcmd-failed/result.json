@@ -1,0 +1,8 @@
+{
+ "v1": {
+  "datasource": "DataSourceNoCloud [seed=/dev/nvme0n1p2]",
+  "errors": [
+   "('scripts_user', RuntimeError('Runparts: 1 failures (runcmd) in 1 attempted commands'))"
+  ]
+ }
+}

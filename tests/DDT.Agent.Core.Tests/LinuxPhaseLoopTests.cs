@@ -214,6 +214,7 @@ public sealed class LinuxPhaseLoopTests : IDisposable
         AgentRun run = LinuxPhaseFixture.Run(script);
         await _linux.HandOverAsync(run);
         _linux.Put(_linux.Paths.At(CloudInitFiles.EnabledPath));
+        _linux.Put(_linux.Paths.At(CloudInitFiles.StatusPath), """{ "v1": { "stage": "modules-final" } }""");
         ManualTimeProvider time = new();
         ScriptedAgentServer server = Server(run);
 
@@ -244,6 +245,38 @@ public sealed class LinuxPhaseLoopTests : IDisposable
         Assert.Contains(server.SentLines, line => line.Message == CloudInitReport.OutputStays);
         Assert.DoesNotContain(server.SentLines, line => line.Message.Contains("Xk7", StringComparison.Ordinal) || line.Message.Contains("'random'", StringComparison.Ordinal));
         Assert.DoesNotContain(_linux.Lines(), line => line.Contains("Xk7", StringComparison.Ordinal) || line.Contains("'random'", StringComparison.Ordinal));
+    }
+
+    // Linux has restarted for the run. Its own wait for cloud-init is long over, and cloud-init runs once more what
+    // it runs at every start. The next step waits for that, and nothing of the first start's wait is said again.
+    [Fact]
+    public async Task AfterARestartWaitsUntilCloudInitHasFinishedAtThatStartToo()
+    {
+        AgentRun run = LinuxPhaseFixture.Run(LinuxPhaseFixture.Script(1));
+        await _linux.HandOverAsync(run);
+        _linux.Put(_linux.Paths.CloudInitWaited);
+        _linux.Put(_linux.Paths.At(CloudInitFiles.EnabledPath));
+        ManualTimeProvider time = new();
+        ScriptedAgentServer server = Server(run);
+
+        Task<int> running = _linux.RunAsync(server, time);
+        await time.AdvanceUntilAsync(TimeSpan.Zero, () => server.RunReports.Count > 0);
+
+        Assert.Equal(RunActivity.WaitingForCloudInit, server.RunReports[^1].Activity);
+        Assert.Empty(_linux.Tools.Calls);
+
+        _linux.Put(_linux.Paths.At(CloudInitFiles.ResultPath), """{ "v1": { "datasource": "DataSourceNoCloud", "errors": [] } }""");
+        await time.AdvanceUntilAsync(LinuxPhaseProfile.PollInterval, () => running.IsCompleted);
+
+        Assert.Equal(AgentExitCodes.Deployed, await running);
+        string[] expected =
+        [
+            $"Waiting for cloud-init, which sets this Linux up at its first start: {CloudInitWait.RunsAgain}. The run goes on after it.",
+            "The wait for cloud-init is over, and the run goes on.",
+            "Step Script 1 begins.",
+        ];
+        Assert.Equal(expected, _linux.Lines().Where(expected.Contains));
+        Assert.DoesNotContain("cloud-init has finished at this start.", _linux.Lines());
     }
 
     // A zip carries no modes, so every file of a package can be started. The package goes with its step.

@@ -55,6 +55,29 @@ public sealed class AnnouncedRestartTests
             AnnouncedRestart.Read(null, "", s_now));
     }
 
+    // What systemd 257 wrote on Debian 13 for cloud-init's shutdown -r +1, read 40 s before its time.
+    [Fact]
+    public void ReadsTheScheduleAsARealSystemWroteIt()
+    {
+        DateTimeOffset written = DateTimeOffset.FromUnixTimeMilliseconds(1791722846024).AddSeconds(-40);
+
+        AnnouncedRestart? announced = AnnouncedRestart.Read(null, CloudInitRoot.Fixture("debian-13-shutdown-scheduled", "scheduled"), written);
+
+        Assert.Equal("a scheduled reboot", announced?.What);
+        Assert.InRange(announced?.Within ?? TimeSpan.Zero, TimeSpan.FromSeconds(160), TimeSpan.FromSeconds(161));
+    }
+
+    // A timeout is in seconds and a delay in minutes, and each has its own limit of a week.
+    [Fact]
+    public void TakesATimeoutOfDaysInSecondsAndDropsOneOfMoreThanAWeek()
+    {
+        TimeSpan threeDays = AnnouncedRestart.Read("""{ "power_state": { "mode": "reboot", "timeout": 259200 } }""", null, s_now)?.Within ?? TimeSpan.Zero;
+        TimeSpan tooLong = AnnouncedRestart.Read("""{ "power_state": { "mode": "reboot", "timeout": 604801 } }""", null, s_now)?.Within ?? TimeSpan.Zero;
+
+        Assert.Equal(TimeSpan.FromDays(3) + AnnouncedRestart.Margin, threeDays);
+        Assert.Equal(AnnouncedRestart.DefaultTimeout + AnnouncedRestart.Margin, tooLong);
+    }
+
     [Fact]
     public void ThePowerStateIsSaidBeforeAShutdownItScheduled() =>
         Assert.Equal(

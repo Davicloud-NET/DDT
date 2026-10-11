@@ -16,4 +16,9 @@
     <ProjectReference Include="..\..\src\DDT.Agent.Core\DDT.Agent.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Files as real systems wrote them, which the tests read from beside the test assembly. -->
+    <Content Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

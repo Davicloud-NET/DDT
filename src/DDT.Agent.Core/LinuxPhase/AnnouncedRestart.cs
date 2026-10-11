@@ -22,6 +22,7 @@ public sealed record AnnouncedRestart(string What, TimeSpan Within)
 
     // A week, so a made-up number cannot overflow the wait.
     private const double MaxMinutes = 7 * 24 * 60;
+    private const double MaxSeconds = MaxMinutes * 60;
 
     // configuration is cloud-init's merged cloud-config, scheduled is systemd's note of a shutdown. Null without either
     // sign.
@@ -48,7 +49,7 @@ public sealed record AnnouncedRestart(string What, TimeSpan Within)
             }
 
             string mode = state.TryGetProperty("mode", out JsonElement named) && named.ValueKind == JsonValueKind.String ? named.GetString() ?? "" : "";
-            TimeSpan timeout = Number(state, "timeout") is { } seconds ? TimeSpan.FromSeconds(seconds) : DefaultTimeout;
+            TimeSpan timeout = Number(state, "timeout", MaxSeconds) is { } seconds ? TimeSpan.FromSeconds(seconds) : DefaultTimeout;
 
             return new AnnouncedRestart($"power_state: {(mode.Length > 0 ? mode : "no mode")}", Delay(state) + timeout + Margin);
         }
@@ -61,7 +62,7 @@ public sealed record AnnouncedRestart(string What, TimeSpan Within)
     // The delay is in minutes: a number, "+5", or "now".
     private static TimeSpan Delay(JsonElement state)
     {
-        if (Number(state, "delay") is { } minutes)
+        if (Number(state, "delay", MaxMinutes) is { } minutes)
         {
             return TimeSpan.FromMinutes(minutes);
         }
@@ -74,8 +75,8 @@ public sealed record AnnouncedRestart(string What, TimeSpan Within)
                 : TimeSpan.Zero;
     }
 
-    private static double? Number(JsonElement state, string name) =>
-        state.TryGetProperty(name, out JsonElement value) && value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out double number) && number is >= 0 and <= MaxMinutes
+    private static double? Number(JsonElement state, string name, double most) =>
+        state.TryGetProperty(name, out JsonElement value) && value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out double number) && number >= 0 && number <= most
             ? number
             : null;
 
@@ -101,7 +102,7 @@ public sealed record AnnouncedRestart(string What, TimeSpan Within)
 
         string mode = values.GetValueOrDefault("MODE") is { Length: > 0 } named ? named : "shutdown";
         TimeSpan delay = values.TryGetValue("USEC", out string? usec) && long.TryParse(usec, NumberStyles.None, CultureInfo.InvariantCulture, out long microseconds)
-            ? TimeSpan.FromSeconds(Math.Clamp((microseconds / 1_000_000d) - (now.ToUnixTimeMilliseconds() / 1000d), 0, MaxMinutes * 60))
+            ? TimeSpan.FromSeconds(Math.Clamp((microseconds / 1_000_000d) - (now.ToUnixTimeMilliseconds() / 1000d), 0, MaxSeconds))
             : UnknownDelay;
 
         return new AnnouncedRestart($"a scheduled {mode}", delay + Margin);

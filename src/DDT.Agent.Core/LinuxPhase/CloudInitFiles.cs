@@ -19,7 +19,7 @@ public sealed class CloudInitFiles(string root) : ICloudInit
 
     public const string StartIdPath = "proc/sys/kernel/random/boot_id";
 
-    public bool Enabled => File.Exists(At(EnabledPath));
+    public bool IsEnabled => File.Exists(At(EnabledPath));
 
     public string? Result() => Read(ResultPath);
 

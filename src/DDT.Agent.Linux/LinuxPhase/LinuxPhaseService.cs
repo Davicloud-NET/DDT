@@ -62,10 +62,14 @@ public static class LinuxPhaseService
 
     private static async Task<int> GoOnAsync(LinuxAgentPaths paths, AgentLog log, CancellationToken cancellationToken)
     {
+        // Before anything that takes time: a restart the user-data asked for may stop the agent within a second.
+        CloudInitFiles cloudInit = new(paths.Root);
+        new FirstStartNote(cloudInit, paths.FirstStart, log).Take();
+
         LibcMounts mounts = new();
         LinuxSeeds seeds = new(mounts, paths, log);
 
-        // Before anything else: a token left on the seed is one more copy of what acts as this machine.
+        // Before the server: a token left on the seed is one more copy of what acts as this machine.
         new SeedTokenRepair(seeds, log).Run();
 
         if (!AgentOptions.TryParse(["--config", paths.Configuration], AgentEnvironment.LinuxBoot, out AgentOptions? options, out string error) || options is null)
@@ -89,7 +93,7 @@ public static class LinuxPhaseService
             Scripts = new ShellScriptLauncher { Environment = LinuxShell.Environment(Environment.GetEnvironmentVariable) },
             Shares = shares,
             Seeds = seeds,
-            CloudInit = new CloudInitFiles(paths.Root),
+            CloudInit = cloudInit,
             RestartMarker = new LinuxRestartMarker(paths.Run, log),
             FreeSpace = new LinuxFreeSpace(),
             Log = log,

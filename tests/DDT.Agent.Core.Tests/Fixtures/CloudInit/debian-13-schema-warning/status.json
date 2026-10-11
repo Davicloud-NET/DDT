@@ -1,0 +1,38 @@
+{
+ "v1": {
+  "datasource": "DataSourceNoCloud [seed=/dev/nvme0n1p2]",
+  "init": {
+   "errors": [],
+   "finished": 5.76,
+   "recoverable_errors": {
+    "WARNING": [
+     "cloud-config failed schema validation! You may run 'sudo cloud-init schema --system' to check the details."
+    ]
+   },
+   "start": 5.42
+  },
+  "init-local": {
+   "errors": [],
+   "finished": 3.57,
+   "recoverable_errors": {},
+   "start": 3.23
+  },
+  "modules-config": {
+   "errors": [],
+   "finished": 5.89,
+   "recoverable_errors": {
+    "WARNING": [
+     "cloud-config failed schema validation! You may run 'sudo cloud-init schema --system' to check the details."
+    ]
+   },
+   "start": 5.82
+  },
+  "modules-final": {
+   "errors": [],
+   "finished": 6.7,
+   "recoverable_errors": {},
+   "start": 5.95
+  },
+  "stage": null
+ }
+}

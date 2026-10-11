@@ -53,4 +53,14 @@ public static class LinuxAgentFiles
             new(SeedToken, token),
         ];
     }
+
+    // Whether the path on a seed is one the hand-over needs for itself: its script, or anything of its folder.
+    public static bool IsForSeed(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+
+        return SeedVolume.SamePath(path, CloudInitSeed.VendorData)
+            || SeedVolume.SamePath(path, SeedFolder)
+            || path.StartsWith(SeedFolder + "/", StringComparison.OrdinalIgnoreCase);
+    }
 }

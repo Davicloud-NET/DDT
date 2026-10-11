@@ -11,8 +11,8 @@ using DDT.Core.Disks;
 namespace DDT.Agent.Sequences;
 
 // Hands a run over to the installed Linux on its cloud-init seed. The seed's volume is written again with this agent,
-// its agent.json and the run's state and token beside the administrator's files, and with a vendor-data script that
-// installs them when cloud-init runs it. Then the disk is put first, as at the end of a run that stays here.
+// its agent.json and the run's state and token beside the files it holds, and with a vendor-data script that installs
+// them when cloud-init runs it. Then the disk is put first, as at the end of a run that stays here.
 public sealed class LinuxHandOver(IRawDisks disks, string agentPath, AgentConfiguration configuration, AgentLog log) : IHandOver
 {
     public const string NoSeedMessage =
@@ -26,18 +26,16 @@ public sealed class LinuxHandOver(IRawDisks disks, string agentPath, AgentConfig
         "The run goes on once the installed Linux has started and cloud-init has run the agent's script from the seed. That " +
         "takes an image with cloud-init and systemd.";
 
+    public const string WithdrawnMessage =
+        "The agent and the run's token are off the cloud-init seed again, which is as it was before the hand-over.";
+
     public static string TooLargeMessage(long shortBytes) =>
         $"The agent and the run's files are {ByteSize.Format(shortBytes)} too large for the cloud-init seed of " +
         $"{ByteSize.Format(CloudInitSeed.SizeBytes)}, so the run cannot go on in the installed Linux. Nothing was written to the seed.";
 
-    public static string SeedGoneMessage(WrittenSeed seed, LocalDisk disk)
-    {
-        ArgumentNullException.ThrowIfNull(seed);
-        ArgumentNullException.ThrowIfNull(disk);
-
-        return $"The cloud-init seed is no longer partition {seed.PartitionNumber} of disk {disk.Number}, where this run wrote it, so the " +
-            "agent cannot be put on it. Nothing was written to the disk.";
-    }
+    public static string ChangedMessage(string changes) =>
+        $"A step changed the cloud-init seed after it was written: {changes}. The seed keeps the files it holds now, and the " +
+        "agent goes beside them.";
 
     async Task IHandOver.HandOverAsync(SequenceRun run, RunBootOrder bootOrder, CancellationToken cancellationToken)
     {
@@ -65,24 +63,30 @@ public sealed class LinuxHandOver(IRawDisks disks, string agentPath, AgentConfig
 
         string token = session.Tokens.RunToken ?? throw new DeploymentStepException(NoTokenMessage);
         byte[] agent = ReadAgent();
-        IReadOnlyList<SeedFile> files = LinuxAgentFiles.ForSeed(
-            agent,
-            JsonSerializer.SerializeToUtf8Bytes(configuration, AgentConfigurationJsonContext.Default.AgentConfiguration),
-            RunFiles.StateContent(state),
-            RunFiles.TokenContent(token));
-        long free = CloudInitSeed.FreeBytes(seed.Files, files);
-
-        if (free < 0)
-        {
-            throw new DeploymentStepException(TooLargeMessage(-free));
-        }
 
         using IRawDisk raw = disks.Open(disk);
-        RequireSeed(raw, seed, disk);
+
+        // What the disk holds, not what the step wrote: a script may have changed the seed's files since, on purpose.
+        SeedVolume found = seed.Found ?? SeedOnDisk.Read(raw, seed, disk);
+        IReadOnlyList<SeedFile> files =
+        [
+            .. found.Files,
+            .. LinuxAgentFiles.ForSeed(
+                agent,
+                JsonSerializer.SerializeToUtf8Bytes(configuration, AgentConfigurationJsonContext.Default.AgentConfiguration),
+                RunFiles.StateContent(state),
+                RunFiles.TokenContent(token)),
+        ];
+        (byte[] volume, long free) = Build(files, found, seed, disk);
+
+        if (found.ChangesSince(CloudInitSeed.FilesOf(seed.Files)) is { } changes)
+        {
+            log.Information(ChangedMessage(changes));
+        }
 
         // Before the first byte, so a write that stops half way is taken back too.
-        session.Seed = seed with { HoldsRun = true };
-        Write(raw, seed, disk, CloudInitSeed.Build(seed.Files, seed.SerialNumber, seed.Timestamp, seed.FirstSector, files));
+        session.Seed = seed with { Found = found };
+        Write(raw, seed, disk, volume);
 
         log.Information(
             $"The agent ({ByteSize.Format(agent.Length)}), its settings and the run are on the cloud-init seed, partition " +
@@ -90,24 +94,26 @@ public sealed class LinuxHandOver(IRawDisks disks, string agentPath, AgentConfig
         log.Information(GoesOnMessage);
     }
 
-    // Writes the seed again as its step wrote it, so a run that failed leaves no token and no agent on the disk.
+    // Writes the seed again as the hand-over found it, so a run that failed leaves no token and no agent on the disk.
     // Never throws.
     public void Withdraw(RunSession session)
     {
         ArgumentNullException.ThrowIfNull(session);
 
-        if (session is not { Seed: { HoldsRun: true } seed, Disk: { } disk })
+        if (session is not { Seed: { Found: { } found } seed, Disk: { } disk })
         {
             return;
         }
 
         try
         {
+            byte[] volume = CloudInitSeed.Build(found.Files, found.SerialNumber, seed.Timestamp, seed.FirstSector);
+
             using IRawDisk raw = disks.Open(disk);
-            raw.Write(seed.FirstSector * GptLayout.SectorSize, CloudInitSeed.Build(seed.Files, seed.SerialNumber, seed.Timestamp, seed.FirstSector));
+            raw.Write(seed.FirstSector * GptLayout.SectorSize, volume);
             raw.Flush();
-            session.Seed = seed with { HoldsRun = false };
-            log.Information("The agent and the run's token are off the cloud-init seed again, which is as its step wrote it.");
+            session.Seed = seed with { Found = null };
+            log.Information(WithdrawnMessage);
         }
         catch (Exception exception) when (exception is DeploymentStepException or IOException or UnauthorizedAccessException)
         {
@@ -132,28 +138,30 @@ public sealed class LinuxHandOver(IRawDisks disks, string agentPath, AgentConfig
         }
     }
 
-    // A script may have changed the disk's partitions since the seed was written.
-    private static void RequireSeed(IRawDisk raw, WrittenSeed seed, LocalDisk disk)
+    // The volume with what it has left. It keeps the serial number it has on the disk, by which the installed Linux
+    // knows it. The builder refuses what a damaged volume may hold, such as one name twice.
+    private static (byte[] Volume, long Free) Build(IReadOnlyList<SeedFile> files, SeedVolume found, WrittenSeed seed, LocalDisk disk)
     {
-        byte[] head = new byte[(int)Math.Min(RawDiskWriter.HeadBytes, raw.Length)];
-        raw.Read(0, head);
+        long free;
 
         try
         {
-            if (GptLayout.Read(head).Partitions.Any(partition =>
-                partition.Number == seed.PartitionNumber
-                && partition.FirstLba == seed.FirstSector
-                && partition.Sectors == CloudInitSeed.SizeBytes / GptLayout.SectorSize))
+            free = CloudInitSeed.FreeBytes(files);
+
+            if (free >= 0)
             {
-                return;
+                return (CloudInitSeed.Build(files, found.SerialNumber, seed.Timestamp, seed.FirstSector), free);
             }
         }
-        catch (Exception exception) when (exception is InvalidGptException or ArgumentException)
+        catch (Exception exception) when (exception is InvalidOperationException or ArgumentException)
         {
-            throw new DeploymentStepException(SeedGoneMessage(seed, disk), exception);
+            throw new DeploymentStepException(
+                $"The cloud-init seed of disk {disk.Number} cannot be written again with the files it holds now ({exception.Message}), " +
+                "so the agent cannot be put on it. Nothing was written to the disk.",
+                exception);
         }
 
-        throw new DeploymentStepException(SeedGoneMessage(seed, disk));
+        throw new DeploymentStepException(TooLargeMessage(-free));
     }
 
     private static void Write(IRawDisk raw, WrittenSeed seed, LocalDisk disk, byte[] volume)

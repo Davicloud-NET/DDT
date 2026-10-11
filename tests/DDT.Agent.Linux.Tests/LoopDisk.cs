@@ -87,6 +87,14 @@ internal sealed class LoopDisk : IDisposable
         _mounted.Add(place);
     }
 
+    // What a script does that mounted a partition for a while.
+    public void Unmount(string place)
+    {
+        (int exitCode, string output) = Run("umount", place);
+        Assert.True(exitCode == 0, output);
+        _mounted.Remove(place);
+    }
+
     public void Dispose()
     {
         foreach (string place in _mounted)

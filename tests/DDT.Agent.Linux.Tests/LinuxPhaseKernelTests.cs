@@ -56,11 +56,13 @@ public sealed class LinuxPhaseKernelTests : IDisposable
         byte[] agent = new byte[300_000];
         new Random(11).NextBytes(agent);
         byte[] volume = CloudInitSeed.Build(
-            new CloudInitSeedFiles("instance-id: a\n", "#cloud-config\nusers:\n  - default\n", null),
+            [
+                .. CloudInitSeed.FilesOf(new CloudInitSeedFiles("instance-id: a\n", "#cloud-config\nusers:\n  - default\n", null)),
+                .. LinuxAgentFiles.ForSeed(agent, Encoding.UTF8.GetBytes("{}"), Encoding.UTF8.GetBytes(State), Encoding.ASCII.GetBytes(Token)),
+            ],
             0x1234ABCD,
             new DateTime(2026, 10, 11, 0, 0, 0, DateTimeKind.Utc),
-            0,
-            LinuxAgentFiles.ForSeed(agent, Encoding.UTF8.GetBytes("{}"), Encoding.UTF8.GetBytes(State), Encoding.ASCII.GetBytes(Token)));
+            0);
         string file = Path.Combine(_folder, "seed.img");
         File.WriteAllBytes(file, volume);
 

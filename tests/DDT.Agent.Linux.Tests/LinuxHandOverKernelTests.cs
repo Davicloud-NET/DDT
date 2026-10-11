@@ -70,9 +70,12 @@ public sealed class LinuxHandOverKernelTests : IDisposable
 
     private static LinuxRawDisks Disks() => new("/", new KernelBlockDevices());
 
+    private int SeedPartition => Assert.IsType<WrittenSeed>(_run.Session.Seed).PartitionNumber;
+
     // The image and its seed, written by their steps to a loop device, and the run handed over on it. Returns the loop
-    // device and the state that was staged.
-    private async Task<(LoopDisk Loop, SequenceState State)> HandOverAsync()
+    // device and the state that was staged. script does to the disk what a step between the seed and the hand-over
+    // would.
+    private async Task<(LoopDisk Loop, SequenceState State)> HandOverAsync(Action<LoopDisk>? script = null)
     {
         LoopDisk.SkipUnlessLinux();
 
@@ -102,6 +105,12 @@ public sealed class LinuxHandOverKernelTests : IDisposable
             Variables = new Dictionary<string, string>([.. image, .. seeded.Outputs!], StringComparer.Ordinal),
             Cursor = new NodeCursor(s_installed.Id, false),
         };
+
+        if (script is not null)
+        {
+            loop.MakePartitionDevices();
+            script(loop);
+        }
 
         _handOver = new LinuxHandOver(disks, agentPath, TestAgents.Configuration, _run.Log);
         _handOver.Stage(_run.Session, state);
@@ -153,6 +162,65 @@ public sealed class LinuxHandOverKernelTests : IDisposable
 
         // The shell reads the script as one. It is not run: on a system with systemd it would install the agent.
         Assert.Equal((0, ""), LoopDisk.Run("sh", "-n", Path.Combine(place, CloudInitSeed.VendorData)));
+    }
+
+    // The kernel's FAT driver writes names and chains its own way: a name in lower case without a long entry, a long
+    // one with a space, a folder, a file that grew and one that is gone.
+    [Fact]
+    public async Task KeepsWhatAScriptWroteToTheSeedThroughTheKernel()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        string place = Path.Combine(_folder, "script");
+
+        (LoopDisk loop, _) = await HandOverAsync(script: disk =>
+        {
+            disk.Mount(SeedPartition, place);
+            File.AppendAllText(Path.Combine(place, CloudInitSeed.UserData), "packages:\n  - htop\n");
+            File.WriteAllText(Path.Combine(place, "notes.txt"), "kept");
+            Directory.CreateDirectory(Path.Combine(place, "Extra Files"));
+            File.WriteAllText(Path.Combine(place, "Extra Files", "A long name.cfg"), "also kept");
+            File.Delete(Path.Combine(place, CloudInitSeed.NetworkConfig));
+            disk.Unmount(place);
+        });
+
+        TestSeed seed = ReadSeed(loop);
+        string after = Path.Combine(_folder, "seed");
+        loop.Mount(seed.Partition.Number, after, "-o", "ro");
+
+        Assert.Equal(["Extra Files", "ddt", "meta-data", "notes.txt", "user-data", "vendor-data"], Names(after));
+        Assert.Equal(s_seed.UserData + "packages:\n  - htop\n", await File.ReadAllTextAsync(Path.Combine(after, CloudInitSeed.UserData), cancellationToken));
+        Assert.Equal("kept", await File.ReadAllTextAsync(Path.Combine(after, "notes.txt"), cancellationToken));
+        Assert.Equal("also kept", await File.ReadAllTextAsync(Path.Combine(after, "Extra Files", "A long name.cfg"), cancellationToken));
+        Assert.Equal(_agent, await File.ReadAllBytesAsync(Path.Combine(after, LinuxAgentFiles.SeedAgent), cancellationToken));
+        Assert.Equal(StepRunnerFixture.RunToken, await File.ReadAllTextAsync(Path.Combine(after, LinuxAgentFiles.SeedToken), cancellationToken));
+
+        string said = Assert.Single(await _run.SentLinesAsync(), line => line.Message.StartsWith("A step changed the cloud-init seed", StringComparison.Ordinal)).Message;
+        Assert.All(
+            (string[])["user-data was changed", "notes.txt was added", "Extra Files/A long name.cfg was added", "network-config was removed"],
+            change => Assert.Contains(change, said, StringComparison.Ordinal));
+    }
+
+    // Taking the run off again leaves what the script made of the seed, as the kernel reads it.
+    [Fact]
+    public async Task TakesTheRunOffASeedAScriptChangedAndLeavesTheScriptsFiles()
+    {
+        string place = Path.Combine(_folder, "script");
+        (LoopDisk loop, _) = await HandOverAsync(script: disk =>
+        {
+            disk.Mount(SeedPartition, place);
+            File.WriteAllText(Path.Combine(place, "notes.txt"), "kept");
+            disk.Unmount(place);
+        });
+
+        _handOver?.Withdraw(_run.Session);
+
+        TestSeed seed = ReadSeed(loop);
+        string after = Path.Combine(_folder, "seed");
+        loop.Mount(seed.Partition.Number, after, "-o", "ro");
+
+        Assert.False(seed.Holds(StepRunnerFixture.RunToken));
+        Assert.Equal(["meta-data", "network-config", "notes.txt", "user-data"], Names(after));
+        Assert.Equal("kept", await File.ReadAllTextAsync(Path.Combine(after, "notes.txt"), TestContext.Current.CancellationToken));
     }
 
     [Fact]

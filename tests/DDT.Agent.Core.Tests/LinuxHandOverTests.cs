@@ -212,7 +212,7 @@ public sealed class LinuxHandOverTests : IDisposable
         Assert.Equal([Firmware, "restore"], _tools.Calls[^2..]);
         Assert.Null(RestartDue());
         AssertSeedAsItsStepWroteIt();
-        Assert.Contains("The agent and the run's token are off the cloud-init seed again, which is as its step wrote it.", _console.ToString(), StringComparison.Ordinal);
+        Assert.Contains(LinuxHandOver.WithdrawnMessage, _console.ToString(), StringComparison.Ordinal);
     }
 
     // An operator stopped the run while it was handed over. Nothing may be left for the installed Linux to go on with.

@@ -7,9 +7,12 @@ using DDT.Core.CloudInit;
 namespace DDT.Agent.Sequences;
 
 // The cloud-init seed a run wrote: its files as they went onto the disk, and what its volume was built with. The
-// hand-over to the installed Linux builds the volume again from these, with the agent beside the files.
+// hand-over to the installed Linux finds the volume by these and builds it again, with the agent beside its files.
 public sealed record WrittenSeed(CloudInitSeedFiles Files, int PartitionNumber, long FirstSector, uint SerialNumber, DateTime Timestamp)
 {
+    // The volume as a hand-over found it on the disk before it put the run on it. Taking the run off puts this back.
+    public SeedVolume? Found { get; init; }
+
     // Whether a hand-over put the run on it, token included.
-    public bool HoldsRun { get; init; }
+    public bool HoldsRun => Found is not null;
 }

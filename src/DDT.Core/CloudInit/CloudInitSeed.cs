@@ -27,29 +27,40 @@ public static class CloudInitSeed
     // backup partition table after it.
     public const long DiskBytes = SizeBytes + (2L * 1024 * 1024);
 
-    // firstSector is where the seed's partition starts on the disk. more go beside cloud-init's own files.
-    public static byte[] Build(CloudInitSeedFiles files, uint serialNumber, DateTime timestamp, long firstSector, IReadOnlyList<SeedFile>? more = null) =>
-        Volume(files, more, new FatVolumeBuilder(SizeBytes, Label, serialNumber, timestamp) { Type = FatType.Fat16, HiddenSectors = firstSector }).Build();
-
-    // What the volume has left with these files on it, in whole clusters. Negative when they do not fit.
-    public static long FreeBytes(CloudInitSeedFiles files, IReadOnlyList<SeedFile>? more = null) =>
-        Volume(files, more, new FatVolumeBuilder(SizeBytes, Label, 0, DateTime.UnixEpoch) { Type = FatType.Fat16 }).FreeBytes();
-
-    private static FatVolumeBuilder Volume(CloudInitSeedFiles files, IReadOnlyList<SeedFile>? more, FatVolumeBuilder volume)
+    // A seed step's files as they go onto the volume, in that order.
+    public static IReadOnlyList<SeedFile> FilesOf(CloudInitSeedFiles files)
     {
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(files.MetaData);
         ArgumentNullException.ThrowIfNull(files.UserData);
 
-        volume.AddFile(MetaData, Encoding.UTF8.GetBytes(files.MetaData));
-        volume.AddFile(UserData, Encoding.UTF8.GetBytes(files.UserData));
+        List<SeedFile> list = [new(MetaData, Encoding.UTF8.GetBytes(files.MetaData)), new(UserData, Encoding.UTF8.GetBytes(files.UserData))];
 
         if (files.NetworkConfig is not null)
         {
-            volume.AddFile(NetworkConfig, Encoding.UTF8.GetBytes(files.NetworkConfig));
+            list.Add(new SeedFile(NetworkConfig, Encoding.UTF8.GetBytes(files.NetworkConfig)));
         }
 
-        foreach (SeedFile file in more ?? [])
+        return list;
+    }
+
+    // firstSector is where the seed's partition starts on the disk.
+    public static byte[] Build(CloudInitSeedFiles files, uint serialNumber, DateTime timestamp, long firstSector) =>
+        Build(FilesOf(files), serialNumber, timestamp, firstSector);
+
+    // The same with any files, one after another, such as a seed's own and then the agent's.
+    public static byte[] Build(IReadOnlyList<SeedFile> files, uint serialNumber, DateTime timestamp, long firstSector) =>
+        Volume(files, new FatVolumeBuilder(SizeBytes, Label, serialNumber, timestamp) { Type = FatType.Fat16, HiddenSectors = firstSector }).Build();
+
+    // What the volume has left with these files on it, in whole clusters. Negative when they do not fit.
+    public static long FreeBytes(IReadOnlyList<SeedFile> files) =>
+        Volume(files, new FatVolumeBuilder(SizeBytes, Label, 0, DateTime.UnixEpoch) { Type = FatType.Fat16 }).FreeBytes();
+
+    private static FatVolumeBuilder Volume(IReadOnlyList<SeedFile> files, FatVolumeBuilder volume)
+    {
+        ArgumentNullException.ThrowIfNull(files);
+
+        foreach (SeedFile file in files)
         {
             volume.AddFile(file.Path, file.Content);
         }

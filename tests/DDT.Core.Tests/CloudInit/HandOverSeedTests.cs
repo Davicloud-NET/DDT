@@ -41,7 +41,11 @@ public sealed class HandOverSeedTests
         return content;
     }
 
-    private static IReadOnlyList<SeedFile> More() => LinuxAgentFiles.ForSeed(s_agent, s_configuration, s_state, s_token);
+    private static IReadOnlyList<SeedFile> Added() => LinuxAgentFiles.ForSeed(s_agent, s_configuration, s_state, s_token);
+
+    // The seed's own files and then what a hand-over adds, as the hand-over lists them.
+    private static IReadOnlyList<SeedFile> HandedOver(CloudInitSeedFiles files, IReadOnlyList<SeedFile>? added = null) =>
+        [.. CloudInitSeed.FilesOf(files), .. added ?? Added()];
 
     private static FatVolume Open(byte[] volume) => FatVolume.Open(new MemoryStream(volume), 0, volume.Length);
 
@@ -50,7 +54,7 @@ public sealed class HandOverSeedTests
     [Fact]
     public void PutsTheScriptAndWhatItInstallsBesideTheAdministratorsFiles()
     {
-        FatVolume volume = Open(CloudInitSeed.Build(s_files, Serial, s_written, FirstSector, More()));
+        FatVolume volume = Open(CloudInitSeed.Build(HandedOver(s_files), Serial, s_written, FirstSector));
 
         Assert.Equal(["meta-data", "user-data", "network-config", "vendor-data", "ddt"], volume.List("").Select(entry => entry.Name));
         Assert.Equal(["ddt-agent", "agent.json", "state.json", "token"], volume.List(LinuxAgentFiles.SeedFolder).Select(entry => entry.Name));
@@ -66,7 +70,7 @@ public sealed class HandOverSeedTests
     public void LeavesTheAdministratorsFilesAndTheVolumesNameAsTheyWere()
     {
         byte[] before = CloudInitSeed.Build(s_files, Serial, s_written, FirstSector);
-        byte[] after = CloudInitSeed.Build(s_files, Serial, s_written, FirstSector, More());
+        byte[] after = CloudInitSeed.Build(HandedOver(s_files), Serial, s_written, FirstSector);
         FatVolume plain = Open(before);
         FatVolume handedOver = Open(after);
 
@@ -88,7 +92,7 @@ public sealed class HandOverSeedTests
     [Fact]
     public void AddsNoFileOfCloudInitsThatTheAdministratorLeftOut()
     {
-        FatVolume volume = Open(CloudInitSeed.Build(s_files with { NetworkConfig = null }, Serial, s_written, FirstSector, More()));
+        FatVolume volume = Open(CloudInitSeed.Build(HandedOver(s_files with { NetworkConfig = null }), Serial, s_written, FirstSector));
 
         Assert.Equal(["meta-data", "user-data", "vendor-data", "ddt"], volume.List("").Select(entry => entry.Name));
     }
@@ -98,13 +102,13 @@ public sealed class HandOverSeedTests
     public void SaysHowMuchOfTheSeedIsLeft()
     {
         FatVolume plain = Open(CloudInitSeed.Build(s_files, Serial, s_written, FirstSector));
-        FatVolume handedOver = Open(CloudInitSeed.Build(s_files, Serial, s_written, FirstSector, More()));
+        FatVolume handedOver = Open(CloudInitSeed.Build(HandedOver(s_files), Serial, s_written, FirstSector));
         int cluster = plain.ClusterBytes;
-        long added = cluster + More().Sum(file => (file.Content.LongLength + cluster - 1) / cluster * cluster);
+        long added = cluster + Added().Sum(file => (file.Content.LongLength + cluster - 1) / cluster * cluster);
 
         Assert.Equal(1024, cluster);
-        Assert.Equal(plain.FreeBytes, CloudInitSeed.FreeBytes(s_files));
-        Assert.Equal(handedOver.FreeBytes, CloudInitSeed.FreeBytes(s_files, More()));
+        Assert.Equal(plain.FreeBytes, CloudInitSeed.FreeBytes(CloudInitSeed.FilesOf(s_files)));
+        Assert.Equal(handedOver.FreeBytes, CloudInitSeed.FreeBytes(HandedOver(s_files)));
         Assert.Equal(added, plain.FreeBytes - handedOver.FreeBytes);
         Assert.InRange(handedOver.FreeBytes, 44L * 1024 * 1024, 48L * 1024 * 1024);
     }
@@ -114,13 +118,13 @@ public sealed class HandOverSeedTests
     {
         // The folder takes a cluster of its own.
         const int Cluster = 1024;
-        long room = CloudInitSeed.FreeBytes(s_files);
+        long room = CloudInitSeed.FreeBytes(CloudInitSeed.FilesOf(s_files));
         SeedFile[] full = [new(LinuxAgentFiles.SeedAgent, new byte[room - Cluster])];
         SeedFile[] tooLarge = [new(LinuxAgentFiles.SeedAgent, new byte[room - Cluster + 1])];
 
-        Assert.Equal(0, CloudInitSeed.FreeBytes(s_files, full));
-        Assert.Equal(-Cluster, CloudInitSeed.FreeBytes(s_files, tooLarge));
-        Assert.Equal(0, Open(CloudInitSeed.Build(s_files, Serial, s_written, FirstSector, full)).FreeBytes);
-        Assert.Throws<InvalidOperationException>(() => CloudInitSeed.Build(s_files, Serial, s_written, FirstSector, tooLarge));
+        Assert.Equal(0, CloudInitSeed.FreeBytes(HandedOver(s_files, full)));
+        Assert.Equal(-Cluster, CloudInitSeed.FreeBytes(HandedOver(s_files, tooLarge)));
+        Assert.Equal(0, Open(CloudInitSeed.Build(HandedOver(s_files, full), Serial, s_written, FirstSector)).FreeBytes);
+        Assert.Throws<InvalidOperationException>(() => CloudInitSeed.Build(HandedOver(s_files, tooLarge), Serial, s_written, FirstSector));
     }
 }

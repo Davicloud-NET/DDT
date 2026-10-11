@@ -83,6 +83,26 @@ internal sealed class SeededRun : IDisposable
         };
     }
 
+    // The run on the seed as a hand-over leaves it, token included. runId is the run the seed's state names.
+    public async Task<SequenceState> HandedOverAsync(Guid? runId = null)
+    {
+        SequenceState state = await SeededAsync() with { RunId = runId ?? StepRunnerFixture.RunId };
+        HandOver().Stage(Run.Session, state);
+
+        return state;
+    }
+
+    // Changes the files the seed holds on the disk, as the agent's script does once the installed Linux has started.
+    // A file change answers with null is gone.
+    public void ChangeSeed(Func<SeedFile, SeedFile?> change)
+    {
+        byte[] volume = Disk.ReadAt(Kept.FirstSector * GptLayout.SectorSize, (int)CloudInitSeed.SizeBytes);
+        RewriteSeed([.. SeedVolume.Read(volume).Files.Select(change).OfType<SeedFile>()]);
+    }
+
+    // The script wiped the token, which is how the installed Linux takes the run over.
+    public void WipeToken() => ChangeSeed(file => SeedVolume.SamePath(file.Path, LinuxAgentFiles.SeedToken) ? null : file);
+
     // The files the seed step wrote, for a test to change.
     public IReadOnlyList<SeedFile> Written() => CloudInitSeed.FilesOf(Kept.Files);
 

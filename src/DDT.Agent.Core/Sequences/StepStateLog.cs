@@ -127,6 +127,13 @@ public sealed class StepStateLog(AgentLog log, SequenceState start, MachineVaria
 
         switch (node)
         {
+            case SetVariableStep set when now.State == StepState.Done && (before.State != StepState.Done || newVisit):
+                // The name alone: a value may be a secret the sequence put together
+                Write(set.Id, $"Step {set.Name} set {set.Variable}.", AgentLogLevel.Information);
+                break;
+            case SetVariableStep set when now.State == StepState.Failed && (before.State != StepState.Failed || newVisit):
+                Write(set.Id, $"Step {set.Name} failed: {now.Error}", AgentLogLevel.Error);
+                break;
             case IfStep choice when now.Branch is { } branch && (before.Branch != branch || newVisit):
                 Took(choice, branch, now.Evaluation ?? []);
                 break;

@@ -202,6 +202,10 @@ public sealed class LinuxPhaseLoopTests : IDisposable
 
         Assert.Contains("Plug LINUX-01 in.", messages);
         Assert.Contains("Someone continued the run on the web.", _linux.Lines());
+
+        // The engine sets the variable without a runner, and the log still says that it did, by the name alone.
+        Assert.Contains("Step Note it set Plugged.", _linux.Lines());
+        Assert.Contains(server.SentLines, line => line.Message == "Step Note it set Plugged." && line.StepId == set.Id);
         Assert.Equal("yes", _linux.Tools.Options[0].Environment?["DDT_VAR_Plugged"]);
         Assert.Equal(Enumerable.Repeat(StepState.Done, 5), server.RunReports[^1].Steps.Select(step => step.State));
     }

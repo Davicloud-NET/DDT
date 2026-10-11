@@ -96,6 +96,20 @@ public sealed class ShellScriptLauncher(bool dryRun = false) : IScriptLauncher
         return new ScriptLaunch(interpreter[0], [.. interpreter.Skip(1), file]) { Environment = Environment };
     }
 
+    // A zip carries no modes, and Linux starts no file without one. The files stay their owner's alone.
+    public void Unpacked(string package)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        foreach (string file in Directory.EnumerateFiles(package, "*", SearchOption.AllDirectories))
+        {
+            File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+    }
+
     // The kernel ends the line at LF alone and splits it at spaces and tabs alone.
     private static string[]? Named(string text)
     {

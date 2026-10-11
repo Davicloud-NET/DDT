@@ -50,6 +50,27 @@ public static class EnvironmentTexts
         (true, false) => "The machine restarts into the Linux boot environment, and the run goes on after the restart.",
     };
 
+    // A restart a step asked for in the installed system.
+    public static string InstalledSystemRestarts(AgentEnvironment environment) => IsLinux(environment)
+        ? "Linux restarts, and the run goes on after the restart."
+        : "Windows restarts, and the run goes on after the restart.";
+
+    // The Linux boot environment keeps a run in memory, so there a stop is the end of it.
+    public static string Stopped(AgentEnvironment environment) => environment switch
+    {
+        AgentEnvironment.LinuxBoot =>
+            "The agent was stopped. The Linux boot environment keeps a run's state in memory, so the run does not go on after a restart.",
+        AgentEnvironment.Linux =>
+            "The agent was stopped. The run's state stays on the disk, so the run goes on when the agent starts again, if the server still runs it.",
+        _ => "The agent was stopped. The run's state stays on the disk, so the run goes on after a restart if the server still runs it.",
+    };
+
+    // A step of the boot environment that the engine meets in the installed system.
+    public static string BootStepAfterInstalled(AgentEnvironment environment) => IsLinux(environment)
+        ? "A step that runs in the Linux boot environment follows the steps in the installed Linux, and the run cannot go back " +
+            "to the boot environment. Move the step before the first step in the installed Linux, then run the sequence again."
+        : SequenceRunner.WindowsPEAfterWindowsMessage;
+
     public static string HandingOverAgain(AgentEnvironment environment, int returns, int most) => IsLinux(environment)
         ? $"The run goes on in the installed Linux, but the machine started the Linux boot environment. Handing the run over again ({returns} of {most} times)."
         : $"The run goes on in the installed Windows, but the machine started Windows PE. Handing the run over again ({returns} of {most} times).";

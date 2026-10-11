@@ -138,7 +138,7 @@ internal sealed class PhaseRunner(
                 run.Heartbeat.Activity = RunActivity.Finishing;
                 break;
             case SequenceOutcome.PhaseChangeRequired when run.InInstalledSystem:
-                throw new DeploymentStepException(SequenceRunner.WindowsPEAfterWindowsMessage);
+                throw new DeploymentStepException(EnvironmentTexts.BootStepAfterInstalled(run.Session.Environment));
             case SequenceOutcome.PhaseChangeRequired:
                 run.Heartbeat.Activity = RunActivity.HandingOver;
                 await handOver.HandOverAsync(run, bootOrder, cancellationToken).ConfigureAwait(false);
@@ -160,7 +160,7 @@ internal sealed class PhaseRunner(
         if (cancellationToken.IsCancellationRequested)
         {
             await bootOrder.RestoreAsync(run).ConfigureAwait(false);
-            log.Warning("The agent was stopped. The run's state stays on the disk, so the run goes on after a restart if the server still runs it.");
+            log.Warning(EnvironmentTexts.Stopped(run.Session.Environment));
 
             return new RunResult(RunOutcome.Stopped);
         }

@@ -156,19 +156,26 @@ public sealed class RunScriptStepRunner(
 
         if (session.RunDirectory is null)
         {
-            throw new DeploymentStepException(context.Phase == SequencePhase.LinuxBoot
-                ? "The Linux boot environment has no partition to unpack a package on, so this script cannot have one."
-                : "A script's package is unpacked on the partitioned disk, so this script can run only after the disk is partitioned.");
+            throw new DeploymentStepException(NoPlaceForPackage(context.Phase));
         }
 
         string package = Path.Combine(directory, "packages", step.Id.ToString("D"));
         await downloads
             .UnpackAsync(content, Path.Combine(directory, "cache"), package, new ScaledProgress(context.Progress, 0, 10), cancellationToken)
             .ConfigureAwait(false);
+        launcher.Unpacked(package);
         account?.Admit(package);
 
         return package;
     }
+
+    // Why a run without a directory on a disk cannot unpack a package in this phase.
+    public static string NoPlaceForPackage(SequencePhase phase) => phase switch
+    {
+        SequencePhase.LinuxBoot => "The Linux boot environment has no partition to unpack a package on, so this script cannot have one.",
+        SequencePhase.Linux => "The run has no directory in the installed Linux to unpack a package in, so this script cannot have one.",
+        _ => "A script's package is unpacked on the partitioned disk, so this script can run only after the disk is partitioned.",
+    };
 
     // Only a sequence with variables that steps may set has somewhere for the script's variables to go. A file left by
     // an earlier visit of the step, in a repeat or before a restart, must not count for this visit.

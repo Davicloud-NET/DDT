@@ -14,4 +14,9 @@ public interface IScriptLauncher
 
     // Writes the script into directory, which exists, and returns what runs it.
     Task<ScriptLaunch> WriteAsync(RunScriptStep step, string directory, CancellationToken cancellationToken);
+
+    // Called once the step's package is unpacked into package, for what the system's programs need of their files.
+    void Unpacked(string package)
+    {
+    }
 }

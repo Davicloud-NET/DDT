@@ -97,7 +97,7 @@ internal sealed class RunEnding(
         bool handingOver = !run.InInstalledSystem && into == RestartInto.InstalledSystem;
         run.Heartbeat.Activity = RunActivity.Restarting;
         log.Information(run.InInstalledSystem
-            ? "Windows restarts, and the run goes on after the restart."
+            ? EnvironmentTexts.InstalledSystemRestarts(run.Session.Environment)
             : EnvironmentTexts.Restarts(run.Session.Environment, handingOver));
         rebooter.LetGo();
 

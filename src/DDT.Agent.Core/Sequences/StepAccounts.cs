@@ -24,6 +24,9 @@ public sealed class StepAccounts(
     public static string RunAsInBoot(SequencePhase phase) =>
         $"A script runs as an account only in Windows, after the hand-over, but this agent was asked to run one in {AgentEnvironments.OfBootPhase(phase)}.";
 
+    public const string RunAsInLinux =
+        "A script runs as an account only in Windows, and in the installed Linux it runs as root, which can change to another user itself.";
+
     public static bool Uses(SequenceStep step)
     {
         ArgumentNullException.ThrowIfNull(step);
@@ -49,9 +52,9 @@ public sealed class StepAccounts(
 
         bool runsAs = step is RunScriptStep { RunAs: not null };
 
-        if (runsAs && SequenceKinds.IsBoot(context.Phase))
+        if (runsAs && context.Phase != SequencePhase.Windows)
         {
-            return StepResult.Failed(RunAsInBoot(context.Phase));
+            return StepResult.Failed(SequenceKinds.IsBoot(context.Phase) ? RunAsInBoot(context.Phase) : RunAsInLinux);
         }
 
         // The server only hands out a step's accounts once it knows the step is running.

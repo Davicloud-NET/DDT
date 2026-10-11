@@ -15,6 +15,9 @@ internal sealed class InstalledPhaseExit(
     InstalledPhaseProfile profile,
     AgentLog log)
 {
+    // True once the agent has removed itself, after which the run's token is gone and nothing more is sent.
+    public bool Removed { get; private set; }
+
     // The state already says the step before the restart is done, so nothing may continue before the restart. Returns
     // null when none is due.
     public async Task<int?> RestartIfDueAsync(CancellationToken cancellationToken)
@@ -53,6 +56,7 @@ internal sealed class InstalledPhaseExit(
             return AgentExitCodes.Stopped;
         }
 
+        Removed = true;
         await removal.RemoveAsync(CancellationToken.None).ConfigureAwait(false);
 
         return exitCode;
@@ -70,6 +74,7 @@ internal sealed class InstalledPhaseExit(
             return AgentExitCodes.Deployed;
         }
 
+        Removed = true;
         await removal.RemoveAsync(CancellationToken.None).ConfigureAwait(false);
 
         if (!profile.RestartsAfterRemoval)

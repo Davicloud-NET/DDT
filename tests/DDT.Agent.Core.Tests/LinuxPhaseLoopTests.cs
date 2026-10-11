@@ -247,6 +247,35 @@ public sealed class LinuxPhaseLoopTests : IDisposable
         Assert.DoesNotContain(_linux.Lines(), line => line.Contains("Xk7", StringComparison.Ordinal) || line.Contains("'random'", StringComparison.Ordinal));
     }
 
+    // systemd stops the unit for the restart the user-data asked for, seconds after the agent has said why it waits.
+    // No beat is due by then, so without one more batch the server would never hear of those lines.
+    [Fact]
+    public async Task AnAgentThatIsStoppedSendsItsLastLinesBeforeItEnds()
+    {
+        AgentRun run = LinuxPhaseFixture.Run(LinuxPhaseFixture.Script(1));
+        await _linux.HandOverAsync(run);
+        _linux.Put(_linux.Paths.At(CloudInitFiles.EnabledPath));
+        _linux.Put(_linux.Paths.At(CloudInitFiles.StatusPath), """{ "v1": { "stage": "modules-final" } }""");
+        ManualTimeProvider time = new();
+        ScriptedAgentServer server = Server(run);
+
+        Task<int> running = _linux.RunAsync(server, time);
+        await time.AdvanceUntilAsync(TimeSpan.Zero, () => server.SentLines.Count > 0);
+        _linux.Put(_linux.Paths.At(CloudInitFiles.ConfigurationPath), """{ "power_state": { "delay": "now", "mode": "reboot" } }""");
+        _linux.Put(_linux.Paths.At(CloudInitFiles.ResultPath), CloudInitRoot.Clean);
+        await time.AdvanceUntilAsync(LinuxPhaseProfile.PollInterval, () => _linux.Lines().Any(line => line.StartsWith("The user-data restarts", StringComparison.Ordinal)));
+        Assert.DoesNotContain(server.SentLines, line => line.Message.StartsWith("The user-data restarts", StringComparison.Ordinal));
+
+        await server.Stop.CancelAsync();
+
+        Assert.Equal(AgentExitCodes.Stopped, await running);
+        Assert.Contains(
+            server.SentLines,
+            line => line.Message == "The user-data restarts or powers off this machine (power_state: reboot), so the run waits for that before its next step, for 2 min 30 s at most.");
+        Assert.Equal("The agent was stopped. The run goes on when the service starts again.", server.SentLines[^1].Message);
+        Assert.Empty(_linux.Tools.Calls);
+    }
+
     // A restart with a share still mounted would cut the server's connection without a word.
     [Fact]
     public async Task DisconnectsAStepsSharesBeforeItRestartsLinuxForTheStep()

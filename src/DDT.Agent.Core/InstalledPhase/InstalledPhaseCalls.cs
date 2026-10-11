@@ -19,6 +19,8 @@ internal sealed class InstalledPhaseCalls(
     AgentLog log,
     TimeProvider timeProvider)
 {
+    private const int MaxLastBatches = 5;
+
     // Every attempt but the first waits a little first. Returns null when the server no longer has the run going on
     // this machine.
     public async Task<InstalledPhaseContact?> RegisterAsync(string? runToken, Guid runId, int attempt, CancellationToken cancellationToken)
@@ -78,6 +80,30 @@ internal sealed class InstalledPhaseCalls(
             log.Warning($"The run's last report could not be sent ({exception.Message}). Trying again.");
 
             return false;
+        }
+    }
+
+    // For an agent that is being stopped, which gets no later moment. The system's own log has every line, so a line
+    // that does not get through is not said again.
+    public async Task SendLastLinesAsync(InstalledPhaseContact contact)
+    {
+        if (options.Profile.LastLines is not { } limit)
+        {
+            return;
+        }
+
+        using CancellationTokenSource deadline = new(limit, timeProvider);
+
+        try
+        {
+            for (int batch = 0; batch < MaxLastBatches && log.QueuedLines > 0; batch++)
+            {
+                await log.FlushAsync(server, contact.MachineId, contact.Tokens.Token, deadline.Token).ConfigureAwait(false);
+            }
+        }
+        catch (Exception exception) when (exception is OperationCanceledException or AgentTokenRejectedException || ServerCallRules.IsTransient(exception, deadline.Token))
+        {
+            // The agent ends now, and nothing could be done about it
         }
     }
 

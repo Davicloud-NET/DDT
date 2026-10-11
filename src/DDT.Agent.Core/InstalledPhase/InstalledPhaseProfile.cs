@@ -24,6 +24,9 @@ public sealed record InstalledPhaseProfile
     // How often the loop asks whether that setup has finished.
     public TimeSpan SetupPollInterval { get; init; } = InstalledPhaseLoop.SetupPollInterval;
 
+    // How long an agent that is being stopped may take to send what its log still holds. Null sends nothing then.
+    public TimeSpan? LastLines { get; init; }
+
     // Whether the system restarts once more after the agent removed itself.
     public required bool RestartsAfterRemoval { get; init; }
 

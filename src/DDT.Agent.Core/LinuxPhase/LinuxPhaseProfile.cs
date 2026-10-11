@@ -14,6 +14,9 @@ public static class LinuxPhaseProfile
     // cloud-init finishes within a second of the unit's start, and the settle time is counted from when that is seen.
     public static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
 
+    // systemd gives the unit two minutes to stop. The lines that say why the run waits are worth a few seconds of them.
+    public static readonly TimeSpan LastLines = TimeSpan.FromSeconds(5);
+
     // setup says what cloud-init still does, which a dry run and the tests fake. Linux deletes a running program's
     // file, so nothing is left for one more restart to remove.
     public static InstalledPhaseProfile With(ISetupProbe setup) => new()
@@ -23,6 +26,7 @@ public static class LinuxPhaseProfile
         Setup = setup,
         WaitActivity = RunActivity.WaitingForCloudInit,
         SetupPollInterval = PollInterval,
+        LastLines = LastLines,
         RestartsAfterRemoval = false,
         Texts = new LinuxPhaseTexts(),
     };

@@ -303,6 +303,8 @@ export interface SequenceView {
   updatedBy: string | null;
   // The phases of every node of the tree, in pre-order.
   nodePhases?: NodePhase[] | null;
+  // What a setting will do, where that is neither wrong nor risky. A server from before notes sends none.
+  notes?: SequenceProblem[] | null;
 }
 
 // A starting point for a new sequence. name and description are the server's English text, next to their codes.

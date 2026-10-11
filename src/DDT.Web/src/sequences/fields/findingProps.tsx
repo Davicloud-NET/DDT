@@ -6,21 +6,24 @@ import type { ReactNode } from "react";
 
 import { fieldFindings, type Findings } from "../problems";
 
-// A problem marks the field invalid and shows under it. A warning shows under it in the attention colour.
+// A problem marks the field invalid and shows under it. A warning shows under it in the attention colour, and a note
+// in the hint's own.
 export function findingProps(findings: Findings, field: string, hint: ReactNode) {
-  const { problems, warnings } = fieldFindings(findings, field);
+  const { problems, warnings, notes } = fieldFindings(findings, field);
   const warning = warnings.join(" ");
+  const note = notes.join(" ");
 
   return {
     isInvalid: problems.length > 0,
     errorMessage: problems.join(" "),
     hint:
-      warning === "" ? (
+      warning === "" && note === "" ? (
         hint
       ) : (
         <>
           {hint ? <>{hint} </> : null}
-          <span className="text-attention-text">{warning}</span>
+          {note === "" ? null : <span>{note} </span>}
+          {warning === "" ? null : <span className="text-attention-text">{warning}</span>}
         </>
       ),
   };

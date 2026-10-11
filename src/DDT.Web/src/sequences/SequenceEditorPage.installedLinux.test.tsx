@@ -78,6 +78,40 @@ describe("SequenceEditorPage, a step in the installed Linux", () => {
     expect(screen.queryByText("In Windows PE")).not.toBeInTheDocument();
   });
 
+  // The server reads the seed's user-data for what keeps the agent out of the installed Linux, and for a restart.
+  it("shows what the user-data does to the run: a warning in its colour and a note as a hint", async () => {
+    const finding = (code: string, args: Record<string, string>, message: string) => ({
+      stepId: "c",
+      field: "userData",
+      message,
+      code,
+      args,
+    });
+    const warnings = [
+      finding("sequence.userDataFinalModulesWarning", { how: "missing" }, "Final modules."),
+    ];
+    const notes = [finding("sequence.userDataPowerStateNote", { mode: "reboot" }, "Power state.")];
+
+    serve(administrator, linuxView(script("Linux", [194]), { warnings, notes }), { step: "c" });
+
+    await opened("Install Linux");
+
+    const userData = within(field("userData"));
+    const warning = userData.getByText(
+      /^The user-data sets cloud_final_modules, and the list names/,
+    );
+    const note = userData.getByText(
+      "The user-data restarts the machine with power_state. The run waits for that restart and then goes on with its steps in the installed Linux.",
+    );
+
+    expect(warning).toHaveClass("text-attention-text");
+    expect(note).not.toHaveClass("text-attention-text");
+    expect(userData.getByText(/^A #cloud-config document/)).toBeInTheDocument();
+    // Only the warning is counted.
+    expect(screen.getAllByText("1 warning").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/2 warnings/)).not.toBeInTheDocument();
+  });
+
   it("gives a script 194 to ask for a restart with when it moves to the installed Linux", async () => {
     const { saves } = serve(administrator, linuxView(script("LinuxBoot", [])), { step: "s" });
 

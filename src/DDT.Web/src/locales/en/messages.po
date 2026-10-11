@@ -469,6 +469,16 @@ msgid "{hours} h {minutes} min"
 msgstr "{hours} h {minutes} min"
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.userDataFinalModulesWarning"
+msgid "{how, select, missing {The user-data sets cloud_final_modules, and the list names neither scripts_vendor nor scripts-vendor, so cloud-init runs no vendor scripts.} other {DDT could not read what the user-data sets cloud_final_modules to. If the list does not name scripts_vendor, cloud-init runs no vendor scripts.}} DDT's script, which installs the agent in the installed Linux, is a vendor script, and without it the steps there never run. Add scripts_vendor to the list."
+msgstr "{how, select, missing {The user-data sets cloud_final_modules, and the list names neither scripts_vendor nor scripts-vendor, so cloud-init runs no vendor scripts.} other {DDT could not read what the user-data sets cloud_final_modules to. If the list does not name scripts_vendor, cloud-init runs no vendor scripts.}} DDT's script, which installs the agent in the installed Linux, is a vendor script, and without it the steps there never run. Add scripts_vendor to the list."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.userDataVendorDataWarning"
+msgid "{how, select, notMapping {The user-data sets vendor_data to something that is not a mapping, so cloud-init reads no vendor data.} notEnabled {The user-data sets enabled under vendor_data to something other than true, so cloud-init reads no vendor data.} other {DDT could not read what the user-data sets vendor_data to. It may switch vendor data off.}} DDT's agent gets into the installed Linux as vendor data, and without it the steps there never run. Leave vendor_data out, or set its enabled to true."
+msgstr "{how, select, notMapping {The user-data sets vendor_data to something that is not a mapping, so cloud-init reads no vendor data.} notEnabled {The user-data sets enabled under vendor_data to something other than true, so cloud-init reads no vendor data.} other {DDT could not read what the user-data sets vendor_data to. It may switch vendor data off.}} DDT's agent gets into the installed Linux as vendor data, and without it the steps there never run. Leave vendor_data out, or set its enabled to true."
+
+#: src/lib/serverMessages.ts
 msgctxt "deployment.notStartingWithSecureBoot"
 msgid "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first."
 msgstr "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first."
@@ -672,6 +682,11 @@ msgstr "{message} Your latest changes are not saved, and leaving throws them awa
 #: src/lib/format.ts
 msgid "{minutes} min {seconds} s"
 msgstr "{minutes} min {seconds} s"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.userDataPowerStateNote"
+msgid "{mode, select, reboot {The user-data restarts the machine with power_state. The run waits for that restart and then goes on with its steps in the installed Linux.} off {The user-data shuts the machine down with power_state. The run waits until someone switches the machine on again, and then goes on with its steps in the installed Linux.} other {The user-data sets power_state, so cloud-init may restart the machine or shut it down. The run waits for that before its steps in the installed Linux, and after a shutdown until someone switches the machine on again.}}"
+msgstr "{mode, select, reboot {The user-data restarts the machine with power_state. The run waits for that restart and then goes on with its steps in the installed Linux.} off {The user-data shuts the machine down with power_state. The run waits until someone switches the machine on again, and then goes on with its steps in the installed Linux.} other {The user-data sets power_state, so cloud-init may restart the machine or shut it down. The run waits for that before its steps in the installed Linux, and after a shutdown until someone switches the machine on again.}}"
 
 #: src/lib/serverMessages.ts
 msgctxt "package.targetTwice"
@@ -3424,6 +3439,11 @@ msgstr "DDT connects these shares with their accounts before the step runs and d
 msgctxt "settings.apply.pxeBindFailed"
 msgid "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} dhcpServerHere {A DHCP server on this computer holds the port. Turn on LeaveDhcpPort, and DDT answers on UDP 4011 alone, which machines reach once that DHCP server sends option 60, PXEClient. UDP 4011 and TFTP are serving meanwhile.} other {Check that no other service holds the port.}}"
 msgstr "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} dhcpServerHere {A DHCP server on this computer holds the port. Turn on LeaveDhcpPort, and DDT answers on UDP 4011 alone, which machines reach once that DHCP server sends option 60, PXEClient. UDP 4011 and TFTP are serving meanwhile.} other {Check that no other service holds the port.}}"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.userDataNotCheckedWarning"
+msgid "DDT could not check this user-data: it reads only a #cloud-config document whose top level has one key per line. The run goes on in the installed Linux only if cloud-init runs vendor scripts there, so vendor_data has to stay enabled, and cloud_final_modules, if set, has to name scripts_vendor."
+msgstr "DDT could not check this user-data: it reads only a #cloud-config document whose top level has one key per line. The run goes on in the installed Linux only if cloud-init runs vendor scripts there, so vendor_data has to stay enabled, and cloud_final_modules, if set, has to name scripts_vendor."
 
 #: src/app/RouteError.tsx
 msgid "DDT could not reach its server. Check that the server is running and that this computer can reach it, then try again."
@@ -10793,6 +10813,11 @@ msgstr "The uploaded agent was not removed. {reason}"
 #: src/settings/ConsolePanel.tsx
 msgid "The uploaded console was not removed. {reason}"
 msgstr "The uploaded console was not removed. {reason}"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.userDataVendorPrefixWarning"
+msgid "The user-data sets prefix under vendor_data, so cloud-init starts vendor scripts through that command. One of them is DDT's, which installs the agent in the installed Linux. If the command does not run it to its end, the steps there never run."
+msgstr "The user-data sets prefix under vendor_data, so cloud-init starts vendor scripts through that command. One of them is DDT's, which installs the agent in the installed Linux. If the command does not run it to its end, the steps there never run."
 
 #: src/sequences/builder/variables/InputDefault.tsx
 msgid "The value of a choice; several separated by semicolons."

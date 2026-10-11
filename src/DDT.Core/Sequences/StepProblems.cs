@@ -7,15 +7,15 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// Collects the problems and warnings of one node, under the node's id. It stays silent while SequencePaths walks a
-// repeat's body just to find the state an iteration starts with.
-internal sealed class StepProblems(Guid? stepId, List<SequenceProblem> problems, List<SequenceProblem> warnings, bool silent)
+// Collects the problems, warnings and notes of one node, under the node's id. It stays silent while SequencePaths
+// walks a repeat's body just to find the state an iteration starts with.
+internal sealed class StepProblems(Guid? stepId, SequenceFindings findings, bool silent)
 {
     public void Add(string? field, ServerMessage message)
     {
         if (!silent)
         {
-            problems.Add(SequenceProblem.From(stepId, field, message));
+            findings.Problems.Add(SequenceProblem.From(stepId, field, message));
         }
     }
 
@@ -23,7 +23,15 @@ internal sealed class StepProblems(Guid? stepId, List<SequenceProblem> problems,
     {
         if (!silent)
         {
-            warnings.Add(SequenceProblem.From(stepId, field, message));
+            findings.Warnings.Add(SequenceProblem.From(stepId, field, message));
+        }
+    }
+
+    public void Note(string? field, ServerMessage message)
+    {
+        if (!silent)
+        {
+            findings.Notes.Add(SequenceProblem.From(stepId, field, message));
         }
     }
 }

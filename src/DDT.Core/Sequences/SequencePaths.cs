@@ -17,8 +17,7 @@ internal sealed class SequencePaths
 
     private readonly SequenceKind _kind;
     private readonly StepRules _rules;
-    private readonly List<SequenceProblem> _problems;
-    private readonly List<SequenceProblem> _warnings;
+    private readonly SequenceFindings _findings;
     private readonly HashSet<Guid> _ids = [];
 
     // The phases each node may run in, one bit per SequencePhase.
@@ -34,14 +33,13 @@ internal sealed class SequencePaths
     // Set while a repeat's body is walked to find the state an iteration starts with.
     private bool _silent;
 
-    public SequencePaths(SequenceDefinition definition, SequenceNames names, List<SequenceProblem> problems, List<SequenceProblem> warnings)
+    public SequencePaths(SequenceDefinition definition, SequenceNames names, SequenceFindings findings)
     {
-        _problems = problems;
-        _warnings = warnings;
+        _findings = findings;
 
         // A sequence either installs Windows or writes a raw disk image. The raw image step may be anywhere in it.
         _kind = SequenceKinds.Of(definition);
-        _rules = new StepRules(names, _kind);
+        _rules = new StepRules(names, _kind, SequenceTree.Nodes(definition).Any(node => node.RequiredPhase == SequencePhase.Linux));
     }
 
     public void Walk(IReadOnlyList<SequenceStep?> steps) => Series(steps, PathState.Start, 0, inRepeat: false);
@@ -97,7 +95,7 @@ internal sealed class SequencePaths
 
     private PathState Node(SequenceStep step, PathState input, int depth, bool inRepeat)
     {
-        StepProblems problems = new(step.Id == Guid.Empty ? null : step.Id, _problems, _warnings, _silent);
+        StepProblems problems = new(step.Id == Guid.Empty ? null : step.Id, _findings, _silent);
 
         if (!_silent)
         {

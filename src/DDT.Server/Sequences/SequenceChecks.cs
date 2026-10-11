@@ -56,7 +56,7 @@ public static class SequenceChecks
             .Where(name => !references.ValueNames.Contains(name))
             .Select(name => SequenceProblem.From(null, null, ServerMessages.SequenceValueUndefined.With("name", name))));
 
-        return new SequenceValidation(problems, warnings);
+        return new SequenceValidation(problems, warnings, analysis.Notes);
     }
 
     // A step on any branch may run, so a sequence that erases a disk on one branch counts as erasing.

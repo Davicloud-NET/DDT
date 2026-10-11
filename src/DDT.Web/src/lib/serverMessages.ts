@@ -1513,6 +1513,26 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.unreadable",
     message: "The sequence is not a document DDT can read. Every step needs an id and a kind this version of DDT knows.",
   }),
+  "sequence.userDataFinalModulesWarning": msg({
+    context: "sequence.userDataFinalModulesWarning",
+    message: "{how, select, missing {The user-data sets cloud_final_modules, and the list names neither scripts_vendor nor scripts-vendor, so cloud-init runs no vendor scripts.} other {DDT could not read what the user-data sets cloud_final_modules to. If the list does not name scripts_vendor, cloud-init runs no vendor scripts.}} DDT's script, which installs the agent in the installed Linux, is a vendor script, and without it the steps there never run. Add scripts_vendor to the list.",
+  }),
+  "sequence.userDataNotCheckedWarning": msg({
+    context: "sequence.userDataNotCheckedWarning",
+    message: "DDT could not check this user-data: it reads only a #cloud-config document whose top level has one key per line. The run goes on in the installed Linux only if cloud-init runs vendor scripts there, so vendor_data has to stay enabled, and cloud_final_modules, if set, has to name scripts_vendor.",
+  }),
+  "sequence.userDataPowerStateNote": msg({
+    context: "sequence.userDataPowerStateNote",
+    message: "{mode, select, reboot {The user-data restarts the machine with power_state. The run waits for that restart and then goes on with its steps in the installed Linux.} off {The user-data shuts the machine down with power_state. The run waits until someone switches the machine on again, and then goes on with its steps in the installed Linux.} other {The user-data sets power_state, so cloud-init may restart the machine or shut it down. The run waits for that before its steps in the installed Linux, and after a shutdown until someone switches the machine on again.}}",
+  }),
+  "sequence.userDataVendorDataWarning": msg({
+    context: "sequence.userDataVendorDataWarning",
+    message: "{how, select, notMapping {The user-data sets vendor_data to something that is not a mapping, so cloud-init reads no vendor data.} notEnabled {The user-data sets enabled under vendor_data to something other than true, so cloud-init reads no vendor data.} other {DDT could not read what the user-data sets vendor_data to. It may switch vendor data off.}} DDT's agent gets into the installed Linux as vendor data, and without it the steps there never run. Leave vendor_data out, or set its enabled to true.",
+  }),
+  "sequence.userDataVendorPrefixWarning": msg({
+    context: "sequence.userDataVendorPrefixWarning",
+    message: "The user-data sets prefix under vendor_data, so cloud-init starts vendor scripts through that command. One of them is DDT's, which installs the agent in the installed Linux. If the command does not run it to its end, the steps there never run.",
+  }),
   "sequence.valueName": msg({
     context: "sequence.valueName",
     message: "A name starts with a letter and has at most {max} letters, digits and underscores.",

@@ -56,7 +56,7 @@ public static class SequenceValidator
         ArgumentNullException.ThrowIfNull(definition);
 
         List<SequenceProblem> problems = [];
-        List<SequenceProblem> warnings = [];
+        SequenceFindings found = new();
 
         if (definition.Version is < 1 or > SequenceDefinition.CurrentVersion)
         {
@@ -102,10 +102,15 @@ public static class SequenceValidator
             names.CheckDeclarations(problems);
         }
 
-        SequencePaths paths = new(definition, names, whole ? problems : [], whole ? warnings : []);
+        SequencePaths paths = new(definition, names, found);
         paths.Walk(steps);
 
-        return new SequenceAnalysis([.. problems.Distinct()], [.. warnings.Distinct()], paths.Phases(definition), names.ValueNames);
+        return new SequenceAnalysis(
+            [.. problems.Concat(whole ? found.Problems : []).Distinct()],
+            [.. (whole ? found.Warnings : []).Distinct()],
+            [.. (whole ? found.Notes : []).Distinct()],
+            paths.Phases(definition),
+            names.ValueNames);
     }
 
     // An empty slot counts as a step, like in a flat sequence.

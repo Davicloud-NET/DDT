@@ -19,4 +19,6 @@ public sealed record SequenceView(
     string? UpdatedBy,
     // The phases each node may run in, in the order of SequenceTree.Nodes. A node has more than one when it depends on
     // the path an IF takes.
-    IReadOnlyList<NodePhase>? NodePhases = null);
+    IReadOnlyList<NodePhase>? NodePhases = null,
+    // What a setting will do, where that is neither wrong nor risky. Shown at its field and counted nowhere.
+    IReadOnlyList<SequenceProblem>? Notes = null);

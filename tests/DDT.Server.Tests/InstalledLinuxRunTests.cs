@@ -103,6 +103,37 @@ public sealed class InstalledLinuxRunTests(DdtApplication application) : IClassF
         Assert.True(Assert.Single(summaries, summary => summary.Id == branched.Id).ContinuesInLinux);
     }
 
+    // The warning counts in the list. The note says what the run waits for and is counted nowhere.
+    [Fact]
+    public async Task WarnsOfUserDataThatSwitchesVendorDataOffAndNotesItsRestart()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        Image image = await application.SeedRawImageAsync(RandomNumberGenerator.GetBytes(4096), name: $"noble {Guid.NewGuid():N}");
+        SequenceDefinition definition = SequenceRequests.LinuxWithInstalledSteps(image.Id);
+        WriteCloudInitSeedStep seed = Assert.IsType<WriteCloudInitSeedStep>(definition.Steps[1]) with
+        {
+            UserData = "#cloud-config\nvendor_data: {enabled: false}\npower_state:\n  mode: reboot\n",
+        };
+
+        SequenceView saved = await administrator.CreatedSequenceAsync(SequenceRequests.Definition(definition.Steps[0], seed, definition.Steps[2]));
+        SequenceView bootOnly = await administrator.CreatedSequenceAsync(SequenceRequests.Definition(definition.Steps[0], seed));
+
+        Assert.Empty(saved.Problems);
+        Assert.Equal(
+            [(seed.Id, "userData", "sequence.userDataVendorDataWarning")],
+            saved.Warnings.Select(warning => (warning.StepId ?? Guid.Empty, warning.Field, warning.Code)));
+        Assert.Equal(
+            [(seed.Id, "userData", "sequence.userDataPowerStateNote")],
+            (saved.Notes ?? []).Select(note => (note.StepId ?? Guid.Empty, note.Field, note.Code)));
+        Assert.Empty(bootOnly.Warnings);
+        Assert.Empty(bootOnly.Notes ?? []);
+
+        IReadOnlyList<SequenceSummary> summaries =
+            await RegisteredMachine.ReadAsync<IReadOnlyList<SequenceSummary>>(await administrator.GetAsync(SequenceRequests.Sequences));
+
+        Assert.Equal((0, 1), (Assert.Single(summaries, summary => summary.Id == saved.Id).ProblemCount, Assert.Single(summaries, summary => summary.Id == saved.Id).WarningCount));
+    }
+
     [Fact]
     public async Task TheLinuxBootEnvironmentHandsTheRunOverAndTheInstalledLinuxReportsItToTheEnd()
     {

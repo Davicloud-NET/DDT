@@ -16,6 +16,7 @@ describe("the findings of a field", () => {
     expect(fieldFindings(findings, "conditions[0].value")).toEqual({
       problems: [],
       warnings: ["Looks odd."],
+      notes: [],
     });
   });
 
@@ -25,6 +26,6 @@ describe("the findings of a field", () => {
         withFieldAt(findings, "conditions[0]", "conditions[0].value"),
         "conditions[0].value",
       ),
-    ).toEqual({ problems: ["Compare with something."], warnings: ["Looks odd."] });
+    ).toEqual({ problems: ["Compare with something."], warnings: ["Looks odd."], notes: [] });
   });
 });

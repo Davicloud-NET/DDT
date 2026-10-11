@@ -62,7 +62,8 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
             validation.Warnings,
             sequence.UpdatedUtc,
             sequence.UpdatedByName,
-            SequenceChecks.NodePhases(definition));
+            SequenceChecks.NodePhases(definition),
+            validation.Notes);
     }
 
     public static SequenceSummary Summary(TaskSequence sequence, SequenceReferences references)

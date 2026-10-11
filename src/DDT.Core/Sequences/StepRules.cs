@@ -7,8 +7,9 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// The rules for each node of a sequence. SequencePaths checks them when it reaches the node.
-internal sealed class StepRules(SequenceNames names, SequenceKind kind)
+// The rules for each node of a sequence. SequencePaths checks them when it reaches the node. goesOnInLinux says that
+// some step runs in the installed Linux, where only the seed can take the agent.
+internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goesOnInLinux)
 {
     // Before Partition, the run's state only exists in memory, so a restart in the boot phase would lose the run. The
     // Linux boot environment keeps it in memory throughout, and has no partition to unpack a package on.
@@ -318,7 +319,7 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind)
         SequenceValidator.CheckRunsEveryTime(step, "rawImage", problems.Add);
     }
 
-    private static void CheckSeed(WriteCloudInitSeedStep seed, StepPlace place, StepProblems problems)
+    private void CheckSeed(WriteCloudInitSeedStep seed, StepPlace place, StepProblems problems)
     {
         if (!place.Before.MustHave(Happened.RawImageWritten))
         {
@@ -331,6 +332,11 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind)
         }
 
         SequenceValidator.CheckSeed(seed, problems.Add);
+
+        if (goesOnInLinux)
+        {
+            UserDataRules.Check(seed, problems);
+        }
     }
 
     private void CheckPause(PauseStep pause, StepPlace place, StepProblems problems)

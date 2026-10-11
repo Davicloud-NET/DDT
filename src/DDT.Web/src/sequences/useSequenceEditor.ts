@@ -72,6 +72,11 @@ function savedElsewhereOf(
 }
 
 // The copy another administrator saved, while this page's own edits haven't been saved over it.
+// What the server found in its copy, by how much it matters.
+function findingsOf(view: SequenceView): Findings {
+  return { problems: view.problems, warnings: view.warnings, notes: view.notes ?? [] };
+}
+
 function conflictOf(autosave: AutosaveSnapshot<SequenceDraft>, latest: SequenceView) {
   const theirs = autosave.theirs;
 
@@ -167,7 +172,7 @@ export function useSequenceEditor(first: SequenceView, readOnly: boolean) {
     deleted,
     locked,
     savedElsewhere: savedElsewhereOf(latest, initial.revision, ownRevisions, me),
-    findings: { problems: latest.problems, warnings: latest.warnings } satisfies Findings,
+    findings: findingsOf(latest),
     phases: nodePhasesOf(draft.steps, {
       steps: latest.definition.steps,
       stepPhases: latest.stepPhases,

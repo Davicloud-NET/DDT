@@ -60,6 +60,9 @@ public sealed class LinuxPartsTests : IDisposable
         Assert.Equal("/run/ddt", LinuxBoot.RunDirectory);
         Assert.StartsWith(LinuxBoot.RunDirectory, LinuxBoot.WorkDirectory, StringComparison.Ordinal);
         Assert.Equal("ddt-agent", LinuxBoot.AgentFileName);
+
+        // What a hand-over puts on the seed is the file that runs, also after it updated itself.
+        Assert.Equal(Environment.ProcessPath, LinuxBoot.AgentPath);
         Assert.DoesNotContain("Windows", EnvironmentTexts.Usage(AgentEnvironment.LinuxBoot), StringComparison.Ordinal);
     }
 

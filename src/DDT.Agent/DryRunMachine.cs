@@ -118,7 +118,7 @@ public sealed class DryRunMachine(
     {
         bool inWindows = phase == SequencePhase.Windows;
         string workDirectory = inWindows ? RunFiles.DirectoryIn(Windows) : options.Root;
-        AgentConfiguration staged = new(options.Agent.ServerUrl.AbsoluteUri, options.Agent.RootCertificate?.ExportCertificatePem(), null);
+        AgentConfiguration staged = options.Agent.ForInstalledSystem();
         DryRunBcdWriter bcdWriter = new(log);
         DryRunImageApplier applier = new(log);
         SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval, workDirectory, DryRun: true)

@@ -21,6 +21,9 @@ public static class LinuxBoot
 
     public static string WorkDirectory => Path.Combine(RunDirectory, "work");
 
+    // The running agent's own file, which a hand-over puts on the seed for the installed Linux.
+    public static string AgentPath => Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, AgentFileName);
+
     // A machine the firmware started from the network may have no adapter Linux has a driver for, or get it late.
     public static Task<bool> ReadyAsync(StartedAgent agent, CancellationToken cancellationToken)
     {
@@ -100,7 +103,7 @@ public static class LinuxBoot
             BootOrder = bootOrder,
             Rebooter = rebooter,
             RestartMarker = new FileRestartMarker(RunDirectory, log, dryRun: false),
-            HandOver = new NoHandOver(),
+            HandOver = new LinuxHandOver(rawDisks, AgentPath, agent.Options.ForInstalledSystem(), log),
             Log = log,
             TimeProvider = TimeProvider.System,
             Options = options,

@@ -4,6 +4,7 @@
 
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
+using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Tests;
@@ -31,6 +32,12 @@ internal sealed record TestRunnerOptions
     // The boot environment the runner runs in, whose check TestAgents.Runner makes of a fresh run. Null is Windows PE
     // without the check.
     public AgentEnvironment? Environment { get; init; }
+
+    // The hand-over of a system. Null is one that only goes into the tools' journal.
+    public IHandOver? HandOver { get; init; }
+
+    // The newest sequence version the runner takes. Null is the one the agent says it runs.
+    public int? SequenceVersion { get; init; }
 
     // What the script launcher adds to every script's environment.
     public IReadOnlyDictionary<string, string>? ScriptEnvironment { get; init; }

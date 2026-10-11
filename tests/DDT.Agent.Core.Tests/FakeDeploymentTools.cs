@@ -49,7 +49,7 @@ internal sealed class FakeDeploymentTools
     // Runs when Windows is put first in the boot order, before FailAt is checked.
     public Action? PuttingWindowsFirst { get; set; }
 
-    // When set, putting Windows first completes FirmwareStarted once it is recorded and then waits for it.
+    // When set, putting Windows or a disk image first completes FirmwareStarted once it is recorded and then waits for it.
     public TaskCompletionSource? FirmwareGate { get; set; }
 
     public TaskCompletionSource FirmwareStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -178,8 +178,8 @@ internal sealed class FakeDeploymentTools
         return Task.FromResult<IReadOnlyList<Guid>>([ErasedSystemPartitionId]);
     }
 
-    // The journal names the loader and the partition it is on.
-    public Task PutFirstAsync(
+    // The journal names the loader and the partition it is on. It waits at the same gate as putting Windows first.
+    public async Task PutFirstAsync(
         EspPartition esp,
         string loaderPath,
         string description,
@@ -187,8 +187,12 @@ internal sealed class FakeDeploymentTools
         CancellationToken cancellationToken)
     {
         Record("firmware", $" {description} {loaderPath} on partition {esp.PartitionNumber}");
+        FirmwareStarted.TrySetResult();
 
-        return Task.CompletedTask;
+        if (FirmwareGate is { } gate)
+        {
+            await gate.Task.WaitAsync(cancellationToken);
+        }
     }
 
     public Task<TargetVolumes> FindAsync(RunDiskIds ids, string windowsRoot, CancellationToken cancellationToken)

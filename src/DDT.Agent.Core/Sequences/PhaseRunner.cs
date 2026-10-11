@@ -186,7 +186,7 @@ internal sealed class PhaseRunner(
 
         if (failure is { } refusal)
         {
-            return await ending.FailAsync(run, LogText.OneLine(refusal), cancellationToken).ConfigureAwait(false);
+            return await FailAsync(run, LogText.OneLine(refusal), cancellationToken).ConfigureAwait(false);
         }
 
         return outcome switch
@@ -195,8 +195,17 @@ internal sealed class PhaseRunner(
             SequenceOutcome.RebootRequired => await ending.RestartAsync(run, run.SamePhase, cancellationToken).ConfigureAwait(false),
             SequenceOutcome.PhaseChangeRequired => await ending.RestartAsync(run, RestartInto.InstalledSystem, cancellationToken).ConfigureAwait(false),
             SequenceOutcome.Stopped => new RunResult(RunOutcome.Stopped),
-            _ => await ending.FailAsync(run, error ?? "The run failed.", cancellationToken).ConfigureAwait(false),
+            _ => await FailAsync(run, error ?? "The run failed.", cancellationToken).ConfigureAwait(false),
         };
+    }
+
+    // The run is over, also where a hand-over staged it for the installed system. A stopped run and one whose token
+    // was refused may still go on, so theirs stays.
+    private Task<RunResult> FailAsync(SequenceRun run, string error, CancellationToken cancellationToken)
+    {
+        handOver.Withdraw(run);
+
+        return ending.FailAsync(run, error, cancellationToken);
     }
 
     private static bool IsSet(SequenceState state, string variable) =>

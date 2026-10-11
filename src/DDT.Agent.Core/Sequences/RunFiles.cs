@@ -31,15 +31,19 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
     // Where a root keeps a run's state, if it has one.
     public static string StatePathIn(string root) => Path.Combine(DirectoryIn(root), "run", "state.json");
 
-    public Task SaveStateAsync(SequenceState state, CancellationToken cancellationToken) =>
-        ReplaceAsync(StatePath, JsonSerializer.SerializeToUtf8Bytes(state, AgentJsonContext.Default.SequenceState), cancellationToken);
+    // What state.json and token hold, for a hand-over that puts them where the installed system's own files come from.
+    public static byte[] StateContent(SequenceState state) => JsonSerializer.SerializeToUtf8Bytes(state, AgentJsonContext.Default.SequenceState);
 
-    public Task SaveTokenAsync(string token, CancellationToken cancellationToken)
+    public static byte[] TokenContent(string token)
     {
         ArgumentException.ThrowIfNullOrEmpty(token);
 
-        return ReplaceAsync(TokenPath, Encoding.ASCII.GetBytes(token), cancellationToken);
+        return Encoding.ASCII.GetBytes(token);
     }
+
+    public Task SaveStateAsync(SequenceState state, CancellationToken cancellationToken) => ReplaceAsync(StatePath, StateContent(state), cancellationToken);
+
+    public Task SaveTokenAsync(string token, CancellationToken cancellationToken) => ReplaceAsync(TokenPath, TokenContent(token), cancellationToken);
 
     public Task SaveFinalReportAsync(AgentRunReport report, CancellationToken cancellationToken) =>
         ReplaceAsync(FinalReportPath, JsonSerializer.SerializeToUtf8Bytes(report, AgentJsonContext.Default.AgentRunReport), cancellationToken);

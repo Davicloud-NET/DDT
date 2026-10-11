@@ -39,7 +39,7 @@ static Task<int> DryRunAsync(StartedAgent agent, CancellationToken cancellationT
     DryRunMachineOptions options = new(
         agent.Options,
         Path.Combine(Path.GetTempPath(), $"ddt-dry-run-{agent.Options.DryRunId}"),
-        Environment.ProcessPath ?? LinuxBoot.AgentFileName,
+        LinuxBoot.AgentPath,
         RunHeartbeat.DefaultInterval,
         agent.Version);
 

@@ -26,6 +26,9 @@ internal sealed class MemoryRawDisk(long length, int sectorSize = 512) : IRawDis
 
     public bool Disposed { get; private set; }
 
+    // The next write keeps this many of its bytes and then fails, as on a disk that stops answering half way.
+    public int? FailNextWriteAfter { get; set; }
+
     public void Read(long offset, Span<byte> buffer)
     {
         CheckWhole(offset, buffer.Length);
@@ -54,6 +57,19 @@ internal sealed class MemoryRawDisk(long length, int sectorSize = 512) : IRawDis
         CheckWhole(offset, buffer.Length);
         Writes.Add((offset, buffer.Length));
 
+        if (FailNextWriteAfter is { } kept)
+        {
+            FailNextWriteAfter = null;
+            Keep(offset, buffer[..Math.Min(kept, buffer.Length)]);
+
+            throw new IOException("The device is not ready.");
+        }
+
+        Keep(offset, buffer);
+    }
+
+    private void Keep(long offset, ReadOnlySpan<byte> buffer)
+    {
         for (int done = 0; done < buffer.Length;)
         {
             long at = offset + done;

@@ -42,6 +42,9 @@ public sealed record AgentOptions(
     // Starts this console instead of the ddt-console.exe beside the agent, even in a dry run or with input redirected.
     public string? ConsolePath { get; init; }
 
+    // The agent.json a hand-over stages for the installed system. It only holds what it takes to reach the server.
+    public AgentConfiguration ForInstalledSystem() => new(ServerUrl.AbsoluteUri, RootCertificate?.ExportCertificatePem(), null);
+
     // Arguments override agent.json, which by default sits next to the executable.
     public static bool TryParse(IReadOnlyList<string> args, out AgentOptions? options, out string error) =>
         TryParse(args, AgentEnvironment.WindowsPE, out options, out error);

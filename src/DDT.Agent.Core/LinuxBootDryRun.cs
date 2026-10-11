@@ -26,6 +26,9 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
     // Without it the fake machine cannot change its boot environment.
     public IVendorVariables? Firmware { get; init; }
 
+    // The newest sequence version the fake machine runs. A test raises it to run what no agent says it runs yet.
+    public int SequenceVersion { get; init; } = SupportedSequences.Version;
+
     public Task<int> RunAsync(CancellationToken cancellationToken)
     {
         log.Information("Dry run: the fake machine started the Linux boot environment, which runs the sequences that write a raw disk image.");
@@ -50,7 +53,11 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
     {
         FileRawDisks rawDisks = new(options.Root, log, MakeSparse);
         DryRunBcdWriter bootOrder = new(log);
-        SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval, options.Root, DryRun: true) { Environment = AgentEnvironment.LinuxBoot };
+        SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval, options.Root, DryRun: true)
+        {
+            Environment = AgentEnvironment.LinuxBoot,
+            SequenceVersion = SequenceVersion,
+        };
 
         return new SequenceRunnerBuilder
         {
@@ -72,7 +79,7 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
             BootOrder = bootOrder,
             Rebooter = rebooter,
             RestartMarker = new FileRestartMarker(options.Root, log, dryRun: true) { DryRunNote = RestartNote },
-            HandOver = new NoHandOver(),
+            HandOver = new LinuxHandOver(rawDisks, options.AgentPath, options.Agent.ForInstalledSystem(), log),
             Log = log,
             TimeProvider = timeProvider,
             Options = runnerOptions,

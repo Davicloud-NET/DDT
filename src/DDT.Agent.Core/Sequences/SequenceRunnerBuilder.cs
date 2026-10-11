@@ -56,7 +56,7 @@ public sealed class SequenceRunnerBuilder
     {
         RunBootOrder bootOrder = new(BcdWriter, BootOrder, RestartMarker, Log);
         RunEnding ending = new(bootOrder, Rebooter, RestartMarker, Log, TimeProvider, Status);
-        RunPreflight preflight = new(Server, new RunDiskChoice(Disks, RawDisks), PreflightChecks, Log, TimeProvider);
+        RunPreflight preflight = new(Server, new RunDiskChoice(Disks, RawDisks), PreflightChecks, Log, TimeProvider, Options.SequenceVersion);
         RunInputsWait inputs = new(Server, Status?.Console, Log, TimeProvider);
 
         return new SequenceRunner(

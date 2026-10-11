@@ -17,8 +17,9 @@ internal static class TestAgents
         new("https://ddt.example:8443/", "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n", null);
 
     // A runner with the parts every system has. Its steps are the Linux boot environment's, which need nothing of one
-    // system. Unless the options name an environment, it checks nothing of a system before a run. Its hand-over only
-    // goes into the tools' journal. Everything on the disk is under tools.Root. The restart marker is a real file.
+    // system. Unless the options name an environment, it checks nothing of a system before a run. Unless they bring a
+    // hand-over, its own only goes into the tools' journal. Everything on the disk is under tools.Root. The restart
+    // marker is a real file.
     public static SequenceRunner Runner(
         IAgentServer server,
         FakeDeploymentTools tools,
@@ -34,6 +35,7 @@ internal static class TestAgents
         SequenceRunnerOptions runnerOptions = new(options.HeartbeatInterval ?? Timeout.InfiniteTimeSpan, Path.Combine(tools.Root, "X"), options.DryRun)
         {
             Environment = options.Environment ?? AgentEnvironment.WindowsPE,
+            SequenceVersion = options.SequenceVersion ?? SupportedSequences.Version,
         };
 
         return new SequenceRunnerBuilder
@@ -59,7 +61,7 @@ internal static class TestAgents
             BootOrder = tools,
             Rebooter = options.Rebooter ?? tools,
             RestartMarker = RestartMarker(tools, log),
-            HandOver = new FakeHandOver(tools),
+            HandOver = options.HandOver ?? new FakeHandOver(tools),
             Log = log,
             TimeProvider = timeProvider,
             Options = runnerOptions,

@@ -38,6 +38,11 @@ public sealed class WindowsHandOver(
             cancellationToken).ConfigureAwait(false);
     }
 
+    // The run's end discards its state and token, and the service removes itself when it finds none.
+    void IHandOver.Withdraw(SequenceRun run)
+    {
+    }
+
     public async Task StageAsync(RunSession session, FileRunStateStore store, SequenceState state, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(session);

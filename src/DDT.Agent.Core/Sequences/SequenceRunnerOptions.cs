@@ -12,4 +12,7 @@ public sealed record SequenceRunnerOptions(TimeSpan HeartbeatInterval, string Wo
 {
     // The boot environment or installed system the runner runs in, which its sentences name.
     public AgentEnvironment Environment { get; init; } = AgentEnvironment.WindowsPE;
+
+    // The newest sequence version the runner takes. A test raises it to run what no agent says it runs yet.
+    public int SequenceVersion { get; init; } = SupportedSequences.Version;
 }

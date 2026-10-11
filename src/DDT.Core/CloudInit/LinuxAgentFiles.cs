@@ -37,12 +37,20 @@ public static class LinuxAgentFiles
     public const string SeedMount = "/run/ddt-seed";
 
     // What the hand-over adds to the seed: the script cloud-init runs once, and what that installs.
-    public static IReadOnlyList<SeedFile> ForSeed(byte[] agent, byte[] configuration, byte[] state, byte[] token) =>
-    [
-        new(CloudInitSeed.VendorData, VendorDataScript.Bytes()),
-        new(SeedAgent, agent),
-        new(SeedConfiguration, configuration),
-        new(SeedState, state),
-        new(SeedToken, token),
-    ];
+    public static IReadOnlyList<SeedFile> ForSeed(byte[] agent, byte[] configuration, byte[] state, byte[] token)
+    {
+        ArgumentNullException.ThrowIfNull(agent);
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(token);
+
+        return
+        [
+            new(CloudInitSeed.VendorData, VendorDataScript.Bytes()),
+            new(SeedAgent, agent),
+            new(SeedConfiguration, configuration),
+            new(SeedState, state),
+            new(SeedToken, token),
+        ];
+    }
 }

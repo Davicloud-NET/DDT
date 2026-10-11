@@ -72,7 +72,7 @@ public sealed class InstalledLinuxDryRunTests(DryRunLab lab)
         Assert.Equal(2, audit.Count(entry => entry.Action == "deployment.resumed" && entry.Detail?.Contains(" from Linux with its run token.", StringComparison.Ordinal) == true));
 
         AssertWhatTheAgentSaid(agent);
-        AssertTheDiskStaysAsItWasHandedOver(agent);
+        AssertTheDiskStaysAsItWasHandedOverButForTheToken(agent);
         lab.AssertClean([agent], [], ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
     }
 
@@ -138,8 +138,9 @@ public sealed class InstalledLinuxDryRunTests(DryRunLab lab)
         Assert.False(Directory.Exists(agent.Root), $"The dry run's root {agent.Root} is still there.");
     }
 
-    // With the agent's own file on the seed, which is megabytes of the published program.
-    private static void AssertTheDiskStaysAsItWasHandedOver(AgentProcess agent)
+    // With the agent's own file on the seed, which is megabytes of the published program, and without the run's
+    // token, which the script wipes on a real seed.
+    private static void AssertTheDiskStaysAsItWasHandedOverButForTheToken(AgentProcess agent)
     {
         using FileStream disk = new(agent.DiskPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         byte[] head = new byte[GptLayout.MaxHeadBytes];
@@ -147,7 +148,8 @@ public sealed class InstalledLinuxDryRunTests(DryRunLab lab)
         GptPartition partition = GptLayout.Read(head).Partitions.Single(candidate => candidate.Name == CloudInitSeed.Label);
         FatVolume volume = FatVolume.Open(disk, partition.FirstLba * GptLayout.SectorSize, (partition.LastLba - partition.FirstLba + 1) * GptLayout.SectorSize);
 
-        Assert.Equal(["ddt-agent", "agent.json", "state.json", "token"], volume.List(LinuxAgentFiles.SeedFolder).Select(entry => entry.Name));
+        Assert.Equal(["meta-data", "user-data", "vendor-data", "ddt"], volume.List("").Select(entry => entry.Name));
+        Assert.Equal(["ddt-agent", "agent.json", "state.json"], volume.List(LinuxAgentFiles.SeedFolder).Select(entry => entry.Name));
         Assert.True(volume.Find(LinuxAgentFiles.SeedAgent)!.Size > 1024 * 1024);
     }
 

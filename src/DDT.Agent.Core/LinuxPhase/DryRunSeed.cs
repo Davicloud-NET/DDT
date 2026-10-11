@@ -10,12 +10,9 @@ using DDT.Core.Disks;
 namespace DDT.Agent.LinuxPhase;
 
 // A dry run's cloud-init seed. No kernel mounts it, so its files are read from the file that is the disk into a
-// folder, which then stands in for the mounted seed. The file itself stays as the hand-over left it, to be looked at.
-public sealed class DryRunSeed(string folder, AgentLog log) : IMountedSeeds
+// folder, which then stands in for the mounted seed. The file stays to be looked at, without the run's token.
+public sealed class DryRunSeed(string folder, AgentLog log, TimeProvider timeProvider) : IMountedSeeds
 {
-    // More than any file of a seed: the agent is its largest.
-    private const int MaxFileBytes = 64 * 1024 * 1024;
-
     public int Each(Action<string> visit)
     {
         ArgumentNullException.ThrowIfNull(visit);
@@ -63,47 +60,60 @@ public sealed class DryRunSeed(string folder, AgentLog log) : IMountedSeeds
         return true;
     }
 
-    // The seed's root and the agent's folder, which is all a seed has.
+    // Every file of the seed goes into the folder. The script wipes the token on the seed, so the seed in the file
+    // is written again without it, and no byte of it stays there either.
     private bool Extract(string diskFile)
     {
-        using FileStream disk = new(diskFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using FileStream disk = new(diskFile, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
         byte[] head = new byte[(int)Math.Min(GptLayout.MaxHeadBytes, disk.Length)];
         disk.ReadExactly(head);
 
         try
         {
-            if (GptLayout.Read(head).Partitions.FirstOrDefault(partition => partition.Name == CloudInitSeed.Label) is not { } partition)
+            if (GptLayout.Read(head).Partitions.FirstOrDefault(partition => partition.Name == CloudInitSeed.Label) is not { } partition
+                || partition.Sectors * GptLayout.SectorSize != CloudInitSeed.SizeBytes)
             {
                 return false;
             }
 
-            long sectors = partition.LastLba - partition.FirstLba + 1;
-            FatVolume volume = FatVolume.Open(disk, partition.FirstLba * GptLayout.SectorSize, sectors * GptLayout.SectorSize);
+            byte[] volume = new byte[CloudInitSeed.SizeBytes];
+            disk.Position = partition.FirstLba * GptLayout.SectorSize;
+            disk.ReadExactly(volume);
+            SeedVolume seed = SeedVolume.Read(volume);
 
-            foreach (string directory in (string[])["", LinuxAgentFiles.SeedFolder])
+            foreach (SeedFile file in seed.Files)
             {
-                if (directory.Length > 0 && volume.Find(directory) is not { IsDirectory: true })
-                {
-                    continue;
-                }
-
-                foreach (FatEntry file in volume.List(directory).Where(entry => !entry.IsDirectory))
-                {
-                    string target = Path.Combine(folder, directory, file.Name);
-                    Directory.CreateDirectory(Path.GetDirectoryName(target) ?? folder);
-                    File.WriteAllBytes(target, volume.ReadFile(file, MaxFileBytes));
-                }
+                string target = Path.Combine(folder, file.Path);
+                Directory.CreateDirectory(Path.GetDirectoryName(target) ?? folder);
+                File.WriteAllBytes(target, file.Content);
             }
+
+            WriteWithoutToken(disk, partition, seed);
 
             return true;
         }
-        catch (Exception exception) when (exception is InvalidGptException or InvalidDataException or ArgumentException)
+        catch (Exception exception) when (exception is InvalidGptException or InvalidDataException or ArgumentException or IOException)
         {
             log.Warning($"Dry run: the seed in {diskFile} cannot be read ({exception.Message}).");
 
             return false;
         }
     }
+
+    private void WriteWithoutToken(FileStream disk, GptPartition partition, SeedVolume seed)
+    {
+        if (!seed.Files.Any(IsToken))
+        {
+            return;
+        }
+
+        SeedFile[] kept = [.. seed.Files.Where(file => !IsToken(file))];
+        disk.Position = partition.FirstLba * GptLayout.SectorSize;
+        disk.Write(CloudInitSeed.Build(kept, seed.SerialNumber, timeProvider.GetUtcNow().UtcDateTime, partition.FirstLba));
+        disk.Flush(flushToDisk: true);
+    }
+
+    private static bool IsToken(SeedFile file) => SeedVolume.SamePath(file.Path, LinuxAgentFiles.SeedToken);
 
     private static void Copy(string from, string to)
     {

@@ -17,7 +17,7 @@ namespace DDT.Agent;
 public sealed class LinuxPhaseDryRun(DryRunMachineOptions options, Func<AgentOptions, IAgentServer> connect, AgentLog log, TimeProvider timeProvider)
 {
     private readonly LinuxAgentPaths _paths = new(Path.Combine(options.Root, "linux"));
-    private readonly DryRunSeed _seed = new(Path.Combine(options.Root, "linux-seed"), log);
+    private readonly DryRunSeed _seed = new(Path.Combine(options.Root, "linux-seed"), log, timeProvider);
 
     // How this computer counts the free space of a path.
     public required IFreeSpace FreeSpace { get; init; }

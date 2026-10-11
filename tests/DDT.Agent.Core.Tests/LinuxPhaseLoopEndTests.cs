@@ -150,7 +150,7 @@ public sealed class LinuxPhaseLoopEndTests : IDisposable
         {
             if (report.State != DeploymentState.Done)
             {
-                return new AgentRunReportResult(token, "resume", "run-token-3");
+                return new AgentRunReportResult(token, "resume", null);
             }
 
             away.Stop.Cancel();
@@ -161,7 +161,7 @@ public sealed class LinuxPhaseLoopEndTests : IDisposable
         Assert.Equal(AgentExitCodes.Stopped, await _linux.RunAsync(away));
 
         Assert.True(File.Exists(_linux.Files.FinalReportPath));
-        Assert.Equal("run-token-3", await _linux.Files.LoadTokenAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("run-token-2", await _linux.Files.LoadTokenAsync(TestContext.Current.CancellationToken));
         Assert.Single(_linux.Tools.Calls);
         Assert.True(File.Exists(_linux.Paths.Unit));
 
@@ -171,7 +171,7 @@ public sealed class LinuxPhaseLoopEndTests : IDisposable
 
         Assert.Equal(AgentExitCodes.Deployed, await _linux.RunAsync(back));
 
-        Assert.Equal("run-token-3", Assert.Single(back.Registrations).RunToken);
+        Assert.Equal("run-token-2", Assert.Single(back.Registrations).RunToken);
         AgentRunReport done = Assert.Single(back.RunReports);
         Assert.Equal(DeploymentState.Done, done.State);
         Assert.Equal(Enumerable.Repeat(StepState.Done, 3), done.Steps.Select(step => step.State));

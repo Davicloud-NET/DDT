@@ -22,6 +22,9 @@ public interface ICloudInit
     // What systemd keeps of a shutdown someone scheduled.
     string? ScheduledShutdown();
 
+    // The kernel's id of this start of Linux, which every start makes anew. Null where it cannot be read.
+    string? StartId();
+
     // The last lines of what cloud-init and its scripts printed, oldest first.
     IReadOnlyList<string> OutputTail(int lines);
 }

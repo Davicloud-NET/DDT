@@ -181,6 +181,37 @@ public sealed class CloudInitWaitTests : IDisposable
             Lines());
     }
 
+    // cloud-init acts on power_state at its first start alone and keeps it in its configuration for good. The restart
+    // can come before the agent has seen that cloud-init finished, so the agent tells the starts apart by their ids.
+    [Fact]
+    public void DoesNotWaitAgainForAPowerStateThatRestartedTheMachineAtAnEarlierStart()
+    {
+        const string PowerState = """{ "power_state": { "delay": "now", "mode": "reboot" } }""";
+        Put(CloudInitFiles.EnabledPath);
+        Put(CloudInitFiles.StartIdPath, "8f2c6f6e-0f5c-4d43-9d1d-4a1f0e0c2a01\n");
+        Assert.Equal(CloudInitWait.StillRunning, Wait().Pending());
+
+        // The agent is started again at the same start of Linux, as after an error: the restart is still to come.
+        Put(CloudInitFiles.ResultPath, Clean);
+        Put(CloudInitFiles.ConfigurationPath, PowerState);
+        Assert.Equal(CloudInitWait.RestartComes, Wait().Pending());
+
+        // Linux has restarted. cloud-init finishes again, and its configuration still holds the power_state.
+        Put(CloudInitFiles.StartIdPath, "c1a59e44-7b1e-4f0a-8a53-2f3b0e7d9b02\n");
+        _console.GetStringBuilder().Clear();
+        CloudInitWait later = Wait();
+
+        Assert.Equal(CloudInitWait.Settling, later.Pending());
+        _time.Advance(CloudInitWait.Settle);
+        Assert.Null(later.Pending());
+        Assert.Equal(
+            [
+                "INFO  cloud-init has finished at this start.",
+                "INFO  The user-data's restart (power_state: reboot) came at an earlier start of this Linux, so the run does not wait for it again.",
+            ],
+            Lines());
+    }
+
     // After a restart the agent starts while cloud-init runs again, and the run must not wait for it a second time.
     [Fact]
     public void IsOverForTheRunOnceItWasOverAlsoAfterARestart()

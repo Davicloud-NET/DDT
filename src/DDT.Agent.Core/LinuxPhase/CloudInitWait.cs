@@ -22,8 +22,12 @@ public sealed class CloudInitWait(ICloudInit cloudInit, string markerPath, Agent
 
     public const string Settling = "cloud-init has finished, and a restart its user-data may have asked for gets a moment to come";
 
+    // Beside the marker, with the id of the start the agent first ran in.
+    public const string FirstStartFile = "cloud-init-first-start";
+
     private long? _finished;
     private AnnouncedRestart? _announced;
+    private bool? _laterStart;
     private bool _over;
 
     public string? Pending()
@@ -32,6 +36,8 @@ public sealed class CloudInitWait(ICloudInit cloudInit, string markerPath, Agent
         {
             return null;
         }
+
+        _laterStart ??= IsALaterStart();
 
         if (!cloudInit.Enabled)
         {
@@ -49,16 +55,53 @@ public sealed class CloudInitWait(ICloudInit cloudInit, string markerPath, Agent
 
             _finished = timeProvider.GetTimestamp();
             CloudInitReport.Write(result, cloudInit.Status(), cloudInit.OutputTail(OutputLines), log);
+
+            if (_laterStart == true && AnnouncedRestart.Read(cloudInit.Configuration(), null, timeProvider.GetUtcNow()) is { } spent)
+            {
+                log.Information($"The user-data's restart ({spent.What}) came at an earlier start of this Linux, so the run does not wait for it again.");
+            }
         }
 
         return AfterItFinished(timeProvider.GetElapsedTime(_finished.Value));
     }
 
+    // cloud-init acts on power_state once, at the start in which it also runs the agent's script. That is the agent's
+    // first start, so its id is noted. At every later start the power_state is still in the configuration and
+    // announces nothing. Without an id the start counts as the first, which only costs the wait.
+    private bool IsALaterStart()
+    {
+        if (cloudInit.StartId() is not { } start)
+        {
+            return false;
+        }
+
+        string note = Path.Combine(Path.GetDirectoryName(markerPath) ?? ".", FirstStartFile);
+
+        try
+        {
+            if (File.Exists(note))
+            {
+                return File.ReadAllText(note).Trim() is { Length: > 0 } first && first != start;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(note) ?? ".");
+            File.WriteAllText(note, start);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            log.Warning($"The start of Linux the agent first ran in could not be noted in {note} ({exception.Message}).");
+        }
+
+        return false;
+    }
+
     // A restart that is announced is waited for until it stops the agent, one that is not gets the settle time.
     private string? AfterItFinished(TimeSpan waited)
     {
+        string? configuration = _laterStart == true ? null : cloudInit.Configuration();
+
         if (_announced is null
-            && AnnouncedRestart.Read(cloudInit.Configuration(), cloudInit.ScheduledShutdown(), timeProvider.GetUtcNow()) is { } announced)
+            && AnnouncedRestart.Read(configuration, cloudInit.ScheduledShutdown(), timeProvider.GetUtcNow()) is { } announced)
         {
             _announced = announced with { Within = waited + announced.Within };
             log.Information(

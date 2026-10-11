@@ -27,5 +27,7 @@ public sealed class DryRunCloudInit(AgentLog log) : ICloudInit
 
     public string? ScheduledShutdown() => null;
 
+    public string? StartId() => null;
+
     public IReadOnlyList<string> OutputTail(int lines) => [];
 }

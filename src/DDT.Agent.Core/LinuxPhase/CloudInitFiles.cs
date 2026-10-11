@@ -16,6 +16,7 @@ public sealed class CloudInitFiles(string root) : ICloudInit
     public const string ConfigurationPath = "run/cloud-init/combined-cloud-config.json";
     public const string ScheduledShutdownPath = "run/systemd/shutdown/scheduled";
     public const string OutputPath = "var/log/cloud-init-output.log";
+    public const string StartIdPath = "proc/sys/kernel/random/boot_id";
 
     // The end of the output is read no further back than this.
     private const int MaxTailBytes = 64 * 1024;
@@ -31,6 +32,8 @@ public sealed class CloudInitFiles(string root) : ICloudInit
     public string? Configuration() => Read(ConfigurationPath);
 
     public string? ScheduledShutdown() => Read(ScheduledShutdownPath);
+
+    public string? StartId() => Read(StartIdPath)?.Trim() is { Length: > 0 } id ? id : null;
 
     public IReadOnlyList<string> OutputTail(int lines)
     {

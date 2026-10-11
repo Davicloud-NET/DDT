@@ -4,8 +4,16 @@
 
 using DDT.Agent;
 using DDT.Agent.Deployment;
+using DDT.Agent.LinuxPhase;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
+using DDT.Core.CloudInit;
+
+// systemd starts the agent in the installed Linux with this argument alone, and nobody sits at it.
+if (args.Contains(LinuxAgentFiles.Argument))
+{
+    return await LinuxPhaseService.RunAsync().ConfigureAwait(false);
+}
 
 // The terminal shows a key in clear until the first read takes it over, so that read comes before any line is
 // printed. A key pressed while the machine started must not show up in a password later.

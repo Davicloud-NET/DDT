@@ -54,13 +54,10 @@ public static class PhaseRules
             : $"This machine registered from {Name(environment)}, so its run cannot be in the {PhaseName(phase)} phase. " +
               $"An agent in {Name(EnvironmentOf(phase))} registers before it reports.";
 
-    private static AgentEnvironment EnvironmentOf(SequencePhase phase) => phase switch
-    {
-        SequencePhase.Windows => AgentEnvironment.Windows,
-        SequencePhase.LinuxBoot => AgentEnvironment.LinuxBoot,
-        SequencePhase.Linux => AgentEnvironment.Linux,
-        _ => AgentEnvironment.WindowsPE,
-    };
+    // The environment whose agent runs the phase's steps.
+    private static AgentEnvironment EnvironmentOf(SequencePhase phase) => SequenceKinds.IsBoot(phase)
+        ? SequenceKinds.BootEnvironment(SequenceKinds.Of(phase))
+        : SequenceKinds.InstalledEnvironment(SequenceKinds.Of(phase));
 
     private static string PhaseName(SequencePhase phase) => phase switch
     {

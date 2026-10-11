@@ -6,6 +6,7 @@ using System.Globalization;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Sequences;
 
 namespace DDT.Agent;
 
@@ -132,5 +133,5 @@ public static class EnvironmentTexts
         IsLinux(environment) ? exitCode.ToString(CultureInfo.InvariantCulture) : $"0x{exitCode:X8}";
 
     // The installed Linux runs the same executable, and has a case of its own where its sentence differs.
-    private static bool IsLinux(AgentEnvironment environment) => environment is AgentEnvironment.LinuxBoot or AgentEnvironment.Linux;
+    private static bool IsLinux(AgentEnvironment environment) => SequenceKinds.Of(environment) == SequenceKind.Linux;
 }

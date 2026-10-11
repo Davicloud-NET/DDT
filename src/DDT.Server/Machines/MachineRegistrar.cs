@@ -84,6 +84,7 @@ public sealed class MachineRegistrar(
                 continued is null ? null : tokens.IssueRunToken(machine, continued.Id),
                 consoleLanguage)
             {
+                BootReturns = continued is { BootReturns: > 0 } ? continued.BootReturns : null,
                 ConsoleKeyboardLayout = machine.AgentEnvironment == AgentEnvironment.LinuxBoot
                     ? settings.Current.Deployment.ConsoleKeyboardLayout
                     : null,

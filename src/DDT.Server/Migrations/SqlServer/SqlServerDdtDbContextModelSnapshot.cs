@@ -388,6 +388,9 @@ namespace DDT.Server.Migrations.SqlServer
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
 
+                    b.Property<int>("BootReturns")
+                        .HasColumnType("int");
+
                     b.Property<int?>("ContinuePass")
                         .HasColumnType("int");
 

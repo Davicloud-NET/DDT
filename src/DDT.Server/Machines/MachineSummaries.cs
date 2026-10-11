@@ -45,6 +45,7 @@ public static class MachineSummaries
             machine.SequenceVersion >= PhaseRules.SwitchVersion,
             PendingSwitch.GaveUp(machine, deployment),
             machine.SequenceVersion,
-            HandOvers.Since(machine, deployment));
+            HandOvers.Since(machine, deployment),
+            HandOvers.Returns(machine, deployment));
     }
 }

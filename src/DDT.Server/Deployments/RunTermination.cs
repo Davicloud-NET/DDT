@@ -80,25 +80,38 @@ public sealed class RunTermination(DdtDbContext database, RunQueries queries, Ti
     public async Task EndForRestartAsync(
         Machine machine,
         Deployment? active,
+        NormalisedRegistration registration,
         string? address,
-        bool presentedRunToken,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(registration);
 
         switch (active)
         {
             case { State: DeploymentState.Running }:
-                string error = presentedRunToken
-                    ? "The machine started again during the run, with a run token the server no longer accepts."
-                    : "The machine started again during the run, without the run's token, so the run could not continue.";
-                await FailAsync(machine, active, Actor.OfMachine(machine.Id, address), error, cancellationToken).ConfigureAwait(false);
+                await FailAsync(machine, active, Actor.OfMachine(machine.Id, address), RestartError(active, registration), cancellationToken).ConfigureAwait(false);
                 break;
 
             case { State: DeploymentState.Assigned, Source: DeploymentSource.Console or DeploymentSource.Rule }:
                 Cancel(machine, active, Actor.OfMachine(machine.Id, address), "The machine started again before the run began.");
                 break;
         }
+    }
+
+    // What the server knows of a registration that ends a running run. Only an agent that found the run handed over
+    // says that someone chose to start over. Any other agent just registered without the run's token.
+    private static string RestartError(Deployment run, NormalisedRegistration registration)
+    {
+        if (registration.RunToken is not null)
+        {
+            return "The machine started again during the run, with a run token the server no longer accepts.";
+        }
+
+        return registration.StartsOver && run.CurrentPhase is { } phase && !SequenceKinds.IsBoot(phase)
+            ? $"The run was ended at the machine. It started from the network while its run went on in {PhaseRules.Name(SequenceKinds.InstalledEnvironment(SequenceKinds.Of(phase)))}, " +
+              "and someone there pressed a key to start over."
+            : "The machine started again during the run, without the run's token, so the run could not continue.";
     }
 
     // For a running run whose agent has been silent for longer than a run token lasts (see AbandonedRunSweeper).

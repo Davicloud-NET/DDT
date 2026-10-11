@@ -345,6 +345,9 @@ namespace DDT.Server.Migrations.Sqlite
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("BootReturns")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("ContinuePass")
                         .HasColumnType("INTEGER");
 

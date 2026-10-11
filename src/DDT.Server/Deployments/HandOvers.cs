@@ -25,6 +25,11 @@ public static class HandOvers
                 : null;
     }
 
+    // How often the boot environment has started again since it first handed the run over. Null when it has not, and
+    // once the installed system has called.
+    public static int? Returns(Machine machine, Deployment? run) =>
+        Since(machine, run) is not null && run is { BootReturns: > 0 } ? run.BootReturns : null;
+
     // Why a run ends whose installed Linux never called while its token lasted. Null for any other run.
     public static string? NeverCalled(Machine machine, Deployment run)
     {

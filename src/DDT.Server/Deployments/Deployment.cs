@@ -40,6 +40,9 @@ public sealed class Deployment
     // How often the server told the machine to restart into BootEnvironment for this run. Zero again once it arrived.
     public int RestartsOrdered { get; set; }
 
+    // How often the boot environment started again after it handed the run over, as its reports of that said.
+    public int BootReturns { get; set; }
+
     public Guid? RequestedByUserId { get; set; }
 
     public string? RequestedByName { get; set; }

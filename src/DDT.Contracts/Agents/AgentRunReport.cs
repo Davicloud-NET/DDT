@@ -24,4 +24,7 @@ public sealed record AgentRunReport(
     // The sequence's variables as steps have set them so far.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, string>? Variables = null,
     // The Pause step's message with its values filled in, while Activity is Paused.
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? PauseMessage = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? PauseMessage = null,
+    // How often the boot environment has started again since it handed the run over. Only the report of such a start
+    // says it.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? BootReturns = null);

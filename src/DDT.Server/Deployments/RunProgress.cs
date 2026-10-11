@@ -64,6 +64,7 @@ internal static class RunProgress
         run.CurrentPhase = report.Phase;
         run.Activity = report.Activity;
         run.UpdatedUtc = received.Now;
+        run.BootReturns = Math.Max(run.BootReturns, report.BootReturns ?? 0);
         Waits(run, byId, current, report);
 
         return null;

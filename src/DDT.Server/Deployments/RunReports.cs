@@ -148,6 +148,11 @@ public sealed class RunReports(DdtDbContext database, RunQueries queries, RunSta
             return "The report names a visit, a time through a repeat or a branch that cannot be.";
         }
 
+        if (report.BootReturns is < 0 or > DeploymentLimits.MaxBootReturns)
+        {
+            return "The report counts starts of the boot environment that cannot be.";
+        }
+
         if (report.Variables is { Count: > RunVariables.MaxCount })
         {
             return $"The report holds more than {RunVariables.MaxCount} variables.";

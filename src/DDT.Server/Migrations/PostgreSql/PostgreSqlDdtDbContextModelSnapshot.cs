@@ -351,6 +351,9 @@ namespace DDT.Server.Migrations.PostgreSql
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
 
+                    b.Property<int>("BootReturns")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("ContinuePass")
                         .HasColumnType("integer");
 

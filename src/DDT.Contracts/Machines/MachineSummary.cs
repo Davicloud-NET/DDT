@@ -44,4 +44,7 @@ public sealed record MachineSummary(
     // The newest sequence version the machine's agent said it runs when it last registered.
     int? SequenceVersion = null,
     // When the boot environment handed the machine's run over to the installed system, until the agent there calls.
-    DateTimeOffset? HandedOverUtc = null);
+    DateTimeOffset? HandedOverUtc = null,
+    // How often the machine has started its boot environment again since then, which each time handed the run over
+    // again at HandedOverUtc. Null when it has not.
+    int? BootReturns = null);

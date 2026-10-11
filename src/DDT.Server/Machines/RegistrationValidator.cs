@@ -125,7 +125,10 @@ public static partial class RegistrationValidator
             registration.SecureBootEnabled,
             registration.TrustedUefiCas,
             registration.ChassisType is >= 0 and <= MaxChassisType ? registration.ChassisType : null,
-            registration.Facts is { } facts ? Normalise(facts) : null);
+            registration.Facts is { } facts ? Normalise(facts) : null)
+        {
+            StartsOver = registration.StartsOver == true,
+        };
     }
 
     // Conditions and rules test these, and the machine's page shows them. Text is cleaned and cut like the names above.

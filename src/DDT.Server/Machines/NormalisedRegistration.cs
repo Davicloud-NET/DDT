@@ -30,6 +30,9 @@ public sealed record NormalisedRegistration(
     int? ChassisType = null,
     MachineFacts? Facts = null)
 {
+    // Someone at the machine chose to start over although its run goes on in the installed system.
+    public bool StartsOver { get; init; }
+
     // If an older agent doesn't report its disks or facts, the newer agent's values are kept rather than made unknown.
     public void ApplyTo(Machine machine, string? address, DateTimeOffset now)
     {

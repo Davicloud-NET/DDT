@@ -151,7 +151,7 @@ public sealed class MachineArrivals(
                 ? $"Kept approved for {kept.Title} assigned by {kept.RequestedByName}: netbooted from {address} in a zero touch network."
                 : $"Was {machine.State}."));
 
-        await termination.EndForRestartAsync(machine, active, address, visit.Registration.RunToken is not null, cancellationToken).ConfigureAwait(false);
+        await termination.EndForRestartAsync(machine, active, visit.Registration, address, cancellationToken).ConfigureAwait(false);
 
         // What was picked before a restart is offered again to whoever signs in after it, but only then.
         if (!PendingSwitch.Arrives(machine, visit.Registration.Environment, visit.Now))

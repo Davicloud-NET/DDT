@@ -67,6 +67,7 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
         LinuxBootReturn returns = new(server, machine, status, log, timeProvider)
         {
             Seeds = new HandedOverSeeds(new FileRawDisks(options.Root, log, MakeSparse), log, timeProvider),
+            Disks = new DryRunDisks(options.Root, new AgentLog(timeProvider, TextWriter.Null)),
             Keys = new ConsoleKeyWait(timeProvider),
             DiskStart = new DryRunDiskStart(log),
             Restart = () => rebooter.RebootAsync(RestartInto.InstalledSystem, CancellationToken.None),

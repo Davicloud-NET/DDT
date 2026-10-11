@@ -58,8 +58,8 @@ public static class LinuxBoot
     }
 
     // It first looks at the disks for a run that was handed over to the installed Linux, which a registration would
-    // end, and only then registers. Its resume token crosses a restart into Windows PE in the firmware, and comes back
-    // the same way.
+    // end, and only then registers. The look lists the disks without a line each, which the registration writes. Its
+    // resume token crosses a restart into Windows PE in the firmware, and comes back the same way.
     private static async Task<int> StartAsync(StartedAgent agent, LinuxRestart restart, CancellationToken cancellationToken)
     {
         AgentLog log = agent.Log;
@@ -77,6 +77,7 @@ public static class LinuxBoot
         BootReturnOutcome returned = await new LinuxBootReturn(agent.Server, machine, agent.Status, log, TimeProvider.System)
         {
             Seeds = new HandedOverSeeds(rawDisks, log, TimeProvider.System),
+            Disks = new LinuxDisks(Root, rawDisks, new AgentLog(TimeProvider.System, TextWriter.Null)),
             Keys = new ConsoleKeyWait(TimeProvider.System),
             DiskStart = new FirmwareDiskStart(firmware, log),
             Restart = rebooter.RestartIntoDiskAsync,

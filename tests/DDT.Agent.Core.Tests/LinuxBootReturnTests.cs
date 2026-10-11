@@ -49,15 +49,16 @@ public sealed class LinuxBootReturnTests : IDisposable
 
     private ScriptedAgentServer Server => _seeded.Run.Server;
 
-    private LinuxBootReturn Return(IDisks? disks = null) =>
+    private LinuxBootReturn Return(IDisks? listsForTheLook = null) =>
         new(
             Server,
-            new AgentMachine(new DryRunMachineIdentityReader(1), disks ?? _seeded.Run.Tools, new LocalRunLocator([]), TestAgents.Version, AgentEnvironment.LinuxBoot),
+            new AgentMachine(new DryRunMachineIdentityReader(1), _seeded.Run.Tools, new LocalRunLocator([]), TestAgents.Version, AgentEnvironment.LinuxBoot),
             TestAgents.Status(new ScriptedSignInPrompt { IsAvailable = false }, new AgentLog(_time, TextWriter.Null)),
             _log,
             _time)
         {
             Seeds = new HandedOverSeeds(_seeded.Run.RawDisks, _log, _time),
+            Disks = listsForTheLook,
             Keys = _keys,
             DiskStart = _diskStart,
             Restart = () =>
@@ -395,6 +396,7 @@ public sealed class LinuxBootReturnTests : IDisposable
         Assert.True(TestSeed.Read(_seeded.Disk).Holds(StepRunnerFixture.RunToken));
     }
 
+    // The look has a lister of its own, so the disks are not said twice at every start.
     [Fact]
     public async Task DisksThatCannotBeListedAreSaidAndTheStartGoesOn()
     {

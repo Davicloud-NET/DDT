@@ -27,6 +27,9 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
 
     public required HandedOverSeeds Seeds { get; init; }
 
+    // What lists the disks for the look. Without it the machine's own does, which the registration asks again.
+    public IDisks? Disks { get; init; }
+
     public required IKeyWait Keys { get; init; }
 
     public required IDiskStart DiskStart { get; init; }
@@ -60,7 +63,7 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
 
         try
         {
-            disks = await machine.Disks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
+            disks = await (Disks ?? machine.Disks).ListDisksAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
         {

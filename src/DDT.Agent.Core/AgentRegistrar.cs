@@ -94,7 +94,8 @@ internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, 
             SecureBootEnabled: identity.SecureBootEnabled,
             TrustedUefiCas: identity.TrustedUefiCas,
             ChassisType: identity.ChassisType,
-            Facts: identity.Facts);
+            Facts: identity.Facts,
+            StartsOver: machine.StartsOver ? true : null);
 
     // The server refuses a web assignment to a machine with several disks, so it has to know the disks. If they can't
     // be read, the machine registers without them rather than not at all.

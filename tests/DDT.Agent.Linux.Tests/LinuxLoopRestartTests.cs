@@ -81,7 +81,7 @@ public sealed class LinuxLoopRestartTests : IDisposable
             GoesOn = () => rebooter.Withdraw(carrier),
         };
 
-        return LinuxBoot.RunAsync(TestAgents.Loop(server, status, machine), _restart, server.Stop.Token);
+        return LinuxBoot.RunAsync(TestAgents.Loop(server, status, machine).RunAsync, _restart, server.Stop.Token);
     }
 
     // A script left a partition mounted. As LinuxBoot wires it, the agent's own log says what is unmounted, and the

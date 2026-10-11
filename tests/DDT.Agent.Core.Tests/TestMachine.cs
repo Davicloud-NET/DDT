@@ -23,4 +23,9 @@ internal sealed record TestMachine(FakeDeploymentTools Tools, AgentLog Log, Time
 
     // What the loop calls when it registers again where it could have ended.
     public Action? GoesOn { get; init; }
+
+    // What a look at the disks before the loop left it: that someone started over on purpose, and a resume token.
+    public bool StartsOver { get; init; }
+
+    public string? ResumeToken { get; init; }
 }

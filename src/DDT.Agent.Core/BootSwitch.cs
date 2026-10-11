@@ -15,8 +15,8 @@ internal sealed class BootSwitch(IAgentServer server, AgentMachine machine, Cons
     private bool _taken;
     private AgentEnvironment? _refused;
 
-    // The resume token the agent before the restart left in the firmware. It is there once, before the first
-    // registration, and null on every later call.
+    // The resume token the agent before the restart left in the firmware, or else the one this start already has. It is
+    // there once, before the first registration, and null on every later call.
     public string? TakeCarried()
     {
         if (_taken)
@@ -26,7 +26,7 @@ internal sealed class BootSwitch(IAgentServer server, AgentMachine machine, Cons
 
         _taken = true;
 
-        return machine.Switch?.Carrier.Take();
+        return machine.Switch?.Carrier.Take() ?? machine.ResumeToken;
     }
 
     // For a sequence picked at the machine. The server keeps the pick, so the agent there offers the sequence first.

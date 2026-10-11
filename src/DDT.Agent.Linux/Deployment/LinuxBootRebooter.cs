@@ -32,6 +32,15 @@ public sealed class LinuxBootRebooter(IUefiVariables variables, LinuxRestart res
 
     public void LetGo() => restart.LetGo();
 
+    // Back into the disk whose boot entry the next start is already set to, which therefore stays as it is.
+    public Task RestartIntoDiskAsync()
+    {
+        restart.LetGo();
+        restart.Issue();
+
+        return Task.CompletedTask;
+    }
+
     // The agent goes on after it issued a restart, as when the server refuses its token with the last lines. Nothing
     // set for that restart stays: not the restart, not the next start, not the token in the firmware.
     public void Withdraw(ResumeCarrier carrier)

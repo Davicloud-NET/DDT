@@ -70,5 +70,5 @@ static Task<int> RunAsync(StartedAgent agent, CancellationToken cancellationToke
 {
     LinuxRestart restart = new(agent.Log);
 
-    return LinuxBoot.RunAsync(LinuxBoot.Loop(agent, restart), restart, cancellationToken);
+    return LinuxBoot.RunAsync(agent, restart, cancellationToken);
 }

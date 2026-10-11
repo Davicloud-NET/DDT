@@ -32,16 +32,16 @@ public static class LinuxBoot
         return new LinuxAdapters(Root).WaitAsync(agent.Log, TimeProvider.System, cancellationToken);
     }
 
-    // The machine restarts only once the loop has ended, so the server has the last lines of its log, and however the
-    // loop ended: the server may have the run as done by then.
-    public static async Task<int> RunAsync(AgentLoop loop, LinuxRestart restart, CancellationToken cancellationToken)
+    // The machine restarts only once the agent has ended, so the server has the last lines of its log, and however it
+    // ended: the server may have the run as done by then.
+    public static async Task<int> RunAsync(Func<CancellationToken, Task<int>> agent, LinuxRestart restart, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(loop);
+        ArgumentNullException.ThrowIfNull(agent);
         ArgumentNullException.ThrowIfNull(restart);
 
         try
         {
-            return await loop.RunAsync(cancellationToken).ConfigureAwait(false);
+            return await agent(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -49,12 +49,19 @@ public static class LinuxBoot
         }
     }
 
-    // Its resume token crosses a restart into Windows PE in the firmware, and comes back the same way.
-    public static AgentLoop Loop(StartedAgent agent, LinuxRestart restart)
+    public static Task<int> RunAsync(StartedAgent agent, LinuxRestart restart, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(agent);
         ArgumentNullException.ThrowIfNull(restart);
 
+        return RunAsync(stop => StartAsync(agent, restart, stop), restart, cancellationToken);
+    }
+
+    // It first looks at the disks for a run that was handed over to the installed Linux, which a registration would
+    // end, and only then registers. Its resume token crosses a restart into Windows PE in the firmware, and comes back
+    // the same way.
+    private static async Task<int> StartAsync(StartedAgent agent, LinuxRestart restart, CancellationToken cancellationToken)
+    {
         AgentLog log = agent.Log;
         LinuxUefiVariables firmware = new(Root);
         LinuxRawDisks rawDisks = new(Root, new KernelBlockDevices());
@@ -64,15 +71,27 @@ public static class LinuxBoot
             new HardwareMachineIdentityReader(new LinuxFirmwareTables(Root), new LinuxSystemHardware(Root), firmware, new LinuxSecureBoot(firmware)),
             new LinuxAdapters(Root));
         ResumeCarrier carrier = new(firmware, AgentEnvironment.LinuxBoot, log);
-        AgentMachine machine = new(identity, disks, new LocalRunLocator([]), agent.Version, AgentEnvironment.LinuxBoot)
-        {
-            Switch = new EnvironmentSwitch(carrier, rebooter),
-        };
-
-        SequenceRunner runner = Runner(agent, disks, rawDisks, new LinuxBootOrder(firmware, log), rebooter);
+        AgentMachine machine = new(identity, disks, new LocalRunLocator([]), agent.Version, AgentEnvironment.LinuxBoot);
         restart.Before = () => new LinuxMounts(Root, log).UnmountFrom(rawDisks.Opened);
 
-        return new AgentLoop(agent.Server, machine, agent.Status, runner, log, TimeProvider.System) { GoesOn = () => rebooter.Withdraw(carrier) };
+        BootReturnOutcome returned = await new LinuxBootReturn(agent.Server, machine, agent.Status, log, TimeProvider.System)
+        {
+            Seeds = new HandedOverSeeds(rawDisks, log, TimeProvider.System),
+            Keys = new ConsoleKeyWait(TimeProvider.System),
+            DiskStart = new FirmwareDiskStart(firmware, log),
+            Restart = rebooter.RestartIntoDiskAsync,
+        }.RunAsync(cancellationToken).ConfigureAwait(false);
+
+        if (returned.ExitCode is { } exitCode)
+        {
+            return exitCode;
+        }
+
+        machine = machine with { Switch = new EnvironmentSwitch(carrier, rebooter), StartsOver = returned.StartsOver, ResumeToken = returned.ResumeToken };
+        SequenceRunner runner = Runner(agent, disks, rawDisks, new LinuxBootOrder(firmware, log), rebooter);
+        AgentLoop loop = new(agent.Server, machine, agent.Status, runner, log, TimeProvider.System) { GoesOn = () => rebooter.Withdraw(carrier) };
+
+        return await loop.RunAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static SequenceRunner Runner(StartedAgent agent, LinuxDisks disks, LinuxRawDisks rawDisks, LinuxBootOrder bootOrder, LinuxBootRebooter rebooter)

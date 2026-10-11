@@ -11,8 +11,8 @@ using Xunit;
 namespace DDT.Core.Tests.CloudInit;
 
 // A folder that stands in for the installed Linux, where sh runs the vendor-data script as it is but for its paths,
-// which lead into the folder. systemctl, blkid, mount and umount are stand-ins: a seed is a folder, and mounting it
-// puts a link to it in the mount point's place.
+// which lead into the folder. systemctl, blkid, mount, umount and sync are stand-ins: a seed is a folder, mounting it
+// puts a link to it in the mount point's place, and the test computer's own disks are not written out.
 [SupportedOSPlatform("linux")]
 internal sealed partial class VendorDataSandbox : IDisposable
 {
@@ -52,6 +52,12 @@ internal sealed partial class VendorDataSandbox : IDisposable
         echo "systemctl $*" >> "$DDT_SANDBOX/calls"
         """;
 
+    private const string Sync =
+        """
+        #!/bin/sh
+        echo "sync" >> "$DDT_SANDBOX/calls"
+        """;
+
     private readonly string _script;
 
     public VendorDataSandbox()
@@ -69,6 +75,7 @@ internal sealed partial class VendorDataSandbox : IDisposable
         Tool("umount", Unmount);
         Tool("blkid", Blkid);
         Tool("systemctl", Systemctl);
+        Tool("sync", Sync);
     }
 
     public string Root { get; }

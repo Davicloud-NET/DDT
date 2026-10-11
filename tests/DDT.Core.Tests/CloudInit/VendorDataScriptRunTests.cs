@@ -84,12 +84,13 @@ public sealed class VendorDataScriptRunTests : IDisposable
         Assert.Contains($"ExecStart={LinuxAgentFiles.Agent} {LinuxAgentFiles.Argument}\n", unit, StringComparison.Ordinal);
         Assert.DoesNotContain(sandbox.Root, unit, StringComparison.Ordinal);
 
-        // The token leaves the seed only after the unit is enabled, and the seed is let go of at the end.
+        // The token leaves the seed only after the unit is enabled and on the disk, and the seed is let go of at the end.
         Assert.Equal(
             [
                 $"mount -t vfat -o rw,umask=077 {sandbox.In("dev/disk/by-label/CIDATA")} {sandbox.SeedMount}",
                 "systemctl daemon-reload",
                 "systemctl enable ddt-agent.service",
+                "sync",
                 "systemctl start --no-block ddt-agent.service",
                 $"umount {sandbox.SeedMount}",
             ],

@@ -12,13 +12,15 @@ import type { MachineSummary } from "@/machines/machines";
 import type { RuleView } from "@/rules/rules";
 import { ruleName, ruleNames } from "@/rules/ruleText";
 
-import { sequenceKind } from "./sequenceKinds";
+import { walk } from "./flow/flowTree";
+import { kindOfNodes } from "./sequenceKinds";
 import {
   sequencesQuery,
   type SequenceDefinition,
   type SequenceSummary,
   type SequenceView,
 } from "./sequences";
+import { isContainer } from "./steps";
 
 // Names are unique regardless of case, so a second sequence from the same template is numbered.
 export function uniqueName(base: string, taken: readonly string[]): string {
@@ -168,19 +170,21 @@ const computerName = /\{\{\s*ComputerName\s*\}\}/i;
 // builds it. The raw image's facts depend on the library, so they stay as the list had them. The hub's
 // sequenceChanged makes the list fetch the server's own entry soon after.
 export function summaryOf(view: SequenceView, previous?: SequenceSummary): SequenceSummary {
-  const steps = view.definition.steps;
-  const writesRaw = steps.some((step) => step.kind === "writeRawImage");
+  // Every node of the tree, as the server looks at them: a group or an IF may hold the step that decides a fact.
+  const nodes = walk(view.definition.steps).map((entry) => entry.node);
+  const phases = view.nodePhases?.flatMap((node) => node.phases) ?? view.stepPhases;
+  const writesRaw = nodes.some((step) => step.kind === "writeRawImage");
 
   return {
     id: view.id,
     name: view.name,
     description: view.description,
     revision: view.revision,
-    stepCount: steps.length,
+    stepCount: nodes.filter((step) => !isContainer(step)).length,
     problemCount: view.problems.length,
     warningCount: view.warnings.length,
-    erasesDisk: steps.some((step) => step.kind === "partition" || step.kind === "writeRawImage"),
-    needsComputerName: steps.some(
+    erasesDisk: nodes.some((step) => step.kind === "partition" || step.kind === "writeRawImage"),
+    needsComputerName: nodes.some(
       (step) =>
         step.kind === "joinDomain" ||
         (step.kind === "writeCloudInitSeed" &&
@@ -188,14 +192,14 @@ export function summaryOf(view: SequenceView, previous?: SequenceSummary): Seque
             computerName.test(text),
           )),
     ),
-    continuesInWindows: view.stepPhases.includes("Windows"),
-    continuesInLinux: view.stepPhases.includes("Linux"),
+    continuesInWindows: phases.includes("Windows"),
+    continuesInLinux: phases.includes("Linux"),
     updatedUtc: view.updatedUtc,
     updatedBy: view.updatedBy,
     rawImageName: writesRaw ? (previous?.rawImageName ?? null) : null,
     rawImageBootCapability: writesRaw ? (previous?.rawImageBootCapability ?? null) : null,
     rawImageSignedUnder: writesRaw ? (previous?.rawImageSignedUnder ?? null) : null,
-    kind: sequenceKind(steps),
+    kind: kindOfNodes(nodes),
   };
 }
 

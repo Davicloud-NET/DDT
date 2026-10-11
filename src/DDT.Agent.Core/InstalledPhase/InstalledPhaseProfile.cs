@@ -21,6 +21,9 @@ public sealed record InstalledPhaseProfile
     // What the run reports while it waits for that setup.
     public required RunActivity WaitActivity { get; init; }
 
+    // How often the loop asks whether that setup has finished.
+    public TimeSpan SetupPollInterval { get; init; } = InstalledPhaseLoop.SetupPollInterval;
+
     // Whether the system restarts once more after the agent removed itself.
     public required bool RestartsAfterRemoval { get; init; }
 

@@ -116,19 +116,24 @@ public static class LinuxPhaseService
         return AgentExitCodes.Stopped;
     }
 
-    // What a script left running goes when its step is stopped, as in the boot environment.
+    // What a script left running goes when its step is stopped, as in the boot environment. The unit's file mode mask
+    // is the agent's alone.
     private static ToolRunner Tools(LinuxAgentPaths paths, AgentLog log) => new(log, TimeProvider.System, Latin1Output.Decode)
     {
         Strays = new LinuxStrayProcesses(paths.Root, log, Environment.ProcessId) { Adopts = LinuxStrayProcesses.Adopt() },
+        FileModeMask = OperatingSystem.IsLinux() ? FileModeMask.Set : null,
     };
 
-    // Null when the file cannot be opened, as on a disk that is full. The journal still gets every line.
+    // Null when the file cannot be opened, as on a disk that is full. The journal still gets every line. The file is
+    // root's alone, because a script's output may hold what only root should read.
     private static StreamWriter? LogFile(LinuxAgentPaths paths)
     {
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(paths.LogFile) ?? paths.State);
-            FileStream file = new(paths.LogFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
+            FileStreamOptions options = OwnFile.Private(FileMode.Append);
+            options.Share = FileShare.ReadWrite | FileShare.Delete;
+            FileStream file = new(paths.LogFile, options);
 
             return new StreamWriter(file, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)) { AutoFlush = true };
         }

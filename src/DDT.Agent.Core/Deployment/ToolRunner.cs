@@ -21,8 +21,17 @@ public sealed class ToolRunner(
     // script ended. So the rest of the output isn't waited for beyond this.
     public static readonly TimeSpan OutputGrace = TimeSpan.FromSeconds(10);
 
+    // The mask a root shell has, 022: a file a tool makes can be read by everyone, as its author expects.
+    public const int ToolFileModeMask = 0x12;
+
+    // The mask is the whole process's, so one tool starts at a time while it is changed.
+    private static readonly Lock s_starting = new();
+
     // Finds what a stopped tool started outside its own process tree. Null where only the tree itself can be ended.
     public IStrayProcesses? Strays { get; init; }
+
+    // Sets the process's file mode mask and returns the one before. Null where a tool starts with the agent's own.
+    public Func<int, int>? FileModeMask { get; init; }
 
     public async Task<IReadOnlyList<string>> RunAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
@@ -183,13 +192,13 @@ public sealed class ToolRunner(
         return start;
     }
 
-    private static Process Start(ProcessStartInfo start, string tool)
+    private Process Start(ProcessStartInfo start, string tool)
     {
         Process process;
 
         try
         {
-            process = Process.Start(start) ?? throw new DeploymentStepException($"{tool} did not start.");
+            process = StartWithMask(start) ?? throw new DeploymentStepException($"{tool} did not start.");
         }
         catch (Win32Exception exception)
         {
@@ -200,6 +209,29 @@ public sealed class ToolRunner(
         process.StandardInput.Close();
 
         return process;
+    }
+
+    // A process starts with its parent's mask, so the agent has the tool's for the moment of the start.
+    private Process? StartWithMask(ProcessStartInfo start)
+    {
+        if (FileModeMask is not { } setMask)
+        {
+            return Process.Start(start);
+        }
+
+        lock (s_starting)
+        {
+            int own = setMask(ToolFileModeMask);
+
+            try
+            {
+                return Process.Start(start);
+            }
+            finally
+            {
+                setMask(own);
+            }
+        }
     }
 
     private async Task DrainAsync(Task output, Task errors, string tool)

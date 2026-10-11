@@ -24,6 +24,7 @@ public sealed class VendorDataScriptTests
         Type=simple
         ExecStart=/usr/local/lib/ddt/ddt-agent --linux-phase
         Environment=HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        UMask=0077
         Restart=on-failure
         RestartSec=15
         TimeoutStopSec=120

@@ -49,6 +49,32 @@ public sealed class LinuxKernelTests : IDisposable
         Assert.Contains("more of its processes, which it had started outside its own tree.", console.ToString(), StringComparison.Ordinal);
     }
 
+    // The unit gives the agent a mask that leaves a new file to root alone. A script's files are for whom it means them.
+    [Fact]
+    public async Task AToolStartsWithARootShellsFileModeMaskAndTheAgentKeepsItsOwn()
+    {
+        Assert.SkipUnless(OperatingSystem.IsLinux(), OnlyLinux);
+
+        const int RootAlone = 0x3F;
+        ToolRunner tools = new(new AgentLog(new ImmediateTimeProvider(), TextWriter.Null), TimeProvider.System, Latin1Output.Decode)
+        {
+            FileModeMask = FileModeMask.Set,
+        };
+        int before = FileModeMask.Set(RootAlone);
+
+        try
+        {
+            IReadOnlyList<string> lines = await tools.RunAsync("/bin/sh", ["-c", "umask"], TestContext.Current.CancellationToken);
+
+            Assert.Equal(["0022"], lines);
+            Assert.Equal(RootAlone, FileModeMask.Set(RootAlone));
+        }
+        finally
+        {
+            FileModeMask.Set(before);
+        }
+    }
+
     // The ids of the living processes whose command line holds the text.
     private static List<int> Sleeping(string text)
     {

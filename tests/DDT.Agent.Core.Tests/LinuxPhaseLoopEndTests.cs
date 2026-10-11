@@ -3,10 +3,12 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using DDT.Agent.LinuxPhase;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -111,6 +113,99 @@ public sealed class LinuxPhaseLoopEndTests : IDisposable
         Assert.True(_linux.IsRemoved());
     }
 
+    // The run waits for cloud-init when an operator stops it on the web. The wait's own report is refused then, and
+    // the registration after it gets the answer that ends the agent. No step ever ran.
+    [Fact]
+    public async Task ARunTheServerEndsDuringTheWaitForCloudInitEndsThereAndTheAgentRemovesItself()
+    {
+        AgentRun run = LinuxPhaseFixture.Run(LinuxPhaseFixture.Script(1));
+        await _linux.HandOverAsync(run);
+        _linux.Put(_linux.Paths.At(CloudInitFiles.EnabledPath));
+        _linux.Put(_linux.Paths.At(CloudInitFiles.StatusPath), """{ "v1": { "stage": "modules-final" } }""");
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => LinuxPhaseFixture.Continued())
+            .OnNext(_ => LinuxPhaseFixture.Next("session-1", run))
+            .OnRegister(_ => throw NothingToContinue());
+        server.AnswerRunReports = (_, _) => throw new AgentTokenRejectedException("The server refused the token.");
+
+        int exitCode = await _linux.RunAsync(server);
+
+        Assert.Equal(AgentExitCodes.Stopped, exitCode);
+        Assert.Equal(["systemctl disable ddt-agent.service", "systemctl daemon-reload"], _linux.Tools.Calls);
+        Assert.Contains(_linux.Lines(), line => line.StartsWith("The server did not take the report while the run waits for cloud-init (", StringComparison.Ordinal));
+        Assert.True(_linux.IsRemoved());
+    }
+
+    // The last step is done and the server is away. The report of that waits on the disk with the token, the unit is
+    // stopped, and the next start sends it without running anything again.
+    [Fact]
+    public async Task ADoneReportTheServerDidNotGetWaitsOnTheDiskAndIsSentAtTheNextStart()
+    {
+        AgentRun run = LinuxPhaseFixture.Run(LinuxPhaseFixture.Script(1));
+        await _linux.HandOverAsync(run);
+        ScriptedAgentServer away = new ScriptedAgentServer()
+            .OnRegister(_ => LinuxPhaseFixture.Continued())
+            .OnNext(_ => LinuxPhaseFixture.Next("session-1", run));
+        away.AnswerRunReports = (report, token) =>
+        {
+            if (report.State != DeploymentState.Done)
+            {
+                return new AgentRunReportResult(token, "resume", "run-token-3");
+            }
+
+            away.Stop.Cancel();
+
+            throw new HttpRequestException("No route to host.");
+        };
+
+        Assert.Equal(AgentExitCodes.Stopped, await _linux.RunAsync(away));
+
+        Assert.True(File.Exists(_linux.Files.FinalReportPath));
+        Assert.Equal("run-token-3", await _linux.Files.LoadTokenAsync(TestContext.Current.CancellationToken));
+        Assert.Single(_linux.Tools.Calls);
+        Assert.True(File.Exists(_linux.Paths.Unit));
+
+        ScriptedAgentServer back = new ScriptedAgentServer()
+            .OnRegister(_ => LinuxPhaseFixture.Continued())
+            .OnNext(_ => LinuxPhaseFixture.Next("session-2", run));
+
+        Assert.Equal(AgentExitCodes.Deployed, await _linux.RunAsync(back));
+
+        Assert.Equal("run-token-3", Assert.Single(back.Registrations).RunToken);
+        AgentRunReport done = Assert.Single(back.RunReports);
+        Assert.Equal(DeploymentState.Done, done.State);
+        Assert.Equal(Enumerable.Repeat(StepState.Done, 3), done.Steps.Select(step => step.State));
+        Assert.Equal(3, _linux.Tools.Calls.Count);
+        Assert.True(_linux.IsRemoved());
+    }
+
+    // The power went while a script ran. Nobody knows how far it got, so it is not run again: the step and the run
+    // fail, the server hears of it, and the agent removes itself.
+    [Fact]
+    public async Task AStepFoundRunningAtTheNextStartFailsTheRunAndIsNotRunAgain()
+    {
+        RunScriptStep script = LinuxPhaseFixture.Script(1);
+        AgentRun run = LinuxPhaseFixture.Run(script, LinuxPhaseFixture.Script(2));
+        await _linux.HandOverAsync(run);
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        SequenceState state = (await _linux.Files.LoadStateAsync(cancellationToken))!;
+        await _linux.Files.SaveStateAsync(
+            state with { Steps = [.. state.Steps.Select(step => step.StepId == script.Id ? step with { State = StepState.Running, Pass = 1 } : step)] },
+            cancellationToken);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => LinuxPhaseFixture.Continued())
+            .OnNext(_ => LinuxPhaseFixture.Next("session-1", run));
+
+        Assert.Equal(AgentExitCodes.Stopped, await _linux.RunAsync(server));
+
+        Assert.Equal(["systemctl disable ddt-agent.service", "systemctl daemon-reload"], _linux.Tools.Calls);
+        AgentRunReport failed = server.RunReports[^1];
+        Assert.Equal(DeploymentState.Failed, failed.State);
+        Assert.Equal(StepState.Failed, failed.Steps.Single(step => step.StepId == script.Id).State);
+        Assert.Contains("Step Script 1 failed: The machine restarted or the agent stopped while this step ran.", _linux.Lines());
+        Assert.True(_linux.IsRemoved());
+    }
+
     // The unit starts an agent that finds its settings and no run, as after a removal that was cut off.
     [Fact]
     public async Task StartedWithoutARunItSaysSoAndRemovesWhatIsLeftOfItself()
@@ -133,7 +228,7 @@ public sealed class LinuxPhaseLoopEndTests : IDisposable
         AgentRun run = LinuxPhaseFixture.Run(LinuxPhaseFixture.Script(1));
         await _linux.HandOverAsync(run);
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
-        await _linux.Files.SaveStateAsync((await _linux.Files.LoadStateAsync(cancellationToken))! with { Phase = Contracts.Sequences.SequencePhase.LinuxBoot }, cancellationToken);
+        await _linux.Files.SaveStateAsync((await _linux.Files.LoadStateAsync(cancellationToken))! with { Phase = SequencePhase.LinuxBoot }, cancellationToken);
         ScriptedAgentServer server = new();
 
         Assert.Equal(AgentExitCodes.Stopped, await _linux.RunAsync(server));

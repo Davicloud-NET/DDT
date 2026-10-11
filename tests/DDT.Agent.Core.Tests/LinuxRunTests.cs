@@ -158,6 +158,32 @@ public sealed class LinuxRunTests : IDisposable
         Assert.Equal(BootEnvironmentCheck.Message(SequenceKind.Windows, AgentEnvironment.LinuxBoot), server.RunReports[^1].Error);
     }
 
+    // The server hands an agent nothing newer than the agent says it runs. Should it ever, the run ends before
+    // anything is erased, with what to do about it.
+    [Fact]
+    public async Task RefusesASequenceOfANewerVersionThanItRunsBeforeTheDiskIsTouched()
+    {
+        LaterStep later = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-00000000e009"), Name = "From a newer DDT" };
+
+        (RunResult result, ScriptedAgentServer server, _) = await RunAsync(Run(steps: [s_write, s_seed, later]));
+
+        Assert.Equal(RunOutcome.Failed, result.Outcome);
+        Assert.Empty(_tools.Calls);
+        Assert.Empty(_toolRunner.Calls);
+        Assert.Equal(
+            $"Install Linux has steps of version {SupportedSequences.Version + 1}, and this agent runs sequences up to version " +
+            $"{SupportedSequences.Version}. Start the machine from the network again, so it gets the server's agent. Nothing was erased.",
+            server.RunReports[^1].Error);
+    }
+
+    // A kind of step from a version after this agent's.
+    private sealed record LaterStep : SequenceStep
+    {
+        public override SequencePhase? RequiredPhase => null;
+
+        public override int MinimumVersion => SupportedSequences.Version + 1;
+    }
+
     // A run assigned before the sequence was rewritten for the shell, and one whose script asks for what the boot
     // environment cannot do. The validator's sentence says what to change, and nothing is erased.
     [Fact]

@@ -87,8 +87,8 @@ public sealed class LinuxPhaseLoopEndTests : IDisposable
         Assert.Equal(2, _linux.Lines().Count(line => line.StartsWith("Cannot register with the server (", StringComparison.Ordinal)));
     }
 
-    // The server takes no token of a run it ended. The step that runs then is stopped, and the registration that
-    // follows gets the answer that ends the agent.
+    // The server takes no token of a run it ended. The script that runs then is stopped, as one that would run for
+    // long, and the registration that follows gets the answer that ends the agent.
     [Fact]
     public async Task ARunTheServerEndsDuringAStepStopsThereAndTheAgentRemovesItself()
     {
@@ -99,11 +99,13 @@ public sealed class LinuxPhaseLoopEndTests : IDisposable
             .OnNext(_ => LinuxPhaseFixture.Next("session-1", run))
             .OnRegister(_ => throw NothingToContinue());
         server.AnswerRunReports = (_, _) => throw new AgentTokenRejectedException("The server refused the token.");
+        _linux.Tools.Running = (_, stopped) => Task.Delay(Timeout.InfiniteTimeSpan, stopped);
 
         int exitCode = await _linux.RunAsync(server);
 
         Assert.Equal(AgentExitCodes.Stopped, exitCode);
         Assert.Equal(2, server.Registrations.Count);
+        Assert.Contains("Step Script 1 was stopped.", _linux.Lines());
         Assert.DoesNotContain(_linux.Tools.Calls, call => call.Contains($"{LinuxPhaseFixture.Script(2).Id:D}", StringComparison.Ordinal));
         Assert.Equal(["systemctl disable ddt-agent.service", "systemctl daemon-reload"], _linux.Tools.Calls.TakeLast(2));
         Assert.True(_linux.IsRemoved());

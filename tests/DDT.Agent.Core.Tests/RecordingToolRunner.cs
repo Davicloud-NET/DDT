@@ -9,6 +9,7 @@ namespace DDT.Agent.Tests;
 // Records each tool call as the file name and its arguments joined by spaces, instead of running it. Answer decides
 // what a call prints, or throws. Without it every call prints nothing. AnswerExitCode decides the exit code of a call
 // that asks for one, or throws. Without it every such call ends with 0. Options holds each such call's options.
+// Running is awaited first, with the call's stop token, for a tool that runs until something stops it.
 internal sealed class RecordingToolRunner : IToolRunner
 {
     private readonly Lock _lock = new();
@@ -18,6 +19,8 @@ internal sealed class RecordingToolRunner : IToolRunner
     public Func<string, IReadOnlyList<string>, IReadOnlyList<string>>? Answer { get; set; }
 
     public Func<string, IReadOnlyList<string>, ToolRunOptions, int>? AnswerExitCode { get; set; }
+
+    public Func<string, CancellationToken, Task>? Running { get; set; }
 
     public List<string> Calls
     {
@@ -60,7 +63,7 @@ internal sealed class RecordingToolRunner : IToolRunner
         }
     }
 
-    public Task<int> RunForExitCodeAsync(string fileName, IReadOnlyList<string> arguments, ToolRunOptions options, CancellationToken cancellationToken)
+    public async Task<int> RunForExitCodeAsync(string fileName, IReadOnlyList<string> arguments, ToolRunOptions options, CancellationToken cancellationToken)
     {
         lock (_lock)
         {
@@ -68,13 +71,11 @@ internal sealed class RecordingToolRunner : IToolRunner
             _options.Add(options);
         }
 
-        try
+        if (Running is { } running)
         {
-            return Task.FromResult(AnswerExitCode?.Invoke(fileName, arguments, options) ?? 0);
+            await running(fileName, cancellationToken);
         }
-        catch (Exception exception)
-        {
-            return Task.FromException<int>(exception);
-        }
+
+        return AnswerExitCode?.Invoke(fileName, arguments, options) ?? 0;
     }
 }

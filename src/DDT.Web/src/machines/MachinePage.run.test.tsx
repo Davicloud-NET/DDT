@@ -184,6 +184,53 @@ describe("MachinePage", () => {
     expect(screen.queryByText("Waiting for the installed Linux")).not.toBeInTheDocument();
   });
 
+  // The boot environment tells the server with the run's token, and the server pushes the machine's row.
+  it("says that the machine started from the network again as soon as a push says so", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now });
+
+    const handedOver = run({
+      phase: "Linux",
+      activity: "Restarting",
+      updatedUtc: "2026-09-16T10:04:00Z",
+    });
+    const waiting = machine({
+      agentEnvironment: "LinuxBoot",
+      handedOverUtc: "2026-09-16T10:04:00Z",
+      deployment: handedOver,
+    });
+    const { hub } = await open(answers([waiting], [handedOver], [view({ summary: handedOver })]));
+
+    expect(
+      await screen.findByText(/, 2 min 0 s ago\. The installed Linux has not called yet\.$/),
+    ).toBeInTheDocument();
+
+    const again = run({
+      phase: "Linux",
+      activity: "Restarting",
+      updatedUtc: "2026-09-16T10:05:30Z",
+    });
+
+    act(() => {
+      hub?.push(
+        "machineChanged",
+        machine({
+          agentEnvironment: "LinuxBoot",
+          handedOverUtc: "2026-09-16T10:05:30Z",
+          bootReturns: 1,
+          deployment: again,
+        }),
+      );
+    });
+
+    expect(
+      await screen.findByText(
+        /^The machine started from the network again .+, 30 s ago, for the 1st time since the hand-over\. DDT restarted it into its disk, and the installed Linux has not called since\.$/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Waiting for the installed Linux")).toBeInTheDocument();
+    expect(screen.queryByText(/The installed Linux has not called yet/)).not.toBeInTheDocument();
+  });
+
   it("moves a step on when the server pushes its change, and never back", async () => {
     const { hub } = await open(answers([machine()], [run()], [view()]));
 

@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { deploymentSummary, machineSummary } from "@/test/builders";
 
-import { FIRST_CALL_EXPECTED_MS, isOverdue, linuxHandOver } from "./handOver";
+import { FIRST_CALL_EXPECTED_MS, isOverdue, linuxHandOver, linuxReturns } from "./handOver";
 
 const since = "2026-09-16T10:00:00Z";
 
@@ -32,6 +32,26 @@ describe("the wait for the installed Linux after a hand-over", () => {
     expect(linuxHandOver(machineSummary({ handedOverUtc: since, deployment: windows }))).toBeNull();
     expect(linuxHandOver(machineSummary({ handedOverUtc: since, deployment: failed }))).toBeNull();
     expect(linuxHandOver(machineSummary({ handedOverUtc: since, deployment: null }))).toBeNull();
+  });
+
+  // The boot environment said so with the run's token, each time it sent the machine back to its disk.
+  it("counts the machine's starts from the network for as long as it lasts", () => {
+    const run = deploymentSummary({ state: "Running", phase: "Linux", activity: "Restarting" });
+    const failed = deploymentSummary({ state: "Failed", phase: "Linux" });
+
+    expect(
+      linuxReturns(machineSummary({ handedOverUtc: since, bootReturns: 2, deployment: run })),
+    ).toBe(2);
+    expect(linuxReturns(machineSummary({ handedOverUtc: since, deployment: run }))).toBe(0);
+    expect(
+      linuxReturns(machineSummary({ handedOverUtc: since, bootReturns: null, deployment: run })),
+    ).toBe(0);
+    expect(
+      linuxReturns(machineSummary({ handedOverUtc: null, bootReturns: 2, deployment: run })),
+    ).toBe(0);
+    expect(
+      linuxReturns(machineSummary({ handedOverUtc: since, bootReturns: 2, deployment: failed })),
+    ).toBe(0);
   });
 
   it("is longer than a first start usually takes from ten minutes on", () => {

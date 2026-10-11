@@ -91,6 +91,9 @@ export interface MachineSummary {
   sequenceVersion?: number | null;
   // When the boot environment handed the machine's run over to the installed system, until the agent there calls.
   handedOverUtc?: string | null;
+  // How often the machine has started its boot environment again since, which each time handed the run over again
+  // at handedOverUtc. Null when it has not.
+  bootReturns?: number | null;
 }
 
 // A hardware model as the machine's firmware reports it. Comparisons ignore case and runs of spaces. A null

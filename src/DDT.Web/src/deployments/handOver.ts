@@ -23,6 +23,14 @@ export function linuxHandOver(
   return run?.state === "Running" && run.phase === "Linux" ? (machine.handedOverUtc ?? null) : null;
 }
 
+// How often the machine has started from the network again since its Linux run was handed over, while the installed
+// Linux has not called. The boot environment sent it back to its disk each time, at the time linuxHandOver names.
+export function linuxReturns(
+  machine: Pick<MachineSummary, "handedOverUtc" | "bootReturns" | "deployment">,
+): number {
+  return linuxHandOver(machine) === null ? 0 : (machine.bootReturns ?? 0);
+}
+
 // What the machine's run does between its steps, as a heading. After a hand-over to Linux the machine is awaited,
 // not known to restart. Null while a step runs, and without a run.
 export function activityOf(

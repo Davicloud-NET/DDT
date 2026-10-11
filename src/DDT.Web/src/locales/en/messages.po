@@ -1080,6 +1080,11 @@ msgctxt "settings.ldapTest.role"
 msgid "{result} The group map makes the account {role}."
 msgstr "{result} The group map makes the account {role}."
 
+#: src/machines/list/runDetail.ts
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "{returns, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
+msgstr "{returns, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
+
 #: src/machines/approval.ts
 msgid "{rule} chooses {name}, but it has {problems} and cannot run until they are fixed. Approving authorizes {label} without running anything."
 msgstr "{rule} chooses {name}, but it has {problems} and cannot run until they are fixed. Approving authorizes {label} without running anything."
@@ -1508,6 +1513,10 @@ msgstr "a fact of the machine"
 msgctxt "package.filesHaveNoTargets"
 msgid "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets."
 msgstr "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets."
+
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "A first start can fail or be cut short, so DDT tries the disk again, and ends the run if the machine keeps coming back. If it does, the image has no cloud-init or no systemd, the user-data keeps cloud-init from running DDT's script, the machine does not start from its disk, or that script failed. Look at the machine's own screen, and in the installed Linux at <0>{output}</0> and <1>{journal}</1>."
+msgstr "A first start can fail or be cut short, so DDT tries the disk again, and ends the run if the machine keeps coming back. If it does, the image has no cloud-init or no systemd, the user-data keeps cloud-init from running DDT's script, the machine does not start from its disk, or that script failed. Look at the machine's own screen, and in the installed Linux at <0>{output}</0> and <1>{journal}</1>."
 
 #: src/settings/directory/GroupsAndRolesGroup.tsx
 msgid "A group added here gives Viewer until you choose its role."
@@ -8893,6 +8902,10 @@ msgstr "started {started}"
 msgid "Started {when} by {startedBy}"
 msgstr "Started {when} by {startedBy}"
 
+#: src/machines/list/runDetail.ts
+msgid "Started from the network again {ago} ({nth} time), still no call from the installed Linux"
+msgstr "Started from the network again {ago} ({nth} time), still no call from the installed Linux"
+
 #: src/machines/bootEnvironment.ts
 msgid "Started the Linux boot environment"
 msgstr "Started the Linux boot environment"
@@ -10211,6 +10224,10 @@ msgstr "the machine role {name}"
 #: src/roles/MachineRolesPage.tsx
 msgid "The machine roles could not be loaded."
 msgstr "The machine roles could not be loaded."
+
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "The machine started from the network again {when}, {ago} ago, for the {nth} time since the hand-over. DDT restarted it into its disk, and the installed Linux has not called since."
+msgstr "The machine started from the network again {when}, {ago} ago, for the {nth} time since the hand-over. DDT restarted it into its disk, and the installed Linux has not called since."
 
 #: src/lib/serverMessages.ts
 msgctxt "deployment.machineRejected"

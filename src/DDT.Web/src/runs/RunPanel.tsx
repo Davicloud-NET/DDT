@@ -31,12 +31,21 @@ interface RunPanelProps {
   lastSeenUtc: string;
   // Since when a Linux run waits for the installed Linux's first call after its hand-over. Null otherwise.
   handedOverUtc?: string | null;
+  // How often the machine has started from the network again since that hand-over.
+  bootReturns?: number;
   now: number;
 }
 
 // Where a run is and for how long: its state, the step it is on with that step's percentage in large type, and
 // the rail of the steps on its path.
-export function RunPanel({ run, view, lastSeenUtc, handedOverUtc = null, now }: RunPanelProps) {
+export function RunPanel({
+  run,
+  view,
+  lastSeenUtc,
+  handedOverUtc = null,
+  bootReturns = 0,
+  now,
+}: RunPanelProps) {
   const { i18n } = useLingui();
   const locale = formattingLocale();
   const path =
@@ -76,6 +85,7 @@ export function RunPanel({ run, view, lastSeenUtc, handedOverUtc = null, now }: 
           path={path}
           lastSeenUtc={lastSeenUtc}
           handedOverUtc={handedOverUtc}
+          bootReturns={bootReturns}
           now={now}
         />
       ) : null}

@@ -1080,6 +1080,11 @@ msgctxt "settings.ldapTest.role"
 msgid "{result} The group map makes the account {role}."
 msgstr "{result} Die Gruppenzuordnung gibt dem Konto die Rolle {role}."
 
+#: src/machines/list/runDetail.ts
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "{returns, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
+msgstr "{returns, selectordinal, other {#.}}"
+
 #: src/machines/approval.ts
 msgid "{rule} chooses {name}, but it has {problems} and cannot run until they are fixed. Approving authorizes {label} without running anything."
 msgstr "{rule} wählt {name}, aber sie hat {problems} und kann erst laufen, wenn diese behoben sind. Die Freigabe autorisiert {label}, ohne etwas auszuführen."
@@ -1508,6 +1513,10 @@ msgstr "einem Gerätemerkmal"
 msgctxt "package.filesHaveNoTargets"
 msgid "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets."
 msgstr "Ein Dateipaket wird für die Schritte „Skript ausführen“ entpackt, die es nennen, nicht nach dem Modell des Geräts, daher hat es keine Ziele."
+
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "A first start can fail or be cut short, so DDT tries the disk again, and ends the run if the machine keeps coming back. If it does, the image has no cloud-init or no systemd, the user-data keeps cloud-init from running DDT's script, the machine does not start from its disk, or that script failed. Look at the machine's own screen, and in the installed Linux at <0>{output}</0> and <1>{journal}</1>."
+msgstr "Ein erster Start kann fehlschlagen oder abgebrochen werden. Deshalb versucht DDT den Datenträger erneut und beendet die Ausführung, wenn das Gerät immer wieder per Netzwerk gestartet wird. In diesem Fall hat das Image kein cloud-init oder kein systemd, die Datei user-data hindert cloud-init daran, das Skript von DDT auszuführen, das Gerät startet nicht von seinem Datenträger, oder dieses Skript ist fehlgeschlagen. Sehen Sie am Bildschirm des Geräts nach und im installierten Linux in <0>{output}</0> und mit <1>{journal}</1>."
 
 #: src/settings/directory/GroupsAndRolesGroup.tsx
 msgid "A group added here gives Viewer until you choose its role."
@@ -8893,6 +8902,10 @@ msgstr "gestartet {started}"
 msgid "Started {when} by {startedBy}"
 msgstr "Gestartet {when} von {startedBy}"
 
+#: src/machines/list/runDetail.ts
+msgid "Started from the network again {ago} ({nth} time), still no call from the installed Linux"
+msgstr "Erneut per Netzwerk gestartet {ago} (zum {nth} Mal), immer noch keine Meldung vom installierten Linux"
+
 #: src/machines/bootEnvironment.ts
 msgid "Started the Linux boot environment"
 msgstr "Hat die Linux-Startumgebung gestartet"
@@ -10211,6 +10224,10 @@ msgstr "der Geräterolle {name}"
 #: src/roles/MachineRolesPage.tsx
 msgid "The machine roles could not be loaded."
 msgstr "Die Geräterollen konnten nicht geladen werden."
+
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "The machine started from the network again {when}, {ago} ago, for the {nth} time since the hand-over. DDT restarted it into its disk, and the installed Linux has not called since."
+msgstr "Das Gerät wurde am {when}, vor {ago}, erneut per Netzwerk gestartet, zum {nth} Mal seit der Übergabe. DDT hat es wieder von seinem Datenträger gestartet, und das installierte Linux hat sich seitdem nicht gemeldet."
 
 #: src/lib/serverMessages.ts
 msgctxt "deployment.machineRejected"

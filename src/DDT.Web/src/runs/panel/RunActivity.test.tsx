@@ -16,7 +16,11 @@ import { RunActivity } from "./RunActivity";
 const lastSeenUtc = "2026-09-16T10:00:00Z";
 const now = Date.parse(lastSeenUtc) + 3 * 60_000;
 
-function renderActivity(run: Partial<DeploymentSummary>, handedOverUtc: string | null = null) {
+function renderActivity(
+  run: Partial<DeploymentSummary>,
+  handedOverUtc: string | null = null,
+  bootReturns = 0,
+) {
   render(
     <I18nProvider i18n={i18n}>
       <RunActivity
@@ -25,6 +29,7 @@ function renderActivity(run: Partial<DeploymentSummary>, handedOverUtc: string |
         path={null}
         lastSeenUtc={lastSeenUtc}
         handedOverUtc={handedOverUtc}
+        bootReturns={bootReturns}
         now={now}
       />
     </I18nProvider>,
@@ -127,6 +132,73 @@ describe("what a run does between its steps", () => {
 
       expect(screen.getByText(/^It starts first/)).toBeInTheDocument();
       expect(screen.queryByText(causes)).not.toBeInTheDocument();
+    });
+
+    // The boot environment saw the machine again, said so with the run's token and sent it back to its disk.
+    describe("once the machine has started from the network again", () => {
+      const again =
+        /^A first start can fail or be cut short, so DDT tries the disk again, and ends the run if the machine keeps coming back\. If it does, the image has no cloud-init or no systemd, the user-data keeps cloud-init from running DDT's script, the machine does not start from its disk, or that script failed\. Look at the machine's own screen, and in the installed Linux at/;
+
+      it("says when, for which time and what DDT did, and where to look, at once", () => {
+        const since = minutesAgo(1);
+        const when = new Date(since).toLocaleString(formattingLocale());
+
+        renderActivity({ ...handedOver, stepName: "Write the cloud-init seed" }, since, 1);
+
+        expect(screen.getByText("Waiting for the installed Linux")).toBeInTheDocument();
+        expect(
+          screen.getByText("After step 2 of 3: Write the cloud-init seed"),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText(
+            `The machine started from the network again ${when}, 1 min 0 s ago, for the 1st time since the hand-over. DDT restarted it into its disk, and the installed Linux has not called since.`,
+          ),
+        ).toBeInTheDocument();
+        expect(screen.getByText(again)).toHaveTextContent(
+          /at \/var\/log\/cloud-init-output\.log and journalctl -u ddt-agent\.$/,
+        );
+        expect(screen.queryByText(/^Handed over/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/^It starts first/)).not.toBeInTheDocument();
+        expect(screen.queryByText(causes)).not.toBeInTheDocument();
+      });
+
+      it("counts on", () => {
+        renderActivity(handedOver, minutesAgo(11), 2);
+
+        expect(
+          screen.getByText(
+            /, 11 min 0 s ago, for the 2nd time since the hand-over\. DDT restarted/,
+          ),
+        ).toBeInTheDocument();
+        expect(screen.getByText(again)).toBeInTheDocument();
+        expect(screen.queryByText(causes)).not.toBeInTheDocument();
+      });
+
+      it("says it in German", async () => {
+        const { messages } = await import("../../locales/de/messages.po");
+        const since = minutesAgo(1);
+
+        i18n.loadAndActivate({ locale: "de", messages });
+
+        try {
+          const when = new Date(since).toLocaleString(formattingLocale());
+
+          renderActivity(handedOver, since, 2);
+
+          expect(
+            screen.getByText(
+              `Das Gerät wurde am ${when}, vor 1 Min. 0 s, erneut per Netzwerk gestartet, zum 2. Mal seit der Übergabe. DDT hat es wieder von seinem Datenträger gestartet, und das installierte Linux hat sich seitdem nicht gemeldet.`,
+            ),
+          ).toBeInTheDocument();
+          expect(
+            screen.getByText(
+              /^Ein erster Start kann fehlschlagen oder abgebrochen werden\. Deshalb versucht DDT den Datenträger erneut und beendet die Ausführung, wenn das Gerät immer wieder per Netzwerk gestartet wird\./,
+            ),
+          ).toBeInTheDocument();
+        } finally {
+          i18n.loadAndActivate({ locale: "en", messages: {} });
+        }
+      });
     });
   });
 

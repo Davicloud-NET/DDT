@@ -27,6 +27,8 @@ interface RunActivityProps {
   lastSeenUtc: string;
   // Since when a Linux run waits for the installed Linux's first call after its hand-over. Null otherwise.
   handedOverUtc?: string | null;
+  // How often the machine has started from the network again since that hand-over.
+  bootReturns?: number;
   now: number;
 }
 
@@ -38,6 +40,7 @@ export function RunActivity({
   path,
   lastSeenUtc,
   handedOverUtc = null,
+  bootReturns = 0,
   now,
 }: RunActivityProps) {
   const current = path?.current ?? null;
@@ -67,7 +70,9 @@ export function RunActivity({
   }
 
   if (handedOverUtc !== null) {
-    return <LinuxHandOverWait sinceUtc={handedOverUtc} after={after} now={now} />;
+    return (
+      <LinuxHandOverWait sinceUtc={handedOverUtc} returns={bootReturns} after={after} now={now} />
+    );
   }
 
   return (

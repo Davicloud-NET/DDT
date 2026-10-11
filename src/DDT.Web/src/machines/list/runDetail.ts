@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { t } from "@lingui/core/macro";
+import { selectOrdinal, t } from "@lingui/core/macro";
 
 import { activityLabel, assignedBy, isSilentActivity } from "@/deployments/deployments";
-import { isOverdue, linuxHandOver } from "@/deployments/handOver";
+import { isOverdue, linuxHandOver, linuxReturns } from "@/deployments/handOver";
 import { formatDuration } from "@/lib/format";
 import { relativeTime } from "@/lib/relativeTime";
 import type { MachineSummary } from "@/machines/machines";
@@ -36,6 +36,14 @@ export function runDetail(machine: MachineSummary, now: number): string | null {
       // Nothing may ever come from the installed Linux, so the row says since when it is awaited.
       if (handedOver !== null) {
         const ago = relativeTime(handedOver, now);
+        const returns = linuxReturns(machine);
+
+        // The boot environment saw the machine again and sent it back to its disk, which says more than the wait.
+        if (returns > 0) {
+          const nth = selectOrdinal(returns, { one: "#st", two: "#nd", few: "#rd", other: "#th" });
+
+          return t`Started from the network again ${ago} (${nth} time), still no call from the installed Linux`;
+        }
 
         return isOverdue(handedOver, now)
           ? t`Handed over ${ago}, still no call from the installed Linux`

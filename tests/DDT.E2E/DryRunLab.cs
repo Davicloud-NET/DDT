@@ -135,14 +135,20 @@ public sealed partial class DryRunLab : IAsyncLifetime
     internal AgentProcess StartLinuxBootAgent(bool secureBoot = false, bool slowDownloads = false) =>
         Start(null, slowDownloads, secureBoot, AgentEnvironment.LinuxBoot);
 
-    private AgentProcess Start(int? dryRunId, bool slowDownloads, bool secureBoot, AgentEnvironment? environment)
+    // The same machine, whose firmware starts the network again after its run was handed over to the installed Linux:
+    // OnceInLinux or Always, as the agent's --dry-run-netboot names them.
+    internal AgentProcess StartLinuxBootAgent(string netboot) =>
+        AgentProcess.Start(StartInfo(null, slowDownloads: false) with { Environment = AgentEnvironment.LinuxBoot, Netboot = netboot });
+
+    private AgentProcess Start(int? dryRunId, bool slowDownloads, bool secureBoot, AgentEnvironment? environment) =>
+        AgentProcess.Start(StartInfo(dryRunId, slowDownloads) with { SecureBoot = secureBoot, Environment = environment });
+
+    private AgentStartInfo StartInfo(int? dryRunId, bool slowDownloads)
     {
         int id = dryRunId ?? NewDryRunId();
         string log = Path.Combine(_directory, $"agent-{id}-{Environment.TickCount64}.log");
-        Uri server = slowDownloads ? _relay!.Url : Host.Url;
-        AgentStartInfo start = new(_agentPath!, server, Host.RootCertificatePath, id, log) { SecureBoot = secureBoot, Environment = environment };
 
-        return AgentProcess.Start(start);
+        return new AgentStartInfo(_agentPath!, slowDownloads ? _relay!.Url : Host.Url, Host.RootCertificatePath, id, log);
     }
 
     // Until the result is disposed, the host can start both boot environments, so a machine gets from one into the

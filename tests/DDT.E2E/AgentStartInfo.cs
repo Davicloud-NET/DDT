@@ -14,4 +14,8 @@ internal sealed record AgentStartInfo(string AgentPath, Uri Server, string RootC
 
     // The boot environment the dry run's machine started. Null is the agent's own, Windows PE.
     public AgentEnvironment? Environment { get; init; }
+
+    // How the dry run's machine starts from the network again once its run was handed over to the installed Linux, as
+    // the agent's --dry-run-netboot names it. Null for a machine that starts from its disk then.
+    public string? Netboot { get; init; }
 }

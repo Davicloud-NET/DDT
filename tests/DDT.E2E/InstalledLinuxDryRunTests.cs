@@ -8,8 +8,6 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
-using DDT.Core.CloudInit;
-using DDT.Core.Disks;
 using DDT.Server.Data;
 using Xunit;
 
@@ -72,7 +70,10 @@ public sealed class InstalledLinuxDryRunTests(DryRunLab lab)
         Assert.Equal(2, audit.Count(entry => entry.Action == "deployment.resumed" && entry.Detail?.Contains(" from Linux with its run token.", StringComparison.Ordinal) == true));
 
         AssertWhatTheAgentSaid(agent);
-        AssertTheSeedIsTheAdministratorsAgain(agent);
+
+        // The disk's file stays to be looked at. The agent's removal took the agent, its script and the run off its seed,
+        // as it does on a machine, so a later start from the network finds no run there.
+        Assert.Equal(["meta-data", "user-data"], agent.SeedFiles());
         lab.AssertClean([agent], [], ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
     }
 
@@ -136,20 +137,6 @@ public sealed class InstalledLinuxDryRunTests(DryRunLab lab)
         Assert.Equal(1, agent.Output.Count("The run is over here, so the agent removes itself."));
         Assert.Equal(1, agent.Output.Count("Dry run: not run: systemctl disable ddt-agent.service"));
         Assert.False(Directory.Exists(agent.Root), $"The dry run's root {agent.Root} is still there.");
-    }
-
-    // The disk's file stays to be looked at. The agent's removal took the agent, its script and the run off the seed, as
-    // it does on a machine, so a later start from the network finds no run there.
-    private static void AssertTheSeedIsTheAdministratorsAgain(AgentProcess agent)
-    {
-        using FileStream disk = new(agent.DiskPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        byte[] head = new byte[GptLayout.MaxHeadBytes];
-        disk.ReadExactly(head);
-        GptPartition partition = GptLayout.Read(head).Partitions.Single(candidate => candidate.Name == CloudInitSeed.Label);
-        FatVolume volume = FatVolume.Open(disk, partition.FirstLba * GptLayout.SectorSize, (partition.LastLba - partition.FirstLba + 1) * GptLayout.SectorSize);
-
-        Assert.Equal(["meta-data", "user-data"], volume.List("").Select(entry => entry.Name));
-        Assert.Null(volume.Find(LinuxAgentFiles.SeedFolder));
     }
 
     // The image and its seed in the boot environment, then a script that asks for a restart, a variable and a script

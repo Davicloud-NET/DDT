@@ -4,6 +4,8 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using DDT.Core.CloudInit;
+using DDT.Core.Disks;
 
 namespace DDT.E2E;
 
@@ -42,6 +44,17 @@ internal sealed class AgentProcess : IAsyncDisposable
 
     public string LinuxCache => Path.Combine(Root, "linux", "var", "lib", "ddt", OperatingSystem.IsWindows() ? "DDT" : string.Empty, "cache");
 
+    // The names of the files in the root of the cloud-init seed on the dry run's disk, as its file holds them now.
+    public string[] SeedFiles()
+    {
+        using FileStream disk = new(DiskPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        byte[] head = new byte[GptLayout.MaxHeadBytes];
+        disk.ReadExactly(head);
+        GptPartition partition = GptLayout.Read(head).Partitions.Single(candidate => candidate.Name == CloudInitSeed.Label);
+
+        return [.. FatVolume.Open(disk, partition.FirstLba * GptLayout.SectorSize, partition.Sectors * GptLayout.SectorSize).List("").Select(entry => entry.Name)];
+    }
+
     public static AgentProcess Start(AgentStartInfo agent)
     {
         ArgumentNullException.ThrowIfNull(agent);
@@ -57,6 +70,7 @@ internal sealed class AgentProcess : IAsyncDisposable
             agent.RootCertificatePath,
             .. agent.SecureBoot ? (string[])["--dry-run-secure-boot"] : [],
             .. agent.Environment is { } environment ? (string[])["--dry-run-environment", environment.ToString()] : [],
+            .. agent.Netboot is { } netboot ? (string[])["--dry-run-netboot", netboot] : [],
         ];
         ProcessStartInfo start = new(agent.AgentPath, arguments)
         {

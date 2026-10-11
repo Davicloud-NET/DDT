@@ -6,34 +6,69 @@ using System.Globalization;
 
 namespace DDT.Agent.Deployment;
 
-// Finds what a script started and no longer holds. The agent asks the kernel to become the parent of every process
-// below it whose own parent ends, so such a process stays below the agent whatever session it moved to. kill returns
-// 0 or the error.
-public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Func<int, int>? kill = null, Action<TimeSpan>? wait = null) : IStrayProcesses
+// Stops a script with what it started. The agent asks the kernel to become the parent of every process below it
+// whose own parent ends, so such a process stays below the agent whatever session it moved to. A script shares the
+// agent's process group, so each of its processes gets the signal itself. signal returns 0 or the error.
+public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Func<int, int, int>? signal = null, Action<TimeSpan>? wait = null) : IStrayProcesses
 {
     // A process can start another while it is being ended, so the list is read again a few times.
     private const int Rounds = 20;
 
     private static readonly TimeSpan s_betweenRounds = TimeSpan.FromMilliseconds(50);
 
-    private readonly Func<int, int> _kill = kill ?? Kill;
+    private readonly Func<int, int, int> _signal = signal ?? Signal;
     private readonly Action<TimeSpan> _wait = wait ?? Thread.Sleep;
 
     // False where the kernel does not hand orphans to the agent. They go to the first process then, out of reach.
     public bool Adopts { get; init; }
 
+    // How long a script has to end after it was asked to, for what its trap still has to do.
+    public TimeSpan Grace { get; init; } = TimeSpan.FromSeconds(5);
+
     // Asks the kernel to hand this process every process below it whose parent ends, for as long as it lives. False
     // where the kernel refuses.
     public static bool Adopt() => StrayNativeMethods.prctl(StrayNativeMethods.SetChildSubreaper, 1, 0, 0, 0) == 0;
 
-    public Action WatchFrom(int processId)
-    {
-        long since = Read(processId)?.Started ?? long.MaxValue;
+    public IToolStop WatchFrom(int processId) => new Stop(this, Read(processId)?.Started ?? long.MaxValue);
 
-        return () => EndStartedSince(since);
+    // SIGTERM to every process below the agent that started no earlier than the tool, the tool among them. True when
+    // none is left once the grace is over.
+    public bool AskStartedSince(long since, string tool)
+    {
+        List<int> asked = Since(since);
+
+        foreach (int process in asked)
+        {
+            _signal(process, StrayNativeMethods.TerminateSignal);
+        }
+
+        List<int> left = asked;
+
+        for (TimeSpan waited = TimeSpan.Zero; left.Count > 0 && waited < Grace; waited += s_betweenRounds)
+        {
+            _wait(s_betweenRounds);
+            left = Since(since);
+        }
+
+        if (left.Count > 0)
+        {
+            log.Warning(
+                $"{Count(left.Count)} of {tool} still ran {Grace.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture)} s after " +
+                $"{tool} was asked to end (SIGTERM), so what is left is ended outright (SIGKILL).");
+        }
+        else if (asked.Count > 1)
+        {
+            log.Information($"{tool} and the {Count(asked.Count - 1)} it had started ended when they were asked to (SIGTERM).");
+        }
+        else if (asked.Count == 1)
+        {
+            log.Information($"{tool} ended when it was asked to (SIGTERM).");
+        }
+
+        return left.Count == 0;
     }
 
-    // Ends every process below the agent that started no earlier than the tool. What an earlier script left stays.
+    // SIGKILL to every process below the agent that started no earlier than the tool. What an earlier script left stays.
     public void EndStartedSince(long since)
     {
         HashSet<int> ended = [];
@@ -41,14 +76,14 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
 
         for (int round = 0; round < Rounds; round++)
         {
-            left = [.. Below().Where(process => process.Started >= since).Select(process => process.Id)];
+            left = Since(since);
 
             if (left.Count == 0)
             {
                 break;
             }
 
-            foreach (int process in left.Where(process => _kill(process) == 0))
+            foreach (int process in left.Where(process => _signal(process, StrayNativeMethods.KillSignal) == 0))
             {
                 ended.Add(process);
             }
@@ -58,6 +93,8 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
 
         Report(ended.Count, left);
     }
+
+    private static string Count(int processes) => processes == 1 ? "1 process" : $"{processes} processes";
 
     private void Report(int ended, List<int> left)
     {
@@ -76,6 +113,8 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
             log.Warning("This system does not hand the agent a process whose parent has ended, so one the tool left behind that way may still run.");
         }
     }
+
+    private List<int> Since(long since) => [.. Below().Where(process => process.Started >= since).Select(process => process.Id)];
 
     // The living processes that descend from the agent. One that has ended and waits to be collected is not among them.
     private List<(int Id, long Started)> Below()
@@ -150,6 +189,14 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
         return (parent, started, fields[0] is not ("Z" or "X"));
     }
 
-    private static int Kill(int process) =>
-        StrayNativeMethods.kill(process, StrayNativeMethods.KillSignal) == 0 ? 0 : System.Runtime.InteropServices.Marshal.GetLastPInvokeError();
+    private static int Signal(int process, int signal) =>
+        StrayNativeMethods.kill(process, signal) == 0 ? 0 : System.Runtime.InteropServices.Marshal.GetLastPInvokeError();
+
+    // One tool's stop, by the moment the tool started.
+    private sealed class Stop(LinuxStrayProcesses strays, long since) : IToolStop
+    {
+        public void Ask(string tool) => strays.AskStartedSince(since, tool);
+
+        public void End() => strays.EndStartedSince(since);
+    }
 }

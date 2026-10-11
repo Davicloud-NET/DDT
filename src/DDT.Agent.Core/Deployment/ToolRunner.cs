@@ -163,7 +163,7 @@ public sealed class ToolRunner(
 
         Process process = Start(start, tool);
 
-        return new ProcessToolProcess(process, log, Strays?.WatchFrom(process.Id));
+        return new ProcessToolProcess(process, log, tool, Strays?.WatchFrom(process.Id));
     }
 
     public static string CommandLine(string fileName, IReadOnlyList<string> arguments)

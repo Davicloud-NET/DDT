@@ -8,7 +8,6 @@ namespace DDT.Agent.Deployment;
 // parent has ended, or one in a session of its own.
 public interface IStrayProcesses
 {
-    // Called once the tool with this process id has started. The answer ends what the tool started and its tree no
-    // longer holds, and is called after the tree itself was ended.
-    Action WatchFrom(int processId);
+    // Called once the tool with this process id has started. The answer is called when the tool has to be stopped.
+    IToolStop WatchFrom(int processId);
 }

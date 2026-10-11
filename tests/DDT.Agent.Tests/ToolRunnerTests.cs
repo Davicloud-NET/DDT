@@ -190,6 +190,7 @@ public sealed class ToolRunnerTests
             stop.Token));
 
         Assert.Equal(2, strays.Watched.Count);
+        Assert.Equal([Path.GetFileName(s_cmd)], strays.Asked);
         Assert.Equal([strays.Watched[1]], strays.Ended);
     }
 

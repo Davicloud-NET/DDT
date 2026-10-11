@@ -537,8 +537,8 @@ msgid "{installed} installed"
 msgstr "{installed} installiert"
 
 #: src/sequences/builder/nodeDetail.ts
-msgid "{interpreter}, in {phase}"
-msgstr "{interpreter}, in {phase}"
+msgid "{interpreter}, {where}"
+msgstr "{interpreter}, {where}"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.emptyContainerWarning"
@@ -572,8 +572,8 @@ msgid "{kind}, {phase}, started {started}, running for {took}"
 msgstr "{kind}, {phase}, gestartet {started}, läuft seit {took}"
 
 #: src/sequences/builder/inspector/NodeSummary.tsx
-msgid "{kind}, in {phaseName}."
-msgstr "{kind}, in {phaseName}."
+msgid "{kind}, {where}."
+msgstr "{kind}, {where}."
 
 #: src/runs/panel/CurrentStep.tsx
 msgid "{kind}: {file}, {size}"
@@ -3539,12 +3539,12 @@ msgid "Debian packages as of"
 msgstr "Debian-Pakete vom"
 
 #: src/runs/flow/detailsText.ts
-msgid "Decided at {start} in {phase}, {into} into the run."
-msgstr "Um {start} in {phase} entschieden, {into} nach dem Start der Ausführung."
+msgid "Decided at {start} {where}, {into} into the run."
+msgstr "Um {start} {where} entschieden, {into} nach dem Start der Ausführung."
 
 #: src/runs/flow/detailsText.ts
-msgid "Decided at {start} in {phase}."
-msgstr "Um {start} in {phase} entschieden."
+msgid "Decided at {start} {where}."
+msgstr "Um {start} {where} entschieden."
 
 #: src/settings/ConfigurationOrigin.tsx
 msgid "default"
@@ -4923,6 +4923,10 @@ msgstr "In {placeholder} nimmt {filter} keine Zahl. Entfernen Sie den Doppelpunk
 msgid "In the image"
 msgstr "Im Image"
 
+#: src/sequences/steps.ts
+msgid "in the installed Linux"
+msgstr "im installierten Linux"
+
 #: src/runs/panel/RunRail.tsx
 msgid "In the installed Linux"
 msgstr "Im installierten Linux"
@@ -4939,10 +4943,22 @@ msgstr "Im installierten Windows"
 msgid "In the installed Windows, after the hand-over"
 msgstr "Im installierten Windows, nach der Übergabe"
 
+#: src/sequences/steps.ts
+msgid "in the Linux boot environment"
+msgstr "in der Linux-Startumgebung"
+
 #: src/runs/panel/RunRail.tsx
 #: src/sequences/flow/HandoverLine.tsx
 msgid "In the Linux boot environment"
 msgstr "In der Linux-Startumgebung"
+
+#: src/sequences/steps.ts
+msgid "in Windows"
+msgstr "in Windows"
+
+#: src/sequences/steps.ts
+msgid "in Windows PE"
+msgstr "in Windows PE"
 
 #: src/runs/panel/RunRail.tsx
 #: src/sequences/flow/HandoverLine.tsx
@@ -7254,8 +7270,8 @@ msgid "Paused for {took}"
 msgstr "Seit {took} angehalten"
 
 #: src/runs/flow/detailsText.ts
-msgid "Paused since {start} in {phase}, for {took}."
-msgstr "Seit {start} in {phase} angehalten, seit {took}."
+msgid "Paused since {start} {where}, for {took}."
+msgstr "Seit {start} {where} angehalten, seit {took}."
 
 #: src/settings/certificate/UploadDialog.tsx
 msgid "PEM files"
@@ -7417,8 +7433,8 @@ msgid "Ran {passes} times, the last is shown."
 msgstr "{passes}-mal ausgeführt, der letzte Durchlauf wird gezeigt."
 
 #: src/runs/flow/detailsText.ts
-msgid "Ran from {start} to {end} in {phase}, took {took}."
-msgstr "Lief von {start} bis {end} in {phase}, dauerte {took}."
+msgid "Ran from {start} to {end} {where}, took {took}."
+msgstr "Lief von {start} bis {end} {where}, dauerte {took}."
 
 #: src/images/images.ts
 #: src/sequences/steps/WriteRawImageFields.tsx
@@ -8003,8 +8019,8 @@ msgid "Running for {took}"
 msgstr "Läuft seit {took}"
 
 #: src/runs/flow/detailsText.ts
-msgid "Running since {start} in {phase}, for {took}."
-msgstr "Läuft seit {start} in {phase}, seit {took}."
+msgid "Running since {start} {where}, for {took}."
+msgstr "Läuft seit {start} {where}, seit {took}."
 
 #: src/audit/auditView.ts
 #: src/runs/history/RunHistoryTable.tsx
@@ -8697,8 +8713,8 @@ msgid "Skipped"
 msgstr "Übersprungen"
 
 #: src/runs/flow/detailsText.ts
-msgid "Skipped at {at} in {phase}."
-msgstr "Um {at} in {phase} übersprungen."
+msgid "Skipped at {at} {where}."
+msgstr "Um {at} {where} übersprungen."
 
 #: src/runs/decisions.ts
 msgid "Skipped, because its condition did not hold"

@@ -537,7 +537,7 @@ msgid "{installed} installed"
 msgstr ""
 
 #: src/sequences/builder/nodeDetail.ts
-msgid "{interpreter}, in {phase}"
+msgid "{interpreter}, {where}"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -572,7 +572,7 @@ msgid "{kind}, {phase}, started {started}, running for {took}"
 msgstr ""
 
 #: src/sequences/builder/inspector/NodeSummary.tsx
-msgid "{kind}, in {phaseName}."
+msgid "{kind}, {where}."
 msgstr ""
 
 #: src/runs/panel/CurrentStep.tsx
@@ -3539,11 +3539,11 @@ msgid "Debian packages as of"
 msgstr ""
 
 #: src/runs/flow/detailsText.ts
-msgid "Decided at {start} in {phase}, {into} into the run."
+msgid "Decided at {start} {where}, {into} into the run."
 msgstr ""
 
 #: src/runs/flow/detailsText.ts
-msgid "Decided at {start} in {phase}."
+msgid "Decided at {start} {where}."
 msgstr ""
 
 #: src/settings/ConfigurationOrigin.tsx
@@ -4923,6 +4923,10 @@ msgstr ""
 msgid "In the image"
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "in the installed Linux"
+msgstr ""
+
 #: src/runs/panel/RunRail.tsx
 msgid "In the installed Linux"
 msgstr ""
@@ -4939,9 +4943,21 @@ msgstr ""
 msgid "In the installed Windows, after the hand-over"
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "in the Linux boot environment"
+msgstr ""
+
 #: src/runs/panel/RunRail.tsx
 #: src/sequences/flow/HandoverLine.tsx
 msgid "In the Linux boot environment"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "in Windows"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "in Windows PE"
 msgstr ""
 
 #: src/runs/panel/RunRail.tsx
@@ -7254,7 +7270,7 @@ msgid "Paused for {took}"
 msgstr ""
 
 #: src/runs/flow/detailsText.ts
-msgid "Paused since {start} in {phase}, for {took}."
+msgid "Paused since {start} {where}, for {took}."
 msgstr ""
 
 #: src/settings/certificate/UploadDialog.tsx
@@ -7417,7 +7433,7 @@ msgid "Ran {passes} times, the last is shown."
 msgstr ""
 
 #: src/runs/flow/detailsText.ts
-msgid "Ran from {start} to {end} in {phase}, took {took}."
+msgid "Ran from {start} to {end} {where}, took {took}."
 msgstr ""
 
 #: src/images/images.ts
@@ -8003,7 +8019,7 @@ msgid "Running for {took}"
 msgstr ""
 
 #: src/runs/flow/detailsText.ts
-msgid "Running since {start} in {phase}, for {took}."
+msgid "Running since {start} {where}, for {took}."
 msgstr ""
 
 #: src/audit/auditView.ts
@@ -8697,7 +8713,7 @@ msgid "Skipped"
 msgstr ""
 
 #: src/runs/flow/detailsText.ts
-msgid "Skipped at {at} in {phase}."
+msgid "Skipped at {at} {where}."
 msgstr ""
 
 #: src/runs/decisions.ts

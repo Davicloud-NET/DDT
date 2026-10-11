@@ -11,7 +11,7 @@ import { StateTag } from "@/ui/StateTag";
 import type { Findings } from "../../problems";
 import { findingCounts } from "../../sequenceList";
 import type { SequencePhase, SequenceStep } from "../../sequences";
-import { phaseLabel, stepKindLabel } from "../../steps";
+import { inPhase, stepKindLabel } from "../../steps";
 
 // Where the node is and how many findings it has, its kind and phase, and how many steps a container holds.
 export function NodeSummary({
@@ -26,8 +26,9 @@ export function NodeSummary({
   findings: Findings;
 }) {
   const kind = stepKindLabel(node.kind);
-  const phaseName = new Intl.ListFormat(formattingLocale(), { type: "disjunction" }).format(
-    phases.map(phaseLabel),
+  // Each phase brings its own "in", so German can say "in der Linux-Startumgebung oder im installierten Linux".
+  const where = new Intl.ListFormat(formattingLocale(), { type: "disjunction" }).format(
+    phases.map(inPhase),
   );
   const counts = findingCounts(findings.problems.length, findings.warnings.length);
   const thenCount = node.kind === "if" ? node.then.length : 0;
@@ -44,7 +45,7 @@ export function NodeSummary({
       </span>
       <span className="type-small text-ink-2">
         <Trans>
-          {kind}, in {phaseName}.
+          {kind}, {where}.
         </Trans>{" "}
         {node.kind === "if"
           ? plural(thenCount, {

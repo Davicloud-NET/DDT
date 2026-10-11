@@ -63,6 +63,19 @@ export function phaseLabel(phase: SequencePhase): string {
   return i18n._(phaseLabels[phase]);
 }
 
+// The phase as a sentence says where something runs. Its preposition is part of it, because German's changes with
+// the phase: "in Windows", "im installierten Linux".
+const phasePlaces: Record<SequencePhase, MessageDescriptor> = {
+  WindowsPE: msg`in Windows PE`,
+  Windows: msg`in Windows`,
+  LinuxBoot: msg`in the Linux boot environment`,
+  Linux: msg`in the installed Linux`,
+};
+
+export function inPhase(phase: SequencePhase): string {
+  return i18n._(phasePlaces[phase]);
+}
+
 // cloud-init's instance id and the machine's name. cloud-init runs its first-boot modules once per instance id.
 export const defaultMetaData =
   'instance-id: "{{SmbiosUuid}}"\nlocal-hostname: "{{ComputerName}}"\n';

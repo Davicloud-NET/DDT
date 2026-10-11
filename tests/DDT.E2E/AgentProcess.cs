@@ -36,6 +36,12 @@ internal sealed class AgentProcess : IAsyncDisposable
 
     public static string DiskPathOf(int dryRunId) => $"{RootOf(dryRunId)}-disk0.img";
 
+    // Where the installed Windows of the dry run downloads to, and where its installed Linux does. On Windows a run's
+    // directory is the folder DDT of its root.
+    public string WindowsCache => Path.Combine(Root, "W", "DDT", "cache");
+
+    public string LinuxCache => Path.Combine(Root, "linux", "var", "lib", "ddt", OperatingSystem.IsWindows() ? "DDT" : string.Empty, "cache");
+
     public static AgentProcess Start(AgentStartInfo agent)
     {
         ArgumentNullException.ThrowIfNull(agent);
@@ -73,10 +79,11 @@ internal sealed class AgentProcess : IAsyncDisposable
     }
 
     // Returns while the file with this hash is downloading into the run's cache, in either phase. The step that
-    // downloads it runs until the download is done. Polled often, so even a quick download is seen.
-    public async Task WaitForDownloadAsync(string sha256, TimeSpan timeout, CancellationToken cancellationToken)
+    // downloads it runs until the download is done. Polled often, so even a quick download is seen. cache is where the
+    // run downloads to, the installed Windows' unless a test names another.
+    public async Task WaitForDownloadAsync(string sha256, TimeSpan timeout, CancellationToken cancellationToken, string? cache = null)
     {
-        string part = Path.Combine(Root, "W", "DDT", "cache", $"{sha256}.part");
+        string part = Path.Combine(cache ?? WindowsCache, $"{sha256}.part");
 
         await Eventually.WaitAsync(
             new Expectation($"Agent {DryRunId}'s download of {part}", timeout, () => Output.Tail())

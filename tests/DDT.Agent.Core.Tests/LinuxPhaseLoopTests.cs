@@ -178,6 +178,34 @@ public sealed class LinuxPhaseLoopTests : IDisposable
         Assert.Equal(["systemctl reboot", "reboot"], _linux.Tools.Calls);
     }
 
+    // Nobody sits at a machine in the installed Linux, so the web continues a pause there, as in Windows.
+    [Fact]
+    public async Task APauseInTheInstalledLinuxIsContinuedFromTheWebAndAVariableIsSetAfterIt()
+    {
+        PauseStep pause = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-00000000b007"), Name = "Wait for the cable", Message = "Plug {{ComputerName}} in." };
+        SetVariableStep set = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-00000000b008"), Name = "Note it", Variable = "Plugged", Value = "yes" };
+        AgentRun run = LinuxPhaseFixture.Run(pause, set, LinuxPhaseFixture.Script(1));
+        run = run with { Sequence = run.Sequence with { Variables = [new VariableDeclaration { Name = "Plugged", SetBySteps = true }] } };
+        await _linux.HandOverAsync(run);
+        ScriptedAgentServer server = Server(run);
+        List<string?> messages = [];
+        server.AnswerRunReports = (report, token) =>
+        {
+            messages.Add(report.PauseMessage);
+
+            return report.Activity == RunActivity.Paused
+                ? new AgentRunReportResult(token, "resume", null, ContinueStepId: pause.Id, ContinuePass: 1)
+                : new AgentRunReportResult(token, "resume", null);
+        };
+
+        Assert.Equal(AgentExitCodes.Deployed, await _linux.RunAsync(server));
+
+        Assert.Contains("Plug LINUX-01 in.", messages);
+        Assert.Contains("Someone continued the run on the web.", _linux.Lines());
+        Assert.Equal("yes", _linux.Tools.Options[0].Environment?["DDT_VAR_Plugged"]);
+        Assert.Equal(Enumerable.Repeat(StepState.Done, 5), server.RunReports[^1].Steps.Select(step => step.State));
+    }
+
     // The run waits before its first step is marked as running, and the server sees what it waits for.
     [Fact]
     public async Task WaitsForCloudInitBeforeTheFirstStepAndTellsTheServer()

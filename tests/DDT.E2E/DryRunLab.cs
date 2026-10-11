@@ -132,7 +132,8 @@ public sealed partial class DryRunLab : IAsyncLifetime
         Start(dryRunId, slowDownloads, secureBoot, null);
 
     // A machine that started the Linux boot environment, which runs the sequences that write a raw disk image.
-    internal AgentProcess StartLinuxBootAgent(bool secureBoot = false) => Start(null, false, secureBoot, AgentEnvironment.LinuxBoot);
+    internal AgentProcess StartLinuxBootAgent(bool secureBoot = false, bool slowDownloads = false) =>
+        Start(null, slowDownloads, secureBoot, AgentEnvironment.LinuxBoot);
 
     private AgentProcess Start(int? dryRunId, bool slowDownloads, bool secureBoot, AgentEnvironment? environment)
     {

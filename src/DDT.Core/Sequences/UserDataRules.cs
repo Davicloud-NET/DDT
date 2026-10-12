@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Sequences;
 
@@ -25,6 +26,12 @@ internal static class UserDataRules
     public static void Check(WriteCloudInitSeedStep seed, StepProblems problems)
     {
         string userData = seed.UserData ?? "";
+
+        // Text over the limit has a problem of its own, and none of it is read.
+        if (Encoding.UTF8.GetByteCount(userData) > SequenceValidator.MaxSeedFileBytes)
+        {
+            return;
+        }
 
         // Nothing in an empty file switches anything off.
         if (string.IsNullOrWhiteSpace(userData.TrimStart('\uFEFF')))

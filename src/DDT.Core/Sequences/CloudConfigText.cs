@@ -66,18 +66,14 @@ internal static class CloudConfigText
         return colon < 0 ? (Unquote(part), "") : (Unquote(part[..colon]), part[(colon + 1)..].Trim());
     }
 
-    // The parts of a flow collection's inside, cut at the commas that are its own.
+    // The parts of a flow collection's inside, cut at the commas that are its own, in one pass over the text.
     public static List<string> FlowParts(string inside)
     {
         List<string> parts = [];
         int start = 0;
 
-        while (start <= inside.Length)
+        void Cut(int end)
         {
-            int from = start;
-            int comma = Find(inside, (text, at) => at >= from && text[at] == ',', brackets: true);
-            int end = comma < 0 ? inside.Length : comma;
-
             if (inside[start..end].Trim() is { Length: > 0 } part)
             {
                 parts.Add(part);
@@ -85,6 +81,20 @@ internal static class CloudConfigText
 
             start = end + 1;
         }
+
+        Find(
+            inside,
+            (text, at) =>
+            {
+                if (text[at] == ',')
+                {
+                    Cut(at);
+                }
+
+                return false;
+            },
+            brackets: true);
+        Cut(inside.Length);
 
         return parts;
     }

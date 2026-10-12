@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Diagnostics;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 using Xunit;
@@ -36,6 +37,11 @@ public sealed class SequenceValidatorUserDataTests
     // Each finding as its code and the form of its sentence, such as "notEnabled".
     private static string[] Said(IEnumerable<SequenceProblem> findings) =>
         [.. findings.Select(finding => finding.Args is { Count: > 0 } args ? $"{finding.Code} {args.Values.Single()}" : finding.Code ?? "")];
+
+    private const string CloudConfigHeader = "#cloud-config\n";
+
+    // What a scan of the longest user-data may take at most. A computer of 2026 needs a few milliseconds.
+    private static readonly TimeSpan s_scanTime = TimeSpan.FromMilliseconds(250);
 
     private static string Document(string keys) => $"#cloud-config\n{keys}\n";
 
@@ -237,6 +243,51 @@ public sealed class SequenceValidatorUserDataTests
 
         Assert.Empty(analysis.Warnings);
         Assert.Empty(analysis.Notes);
+    }
+
+    // The limit's own problem is all that such text draws. Nothing in it is read.
+    [Fact]
+    public void ScansNoUserDataThatIsOverTheLimit()
+    {
+        const string SwitchesOff = "#cloud-config\nvendor_data: {enabled: false}\npower_state: {mode: reboot}\n# ";
+        WriteCloudInitSeedStep seed = WriteSeed() with { UserData = SwitchesOff.PadRight(SequenceValidator.MaxSeedFileBytes, 'x') };
+
+        Assert.NotEmpty(Analyse(seed.UserData).Warnings);
+
+        SequenceAnalysis analysis = SequenceValidator.Analyse(Definition(WriteRawImage(), seed with { UserData = seed.UserData + "x" }, InLinux()));
+
+        Assert.Equal([(seed.Id, "userData", "sequence.seedFileTooLarge")], TreeSteps.Said(analysis.Problems));
+        Assert.Empty(analysis.Warnings);
+        Assert.Empty(analysis.Notes);
+    }
+
+    // Each is as long as the limit lets it be. A scan that began again at every comma took seconds for the first two,
+    // so the best of a few tries, which a busy computer does not stretch, stays far below that.
+    [Theory]
+    [InlineData("vendor_data: {", ",", "}")]
+    [InlineData("power_state: {", "a,", "}")]
+    [InlineData("vendor_data: {enabled: ", "[", "}")]
+    [InlineData("vendor_data: {enabled: true, disabled_handlers: [", "'',", "]}")]
+    [InlineData("cloud_final_modules: [", "a: b, ", "]")]
+    [InlineData("cloud_final_modules:", "\n- a", "")]
+    [InlineData("vendor_data:", "\n  a: {b: c}", "")]
+    [InlineData("vendor_data: {", "a: '", "}")]
+    public void ScansTheLongestUserDataInTimeThatGrowsWithItsLength(string before, string repeated, string after)
+    {
+        int times = (SequenceValidator.MaxSeedFileBytes - CloudConfigHeader.Length - before.Length - after.Length) / repeated.Length;
+        string userData = CloudConfigHeader + before + string.Concat(Enumerable.Repeat(repeated, times)) + after;
+        SequenceDefinition definition = Definition(WriteRawImage(), WriteSeed() with { UserData = userData }, InLinux());
+        TimeSpan best = TimeSpan.MaxValue;
+
+        for (int attempt = 0; attempt < 5 && best > s_scanTime; attempt++)
+        {
+            long started = Stopwatch.GetTimestamp();
+            Assert.Empty(SequenceValidator.Analyse(definition).Problems);
+            best = TimeSpan.FromTicks(Math.Min(best.Ticks, Stopwatch.GetElapsedTime(started).Ticks));
+        }
+
+        Assert.True(userData.Length > SequenceValidator.MaxSeedFileBytes - repeated.Length);
+        Assert.True(best < s_scanTime, $"Scanning {userData.Length} characters took {best.TotalMilliseconds:F0} ms at best.");
     }
 
     [Fact]

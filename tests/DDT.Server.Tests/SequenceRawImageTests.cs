@@ -200,4 +200,26 @@ public sealed class SequenceRawImageTests(DdtApplication application) : IClassFi
         Assert.DoesNotContain("[]", SequenceTemplates.LinuxUserData, StringComparison.Ordinal);
         Assert.EndsWith("\n", SequenceTemplates.LinuxUserData, StringComparison.Ordinal);
     }
+
+    // A sequence saves with such a seed as a draft, and its row in the list is made without reading the text.
+    [Fact]
+    public async Task ASeedOverTheLimitDrawsTheLimitsProblemAndNothingOfItsUserData()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        Image image = await application.SeedRawImageAsync(RandomNumberGenerator.GetBytes(4096), name: $"noble {Guid.NewGuid():N}");
+        SequenceDefinition definition = SequenceRequests.LinuxWithInstalledSteps(image.Id);
+        WriteCloudInitSeedStep seed = Assert.IsType<WriteCloudInitSeedStep>(definition.Steps[1]) with
+        {
+            UserData = "#cloud-config\nvendor_data: {enabled: false}\n# " + new string('x', 64 * 1024),
+        };
+
+        SequenceView saved = await administrator.CreatedSequenceAsync(SequenceRequests.Definition(definition.Steps[0], seed, definition.Steps[2]));
+        SequenceSummary row = Assert.Single(
+            await ReadAsync<IReadOnlyList<SequenceSummary>>(await administrator.GetAsync(SequenceRequests.Sequences)),
+            summary => summary.Id == saved.Id);
+
+        Assert.Equal("sequence.seedFileTooLarge", Assert.Single(saved.Problems).Code);
+        Assert.Empty(saved.Warnings);
+        Assert.Equal((1, 0, true), (row.ProblemCount, row.WarningCount, row.ContinuesInLinux));
+    }
 }

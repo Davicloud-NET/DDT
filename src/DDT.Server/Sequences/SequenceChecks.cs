@@ -24,12 +24,16 @@ public static class SequenceChecks
     // Parts of a name that say its value is a password or another secret, ignoring case.
     private static readonly string[] s_secretNames = ["password", "passwd", "passwort", "kennwort", "pwd", "secret", "token"];
 
-    public static SequenceValidation Check(SequenceDefinition definition, SequenceReferences references)
+    public static SequenceValidation Check(SequenceDefinition definition, SequenceReferences references) =>
+        Check(definition, references, SequenceValidator.Analyse(definition));
+
+    // With the analysis a caller already has. Each analysis walks every path and reads every seed's user-data.
+    public static SequenceValidation Check(SequenceDefinition definition, SequenceReferences references, SequenceAnalysis analysis)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(references);
+        ArgumentNullException.ThrowIfNull(analysis);
 
-        SequenceAnalysis analysis = SequenceValidator.Analyse(definition);
         List<SequenceProblem> problems = [.. analysis.Problems];
         List<SequenceProblem> warnings = [.. analysis.Warnings];
         bool addsAdministrator = false;
@@ -42,7 +46,7 @@ public static class SequenceChecks
         CheckDeclaredSecrets(definition, warnings);
 
         // Some path reaches Windows, and no answer file on any path adds the administrator.
-        if (InWindows(analysis.NodePhases) && !addsAdministrator)
+        if (ContinuesInWindows(analysis.NodePhases) && !addsAdministrator)
         {
             warnings.Add(SequenceProblem.From(null, null, ServerMessages.SequenceNoAdministratorWarning.With()));
         }
@@ -78,12 +82,21 @@ public static class SequenceChecks
     // The phases each node may run in, in SequenceTree.Nodes order. A node has more than one if it depends on the path.
     public static IReadOnlyList<NodePhase> NodePhases(SequenceDefinition definition) => SequenceValidator.Analyse(definition).NodePhases;
 
-    // Whether some path through the sequence continues in Windows.
-    public static bool ContinuesInWindows(SequenceDefinition definition) => InWindows(NodePhases(definition));
+    // Whether some path through the sequence continues in Windows, from the phases of its nodes.
+    public static bool ContinuesInWindows(IReadOnlyList<NodePhase> nodes)
+    {
+        ArgumentNullException.ThrowIfNull(nodes);
+
+        return nodes.Any(node => node.Phases.Contains(SequencePhase.Windows));
+    }
 
     // The same for the installed Linux, where the seed carries the agent.
-    public static bool ContinuesInLinux(SequenceDefinition definition) =>
-        NodePhases(definition).Any(node => node.Phases.Contains(SequencePhase.Linux));
+    public static bool ContinuesInLinux(IReadOnlyList<NodePhase> nodes)
+    {
+        ArgumentNullException.ThrowIfNull(nodes);
+
+        return nodes.Any(node => node.Phases.Contains(SequencePhase.Linux));
+    }
 
     // Why a sequence needs a computer name, or null if it doesn't. It joins the domain under that name, a cloud-init
     // seed names the machine with it, or it declares the ComputerName variable. A join or a seed on any branch counts.
@@ -183,8 +196,6 @@ public static class SequenceChecks
                 written.BootDetail ?? ""));
         }
     }
-
-    private static bool InWindows(IReadOnlyList<NodePhase> nodes) => nodes.Any(node => node.Phases.Contains(SequencePhase.Windows));
 
     private static void CheckImage(Guid imageId, ImageKind kind, SequenceReferences references, Action<string?, ServerMessage> add)
     {

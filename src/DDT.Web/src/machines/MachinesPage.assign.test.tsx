@@ -344,6 +344,9 @@ describe("MachinesPage", () => {
           /^Required, because Install Windows joins the domain under this name\./,
         );
       });
+      expect(name).toHaveAccessibleDescription(
+        /At most 15 characters: the letters A to Z, digits and hyphens\. Not only digits, and no hyphen first or last\.$/,
+      );
       expect(name).toBeRequired();
       await assignable(dialog);
 

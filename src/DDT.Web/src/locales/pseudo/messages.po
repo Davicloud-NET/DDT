@@ -2728,6 +2728,10 @@ msgstr ""
 msgid "At least one of these holds"
 msgstr ""
 
+#: src/machines/assign/AssignFields.tsx
+msgid "At most 15 characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first or last."
+msgstr ""
+
 #: src/sequences/builder/variables/MaxLengthSetting.tsx
 msgid "At most this many characters"
 msgstr ""
@@ -11548,10 +11552,6 @@ msgstr ""
 
 #: src/sequences/builder/inspector/NodeKeys.tsx
 msgid "Unwrap {name}"
-msgstr ""
-
-#: src/machines/assign/AssignFields.tsx
-msgid "Up to 15 letters A to Z, digits and hyphens."
 msgstr ""
 
 #: src/uploads/UploadPanel.tsx

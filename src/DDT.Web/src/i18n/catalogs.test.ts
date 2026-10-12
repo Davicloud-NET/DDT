@@ -9,9 +9,9 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-// The catalogs as `npm run i18n` writes them: one msgid and msgstr per entry, each on a single line.
-function read(locale: string): Map<string, string> {
-  const text = readFileSync(new URL(`../locales/${locale}/messages.po`, import.meta.url), "utf8");
+// A catalog with one msgid and msgstr per entry, each on a single line, as `npm run i18n` writes the web's.
+function readCatalog(file: URL): Map<string, string> {
+  const text = readFileSync(file, "utf8");
   const entries = new Map<string, string>();
 
   for (const match of text.matchAll(
@@ -25,6 +25,10 @@ function read(locale: string): Map<string, string> {
   }
 
   return entries;
+}
+
+function read(locale: string): Map<string, string> {
+  return readCatalog(new URL(`../locales/${locale}/messages.po`, import.meta.url));
 }
 
 // The arguments a message names, such as {name} and {count, plural, …}. The text of a plural branch, such as
@@ -70,5 +74,18 @@ describe("the translation catalogs", () => {
       .map(([id]) => id);
 
     expect(changed).toEqual([]);
+  });
+
+  // The console at the machine asks for the same name, and the server holds both to one rule.
+  it("say what a computer name may be as the console at the machine does", () => {
+    const atMachine = readCatalog(
+      new URL("../../../DDT.MachineConsole/Locales/de/messages.po", import.meta.url),
+    );
+    const [hint, germanHint] = [...atMachine].find(([id]) =>
+      id.startsWith("At most {max} characters:"),
+    ) ?? ["", ""];
+
+    expect(hint).toMatch(/no hyphen first or last\.$/);
+    expect(german.get(hint.replace("{max}", "15"))).toBe(germanHint.replace("{max}", "15"));
   });
 });

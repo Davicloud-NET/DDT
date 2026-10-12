@@ -48,8 +48,34 @@ public sealed class InstalledLinuxVersionTests(BothEnvironmentsApplication appli
     private Task<Deployment> StoredAsync(Guid runId) =>
         application.QueryAsync(database => database.Deployments.AsNoTracking().SingleAsync(d => d.Id == runId, TestContext.Current.CancellationToken));
 
+    // The list shows it with its restart, and the restart is taken. A run of it is still never handed to Windows PE.
     [Fact]
-    public async Task AnAgentOfVersion4IsOfferedNoSequenceWithStepsInTheInstalledLinuxAtTheMachine()
+    public async Task AnAgentOfVersion4InWindowsPEMayRestartForASequenceItCannotRunAndIsHandedNoRunOfItThere()
+    {
+        string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
+        SequenceView installed = await SequenceAsync();
+        using DeployingMachine machine = await DeployingMachine.SignedInAsync(application, operatorName, [DeployingMachine.Disk(0)], sequenceVersion: BootOnlyVersion);
+
+        HttpResponseMessage picked = await machine.Agent.PickRunAsync(machine.Id, machine.Token, new AgentRunRequest(installed.Id, 0, "LINUX-34"));
+
+        Assert.Equal(HttpStatusCode.Conflict, picked.StatusCode);
+        Assert.Equal(
+            $"{installed.Name} runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the " +
+            "Linux boot environment first. Choose the sequence again, and it does.",
+            await TestDatabase.TitleAsync(picked));
+        Assert.Null((await application.MachineAsync(machine.Id)).ActiveDeploymentId);
+
+        (await machine.Agent.EnvironmentAsync(machine.Id, machine.Token, new AgentEnvironmentRequest(AgentEnvironment.LinuxBoot, installed.Id))).EnsureSuccessStatusCode();
+
+        Assert.Equal(AgentEnvironment.LinuxBoot, (await application.MachineAsync(machine.Id)).NextEnvironment);
+        Assert.Equal(installed.Id, (await application.MachineAsync(machine.Id)).PendingSequenceId);
+        Assert.Null((await application.MachineAsync(machine.Id)).ActiveDeploymentId);
+    }
+
+    // Where the machine is, its agent's version decides. For the other boot environment the restart is the cure: it
+    // is a start from the network, which brings the server's agent.
+    [Fact]
+    public async Task AnAgentOfVersion4IsOfferedASequenceWithStepsInTheInstalledLinuxOnlyWhereTheMachineRestartsForIt()
     {
         string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
         SequenceView installed = await SequenceAsync();
@@ -67,16 +93,19 @@ public sealed class InstalledLinuxVersionTests(BothEnvironmentsApplication appli
         using DeployingMachine windowsPE = await DeployingMachine.SignedInAsync(application, operatorName, [DeployingMachine.Disk(0)]);
         Guid[] both = [installed.Id, bootOnly.Id];
 
-        async Task<IEnumerable<Guid>> ListedAsync(DeployingMachine machine) =>
-            (await RegisteredMachine.ReadAsync<IReadOnlyList<AgentSequenceChoice>>(await machine.Agent.SequencesAsync(machine.Id, machine.Token)))
-            .Select(choice => choice.Id)
-            .Where(both.Contains);
+        async Task<IReadOnlyList<AgentSequenceChoice>> ChoicesAsync(DeployingMachine machine) =>
+            [.. (await RegisteredMachine.ReadAsync<IReadOnlyList<AgentSequenceChoice>>(await machine.Agent.SequencesAsync(machine.Id, machine.Token)))
+                .Where(choice => both.Contains(choice.Id))];
+
+        async Task<IEnumerable<Guid>> ListedAsync(DeployingMachine machine) => (await ChoicesAsync(machine)).Select(choice => choice.Id);
 
         Assert.Equal([bootOnly.Id], await ListedAsync(old));
         Assert.Equal(both.Order(), (await ListedAsync(current)).Order());
 
-        // Windows PE lists what it can restart for, and its own version decides what that is.
-        Assert.Equal([bootOnly.Id], await ListedAsync(oldWindowsPE));
+        // Windows PE lists what it can restart for, whatever its own agent runs: none of it runs there.
+        IReadOnlyList<AgentSequenceChoice> restartsFirst = await ChoicesAsync(oldWindowsPE);
+        Assert.Equal(both.Order(), restartsFirst.Select(choice => choice.Id).Order());
+        Assert.All(restartsFirst, choice => Assert.Equal(AgentEnvironment.LinuxBoot, choice.Environment));
         Assert.Equal(both.Order(), (await ListedAsync(windowsPE)).Order());
 
         // A pick of what the list did not show is refused, and nothing is assigned.

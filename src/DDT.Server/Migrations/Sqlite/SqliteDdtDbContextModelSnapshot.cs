@@ -372,6 +372,9 @@ namespace DDT.Server.Migrations.Sqlite
                         .HasMaxLength(128)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Detours")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("DiskNumber")
                         .HasColumnType("INTEGER");
 

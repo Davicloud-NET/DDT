@@ -128,6 +128,7 @@ public static partial class RegistrationValidator
             registration.Facts is { } facts ? Normalise(facts) : null)
         {
             StartsOver = registration.StartsOver == true,
+            HandedOver = registration.HandedOver,
         };
     }
 

@@ -51,6 +51,12 @@ public sealed class MachineArrivals(
             return Arrival.Refused(RegistrationRefusal.NothingToContinue);
         }
 
+        if (machine is not null
+            && await DetourAsync(new Visit(machine, active, continuation, registration, remoteAddress, now), cancellationToken).ConfigureAwait(false) is { } detour)
+        {
+            return new Arrival(machine, active, before, null, tested, RegistrationRefusal.None) { Detour = detour };
+        }
+
         if (machine is null)
         {
             machine = await AddNewAsync(registration, address, now, cancellationToken).ConfigureAwait(false);
@@ -69,6 +75,37 @@ public sealed class MachineArrivals(
         RecordRefusedRunToken(new Visit(machine, active, continuation, registration, remoteAddress, now));
 
         return new Arrival(machine, active, before, continuation.Continued, tested, RegistrationRefusal.None);
+    }
+
+    // An attempt that lost a race is forgotten before the next one decides anew.
+    public void Forget() => database.ChangeTracker.Clear();
+
+    // A boot agent that found the run handed over asks before it registers. While that run goes on in the installed
+    // Linux, nothing of the registration is taken: the machine keeps its approval and the run its tokens. Null when
+    // the registration is one as any other, which it also is at the limit, where the run ends first.
+    private async Task<MachineLogLine?> DetourAsync(Visit visit, CancellationToken cancellationToken)
+    {
+        if (visit.Continuation != Continuation.None || !NetworkDetours.Asks(visit.Registration, visit.Active))
+        {
+            return null;
+        }
+
+        Deployment run = visit.Active;
+        string? address = visit.RemoteAddress?.ToString();
+        run.Detours++;
+
+        if (run.Detours >= NetworkDetours.Max)
+        {
+            await termination.EndForDetoursAsync(visit.Machine, run, address, cancellationToken).ConfigureAwait(false);
+
+            return null;
+        }
+
+        MachineLogLine line = NetworkDetours.Line(run, visit.Now);
+        database.MachineLogLines.Add(line);
+        NetworkDetours.Answered(logger, visit.Machine.Id, address ?? "unknown", run.Id, run.Detours);
+
+        return line;
     }
 
     // Returns null if too many machines that nobody approved are waiting. Only those count, so a fleet that was
@@ -126,6 +163,12 @@ public sealed class MachineArrivals(
                 visit.Now,
                 $"Continued {continued.Title} ({continued.Id:D}) from {environment} with its {(continuation.ByRunToken ? "run" : "resume")} token."));
             RegistrationLog.Continued(logger, machine.Id, continued.Id, address ?? "unknown", environment);
+
+            // The installed system has called, so the machine reaches it
+            if (!SequenceKinds.IsBoot(SequenceKinds.Phase(environment)))
+            {
+                continued.Detours = 0;
+            }
         }
         else if (!continuation.Resumes)
         {

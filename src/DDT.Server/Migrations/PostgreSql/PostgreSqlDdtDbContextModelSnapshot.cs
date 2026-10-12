@@ -378,6 +378,9 @@ namespace DDT.Server.Migrations.PostgreSql
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
+                    b.Property<int>("Detours")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("DiskNumber")
                         .HasColumnType("integer");
 

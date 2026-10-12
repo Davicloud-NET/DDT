@@ -33,6 +33,9 @@ public sealed record NormalisedRegistration(
     // Someone at the machine chose to start over although its run goes on in the installed system.
     public bool StartsOver { get; init; }
 
+    // The agent found a run handed over to the installed system on a disk, without its token, and asks first.
+    public AgentHandedOverRun? HandedOver { get; init; }
+
     // If an older agent doesn't report its disks or facts, the newer agent's values are kept rather than made unknown.
     public void ApplyTo(Machine machine, string? address, DateTimeOffset now)
     {

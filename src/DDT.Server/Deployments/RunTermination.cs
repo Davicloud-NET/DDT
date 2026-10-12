@@ -114,6 +114,16 @@ public sealed class RunTermination(DdtDbContext database, RunQueries queries, Ti
             : "The machine started again during the run, without the run's token, so the run could not continue.";
     }
 
+    // For a run in the installed Linux whose machine keeps starting from the network (see NetworkDetours). The
+    // registration that follows starts the machine over, as any without a token does.
+    public Task EndForDetoursAsync(Machine machine, Deployment running, string? address, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(running);
+
+        return FailAsync(machine, running, Actor.OfMachine(machine.Id, address), NetworkDetours.TooMany, cancellationToken);
+    }
+
     // For a running run whose agent has been silent for longer than a run token lasts (see AbandonedRunSweeper).
     public async Task EndForLostContactAsync(Machine machine, Deployment running, CancellationToken cancellationToken)
     {

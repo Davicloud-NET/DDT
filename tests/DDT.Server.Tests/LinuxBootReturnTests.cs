@@ -26,28 +26,9 @@ public sealed class LinuxBootReturnTests(DdtApplication application) : IClassFix
         "The run was ended at the machine. It started from the network while its run went on in the installed Linux, and someone " +
         "there pressed a key to start over.";
 
-    // A run the Linux boot environment has handed over, and the machine that still holds its token.
-    private async Task<(DeployingMachine Machine, AgentRun Run)> HandedOverAsync(string name)
-    {
-        SignedInClient administrator = await application.AdministratorAsync();
-        Image image = await application.SeedRawImageAsync(RandomNumberGenerator.GetBytes(4096), name: $"noble {Guid.NewGuid():N}");
-        SequenceView sequence = await administrator.CreatedSequenceAsync(SequenceRequests.LinuxWithInstalledSteps(image.Id));
-        DeployingMachine machine = await DeployingMachine.RegisterAsync(application, DeployingMachine.LinuxBoot());
-        (await administrator.PostAsync($"/api/machines/{machine.Id}/approve")).EnsureSuccessStatusCode();
-        await machine.NextAsync();
-        await administrator.AssignedAsync(machine.Id, sequence.Id, name);
-        AgentRun run = Assert.IsType<AgentRun>((await machine.NextAsync()).Run);
-        StepRunState[] written = [Step(run.Sequence.Steps[0], StepState.Done), Step(run.Sequence.Steps[1], StepState.Done)];
+    private Task<(DeployingMachine Machine, AgentRun Run)> HandedOverAsync(string name) => HandedOverLinuxRun.StartAsync(application, name);
 
-        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Running, written) with { Phase = SequencePhase.LinuxBoot, Activity = RunActivity.HandingOver });
-        await machine.ReportOkAsync(run.Id, Returned(null) with { Steps = written });
-
-        return (machine, run);
-    }
-
-    // What the boot agent reports when it sends the machine back to its disk: no step moves, and the count if it has one.
-    private static AgentRunReport Returned(int? returns) =>
-        new(DeploymentState.Running, SequencePhase.Linux, [], null, 0, RunActivity.Restarting, null, BootReturns: returns);
+    private static AgentRunReport Returned(int? returns) => HandedOverLinuxRun.Returned(returns);
 
     // The boot environment registers with the token the seed still holds, and keeps the tokens the server answers with.
     private static async Task<(AgentRegistrationResult Registered, string Token)> ReturnAsync(DeployingMachine machine)

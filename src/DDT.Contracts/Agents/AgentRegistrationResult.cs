@@ -29,4 +29,7 @@ public sealed record AgentRegistrationResult(
     // the settings name none, and for an agent in another environment.
     string? ConsoleKeyboardLayout = null,
     // With RunId: how often the run's reports said that the boot environment started again since it handed the run over.
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? BootReturns = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? BootReturns = null,
+    // Set, with no token, for a registration that asked with HandedOver while that run goes on in the installed system.
+    // Nothing was registered or changed, and the agent sends the machine back to its disk.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AgentInstalledRun? InstalledRun = null);

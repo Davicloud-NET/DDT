@@ -40,4 +40,7 @@ public sealed record AgentRegistration(
     // The other facts that conditions test. Null from an agent that predates version 3 sequences.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] MachineFacts? Facts = null,
     // Someone at the machine chose to start over, although a run of it goes on in its installed system. That ends the run.
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? StartsOver = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? StartsOver = null,
+    // Set by a boot environment's agent that found a run handed over on a disk and has no token. It asks before it
+    // registers: while that run goes on in the installed system, the server changes nothing and answers InstalledRun.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AgentHandedOverRun? HandedOver = null);

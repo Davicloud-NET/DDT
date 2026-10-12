@@ -43,6 +43,10 @@ public sealed class Deployment
     // How often the boot environment started again after it handed the run over, as its reports of that said.
     public int BootReturns { get; set; }
 
+    // How often in a row the machine started from the network while the installed Linux had the run, with no
+    // registration from there in between. See NetworkDetours.
+    public int Detours { get; set; }
+
     public Guid? RequestedByUserId { get; set; }
 
     public string? RequestedByName { get; set; }

@@ -417,6 +417,9 @@ namespace DDT.Server.Migrations.SqlServer
                         .HasColumnType("nvarchar(128)")
                         .UseCollation("Latin1_General_100_BIN2");
 
+                    b.Property<int>("Detours")
+                        .HasColumnType("int");
+
                     b.Property<int?>("DiskNumber")
                         .HasColumnType("int");
 

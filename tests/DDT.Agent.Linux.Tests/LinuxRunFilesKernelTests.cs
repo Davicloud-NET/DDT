@@ -6,6 +6,7 @@ using System.Text;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Sequences;
+using DDT.Core.CloudInit;
 using DDT.Core.Sequences;
 using Xunit;
 
@@ -76,6 +77,22 @@ public sealed class LinuxRunFilesKernelTests : IDisposable
         return place;
     }
 
+    // A FAT volume of the seed's kind, mounted. FAT has no second names, so a save cannot keep the copy it replaces.
+    private string FatVolume()
+    {
+        LoopDisk.SkipUnlessLinux();
+        Assert.SkipUnless(Environment.UserName == "root", "Only root may mount.");
+        File.WriteAllBytes(Image, CloudInitSeed.Build([new SeedFile("meta-data", "x"u8.ToArray())], 7, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), 0));
+        _loop = LoopDisk.Attach(Image, partitions: 0);
+        string place = Path.Combine(_folder, "fat");
+        Directory.CreateDirectory(place);
+        int error = _mounts.Mount(_loop.Device, place, "vfat", string.Empty);
+        Assert.SkipUnless(error == 0, $"This system mounts no FAT file system (error {error}).");
+        _mounted.Add(place);
+
+        return place;
+    }
+
     // What the volume holds once everything written is on it, also in blocks no file owns. Only this volume is
     // written out: the system's other file systems are none of the test's.
     private byte[] Raw()
@@ -113,6 +130,51 @@ public sealed class LinuxRunFilesKernelTests : IDisposable
         Assert.All(Enumerable.Range(1, 5), number => Assert.False(Holds(after, Token(number)), $"token {number}"));
         Assert.All(Enumerable.Range(1, 5), number => Assert.False(Holds(after, Marker(number)), $"state {number}"));
         Assert.DoesNotContain("WARN", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    // FAT has no second names. A save still leaves each file whole, and says once that the copy it replaced stays.
+    [Fact]
+    public async Task AFileSystemWithoutSecondNamesStillGetsEachFileWholeAndIsToldOnceWhatStays()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        RunFiles files = RunFiles.In(FatVolume(), _log);
+
+        for (int number = 1; number <= 3; number++)
+        {
+            await files.SaveTokenAsync(Token(number), cancellationToken);
+            await files.SaveStateAsync(State(number), cancellationToken);
+        }
+
+        Assert.Equal(Token(3), await files.LoadTokenAsync(cancellationToken));
+        Assert.Equal(Marker(3), (await files.LoadStateAsync(cancellationToken))?.Variables["Password"]);
+        Assert.Equal(["state.json", "token"], Directory.EnumerateFiles(Path.GetDirectoryName(files.TokenPath)!).Select(Path.GetFileName).Order());
+        string said = Assert.Single(_console.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries), line => line.Contains("WARN", StringComparison.Ordinal));
+        Assert.Contains($"The copy of {files.TokenPath} that a save replaces cannot be kept under a second name (", said, StringComparison.Ordinal);
+    }
+
+    // A link that points nowhere where a save writes: the kernel would make its target, with the token in it.
+    [Fact]
+    public async Task ALinkThatPointsNowhereIsReplacedAndItsTargetNeverMade()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        string root = Volume();
+        RunFiles files = RunFiles.In(root, _log);
+        string planted = Path.Combine(root, "planted");
+        Directory.CreateDirectory(Path.GetDirectoryName(files.TokenPath)!);
+
+        foreach (string name in (string[])[files.TokenPath, files.TokenPath + FileReplacement.Temporary, files.TokenPath + FileReplacement.Replaced])
+        {
+            Assert.Equal(0, LoopDisk.Run("ln", "-s", planted, name).ExitCode);
+        }
+
+        await files.SaveTokenAsync(Token(1), cancellationToken);
+        await files.SaveTokenAsync(Token(2), cancellationToken);
+
+        Assert.False(File.Exists(planted));
+        Assert.Equal(Token(2), await files.LoadTokenAsync(cancellationToken));
+        Assert.Equal(["token"], Directory.EnumerateFileSystemEntries(Path.GetDirectoryName(files.TokenPath)!).Select(Path.GetFileName));
+        Assert.Null(new FileInfo(files.TokenPath).LinkTarget);
+        Assert.False(Holds(Raw(), Token(1)));
     }
 
     // The power went between two saves' steps: one left its temporary file, another the file it had replaced.

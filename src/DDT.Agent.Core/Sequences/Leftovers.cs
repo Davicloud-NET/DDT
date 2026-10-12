@@ -7,7 +7,8 @@ using DDT.Agent.Deployment;
 namespace DDT.Agent.Sequences;
 
 // Deletes what a step no longer needs. A file or directory that stays behind only costs space, so a failure is a
-// warning and never fails the step. A link is deleted itself and never followed, whatever a script left behind.
+// warning and never fails the step. A link at the path is deleted itself, also one that points nowhere. A link in a
+// folder above it is followed.
 internal static class Leftovers
 {
     // A larger file is no token and no state of a run, and only deleted.
@@ -27,10 +28,15 @@ internal static class Leftovers
                     log.Warning($"{path} was not deleted, because {reason}.");
                 }
             }
-            else if (File.Exists(path))
+            else
             {
+                // Not asked first whether it exists: that follows a link, and one that points nowhere would stay
                 File.Delete(path);
             }
+        }
+        catch (DirectoryNotFoundException)
+        {
+            // Not even its folder is there
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

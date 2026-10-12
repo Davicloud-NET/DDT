@@ -206,6 +206,31 @@ public sealed class CloudInitWaitStartsTests : IDisposable
         Assert.StartsWith($"WARN  That the wait for cloud-init is over could not be noted in {_linux.Marker} (", warnings[1], StringComparison.Ordinal);
     }
 
+    // A plain create would follow the link and write the start's id wherever it points.
+    [Fact]
+    public void ALinkThatPointsNowhereInTheNotesPlaceIsReplacedByTheNote()
+    {
+        string target = Path.Combine(Path.GetDirectoryName(_linux.Note)!, "planted");
+        _linux.Start(CloudInitRoot.StartA);
+        Directory.CreateDirectory(Path.GetDirectoryName(_linux.Note)!);
+
+        try
+        {
+            File.CreateSymbolicLink(_linux.Note, target);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Assert.Skip($"This system lets the test make no link ({exception.Message}).");
+        }
+
+        _linux.FirstStart().Take();
+
+        Assert.False(File.Exists(target));
+        Assert.Null(new FileInfo(_linux.Note).LinkTarget);
+        Assert.Equal(CloudInitRoot.StartA, File.ReadAllText(_linux.Note));
+        Assert.DoesNotContain(_linux.Lines(), line => line.StartsWith("WARN", StringComparison.Ordinal));
+    }
+
     // A container, or a kernel built without the file: every start then counts as the first, which only costs the wait.
     [Fact]
     public void WithoutAnIdOfTheStartEveryStartCountsAsTheFirst()

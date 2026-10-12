@@ -17,7 +17,8 @@ internal sealed class ReplacementDisk(AgentLog log) : IReplacementDisk
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
 
-        FileStream file = new(path, OwnFile.Private(FileMode.Create, FileOptions.WriteThrough));
+        // Never through a link someone left at the name: the name is new, or the save fails
+        FileStream file = new(path, OwnFile.Private(FileMode.CreateNew, FileOptions.WriteThrough));
 
         await using (file.ConfigureAwait(false))
         {

@@ -166,6 +166,54 @@ public sealed class RunFilesTests : IDisposable
         Assert.Null(await _files.LoadTokenAsync(TestContext.Current.CancellationToken));
     }
 
+    public static TheoryData<string> LinkedNames => ["token" + FileReplacement.Temporary, "token" + FileReplacement.Replaced, "token"];
+
+    // File.Exists follows a link, so one that points nowhere looks like nothing, and a plain create would write its target.
+    [Theory]
+    [MemberData(nameof(LinkedNames))]
+    public async Task ALinkThatPointsNowhereIsNeitherWrittenThroughNorLeft(string name)
+    {
+        string run = Path.Combine(RunDirectory, "run");
+        string target = Path.Combine(_windows, "planted");
+        Directory.CreateDirectory(run);
+        LinkOrSkip(Path.Combine(run, name), target);
+
+        await _files.SaveTokenAsync("run-token-1", TestContext.Current.CancellationToken);
+        await _files.SaveTokenAsync("run-token-2", TestContext.Current.CancellationToken);
+
+        Assert.False(File.Exists(target));
+        Assert.Equal("run-token-2", await _files.LoadTokenAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(["token"], Directory.EnumerateFileSystemEntries(run).Select(Path.GetFileName));
+        Assert.Null(new FileInfo(_files.TokenPath).LinkTarget);
+    }
+
+    [Fact]
+    public async Task DiscardRemovesALinkThatPointsNowhereItself()
+    {
+        await _files.SaveTokenAsync("run-token-1", TestContext.Current.CancellationToken);
+        string target = Path.Combine(_windows, "planted");
+        LinkOrSkip(_files.StatePath, target);
+
+        _files.Discard();
+
+        Assert.False(Directory.Exists(Path.Combine(RunDirectory, "run")));
+        Assert.False(File.Exists(target));
+        Assert.Empty(_console.ToString());
+    }
+
+    // Windows lets only an administrator or a developer's computer make a link.
+    private static void LinkOrSkip(string path, string target)
+    {
+        try
+        {
+            File.CreateSymbolicLink(path, target);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Assert.Skip($"This system lets the test make no link ({exception.Message}).");
+        }
+    }
+
     [Fact]
     public async Task NoFilesMeanNoRun()
     {

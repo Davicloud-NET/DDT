@@ -29,14 +29,16 @@ public sealed class FirstStartNote(ICloudInit cloudInit, string path, AgentLog l
 
         try
         {
-            if (File.Exists(path))
+            if (Noted() is { } first)
             {
-                return File.ReadAllText(path).Trim() is { Length: > 0 } first && first != start;
+                return first.Length > 0 && first != start;
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
 
-            using StreamWriter note = new(new FileStream(path, OwnFile.Private(FileMode.Create)));
+            // A link that points nowhere is no note, and must not be written through
+            File.Delete(path);
+            using StreamWriter note = new(new FileStream(path, OwnFile.Private(FileMode.CreateNew)));
             note.Write(start);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -45,5 +47,19 @@ public sealed class FirstStartNote(ICloudInit cloudInit, string path, AgentLog l
         }
 
         return false;
+    }
+
+    // Null when there is no note. Not asked first whether the file exists, which a link that points nowhere answers
+    // differently on each system.
+    private string? Noted()
+    {
+        try
+        {
+            return File.ReadAllText(path).Trim();
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return null;
+        }
     }
 }

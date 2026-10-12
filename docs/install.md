@@ -1015,7 +1015,8 @@ before the run's next step, and the run reads "Waiting for cloud-init" meanwhile
   steps set, by writing `Name=Value` lines to the file that `DDT_VARIABLES_OUT` names. The log
   names the variable and never its value.
 - **A Pause** waits until someone lets the run go on on the web, or until its own time is over.
-  Nobody is asked at the machine: the agent in the installed Linux has no console.
+  Nobody is asked at the machine: the agent in the installed Linux has no console. A graphical
+  console on Linux, there and in the boot environment, is the third part of M8 and not built.
 - **Restarts.** A Restart step, "Restart after" on a step and a script's restart code restart
   Linux with `systemctl reboot`. The unit starts again after the restart, and the run goes on at
   its next step.
@@ -1228,6 +1229,8 @@ version it runs, and the server hands it no newer sequence:
   again, where it takes the server's agent."
 - An older agent in Windows PE is restarted into the Linux boot environment like any other,
   since the agent it takes there is the server's.
+- An agent that is handed a sequence newer than it runs refuses the run before anything is
+  erased, and says to start the machine from the network again.
 
 Nothing has to be built for version 5. An agent updates itself from the server before it
 registers, in Windows PE and in the Linux boot environment (section 4.2), so machines run the

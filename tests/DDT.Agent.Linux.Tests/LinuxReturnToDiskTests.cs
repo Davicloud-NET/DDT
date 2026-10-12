@@ -119,7 +119,7 @@ public sealed class LinuxReturnToDiskTests : IDisposable
         Assert.Contains(Server.SentLines, line => line.Message == "The next start comes from boot entry Boot0002, which starts disk 0, whatever the boot order says.");
     }
 
-    // A restart into the installed system otherwise follows the boot order, and takes back a next start set before it.
+    // Any other restart into the installed system names the first entry of the boot order, whatever was set before it.
     [Fact]
     public async Task TheRestartIntoTheDiskKeepsTheNextStartThatWasSetForIt()
     {
@@ -134,7 +134,7 @@ public sealed class LinuxReturnToDiskTests : IDisposable
 
         await rebooter.RebootAsync(RestartInto.InstalledSystem, TestContext.Current.CancellationToken);
 
-        Assert.Null(_firmware.Read("BootNext"));
+        Assert.Equal([0x01, 0x00], _firmware.Read("BootNext"));
     }
 
     [Fact]

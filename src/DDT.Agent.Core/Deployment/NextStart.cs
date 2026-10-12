@@ -8,12 +8,14 @@ using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Deployment;
 
-// Makes the firmware start next from the boot entry this start came from, whatever the boot order says, so a restart
-// leads back into the boot environment. It sets BootNext to BootCurrent, and only warns where that cannot be done.
+// Names the boot entry the firmware starts next, whatever it does with its boot order: the one this start came from,
+// so a restart leads back into the boot environment, or the first of the order, where a run put its disk. It sets
+// BootNext, and only warns where that cannot be done.
 public sealed class NextStart(IUefiVariables variables, AgentLog log, AgentEnvironment environment)
 {
     private const string BootCurrent = "BootCurrent";
     private const string BootNext = "BootNext";
+    private const string BootOrder = "BootOrder";
 
     // A firmware may have made the entry only for a one-time boot menu. The restart is then plain.
     public void FromThisEntry()
@@ -44,6 +46,29 @@ public sealed class NextStart(IUefiVariables variables, AgentLog log, AgentEnvir
         catch (DeploymentStepException exception)
         {
             log.Warning($"The next start could not be set to this start's boot entry ({exception.Message}). {plainly}");
+        }
+    }
+
+    // Names the first entry of the boot order, where a run put its disk, as the next start too. A firmware that tries
+    // the network before its order at every start would otherwise come back here once for nothing.
+    public void FromTheFirstEntry()
+    {
+        try
+        {
+            if (variables.Read(BootOrder) is not { Length: >= 2 } order)
+            {
+                FromTheBootOrder();
+
+                return;
+            }
+
+            string entry = string.Create(CultureInfo.InvariantCulture, $"Boot{BinaryPrimitives.ReadUInt16LittleEndian(order):X4}");
+            variables.Write(BootNext, order[..2]);
+            log.Information($"The next start comes from boot entry {entry}, the first in the boot order, also where the firmware tries the network before it.");
+        }
+        catch (DeploymentStepException exception)
+        {
+            log.Warning($"The next start could not be set to the first entry of the boot order ({exception.Message}), so the firmware's own order decides.");
         }
     }
 

@@ -7,7 +7,8 @@ using DDT.Contracts.Agents;
 namespace DDT.Agent.Deployment;
 
 // Restarts the machine from the Linux boot environment. For a restart back into it the network starts next whatever
-// the boot order says. A restart into the installed system follows the boot order, where the run put the disk first.
+// the boot order says. A restart into the installed system starts the first entry of the boot order next, where the
+// run put the disk, also on a firmware that tries the network first at every start.
 public sealed class LinuxBootRebooter(IUefiVariables variables, LinuxRestart restart, AgentLog log) : IRebooter
 {
     private readonly NextStart _next = new(variables, log, AgentEnvironment.LinuxBoot);
@@ -20,7 +21,7 @@ public sealed class LinuxBootRebooter(IUefiVariables variables, LinuxRestart res
         }
         else
         {
-            _next.FromTheBootOrder();
+            _next.FromTheFirstEntry();
         }
 
         // The loop still sends its last lines after this, so they say what was unmounted.

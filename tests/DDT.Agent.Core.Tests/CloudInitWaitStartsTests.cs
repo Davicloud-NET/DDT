@@ -26,7 +26,7 @@ public sealed class CloudInitWaitStartsTests : IDisposable
     public void DoesNotWaitAgainForAPowerStateThatRestartedTheMachineAtAnEarlierStart()
     {
         _linux.Start(CloudInitRoot.StartA);
-        Assert.Equal(CloudInitWait.StillRunning, _linux.Wait().Pending());
+        Assert.Equal(CloudInitWait.NotStarted, _linux.Wait().Pending());
 
         // The agent is started again at the same start of Linux, as after an error: the restart is still to come.
         _linux.Put(CloudInitFiles.ResultPath, CloudInitRoot.Clean);
@@ -87,16 +87,16 @@ public sealed class CloudInitWaitStartsTests : IDisposable
     }
 
     // User-data that disables cloud-init's units and restarts, a common way to run it once. The generator still says
-    // enabled at the next start, and no unit writes a status.
+    // enabled at the next start, and no unit writes a status. Until then nothing says that cloud-init runs.
     [Fact]
     public void GoesOnOnceCloudInitHasShownNoSignOfRunningTwoMinutesAfterTheAgentStarted()
     {
         _linux.Start(CloudInitRoot.StartA);
         CloudInitWait wait = _linux.Wait();
 
-        Assert.Equal(CloudInitWait.StillRunning, wait.Pending());
+        Assert.Equal("cloud-init has not shown yet that it runs at this start", wait.Pending());
         _linux.Time.Advance(CloudInitWait.StartLimit - TimeSpan.FromSeconds(1));
-        Assert.Equal(CloudInitWait.StillRunning, wait.Pending());
+        Assert.Equal(CloudInitWait.NotStarted, wait.Pending());
         Assert.False(File.Exists(_linux.Marker));
 
         _linux.Time.Advance(TimeSpan.FromSeconds(1));

@@ -333,7 +333,7 @@ public sealed class LinuxPhaseLoopTests : IDisposable
         Assert.Equal(AgentExitCodes.Deployed, await running);
         string[] expected =
         [
-            $"Waiting for cloud-init, which sets this Linux up at its first start: {CloudInitWait.RunsAgain}. The run goes on after it.",
+            "Waiting for cloud-init: cloud-init runs again at this later start of Linux. The run goes on after it.",
             "The wait for cloud-init is over, and the run goes on.",
             "Step Script 1 begins.",
         ];

@@ -21,6 +21,9 @@ public sealed class CloudInitWait(ICloudInit cloudInit, FirstStartNote firstStar
 
     public const string StillRunning = "cloud-init is still running";
 
+    // Its generator says enabled, and no unit of it has written a status yet. Whether one ever does is not known.
+    public const string NotStarted = "cloud-init has not shown yet that it runs at this start";
+
     public const string RunsAgain = "cloud-init runs again at this later start of Linux";
 
     public const string RestartComes = "cloud-init has finished, and the machine restarts or powers off as its user-data asked";
@@ -104,9 +107,14 @@ public sealed class CloudInitWait(ICloudInit cloudInit, FirstStartNote firstStar
     {
         TimeSpan waited = timeProvider.GetElapsedTime(_started);
 
-        if (cloudInit.Status() is not null || waited < StartLimit)
+        if (cloudInit.Status() is not null)
         {
             return StillRunning;
+        }
+
+        if (waited < StartLimit)
+        {
+            return NotStarted;
         }
 
         log.Information(NotRunning(waited));

@@ -32,8 +32,10 @@ public sealed class LinuxPhaseTexts : IInstalledPhaseTexts
     public string StillInBootEnvironment(Guid runId) =>
         $"Run {runId} still goes on in the Linux boot environment, which hands it over again. The agent leaves it alone.";
 
-    public string WaitingForSetup(string pending) =>
-        $"Waiting for cloud-init, which sets this Linux up at its first start: {pending}. The run goes on after it.";
+    // At a later start the wait is for what cloud-init does at every start, which the pending text then says itself.
+    public string WaitingForSetup(string pending) => pending == CloudInitWait.RunsAgain
+        ? $"Waiting for cloud-init: {pending}. The run goes on after it."
+        : $"Waiting for cloud-init, which sets this Linux up at its first start: {pending}. The run goes on after it.";
 
     public string ReportRefusedDuringSetup(string failure) =>
         $"The server did not take the report while the run waits for cloud-init ({failure}). Registering again.";

@@ -70,7 +70,7 @@ public sealed class InstalledPhaseLoop
     private async Task<int> GoOnAsync(CancellationToken cancellationToken)
     {
         _log.Information(_profile.Texts.Started(_options.AgentVersion));
-        RunFiles.In(_options.Root, _log).Sweep();
+        RunFiles.In(_options.Root, _log).Recover();
 
         if (await LocalRun.LoadAsync(_options.Root, _log, cancellationToken).ConfigureAwait(false) is not { } local)
         {

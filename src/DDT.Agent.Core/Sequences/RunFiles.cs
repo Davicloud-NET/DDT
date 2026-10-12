@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
@@ -49,12 +50,62 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
     public Task SaveFinalReportAsync(AgentRunReport report, CancellationToken cancellationToken) =>
         FileReplacement.ReplaceAsync(FinalReportPath, JsonSerializer.SerializeToUtf8Bytes(report, AgentJsonContext.Default.AgentRunReport), log, cancellationToken);
 
-    // Overwrites and removes what a save that was cut off left behind. For the agent's start, while nothing saves.
-    public void Sweep()
+    // For the agent's start, while nothing saves: overwrites and removes what a save that was cut off left behind. A
+    // file such a save left unreadable gets the whole copy the save had written, if there is one.
+    public void Recover()
     {
-        foreach (string path in (string[])[TokenPath, StatePath, FinalReportPath])
+        FileReplacement.Recover(TokenPath, bytes => IsToken(bytes), log);
+        FileReplacement.Recover(StatePath, bytes => Parses(bytes, AgentJsonContext.Default.SequenceState), log);
+        FileReplacement.Recover(FinalReportPath, bytes => Parses(bytes, AgentJsonContext.Default.AgentRunReport), log);
+    }
+
+    // A token is a line of printable ASCII. A file of zeros, as an overwritten one is, holds none. Loops by hand: with
+    // MemoryExtensions.ContainsAnyExceptInRange here, ILCompiler 10.0.12 crashes on most publishes of the Windows agent.
+    internal static bool IsToken(ReadOnlySpan<byte> content)
+    {
+        ReadOnlySpan<byte> token = Trimmed(content, zerosToo: false);
+
+        foreach (byte value in token)
         {
-            FileReplacement.Sweep(path, log);
+            if (value is < 0x21 or > 0x7E)
+            {
+                return false;
+            }
+        }
+
+        return token.Length > 0;
+    }
+
+    // The bytes without the blanks and line ends around them, and without the zeros there where those count as none.
+    internal static ReadOnlySpan<byte> Trimmed(ReadOnlySpan<byte> content, bool zerosToo)
+    {
+        int start = 0;
+        int end = content.Length;
+
+        while (start < end && IsBlank(content[start], zerosToo))
+        {
+            start++;
+        }
+
+        while (end > start && IsBlank(content[end - 1], zerosToo))
+        {
+            end--;
+        }
+
+        return content[start..end];
+    }
+
+    private static bool IsBlank(byte value, bool zerosToo) => value is 0x20 or 0x09 or 0x0D or 0x0A || (zerosToo && value == 0);
+
+    private static bool Parses<T>(byte[] json, JsonTypeInfo<T> type)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize(json, type) is not null;
+        }
+        catch (Exception exception) when (exception is JsonException or NotSupportedException)
+        {
+            return false;
         }
     }
 
@@ -120,9 +171,9 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
 
         try
         {
-            string token = (await File.ReadAllTextAsync(TokenPath, Encoding.ASCII, cancellationToken).ConfigureAwait(false)).Trim();
+            byte[] content = await File.ReadAllBytesAsync(TokenPath, cancellationToken).ConfigureAwait(false);
 
-            return token.Length > 0 ? token : null;
+            return IsToken(content) ? Encoding.ASCII.GetString(content).Trim() : null;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -152,7 +203,11 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
     // deleted file's bytes stay on the disk.
     public void Discard()
     {
-        Sweep();
+        foreach (string path in (string[])[TokenPath, StatePath, FinalReportPath])
+        {
+            FileReplacement.Sweep(path, log);
+        }
+
         Leftovers.Wipe(TokenPath, log);
         Leftovers.Wipe(StatePath, log);
         Leftovers.Wipe(FinalReportPath, log);

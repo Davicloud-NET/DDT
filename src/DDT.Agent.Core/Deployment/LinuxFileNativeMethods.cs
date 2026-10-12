@@ -25,6 +25,9 @@ internal static partial class LinuxFileNativeMethods
     // PATH_MAX of limits.h, and the end of the text.
     public const int MaxPath = 4096 + 1;
 
+    // O_RDONLY with O_CLOEXEC of fcntl.h, which x64 and arm64 number alike.
+    public const int ReadOnlyCloseOnExec = 0x80000;
+
     [LibraryImport("libc", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial int statx(int directory, string path, int flags, uint mask, out Status status);
 
@@ -35,6 +38,17 @@ internal static partial class LinuxFileNativeMethods
     // Gives a file a second name, which shares its bytes with the first.
     [LibraryImport("libc", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial int link(string existing, string added);
+
+    // Declared with the mode the kernel reads: open takes a variable number of arguments in C.
+    [LibraryImport("libc", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
+    internal static partial int open(string path, int flags, int mode);
+
+    // Of a folder: has its names written to the disk.
+    [LibraryImport("libc", SetLastError = true)]
+    internal static partial int fsync(int file);
+
+    [LibraryImport("libc", SetLastError = true)]
+    internal static partial int close(int file);
 
     // Writes the path without any link in it into resolved, which holds MaxPath bytes. Null when there is no such path.
     [LibraryImport("libc", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]

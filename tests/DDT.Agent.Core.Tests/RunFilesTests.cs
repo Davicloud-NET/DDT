@@ -111,11 +111,59 @@ public sealed class RunFilesTests : IDisposable
         await File.WriteAllTextAsync(_files.TokenPath + FileReplacement.Temporary, "half a tok", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(_files.StatePath + FileReplacement.Replaced, "{}", TestContext.Current.CancellationToken);
 
-        _files.Sweep();
+        _files.Recover();
 
         Assert.Equal(["token"], Directory.EnumerateFiles(Path.Combine(RunDirectory, "run")).Select(Path.GetFileName));
         Assert.Equal("run-token-1", await _files.LoadTokenAsync(TestContext.Current.CancellationToken));
         Assert.Empty(_console.ToString());
+    }
+
+    // An overwrite that reached the disk before its rename did: zeros under the name, and the save's own copy beside it.
+    [Fact]
+    public async Task AtAStartAWholeCopyTakesThePlaceOfAFileThatCannotBeRead()
+    {
+        await _files.SaveTokenAsync("run-token-1", TestContext.Current.CancellationToken);
+        await _files.SaveStateAsync(s_state, TestContext.Current.CancellationToken);
+        await File.WriteAllBytesAsync(_files.TokenPath, new byte[11], TestContext.Current.CancellationToken);
+        await File.WriteAllBytesAsync(_files.StatePath, new byte[400], TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(_files.TokenPath + FileReplacement.Temporary, "run-token-2", TestContext.Current.CancellationToken);
+        await File.WriteAllBytesAsync(_files.StatePath + FileReplacement.Temporary, RunFiles.StateContent(s_state with { NextIndex = 2 }), TestContext.Current.CancellationToken);
+
+        _files.Recover();
+
+        Assert.Equal("run-token-2", await _files.LoadTokenAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(2, (await _files.LoadStateAsync(TestContext.Current.CancellationToken))?.NextIndex);
+        Assert.Equal(["state.json", "token"], Directory.EnumerateFiles(Path.Combine(RunDirectory, "run")).Select(Path.GetFileName).Order());
+        Assert.Contains(
+            $"WARN  {_files.TokenPath} could not be read after a save that was cut off. The copy that save had written whole is in its place now.",
+            _console.ToString(),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ACopyThatIsNotWholeTakesNoPlace()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_files.StatePath)!);
+        await File.WriteAllBytesAsync(_files.TokenPath, new byte[11], TestContext.Current.CancellationToken);
+        await File.WriteAllBytesAsync(_files.StatePath, new byte[400], TestContext.Current.CancellationToken);
+        await File.WriteAllBytesAsync(_files.TokenPath + FileReplacement.Temporary, [(byte)'r', 0, 0], TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(_files.StatePath + FileReplacement.Temporary, "{ \"format\": 2, \"run", TestContext.Current.CancellationToken);
+
+        _files.Recover();
+
+        Assert.Equal(new byte[11], await File.ReadAllBytesAsync(_files.TokenPath, TestContext.Current.CancellationToken));
+        Assert.Equal(["state.json", "token"], Directory.EnumerateFiles(Path.Combine(RunDirectory, "run")).Select(Path.GetFileName).Order());
+        Assert.Empty(_console.ToString());
+    }
+
+    // An overwritten token must not be sent to the server as a line of NUL characters.
+    [Fact]
+    public async Task ATokenFileOfZerosHoldsNoToken()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_files.TokenPath)!);
+        await File.WriteAllBytesAsync(_files.TokenPath, new byte[64], TestContext.Current.CancellationToken);
+
+        Assert.Null(await _files.LoadTokenAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]

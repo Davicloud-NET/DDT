@@ -127,7 +127,7 @@ public sealed class LinuxRunFilesKernelTests : IDisposable
         await File.WriteAllTextAsync(files.StatePath + FileReplacement.Temporary, Marker(1), cancellationToken);
         Assert.True(Holds(Raw(), Token(2)));
 
-        files.Sweep();
+        files.Recover();
 
         byte[] raw = Raw();
         Assert.Equal(Token(3), await files.LoadTokenAsync(cancellationToken));
@@ -148,7 +148,7 @@ public sealed class LinuxRunFilesKernelTests : IDisposable
         Assert.Equal(0, LoopDisk.Run("ln", files.TokenPath, files.TokenPath + FileReplacement.Replaced).ExitCode);
         Assert.Equal(0, LoopDisk.Run("ln", files.StatePath, files.StatePath + FileReplacement.Replaced).ExitCode);
 
-        files.Sweep();
+        files.Recover();
 
         Assert.Equal(Token(1), await files.LoadTokenAsync(cancellationToken));
         Assert.Equal(Marker(1), (await files.LoadStateAsync(cancellationToken))?.Variables["Password"]);

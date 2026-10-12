@@ -25,11 +25,29 @@ internal static class OwnFile
 
     // Null when the path holds nothing to overwrite: no file, a link, a pipe, a socket, a device, or a second name
     // of a file. Opening a pipe would wait for ever, and a second name shares its bytes with the first.
-    public static FileStream? OpenToOverwrite(string path)
+    public static FileStream? OpenToOverwrite(string path) => OpenPlain(path, FileAccess.Write);
+
+    // The bytes of such a file. Null when the path holds none, or one larger than maxBytes.
+    public static byte[]? Read(string path, long maxBytes)
+    {
+        using FileStream? file = OpenPlain(path, FileAccess.Read);
+
+        if (file is null || file.Length > maxBytes)
+        {
+            return null;
+        }
+
+        byte[] bytes = new byte[file.Length];
+        file.ReadExactly(bytes);
+
+        return bytes;
+    }
+
+    private static FileStream? OpenPlain(string path, FileAccess access)
     {
         if (!OperatingSystem.IsLinux())
         {
-            return File.Exists(path) && !File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint) ? Open(path) : null;
+            return File.Exists(path) && !File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint) ? Open(path, access) : null;
         }
 
         int found = LinuxFileNativeMethods.statx(
@@ -44,7 +62,7 @@ internal static class OwnFile
             return null;
         }
 
-        FileStream stream = Open(path);
+        FileStream stream = Open(path, access);
 
         // What was opened is asked again, in case the name changed hands in between.
         int opened = LinuxFileNativeMethods.statx(
@@ -64,7 +82,7 @@ internal static class OwnFile
         return null;
     }
 
-    private static FileStream Open(string path) => new(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
+    private static FileStream Open(string path, FileAccess access) => new(path, FileMode.Open, access, FileShare.ReadWrite | FileShare.Delete);
 
     // What tells the file from every other, or null for anything but a regular file with one name.
     private static (uint Major, uint Minor, ulong Inode)? Plain(int result, LinuxFileNativeMethods.Status status)

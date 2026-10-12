@@ -36,7 +36,7 @@ public sealed class FirmwareDiskStart(IUefiVariables variables, AgentLog log) : 
 
         try
         {
-            FirmwareBootEntry entries = new(variables, log);
+            FirmwareBootEntry entries = new(variables, log) { Partition = $"the EFI system partition of disk {disk.Number}" };
             ushort entry = (first ? null : entries.Find(systemPartition, FirmwareBootEntry.FallbackLoaderPath))
                 ?? entries.MakeFirst(systemPartition, FirmwareBootEntry.FallbackLoaderPath, Description, []);
             byte[] next = new byte[2];

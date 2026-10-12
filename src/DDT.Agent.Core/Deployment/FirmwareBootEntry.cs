@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace DDT.Agent.Deployment;
 
-// Puts a firmware boot entry for a loader on the new EFI system partition first in BootOrder. An entry is recognised by
+// Puts a firmware boot entry for a loader on an EFI system partition first in BootOrder. An entry is recognised by
 // the partition and file it starts, never by its description. A dead entry from an earlier installation has the same
 // description.
 public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
@@ -19,6 +19,9 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
     public const string FallbackLoaderPath = @"\EFI\BOOT\BOOTX64.EFI";
 
     private const string BootOrder = "BootOrder";
+
+    // How the log names the partition. A deployment has just made it. A machine that came back has had it all along.
+    public string Partition { get; init; } = "the new EFI system partition";
 
     // Takes every other entry for an erased EFI system partition out of the firmware. Off, they stay, as in Windows PE.
     public bool RemovesDeadEntries { get; init; }
@@ -136,18 +139,18 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
         if (existed)
         {
             log.Information(moved
-                ? $"Firmware boot entry {name} already starts {description} on the new EFI system partition. It is now first in the boot order."
-                : $"Firmware boot entry {name} already starts {description} on the new EFI system partition and is first in the boot order.");
+                ? $"Firmware boot entry {name} already starts {description} on {Partition}. It is now first in the boot order."
+                : $"Firmware boot entry {name} already starts {description} on {Partition} and is first in the boot order.");
         }
         else if (reusedErased)
         {
             log.Information(
                 $"Firmware boot entry {name} pointed at the EFI system partition this deployment erased. It now starts {description} on " +
-                "the new EFI system partition and is first in the boot order.");
+                $"{Partition} and is first in the boot order.");
         }
         else
         {
-            log.Information($"Added firmware boot entry {name} for {description} on the new EFI system partition and put it first in the boot order.");
+            log.Information($"Added firmware boot entry {name} for {description} on {Partition} and put it first in the boot order.");
         }
     }
 

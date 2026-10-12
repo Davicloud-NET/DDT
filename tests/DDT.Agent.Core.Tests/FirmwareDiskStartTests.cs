@@ -64,6 +64,13 @@ public sealed class FirmwareDiskStartTests
         Assert.Equal(Order(6), _variables.Values["BootNext"]);
         Assert.Equal(Order(6, 0, 2), _variables.Values["BootOrder"]);
         Assert.Equal(["BootOrder", "BootNext"], _variables.Writes);
+
+        // The partition is not new: the machine has had it since the image was written.
+        Assert.Contains(
+            "INFO  Firmware boot entry Boot0006 already starts Linux on the EFI system partition of disk 0. It is now first in the boot order.",
+            _console.ToString(),
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("new EFI system partition", _console.ToString(), StringComparison.Ordinal);
     }
 
     // A firmware may drop an entry it could not start, or one made for a one-time boot menu.
@@ -80,6 +87,10 @@ public sealed class FirmwareDiskStartTests
         Assert.Equal(EfiLoadOption.Build(FirmwareDiskStart.Description, s_esp, FirmwareBootEntry.FallbackLoaderPath), _variables.Values["Boot0001"]);
         Assert.Equal(Order(1, 0, 2), _variables.Values["BootOrder"]);
         Assert.Equal(Order(1), _variables.Values["BootNext"]);
+        Assert.Contains(
+            "INFO  Added firmware boot entry Boot0001 for Linux on the EFI system partition of disk 0 and put it first in the boot order.",
+            _console.ToString(),
+            StringComparison.Ordinal);
     }
 
     [Fact]

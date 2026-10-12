@@ -200,6 +200,43 @@ the values it ran with and where each of them came from, and the log of every st
 
 You can stop a run from here, or let a paused one go on. Nobody has to press reload for any of it.
 
+## Linux, if you deploy that too
+
+MDT never did Linux, so there is nothing to translate here, only something new. A task sequence
+that writes a raw disk image, such as a distribution's cloud image, is a Linux sequence. Start
+from the template **Install Linux**: it writes the image, writes a cloud-init seed that names the
+machine, and runs a script in the installed Linux.
+
+That last step is what State Restore was in MDT. Once the image has started, the run carries on
+inside it, and most of it will look familiar:
+
+- **Run script** is your Run Command Line: a shell script, run as root. It can bring a zip from
+  *Library, Files* along, and it finds the run's values in its environment.
+- **Restart** is Restart computer. A script asks for one by ending with exit code 194, which is
+  what a shell makes of the 3010 you know: its exit codes stop at 255.
+- **A share on a step** is Connect to UNC Path, with an account. The script finds the share
+  mounted, at the path in `DDT_SHARE_1`.
+- **Pause** is LTISuspend, and you let the run go on from the machine's page.
+- The machine's page shows each step with its log, as it does for Windows, and the run is done
+  when the last step is, not when the disk is written.
+
+What has no counterpart in MDT, because here DDT is a guest in an image somebody else made:
+
+- **The image has to play along.** DDT's agent travels into the installed Linux on the cloud-init
+  seed and runs there under systemd, so the image needs cloud-init and systemd. The cloud images
+  of Debian 13 and Ubuntu 24.04 have both, and those are the two it was tried with. In an image
+  with neither, nothing ever calls back. The machine's page then says how long it has been
+  waiting and where to look, and the task sequence editor warns beforehand of cloud-init
+  user-data that would lock the agent out.
+- **No "run as" and no domain join.** Scripts are root, and a share signs in with NTLM.
+- **Nobody asks at the machine.** The agent in the installed Linux has no console, so a Pause
+  there waits for the web.
+- **The agent leaves when it is done.** However the run ends, the agent removes itself from the
+  installed Linux, with its service and its files.
+
+[install.md](install.md), section 4.9, has all of it at length, including what to do with a
+machine that will not come back from its installed Linux.
+
 ## What DDT cannot do yet
 
 Better you hear it here than find out on a Friday afternoon:
@@ -212,11 +249,11 @@ Better you hear it here than find out on a Friday afternoon:
 - **Capturing a reference image.** Also M10. Until then, capture the way you do today and import
   the WIM.
 - **Offline media.** No USB sticks yet; machines netboot. M11.
-- **Linux past the image.** If you deploy Linux too: DDT writes the disk image with its cloud-init
-  seed and the run ends there. Steps inside the installed Linux and a graphical console for the
-  Linux boot environment are the rest of M8, and joining a Linux machine to a domain is not
-  planned. The Linux boot environment also needs DDT's own netboot. From the WDS boot menu a
-  machine starts DDT's Windows PE and nothing else.
+- **The rest of Linux.** A graphical console for the Linux boot environment is the last part of
+  M8, and until then that one asks in plain text. Joining a Linux machine to a domain is not
+  planned. Runs inside the installed Linux have only met virtual machines so far, so try yours
+  before you count on them. And Linux needs DDT's own netboot: from the WDS boot menu a machine
+  starts DDT's Windows PE and nothing else.
 - **BIOS and 32-bit machines.** Not planned at all. Windows 11 wants UEFI and x64, and so does DDT.
 
 The [roadmap](roadmap.md) has the rest.

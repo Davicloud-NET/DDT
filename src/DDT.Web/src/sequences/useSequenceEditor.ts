@@ -71,12 +71,12 @@ function savedElsewhereOf(
     : null;
 }
 
-// The copy another administrator saved, while this page's own edits haven't been saved over it.
 // What the server found in its copy, by how much it matters.
 function findingsOf(view: SequenceView): Findings {
   return { problems: view.problems, warnings: view.warnings, notes: view.notes ?? [] };
 }
 
+// The copy another administrator saved, while this page's own edits haven't been saved over it.
 function conflictOf(autosave: AutosaveSnapshot<SequenceDraft>, latest: SequenceView) {
   const theirs = autosave.theirs;
 

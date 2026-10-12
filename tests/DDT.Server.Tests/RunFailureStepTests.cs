@@ -127,4 +127,96 @@ public sealed class RunFailureStepTests : IDisposable
             $"Deployment {run.Id} of {failed.Title} failed on machine {machine.Id}, at none of its steps: The run's state could not be saved: the disk is full.",
             Logged(run.Id));
     }
+
+    // The step the agent named last has ended by the time the run fails, so the failure is not its own.
+    [Fact]
+    public async Task AFailureAtNoStepNamesNoneThoughAStepWasCurrentBefore()
+    {
+        const string NotSaved = "The run's state could not be saved: the disk is full.";
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync();
+        using DeployingMachine _ = machine;
+        (SequenceStep partition, SequenceStep apply) = (run.Sequence.Steps[0], run.Sequence.Steps[1]);
+
+        await machine.ReportOkAsync(run.Id, Running(Step(partition, StepState.Done), Step(apply, StepState.Running)));
+        Assert.Equal((1, "Apply"), ((await SummaryAsync(run.Id)).StepIndex, (await SummaryAsync(run.Id)).StepName));
+
+        await machine.ReportOkAsync(
+            run.Id,
+            Report(DeploymentState.Failed, [Step(partition, StepState.Done), Step(apply, StepState.Done)]) with { Error = NotSaved });
+
+        DeploymentSummary failed = await SummaryAsync(run.Id);
+
+        Assert.Equal((DeploymentState.Failed, null, null), (failed.State, failed.StepIndex, failed.StepName));
+        Assert.Equal([$"{failed.Title} on machine {machine.Id:D}: {NotSaved}"], await AuditAsync(run.Id));
+        Assert.Equal($"Deployment {run.Id} of {failed.Title} failed on machine {machine.Id}, at none of its steps: {NotSaved}", Logged(run.Id));
+    }
+
+    // The group around the step fails with it and carries the same error. The run failed at the step.
+    [Fact]
+    public async Task AFailureInsideAGroupNamesTheStepAndNotTheGroup()
+    {
+        RunScriptStep inner = Script("Configure");
+        GroupStep group = new() { Id = Guid.NewGuid(), Name = "Set up", Steps = [inner] };
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync(group);
+        using DeployingMachine _ = machine;
+        StepRunState[] steps =
+        [
+            Step(run.Sequence.Steps[0], StepState.Done),
+            Step(run.Sequence.Steps[1], StepState.Done),
+            Step(group, StepState.Failed, ExitCode),
+            Step(inner, StepState.Failed, ExitCode),
+        ];
+
+        await machine.ReportOkAsync(run.Id, Running() with { Activity = RunActivity.Preparing });
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, steps) with { Phase = SequencePhase.Windows, Error = ExitCode });
+
+        DeploymentSummary failed = await SummaryAsync(run.Id);
+
+        Assert.Equal((2, "Configure"), (failed.StepIndex, failed.StepName));
+        Assert.Equal([$"{failed.Title} on machine {machine.Id:D} at Configure: {ExitCode}"], await AuditAsync(run.Id));
+    }
+
+    // Both failed since the last report, with the same words. The run went on after the first and ended at the second.
+    [Fact]
+    public async Task AFailureNamesTheLaterOfAStepThatMayFailAndTheOneThatFailedTheRun()
+    {
+        RunScriptStep allowed = Script("Tidy up", mayFail: true);
+        RunScriptStep last = Script("Last");
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync(allowed, last);
+        using DeployingMachine _ = machine;
+        StepRunState[] steps =
+        [
+            Step(run.Sequence.Steps[0], StepState.Done),
+            Step(run.Sequence.Steps[1], StepState.Done),
+            Step(allowed, StepState.Failed, ExitCode),
+            Step(last, StepState.Failed, ExitCode),
+        ];
+
+        await machine.ReportOkAsync(run.Id, Running() with { Activity = RunActivity.Preparing });
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, steps) with { Phase = SequencePhase.Windows, Error = ExitCode });
+
+        DeploymentSummary failed = await SummaryAsync(run.Id);
+
+        Assert.Equal((3, "Last"), (failed.StepIndex, failed.StepName));
+        Assert.Equal($"Deployment {run.Id} of {failed.Title} failed on machine {machine.Id} at step Last: {ExitCode}", Logged(run.Id));
+    }
+
+    // A report without steps, as from an agent that no longer has the run's state, fails the step that still runs.
+    [Fact]
+    public async Task AFailureThatNamesNoStepIsTheOneOfTheStepThatStillRuns()
+    {
+        const string Stopped = "The machine restarted or the agent stopped while the run went on.";
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync();
+        using DeployingMachine _ = machine;
+        SequenceStep partition = run.Sequence.Steps[0];
+
+        await machine.ReportOkAsync(run.Id, Running(Step(partition, StepState.Running)));
+        await machine.ReportOkAsync(run.Id, Report(DeploymentState.Failed, []) with { Error = Stopped });
+
+        DeploymentSummary failed = await SummaryAsync(run.Id);
+        DeploymentStepView row = (await (await _application.AdministratorAsync()).RunAsync(run.Id)).Steps.Single(step => step.StepId == partition.Id);
+
+        Assert.Equal((0, "Partition"), (failed.StepIndex, failed.StepName));
+        Assert.Equal((StepState.Failed, Stopped), (row.State, row.Error));
+    }
 }

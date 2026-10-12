@@ -22,7 +22,8 @@ over a few sites and a VPN.
 Plug a PC into the network and let it netboot. DDT takes it from there: it starts Windows PE, runs
 a task sequence that partitions the disk and applies Windows, carries on inside the freshly
 installed Windows, and reports every step live to your browser. For a Linux image it starts a small
-Linux boot environment of its own instead. You get to drink your coffee.
+Linux boot environment of its own instead, and carries on inside the installed Linux the same way.
+You get to drink your coffee.
 
 > [!NOTE]
 > **The documentation is still thin.** There is a quick start right below, and a guide for people
@@ -107,13 +108,16 @@ Two things that save an afternoon:
   written from a Linux boot environment that comes with every release: Debian's kernel and DDT's
   agent for Linux, about 36 MB, with no ADK and nothing to build. The server names each machine the
   boot environment its task sequence needs, Windows PE for Windows and this one for Linux. The run
-  ends when the disk is written. Carrying on inside the installed Linux is the next part of M8.
+  then carries on inside the installed Linux, in an image that has cloud-init and systemd: shell
+  scripts as root, file packages, variables, pauses, restarts and network shares. DDT's agent
+  gets there on the cloud-init seed, reports each step, and removes itself when the run is over.
 - **Has a web UI that stays live.** Changes show up the moment they happen, no reload button
   required. Light and dark, English and German, and it fits on a phone, for approving a machine
   from the couch.
 - **Puts a console at the machine.** A graphical console in Windows PE lets a technician sign in,
   pick a sequence and watch it run. Shift+F10 still gets you a command prompt. The Linux boot
-  environment does the same in text for now.
+  environment does the same in text for now, and the agent in the installed Linux has no console:
+  its run is on the web.
 - **Is secure by default.** HTTPS only, with DDT's own root certificate. A machine gets no image,
   package or secret until it is authorized: by someone signing in at it, by an approval on the web,
   or by a zero-touch network you chose. Local accounts, LDAP and OpenID Connect, two-factor
@@ -155,8 +159,10 @@ Who helps with what:
 
 DDT is young, and what it publishes for now are pre-releases. It has deployed Windows to Hyper-V
 test machines and netbooted real hardware. The Linux boot environment is newer: it has deployed
-Debian to Hyper-V and QEMU virtual machines and to one laptop, with Secure Boot on. Treat all of it
-as a preview.
+Debian to Hyper-V and QEMU virtual machines and to one laptop, with Secure Boot on. Runs that carry
+on inside the installed Linux are newer still: they have run on the Debian 13 and Ubuntu 24.04
+cloud images in QEMU virtual machines with Secure Boot on, and on no Hyper-V machine and no real
+hardware yet. Treat all of it as a preview.
 
 | | Milestone | |
 |---|---|---|
@@ -166,15 +172,15 @@ as a preview.
 | M6.5 | The real UI: a new web UI, the graphical console, settings on web pages | ✅ Done |
 | M6.6 | Installing DDT with one command, on Windows Server and on Linux | ✅ Done |
 | M7 | A node-based flow builder for task sequences | ✅ Done |
-| M8 | Linux: a boot environment of its own, runs that carry on inside the installed Linux, the graphical console | 🔜 Part 1 of 3 |
+| M8 | Linux: a boot environment of its own, runs that carry on inside the installed Linux, the graphical console | 🔜 Part 2 of 3 |
 | M9 | Applications and Windows configuration | Planned |
 | M10 | Golden images and the machine lifecycle | Planned |
 | M11 | Beyond netboot and beyond a single site | Planned |
 | M12 | Documentation, the proper kind | Planned |
 
-M8 comes in three parts. The first is built: the Linux boot environment and the agent for Linux,
-which write Linux images in place of Windows PE. The run that carries on inside the installed Linux
-and the graphical console on Linux are the next two.
+M8 comes in three parts. The first two are built: the Linux boot environment and the agent for
+Linux, which write Linux images in place of Windows PE, and the run that carries on inside the
+installed Linux. The graphical console on Linux is the third, and not built.
 
 The [roadmap](docs/roadmap.md) has the details, and what is not planned at all.
 

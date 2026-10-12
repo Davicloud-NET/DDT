@@ -130,10 +130,10 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
         }
     }
 
-    private List<Listed> Since(long since) => [.. Below().Where(process => process.Started >= since)];
-
-    // The living processes that descend from the agent. One that has ended and waits to be collected is not among them.
-    private List<Listed> Below()
+    // The living processes below the agent that the tool started, or that it may have: none of them and none between
+    // them and the agent is older than the tool. What a daemon of an earlier step starts later is that daemon's.
+    // One that has ended and waits to be collected is not among them.
+    private List<Listed> Since(long since)
     {
         Dictionary<int, (int Parent, long Started, bool Alive)> all = [];
 
@@ -145,16 +145,21 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
             }
         }
 
-        return [.. all.Where(process => process.Value.Alive && IsBelow(process.Key, all)).Select(process => new Listed(process.Key, process.Value.Started))];
+        return [.. all.Where(process => process.Value.Alive && IsBelow(process.Key, since, all)).Select(process => new Listed(process.Key, process.Value.Started))];
     }
 
-    private bool IsBelow(int process, Dictionary<int, (int Parent, long Started, bool Alive)> all)
+    private bool IsBelow(int process, long since, Dictionary<int, (int Parent, long Started, bool Alive)> all)
     {
         int current = process;
 
         // A chain longer than the list has a circle in it, which a list read while it changes can show.
         for (int steps = 0; steps <= all.Count && all.TryGetValue(current, out (int Parent, long Started, bool Alive) entry); steps++)
         {
+            if (entry.Started < since)
+            {
+                return false;
+            }
+
             if (entry.Parent == agent)
             {
                 return process != agent;

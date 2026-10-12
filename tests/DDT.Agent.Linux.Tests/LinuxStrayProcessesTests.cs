@@ -224,6 +224,27 @@ public sealed class LinuxStrayProcessesTests : IDisposable
         Assert.Equal("", _console.ToString());
     }
 
+    // A step before this one left a daemon running on purpose. What that daemon starts while a later script runs is
+    // the daemon's own, however young it is.
+    [Fact]
+    public async Task LeavesAloneWhatADaemonOfAnEarlierStepStartedWhileTheScriptRan()
+    {
+        Process(150, Agent, 4000, "daemon-of-an-earlier-step");
+        Process(200, Agent, 5000, "sh");
+        Process(151, 150, 6000, "the-daemons-worker");
+        Process(152, 151, 6001);
+        Process(301, 200, 5010);
+        _obedient.UnionWith([200, 301]);
+        IToolStop stop = Strays().WatchFrom(200);
+
+        await stop.AskAsync("sh");
+        await stop.EndAsync();
+
+        Assert.Equal([200, 301], _asked.Order());
+        Assert.Empty(_killed);
+        Assert.Equal("INFO  sh and the 1 process it had started ended when they were asked to (SIGTERM).", Assert.Single(Lines()));
+    }
+
     [Fact]
     public async Task SaysWhichProcessesItCouldNotEnd()
     {

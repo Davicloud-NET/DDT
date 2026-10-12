@@ -229,7 +229,7 @@ public sealed class SequenceValidatorUserDataTests
     [InlineData(" \n\t\n")]
     [InlineData("#cloud-config")]
     [InlineData("#cloud-config\n")]
-    [InlineData("﻿\n\n#cloud-config\r\nusers:\r\n  - default\r\n")]
+    [InlineData("\uFEFF\n\n#cloud-config\r\nusers:\r\n  - default\r\n")]
     [InlineData("#cloud-config\n# Only comments.\n\n")]
     public void SaysNothingOfUserDataThatSetsNothing(string userData)
     {

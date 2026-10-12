@@ -27,7 +27,7 @@ internal static class UserDataRules
         string userData = seed.UserData ?? "";
 
         // Nothing in an empty file switches anything off.
-        if (string.IsNullOrWhiteSpace(userData.TrimStart('﻿')))
+        if (string.IsNullOrWhiteSpace(userData.TrimStart('\uFEFF')))
         {
             return;
         }

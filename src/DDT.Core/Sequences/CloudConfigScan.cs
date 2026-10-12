@@ -27,7 +27,7 @@ internal sealed class CloudConfigScan
     {
         ArgumentNullException.ThrowIfNull(userData);
 
-        string text = userData.TrimStart('﻿').TrimStart();
+        string text = userData.TrimStart('\uFEFF').TrimStart();
 
         return text.StartsWith(Header, StringComparison.Ordinal) && !text.StartsWith(Header + "-", StringComparison.Ordinal);
     }
@@ -50,7 +50,7 @@ internal sealed class CloudConfigScan
             }
         }
 
-        foreach (string line in userData.TrimStart('﻿').TrimStart().Split('\n').Skip(1).Select(line => line.TrimEnd('\r')))
+        foreach (string line in userData.TrimStart('\uFEFF').TrimStart().Split('\n').Skip(1).Select(line => line.TrimEnd('\r')))
         {
             // An open flow collection goes on wherever its next line begins.
             if (open > 0 || BelongsToKey(line, name is not null, beside))

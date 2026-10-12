@@ -52,6 +52,30 @@ public sealed class CloudInitTests
         Assert.Equal("model: \"A\\x85B\\x9fC D\"", CloudInitTemplate.Render("model: \"{{Model}}\"", values));
     }
 
+    // Render turns every kind of line end into a line feed, also U+2028 and U+2029, and so does YAML. A value that
+    // holds one must not start a line of its own in the seed: that line would be cloud-config of whoever set the value.
+    [Theory]
+    [InlineData("\u2028", "\\u2028")]
+    [InlineData("\u2029", "\\u2029")]
+    [InlineData("\u0085", "\\x85")]
+    [InlineData("\n", "\\x0a")]
+    [InlineData("\r\n", "\\x0d\\x0a")]
+    [InlineData("\f", "\\x0c")]
+    public void AValueNeverMakesALineOfItsOwn(string lineEnd, string escaped)
+    {
+        Dictionary<string, string?> values = new(s_values)
+        {
+            [MachineVariableNames.Model] = $"OptiPlex{lineEnd}runcmd: [reboot]",
+            ["Office"] = $"Wien{lineEnd}ssh_pwauth: true",
+        };
+
+        string rendered = CloudInitTemplate.Render("#cloud-config\r\nmodel: \"{{Model}}\"\r\noffice: {{Office}}\r\n", values);
+
+        Assert.Equal($"#cloud-config\nmodel: \"OptiPlex{escaped}runcmd: [reboot]\"\noffice: Wien{escaped}ssh_pwauth: true\n", rendered);
+        Assert.Equal(3, rendered.Count(character => character == '\n'));
+        Assert.Equal(-1, rendered.AsSpan().IndexOfAny("\r\f\u0085\u2028\u2029"));
+    }
+
     [Fact]
     public void LeavesJinjaAndUnknownNamesAsTheyAre()
     {

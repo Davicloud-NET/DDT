@@ -79,7 +79,7 @@ model grows with it:
 
 ## M8 Linux
 
-Three parts, each a pull request that works by itself. The first is built.
+Three parts, each a pull request that works by itself. The first two are built.
 
 1. **The Linux boot environment and the agent for Linux.** Built. A netbooted Linux environment
    writes Linux images, and Windows PE is used for Windows only: the ADK's licence allows Windows
@@ -93,19 +93,32 @@ Three parts, each a pull request that works by itself. The first is built.
      the boot file of the environment its task sequence needs. A setting says what machines without
      a run start.
    - A sequence that writes a raw disk image is a Linux sequence. It runs in this environment, with
-     shell scripts before and after the image, and ends when the disk is written and first in the
-     boot order.
+     shell scripts before and after the image. Without steps in the installed Linux it ends when
+     the disk is written and first in the boot order.
    - A machine that started the other environment restarts into the right one. Its sign-in goes
      along in a UEFI variable, and where the firmware does not keep that, someone signs in again.
    - The console in this environment is text.
-2. **The run goes on in the installed Linux**, as it goes on in the installed Windows. Not built.
-   The cloud-init seed starts the agent for Linux there, which runs the sequence's steps, shell
-   scripts, file packages, restarts and shares included, reports each step with its log, ends the
-   run only when those steps are done, and then removes itself. Until then a run that writes a raw
-   disk image ends when the disk is written, and DDT does not watch what cloud-init does at the
-   first start.
+2. **The run goes on in the installed Linux**, as it goes on in the installed Windows. Built.
+   [install.md](install.md), section 4.9, has the details.
+   - The Linux boot environment hands the run over on the cloud-init seed: the agent, the run's
+     state and its token go onto the seed, and cloud-init installs the agent as a systemd unit at
+     the first start. So the image has to have cloud-init and systemd, and its user-data must
+     leave vendor data on. The sequence editor warns of user-data that does not.
+   - The agent there waits for cloud-init, then runs the sequence's steps as root: shell scripts,
+     file packages, variables, pauses, restarts and shares, which sign in with NTLM and not with
+     Kerberos. It reports each step with its log and ends the run only when those steps are done.
+     Then it removes itself, and overwrites what held the run's token before it deletes it.
+   - The server cannot see into an image, so a machine's page says since when its run waits for
+     the installed Linux to call, and after ten minutes what may keep it.
+   - A machine that starts from the network while its run is in the installed Linux is sent back
+     to its disk. The server counts such starts and ends the run when they do not stop.
+   - A sequence with such steps is of version 5. Agents take the server's agent at their next
+     netboot, so no boot image has to be built for it.
+   - Tried in QEMU on the cloud images of Debian 13 and Ubuntu 24.04, with Secure Boot on. Not
+     tried on Hyper-V or on a physical PC yet.
 3. **The graphical console on Linux**, in the boot environment and in the installed Linux. Not
-   built. Until then the Linux boot environment keeps its text console.
+   built. Until then the Linux boot environment keeps its text console, and the agent in the
+   installed Linux has none: a Pause there is continued on the web.
 
 Decided for all three parts:
 

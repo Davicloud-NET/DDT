@@ -5,7 +5,7 @@
 namespace DDT.Core.Sequences;
 
 // What a key of a cloud-config document is set to: the text beside the key and the lines below it.
-internal sealed class CloudConfigValue(string inline, IReadOnlyList<string> below)
+internal sealed class CloudConfigValue(string inline, IReadOnlyList<string> below, bool again = false)
 {
     // The lines that say something, each without its comment.
     private readonly string[] _below = [.. below.Select(CloudConfigText.StripComment).Where(line => !string.IsNullOrWhiteSpace(line))];
@@ -13,9 +13,11 @@ internal sealed class CloudConfigValue(string inline, IReadOnlyList<string> belo
     // All of the value, without comments.
     public string Text => string.Join('\n', [inline, .. _below]).Trim();
 
-    // An alias, an anchor, a tag, a block scalar or a placeholder: the value is not what its text here says.
+    // An alias, an anchor, a tag, a block scalar, a placeholder or a key set twice: the value is not what its text
+    // here says.
     public bool Unsure =>
-        Text.Contains("{{", StringComparison.Ordinal)
+        again
+        || Text.Contains("{{", StringComparison.Ordinal)
         || (Text.Length > 0 && "&*!|>".Contains(Text[0], StringComparison.Ordinal))
         || (Text.StartsWith('{') && !Text.EndsWith('}'))
         || (Text.StartsWith('[') && !Text.EndsWith(']'));

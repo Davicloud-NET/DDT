@@ -15,7 +15,8 @@ internal sealed class CloudConfigMapping
     // The key's value, or null if the mapping does not set it.
     public CloudConfigValue? this[string key] => _members.GetValueOrDefault(key);
 
-    // A key set again keeps its last value, as in YAML. Null is a key without a name the scan can tell.
+    // A key set again keeps its last value, as in YAML, and that value is unsure: the scan follows no quoted scalar
+    // over several lines, and one of the two may be text inside one.
     public void Set(string? key, string beside, IReadOnlyList<string> below)
     {
         if (key is null)
@@ -25,6 +26,6 @@ internal sealed class CloudConfigMapping
             return;
         }
 
-        _members[key] = new CloudConfigValue(beside, below);
+        _members[key] = new CloudConfigValue(beside, below, again: _members.ContainsKey(key));
     }
 }

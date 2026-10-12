@@ -83,7 +83,7 @@ internal static class UserDataRules
             return;
         }
 
-        if (members?["prefix"] is { IsEmpty: false })
+        if (members?["prefix"] is { IsEmpty: false } or { Unsure: true })
         {
             problems.Warn(Field, ServerMessages.SequenceUserDataVendorPrefixWarning.With());
         }
@@ -163,7 +163,7 @@ internal static class UserDataRules
 
         // A merged mapping may bring a condition of its own.
         bool happens = members is { Unsure: false } && (condition is null || Is(condition, s_true));
-        string mode = happens ? members?["mode"]?.Scalar?.ToLowerInvariant() ?? "" : "";
+        string mode = happens && members?["mode"] is { Unsure: false } set ? set.Scalar?.ToLowerInvariant() ?? "" : "";
 
         problems.Note(Field, ServerMessages.SequenceUserDataPowerStateNote.With("mode", mode switch
         {

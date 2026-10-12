@@ -91,7 +91,6 @@ public sealed class SequenceValidatorUserDataTests
     [InlineData("\"vendor_data\":\n  'enabled': \"0\"", "notEnabled")]
     [InlineData("vendor_data:\n  enabled:", "notEnabled")]
     [InlineData("vendor_data: {enabled:\n  false}", "notEnabled")]
-    [InlineData("vendor_data: {enabled: true}\nruncmd: [ls]\nvendor_data: {enabled: false}", "notEnabled")]
     [InlineData("vendor_data: false", "notMapping")]
     [InlineData("vendor_data: off", "notMapping")]
     [InlineData("vendor_data:", "notMapping")]
@@ -125,7 +124,6 @@ public sealed class SequenceValidatorUserDataTests
     [InlineData("vendor_data: {}")]
     [InlineData("vendor_data: {prefix: []}")]
     [InlineData("vendor_data:\n  prefix:")]
-    [InlineData("vendor_data: {enabled: false}\nvendor_data: {enabled: true}")]
     [InlineData("# vendor_data: {enabled: false}")]
     [InlineData("  # vendor_data: false")]
     [InlineData("write_files:\n  - path: /etc/cloud/cloud.cfg.d/99.cfg\n    content: |\n      vendor_data: {enabled: false}\n      cloud_final_modules: []")]
@@ -142,6 +140,22 @@ public sealed class SequenceValidatorUserDataTests
 
         Assert.Empty(analysis.Warnings);
         Assert.Empty(analysis.Notes);
+    }
+
+    // A key set twice keeps its last value in YAML. One of the two may be text in a quoted scalar over several lines,
+    // which the scan does not follow, so it says "may" whatever the last one says.
+    [Theory]
+    [InlineData("vendor_data: {enabled: true}\nruncmd: [ls]\nvendor_data: {enabled: false}", $"{VendorData} unread")]
+    [InlineData("vendor_data: {enabled: false}\nvendor_data: {enabled: true}", $"{VendorData} unread")]
+    [InlineData("vendor_data: {enabled: false}\nmotd: \"\nvendor_data:\n  enabled: true\n  end: \"", $"{VendorData} unread")]
+    [InlineData("vendor_data:\n  enabled: false\n  enabled: true", $"{VendorData} unread")]
+    [InlineData("vendor_data:\n  prefix: [timeout, 30]\n  prefix: []", VendorPrefix)]
+    [InlineData("cloud_final_modules: [scripts_user]\ncloud_final_modules: [scripts_vendor]", $"{FinalModules} unread")]
+    public void SaysMayOfAKeyTheUserDataSetsTwice(string keys, string warning)
+    {
+        SequenceAnalysis analysis = Analyse(Document(keys));
+
+        Assert.Equal([warning], Said(analysis.Warnings));
     }
 
     // cloud-init hands vendor data of a listed content type to no handler, and takes any part of a text for a type.
@@ -228,6 +242,8 @@ public sealed class SequenceValidatorUserDataTests
     [InlineData("power_state:\n  delay: now", "unread")]
     [InlineData("power_state: *power", "unread")]
     [InlineData("power_state: {<<: *power, mode: reboot}", "unread")]
+    [InlineData("power_state: {mode: reboot}\npower_state: {mode: reboot, condition: false}", "unread")]
+    [InlineData("power_state:\n  mode: poweroff\n  mode: reboot", "unread")]
     public void NotesWhatPowerStateDoesToTheRun(string keys, string mode)
     {
         SequenceAnalysis analysis = Analyse(Document(keys));

@@ -29,6 +29,8 @@ interface RunActivityProps {
   handedOverUtc?: string | null;
   // How often the machine has started from the network again since that hand-over.
   bootReturns?: number;
+  // What to add to now for the server's clock, on which the wait after a hand-over is measured.
+  clockOffsetMs?: number;
   now: number;
 }
 
@@ -41,6 +43,7 @@ export function RunActivity({
   lastSeenUtc,
   handedOverUtc = null,
   bootReturns = 0,
+  clockOffsetMs = 0,
   now,
 }: RunActivityProps) {
   const current = path?.current ?? null;
@@ -71,7 +74,12 @@ export function RunActivity({
 
   if (handedOverUtc !== null) {
     return (
-      <LinuxHandOverWait sinceUtc={handedOverUtc} returns={bootReturns} after={after} now={now} />
+      <LinuxHandOverWait
+        sinceUtc={handedOverUtc}
+        returns={bootReturns}
+        after={after}
+        now={now + clockOffsetMs}
+      />
     );
   }
 

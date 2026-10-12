@@ -8,6 +8,7 @@ import { Link, useParams, useSearch } from "@tanstack/react-router";
 
 import { isActive } from "@/deployments/deployments";
 import { linuxHandOver, linuxReturns } from "@/deployments/handOver";
+import { useServerClockOffset } from "@/deployments/useServerClockOffset";
 import { useNow } from "@/lib/useNow";
 import { LogPanel } from "@/log/LogPanel";
 import { resolutionText } from "@/rules/rules";
@@ -43,6 +44,8 @@ export function MachinePage() {
   const actions = useMachineActions();
   const now = useNow(1_000);
   const { machine, summary, view, removed } = detail;
+  const handedOverUtc = machine === null ? null : linuxHandOver(machine);
+  const clockOffsetMs = useServerClockOffset(handedOverUtc !== null);
   const { logId, filteredStep, showStepLog, showLogFromFlow } = useStepLog(detail.runId);
 
   return (
@@ -92,8 +95,9 @@ export function MachinePage() {
           run={summary}
           view={view}
           lastSeenUtc={machine?.lastSeenUtc ?? summary.updatedUtc}
-          handedOverUtc={machine === null ? null : linuxHandOver(machine)}
+          handedOverUtc={handedOverUtc}
           bootReturns={machine === null ? 0 : linuxReturns(machine)}
+          clockOffsetMs={clockOffsetMs}
           now={now}
         />
       ) : null}

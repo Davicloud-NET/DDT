@@ -44,6 +44,19 @@ describe("what a row says of a Linux run after its hand-over", () => {
     );
   });
 
+  // The hand-over's time is the server's, so a browser whose clock is ten minutes ahead adds them to no wait.
+  it("measures the wait on the server's clock", () => {
+    const machine = machineSummary({ handedOverUtc: minutesAgo(12), deployment: restarting });
+    const behind = machineSummary({ handedOverUtc: minutesAgo(2), deployment: restarting });
+
+    expect(runDetail(machine, now, -10 * 60_000)).toBe(
+      "Handed over 2 minutes ago, no call from the installed Linux yet",
+    );
+    expect(runDetail(behind, now, 9 * 60_000)).toBe(
+      "Handed over 11 minutes ago, still no call from the installed Linux",
+    );
+  });
+
   // The boot environment saw the machine again and sent it back to its disk, at the time the server names.
   it("says that the machine started from the network again, and for which time", () => {
     const once = machineSummary({

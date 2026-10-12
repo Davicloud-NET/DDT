@@ -18,8 +18,9 @@ export function detailTone(
   return state === "Running" ? "run" : state === "Failed" ? "fail" : "muted";
 }
 
-// The line beside a run's title in the list: its step or activity, or how it ended.
-export function runDetail(machine: MachineSummary, now: number): string | null {
+// The line beside a run's title in the list: its step or activity, or how it ended. clockOffsetMs is what to add to
+// now for the server's clock, on which the wait after a hand-over is measured.
+export function runDetail(machine: MachineSummary, now: number, clockOffsetMs = 0): string | null {
   const run = machine.deployment;
 
   if (run === null) {
@@ -35,7 +36,8 @@ export function runDetail(machine: MachineSummary, now: number): string | null {
 
       // Nothing may ever come from the installed Linux, so the row says since when it is awaited.
       if (handedOver !== null) {
-        const ago = relativeTime(handedOver, now);
+        const serverNow = now + clockOffsetMs;
+        const ago = relativeTime(handedOver, serverNow);
         const returns = linuxReturns(machine);
 
         // The boot environment saw the machine again and sent it back to its disk, which says more than the wait.
@@ -45,7 +47,7 @@ export function runDetail(machine: MachineSummary, now: number): string | null {
           return t`Started from the network again ${ago} (${nth} time), still no call from the installed Linux`;
         }
 
-        return isOverdue(handedOver, now)
+        return isOverdue(handedOver, serverNow)
           ? t`Handed over ${ago}, still no call from the installed Linux`
           : t`Handed over ${ago}, no call from the installed Linux yet`;
       }

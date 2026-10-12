@@ -16,6 +16,7 @@ interface LinuxHandOverWaitProps {
   returns?: number;
   // "step 2 of 4: Write the cloud-init seed", or null before the agent reported a step.
   after: string | null;
+  // On the server's clock, as sinceUtc is.
   now: number;
 }
 

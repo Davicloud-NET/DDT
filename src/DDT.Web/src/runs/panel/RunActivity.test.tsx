@@ -20,6 +20,7 @@ function renderActivity(
   run: Partial<DeploymentSummary>,
   handedOverUtc: string | null = null,
   bootReturns = 0,
+  clockOffsetMs = 0,
 ) {
   render(
     <I18nProvider i18n={i18n}>
@@ -30,6 +31,7 @@ function renderActivity(
         lastSeenUtc={lastSeenUtc}
         handedOverUtc={handedOverUtc}
         bootReturns={bootReturns}
+        clockOffsetMs={clockOffsetMs}
         now={now}
       />
     </I18nProvider>,
@@ -132,6 +134,28 @@ describe("what a run does between its steps", () => {
 
       expect(screen.getByText(/^It starts first/)).toBeInTheDocument();
       expect(screen.queryByText(causes)).not.toBeInTheDocument();
+    });
+
+    // The hand-over's time is the server's. A browser whose clock is off would count the ten minutes wrong.
+    it("measures the wait on the server's clock", () => {
+      const ahead = -10 * 60_000;
+
+      renderActivity(handedOver, minutesAgo(12), 0, ahead);
+
+      expect(
+        screen.getByText(/, 2 min 0 s ago\. The installed Linux has not called yet\.$/),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/^It starts first/)).toBeInTheDocument();
+      expect(screen.queryByText(causes)).not.toBeInTheDocument();
+    });
+
+    it("says after ten minutes on the server's clock what may keep it, though the browser's is behind", () => {
+      renderActivity(handedOver, minutesAgo(2), 0, 9 * 60_000);
+
+      expect(
+        screen.getByText(/, 11 min 0 s ago\. The installed Linux has not called yet\.$/),
+      ).toBeInTheDocument();
+      expect(screen.getByText(causes)).toBeInTheDocument();
     });
 
     it("says in German what may keep it", async () => {

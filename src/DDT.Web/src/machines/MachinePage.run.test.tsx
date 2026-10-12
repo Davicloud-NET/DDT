@@ -6,7 +6,7 @@ import { act, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { press } from "@/test/aria";
-import { logLine } from "@/test/builders";
+import { deploymentOptions, logLine } from "@/test/builders";
 
 import {
   answers,
@@ -182,6 +182,36 @@ describe("MachinePage", () => {
 
     expect(await screen.findByText("Waiting for cloud-init")).toBeInTheDocument();
     expect(screen.queryByText("Waiting for the installed Linux")).not.toBeInTheDocument();
+  });
+
+  // This browser's clock is eleven minutes behind the server's, which the server's own time in its options shows.
+  it("counts a first start's ten minutes on the server's clock", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now });
+
+    const handedOver = run({
+      phase: "Linux",
+      activity: "Restarting",
+      updatedUtc: "2026-09-16T10:04:00Z",
+    });
+    const waiting = machine({
+      agentEnvironment: "LinuxBoot",
+      handedOverUtc: "2026-09-16T10:04:00Z",
+      deployment: handedOver,
+    });
+
+    await open({
+      ...answers([waiting], [handedOver], [view({ summary: handedOver })]),
+      "GET /api/deployments/options": {
+        body: deploymentOptions({ serverUtc: "2026-09-16T10:17:00Z" }),
+      },
+    });
+
+    expect(
+      await screen.findByText(/, 13 min 0 s ago\. The installed Linux has not called yet\.$/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/^That is longer than a first start usually takes\./),
+    ).toBeInTheDocument();
   });
 
   // The boot environment tells the server with the run's token, and the server pushes the machine's row.

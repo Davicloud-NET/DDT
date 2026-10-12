@@ -6,7 +6,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { fill, press } from "@/test/aria";
-import { deploymentSummary, machineSummary } from "@/test/builders";
+import { deploymentOptions, deploymentSummary, machineSummary } from "@/test/builders";
 
 import { fact, now, open, row, secondsBefore, waiting } from "./MachinesPage.fixtures";
 
@@ -343,6 +343,44 @@ describe("MachinesPage", () => {
       const panel = within(screen.getByRole("complementary", { name: "PC-HANDED-OVER" }));
       expect(panel.getByText("Waiting for the installed Linux")).toBeInTheDocument();
       expect(panel.queryByText("Restarting")).not.toBeInTheDocument();
+    });
+
+    // This browser's clock is ten minutes behind the server's. The server is asked for its time for such a row only.
+    it("counts a first start's ten minutes on the server's clock", async () => {
+      vi.useFakeTimers({ toFake: ["Date"], now });
+
+      const handedOver = machineSummary({
+        id: "m1",
+        assignedName: "PC-HANDED-OVER",
+        state: "Deploying",
+        agentEnvironment: "LinuxBoot",
+        handedOverUtc: secondsBefore(120),
+        deployment: deploymentSummary({
+          title: "Install Linux",
+          state: "Running",
+          phase: "Linux",
+          activity: "Restarting",
+          updatedUtc: secondsBefore(120),
+        }),
+      });
+      const options = "GET /api/deployments/options";
+      const { server } = await open([handedOver], {
+        [options]: { body: deploymentOptions({ serverUtc: secondsBefore(-600) }) },
+      });
+
+      expect(
+        await within(await screen.findByRole("row", { name: /^PC-HANDED-OVER/ })).findByText(
+          "Handed over 12 minutes ago, still no call from the installed Linux",
+        ),
+      ).toBeInTheDocument();
+      expect(server.count(options)).toBe(1);
+    });
+
+    it("asks the server for its time for no list without such a row", async () => {
+      const { server } = await open([machineSummary({ assignedName: "PC-DONE", state: "Done" })]);
+
+      await screen.findByRole("link", { name: "PC-DONE" });
+      expect(server.count("GET /api/deployments/options")).toBe(0);
     });
 
     it("puts the machines that need someone first", async () => {

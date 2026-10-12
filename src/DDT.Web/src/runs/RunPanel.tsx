@@ -33,6 +33,8 @@ interface RunPanelProps {
   handedOverUtc?: string | null;
   // How often the machine has started from the network again since that hand-over.
   bootReturns?: number;
+  // What to add to now for the server's clock, on which the wait after a hand-over is measured.
+  clockOffsetMs?: number;
   now: number;
 }
 
@@ -44,6 +46,7 @@ export function RunPanel({
   lastSeenUtc,
   handedOverUtc = null,
   bootReturns = 0,
+  clockOffsetMs = 0,
   now,
 }: RunPanelProps) {
   const { i18n } = useLingui();
@@ -86,6 +89,7 @@ export function RunPanel({
           lastSeenUtc={lastSeenUtc}
           handedOverUtc={handedOverUtc}
           bootReturns={bootReturns}
+          clockOffsetMs={clockOffsetMs}
           now={now}
         />
       ) : null}

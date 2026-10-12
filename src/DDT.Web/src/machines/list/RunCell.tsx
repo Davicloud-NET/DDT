@@ -5,6 +5,8 @@
 import { t } from "@lingui/core/macro";
 
 import { isActive, isWaiting } from "@/deployments/deployments";
+import { linuxHandOver } from "@/deployments/handOver";
+import { useServerClockOffset } from "@/deployments/useServerClockOffset";
 import { relativeTime } from "@/lib/relativeTime";
 import { environmentLine, restartLine, restartsFailedLine } from "@/machines/bootEnvironment";
 import type { MachineSummary } from "@/machines/machines";
@@ -18,6 +20,8 @@ import { RunLines } from "./RunLines";
 export function RunCell({ machine, now }: { machine: MachineSummary; now: number }) {
   const run = machine.deployment;
   const environment = environmentLine(machine);
+  // A browser whose clock is off would say too early or too late that a first start takes long.
+  const clockOffsetMs = useServerClockOffset(linuxHandOver(machine) !== null);
 
   if (machine.state === "Pending" && !isActive(run)) {
     const by = machine.signedInBy;
@@ -53,7 +57,7 @@ export function RunCell({ machine, now }: { machine: MachineSummary; now: number
     <span className="flex min-w-0 flex-col gap-1.5 pr-6">
       <RunLines
         title={run.title}
-        detail={runDetail(machine, now)}
+        detail={runDetail(machine, now, clockOffsetMs)}
         detailTone={isWaiting(run) ? "attention" : detailTone(run.state)}
       />
       {rail.length > 0 ? <SequenceRailStrip steps={rail} label={railLabel(run)} /> : null}

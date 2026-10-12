@@ -40,7 +40,7 @@ export function LinuxHandOverWait({ sinceUtc, returns = 0, after, now }: LinuxHa
           <Trans>After {after}</Trans>
         </span>
       ) : null}
-      <span className="type-small text-ink-2">
+      <span className="max-w-[80ch] type-small text-ink-2">
         {returns > 0 ? (
           <Trans>
             The machine started from the network again {when}, {ago} ago, for the {nth} time since
@@ -53,7 +53,7 @@ export function LinuxHandOverWait({ sinceUtc, returns = 0, after, now }: LinuxHa
           </Trans>
         )}
       </span>
-      <span className="type-small text-ink-2">
+      <span className="max-w-[80ch] type-small text-ink-2">
         {returns > 0 ? (
           <Trans>
             A first start can fail or be cut short, so DDT tries the disk again, and ends the run if
@@ -61,7 +61,7 @@ export function LinuxHandOverWait({ sinceUtc, returns = 0, after, now }: LinuxHa
             the user-data keeps cloud-init from running DDT's script, the machine does not start
             from its disk, or that script failed. Look at the machine's own screen, and in the
             installed Linux at <span className="type-data">{output}</span> and{" "}
-            <span className="type-data">{journal}</span>.
+            <span className="type-data whitespace-nowrap">{journal}</span>.
           </Trans>
         ) : isOverdue(sinceUtc, now) ? (
           <Trans>
@@ -70,7 +70,7 @@ export function LinuxHandOverWait({ sinceUtc, returns = 0, after, now }: LinuxHa
             systemd, the user-data keeps cloud-init from running DDT's script, or that script
             failed. Look at the machine's own screen, and in the installed Linux at{" "}
             <span className="type-data">{output}</span> and{" "}
-            <span className="type-data">{journal}</span>.
+            <span className="type-data whitespace-nowrap">{journal}</span>.
           </Trans>
         ) : (
           <Trans>

@@ -92,7 +92,7 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
 
     // Closing the job kills the tree too, but this ends it right away, so the wait returns without waiting for the
     // handles to close.
-    public void Kill()
+    public Task KillAsync()
     {
         try
         {
@@ -109,6 +109,8 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         {
             log.Warning($"The script could not be stopped ({exception.Message}).");
         }
+
+        return Task.CompletedTask;
     }
 
     public void Dispose()

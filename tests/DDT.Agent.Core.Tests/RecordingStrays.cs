@@ -60,20 +60,24 @@ internal sealed class RecordingStrays : IStrayProcesses
 
     private sealed class Stop(RecordingStrays strays, int processId) : IToolStop
     {
-        public void Ask(string tool)
+        public Task AskAsync(string tool)
         {
             lock (strays._lock)
             {
                 strays._asked.Add(tool);
             }
+
+            return Task.CompletedTask;
         }
 
-        public void End()
+        public Task EndAsync()
         {
             lock (strays._lock)
             {
                 strays._ended.Add(processId);
             }
+
+            return Task.CompletedTask;
         }
     }
 }

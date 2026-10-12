@@ -4,8 +4,8 @@
 
 namespace DDT.Agent.Deployment;
 
-// What a tool started and left outside its own process tree, where the system lets the agent find it: a process whose
-// parent has ended, or one in a session of its own.
+// What stops a tool with everything it started, where the system lets the agent find that: the tool's own tree, a
+// process whose parent has ended, and one in a session of its own.
 public interface IStrayProcesses
 {
     // Called once the tool with this process id has started. The answer is called when the tool has to be stopped.

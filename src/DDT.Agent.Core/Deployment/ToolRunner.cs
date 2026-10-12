@@ -110,7 +110,7 @@ public sealed class ToolRunner(
         }
         catch (OperationCanceledException)
         {
-            process.Kill();
+            await process.KillAsync().ConfigureAwait(false);
 
             // The last lines often say why it hung.
             await DrainAsync(output, errors, tool).ConfigureAwait(false);

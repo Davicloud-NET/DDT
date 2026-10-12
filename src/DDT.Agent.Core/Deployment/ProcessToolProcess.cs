@@ -34,9 +34,12 @@ internal sealed class ProcessToolProcess : IToolProcess
 
     public Task WaitForExitAsync(CancellationToken cancellationToken) => _process.WaitForExitAsync(cancellationToken);
 
-    public void Kill()
+    public async Task KillAsync()
     {
-        _stop?.Ask(_tool);
+        if (_stop is not null)
+        {
+            await _stop.AskAsync(_tool).ConfigureAwait(false);
+        }
 
         try
         {
@@ -47,7 +50,10 @@ internal sealed class ProcessToolProcess : IToolProcess
             _log.Warning($"{_tool} could not be stopped ({exception.Message}).");
         }
 
-        _stop?.End();
+        if (_stop is not null)
+        {
+            await _stop.EndAsync().ConfigureAwait(false);
+        }
     }
 
     public void Dispose() => _process.Dispose();

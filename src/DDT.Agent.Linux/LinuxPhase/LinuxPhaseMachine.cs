@@ -22,6 +22,9 @@ internal sealed record LinuxPhaseMachine(LinuxAgentPaths Paths, TextWriter Outpu
     // The machine's own identity, from its firmware and adapters.
     public IMachineIdentityReader? Identity { get; init; }
 
+    // True once systemd has sent SIGTERM to the unit's processes to stop it. Null where nothing tells.
+    public Func<bool>? UnitIsStopping { get; init; }
+
     // The machine the unit runs on.
     public static LinuxPhaseMachine Own() => new(LinuxAgentPaths.Machine, Console.Out, Environment.ProcessPath);
 }

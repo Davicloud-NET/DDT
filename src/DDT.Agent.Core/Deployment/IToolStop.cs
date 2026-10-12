@@ -9,8 +9,8 @@ public interface IToolStop
 {
     // Before the tree is ended: asks the tool and all it started to end, and gives them a moment to. A script's own
     // clean-up runs then. tool is its name for the log.
-    void Ask(string tool);
+    Task AskAsync(string tool);
 
     // After the tree is ended: ends what the tool started and its tree no longer holds.
-    void End();
+    Task EndAsync();
 }

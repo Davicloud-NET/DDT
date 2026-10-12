@@ -19,18 +19,29 @@ public static class LinuxPhaseService
     // For an error nobody expected. systemd starts the unit again after it.
     public const int Crashed = 1;
 
+    // What systemd sets for every process it starts for a unit.
+    private const string InvocationId = "INVOCATION_ID";
+
     public static string NoSettings(string configuration) =>
         $"{configuration} is not there, so this system has no run for the DDT agent to go on with.";
 
     // systemd stops the unit with SIGTERM, also on the machine's way down for a restart. The run then ends cleanly
-    // at the step it is in, and goes on when the unit starts again.
+    // at the step it is in. DDT's unit leaves KillMode as it is, so systemd sends the signal to every process of the
+    // unit at once, a script's among them.
     public static async Task<int> RunAsync()
     {
         using CancellationTokenSource stop = new();
-        using PosixSignalRegistration terminate = PosixSignalRegistration.Create(PosixSignal.SIGTERM, signal => Stop(signal, stop));
+        bool underSystemd = Environment.GetEnvironmentVariable(InvocationId) is { Length: > 0 };
+        int terminated = 0;
+        using PosixSignalRegistration terminate = PosixSignalRegistration.Create(PosixSignal.SIGTERM, signal =>
+        {
+            Interlocked.Exchange(ref terminated, 1);
+            Stop(signal, stop);
+        });
         using PosixSignalRegistration interrupt = PosixSignalRegistration.Create(PosixSignal.SIGINT, signal => Stop(signal, stop));
+        LinuxPhaseMachine machine = LinuxPhaseMachine.Own() with { UnitIsStopping = () => underSystemd && Volatile.Read(ref terminated) == 1 };
 
-        return await RunAsync(LinuxPhaseMachine.Own(), stop.Token).ConfigureAwait(false);
+        return await RunAsync(machine, stop.Token).ConfigureAwait(false);
     }
 
     // After the removal any exit code but 0 would leave a failed unit that has no file, so a finished run and a
@@ -150,7 +161,11 @@ public static class LinuxPhaseService
         bool onLinux = OperatingSystem.IsLinux();
         ToolRunner tools = new(log, TimeProvider.System, Latin1Output.Decode)
         {
-            Strays = new LinuxStrayProcesses(machine.Paths.Root, log, Environment.ProcessId) { Adopts = onLinux && LinuxStrayProcesses.Adopt() },
+            Strays = new LinuxStrayProcesses(machine.Paths.Root, log, Environment.ProcessId)
+            {
+                Adopts = onLinux && LinuxStrayProcesses.Adopt(),
+                UnitIsStopping = machine.UnitIsStopping,
+            },
             FileModeMask = onLinux ? FileModeMask.Set : null,
             PlainErrorOutput = new HashSet<string>(StringComparer.Ordinal) { LinuxPhaseRebooter.Systemctl },
         };

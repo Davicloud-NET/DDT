@@ -17,5 +17,5 @@ public interface IToolProcess : IDisposable
     Task WaitForExitAsync(CancellationToken cancellationToken);
 
     // Ends the tool and every process it started. A failure is logged, not thrown.
-    void Kill();
+    Task KillAsync();
 }

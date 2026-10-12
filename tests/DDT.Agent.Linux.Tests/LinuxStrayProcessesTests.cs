@@ -20,6 +20,8 @@ public sealed class LinuxStrayProcessesTests : IDisposable
     private readonly List<int> _killed = [];
     private readonly HashSet<int> _immortal = [];
     private readonly HashSet<int> _obedient = [];
+    private readonly List<int> _endingBySystemd = [];
+    private int _waits;
 
     public LinuxStrayProcessesTests()
     {
@@ -46,7 +48,7 @@ public sealed class LinuxStrayProcessesTests : IDisposable
 
     // Ending a process takes its folder away, as the kernel does once the process is gone. Only a process the test
     // names goes when it is asked to.
-    private LinuxStrayProcesses Strays(bool adopts = true) => new(
+    private LinuxStrayProcesses Strays(bool adopts = true, bool unitIsStopping = false) => new(
         _tree.Root,
         new AgentLog(new ImmediateTimeProvider(), _console),
         Agent,
@@ -63,15 +65,29 @@ public sealed class LinuxStrayProcessesTests : IDisposable
 
             return _immortal.Contains(process) ? 1 : Gone(process);
         },
-        _ => { })
+        _ =>
+        {
+            _waits++;
+
+            // What systemd asked to end goes while the agent waits for it.
+            foreach (int process in _endingBySystemd)
+            {
+                Gone(process);
+            }
+
+            _endingBySystemd.Clear();
+
+            return Task.CompletedTask;
+        })
     {
         Adopts = adopts,
+        UnitIsStopping = () => unitIsStopping,
     };
 
     // The script was process 200. Its own tree is gone already. One of its children had put itself into a session of
     // its own, another had been left by a child that ended: the kernel gave both to the agent.
     [Fact]
-    public void EndsWhatTheScriptStartedThatTheAgentInherited()
+    public async Task EndsWhatTheScriptStartedThatTheAgentInherited()
     {
         Process(200, Agent, 5000, "sh", state: 'Z');
         Process(301, Agent, 5010, "sleep");
@@ -79,7 +95,7 @@ public sealed class LinuxStrayProcessesTests : IDisposable
         Process(303, 302, 5030);
         IToolStop stop = Strays().WatchFrom(200);
 
-        stop.End();
+        await stop.EndAsync();
 
         Assert.Equal([301, 302, 303], _killed.Order());
         Assert.Contains("Ended 3 more of its processes, which it had started outside its own tree.", _console.ToString(), StringComparison.Ordinal);
@@ -88,7 +104,7 @@ public sealed class LinuxStrayProcessesTests : IDisposable
 
     // The script, a child in its tree and one the agent inherited all end on SIGTERM. Nothing is ended outright.
     [Fact]
-    public void AsksAScriptAndAllItStartedToEndAndSaysThatTheyDid()
+    public async Task AsksAScriptAndAllItStartedToEndAndSaysThatTheyDid()
     {
         Process(150, Agent, 4000, "left-by-an-earlier-script");
         Process(200, Agent, 5000, "sh");
@@ -97,8 +113,8 @@ public sealed class LinuxStrayProcessesTests : IDisposable
         _obedient.UnionWith([200, 301, 302]);
         IToolStop stop = Strays().WatchFrom(200);
 
-        stop.Ask("sh");
-        stop.End();
+        await stop.AskAsync("sh");
+        await stop.EndAsync();
 
         Assert.Equal([200, 301, 302], _asked.Order());
         Assert.Empty(_killed);
@@ -106,19 +122,19 @@ public sealed class LinuxStrayProcessesTests : IDisposable
     }
 
     [Fact]
-    public void AScriptAloneThatEndsWhenAskedIsSaidInOneLine()
+    public async Task AScriptAloneThatEndsWhenAskedIsSaidInOneLine()
     {
         Process(200, Agent, 5000, "sh");
         _obedient.Add(200);
 
-        Strays().WatchFrom(200).Ask("sh");
+        await Strays().WatchFrom(200).AskAsync("sh");
 
         Assert.Equal("INFO  sh ended when it was asked to (SIGTERM).", Assert.Single(Lines()));
     }
 
     // A script with a trap that never returns, and a child that ignores the signal. Both are there after the grace.
     [Fact]
-    public void EndsOutrightWhatIsStillThereAfterTheGraceAndSaysWhichItTook()
+    public async Task EndsOutrightWhatIsStillThereAfterTheGraceAndSaysWhichItTook()
     {
         Process(200, Agent, 5000, "sh");
         Process(301, 200, 5010);
@@ -126,27 +142,65 @@ public sealed class LinuxStrayProcessesTests : IDisposable
         _obedient.Add(302);
         IToolStop stop = Strays().WatchFrom(200);
 
-        stop.Ask("sh");
+        await stop.AskAsync("sh");
 
         Assert.Empty(_killed);
         Assert.Equal(
             "WARN  2 processes of sh still ran 5 s after sh was asked to end (SIGTERM), so what is left is ended outright (SIGKILL).",
             Assert.Single(Lines()));
 
-        stop.End();
+        await stop.EndAsync();
 
         Assert.Equal([200, 301], _killed.Order());
     }
 
+    // systemctl stop sends SIGTERM to every process of the unit at once. A second one from the agent ran a trap twice.
+    [Fact]
+    public async Task SignalsNobodyASecondTimeWhenSystemdStopsTheUnitAndOnlyWaitsForThemToEnd()
+    {
+        Process(200, Agent, 5000, "sh");
+        Process(301, 200, 5010);
+        _endingBySystemd.AddRange([200, 301]);
+        IToolStop stop = Strays(unitIsStopping: true).WatchFrom(200);
+
+        await stop.AskAsync("sh");
+        await stop.EndAsync();
+
+        Assert.Empty(_asked);
+        Assert.Empty(_killed);
+        Assert.Equal(1, _waits);
+        Assert.Equal(
+            "INFO  sh and the 1 process it had started ended when systemd stopped the unit and asked every process of it to end (SIGTERM).",
+            Assert.Single(Lines()));
+    }
+
+    // A trap that does not end its script: the grace is the same, and what is left goes as after the agent's own signal.
+    [Fact]
+    public async Task EndsOutrightWhatSystemdsSignalDidNotEnd()
+    {
+        Process(200, Agent, 5000, "sh");
+        IToolStop stop = Strays(unitIsStopping: true).WatchFrom(200);
+
+        await stop.AskAsync("sh");
+        await stop.EndAsync();
+
+        Assert.Empty(_asked);
+        Assert.Equal([200], _killed);
+        Assert.Equal(
+            "WARN  1 process of sh still ran 5 s after systemd stopped the unit and asked every process of it to end (SIGTERM), so " +
+            "what is left is ended outright (SIGKILL).",
+            Lines()[0]);
+    }
+
     // The tool ended by itself between its time limit and the stop, and left nothing.
     [Fact]
-    public void AsksNobodyAndSaysNothingWhenTheToolAndItsProcessesAreGone()
+    public async Task AsksNobodyAndSaysNothingWhenTheToolAndItsProcessesAreGone()
     {
         Process(200, Agent, 5000, "sh");
         IToolStop stop = Strays().WatchFrom(200);
         Directory.Delete(_tree.PathOf("proc", "200"), recursive: true);
 
-        stop.Ask("sh");
+        await stop.AskAsync("sh");
 
         Assert.Empty(_asked);
         Assert.Empty(Lines());
@@ -154,7 +208,7 @@ public sealed class LinuxStrayProcessesTests : IDisposable
 
     // What an earlier script left running on purpose, what other programs started and what has ended already.
     [Fact]
-    public void LeavesAloneWhatIsOlderThanTheScriptOrNotBelowTheAgentOrGone()
+    public async Task LeavesAloneWhatIsOlderThanTheScriptOrNotBelowTheAgentOrGone()
     {
         Process(150, Agent, 4000, "left-by-an-earlier-script");
         Process(200, Agent, 5000, "sh");
@@ -164,14 +218,14 @@ public sealed class LinuxStrayProcessesTests : IDisposable
         IToolStop stop = Strays().WatchFrom(200);
         Directory.Delete(_tree.PathOf("proc", "200"), recursive: true);
 
-        stop.End();
+        await stop.EndAsync();
 
         Assert.Empty(_killed);
         Assert.Equal("", _console.ToString());
     }
 
     [Fact]
-    public void SaysWhichProcessesItCouldNotEnd()
+    public async Task SaysWhichProcessesItCouldNotEnd()
     {
         Process(200, Agent, 5000, "sh");
         Process(301, 200, 5010);
@@ -180,7 +234,7 @@ public sealed class LinuxStrayProcessesTests : IDisposable
         Directory.Delete(_tree.PathOf("proc", "200"), recursive: true);
         Process(301, Agent, 5010);
 
-        stop.End();
+        await stop.EndAsync();
 
         Assert.Equal(20, _killed.Count);
         Assert.Contains("1 of its processes could not be ended and may still run: 301.", _console.ToString(), StringComparison.Ordinal);
@@ -188,12 +242,12 @@ public sealed class LinuxStrayProcessesTests : IDisposable
 
     // Without the kernel's help an orphan goes to the first process, where nothing tells whose it was.
     [Fact]
-    public void SaysWhatMaySurviveWhereTheKernelHandsTheAgentNoOrphans()
+    public async Task SaysWhatMaySurviveWhereTheKernelHandsTheAgentNoOrphans()
     {
         Process(200, Agent, 5000, "sh");
         Process(301, 1, 5010);
 
-        Strays(adopts: false).WatchFrom(200).End();
+        await Strays(adopts: false).WatchFrom(200).EndAsync();
 
         Assert.Equal([200], _killed);
         Assert.Contains(
@@ -204,11 +258,11 @@ public sealed class LinuxStrayProcessesTests : IDisposable
 
     // A tool that had ended before anyone looked leaves nothing to tell its processes by, so nothing is ended.
     [Fact]
-    public void EndsNothingWhenTheToolIsNotThereToBeWatched()
+    public async Task EndsNothingWhenTheToolIsNotThereToBeWatched()
     {
         Process(301, Agent, 5010);
 
-        Strays().WatchFrom(200).End();
+        await Strays().WatchFrom(200).EndAsync();
 
         Assert.Empty(_killed);
     }

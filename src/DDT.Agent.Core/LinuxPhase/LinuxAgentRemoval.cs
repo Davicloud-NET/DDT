@@ -118,7 +118,7 @@ public sealed class LinuxAgentRemoval(LinuxAgentPaths paths, IMountedSeeds seeds
             DeleteEmpty(run);
         }
 
-        Leftovers.Wipe(paths.LogFile, log);
+        Leftovers.WipeLog(paths.LogFile, log);
         Leftovers.Delete(Path.GetDirectoryName(paths.LogFile) ?? paths.LogFile, log);
         Leftovers.Delete(paths.Configuration, log);
         DeleteEmpty(paths.State);

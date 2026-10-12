@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using DDT.Agent.Deployment;
 
@@ -10,8 +11,8 @@ namespace DDT.Agent.Sequences;
 // A save's steps on the real disk. Second names and a folder written out are Linux's. Windows needs neither.
 internal sealed class ReplacementDisk(AgentLog log) : IReplacementDisk
 {
-    // Said once: a save comes every few seconds.
-    private static int s_toldNoSecondName;
+    // Said once to each log: a save comes every few seconds.
+    private static readonly ConditionalWeakTable<AgentLog, object> s_toldNoSecondName = [];
 
     public async Task WriteNewAsync(string path, byte[] content, CancellationToken cancellationToken)
     {
@@ -41,7 +42,7 @@ internal sealed class ReplacementDisk(AgentLog log) : IReplacementDisk
 
         string why = Marshal.GetPInvokeErrorMessage(Marshal.GetLastPInvokeError());
 
-        if (Interlocked.Exchange(ref s_toldNoSecondName, 1) == 0)
+        if (s_toldNoSecondName.TryAdd(log, log))
         {
             log.Warning(
                 $"The copy of {path} that a save replaces cannot be kept under a second name ({why}), so its bytes are not " +

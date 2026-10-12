@@ -14,6 +14,11 @@ internal static class Leftovers
     // A larger file is no token and no state of a run, and only deleted.
     internal const long MaxWipedBytes = 4L * 1024 * 1024;
 
+    // The agent's log grows with what a run's scripts print. Overwriting more than this would hold the removal up.
+    internal const long MaxWipedLogBytes = 256L * 1024 * 1024;
+
+    private const int ZeroBytes = 64 * 1024;
+
     public static void Delete(string path, AgentLog log) => Delete(path, log, directory => MountsBelow.Holding(directory));
 
     // held says why a directory must stay with all it holds, or null.
@@ -70,16 +75,27 @@ internal static class Leftovers
 
     // For a file the agent wrote itself and that held a secret. Deleting alone leaves its bytes on the disk, so they
     // are overwritten first. Only OwnFile's kind of file is opened, so nothing a script put in its place is written to.
-    public static void Wipe(string path, AgentLog log)
+    public static void Wipe(string path, AgentLog log) => Wipe(path, log, MaxWipedBytes, saysLarger: false);
+
+    // For the agent's log, which may hold what only root should read and is far longer than a token. One longer than
+    // the limit is deleted as it is, which is said: its bytes stay on the disk.
+    public static void WipeLog(string path, AgentLog log) => Wipe(path, log, MaxWipedLogBytes, saysLarger: true);
+
+    private static void Wipe(string path, AgentLog log, long maxBytes, bool saysLarger)
     {
         try
         {
             using FileStream? file = OwnFile.OpenToOverwrite(path);
 
-            if (file is { Length: <= MaxWipedBytes })
+            if (file is not null && file.Length <= maxBytes)
             {
-                file.Write(new byte[file.Length]);
-                file.Flush(flushToDisk: true);
+                Zero(file);
+            }
+            else if (file is not null && saysLarger)
+            {
+                log.Warning(
+                    $"{path} holds {ByteSize.Format(file.Length)}, more than the {ByteSize.Format(maxBytes)} the agent overwrites before it " +
+                    "deletes a file, so what it held stays on the disk until something else is written there.");
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -88,5 +104,17 @@ internal static class Leftovers
         }
 
         Delete(path, log);
+    }
+
+    private static void Zero(FileStream file)
+    {
+        byte[] zeros = new byte[(int)Math.Min(file.Length, ZeroBytes)];
+
+        for (long left = file.Length; left > 0; left -= zeros.Length)
+        {
+            file.Write(zeros, 0, (int)Math.Min(left, zeros.Length));
+        }
+
+        file.Flush(flushToDisk: true);
     }
 }

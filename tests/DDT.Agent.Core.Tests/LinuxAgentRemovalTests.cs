@@ -166,6 +166,52 @@ public sealed class LinuxAgentRemovalTests : IDisposable
         }
     }
 
+    // The log holds what a run's scripts printed, and is soon longer than any token or state.
+    [Fact]
+    public void OverwritesALogFarLongerThanATokenBeforeItDeletesIt()
+    {
+        string file = Path.Combine(_paths.State, "long.log");
+        Directory.CreateDirectory(_paths.State);
+        byte[] printed = new byte[(int)Leftovers.MaxWipedBytes + (3 * 64 * 1024) + 5];
+        printed.AsSpan().Fill((byte)'x');
+        File.WriteAllBytes(file, printed);
+        using FileStream before = new(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+
+        Leftovers.WipeLog(file, _log);
+
+        byte[] left = new byte[printed.Length];
+        before.ReadExactly(left);
+        Assert.Equal(-1, left.AsSpan().IndexOfAnyExcept((byte)0));
+        Assert.False(File.Exists(file));
+        Assert.Empty(Warnings());
+    }
+
+    // Overwriting without end would hold the removal up, so the limit stays, and what it leaves is said.
+    [Fact]
+    public void ALogLongerThanTheAgentOverwritesIsDeletedAsItIsAndSaid()
+    {
+        string file = Path.Combine(_paths.State, "longest.log");
+        Directory.CreateDirectory(_paths.State);
+
+        using (FileStream longest = new(file, FileMode.CreateNew, FileAccess.Write))
+        {
+            longest.Write("secret"u8);
+            longest.SetLength(Leftovers.MaxWipedLogBytes + 1);
+        }
+
+        using FileStream before = new(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+
+        Leftovers.WipeLog(file, _log);
+
+        byte[] start = new byte[6];
+        before.ReadExactly(start);
+        Assert.Equal("secret"u8.ToArray(), start);
+        Assert.False(File.Exists(file));
+        Assert.Equal(
+            [$"{file} holds 256 MB, more than the 256 MB the agent overwrites before it deletes a file, so what it held stays on the disk until something else is written there."],
+            Warnings());
+    }
+
     // Removing twice is what an agent does that was stopped half way, and at its next start finds nothing of a run.
     [Fact]
     public async Task ASecondRemovalFindsNothingLeftAndSaysNothingIsWrong()

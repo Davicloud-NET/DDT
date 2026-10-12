@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Globalization;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
@@ -35,9 +36,26 @@ public static class HandOvers
     {
         ArgumentNullException.ThrowIfNull(run);
 
-        return run.CurrentPhase == SequencePhase.Linux && Since(machine, run) is { } since
-            ? $"The installed Linux has not called since the run was handed over at {since:u}, and the run could no longer go on. " +
-              "The machine did not start from its disk, or cloud-init did not install DDT's agent there."
-            : null;
+        if (run.CurrentPhase != SequencePhase.Linux || Since(machine, run) is not { } since)
+        {
+            return null;
+        }
+
+        // After a return the run's last change is that return, not the hand-over
+        string last = run.BootReturns > 0
+            ? string.Create(
+                CultureInfo.InvariantCulture,
+                $"The installed Linux has not called since the run was handed over. The machine started from the network again {Times(run.BootReturns)} " +
+                $"after that and was sent back to its disk, last at {since:u}, and the run could no longer go on.")
+            : $"The installed Linux has not called since the run was handed over at {since:u}, and the run could no longer go on.";
+
+        return $"{last} The machine did not start from its disk, or cloud-init did not install DDT's agent there.";
     }
+
+    private static string Times(int count) => count switch
+    {
+        1 => "once",
+        2 => "twice",
+        _ => string.Create(CultureInfo.InvariantCulture, $"{count} times"),
+    };
 }

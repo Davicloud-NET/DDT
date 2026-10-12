@@ -104,7 +104,6 @@ internal static class TestAgents
             new AgentMachine(machine.Identity ?? new DryRunMachineIdentityReader(1), tools, new LocalRunLocator([tools.Volumes.Windows]), Version, machine.Environment)
             {
                 Switch = machine.Switch,
-                StartsOver = machine.StartsOver,
                 ResumeToken = machine.ResumeToken,
             },
             status,

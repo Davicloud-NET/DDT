@@ -59,7 +59,8 @@ public static class LinuxBoot
 
     // It first looks at the disks for a run that was handed over to the installed Linux, which a registration would
     // end, and only then registers. The look lists the disks without a line each, which the registration writes. Its
-    // resume token crosses a restart into Windows PE in the firmware, and comes back the same way.
+    // resume token crosses a restart into Windows PE in the firmware, and comes back the same way: to the look where
+    // it registers, else to the loop.
     private static async Task<int> StartAsync(StartedAgent agent, LinuxRestart restart, CancellationToken cancellationToken)
     {
         AgentLog log = agent.Log;
@@ -78,9 +79,14 @@ public static class LinuxBoot
         {
             Seeds = new HandedOverSeeds(rawDisks, log, TimeProvider.System),
             Disks = new LinuxDisks(Root, rawDisks, new AgentLog(TimeProvider.System, TextWriter.Null)),
-            Keys = new ConsoleKeyWait(TimeProvider.System),
+            StartOver = new StartOverQuestion(
+                new ConsoleKeyWait(TimeProvider.System),
+                new ConsoleSignInPrompt(log, TimeProvider.System, keyboardLayout: null),
+                log,
+                TimeProvider.System),
             DiskStart = new FirmwareDiskStart(firmware, log),
             Restart = rebooter.RestartIntoDiskAsync,
+            Carried = carrier.Take,
         }.RunAsync(cancellationToken).ConfigureAwait(false);
 
         if (returned.ExitCode is { } exitCode)
@@ -88,7 +94,7 @@ public static class LinuxBoot
             return exitCode;
         }
 
-        machine = machine with { Switch = new EnvironmentSwitch(carrier, rebooter), StartsOver = returned.StartsOver, ResumeToken = returned.ResumeToken };
+        machine = machine with { Switch = new EnvironmentSwitch(carrier, rebooter), ResumeToken = returned.ResumeToken };
         SequenceRunner runner = Runner(agent, disks, rawDisks, new LinuxBootOrder(firmware, log), rebooter);
         AgentLoop loop = new(agent.Server, machine, agent.Status, runner, log, TimeProvider.System) { GoesOn = () => rebooter.Withdraw(carrier) };
 

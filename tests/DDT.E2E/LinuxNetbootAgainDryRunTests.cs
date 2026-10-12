@@ -14,8 +14,8 @@ using Xunit;
 namespace DDT.E2E;
 
 // A machine starts from the network again after its Linux run was handed over, with the real host. While the installed
-// Linux has the run, the boot environment registers nothing and the run goes on. While it never took the run, the boot
-// environment speaks for it with the token on the seed, and gives it up the third time.
+// Linux has the run, the boot environment asks the server, which changes nothing, and the run goes on. While it never
+// took the run, the boot environment speaks for it with the token on the seed, and gives it up the third time.
 [Trait("Category", "E2E")]
 [Trait("Agent", "Linux")]
 [Collection(DryRunCollection.Name)]
@@ -84,19 +84,27 @@ public sealed class LinuxNetbootAgainDryRunTests(DryRunLab lab)
         MachineSummary done = await lab.WaitForMachineAsync(agent, cancellationToken);
         Assert.Equal((machine.Id, MachineState.Done, AgentEnvironment.Linux), (done.Id, done.State, done.AgentEnvironment));
 
-        // The boot environment was there twice and registered once, and the installed Linux once with the run's token.
+        // The boot environment was there twice and registered once. The second time it only asked, and was answered.
         Assert.Equal(2, agent.Output.Count("Dry run: the fake machine started the Linux boot environment"));
-        Assert.Equal(1, agent.Output.Count("goes on in the installed Linux on disk 0, which has taken it over."));
+        Assert.Equal(1, agent.Output.Count("so the agent asks the server whether the run still goes on there."));
+        Assert.Equal(1, agent.Output.Count($"The server says that run {runId:D} of this machine goes on in the installed Linux, and has changed nothing. This is start 1 of 5"));
         Assert.Equal(1, agent.Output.Count("The machine restarts into the installed Linux in 10 seconds."));
         Assert.Equal(1, agent.Output.Count("Registered as machine "));
+
+        // The installed Linux then registered with the run's token, and the machine was never started over.
         IReadOnlyList<AuditEvent> audit = await lab.AuditAsync(runId, cancellationToken);
         Assert.Equal(1, audit.Count(entry => entry.Action == "deployment.resumed" && entry.Detail?.Contains(" from Linux with its run token.", StringComparison.Ordinal) == true));
         Assert.DoesNotContain(audit, entry => entry.Action == "deployment.failed");
+        Assert.DoesNotContain(await lab.AuditAsync(machine.Id, cancellationToken), entry => entry.Action == "machine.reregistered");
         Assert.Equal(["meta-data", "user-data"], agent.SeedFiles());
+
+        // The run's log on the server says that the machine came through the network.
+        MachineLogPage log = await lab.LogAsync(machine.Id, $"deploymentId={runId:D}&limit=1000", cancellationToken);
+        Assert.Single(log.Lines, line => line.Message.StartsWith("The machine started from the network while this run goes on in the installed Linux", StringComparison.Ordinal));
 
         lab.AssertClean(
             [agent],
-            ["goes on in the installed Linux on disk 0, which has taken it over."],
+            ["so the agent asks the server whether the run still goes on there."],
             ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
     }
 

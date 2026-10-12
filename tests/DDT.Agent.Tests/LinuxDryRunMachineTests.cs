@@ -195,27 +195,39 @@ public sealed class LinuxDryRunMachineTests : IDisposable
         Assert.DoesNotContain(lines, line => line.StartsWith("WARN", StringComparison.Ordinal) || line.Contains("could not", StringComparison.Ordinal));
     }
 
-    // The firmware put the network first again. The boot environment registers nothing, so the run is not ended, and
-    // the installed Linux goes on with it as if the machine had started from its disk.
+    // The firmware put the network first again. The boot environment asks the server, which says that the run goes on
+    // and changes nothing, and the installed Linux goes on with it as if the machine had started from its disk.
     [Fact]
-    public async Task AStartFromTheNetworkWhileTheInstalledLinuxHasTheRunLeadsBackToTheDiskWithoutARegistration()
+    public async Task AStartFromTheNetworkWhileTheInstalledLinuxHasTheRunAsksTheServerAndLeadsBackToTheDisk()
     {
         await File.WriteAllBytesAsync(AgentPath, new byte[150_000], TestContext.Current.CancellationToken);
-        ScriptedAgentServer server = Server();
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer())
+            .OnRegister(_ => new AgentRegistrationResult(s_machineId, MachineState.Approved, "session-0", "resume-0", 10, null))
+            .OnNext(_ => new AgentNextResult(MachineState.Approved, "session-1", "resume", 10, null, Run: Run(DeploymentState.Assigned)))
+            .OnRegister(_ => new AgentRegistrationResult(s_machineId, MachineState.Deploying, null, null, 10, null) { InstalledRun = new AgentInstalledRun(TestRuns.RunId, 1, 5) })
+            .OnRegister(_ => Continued())
+            .OnNext(_ => new AgentNextResult(MachineState.Deploying, "session-3", "resume", 10, null, Run: Run(DeploymentState.Running)))
+            .OnRegister(_ => Continued())
+            .OnNext(_ => new AgentNextResult(MachineState.Deploying, "session-4", "resume", 10, null, Run: Run(DeploymentState.Running)));
+        server.AnswerRunReports = (_, token) => new AgentRunReportResult(token, "resume", "run-token-1");
 
         Assert.Equal(AgentExitCodes.Deployed, await Machine(server, DryRunNetboot.OnceInLinux).RunAsync(server.Stop.Token));
 
         Assert.Equal(
-            [(AgentEnvironment.LinuxBoot, null), (AgentEnvironment.Linux, "run-token-1"), (AgentEnvironment.Linux, "run-token-1")],
-            server.Registrations.Select(registration => (registration.Environment, registration.RunToken)));
+            [(AgentEnvironment.LinuxBoot, null, null), (AgentEnvironment.LinuxBoot, null, TestRuns.RunId), (AgentEnvironment.Linux, "run-token-1", null), (AgentEnvironment.Linux, "run-token-1", null)],
+            server.Registrations.Select(registration => (registration.Environment, registration.RunToken, registration.HandedOver?.RunId)));
         Assert.Equal(DeploymentState.Done, server.RunReports[^1].State);
         Assert.DoesNotContain(server.RunReports, report => report.BootReturns is not null);
 
         string[] expected =
         [
             "Dry run: the machine restarts into the installed Linux, which takes the run over, and then starts from the network once more.",
-            $"Run {TestRuns.RunId:D} of this machine goes on in the installed Linux on disk 0, which has taken it over. This start came from " +
-                "the network instead of that disk, so the agent does not register and starts the installed Linux again.",
+            $"Run {TestRuns.RunId:D} of this machine was handed over to the installed Linux on disk 0, and that disk's cloud-init seed holds its " +
+                "state without its token, as it does once the installed Linux has taken the run over. This start came from the network " +
+                "instead of that disk, so the agent asks the server whether the run still goes on there.",
+            $"The server says that run {TestRuns.RunId:D} of this machine goes on in the installed Linux, and has changed nothing. This is start 1 " +
+                "of 5 from the network in a row without a call from the installed Linux in between. At start 5, the server ends the run. " +
+                "The agent starts disk 0 again.",
             "The machine restarts into the installed Linux in 10 seconds.",
             "Dry run: the firmware is not changed. On a machine, BootNext would name the boot entry of disk 0, so the next start comes from the disk.",
             "The machine restarts into the installed Linux.",

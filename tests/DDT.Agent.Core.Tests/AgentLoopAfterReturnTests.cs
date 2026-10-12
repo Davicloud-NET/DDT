@@ -36,27 +36,17 @@ public sealed class AgentLoopAfterReturnTests : IDisposable
         return server;
     }
 
-    // That it comes without any token is what ends the run. The flag only lets the server say why.
-    [Fact]
-    public async Task SaysThatSomeoneAtTheMachineStartedOver()
-    {
-        ScriptedAgentServer server = await RunAsync(machine => machine with { StartsOver = true });
-
-        Assert.Equal([true, true], server.Registrations.Select(registration => registration.StartsOver));
-        Assert.Null(server.Registrations[0].ResumeToken);
-        Assert.Null(server.Registrations[0].RunToken);
-    }
-
     [Fact]
     public async Task ARegistrationAfterAnyOtherStartSaysNothingOfIt()
     {
         ScriptedAgentServer server = await RunAsync(machine => machine);
 
         Assert.All(server.Registrations, registration => Assert.Null(registration.StartsOver));
+        Assert.All(server.Registrations, registration => Assert.Null(registration.HandedOver));
         Assert.Null(server.Registrations[0].ResumeToken);
     }
 
-    // The registration the look made with the run's token already has the machine as the server's.
+    // The look's own registration already has the machine as the server's, also the one that said someone started over.
     [Fact]
     public async Task GoesOnFromTheResumeTokenOfTheRegistrationBeforeTheLoopOnce()
     {
@@ -64,5 +54,7 @@ public sealed class AgentLoopAfterReturnTests : IDisposable
 
         Assert.Equal(["resume-0", "resume-1"], server.Registrations.Select(registration => registration.ResumeToken));
         Assert.All(server.Registrations, registration => Assert.Null(registration.RunToken));
+        Assert.All(server.Registrations, registration => Assert.Null(registration.StartsOver));
+        Assert.All(server.Registrations, registration => Assert.Null(registration.HandedOver));
     }
 }

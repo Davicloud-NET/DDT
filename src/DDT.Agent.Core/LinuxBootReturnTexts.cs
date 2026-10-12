@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using DDT.Agent.Sequences;
+using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
 
@@ -13,17 +14,22 @@ public static class LinuxBootReturnTexts
     public const string Restarts = "The machine restarts into the installed Linux.";
 
     public const string StartsOverTaken =
-        "A key was pressed, so the machine starts over here and registers as after any start. That ends the run that is " +
-        "going on in the installed Linux.";
+        $"{StartsOver} That ends the run that is going on in the installed Linux.";
 
     public const string StartsOverNotTaken =
-        "A key was pressed, so the machine starts over here and registers as after any start. That ends the run, which the " +
-        "installed Linux had not taken over.";
+        $"{StartsOver} That ends the run, which the installed Linux had not taken over.";
+
+    private const string StartsOver =
+        $"{StartOverQuestion.Word} was typed, so the machine starts over here: the agent registers without the run's token and tells the " +
+        "server that someone at the machine chose to.";
 
     public static string RestartsSoon { get; } =
         string.Create(CultureInfo.InvariantCulture, $"The machine restarts into the installed Linux in {LinuxBootReturn.Wait.TotalSeconds:0} seconds.");
 
-    public static string RestartsUnlessKey { get; } = $"{RestartsSoon} To start over here instead, press a key within that time: it ends the run.";
+    public static string NotAsked { get; } = string.Create(
+        CultureInfo.InvariantCulture,
+        $"The server did not answer within {LinuxBootReturn.AskTime.TotalSeconds:0} seconds, so the agent could not ask it whether the run " +
+        $"still goes on in the installed Linux. It goes by what the disk says.");
 
     public static string DisksUnread(string why) =>
         $"The disks cannot be read ({why}), so the agent cannot look for a run that was handed over to the installed Linux. " +
@@ -41,9 +47,31 @@ public static class LinuxBootReturnTexts
             "The other seeds stay as they are.";
     }
 
-    public static string Taken(HandedOverSeed seed) =>
-        $"{Run(seed)} goes on in the installed Linux on disk {Disk(seed)}, which has taken it over. This start came from the network " +
-        "instead of that disk, so the agent does not register and starts the installed Linux again.";
+    // The seed holds no token. Its state names the run, or names none, which says even less of what the installed Linux has.
+    public static string Asks(HandedOverSeed seed)
+    {
+        ArgumentNullException.ThrowIfNull(seed);
+
+        return seed.RunId is { } id
+            ? $"Run {id:D} of this machine was handed over to the installed Linux on disk {Disk(seed)}, and that disk's cloud-init seed " +
+              "holds its state without its token, as it does once the installed Linux has taken the run over. This start came from the " +
+              "network instead of that disk, so the agent asks the server whether the run still goes on there."
+            : $"The cloud-init seed of disk {Disk(seed)} holds what a hand-over to the installed Linux left, with no token and no state " +
+              "that names a run. That alone says nothing of a run that goes on, so the agent asks the server whether one of this machine " +
+              "goes on in the installed Linux.";
+    }
+
+    public static string GoesOn(HandedOverSeed seed, AgentInstalledRun installed)
+    {
+        ArgumentNullException.ThrowIfNull(seed);
+        ArgumentNullException.ThrowIfNull(installed);
+
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"The server says that run {installed.RunId:D} of this machine goes on in the installed Linux, and has changed nothing. This is " +
+            $"start {installed.Detours} of {installed.MaxDetours} from the network in a row without a call from the installed Linux in " +
+            $"between. At start {installed.MaxDetours}, the server ends the run. The agent starts disk {Disk(seed)} again.");
+    }
 
     public static string NotTaken(HandedOverSeed seed) =>
         $"{Run(seed)} was handed over to the installed Linux on disk {Disk(seed)}, and its token is still on that disk's cloud-init " +

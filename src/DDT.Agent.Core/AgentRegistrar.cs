@@ -16,8 +16,13 @@ internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, 
     public MachineIdentity? LastIdentity { get; private set; }
 
     // Null once stopped.
-    public async Task<AgentRegistrationResult?> RegisterAsync(string? resumeToken, string? runToken, CancellationToken cancellationToken)
+    public Task<AgentRegistrationResult?> RegisterAsync(string? resumeToken, string? runToken, CancellationToken cancellationToken) =>
+        RegisterAsync(new RegistrationClaims { ResumeToken = resumeToken, RunToken = runToken }, cancellationToken);
+
+    // Null once stopped, and once the time the claims give the server is over without an answer.
+    public async Task<AgentRegistrationResult?> RegisterAsync(RegistrationClaims claims, CancellationToken cancellationToken)
     {
+        long began = timeProvider.GetTimestamp();
         int failures = 0;
         bool toldNoAdapter = false;
         status.Registering();
@@ -32,8 +37,7 @@ internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, 
                 MachineIdentity identity = machine.Identity.Read();
                 ReportIdentity(identity);
 
-                return await server.RegisterAsync(Registration(identity, eligibleDisks, resumeToken, runToken), cancellationToken)
-                    .ConfigureAwait(false);
+                return await server.RegisterAsync(Registration(identity, eligibleDisks, claims), cancellationToken).ConfigureAwait(false);
             }
             catch (AgentTokenRejectedException exception)
             {
@@ -64,7 +68,8 @@ internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, 
                 status.Unreachable(exception);
             }
 
-            if (!await CancellableDelay.WaitAsync(AgentLimits.RetryDelay(failures), timeProvider, cancellationToken).ConfigureAwait(false))
+            if (timeProvider.GetElapsedTime(began) >= claims.GiveUpAfter
+                || !await CancellableDelay.WaitAsync(AgentLimits.RetryDelay(failures), timeProvider, cancellationToken).ConfigureAwait(false))
             {
                 return null;
             }
@@ -73,11 +78,7 @@ internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, 
         return null;
     }
 
-    private AgentRegistration Registration(
-        MachineIdentity identity,
-        IReadOnlyList<AgentDisk>? eligibleDisks,
-        string? resumeToken,
-        string? runToken) =>
+    private AgentRegistration Registration(MachineIdentity identity, IReadOnlyList<AgentDisk>? eligibleDisks, RegistrationClaims claims) =>
         new(
             identity.SmbiosUuid,
             identity.PrimaryMac,
@@ -86,16 +87,17 @@ internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, 
             identity.Model,
             identity.SerialNumber,
             machine.AgentVersion,
-            resumeToken,
+            claims.ResumeToken,
             eligibleDisks,
-            runToken,
+            claims.RunToken,
             SupportedSequences.Version,
             machine.Environment,
             SecureBootEnabled: identity.SecureBootEnabled,
             TrustedUefiCas: identity.TrustedUefiCas,
             ChassisType: identity.ChassisType,
             Facts: identity.Facts,
-            StartsOver: machine.StartsOver ? true : null);
+            StartsOver: claims.StartsOver ? true : null,
+            HandedOver: claims.HandedOver);
 
     // The server refuses a web assignment to a machine with several disks, so it has to know the disks. If they can't
     // be read, the machine registers without them rather than not at all.

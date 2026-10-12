@@ -38,7 +38,8 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
             new LocalRunLocator([]),
             options.AgentVersion,
             AgentEnvironment.LinuxBoot);
-        BootReturnOutcome returned = await ReturnAsync(machine, rebooter, cancellationToken).ConfigureAwait(false);
+        ResumeCarrier? carrier = Firmware is null ? null : new ResumeCarrier(Firmware, AgentEnvironment.LinuxBoot, log);
+        BootReturnOutcome returned = await ReturnAsync(machine, rebooter, carrier, cancellationToken).ConfigureAwait(false);
 
         if (returned.ExitCode is { } exitCode)
         {
@@ -47,8 +48,7 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
 
         machine = machine with
         {
-            Switch = Firmware is null ? null : new EnvironmentSwitch(new ResumeCarrier(Firmware, AgentEnvironment.LinuxBoot, log), rebooter),
-            StartsOver = returned.StartsOver,
+            Switch = carrier is null ? null : new EnvironmentSwitch(carrier, rebooter),
             ResumeToken = returned.ResumeToken,
         };
 
@@ -57,7 +57,7 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
 
     // What the boot environment does first on a machine whose disk holds a run that was handed over. A fake machine
     // that has written no disk yet has none, and the look must not make the file.
-    private async Task<BootReturnOutcome> ReturnAsync(AgentMachine machine, DryRunRebooter rebooter, CancellationToken cancellationToken)
+    private async Task<BootReturnOutcome> ReturnAsync(AgentMachine machine, DryRunRebooter rebooter, ResumeCarrier? carrier, CancellationToken cancellationToken)
     {
         if (!File.Exists(FileRawDisks.PathFor(options.Root, DryRunDisks.Disk.Number)))
         {
@@ -68,9 +68,10 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
         {
             Seeds = new HandedOverSeeds(new FileRawDisks(options.Root, log, MakeSparse), log, timeProvider),
             Disks = new DryRunDisks(options.Root, new AgentLog(timeProvider, TextWriter.Null)),
-            Keys = new ConsoleKeyWait(timeProvider),
+            StartOver = new StartOverQuestion(new ConsoleKeyWait(timeProvider), new ConsoleSignInPrompt(log, timeProvider, keyboardLayout: null), log, timeProvider),
             DiskStart = new DryRunDiskStart(log),
             Restart = () => rebooter.RebootAsync(RestartInto.InstalledSystem, CancellationToken.None),
+            Carried = carrier is null ? null : carrier.Take,
         };
 
         return await returns.RunAsync(cancellationToken).ConfigureAwait(false);

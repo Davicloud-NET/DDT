@@ -65,8 +65,9 @@ public sealed class LinuxReturnToDiskTests : IDisposable
 
     private ScriptedAgentServer Server => _seeded.Run.Server;
 
-    // The look and what follows it, put together as LinuxBoot does, with the tests' server, disks and keyboard.
-    private Task<int> RunAsync(bool key = false)
+    // The look and what follows it, put together as LinuxBoot does, with the tests' server, disks and keyboard. With
+    // startOver someone presses a key and types the word.
+    private Task<int> RunAsync(bool startOver = false)
     {
         _callsBefore = Server.Calls.Count;
         LinuxBootRebooter rebooter = new(_firmware, _restart, _log);
@@ -75,7 +76,7 @@ public sealed class LinuxReturnToDiskTests : IDisposable
         LinuxBootReturn returns = new(Server, machine, status, _log, _time)
         {
             Seeds = new HandedOverSeeds(_seeded.Run.RawDisks, _log, _time),
-            Keys = new FakeKeyWait { Pressed = key },
+            StartOver = new StartOverQuestion(new FakeKeyWait { Pressed = startOver }, new ScriptedSignInPrompt(StartOverQuestion.Word), _log, _time),
             DiskStart = new FirmwareDiskStart(_firmware, _log),
             Restart = rebooter.RestartIntoDiskAsync,
         };
@@ -89,13 +90,14 @@ public sealed class LinuxReturnToDiskTests : IDisposable
     {
         await _seeded.HandedOverAsync();
         _seeded.WipeToken();
+        Server.OnRegister(_ => BootReturnStart.GoesOn());
 
         int exitCode = await RunAsync();
 
         Assert.Equal(AgentExitCodes.Restarting, exitCode);
         Assert.Equal([0x02, 0x00], _firmware.Read("BootNext"));
         Assert.Equal([0x01, 0x00, 0x02, 0x00], _firmware.Read("BootOrder"));
-        Assert.Equal(["kernel restart"], _atRestart);
+        Assert.Equal(["register", "kernel restart"], _atRestart);
         Assert.True(_letGo > 0);
         Assert.Contains("The next start comes from boot entry Boot0002, which starts disk 0, whatever the boot order says.", _console.ToString(), StringComparison.Ordinal);
     }
@@ -136,12 +138,13 @@ public sealed class LinuxReturnToDiskTests : IDisposable
     }
 
     [Fact]
-    public async Task AKeyLeavesTheFirmwareAsItWasAndRestartsNothing()
+    public async Task AStartOverLeavesTheFirmwareAsItWasAndRestartsNothing()
     {
         await _seeded.HandedOverAsync();
         _seeded.WipeToken();
+        Server.OnRegister(_ => BootReturnStart.GoesOn()).OnRegister(_ => BootReturnStart.StartedOver());
 
-        int exitCode = await RunAsync(key: true);
+        int exitCode = await RunAsync(startOver: true);
 
         Assert.Equal(-1, exitCode);
         Assert.Null(_firmware.Read("BootNext"));

@@ -12,9 +12,9 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent;
 
-// What the agent of the Linux boot environment does before it registers, on a machine whose disk holds a run that was
-// handed over to the installed Linux. A registration without the run's token ends that run, so none is made while the
-// installed Linux may have it. It never throws for what a disk or the server does.
+// What the agent of the Linux boot environment does before its loop registers, on a machine whose disk holds a run that
+// was handed over to the installed Linux. A registration without the run's token ends that run, so without the token
+// the agent asks the server first, which then changes nothing. It never throws for what a disk or the server does.
 public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, ConsoleStatus status, AgentLog log, TimeProvider timeProvider)
 {
     // The start from the network at which a run the installed Linux never took over is given up.
@@ -23,19 +23,31 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
     // How long the screen says what comes next before the machine restarts, and a key can still change it.
     public static readonly TimeSpan Wait = TimeSpan.FromSeconds(10);
 
+    // How long the server is tried for the question. The machine got its boot environment from it a moment ago.
+    public static readonly TimeSpan AskTime = TimeSpan.FromSeconds(30);
+
+    // How long the last lines stay on the screen before the restart takes them.
+    public static readonly TimeSpan Shown = TimeSpan.FromSeconds(2);
+
     private const int MaxFlushes = 10;
+
+    private readonly AgentRegistrar _registrar = new(server, machine, status, log, timeProvider);
 
     public required HandedOverSeeds Seeds { get; init; }
 
     // What lists the disks for the look. Without it the machine's own does, which the registration asks again.
     public IDisks? Disks { get; init; }
 
-    public required IKeyWait Keys { get; init; }
+    public required StartOverQuestion StartOver { get; init; }
 
     public required IDiskStart DiskStart { get; init; }
 
     // Issues the restart, which happens once the agent has ended.
     public required Func<Task> Restart { get; init; }
+
+    // Takes the resume token an agent left in the firmware before a restart, for the look's first registration. The
+    // loop would find it too late: by then the look's registration has started the machine over.
+    public Func<string?>? Carried { get; init; }
 
     public async Task<BootReturnOutcome> RunAsync(CancellationToken cancellationToken)
     {
@@ -47,7 +59,7 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
             }
 
             return seed.IsTaken
-                ? await TakenAsync(seed, cancellationToken).ConfigureAwait(false)
+                ? await AskAsync(seed, cancellationToken).ConfigureAwait(false)
                 : await NotTakenAsync(seed, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -82,20 +94,47 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
         return found.Count == 0 ? null : found[0];
     }
 
-    // The installed Linux has the run, and only its agent holds the token. Nothing is said to the server.
-    private async Task<BootReturnOutcome> TakenAsync(HandedOverSeed seed, CancellationToken cancellationToken)
+    // No token is on the seed, so the installed Linux may have the run, or the seed is a leftover of one that is over.
+    // The server knows which. A seed that names its run goes back to the disk when the server cannot be asked.
+    private async Task<BootReturnOutcome> AskAsync(HandedOverSeed seed, CancellationToken cancellationToken)
     {
-        log.Warning(LinuxBootReturnTexts.Taken(seed));
+        log.Warning(LinuxBootReturnTexts.Asks(seed));
 
-        if (await KeyAsync(cancellationToken).ConfigureAwait(false))
+        string? carried = Carried?.Invoke();
+        AgentRegistrationResult? answer = await _registrar
+            .RegisterAsync(
+                new RegistrationClaims { ResumeToken = carried, HandedOver = new AgentHandedOverRun(seed.RunId), GiveUpAfter = seed.RunId is null ? null : AskTime },
+                cancellationToken)
+            .ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (answer is null)
         {
-            return StartOver(seed, LinuxBootReturnTexts.StartsOverTaken);
+            log.Warning(LinuxBootReturnTexts.NotAsked);
+        }
+        else if (answer.InstalledRun is { } installed)
+        {
+            log.Information(LinuxBootReturnTexts.GoesOn(seed, installed));
+        }
+        else if (answer.RunId is null)
+        {
+            return NoLongerRuns(seed, answer.ResumeToken);
+        }
+
+        return await BackToDiskAsync(seed, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<BootReturnOutcome> BackToDiskAsync(HandedOverSeed seed, CancellationToken cancellationToken)
+    {
+        if (await StartsOverAsync(taken: true, cancellationToken).ConfigureAwait(false))
+        {
+            return await StartOverAsync(seed, LinuxBootReturnTexts.StartsOverTaken, cancellationToken).ConfigureAwait(false);
         }
 
         DiskStart.Next(seed.Disk, seed.SystemPartition, first: false);
         log.Information(LinuxBootReturnTexts.Restarts);
 
-        return await RestartAsync().ConfigureAwait(false);
+        return await RestartAsync(cancellationToken).ConfigureAwait(false);
     }
 
     // The token on the seed still speaks for the run, so the server learns of this start and counts it.
@@ -103,8 +142,8 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
     {
         log.Information(LinuxBootReturnTexts.NotTaken(seed));
 
-        AgentRegistrationResult? registered = await new AgentRegistrar(server, machine, status, log, timeProvider)
-            .RegisterAsync(null, seed.Token, cancellationToken)
+        AgentRegistrationResult? registered = await _registrar
+            .RegisterAsync(new RegistrationClaims { ResumeToken = Carried?.Invoke(), RunToken = seed.Token }, cancellationToken)
             .ConfigureAwait(false);
 
         if (registered is null)
@@ -138,16 +177,16 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
 
         await FlushAsync(call, cancellationToken).ConfigureAwait(false);
 
-        if (await KeyAsync(cancellationToken).ConfigureAwait(false))
+        if (await StartsOverAsync(taken: false, cancellationToken).ConfigureAwait(false))
         {
-            return StartOver(seed, LinuxBootReturnTexts.StartsOverNotTaken);
+            return await StartOverAsync(seed, LinuxBootReturnTexts.StartsOverNotTaken, cancellationToken).ConfigureAwait(false);
         }
 
         DiskStart.Next(seed.Disk, seed.SystemPartition, first: true);
         log.Information(LinuxBootReturnTexts.Restarts);
         await FlushAsync(call, cancellationToken).ConfigureAwait(false);
 
-        return await RestartAsync().ConfigureAwait(false);
+        return await RestartAsync(cancellationToken).ConfigureAwait(false);
     }
 
     // The run fails here, and its token must not stay on the disk of a failed run.
@@ -172,14 +211,20 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
         return BootReturnOutcome.GoesOn with { ResumeToken = resumeToken };
     }
 
-    // The registration that follows carries no token, which is what ends the run on the server. A later start from the
-    // network must not find the run on the seed again.
-    private BootReturnOutcome StartOver(HandedOverSeed seed, string said)
+    // A later start from the network must not find the run on the seed again, so that goes first. The one registration
+    // that says someone chose to start over carries no token, which is what ends the run on the server.
+    private async Task<BootReturnOutcome> StartOverAsync(HandedOverSeed seed, string said, CancellationToken cancellationToken)
     {
         log.Warning(said);
         TakeOff(seed);
 
-        return BootReturnOutcome.GoesOn with { StartsOver = true };
+        AgentRegistrationResult? registered = await _registrar
+            .RegisterAsync(new RegistrationClaims { StartsOver = true }, cancellationToken)
+            .ConfigureAwait(false);
+
+        return registered is null
+            ? new BootReturnOutcome(AgentExitCodes.Stopped)
+            : BootReturnOutcome.GoesOn with { ResumeToken = registered.ResumeToken };
     }
 
     private void TakeOff(HandedOverSeed seed)
@@ -190,20 +235,21 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
         }
     }
 
-    private async Task<BootReturnOutcome> RestartAsync()
+    private async Task<BootReturnOutcome> RestartAsync(CancellationToken cancellationToken)
     {
         status.Restarting(RestartReason.HandOver, RestartInto.InstalledSystem);
+        await Task.Delay(Shown, timeProvider, cancellationToken).ConfigureAwait(false);
         await Restart().ConfigureAwait(false);
 
         return new BootReturnOutcome(AgentExitCodes.Restarting);
     }
 
-    // True when someone pressed a key to start over instead of the restart.
-    private Task<bool> KeyAsync(CancellationToken cancellationToken)
+    // True when someone stopped the countdown with a key and then confirmed to start over instead of the restart.
+    private Task<bool> StartsOverAsync(bool taken, CancellationToken cancellationToken)
     {
-        log.Information(Keys.CanPress ? LinuxBootReturnTexts.RestartsUnlessKey : LinuxBootReturnTexts.RestartsSoon);
+        log.Information(StartOver.CanAsk ? $"{LinuxBootReturnTexts.RestartsSoon} {StartOverQuestion.Offer}" : LinuxBootReturnTexts.RestartsSoon);
 
-        return Keys.PressedWithinAsync(Wait, cancellationToken);
+        return StartOver.ConfirmedWithinAsync(Wait, taken, cancellationToken);
     }
 
     // A refusal means the server has ended the run meanwhile. A server that cannot be reached is said and waited for

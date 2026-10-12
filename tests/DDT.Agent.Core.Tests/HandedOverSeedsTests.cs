@@ -125,6 +125,96 @@ public sealed class HandedOverSeedsTests : IDisposable
         Assert.Null(taken.RunId);
     }
 
+    // Sent as a token, such bytes would be refused, and a registration with a refused token ends the machine's run.
+    [Theory]
+    [InlineData(20 * 1024, (byte)'t')]
+    [InlineData(40, (byte)0xC3)]
+    public async Task ATokenFileThatHoldsNoTokenIsSaidAndTheDiskIsStillLookedAt(int bytes, byte filled)
+    {
+        await _seeded.HandedOverAsync();
+        byte[] content = new byte[bytes];
+        content.AsSpan().Fill(filled);
+        _seeded.ChangeSeed(file => Is(file, LinuxAgentFiles.SeedToken) ? file with { Content = content } : file);
+
+        HandedOverSeed seed = Assert.Single(Find());
+
+        Assert.Null(seed.Token);
+        Assert.Equal(StepRunnerFixture.RunId, seed.RunId);
+        Assert.Equal(
+            bytes > 16 * 1024 || filled > 0x7E ? [HandedOverSeeds.NoTokenMessage(FakeDeploymentTools.Disk(0), bytes)] : [],
+            (await WarningsAsync()).Select(line => line.Message));
+    }
+
+    [Fact]
+    public async Task AFolderInTheStatesPlaceNamesNoRun()
+    {
+        await _seeded.HandedOverAsync();
+        _seeded.ChangeSeed(file => Is(file, LinuxAgentFiles.SeedState) ? new SeedFile($"{LinuxAgentFiles.SeedState}/inner", [1, 2, 3]) : file);
+        _seeded.WipeToken();
+
+        HandedOverSeed seed = Assert.Single(Find());
+
+        Assert.Null(seed.RunId);
+        Assert.True(seed.IsTaken);
+        Assert.Empty(await WarningsAsync());
+    }
+
+    // DDT writes no image to such a disk, so its table is none a hand-over made.
+    [Fact]
+    public async Task ADiskWhoseTableIsForSectorsOfFourKilobytesHoldsNoRunAndIsNotEvenSaid()
+    {
+        await _seeded.HandedOverAsync();
+        byte[] header = Disk.ReadAt(GptLayout.SectorSize, GptLayout.SectorSize);
+        Disk.Write(GptLayout.SectorSize, new byte[GptLayout.SectorSize]);
+        Disk.Write(4096, header);
+
+        Assert.Empty(Find());
+        Assert.Empty(await WarningsAsync());
+    }
+
+    // An image written to a smaller disk than its table was made for.
+    [Fact]
+    public async Task ASeedPartitionPastTheDisksEndIsSaidAndHoldsNoRun()
+    {
+        await _seeded.HandedOverAsync();
+        MemoryRawDisk shorter = new(_seeded.Kept.FirstSector * GptLayout.SectorSize);
+        shorter.Write(0, Disk.ReadAt(0, GptLayout.MaxHeadBytes));
+        Run.RawDisks.Disks[0] = shorter;
+
+        Assert.Empty(Find());
+        Assert.StartsWith("Disk 0 could not be looked at for a run that was handed over to the installed Linux (", Assert.Single(await WarningsAsync()).Message, StringComparison.Ordinal);
+    }
+
+    // The table allows thousands of partitions, and each one that looks like a seed is read whole before the agent registers.
+    [Theory]
+    [InlineData(HandedOverSeeds.MaxSeedsPerDisk, true)]
+    [InlineData(HandedOverSeeds.MaxSeedsPerDisk + 1, false)]
+    public async Task LooksAtNoMoreSeedsOnADiskThanAHandOverCouldHaveLeft(int position, bool looked)
+    {
+        await _seeded.HandedOverAsync();
+        byte[] handedOver = Disk.ReadAt(_seeded.Kept.FirstSector * GptLayout.SectorSize, (int)CloudInitSeed.SizeBytes);
+        byte[] plain = CloudInitSeed.Build(_seeded.Written(), 7, Run.Time.GetUtcNow().UtcDateTime, 0);
+        long sectors = CloudInitSeed.SizeBytes / GptLayout.SectorSize;
+        const int Seeds = HandedOverSeeds.MaxSeedsPerDisk + 2;
+        MemoryRawDisk many = new(((Seeds + 1) * CloudInitSeed.SizeBytes) + (4 * GptLayout.MaxHeadBytes));
+        GptLayout layout = GptLayout.Create(many.Length / GptLayout.SectorSize, Guid.NewGuid());
+
+        for (int number = 1; number <= Seeds; number++)
+        {
+            long first = GptLayout.AlignmentSectors + ((number - 1) * sectors);
+            layout = layout.WithPartition(GptPartitionTypes.BasicData, Guid.NewGuid(), CloudInitSeed.Label, first, first + sectors - 1);
+            many.Write(first * GptLayout.SectorSize, number == position ? handedOver : plain);
+        }
+
+        many.Write(0, layout.ProtectiveMbr(default));
+        many.Write(GptLayout.SectorSize, layout.PrimaryHeader());
+        many.Write(layout.EntriesLba * GptLayout.SectorSize, layout.EntryArray());
+        Run.RawDisks.Disks[0] = many;
+
+        Assert.Equal(looked ? 1 : 0, Find().Count);
+        Assert.Equal(HandedOverSeeds.TooManySeedsMessage(FakeDeploymentTools.Disk(0), Seeds), Assert.Single(await WarningsAsync()).Message);
+    }
+
     // What the hand-over left beside the state and the token says nothing of a run.
     [Fact]
     public async Task ASeedWithNeitherStateNorTokenHoldsNoRun()

@@ -20,12 +20,31 @@ public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider 
 
     private const int MaxStateBytes = 4 * 1024 * 1024;
 
+    // A hand-over's disk has one seed. Each partition that looks like one is 64 MiB to read before the agent registers.
+    public const int MaxSeedsPerDisk = 4;
+
     public static string UnreadMessage(LocalDisk disk, string why)
     {
         ArgumentNullException.ThrowIfNull(disk);
 
         return $"Disk {disk.Number} could not be looked at for a run that was handed over to the installed Linux ({why}). The agent " +
             "goes on as if it held none.";
+    }
+
+    public static string TooManySeedsMessage(LocalDisk disk, int found)
+    {
+        ArgumentNullException.ThrowIfNull(disk);
+
+        return $"Disk {disk.Number} has {found} partitions with a cloud-init seed's name and size. The agent looked at the first " +
+            $"{MaxSeedsPerDisk} for a run that was handed over to the installed Linux, and not at the others.";
+    }
+
+    public static string NoTokenMessage(LocalDisk disk, long bytes)
+    {
+        ArgumentNullException.ThrowIfNull(disk);
+
+        return $"The file {LinuxAgentFiles.SeedToken} on the cloud-init seed of disk {disk.Number} holds {bytes} bytes that are no token of a run, " +
+            "so the agent does not read it as one.";
     }
 
     public static string RemovedMessage(LocalDisk disk)
@@ -114,7 +133,14 @@ public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider 
             ? new EspPartition((uint)esp.Number, (ulong)esp.FirstLba, (ulong)esp.Sectors, esp.Id)
             : null;
 
-        return [.. layout.Partitions.Where(IsSeed).Select(partition => Read(raw, disk, partition, system)).OfType<HandedOverSeed>()];
+        GptPartition[] seeds = [.. layout.Partitions.Where(IsSeed)];
+
+        if (seeds.Length > MaxSeedsPerDisk)
+        {
+            log.Warning(TooManySeedsMessage(disk, seeds.Length));
+        }
+
+        return [.. seeds.Take(MaxSeedsPerDisk).Select(partition => Read(raw, disk, partition, system)).OfType<HandedOverSeed>()];
     }
 
     // The seed step names its partition after the label and gives it this size.
@@ -122,7 +148,7 @@ public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider 
         partition.Name == CloudInitSeed.Label && partition.Sectors * GptLayout.SectorSize == CloudInitSeed.SizeBytes;
 
     // Null for a seed that holds neither the state nor the token of a run.
-    private static HandedOverSeed? Read(IRawDisk raw, LocalDisk disk, GptPartition partition, EspPartition? system)
+    private HandedOverSeed? Read(IRawDisk raw, LocalDisk disk, GptPartition partition, EspPartition? system)
     {
         byte[] bytes = ReadPartition(raw, partition);
         FatVolume volume = FatVolume.Open(new MemoryStream(bytes, writable: false), 0, bytes.Length);
@@ -133,7 +159,7 @@ public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider 
         }
 
         FatEntry? state = volume.Find(LinuxAgentFiles.SeedState);
-        string? token = volume.Find(LinuxAgentFiles.SeedToken) is { IsDirectory: false } entry ? Token(volume.ReadFile(entry, MaxTokenBytes)) : null;
+        string? token = volume.Find(LinuxAgentFiles.SeedToken) is { IsDirectory: false } entry ? Token(volume, entry, disk) : null;
 
         return state is null && token is null
             ? null
@@ -148,12 +174,28 @@ public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider 
         return bytes;
     }
 
-    // The script overwrites the token with zeros before it deletes it, and power may be lost between the two.
-    private static string? Token(byte[] content)
+    // The script overwrites the token with zeros before it deletes it, and power may be lost between the two. A file
+    // that holds anything but a token is said and counts as none: sent as one, it would end the run on the server.
+    private string? Token(FatVolume volume, FatEntry entry, LocalDisk disk)
     {
-        string token = Encoding.ASCII.GetString(content).Trim('\0', ' ', '\t', '\r', '\n');
+        if (entry.Size <= MaxTokenBytes)
+        {
+            ReadOnlySpan<byte> line = RunFiles.Trimmed(volume.ReadFile(entry, MaxTokenBytes), zerosToo: true);
 
-        return token.Length == 0 ? null : token;
+            if (line.Length == 0)
+            {
+                return null;
+            }
+
+            if (RunFiles.IsToken(line))
+            {
+                return Encoding.ASCII.GetString(line);
+            }
+        }
+
+        log.Warning(NoTokenMessage(disk, entry.Size));
+
+        return null;
     }
 
     // Only for the log and to tell an older run from a newer one, so a state that cannot be read names none.

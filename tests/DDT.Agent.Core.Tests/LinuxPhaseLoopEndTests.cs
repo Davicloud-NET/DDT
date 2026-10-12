@@ -113,6 +113,41 @@ public sealed class LinuxPhaseLoopEndTests : IDisposable
         Assert.True(_linux.IsRemoved());
     }
 
+    // systemctl stop in the middle of a script. Nobody knows how far the script came, so the next start fails its
+    // step, and the stop says that instead of promising that the run goes on.
+    [Fact]
+    public async Task AStopOfTheAgentInAStepSaysThatTheStepCountsAsFailedAndTheNextStartFailsIt()
+    {
+        AgentRun run = LinuxPhaseFixture.Run(LinuxPhaseFixture.Script(1), LinuxPhaseFixture.Script(2));
+        await _linux.HandOverAsync(run);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => LinuxPhaseFixture.Continued())
+            .OnNext(_ => LinuxPhaseFixture.Next("session-1", run));
+        _linux.Tools.Running = (_, stopped) =>
+        {
+            server.Stop.Cancel();
+
+            return Task.Delay(Timeout.InfiniteTimeSpan, stopped);
+        };
+
+        Assert.Equal(AgentExitCodes.Stopped, await _linux.RunAsync(server));
+
+        Assert.Contains(
+            "The agent was stopped while step Script 1 ran. The run's state stays on the disk. Nobody knows how far the step came, so it " +
+            "counts as failed when the agent starts again, and the run fails with it.",
+            _linux.Lines());
+        Assert.DoesNotContain(_linux.Lines(), line => line.Contains("so the run goes on when the agent starts again", StringComparison.Ordinal));
+
+        ScriptedAgentServer again = new ScriptedAgentServer()
+            .OnRegister(_ => LinuxPhaseFixture.Continued())
+            .OnNext(_ => LinuxPhaseFixture.Next("session-1", run));
+        _linux.Tools.Running = null;
+        await _linux.RunAsync(again);
+
+        Assert.Equal(DeploymentState.Failed, again.RunReports[^1].State);
+        Assert.Contains("Step Script 1 failed: The machine restarted or the agent stopped while this step ran.", _linux.Lines());
+    }
+
     // The run waits for cloud-init when an operator stops it on the web. The wait's own report is refused then, and
     // the registration after it gets the answer that ends the agent. No step ever ran.
     [Fact]

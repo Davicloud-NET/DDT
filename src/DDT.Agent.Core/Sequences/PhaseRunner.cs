@@ -163,7 +163,7 @@ internal sealed class PhaseRunner(
         {
             handOver.Withdraw(run, HandOverEnd.Stopped);
             await bootOrder.RestoreAsync(run).ConfigureAwait(false);
-            log.Warning(EnvironmentTexts.Stopped(run.Session.Environment));
+            log.Warning(EnvironmentTexts.Stopped(run.Session.Environment, Interrupted(run.State)));
 
             return new RunResult(RunOutcome.Stopped);
         }
@@ -229,4 +229,12 @@ internal sealed class PhaseRunner(
 
     private static bool IsSet(SequenceState state, string variable) =>
         state.Variables.TryGetValue(variable, out string? value) && value == RunVariables.Set;
+
+    // The step a stop cut off, which the next start fails. Null between steps, and for a step that can be taken up again.
+    private static SequenceStep? Interrupted(SequenceState state)
+    {
+        HashSet<Guid> running = [.. state.Steps.Where(step => step.State == StepState.Running).Select(step => step.StepId)];
+
+        return SequenceTree.Nodes(state.Definition).FirstOrDefault(node => !node.IsContainer && !node.Resumable && running.Contains(node.Id));
+    }
 }

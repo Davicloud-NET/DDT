@@ -5,6 +5,7 @@
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Sequences;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -152,6 +153,31 @@ public sealed class EnvironmentTextsTests
             "The agent was stopped. The run's state stays on the disk, so the run goes on when the agent starts again, if the server still runs it.",
             EnvironmentTexts.Stopped(AgentEnvironment.Linux));
         Assert.Equal("Linux restarts, and the run goes on after the restart.", EnvironmentTexts.InstalledSystemRestarts(AgentEnvironment.Linux));
+    }
+
+    // The agent's next start fails a step that was cut off, so the stop must not promise that the run goes on.
+    [Fact]
+    public void AStopInAStepOfTheInstalledLinuxSaysWhatTheNextStartDoesWithThatStep()
+    {
+        RunScriptStep step = new() { Id = Guid.NewGuid(), Name = "Sleep long", Phase = SequencePhase.Linux, Script = "sleep 600" };
+
+        Assert.Equal(
+            "The agent was stopped while step Sleep long ran. The run's state stays on the disk. Nobody knows how far the step came, so it " +
+            "counts as failed when the agent starts again, and the run fails with it.",
+            EnvironmentTexts.Stopped(AgentEnvironment.Linux, step));
+        Assert.Equal(
+            "The agent was stopped while step Sleep long ran. The run's state stays on the disk. Nobody knows how far the step came, so it " +
+            "counts as failed when the agent starts again, and the run goes on after it, if the server still runs it.",
+            EnvironmentTexts.Stopped(AgentEnvironment.Linux, step with { ContinueOnError = true }));
+
+        // Windows and the boot environment keep their words.
+        Assert.Equal(EnvironmentTexts.Stopped(AgentEnvironment.Windows), EnvironmentTexts.Stopped(AgentEnvironment.Windows, step));
+        Assert.Equal(EnvironmentTexts.Stopped(AgentEnvironment.LinuxBoot), EnvironmentTexts.Stopped(AgentEnvironment.LinuxBoot, step));
+    }
+
+    [Fact]
+    public void AStepOfTheBootEnvironmentAfterTheInstalledLinuxIsSaidInLinuxsWords()
+    {
         Assert.Equal(
             "A step that runs in the Linux boot environment follows the steps in the installed Linux, and the run cannot go back to the boot " +
             "environment. Move the step before the first step in the installed Linux, then run the sequence again.",

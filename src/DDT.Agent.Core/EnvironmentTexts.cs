@@ -57,12 +57,19 @@ public static class EnvironmentTexts
         ? "Linux restarts, and the run goes on after the restart."
         : "Windows restarts, and the run goes on after the restart.";
 
-    // The Linux boot environment keeps a run in memory, so there a stop is the end of it.
-    public static string Stopped(AgentEnvironment environment) => environment switch
+    // The Linux boot environment keeps a run in memory, so there a stop is the end of it. In the installed Linux the
+    // run goes on, but not past a step that was cut off: interrupted is that step, or null between steps.
+    public static string Stopped(AgentEnvironment environment, SequenceStep? interrupted = null) => (environment, interrupted) switch
     {
-        AgentEnvironment.LinuxBoot =>
+        (AgentEnvironment.LinuxBoot, _) =>
             "The agent was stopped. The Linux boot environment keeps a run's state in memory, so the run does not go on after a restart.",
-        AgentEnvironment.Linux =>
+        (AgentEnvironment.Linux, { ContinueOnError: true } step) =>
+            $"The agent was stopped while step {step.Name} ran. The run's state stays on the disk. Nobody knows how far the step came, so it " +
+            "counts as failed when the agent starts again, and the run goes on after it, if the server still runs it.",
+        (AgentEnvironment.Linux, { } step) =>
+            $"The agent was stopped while step {step.Name} ran. The run's state stays on the disk. Nobody knows how far the step came, so it " +
+            "counts as failed when the agent starts again, and the run fails with it.",
+        (AgentEnvironment.Linux, null) =>
             "The agent was stopped. The run's state stays on the disk, so the run goes on when the agent starts again, if the server still runs it.",
         _ => "The agent was stopped. The run's state stays on the disk, so the run goes on after a restart if the server still runs it.",
     };

@@ -179,6 +179,10 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool
             {
                 _heldConsoleLines.Add(text);
             }
+            else if (console is ILeveledOutput leveled)
+            {
+                leveled.WriteLine(level, text);
+            }
             else
             {
                 console.WriteLine(text);

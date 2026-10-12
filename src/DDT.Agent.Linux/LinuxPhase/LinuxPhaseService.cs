@@ -19,8 +19,9 @@ public static class LinuxPhaseService
     // For an error nobody expected. systemd starts the unit again after it.
     public const int Crashed = 1;
 
-    // What systemd sets for every process it starts for a unit.
+    // What systemd sets for every process it starts for a unit, and for one whose output it connected to the journal.
     private const string InvocationId = "INVOCATION_ID";
+    private const string JournalStream = "JOURNAL_STREAM";
 
     public static string NoSettings(string configuration) =>
         $"{configuration} is not there, so this system has no run for the DDT agent to go on with.";
@@ -39,7 +40,11 @@ public static class LinuxPhaseService
             Stop(signal, stop);
         });
         using PosixSignalRegistration interrupt = PosixSignalRegistration.Create(PosixSignal.SIGINT, signal => Stop(signal, stop));
-        LinuxPhaseMachine machine = LinuxPhaseMachine.Own() with { UnitIsStopping = () => underSystemd && Volatile.Read(ref terminated) == 1 };
+        LinuxPhaseMachine machine = LinuxPhaseMachine.Own() with
+        {
+            UnitIsStopping = () => underSystemd && Volatile.Read(ref terminated) == 1,
+            OutputIsJournal = Environment.GetEnvironmentVariable(JournalStream) is { Length: > 0 },
+        };
 
         return await RunAsync(machine, stop.Token).ConfigureAwait(false);
     }
@@ -51,7 +56,7 @@ public static class LinuxPhaseService
         bool hasSettings = File.Exists(machine.Paths.Configuration);
 
         // Without its settings the agent may be on a system that is not its own, where it makes no file either.
-        using JournalAndFile writer = new(machine.Output, hasSettings ? LogFile(machine.Paths) : null);
+        using JournalAndFile writer = new(machine.Output, hasSettings ? LogFile(machine.Paths) : null, machine.OutputIsJournal);
         AgentLog log = new(TimeProvider.System, writer, datedLines: true);
 
         try

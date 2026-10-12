@@ -69,6 +69,42 @@ public sealed class LinuxPhaseServiceTests : IDisposable
         Assert.Matches(@"^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d UTC ERROR ", line);
     }
 
+    // journalctl -p warning then finds what went wrong. Before, every line of the agent had the priority of a notice.
+    [Fact]
+    public void GivesAWarningAndAnErrorTheirPriorityInTheJournalAndLeavesTheFileAsItWas()
+    {
+        using StringWriter file = new();
+        using JournalAndFile both = new(_output, file, prioritized: true);
+        AgentLog log = new(new ImmediateTimeProvider(), both);
+
+        log.Information("Step Copy begins.");
+        log.Warning("The share answered late.");
+        log.Error($"The agent stopped on an unexpected error: first{Environment.NewLine}   at second");
+
+        Assert.Equal(
+            [
+                "00:00:00 INFO  Step Copy begins.",
+                "<4>00:00:00 WARN  The share answered late.",
+                "<3>00:00:00 ERROR The agent stopped on an unexpected error: first",
+                "<3>   at second",
+            ],
+            Lines());
+        Assert.DoesNotContain('<', file.ToString());
+        Assert.Equal(4, file.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Length);
+    }
+
+    // Started by hand, the agent's lines go to a terminal, where such a prefix would only be noise.
+    [Fact]
+    public void WritesNoPriorityWhereTheOutputIsNotTheJournal()
+    {
+        using JournalAndFile both = new(_output, null);
+        AgentLog log = new(new ImmediateTimeProvider(), both);
+
+        log.Warning("The share answered late.");
+
+        Assert.Equal(["00:00:00 WARN  The share answered late."], Lines());
+    }
+
     [Fact]
     public void WritesEveryLineToTheJournalAlsoWhenItsFileTakesNoMore()
     {

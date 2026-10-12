@@ -25,6 +25,9 @@ internal sealed record LinuxPhaseMachine(LinuxAgentPaths Paths, TextWriter Outpu
     // True once systemd has sent SIGTERM to the unit's processes to stop it. Null where nothing tells.
     public Func<bool>? UnitIsStopping { get; init; }
 
+    // Whether the output goes to the journal, which reads a line's priority from its first characters.
+    public bool OutputIsJournal { get; init; }
+
     // The machine the unit runs on.
     public static LinuxPhaseMachine Own() => new(LinuxAgentPaths.Machine, Console.Out, Environment.ProcessPath);
 }

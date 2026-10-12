@@ -53,6 +53,29 @@ public sealed class ToolRunnerTests
         Assert.StartsWith($"{missing} cannot be started", exception.Message, StringComparison.Ordinal);
     }
 
+    // The agent has the tool's mask for the moment of the start. Its own must be back however the start went, or every
+    // file the agent writes after it could be read by all.
+    [Fact]
+    public async Task TheAgentsOwnFileModeMaskIsBackAfterAStartThatFails()
+    {
+        const int Own = 0x3F;
+        List<int> set = [];
+        ToolRunner tools = new(new AgentLog(new ImmediateTimeProvider(), TextWriter.Null), TimeProvider.System, AnsiCodePage.Decode)
+        {
+            FileModeMask = mask =>
+            {
+                set.Add(mask);
+
+                return set.Count == 1 ? Own : ToolRunner.ToolFileModeMask;
+            },
+        };
+        string missing = Path.Combine(Path.GetTempPath(), $"ddt-missing-{Guid.NewGuid():N}.exe");
+
+        await Assert.ThrowsAsync<DeploymentStepException>(() => tools.RunForExitCodeAsync(missing, [], new ToolRunOptions(), TestContext.Current.CancellationToken));
+
+        Assert.Equal([ToolRunner.ToolFileModeMask, Own], set);
+    }
+
     [Fact]
     public async Task HandsBackAnyExitCodeAndLogsTheOutput()
     {

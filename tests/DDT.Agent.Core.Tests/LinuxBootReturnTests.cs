@@ -151,6 +151,31 @@ public sealed class LinuxBootReturnTests : IDisposable
         AssertNoLineNamesAToken();
     }
 
+    // The server could not be told that the run is given up. The token still leaves the disk, and the loop goes on with
+    // the resume token of the registration: the server then has the run as one whose state is gone.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ARunGivenUpIsTakenOffTheSeedAlsoWhenTheServerDoesNotTakeTheReport(bool refused)
+    {
+        await _start.Seeded.HandedOverAsync();
+        Server.OnRegister(_ => Continued(returns: 2));
+        Server.AnswerRunReports = (_, _) => refused ? throw new AgentTokenRejectedException() : throw new HttpRequestException("The connection was refused.");
+
+        BootReturnOutcome outcome = await RunAsync();
+
+        Assert.Equal(BootReturnOutcome.GoesOn with { ResumeToken = "resume-0" }, outcome);
+        Assert.All(Server.RunReports, report => Assert.Equal((DeploymentState.Failed, 3), (report.State, report.BootReturns)));
+        Assert.Equal(refused ? 1 : ServerCallRules.MaxRetries + 1, Server.RunReports.Count);
+        Assert.Equal(0, _start.Restarts);
+        TestSeed after = TestSeed.Read(_start.Seeded.Disk);
+        Assert.Equal(["meta-data", "user-data", "network-config"], after.Names());
+        Assert.False(after.Holds(StepRunnerFixture.RunToken));
+        Assert.Equal(!refused, Lines().Any(line => line.StartsWith("The server could not be told of the failure (", StringComparison.Ordinal)));
+        Assert.Equal(Removed, Lines()[^1]);
+        AssertNoLineNamesAToken();
+    }
+
     // Stopped, ended, or another run assigned since. The registration started the machine over, as any does then.
     [Fact]
     public async Task ARunTheServerNoLongerKnowsIsTakenOffTheSeedWithOneSentence()

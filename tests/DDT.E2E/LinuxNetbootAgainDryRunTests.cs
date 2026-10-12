@@ -108,6 +108,39 @@ public sealed class LinuxNetbootAgainDryRunTests(DryRunLab lab)
             ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
     }
 
+    // A first start of the installed Linux that was cut short. The server counts the start from the network, and the
+    // installed Linux then takes the run with the token the seed held all along.
+    [Fact(Timeout = 600_000)]
+    public async Task AStartFromTheNetworkBeforeTheInstalledLinuxTakesTheRunIsCountedAndTheRunStillEndsDone()
+    {
+        Assert.SkipWhen(lab.SkipReason is not null, lab.SkipReason ?? string.Empty);
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        (SequenceView sequence, _) = await SequenceAsync("Linux that comes back once", cancellationToken);
+
+        await using AgentProcess agent = lab.StartLinuxBootAgent("OnceBeforeLinux");
+        (MachineSummary machine, Guid runId) = await AssignAsync(agent, sequence, cancellationToken);
+        MachineSummary once = await MachineWhenAsync(agent, "started from the network once", shown => shown.BootReturns == 1, cancellationToken);
+        Assert.Equal((machine.Id, AgentEnvironment.LinuxBoot), (once.Id, once.AgentEnvironment));
+
+        Assert.Equal(Deployed, await agent.WaitForExitAsync(s_runTimeout, cancellationToken));
+
+        DeploymentView run = await lab.RunAsync(runId, cancellationToken);
+        Assert.Equal((DeploymentState.Done, null), (run.Summary.State, run.Summary.Error));
+        MachineSummary done = await lab.WaitForMachineAsync(agent, cancellationToken);
+        Assert.Equal((MachineState.Done, AgentEnvironment.Linux), (done.State, done.AgentEnvironment));
+        Assert.Null(done.BootReturns);
+        IReadOnlyList<AuditEvent> audit = await lab.AuditAsync(runId, cancellationToken);
+        Assert.Equal(1, audit.Count(entry => entry.Action == "deployment.resumed" && entry.Detail?.Contains(" from LinuxBoot with its run token.", StringComparison.Ordinal) == true));
+        Assert.Equal(1, audit.Count(entry => entry.Action == "deployment.resumed" && entry.Detail?.Contains(" from Linux with its run token.", StringComparison.Ordinal) == true));
+        Assert.DoesNotContain(await lab.AuditAsync(machine.Id, cancellationToken), entry => entry.Action == "deployment.run-token-refused");
+        Assert.Equal(["meta-data", "user-data"], agent.SeedFiles());
+
+        lab.AssertClean(
+            [agent],
+            ["The machine started from the network again before the installed Linux took the run over"],
+            ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
+    }
+
     // As with an image without cloud-init, or user-data that switches vendor data off: nothing ever calls from the disk.
     [Fact(Timeout = 600_000)]
     public async Task AnInstalledLinuxThatNeverTakesTheRunIsCountedShownAndGivenUpAtTheThirdStartFromTheNetwork()

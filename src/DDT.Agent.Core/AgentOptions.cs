@@ -30,7 +30,7 @@ public sealed record AgentOptions(
     public const string Usage =
         "Usage: ddt-agent [--config <agent.json>] [--server <https url>] [--root-certificate <pem file>] " +
         "[--no-update] [--console <ddt-console.exe>] [--dry-run [--dry-run-id <number>] [--dry-run-secure-boot] " +
-        "[--dry-run-environment <WindowsPE|LinuxBoot>] [--dry-run-netboot <OnceInLinux|Always>]], or ddt-agent --licenses";
+        "[--dry-run-environment <WindowsPE|LinuxBoot>] [--dry-run-netboot <OnceInLinux|OnceBeforeLinux|Always>]], or ddt-agent --licenses";
 
     public const string DryRunEnvironmentArgument = "--dry-run-environment";
 

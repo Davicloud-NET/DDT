@@ -13,6 +13,9 @@ public enum DryRunNetboot
     // From the network once more when the installed Linux has taken the run over, and then from its disk.
     OnceInLinux,
 
+    // From the network once more before the installed Linux has taken the run over, which it does at the start after.
+    OnceBeforeLinux,
+
     // From the network every time, with an installed Linux that never runs the agent's script.
     Always,
 }

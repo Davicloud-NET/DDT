@@ -136,7 +136,7 @@ public sealed partial class DryRunLab : IAsyncLifetime
         Start(null, slowDownloads, secureBoot, AgentEnvironment.LinuxBoot);
 
     // The same machine, whose firmware starts the network again after its run was handed over to the installed Linux:
-    // OnceInLinux or Always, as the agent's --dry-run-netboot names them.
+    // OnceInLinux, OnceBeforeLinux or Always, as the agent's --dry-run-netboot names them.
     internal AgentProcess StartLinuxBootAgent(string netboot) =>
         AgentProcess.Start(StartInfo(null, slowDownloads: false) with { Environment = AgentEnvironment.LinuxBoot, Netboot = netboot });
 

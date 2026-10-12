@@ -50,9 +50,12 @@ public sealed class LinuxDryRunMachine(
             }
 
             // The boot environment restarts only for a run it handed over, which the seed on the disk then holds.
-            if (netboot == DryRunNetboot.Always && !inLinux)
+            if (netboot is DryRunNetboot.Always or DryRunNetboot.OnceBeforeLinux && !inLinux)
             {
-                log.Information("Dry run: the installed Linux never runs the agent's script, and the machine starts from the network again.");
+                log.Information(netboot == DryRunNetboot.Always
+                    ? "Dry run: the installed Linux never runs the agent's script, and the machine starts from the network again."
+                    : "Dry run: the machine does not reach the installed Linux at this start, and starts from the network once more.");
+                netboot = netboot == DryRunNetboot.Always ? netboot : DryRunNetboot.Never;
 
                 continue;
             }

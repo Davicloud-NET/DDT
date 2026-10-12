@@ -241,6 +241,38 @@ public sealed class LinuxDryRunMachineTests : IDisposable
         Assert.DoesNotContain(lines, line => line.Contains("run-token", StringComparison.Ordinal));
     }
 
+    // The machine comes back once before the installed Linux has the run. The boot environment speaks for the run with
+    // the token on the seed and counts the start. The installed Linux then takes the run with that same token.
+    [Fact]
+    public async Task AStartFromTheNetworkBeforeTheInstalledLinuxTakesTheRunIsCountedAndTheRunGoesOn()
+    {
+        await File.WriteAllBytesAsync(AgentPath, new byte[150_000], TestContext.Current.CancellationToken);
+        ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer())
+            .OnRegister(_ => new AgentRegistrationResult(s_machineId, MachineState.Approved, "session-0", "resume-0", 10, null))
+            .OnNext(_ => new AgentNextResult(MachineState.Approved, "session-1", "resume", 10, null, Run: Run(DeploymentState.Assigned)))
+            .OnRegister(_ => Continued())
+            .OnRegister(_ => Continued())
+            .OnNext(_ => new AgentNextResult(MachineState.Deploying, "session-3", "resume", 10, null, Run: Run(DeploymentState.Running)))
+            .OnRegister(_ => Continued())
+            .OnNext(_ => new AgentNextResult(MachineState.Deploying, "session-4", "resume", 10, null, Run: Run(DeploymentState.Running)));
+        server.AnswerRunReports = (_, token) => new AgentRunReportResult(token, "resume", "run-token-1");
+
+        Assert.Equal(AgentExitCodes.Deployed, await Machine(server, DryRunNetboot.OnceBeforeLinux).RunAsync(server.Stop.Token));
+
+        Assert.Equal(
+            [(AgentEnvironment.LinuxBoot, null), (AgentEnvironment.LinuxBoot, "run-token-1"), (AgentEnvironment.Linux, "run-token-1"), (AgentEnvironment.Linux, "run-token-1")],
+            server.Registrations.Select(registration => (registration.Environment, registration.RunToken)));
+        Assert.All(server.Registrations, registration => Assert.Null(registration.HandedOver));
+        Assert.Equal([1], server.RunReports.Where(report => report.BootReturns is not null).Select(report => report.BootReturns ?? 0));
+        Assert.Equal(DeploymentState.Done, server.RunReports[^1].State);
+
+        string[] lines = Lines();
+        Assert.Contains("Dry run: the machine does not reach the installed Linux at this start, and starts from the network once more.", lines);
+        Assert.Contains(lines, line => line.StartsWith("The machine started from the network again before the installed Linux took the run over, for the first time.", StringComparison.Ordinal));
+        Assert.Contains("Dry run: the firmware is not changed. On a machine, the boot entry of disk 0 would be put first again and named in BootNext, so the next start comes from the disk.", lines);
+        Assert.DoesNotContain(lines, line => line.Contains("run-token", StringComparison.Ordinal));
+    }
+
     // cloud-init never ran the agent's script, so the token stays on the seed and each start from the network speaks for
     // the run with it. The third fails the run and takes it off the seed, and the machine waits as after any failed run.
     [Fact]

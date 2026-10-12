@@ -114,7 +114,7 @@ public sealed class LinuxHandOverKernelTests : IDisposable
 
         _handOver = new LinuxHandOver(disks, agentPath, TestAgents.Configuration, _run.Log)
         {
-            LetGo = letGo ? () => new LinuxMounts("/", _run.Log).UnmountFrom(disks.Opened) : null,
+            LetGo = letGo ? () => new LinuxMounts("/", _run.Log).UnmountFrom(disks.Opened, LinuxMounts.TheHandOver) : null,
         };
         _handOver.Stage(_run.Session, state);
         loop.MakePartitionDevices();
@@ -328,7 +328,7 @@ public sealed class LinuxHandOverKernelTests : IDisposable
         Assert.DoesNotContain($" {place} ", await File.ReadAllTextAsync("/proc/self/mounts", TestContext.Current.CancellationToken), StringComparison.Ordinal);
         Assert.Contains(
             await _run.SentLinesAsync(),
-            line => line.Message == $"Unmounted {place}, which was still mounted from {loop.PartitionDevice(seed.Partition.Number)}, before the restart.");
+            line => line.Message == $"Unmounted {place}, which was still mounted from {loop.PartitionDevice(seed.Partition.Number)}, before the hand-over writes the cloud-init seed.");
     }
 
     [Fact]

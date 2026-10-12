@@ -62,6 +62,35 @@ public sealed class LinuxMountsTests : IDisposable
         Assert.Contains("Unmounted /mnt, which was still mounted from /dev/nvme0n1p1, before the restart.", _console.ToString(), StringComparison.Ordinal);
     }
 
+    // The look for a handed-over run opens every disk, so every one of them is let go of, also one no run wrote to.
+    [Fact]
+    public void UnmountsWhatIsMountedFromEveryDiskThatWasOpened()
+    {
+        MountsOf().UnmountFrom([_tree.PathOf("dev", "nvme0n1"), "/dev/nvme1n1", "/dev/sda"]);
+
+        Assert.Equal(["/srv/whole\tdisk", "/mnt/usb stick", "/mnt/boot/efi", "/mnt"], _unmounted);
+    }
+
+    // The hand-over lets go of the disk before it writes the seed. No restart comes then, so none is named.
+    [Fact]
+    public void SaysWhatTheUnmountingComesBeforeWhenThatIsNotTheRestart()
+    {
+        _errors["/mnt"] = 16;
+
+        MountsOf().UnmountFrom([_tree.PathOf("dev", "nvme0n1")], LinuxMounts.TheHandOver);
+
+        Assert.Contains(
+            "INFO  Unmounted /mnt/boot/efi, which was still mounted from /dev/nvme0n1p15, before the hand-over writes the cloud-init seed.",
+            _console.ToString(),
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "WARN  /mnt is still mounted from /dev/nvme0n1p1 and could not be unmounted (error 16), so its file system is not closed before " +
+            "the hand-over writes the cloud-init seed.",
+            _console.ToString(),
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("restart", _console.ToString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void ReadsAPlaceWithASpaceOrATabAndADiskMountedWhole()
     {

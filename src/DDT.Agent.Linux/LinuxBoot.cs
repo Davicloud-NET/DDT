@@ -131,7 +131,7 @@ public static class LinuxBoot
             RestartMarker = new FileRestartMarker(RunDirectory, log, dryRun: false),
             HandOver = new LinuxHandOver(rawDisks, AgentPath, agent.Options.ForInstalledSystem(), log)
             {
-                LetGo = rebooter.LetGo,
+                LetGo = () => new LinuxMounts(Root, log).UnmountFrom(rawDisks.Opened, LinuxMounts.TheHandOver),
                 ServerAddress = () => agent.Server.Lookup.ReachedAt,
             },
             Log = log,

@@ -134,6 +134,24 @@ describe("what a run does between its steps", () => {
       expect(screen.queryByText(causes)).not.toBeInTheDocument();
     });
 
+    it("says in German what may keep it", async () => {
+      const { messages } = await import("../../locales/de/messages.po");
+
+      i18n.loadAndActivate({ locale: "de", messages });
+
+      try {
+        renderActivity(handedOver, minutesAgo(10));
+
+        expect(
+          screen.getByText(
+            /^Das ist länger, als ein erster Start üblicherweise dauert\. Möglicherweise installiert es noch Pakete\. Andernfalls ist das Gerät nicht von seinem Datenträger gestartet, das Image hat kein cloud-init oder kein systemd, die Datei user-data hindert cloud-init daran, das Skript von DDT auszuführen, oder dieses Skript ist fehlgeschlagen\. Sehen Sie am Bildschirm des Geräts nach und im installierten Linux in/,
+          ),
+        ).toBeInTheDocument();
+      } finally {
+        i18n.loadAndActivate({ locale: "en", messages: {} });
+      }
+    });
+
     // The boot environment saw the machine again, said so with the run's token and sent it back to its disk.
     describe("once the machine has started from the network again", () => {
       const again =

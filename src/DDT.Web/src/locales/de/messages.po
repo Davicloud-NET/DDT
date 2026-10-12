@@ -9283,7 +9283,7 @@ msgstr "Das hat nicht funktioniert."
 
 #: src/runs/panel/LinuxHandOverWait.tsx
 msgid "That is longer than a first start usually takes. It may still be installing packages. Otherwise the machine did not start from its disk, the image has no cloud-init or no systemd, the user-data keeps cloud-init from running DDT's script, or that script failed. Look at the machine's own screen, and in the installed Linux at <0>{output}</0> and <1>{journal}</1>."
-msgstr "Das ist länger, als ein erster Start üblicherweise dauert. Möglicherweise installiert es noch Pakete. Andernfalls hat das Gerät nicht von seinem Datenträger gestartet, das Image hat kein cloud-init oder kein systemd, die Datei user-data hindert cloud-init daran, das Skript von DDT auszuführen, oder dieses Skript ist fehlgeschlagen. Sehen Sie am Bildschirm des Geräts nach und im installierten Linux in <0>{output}</0> und mit <1>{journal}</1>."
+msgstr "Das ist länger, als ein erster Start üblicherweise dauert. Möglicherweise installiert es noch Pakete. Andernfalls ist das Gerät nicht von seinem Datenträger gestartet, das Image hat kein cloud-init oder kein systemd, die Datei user-data hindert cloud-init daran, das Skript von DDT auszuführen, oder dieses Skript ist fehlgeschlagen. Sehen Sie am Bildschirm des Geräts nach und im installierten Linux in <0>{output}</0> und mit <1>{journal}</1>."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.linuxAgent.notExecutable"

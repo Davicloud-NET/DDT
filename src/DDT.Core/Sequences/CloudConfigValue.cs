@@ -29,65 +29,61 @@ internal sealed class CloudConfigValue(string inline, IReadOnlyList<string> belo
             ? null
             : CloudConfigText.Unquote(Text.ReplaceLineEndings(" "));
 
-    // The members of a mapping, in flow or in block style. Null for anything else. A repeated key keeps its last value.
-    public IReadOnlyDictionary<string, CloudConfigValue>? Members =>
+    // The members of a mapping, in flow or in block style. Null for anything else.
+    public CloudConfigMapping? Mapping =>
         Text.StartsWith('{') && Text.EndsWith('}') ? Flow() : inline.Length == 0 && _below.Length > 0 ? Block() : null;
 
     private static bool IsItem(string line) => line.TrimStart() is "-" || line.TrimStart().StartsWith("- ", StringComparison.Ordinal);
 
-    private static bool IsMember(string line) => CloudConfigText.TryKey(line.TrimStart(), out _, out _);
+    private static bool IsMember(string line) => CloudConfigText.TrySplit(line.TrimStart(), out _, out _);
 
     private static int Indent(string line) => line.Length - line.TrimStart(' ').Length;
 
-    private Dictionary<string, CloudConfigValue> Flow()
+    private CloudConfigMapping Flow()
     {
-        Dictionary<string, CloudConfigValue> members = new(StringComparer.Ordinal);
+        CloudConfigMapping members = new();
 
         foreach (string part in CloudConfigText.FlowParts(Text[1..^1]))
         {
             (string key, string rest) = CloudConfigText.FlowMember(part);
-            members[key] = new CloudConfigValue(rest, []);
+            members.Set(CloudConfigText.Name(key), rest, []);
         }
 
         return members;
     }
 
     // The members are the keys at the first line's indentation. What is indented more belongs to the key above it.
-    private Dictionary<string, CloudConfigValue>? Block()
+    private CloudConfigMapping? Block()
     {
-        Dictionary<string, CloudConfigValue> members = new(StringComparer.Ordinal);
+        CloudConfigMapping members = new();
         int indent = Indent(_below[0]);
-        string? name = null;
-        string beside = "";
-        List<string> under = [];
+        (bool Open, string? Name, string Beside, List<string> Under) member = (false, null, "", []);
 
         foreach (string line in _below)
         {
             // A list may sit at its key's own indentation.
-            if (Indent(line) > indent || (Indent(line) == indent && IsItem(line) && name is not null && beside.Length == 0))
+            if (Indent(line) > indent || (Indent(line) == indent && IsItem(line) && member.Open && member.Beside.Length == 0))
             {
-                under.Add(line);
+                member.Under.Add(line);
 
                 continue;
             }
 
-            if (Indent(line) < indent || !CloudConfigText.TryKey(line.TrimStart(), out string key, out string rest))
+            // A list, a scalar or a line that is set too far left: no mapping the scan can read.
+            if (Indent(line) < indent || IsItem(line) || !CloudConfigText.TrySplit(line.TrimStart(), out string written, out string rest))
             {
                 return null;
             }
 
-            if (name is not null)
+            if (member.Open)
             {
-                members[name] = new CloudConfigValue(beside, under);
+                members.Set(member.Name, member.Beside, member.Under);
             }
 
-            (name, beside, under) = (key, rest, []);
+            member = (true, CloudConfigText.Name(written), rest, []);
         }
 
-        if (name is not null)
-        {
-            members[name] = new CloudConfigValue(beside, under);
-        }
+        members.Set(member.Name, member.Beside, member.Under);
 
         return members;
     }

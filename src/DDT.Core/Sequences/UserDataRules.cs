@@ -14,6 +14,9 @@ internal static class UserDataRules
 {
     private const string Field = "userData";
 
+    // The content type cloud-init gives a script that begins with #!, as DDT's vendor data does.
+    private const string ShellScript = "text/x-shellscript";
+
     // What cloud-init's is_true takes, of a scalar or its text.
     private static readonly string[] s_true = ["true", "yes", "on", "1"];
 
@@ -23,18 +26,25 @@ internal static class UserDataRules
     // Both spellings name the module that runs vendor scripts: Ubuntu's cloud.cfg has the first, Debian's the second.
     private static readonly string[] s_vendorScripts = ["scripts_vendor", "scripts-vendor"];
 
+    // What stands between the names in a list, written in block or in flow style.
+    private static readonly char[] s_between = [' ', '\n', '\t', ',', '[', ']', '"', '\''];
+
     public static void Check(WriteCloudInitSeedStep seed, StepProblems problems)
     {
-        string userData = seed.UserData ?? "";
+        string written = seed.UserData ?? "";
 
         // Text over the limit has a problem of its own, and none of it is read.
-        if (Encoding.UTF8.GetByteCount(userData) > SequenceValidator.MaxSeedFileBytes)
+        if (Encoding.UTF8.GetByteCount(written) > SequenceValidator.MaxSeedFileBytes)
         {
             return;
         }
 
+        // As the seed will hold it: CloudInitTemplate.Render writes every line end as a line feed.
+        string userData = written.ReplaceLineEndings("\n");
+        string text = userData.TrimStart('\uFEFF').TrimStart();
+
         // Nothing in an empty file switches anything off.
-        if (string.IsNullOrWhiteSpace(userData.TrimStart('\uFEFF')))
+        if (text.Length == 0)
         {
             return;
         }
@@ -61,10 +71,10 @@ internal static class UserDataRules
             return;
         }
 
-        IReadOnlyDictionary<string, CloudConfigValue>? members = vendor.Unsure ? null : vendor.Members;
-        CloudConfigValue? enabled = members?.GetValueOrDefault("enabled");
+        CloudConfigMapping? members = vendor.Unsure ? null : vendor.Mapping;
+        CloudConfigValue? enabled = members?["enabled"];
 
-        string? how = vendor.Unsure || enabled is { Unsure: true } ? "unread"
+        string? how = vendor.Unsure || members is { Unsure: true } || enabled is { Unsure: true } ? "unread"
             : members is null ? "notMapping"
             : enabled is not null && !Is(enabled, s_true) ? "notEnabled"
             : null;
@@ -72,10 +82,39 @@ internal static class UserDataRules
         if (how is not null)
         {
             problems.Warn(Field, ServerMessages.SequenceUserDataVendorDataWarning.With("how", how));
+
+            return;
         }
-        else if (members?.GetValueOrDefault("prefix") is { IsEmpty: false })
+
+        if (members?["prefix"] is { IsEmpty: false })
         {
             problems.Warn(Field, ServerMessages.SequenceUserDataVendorPrefixWarning.With());
+        }
+
+        CheckHandlers(members?["disabled_handlers"], problems);
+    }
+
+    // cloud-init hands vendor data of a content type listed here to no handler. Of a text it takes any part, of a
+    // mapping the keys.
+    private static void CheckHandlers(CloudConfigValue? handlers, StepProblems problems)
+    {
+        if (handlers is null)
+        {
+            return;
+        }
+
+        string[] words = handlers.Text.Split([.. s_between, '{', '}', ':'], StringSplitOptions.RemoveEmptyEntries);
+        bool named = handlers.Scalar?.Contains(ShellScript, StringComparison.Ordinal)
+            ?? words.Contains(ShellScript, StringComparer.Ordinal);
+
+        // An escape in double quotes can spell the type in a way the text here does not show.
+        if (handlers.Unsure || handlers.Text.Contains('\\', StringComparison.Ordinal))
+        {
+            problems.Warn(Field, ServerMessages.SequenceUserDataVendorHandlersWarning.With("how", "unread"));
+        }
+        else if (named)
+        {
+            problems.Warn(Field, ServerMessages.SequenceUserDataVendorHandlersWarning.With("how", "named"));
         }
     }
 
@@ -87,7 +126,7 @@ internal static class UserDataRules
             return;
         }
 
-        string[] words = modules.Text.Split([' ', '\n', '\t', ',', '[', ']', '"', '\''], StringSplitOptions.RemoveEmptyEntries);
+        string[] words = modules.Text.Split(s_between, StringSplitOptions.RemoveEmptyEntries);
 
         if (modules.Unsure || modules.Text.Length == 0)
         {
@@ -107,15 +146,17 @@ internal static class UserDataRules
             return;
         }
 
-        IReadOnlyDictionary<string, CloudConfigValue>? members = power.Unsure ? null : power.Members;
-        CloudConfigValue? condition = members?.GetValueOrDefault("condition");
+        CloudConfigMapping? members = power.Unsure ? null : power.Mapping;
+        CloudConfigValue? condition = members?["condition"];
 
         if (condition is { Unsure: false } && Is(condition, s_false))
         {
             return;
         }
 
-        string mode = condition is null || Is(condition, s_true) ? members?.GetValueOrDefault("mode")?.Scalar?.ToLowerInvariant() ?? "" : "";
+        // A merged mapping may bring a condition of its own.
+        bool happens = members is { Unsure: false } && (condition is null || Is(condition, s_true));
+        string mode = happens ? members?["mode"]?.Scalar?.ToLowerInvariant() ?? "" : "";
 
         problems.Note(Field, ServerMessages.SequenceUserDataPowerStateNote.With("mode", mode switch
         {

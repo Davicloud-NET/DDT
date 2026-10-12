@@ -1529,6 +1529,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.userDataVendorDataWarning",
     message: "{how, select, notMapping {The user-data sets vendor_data to something that is not a mapping, so cloud-init reads no vendor data.} notEnabled {The user-data sets enabled under vendor_data to something other than true, so cloud-init reads no vendor data.} other {DDT could not read what the user-data sets vendor_data to. It may switch vendor data off.}} DDT's agent gets into the installed Linux as vendor data, and without it the steps there never run. Leave vendor_data out, or set its enabled to true.",
   }),
+  "sequence.userDataVendorHandlersWarning": msg({
+    context: "sequence.userDataVendorHandlersWarning",
+    message: "{how, select, named {The user-data names text/x-shellscript in disabled_handlers under vendor_data, so cloud-init runs no shell script from vendor data.} other {DDT could not read what the user-data sets disabled_handlers under vendor_data to. If it names text/x-shellscript, cloud-init runs no shell script from vendor data.}} DDT's script, which installs the agent in the installed Linux, is a shell script, and without it the steps there never run. Leave text/x-shellscript out of disabled_handlers.",
+  }),
   "sequence.userDataVendorPrefixWarning": msg({
     context: "sequence.userDataVendorPrefixWarning",
     message: "The user-data sets prefix under vendor_data, so cloud-init starts vendor scripts through that command. One of them is DDT's, which installs the agent in the installed Linux. If the command does not run it to its end, the steps there never run.",

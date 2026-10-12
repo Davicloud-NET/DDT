@@ -201,6 +201,30 @@ public sealed class SequenceRawImageTests(DdtApplication application) : IClassFi
         Assert.EndsWith("\n", SequenceTemplates.LinuxUserData, StringComparison.Ordinal);
     }
 
+    // The editor asks this while the administrator types, so a note stands under its field before anything is saved.
+    [Fact]
+    public async Task ValidatingASequenceCarriesTheWarningsAndTheNotesOfItsUserData()
+    {
+        Image image = await application.SeedRawImageAsync(RandomNumberGenerator.GetBytes(4096), name: $"noble {Guid.NewGuid():N}");
+        SequenceDefinition definition = SequenceRequests.LinuxWithInstalledSteps(image.Id);
+        WriteCloudInitSeedStep seed = Assert.IsType<WriteCloudInitSeedStep>(definition.Steps[1]) with
+        {
+            UserData = "#cloud-config\nvendor_data: {disabled_handlers: [text/x-shellscript]}\npower_state: {mode: poweroff}\n",
+        };
+
+        SequenceValidation validation = await ValidateAsync(SequenceRequests.Definition(definition.Steps[0], seed, definition.Steps[2]));
+        SequenceProblem warning = Assert.Single(validation.Warnings);
+        SequenceProblem note = Assert.Single(validation.Notes ?? []);
+
+        Assert.Empty(validation.Problems);
+        Assert.Equal((seed.Id, "userData", "sequence.userDataVendorHandlersWarning"), (warning.StepId ?? Guid.Empty, warning.Field, warning.Code));
+        Assert.Equal((seed.Id, "userData", "sequence.userDataPowerStateNote"), (note.StepId ?? Guid.Empty, note.Field, note.Code));
+        Assert.Equal(
+            "The user-data shuts the machine down with power_state. The run waits until someone switches the machine on again, and then " +
+            "goes on with its steps in the installed Linux.",
+            note.Message);
+    }
+
     // A sequence saves with such a seed as a draft, and its row in the list is made without reading the text.
     [Fact]
     public async Task ASeedOverTheLimitDrawsTheLimitsProblemAndNothingOfItsUserData()

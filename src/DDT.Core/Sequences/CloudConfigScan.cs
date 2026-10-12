@@ -10,17 +10,18 @@ internal sealed class CloudConfigScan
 {
     public const string Header = "#cloud-config";
 
-    private readonly Dictionary<string, CloudConfigValue> _keys = new(StringComparer.Ordinal);
+    private readonly CloudConfigMapping _keys = new();
 
     private CloudConfigScan()
     {
     }
 
-    // Some line at the top level is none of what the scan knows, so the keys it found may not be all there is.
+    // Some line is none of what the scan knows, or a flow collection over several lines may end elsewhere than the
+    // scan counts. The keys found may then not be all there is.
     public bool Unreadable { get; private set; }
 
-    // The key's value, or null if the document does not set it. A repeated key keeps its last value, as in YAML.
-    public CloudConfigValue? this[string key] => _keys.GetValueOrDefault(key);
+    // The key's value, or null if the document does not set it.
+    public CloudConfigValue? this[string key] => _keys[key];
 
     // cloud-init skips white space before the header. An archive and a JSON patch have headers that only start alike.
     public static bool IsCloudConfig(string userData)
@@ -32,6 +33,7 @@ internal sealed class CloudConfigScan
         return text.StartsWith(Header, StringComparison.Ordinal) && !text.StartsWith(Header + "-", StringComparison.Ordinal);
     }
 
+    // The text comes with the line ends the seed gets, each a line feed.
     public static CloudConfigScan Read(string userData)
     {
         ArgumentNullException.ThrowIfNull(userData);
@@ -46,23 +48,29 @@ internal sealed class CloudConfigScan
         {
             if (name is not null)
             {
-                scan._keys[name] = new CloudConfigValue(beside, below);
+                scan._keys.Set(name, beside, below);
             }
         }
 
-        foreach (string line in userData.TrimStart('\uFEFF').TrimStart().Split('\n').Skip(1).Select(line => line.TrimEnd('\r')))
+        foreach (string line in userData.TrimStart('\uFEFF').TrimStart().Split('\n').Skip(1))
         {
-            // An open flow collection goes on wherever its next line begins.
-            if (open > 0 || BelongsToKey(line, name is not null, beside))
+            // An open flow collection goes on wherever its next line begins. A line in one that reads as a key of the
+            // document may be one, if the brackets were counted wrong.
+            if (open > 0)
             {
                 below.Add(line);
-                open += open > 0 ? CloudConfigText.Depth(line) : 0;
+                scan.Unreadable |= CloudConfigText.TryKey(line, out _, out _);
+                open += scan.Flow(line);
+            }
+            else if (BelongsToKey(line, name is not null, beside))
+            {
+                below.Add(line);
             }
             else if (CloudConfigText.TryKey(line, out string key, out string rest))
             {
                 Close();
                 (name, beside, below) = (key, rest, []);
-                open = rest.StartsWith('{') || rest.StartsWith('[') ? Math.Max(0, CloudConfigText.Depth(rest)) : 0;
+                open = rest.StartsWith('{') || rest.StartsWith('[') ? Math.Max(0, scan.Flow(rest)) : 0;
             }
             else if (!Says(line) || (line.TrimEnd() == "---" && name is null))
             {
@@ -88,4 +96,14 @@ internal sealed class CloudConfigScan
         inKey
         && Says(line)
         && (line[0] == ' ' || (beside.Length == 0 && (line == "-" || line.StartsWith("- ", StringComparison.Ordinal))));
+
+    // How many flow collections a line of one opens and leaves open. Brackets inside a quoted scalar that goes on in
+    // the next line cannot be told from the collection's own, so the scan gives up there.
+    private int Flow(string line)
+    {
+        int depth = CloudConfigText.Depth(line, out bool quoted);
+        Unreadable |= quoted;
+
+        return depth;
+    }
 }

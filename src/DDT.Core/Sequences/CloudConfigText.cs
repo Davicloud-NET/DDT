@@ -13,13 +13,14 @@ internal static class CloudConfigText
     // The line without its comment. A # starts one at the line's start or after white space, outside quotes.
     public static string StripComment(string line)
     {
-        int end = Find(line, (text, at) => text[at] == '#' && (at == 0 || char.IsWhiteSpace(text[at - 1])), brackets: false);
+        int end = Find(line, (text, at) => text[at] == '#' && (at == 0 || char.IsWhiteSpace(text[at - 1])), brackets: false, out _);
 
         return end < 0 ? line : line[..end];
     }
 
-    // How many flow collections the text opens and leaves open, outside quotes and comments.
-    public static int Depth(string text)
+    // How many flow collections the text opens and leaves open, outside quotes and comments. Quoted says that the text
+    // ends inside a quoted scalar, which then goes on in the next line.
+    public static int Depth(string text, out bool quoted)
     {
         int depth = 0;
         Find(
@@ -30,7 +31,8 @@ internal static class CloudConfigText
 
                 return false;
             },
-            brackets: false);
+            brackets: false,
+            out quoted);
 
         return depth;
     }
@@ -38,32 +40,36 @@ internal static class CloudConfigText
     // "key: rest" or "key:" with a plain or a quoted key. Rest comes without its comment.
     public static bool TryKey(string line, out string key, out string rest)
     {
-        (key, rest) = ("", "");
-
-        if (line.Length == 0 || NotAKey.Contains(line[0], StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        int colon = Find(line, (text, at) => text[at] == ':' && (at == text.Length - 1 || char.IsWhiteSpace(text[at + 1])), brackets: false);
-
-        if (colon < 0)
-        {
-            return false;
-        }
-
-        key = Unquote(line[..colon]);
-        rest = StripComment(line[(colon + 1)..]).Trim();
+        bool split = TrySplit(line, out string written, out rest);
+        key = split ? Name(written) ?? "" : "";
 
         return key.Length > 0;
     }
 
-    // A member of a flow mapping, as "enabled: false", "\"enabled\":false" or a key alone.
+    // The same cut for any key, which comes as it is written: a merge key or one with an anchor is a key too.
+    public static bool TrySplit(string line, out string written, out string rest)
+    {
+        int colon = Find(line, (text, at) => text[at] == ':' && (at == text.Length - 1 || char.IsWhiteSpace(text[at + 1])), false, out _);
+        (written, rest) = colon < 0 ? ("", "") : (line[..colon], StripComment(line[(colon + 1)..]).Trim());
+
+        return colon >= 0;
+    }
+
+    // The name of a key as written. Null for one the scan cannot tell: a merge key, a key with an anchor or a tag, or
+    // double quotes with an escape in them.
+    public static string? Name(string written)
+    {
+        bool escaped = written.StartsWith('"') && written.Contains('\\', StringComparison.Ordinal);
+
+        return written.Length == 0 || NotAKey.Contains(written[0], StringComparison.Ordinal) || escaped ? null : Unquote(written);
+    }
+
+    // A member of a flow mapping, as "enabled: false", "\"enabled\":false" or a key alone. The key is as written.
     public static (string Key, string Value) FlowMember(string part)
     {
-        int colon = Find(part, (text, at) => text[at] == ':', brackets: true);
+        int colon = Find(part, (text, at) => text[at] == ':', brackets: true, out _);
 
-        return colon < 0 ? (Unquote(part), "") : (Unquote(part[..colon]), part[(colon + 1)..].Trim());
+        return colon < 0 ? (part, "") : (part[..colon].Trim(), part[(colon + 1)..].Trim());
     }
 
     // The parts of a flow collection's inside, cut at the commas that are its own, in one pass over the text.
@@ -93,7 +99,8 @@ internal static class CloudConfigText
 
                 return false;
             },
-            brackets: true);
+            brackets: true,
+            out _);
         Cut(inside.Length);
 
         return parts;
@@ -107,13 +114,15 @@ internal static class CloudConfigText
         return trimmed.Length >= 2 && trimmed[0] is '"' or '\'' && trimmed[^1] == trimmed[0] ? trimmed[1..^1] : trimmed;
     }
 
-    // The first place the test holds outside quotes, and outside nested flow collections when brackets is set. -1 if none.
-    private static int Find(string text, Func<string, int, bool> test, bool brackets)
+    // The first place the test holds outside quotes, and outside nested flow collections when brackets is set. -1 if
+    // none. Quoted says that the text ends inside a quoted scalar.
+    private static int Find(string text, Func<string, int, bool> test, bool brackets, out bool quoted)
     {
         char quote = '\0';
         int depth = 0;
+        int found = -1;
 
-        for (int at = 0; at < text.Length; at++)
+        for (int at = 0; at < text.Length && found < 0; at++)
         {
             char c = text[at];
 
@@ -129,7 +138,7 @@ internal static class CloudConfigText
             }
             else if (depth == 0 && test(text, at))
             {
-                return at;
+                found = at;
             }
             else if (brackets)
             {
@@ -137,7 +146,9 @@ internal static class CloudConfigText
             }
         }
 
-        return -1;
+        quoted = quote != '\0';
+
+        return found;
     }
 
     // A quote only opens a scalar where one can begin, so the apostrophe in "don't" opens none. Two single quotes

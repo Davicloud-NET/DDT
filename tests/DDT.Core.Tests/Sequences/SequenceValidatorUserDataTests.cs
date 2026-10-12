@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using DDT.Contracts.Sequences;
+using DDT.Core.CloudInit;
 using DDT.Core.Sequences;
 using Xunit;
 using static DDT.Core.Tests.Sequences.TreeSteps;
@@ -17,6 +18,7 @@ public sealed class SequenceValidatorUserDataTests
     private const string NotChecked = "sequence.userDataNotCheckedWarning";
     private const string VendorData = "sequence.userDataVendorDataWarning";
     private const string VendorPrefix = "sequence.userDataVendorPrefixWarning";
+    private const string VendorHandlers = "sequence.userDataVendorHandlersWarning";
     private const string FinalModules = "sequence.userDataFinalModulesWarning";
     private const string PowerState = "sequence.userDataPowerStateNote";
 
@@ -100,6 +102,13 @@ public sealed class SequenceValidatorUserDataTests
     [InlineData("vendor_data: &vendor {enabled: true}", "unread")]
     [InlineData("vendor_data: {enabled: \"{{VendorData}}\"}", "unread")]
     [InlineData("vendor_data:\n  enabled: !!bool yes", "unread")]
+    [InlineData("off: &off {enabled: false}\nvendor_data: {<<: *off}", "unread")]
+    [InlineData("off: &off {enabled: false}\nvendor_data: { prefix: [], << : *off }", "unread")]
+    [InlineData("off: &off\n  enabled: false\nvendor_data:\n  <<: *off", "unread")]
+    [InlineData("vendor_data:\n  prefix: []\n  <<: [*on, *off]", "unread")]
+    [InlineData("vendor_data: {\"en\\x61bled\": false}", "unread")]
+    [InlineData("vendor_data:\n  \"en\\u0061bled\": false", "unread")]
+    [InlineData("vendor_data:\n  &flag enabled: false", "unread")]
     public void WarnsOfVendorDataThatIsOffInBlockAndInFlowStyle(string keys, string how)
     {
         SequenceAnalysis analysis = Analyse(Document(keys));
@@ -124,12 +133,40 @@ public sealed class SequenceValidatorUserDataTests
     [InlineData("final_message: \"vendor_data: {enabled: false}\"")]
     [InlineData("bootcmd:\n- [sh, -c, 'echo vendor_data: false']")]
     [InlineData("---\nhostname: \"{{ComputerName}}\"\nmessage: it's { fine\nusers: [default]")]
+    [InlineData("vendor_data: {disabled_handlers: [text/cloud-boothook, 'text/cloud-config']}")]
+    [InlineData("vendor_data:\n  disabled_handlers:\n    - text/x-shellscript-per-boot\n    - text/x-shellscripts")]
+    [InlineData("vendor_data:\n  enabled: true\n  disabled_handlers: ~")]
     public void SaysNothingWhileVendorDataStaysOn(string keys)
     {
         SequenceAnalysis analysis = Analyse(Document(keys));
 
         Assert.Empty(analysis.Warnings);
         Assert.Empty(analysis.Notes);
+    }
+
+    // cloud-init hands vendor data of a listed content type to no handler, and takes any part of a text for a type.
+    [Theory]
+    [InlineData("vendor_data: {enabled: true, disabled_handlers: [text/x-shellscript]}", "named")]
+    [InlineData("vendor_data:\n  disabled_handlers:\n    - text/cloud-config\n    - \"text/x-shellscript\"", "named")]
+    [InlineData("vendor_data:\n  disabled_handlers: text/x-shellscript-per-boot", "named")]
+    [InlineData("vendor_data: {disabled_handlers: {text/x-shellscript: off}}", "named")]
+    [InlineData("vendor_data: {disabled_handlers: *handlers}", "unread")]
+    [InlineData("vendor_data:\n  disabled_handlers: [\"text/x\\x2dshellscript\"]", "unread")]
+    public void WarnsOfVendorDataWhoseShellScriptsAreNotRun(string keys, string how)
+    {
+        const string End =
+            " DDT's script, which installs the agent in the installed Linux, is a shell script, and without it the steps there never " +
+            "run. Leave text/x-shellscript out of disabled_handlers.";
+        SequenceAnalysis analysis = Analyse(Document(keys));
+
+        Assert.Equal([$"{VendorHandlers} {how}"], Said(analysis.Warnings));
+        Assert.Equal(
+            how == "named"
+                ? "The user-data names text/x-shellscript in disabled_handlers under vendor_data, so cloud-init runs no shell script " +
+                  "from vendor data." + End
+                : "DDT could not read what the user-data sets disabled_handlers under vendor_data to. If it names text/x-shellscript, " +
+                  "cloud-init runs no shell script from vendor data." + End,
+            analysis.Warnings[0].Message);
     }
 
     [Theory]
@@ -182,6 +219,7 @@ public sealed class SequenceValidatorUserDataTests
     [InlineData("power_state:\n  mode: \"{{PowerMode}}\"", "unread")]
     [InlineData("power_state:\n  delay: now", "unread")]
     [InlineData("power_state: *power", "unread")]
+    [InlineData("power_state: {<<: *power, mode: reboot}", "unread")]
     public void NotesWhatPowerStateDoesToTheRun(string keys, string mode)
     {
         SequenceAnalysis analysis = Analyse(Document(keys));
@@ -216,6 +254,12 @@ public sealed class SequenceValidatorUserDataTests
     [InlineData("#cloud-config\nruncmd: [ 'echo never',\n")]
     [InlineData("#cloud-config\nhostname: a\n---\nvendor_data: false\n")]
     [InlineData("#cloud-config\n  vendor_data: false\n")]
+    [InlineData("#cloud-config\n\"vendor\\x5fdata\": {enabled: false}\n")]
+    [InlineData("#cloud-config\nwrite_files: [{path: /x, content: \"a\n  [ b\"}]\nvendor_data: {enabled: false}\nfinal_message: done ]\n")]
+    [InlineData("#cloud-config\nruncmd: [ 'echo a\n  ] b' ]\nvendor_data: {enabled: false}\n")]
+    [InlineData("#cloud-config\nmotd: [a ' b]  # it's\nvendor_data: {enabled: false}\nfinal_message: done ]\n")]
+    [InlineData("#cloud-config\nvendor_data: {\nenabled: false\n}\n")]
+    [InlineData("#cloud-config\nvendor_data: {enabled: false, note: \"a\n  \", enabled: true}\n")]
     public void SaysWhenItCouldNotCheckTheUserData(string userData)
     {
         SequenceAnalysis analysis = Analyse(userData);
@@ -243,6 +287,24 @@ public sealed class SequenceValidatorUserDataTests
 
         Assert.Empty(analysis.Warnings);
         Assert.Empty(analysis.Notes);
+    }
+
+    // The seed gets every line end as a line feed, so a key after any of them is a line of its own to cloud-init.
+    [Theory]
+    [InlineData("\r")]
+    [InlineData("\r\n")]
+    [InlineData("\f")]
+    [InlineData("\u0085")]
+    [InlineData("\u2028")]
+    [InlineData("\u2029")]
+    public void ReadsTheUserDataWithTheLineEndsTheSeedGets(string lineEnd)
+    {
+        string userData = string.Join(lineEnd, "#cloud-config", "vendor_data:", "  enabled: false", "cloud_final_modules: [scripts_user]", "");
+        string onTheSeed = CloudInitTemplate.Render(userData, new Dictionary<string, string?>());
+
+        Assert.Equal("#cloud-config\nvendor_data:\n  enabled: false\ncloud_final_modules: [scripts_user]\n", onTheSeed);
+        Assert.Equal([$"{VendorData} notEnabled", $"{FinalModules} missing"], Said(Analyse(userData).Warnings));
+        Assert.Equal(Said(Analyse(onTheSeed).Warnings), Said(Analyse(userData).Warnings));
     }
 
     // The limit's own problem is all that such text draws. Nothing in it is read.

@@ -28,6 +28,14 @@ public static partial class ServerMessages
         "The user-data sets prefix under vendor_data, so cloud-init starts vendor scripts through that command. One of them is DDT's, " +
         "which installs the agent in the installed Linux. If the command does not run it to its end, the steps there never run.");
 
+    public static readonly MessageTemplate SequenceUserDataVendorHandlersWarning = Define(
+        "sequence.userDataVendorHandlersWarning",
+        "{how, select, named {The user-data names text/x-shellscript in disabled_handlers under vendor_data, so cloud-init runs no " +
+        "shell script from vendor data.} other {DDT could not read what the user-data sets disabled_handlers under vendor_data to. If " +
+        "it names text/x-shellscript, cloud-init runs no shell script from vendor data.}} DDT's script, which installs the agent in the " +
+        "installed Linux, is a shell script, and without it the steps there never run. Leave text/x-shellscript out of " +
+        "disabled_handlers.");
+
     public static readonly MessageTemplate SequenceUserDataFinalModulesWarning = Define(
         "sequence.userDataFinalModulesWarning",
         "{how, select, missing {The user-data sets cloud_final_modules, and the list names neither scripts_vendor nor scripts-vendor, " +

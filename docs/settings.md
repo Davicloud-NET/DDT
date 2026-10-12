@@ -91,7 +91,9 @@ Some keys are not settings at all and never appear on the page:
 - **Build and test script parameters:** Start-DevHost, Publish-Agent, New-TestVm, and Build-BootImage
   -Destination and -WorkDirectory.
 - **Agent command-line flags.** startnet.cmd never passes any (Build-BootImage.ps1:358). The
-  DdtSequence service that M5 registers in the installed Windows passes only `--service`.
+  DdtSequence service that M5 registers in the installed Windows passes only `--service`, and the
+  `ddt-agent.service` unit that a Linux run installs in the installed Linux since M8 passes only
+  `--linux-phase`. The `--dry-run` switches are for tests (CONTRIBUTING.md).
 - **ASPNETCORE_FORWARDEDHEADERS_ENABLED,** which is inert by design (DdtForwardedHeadersExtensions.cs:31-33).
 - **Constants that stay constants:**
   - UDP 67, 4011 and 69 (PxeHost.cs:17-19)
@@ -116,7 +118,8 @@ Some keys are not settings at all and never appear on the page:
   (DeploymentEndpoints.cs:33-39) and must stay limited to them once it reads the snapshot. Beside
   them it carries the server's time, the boot environments the server can start and the certificate
   authorities the Linux boot environment's shim is signed under, none of which comes from a
-  settings section.
+  settings section. The web holds the ten minutes of a Linux run's hand-over against that time,
+  not against the browser's clock.
 
 **Fields marked "Admin, re-auth".** These also need a fresh proof of identity, a re-auth token from
 section 6.
@@ -426,6 +429,10 @@ These constants could join a section later. They are not in M6.5 scope.
 - ProtectYourPC (UnattendWriter.cs:85-96)
 - PollAfterSeconds (MachineRegistrar.cs:28). Other limits assume its value (MachineLogLimits.cs:22-24,
   DeploymentLimits.cs:20-22).
+- since M8, for a Linux run that goes on in the installed Linux: the five starts from the network
+  in a row after which the server ends such a run (NetworkDetours.cs), and the ten minutes after
+  which a machine's page names what may keep the installed Linux from calling, a constant of the
+  web client (deployments/handOver.ts). install.md section 4.9 says what both are for.
 
 ## 4. Boot image and agent values
 
@@ -434,6 +441,7 @@ These constants could join a section later. They are not in M6.5 scope.
 | serverUrl (agent.json, -ServerUrl, --server) | boot.wim (Build-BootImage.ps1:337-347) | No: it is how the agent finds the server (AgentOptions.cs:93-127). |
 | rootCertificate (agent.json, -RootCertificatePath, --root-certificate) | boot.wim | No: a trust anchor cannot come over the channel it protects (HttpAgentServer.cs:41-53). Since M5 the boot image pins DDT's own root, which is valid for 20 years, so it changes only with a new root (question 5). |
 | keyboardLayout (agent.json, -KeyboardLayout) | boot.wim, twice: the input locale and the name shown at the prompt (Build-BootImage.ps1:340,367-371) | Not yet (see below). |
+| serverAddress (agent.json) | the `agent.json` a Linux hand-over writes onto the cloud-init seed, from where it reaches `/var/lib/ddt/agent.json` in the installed Linux (LinuxHandOver.cs) | No: it is there for an installed Linux that cannot look the server's name up, so it has to be known before the first call (ServerLookup.cs). No administrator sets it. The agent in the Linux boot environment writes the address at which its own connection reached the server. |
 | -AgentPath | boot.wim, as the fallback agent (Build-BootImage.ps1:328-330) | Already done: the agent updates itself from the server at every boot (AgentUpdate.cs:36-62). The page uploads it. |
 | -WimLibraryPath | boot.wim (Build-BootImage.ps1:287-295,333-335) | It could ship with the agent release. That has little value, so it stays as is. |
 | -TftpBlockSize, -TftpWindowSize | the BCD (Build-BootImage.ps1:215-216) | No: the boot manager reads them before any DDT code runs. The server-side caps apply (TftpMaxWindowSize on the page). |
@@ -441,6 +449,16 @@ These constants could join a section later. They are not in M6.5 scope.
 | Agent constants: heartbeat, HTTP timeouts, retries, download, stall and give-up timeouts, log queue | ddt-agent.exe | Changed by publishing a new agent, with no new boot image. If one ever needs tuning, send it additively in AgentNextResult (AgentNextResult.cs:10-19). The contracts are frozen (AgentRelease.cs:7). |
 | Disk eligibility, partition sizes, free space rule | ddt-agent.exe (DiskEligibility.cs:9-31, DiskpartScript.cs:10-21, SequenceRunner.cs:59-60,457-490) | Partly: since M5 the partition sizes are fields of the Partition the disk step, which the server sends. Disk eligibility and the free space rule stay in the agent. |
 | PollAfterSeconds | a server constant (MachineRegistrar.cs:28) | Already sent in every response. |
+
+**The agent.json of the installed Linux.** Since M8 a Linux run that goes on in the installed
+Linux takes an `agent.json` of its own along, which the agent in the Linux boot environment
+writes at the hand-over (install.md section 4.9): serverUrl and rootCertificate as it has them
+itself, serverAddress, and no keyboardLayout. The agent there reads it from
+`/var/lib/ddt/agent.json`, away from the program. The format stays frozen: serverAddress is
+optional, and a file without it reads as before. The file holds no secret. What the agent in the
+installed Linux waits for and for how long, such as the 12 seconds after cloud-init and the two
+minutes for a start of it, are agent constants like those in the table, changed by publishing a
+new agent for Linux.
 
 **Keyboard layout.** The server could send a layout as a new additive field on
 AgentRegistrationResult or AgentNextResult, with the baked layout kept as the fallback. But

@@ -90,7 +90,7 @@ public sealed class RunTermination(DdtDbContext database, RunQueries queries, Ti
         switch (active)
         {
             case { State: DeploymentState.Running }:
-                await FailAsync(machine, active, Actor.OfMachine(machine.Id, address), RestartError(active, registration), cancellationToken).ConfigureAwait(false);
+                await FailAsync(machine, active, Actor.OfMachine(machine.Id, address), RestartError(machine, active, registration), cancellationToken).ConfigureAwait(false);
                 break;
 
             case { State: DeploymentState.Assigned, Source: DeploymentSource.Console or DeploymentSource.Rule }:
@@ -99,19 +99,28 @@ public sealed class RunTermination(DdtDbContext database, RunQueries queries, Ti
         }
     }
 
-    // What the server knows of a registration that ends a running run. Only an agent that found the run handed over
-    // says that someone chose to start over. Any other agent just registered without the run's token.
-    private static string RestartError(Deployment run, NormalisedRegistration registration)
+    // What the server knows of a registration that ends a running run. That someone chose to start over is what the
+    // agent reported, without any secret, so it is said as that. Called before the registration is copied to the
+    // machine, which still says whether the installed system ever called.
+    private static string RestartError(Machine machine, Deployment run, NormalisedRegistration registration)
     {
         if (registration.RunToken is not null)
         {
             return "The machine started again during the run, with a run token the server no longer accepts.";
         }
 
-        return registration.StartsOver && run.CurrentPhase is { } phase && !SequenceKinds.IsBoot(phase)
-            ? $"The run was ended at the machine. It started from the network while its run went on in {PhaseRules.Name(SequenceKinds.InstalledEnvironment(SequenceKinds.Of(phase)))}, " +
-              "and someone there pressed a key to start over."
-            : "The machine started again during the run, without the run's token, so the run could not continue.";
+        if (!registration.StartsOver || run.CurrentPhase is not { } phase || SequenceKinds.IsBoot(phase))
+        {
+            return "The machine started again during the run, without the run's token, so the run could not continue.";
+        }
+
+        string installed = PhaseRules.Name(SequenceKinds.InstalledEnvironment(SequenceKinds.Of(phase)));
+
+        return "The machine started from the network during the run and registered without the run's token, which ended the run. " +
+            "Its agent there reported that someone at the machine chose to start over. " +
+            (HandOvers.Since(machine, run) is null
+                ? $"The run went on in {installed} until then."
+                : $"The run was handed over to {installed}, which had not called yet.");
     }
 
     // For a run in the installed Linux whose machine keeps starting from the network (see NetworkDetours). The

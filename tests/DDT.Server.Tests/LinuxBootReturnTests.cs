@@ -23,8 +23,8 @@ public sealed class LinuxBootReturnTests(DdtApplication application) : IClassFix
     private const string WithoutToken = "The machine started again during the run, without the run's token, so the run could not continue.";
 
     private const string StartedOver =
-        "The run was ended at the machine. It started from the network while its run went on in the installed Linux, and someone " +
-        "there pressed a key to start over.";
+        "The machine started from the network during the run and registered without the run's token, which ended the run. " +
+        "Its agent there reported that someone at the machine chose to start over. ";
 
     private Task<(DeployingMachine Machine, AgentRun Run)> HandedOverAsync(string name) => HandedOverLinuxRun.StartAsync(application, name);
 
@@ -169,7 +169,25 @@ public sealed class LinuxBootReturnTests(DdtApplication application) : IClassFix
 
         DeploymentSummary failed = (await (await application.AdministratorAsync()).RunAsync(run.Id)).Summary;
         Assert.Equal((MachineState.Pending, AgentEnvironment.LinuxBoot), (registered.State, (await ShownAsync(machine.Id)).AgentEnvironment));
-        Assert.Equal((DeploymentState.Failed, StartedOver), (failed.State, failed.Error));
+        Assert.Equal((DeploymentState.Failed, StartedOver + "The run went on in the installed Linux until then."), (failed.State, failed.Error));
+    }
+
+    // The token was still on the seed when someone chose to start over: no installed Linux ever had the run.
+    [Fact]
+    public async Task AStartOverBeforeTheInstalledLinuxEverCalledSaysThatItHadNot()
+    {
+        (DeployingMachine machine, AgentRun run) = await HandedOverAsync("LINUX-67");
+        using DeployingMachine owned = machine;
+        await ReturnAsync(machine);
+
+        AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
+            await machine.Agent.RegisterAsync(machine.Registration with { StartsOver = true }));
+
+        DeploymentSummary failed = (await (await application.AdministratorAsync()).RunAsync(run.Id)).Summary;
+        Assert.Equal(MachineState.Pending, registered.State);
+        Assert.Equal(
+            (DeploymentState.Failed, StartedOver + "The run was handed over to the installed Linux, which had not called yet."),
+            (failed.State, failed.Error));
     }
 
     // Nothing was handed over, so nobody was offered a key, whatever the registration claims.

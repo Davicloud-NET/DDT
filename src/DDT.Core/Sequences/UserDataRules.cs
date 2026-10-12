@@ -23,11 +23,8 @@ internal static class UserDataRules
     // YAML's own false. cloud-init runs any other condition as a command.
     private static readonly string[] s_false = ["false", "no", "off"];
 
-    // Both spellings name the module that runs vendor scripts: Ubuntu's cloud.cfg has the first, Debian's the second.
-    private static readonly string[] s_vendorScripts = ["scripts_vendor", "scripts-vendor"];
-
     // What stands between the names in a list, written in block or in flow style.
-    private static readonly char[] s_between = [' ', '\n', '\t', ',', '[', ']', '"', '\''];
+    private static readonly char[] s_between = [' ', '\n', '\t', ',', '[', ']', '{', '}', '"', '\''];
 
     public static void Check(WriteCloudInitSeedStep seed, StepProblems problems)
     {
@@ -43,8 +40,8 @@ internal static class UserDataRules
         string userData = written.ReplaceLineEndings("\n");
         string text = userData.TrimStart('\uFEFF').TrimStart();
 
-        // Nothing in an empty file switches anything off.
-        if (text.Length == 0)
+        // Nothing in an empty file switches anything off, and cloud-init runs DDT's vendor script beside a script.
+        if (text.Length == 0 || text.StartsWith("#!", StringComparison.Ordinal))
         {
             return;
         }
@@ -103,7 +100,7 @@ internal static class UserDataRules
             return;
         }
 
-        string[] words = handlers.Text.Split([.. s_between, '{', '}', ':'], StringSplitOptions.RemoveEmptyEntries);
+        string[] words = handlers.Text.Split([.. s_between, ':'], StringSplitOptions.RemoveEmptyEntries);
         bool named = handlers.Scalar?.Contains(ShellScript, StringComparison.Ordinal)
             ?? words.Contains(ShellScript, StringComparer.Ordinal);
 
@@ -132,10 +129,20 @@ internal static class UserDataRules
         {
             problems.Warn(Field, ServerMessages.SequenceUserDataFinalModulesWarning.With("how", "unread"));
         }
-        else if (!words.Any(word => s_vendorScripts.Contains(word, StringComparer.Ordinal)))
+        else if (!words.Any(IsVendorScripts))
         {
             problems.Warn(Field, ServerMessages.SequenceUserDataFinalModulesWarning.With("how", "missing"));
         }
+    }
+
+    // The module that runs vendor scripts, as cloud-init takes a module's name: Debian's cloud.cfg writes it with a
+    // dash and Ubuntu's with an underscore, and the cc_ of its file and a .py at its end may stand too.
+    private static bool IsVendorScripts(string word)
+    {
+        string name = word.Replace('-', '_');
+        name = name.EndsWith(".py", StringComparison.OrdinalIgnoreCase) ? name[..^3] : name;
+
+        return name is "scripts_vendor" or "cc_scripts_vendor";
     }
 
     // The agent waits for the restart or the shutdown that cloud-init announces. A condition that is false cancels it.

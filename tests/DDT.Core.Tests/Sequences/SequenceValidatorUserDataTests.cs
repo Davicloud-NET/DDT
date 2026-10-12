@@ -54,10 +54,10 @@ public sealed class SequenceValidatorUserDataTests
     [InlineData("fail-runcmd")]
     [InlineData("runcmd-reboot")]
     [InlineData("vendor-prefix")]
+    [InlineData("shell-script")]
     [InlineData("vendor-off", $"{VendorData} notEnabled")]
     [InlineData("vendor-false", $"{VendorData} notMapping")]
     [InlineData("final-modules", $"{FinalModules} missing")]
-    [InlineData("shell-script", NotChecked)]
     [InlineData("invalid-yaml", NotChecked)]
     public void WarnsOfTheLabsUserDataThatKeptTheAgentOutOfLinux(string file, params string[] warnings)
     {
@@ -191,6 +191,7 @@ public sealed class SequenceValidatorUserDataTests
     [InlineData("cloud_final_modules: []", "missing")]
     [InlineData("cloud_final_modules:\n  # - scripts_vendor\n  - scripts_user   # not scripts_vendor", "missing")]
     [InlineData("cloud_final_modules:\n  - scripts_vendors\n  - my-scripts_vendor", "missing")]
+    [InlineData("cloud_final_modules:\n  - {scripts_vendor: always}\n  - scripts_vendor.sh\n  - cc_scripts_user", "missing")]
     [InlineData("cloud_final_modules:", "unread")]
     [InlineData("cloud_final_modules: *modules", "unread")]
     [InlineData("cloud_final_modules: [\"{{Modules}}\"]", "unread")]
@@ -201,8 +202,15 @@ public sealed class SequenceValidatorUserDataTests
         Assert.Equal([$"{FinalModules} {how}"], Said(analysis.Warnings));
     }
 
-    // Debian's cloud.cfg writes the module with a dash, Ubuntu's with an underscore, and cloud-init reads both.
+    // Debian's cloud.cfg writes the module with a dash, Ubuntu's with an underscore, and cloud-init reads both. It
+    // also takes an entry as a mapping with the name, and the name with the cc_ and the .py of the module's file.
     [Theory]
+    [InlineData("cloud_final_modules:\n  - {name: scripts_vendor}\n  - scripts_user")]
+    [InlineData("cloud_final_modules: [{name: scripts-vendor, frequency: always}]")]
+    [InlineData("cloud_final_modules:\n  - name: scripts_vendor\n    frequency: once-per-instance")]
+    [InlineData("cloud_final_modules:\n  - cc_scripts_vendor")]
+    [InlineData("cloud_final_modules: [scripts_user, scripts_vendor.py]")]
+    [InlineData("cloud_final_modules:\n- \"cc_scripts-vendor.PY\"")]
     [InlineData("cloud_final_modules:\n  - scripts_vendor\n  - scripts_user")]
     [InlineData("cloud_final_modules:\n- scripts-vendor\n- scripts-user")]
     [InlineData("cloud_final_modules: [package_update_upgrade_install, [scripts_vendor, always], scripts_user]")]
@@ -242,7 +250,6 @@ public sealed class SequenceValidatorUserDataTests
     [InlineData("## template: jinja\n#cloud-config\nvendor_data: {enabled: false}\n")]
     [InlineData("#cloud-config-archive\n- type: text/cloud-config\n  content: \"vendor_data: {enabled: false}\"\n")]
     [InlineData("#cloud-config-jsonp\n[{ \"op\": \"add\", \"path\": \"/vendor_data\", \"value\": false }]\n")]
-    [InlineData("#!/bin/sh\necho hello\n")]
     [InlineData("#cloud-boothook\n#!/bin/sh\necho early\n")]
     [InlineData("\u001f\u008b\u0008binary")]
     [InlineData("{{UserData}}")]
@@ -282,6 +289,18 @@ public sealed class SequenceValidatorUserDataTests
     [InlineData("\uFEFF\n\n#cloud-config\r\nusers:\r\n  - default\r\n")]
     [InlineData("#cloud-config\n# Only comments.\n\n")]
     public void SaysNothingOfUserDataThatSetsNothing(string userData)
+    {
+        SequenceAnalysis analysis = Analyse(userData);
+
+        Assert.Empty(analysis.Warnings);
+        Assert.Empty(analysis.Notes);
+    }
+
+    // The lab saw cloud-init run DDT's vendor script beside a script as user-data. What the script does is its own.
+    [Theory]
+    [InlineData("#!/bin/sh\necho hello\n")]
+    [InlineData("\uFEFF\n #!/usr/bin/env python3\nprint('vendor_data: {enabled: false}')\n")]
+    public void SaysNothingOfAScriptAsUserData(string userData)
     {
         SequenceAnalysis analysis = Analyse(userData);
 

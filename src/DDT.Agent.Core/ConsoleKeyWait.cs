@@ -7,11 +7,13 @@ using DDT.Agent.Consoles;
 namespace DDT.Agent;
 
 // Waits for a key at the text console. Keys are polled, as for a typed line, because a read cannot be cancelled.
-public sealed class ConsoleKeyWait(TimeProvider timeProvider) : IKeyWait
+public sealed class ConsoleKeyWait(TimeProvider timeProvider, IConsoleKeys? console = null) : IKeyWait
 {
     private static readonly TimeSpan s_pollInterval = TimeSpan.FromMilliseconds(50);
 
-    public bool CanPress => !Console.IsInputRedirected;
+    private readonly IConsoleKeys _console = console ?? new SystemConsoleKeys();
+
+    public bool CanPress => !_console.IsRedirected;
 
     public async Task<bool> PressedWithinAsync(TimeSpan time, CancellationToken cancellationToken)
     {
@@ -27,7 +29,7 @@ public sealed class ConsoleKeyWait(TimeProvider timeProvider) : IKeyWait
 
         for (TimeSpan waited = TimeSpan.Zero; waited < time; waited += s_pollInterval)
         {
-            if (Console.KeyAvailable)
+            if (_console.KeyAvailable)
             {
                 Discard();
 
@@ -41,11 +43,11 @@ public sealed class ConsoleKeyWait(TimeProvider timeProvider) : IKeyWait
     }
 
     // The key itself means nothing, and must not land in a prompt that comes later.
-    private static void Discard()
+    private void Discard()
     {
-        while (Console.KeyAvailable)
+        while (_console.KeyAvailable)
         {
-            Console.ReadKey(intercept: true);
+            _console.TakeKey();
         }
     }
 }

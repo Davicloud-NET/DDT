@@ -17,8 +17,7 @@ using Xunit;
 
 namespace DDT.Server.Tests;
 
-// An agent that knows sequences up to version 4, on a server that can start both boot environments: it is offered no
-// sequence with steps in the installed Linux, and Windows PE is restarted for a run of one, into the server's agent.
+// An agent that knows sequences up to version 4, on a server that can start both boot environments.
 public sealed class InstalledLinuxVersionTests(BothEnvironmentsApplication application) : IClassFixture<BothEnvironmentsApplication>
 {
     // The version the agents of the Linux boot environment's first release say they run.

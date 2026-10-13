@@ -19,9 +19,6 @@ public static class LinuxPhaseService
     // For an error nobody expected. systemd starts the unit again after it.
     public const int Crashed = 1;
 
-    // What systemd sets for a process whose output it connected to the journal.
-    private const string JournalStream = "JOURNAL_STREAM";
-
     public static string NoSettings(string configuration) =>
         $"{configuration} is not there, so this system has no run for the DDT agent to go on with.";
 
@@ -33,7 +30,7 @@ public static class LinuxPhaseService
         using CancellationTokenSource stop = new();
         using PosixSignalRegistration terminate = PosixSignalRegistration.Create(PosixSignal.SIGTERM, signal => Stop(signal, stop));
         using PosixSignalRegistration interrupt = PosixSignalRegistration.Create(PosixSignal.SIGINT, signal => Stop(signal, stop));
-        LinuxPhaseMachine machine = LinuxPhaseMachine.Own() with { OutputIsJournal = Environment.GetEnvironmentVariable(JournalStream) is { Length: > 0 } };
+        LinuxPhaseMachine machine = LinuxPhaseMachine.Own() with { OutputIsJournal = JournalStream.IsOutput(Environment.GetEnvironmentVariable(JournalStream.Variable)) };
 
         return await RunAsync(machine, stop.Token).ConfigureAwait(false);
     }

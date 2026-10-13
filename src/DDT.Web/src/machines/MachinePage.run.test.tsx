@@ -261,6 +261,45 @@ describe("MachinePage", () => {
     expect(screen.queryByText(/The installed Linux has not called yet/)).not.toBeInTheDocument();
   });
 
+  // The server counts a start from the network while the installed Linux has the run, and pushes the machine's row.
+  it("says how often in a row the machine started from the network, until a push says the installed Linux called", async () => {
+    const installed = run({ phase: "Linux", activity: "WaitingForCloudInit" });
+    const { hub } = await open(
+      answers(
+        [machine({ agentEnvironment: "Linux", deployment: installed })],
+        [installed],
+        [view({ summary: installed })],
+      ),
+    );
+
+    expect(await screen.findByText("Waiting for cloud-init")).toBeInTheDocument();
+    expect(screen.queryByText(/^The machine started from the network/)).not.toBeInTheDocument();
+
+    act(() => {
+      hub?.push(
+        "machineChanged",
+        machine({ agentEnvironment: "Linux", detours: 2, deployment: installed }),
+      );
+    });
+
+    expect(
+      await screen.findByText(
+        "The machine started from the network 2 times in a row while its run goes on in the installed Linux and was sent back to its disk each time, and at 5 such starts in a row the server ends the run.",
+      ),
+    ).toBeInTheDocument();
+
+    act(() => {
+      hub?.push(
+        "machineChanged",
+        machine({ agentEnvironment: "Linux", detours: null, deployment: installed }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/^The machine started from the network/)).not.toBeInTheDocument();
+    });
+  });
+
   it("moves a step on when the server pushes its change, and never back", async () => {
     const { hub } = await open(answers([machine()], [run()], [view()]));
 

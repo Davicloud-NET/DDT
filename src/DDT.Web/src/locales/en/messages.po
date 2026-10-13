@@ -370,6 +370,10 @@ msgstr "{count, plural, one {Pasted # step.} other {Pasted # steps.}}"
 msgid "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
 msgstr "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
 
+#: src/runs/panel/LinuxDetours.tsx
+msgid "{count, plural, one {The machine started from the network once while its run goes on in the installed Linux and was sent back to its disk, and at {max} such starts in a row the server ends the run.} other {The machine started from the network # times in a row while its run goes on in the installed Linux and was sent back to its disk each time, and at {max} such starts in a row the server ends the run.}}"
+msgstr "{count, plural, one {The machine started from the network once while its run goes on in the installed Linux and was sent back to its disk, and at {max} such starts in a row the server ends the run.} other {The machine started from the network # times in a row while its run goes on in the installed Linux and was sent back to its disk each time, and at {max} such starts in a row the server ends the run.}}"
+
 #: src/accounts/DeleteAccountDialog.tsx
 msgid "{count, plural, one {The sequence {list} uses this account. Choose another account there first.} other {The sequences {list} use this account. Choose another account there first.}}"
 msgstr "{count, plural, one {The sequence {list} uses this account. Choose another account there first.} other {The sequences {list} use this account. Choose another account there first.}}"

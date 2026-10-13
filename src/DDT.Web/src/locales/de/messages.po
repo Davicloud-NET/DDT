@@ -370,6 +370,10 @@ msgstr "{count, plural, one {# Schritt eingefügt.} other {# Schritte eingefügt
 msgid "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
 msgstr "{count, plural, one {Die Bibliothek enthält jetzt # Image aus {file}.} other {Die Bibliothek enthält jetzt # Images aus {file}.}}"
 
+#: src/runs/panel/LinuxDetours.tsx
+msgid "{count, plural, one {The machine started from the network once while its run goes on in the installed Linux and was sent back to its disk, and at {max} such starts in a row the server ends the run.} other {The machine started from the network # times in a row while its run goes on in the installed Linux and was sent back to its disk each time, and at {max} such starts in a row the server ends the run.}}"
+msgstr "{count, plural, one {Das Gerät wurde einmal per Netzwerk gestartet, während seine Ausführung im installierten Linux weiterläuft, und wieder von seinem Datenträger gestartet, und bei {max} solchen Starts in Folge beendet der Server die Ausführung.} other {Das Gerät wurde #-mal in Folge per Netzwerk gestartet, während seine Ausführung im installierten Linux weiterläuft, und jedes Mal wieder von seinem Datenträger gestartet, und bei {max} solchen Starts in Folge beendet der Server die Ausführung.}}"
+
 #: src/accounts/DeleteAccountDialog.tsx
 msgid "{count, plural, one {The sequence {list} uses this account. Choose another account there first.} other {The sequences {list} use this account. Choose another account there first.}}"
 msgstr "{count, plural, one {Die Tasksequenz {list} verwendet dieses Konto. Wählen Sie dort zuerst ein anderes Konto.} other {Die Tasksequenzen {list} verwenden dieses Konto. Wählen Sie dort zuerst ein anderes Konto.}}"

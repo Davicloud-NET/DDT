@@ -48,6 +48,10 @@ public static partial class NetworkDetours
         return start is not null && run.DetourStart == start;
     }
 
+    // The starts counted for a run that still goes on in the installed Linux, for a page to show. Null when none.
+    public static int? Counted(Deployment? run) =>
+        run is { State: DeploymentState.Running, CurrentPhase: SequencePhase.Linux, Detours: > 0 } ? run.Detours : null;
+
     // The audit row of a start the server counted, which holds the address the question came from.
     public static AuditEvent Audit(Deployment run, Actor machine, DateTimeOffset now)
     {

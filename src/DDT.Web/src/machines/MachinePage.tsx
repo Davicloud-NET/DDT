@@ -7,7 +7,7 @@ import { IconChevronLeft } from "@tabler/icons-react";
 import { Link, useParams, useSearch } from "@tanstack/react-router";
 
 import { isActive } from "@/deployments/deployments";
-import { linuxHandOver, linuxReturns } from "@/deployments/handOver";
+import { linuxDetours, linuxHandOver, linuxReturns } from "@/deployments/handOver";
 import { useServerClockOffset } from "@/deployments/useServerClockOffset";
 import { useNow } from "@/lib/useNow";
 import { LogPanel } from "@/log/LogPanel";
@@ -97,6 +97,7 @@ export function MachinePage() {
           lastSeenUtc={machine?.lastSeenUtc ?? summary.updatedUtc}
           handedOverUtc={handedOverUtc}
           bootReturns={machine === null ? 0 : linuxReturns(machine)}
+          detours={machine === null ? 0 : linuxDetours(machine)}
           clockOffsetMs={clockOffsetMs}
           now={now}
         />

@@ -15,6 +15,7 @@ import { Notice } from "@/ui/Notice";
 import { Panel } from "@/ui/Panel";
 import { StateTag } from "@/ui/StateTag";
 
+import { LinuxDetours } from "./panel/LinuxDetours";
 import { RunActivity } from "./panel/RunActivity";
 import { runLine } from "./panel/runLine";
 import { RunProgress } from "./panel/RunProgress";
@@ -33,6 +34,8 @@ interface RunPanelProps {
   handedOverUtc?: string | null;
   // How often the machine has started from the network again since that hand-over.
   bootReturns?: number;
+  // How often in a row the machine started from the network while the run goes on in the installed Linux.
+  detours?: number;
   // What to add to now for the server's clock, on which the wait after a hand-over is measured.
   clockOffsetMs?: number;
   now: number;
@@ -46,6 +49,7 @@ export function RunPanel({
   lastSeenUtc,
   handedOverUtc = null,
   bootReturns = 0,
+  detours = 0,
   clockOffsetMs = 0,
   now,
 }: RunPanelProps) {
@@ -93,6 +97,8 @@ export function RunPanel({
           now={now}
         />
       ) : null}
+
+      {run.state === "Running" && detours > 0 ? <LinuxDetours count={detours} /> : null}
 
       {run.state === "Assigned" ? (
         <p className="text-ink-2">

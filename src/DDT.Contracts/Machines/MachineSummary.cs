@@ -47,4 +47,7 @@ public sealed record MachineSummary(
     DateTimeOffset? HandedOverUtc = null,
     // How often the machine has started its boot environment again since then, which each time handed the run over
     // again at HandedOverUtc. Null when it has not.
-    int? BootReturns = null);
+    int? BootReturns = null,
+    // How often in a row the machine started from the network while its run goes on in the installed Linux, with no
+    // call from there in between. The server ends the run at five. Null when it has not, and once that Linux has called.
+    int? Detours = null);

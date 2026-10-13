@@ -6,7 +6,14 @@ import { describe, expect, it } from "vitest";
 
 import { deploymentSummary, machineSummary } from "@/test/builders";
 
-import { FIRST_CALL_EXPECTED_MS, isOverdue, linuxHandOver, linuxReturns } from "./handOver";
+import {
+  FIRST_CALL_EXPECTED_MS,
+  isOverdue,
+  linuxDetours,
+  linuxHandOver,
+  linuxReturns,
+  MAX_NETWORK_DETOURS,
+} from "./handOver";
 
 const since = "2026-09-16T10:00:00Z";
 
@@ -52,6 +59,23 @@ describe("the wait for the installed Linux after a hand-over", () => {
     expect(
       linuxReturns(machineSummary({ handedOverUtc: since, bootReturns: 2, deployment: failed })),
     ).toBe(0);
+  });
+
+  // The server counts them while the run goes on in the installed Linux, before and after that Linux's first call.
+  it("counts the starts from the network in a row for as long as the Linux run is running", () => {
+    const waiting = deploymentSummary({ state: "Running", phase: "Linux", activity: "Restarting" });
+    const stepping = deploymentSummary({ state: "Running", phase: "Linux", activity: "Step" });
+    const failed = deploymentSummary({ state: "Failed", phase: "Linux" });
+
+    expect(MAX_NETWORK_DETOURS).toBe(5);
+    expect(linuxDetours(machineSummary({ detours: 2, deployment: stepping }))).toBe(2);
+    expect(
+      linuxDetours(machineSummary({ handedOverUtc: since, detours: 1, deployment: waiting })),
+    ).toBe(1);
+    expect(linuxDetours(machineSummary({ deployment: stepping }))).toBe(0);
+    expect(linuxDetours(machineSummary({ detours: null, deployment: stepping }))).toBe(0);
+    expect(linuxDetours(machineSummary({ detours: 4, deployment: failed }))).toBe(0);
+    expect(linuxDetours(machineSummary({ detours: 4, deployment: null }))).toBe(0);
   });
 
   it("is longer than a first start usually takes from ten minutes on", () => {

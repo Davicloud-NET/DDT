@@ -44,6 +44,11 @@ internal static class HandedOverLinuxRun
         return (machine, run);
     }
 
+    // The boot agent's question: no token at all, the run the seed's state names, if it names one, and the id of the
+    // start, which an agent that makes none leaves out.
+    public static async Task<AgentRegistrationResult> AskAsync(DeployingMachine machine, Guid? runId, Guid? start = null) =>
+        await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(machine.Registration with { HandedOver = new AgentHandedOverRun(runId, start) }));
+
     // The agent's first call from the installed Linux, which takes the run over.
     public static async Task<AgentRegistrationResult> InstalledAsync(DeployingMachine machine) =>
         await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(

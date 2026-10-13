@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace DDT.Server.Migrations.SqlServer
+namespace DDT.Server.Migrations.Sqlite
 {
     /// <inheritdoc />
     public partial class Detours : Migration
@@ -14,11 +15,18 @@ namespace DDT.Server.Migrations.SqlServer
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<Guid>(
+                name: "DetourStart",
+                schema: "ddt",
+                table: "Deployments",
+                type: "TEXT",
+                nullable: true);
+
             migrationBuilder.AddColumn<int>(
                 name: "Detours",
                 schema: "ddt",
                 table: "Deployments",
-                type: "int",
+                type: "INTEGER",
                 nullable: false,
                 defaultValue: 0);
         }
@@ -26,6 +34,11 @@ namespace DDT.Server.Migrations.SqlServer
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropColumn(
+                name: "DetourStart",
+                schema: "ddt",
+                table: "Deployments");
+
             migrationBuilder.DropColumn(
                 name: "Detours",
                 schema: "ddt",

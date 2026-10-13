@@ -378,7 +378,11 @@ namespace DDT.Server.Migrations.PostgreSql
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
+                    b.Property<Guid?>("DetourStart")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Detours")
+                        .IsConcurrencyToken()
                         .HasColumnType("integer");
 
                     b.Property<int?>("DiskNumber")

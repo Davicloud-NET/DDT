@@ -26,6 +26,9 @@ public static class AuditActions
     public const string DeploymentResumed = "deployment.resumed";
     public const string DeploymentRunTokenRefused = "deployment.run-token-refused";
 
+    // A start from the network the server counted while the run goes on in the installed Linux.
+    public const string DeploymentDetoured = "deployment.detoured";
+
     // Names the inputs only, never an answer.
     public const string DeploymentInputsAnswered = "deployment.inputs-answered";
 

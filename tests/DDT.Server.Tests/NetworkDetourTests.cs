@@ -7,6 +7,7 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
+using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Live;
 using DDT.Server.Machines;
@@ -33,9 +34,19 @@ public sealed class NetworkDetourTests(DdtApplication application) : IClassFixtu
         $"sends it back to its disk. This is start {detours} of 5 in a row without a call from the installed Linux in between. At start 5, " +
         "the server ends the run.";
 
-    // The boot agent's question: no token at all, and the run the seed's state names, if it names one.
-    private static async Task<AgentRegistrationResult> AskAsync(DeployingMachine machine, Guid? runId) =>
-        await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(machine.Registration with { HandedOver = new AgentHandedOverRun(runId) }));
+    // An agent that makes no id for its start, so each question is a start of its own.
+    private static Task<AgentRegistrationResult> AskAsync(DeployingMachine machine, Guid? runId) => HandedOverLinuxRun.AskAsync(machine, runId);
+
+    private Task<List<AuditEvent>> AuditAsync(Guid runId)
+    {
+        string subject = runId.ToString("D");
+
+        return application.QueryAsync(database => database.AuditEvents
+            .AsNoTracking()
+            .Where(e => e.SubjectId == subject && (e.Action == AuditActions.DeploymentDetoured || e.Action == AuditActions.DeploymentFailed))
+            .OrderBy(e => e.Id)
+            .ToListAsync(TestContext.Current.CancellationToken));
+    }
 
     private Task<Deployment> StoredAsync(Guid runId) =>
         application.QueryAsync(database => database.Deployments.AsNoTracking().SingleAsync(d => d.Id == runId, TestContext.Current.CancellationToken));
@@ -84,6 +95,16 @@ public sealed class NetworkDetourTests(DdtApplication application) : IClassFixtu
         MachineLogEntry said = Assert.Single(await RunLogAsync(machine.Id, run.Id), line => line.Message.StartsWith("The machine started from the network", StringComparison.Ordinal));
         Assert.Equal((Line(1), AgentLogLevel.Warning, (Guid?)run.Id), (said.Message, said.Level, said.DeploymentId));
         Assert.Equal(said.Id, (await LiveListener.NextAsync(logs, appended => appended.LastLineId == said.Id)).LastLineId);
+
+        // The count is a change someone who knows a UUID and a MAC can cause, so the audit log has where it came from.
+        AuditEvent audit = Assert.Single(await AuditAsync(run.Id));
+        Assert.Equal(
+            (AuditActions.DeploymentDetoured, (Guid?)machine.Id, machine.Agent.RemoteAddress, null),
+            (audit.Action, audit.ActorMachineId, audit.SourceAddress, audit.ActorName));
+        Assert.Equal(
+            $"{stored.Title} on machine {machine.Id:D}. Counted start 1 of 5 from the network in a row while the run goes on in the installed " +
+            "Linux. Nothing else of the registration was taken.",
+            audit.Detail);
     }
 
     // The script wiped the token off the seed, and power was lost before the installed agent's first call.
@@ -228,6 +249,14 @@ public sealed class NetworkDetourTests(DdtApplication application) : IClassFixtu
         Assert.Equal(
             [Line(1), Line(2), Line(3), Line(4)],
             (await RunLogAsync(machine.Id, run.Id)).Select(line => line.Message).Where(message => message.StartsWith("The machine started from the network", StringComparison.Ordinal)));
+
+        // Four counted starts and the end, each with the machine as its actor and the address it came from.
+        List<AuditEvent> audit = await AuditAsync(run.Id);
+        Assert.Equal(
+            [.. Enumerable.Repeat(AuditActions.DeploymentDetoured, 4), AuditActions.DeploymentFailed],
+            audit.Select(e => e.Action));
+        Assert.All(audit, e => Assert.Equal(((Guid?)machine.Id, machine.Agent.RemoteAddress, null), (e.ActorMachineId, e.SourceAddress, e.ActorName)));
+        Assert.Equal($"{view.Summary.Title} on machine {machine.Id:D}. {TooMany}", audit[^1].Detail);
 
         // The installed Linux, should it start after all, has nothing to go on with.
         HttpResponseMessage late = await machine.Agent.RegisterAsync(machine.Registration with { RunToken = machine.RunToken, Environment = AgentEnvironment.Linux });

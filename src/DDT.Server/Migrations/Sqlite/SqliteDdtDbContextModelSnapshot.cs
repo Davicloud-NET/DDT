@@ -372,7 +372,11 @@ namespace DDT.Server.Migrations.Sqlite
                         .HasMaxLength(128)
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("DetourStart")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Detours")
+                        .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("DiskNumber")

@@ -16,7 +16,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DDT.Server.Migrations.PostgreSql
 {
     [DbContext(typeof(PostgreSqlDdtDbContext))]
-    [Migration("20261012000807_Detours")]
+    [Migration("20261013063548_Detours")]
     partial class Detours
     {
         /// <inheritdoc />
@@ -381,7 +381,11 @@ namespace DDT.Server.Migrations.PostgreSql
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
+                    b.Property<Guid?>("DetourStart")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Detours")
+                        .IsConcurrencyToken()
                         .HasColumnType("integer");
 
                     b.Property<int?>("DiskNumber")

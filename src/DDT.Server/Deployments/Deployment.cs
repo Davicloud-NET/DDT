@@ -47,6 +47,9 @@ public sealed class Deployment
     // registration from there in between. See NetworkDetours.
     public int Detours { get; set; }
 
+    // The start Detours counted last, by the id its agent made for it. Null when that agent named none.
+    public Guid? DetourStart { get; set; }
+
     public Guid? RequestedByUserId { get; set; }
 
     public string? RequestedByName { get; set; }

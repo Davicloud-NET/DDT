@@ -60,10 +60,14 @@ public sealed class MachineRegistrar(
             return MachineRegistration.Refused(arrival.Refusal);
         }
 
-        if (arrival is { Detour: { } line, Active: { } installed })
+        if (arrival is { GoesOnInstalled: true, Active: { } installed })
         {
-            await publisher.PublishAsync(machine, arrival, cancellationToken).ConfigureAwait(false);
-            live.MachineLogAppended(machine.Id, line.Id);
+            // A start that was counted before changed nothing, so there is nothing to save or to push.
+            if (arrival.Detour is { } line)
+            {
+                await publisher.PublishAsync(machine, arrival, cancellationToken).ConfigureAwait(false);
+                live.MachineLogAppended(machine.Id, line.Id);
+            }
 
             return new MachineRegistration(GoesOn(machine, installed), RegistrationRefusal.None);
         }

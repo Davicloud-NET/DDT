@@ -417,7 +417,11 @@ namespace DDT.Server.Migrations.SqlServer
                         .HasColumnType("nvarchar(128)")
                         .UseCollation("Latin1_General_100_BIN2");
 
+                    b.Property<Guid?>("DetourStart")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("Detours")
+                        .IsConcurrencyToken()
                         .HasColumnType("int");
 
                     b.Property<int?>("DiskNumber")

@@ -51,10 +51,15 @@ public sealed class MachineArrivals(
             return Arrival.Refused(RegistrationRefusal.NothingToContinue);
         }
 
-        if (machine is not null
-            && await DetourAsync(new Visit(machine, active, continuation, registration, remoteAddress, now), cancellationToken).ConfigureAwait(false) is { } detour)
+        if (machine is not null && continuation == Continuation.None && NetworkDetours.Asks(registration, active))
         {
-            return new Arrival(machine, active, before, null, tested, RegistrationRefusal.None) { Detour = detour };
+            Visit asking = new(machine, active, continuation, registration, remoteAddress, now);
+            (bool goesOn, MachineLogLine? line) = await DetourAsync(asking, active, cancellationToken).ConfigureAwait(false);
+
+            if (goesOn)
+            {
+                return new Arrival(machine, active, before, null, tested, RegistrationRefusal.None) { GoesOnInstalled = true, Detour = line };
+            }
         }
 
         if (machine is null)
@@ -81,31 +86,37 @@ public sealed class MachineArrivals(
     public void Forget() => database.ChangeTracker.Clear();
 
     // A boot agent that found the run handed over asks before it registers. While that run goes on in the installed
-    // Linux, nothing of the registration is taken: the machine keeps its approval and the run its tokens. Null when
-    // the registration is one as any other, which it also is at the limit, where the run ends first.
-    private async Task<MachineLogLine?> DetourAsync(Visit visit, CancellationToken cancellationToken)
+    // Linux, nothing of the registration is taken: the machine keeps its approval and the run its tokens. A start is
+    // counted once, however often its agent asks, and only a counted one writes a line. At the limit the run ends
+    // and does not go on.
+    private async Task<(bool GoesOn, MachineLogLine? Line)> DetourAsync(Visit visit, Deployment run, CancellationToken cancellationToken)
     {
-        if (visit.Continuation != Continuation.None || !NetworkDetours.Asks(visit.Registration, visit.Active))
+        string? address = visit.RemoteAddress?.ToString();
+        Guid? start = visit.Registration.HandedOver?.Start;
+
+        if (NetworkDetours.IsRepeated(run, start))
         {
-            return null;
+            NetworkDetours.AnsweredAgain(logger, visit.Machine.Id, address ?? "unknown", run.Id);
+
+            return (true, null);
         }
 
-        Deployment run = visit.Active;
-        string? address = visit.RemoteAddress?.ToString();
         run.Detours++;
+        run.DetourStart = start;
 
         if (run.Detours >= NetworkDetours.Max)
         {
             await termination.EndForDetoursAsync(visit.Machine, run, address, cancellationToken).ConfigureAwait(false);
 
-            return null;
+            return (false, null);
         }
 
         MachineLogLine line = NetworkDetours.Line(run, visit.Now);
         database.MachineLogLines.Add(line);
+        database.AuditEvents.Add(NetworkDetours.Audit(run, Actor.OfMachine(visit.Machine.Id, address), visit.Now));
         NetworkDetours.Answered(logger, visit.Machine.Id, address ?? "unknown", run.Id, run.Detours);
 
-        return line;
+        return (true, line);
     }
 
     // Returns null if too many machines that nobody approved are waiting. Only those count, so a fleet that was
@@ -168,6 +179,7 @@ public sealed class MachineArrivals(
             if (!SequenceKinds.IsBoot(SequenceKinds.Phase(environment)))
             {
                 continued.Detours = 0;
+                continued.DetourStart = null;
             }
         }
         else if (!continuation.Resumes)

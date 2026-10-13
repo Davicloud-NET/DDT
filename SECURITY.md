@@ -73,8 +73,9 @@ not make. The same section says what such a run trusts. Accepted, and no vulnera
   nothing while a run of that machine goes on in the installed Linux, and is answered without a
   token. It need not name the run. Whoever knows the machine's SMBIOS UUID and adapter address
   so learns the machine's state, the run's id and how often the machine was sent back to its
-  disk. Five such questions in a row end the run, as one registration in the machine's name
-  without the question does.
+  disk. Each question names its start with an id the sender chooses, and five starts in a row end
+  the run, as one registration in the machine's name without the question does. Each counted
+  start is in the audit log with the address it came from.
 - Whoever sits at a netbooted machine can end a run that goes on in its installed Linux, by
   typing `END` there, without signing in.
 

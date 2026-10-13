@@ -971,7 +971,9 @@ script does not get that mask: the agent starts each script with 022, the mask o
 so a file a script makes is readable by others unless the script says otherwise. In QEMU a
 script's `umask` printed 0022, and a file it made had mode 644. The unit also has
 `Restart=on-failure`: an agent that ended on an error nobody expected starts again 15 seconds
-later. After its removal the agent ends with exit code 0, so no failed unit stays.
+later. After its removal the agent ends with exit code 0, so no failed unit stays. And it has
+`KillMode=mixed`: systemd, when it stops the unit, signals the agent alone, and the agent ends
+its script itself.
 
 **The wait for cloud-init.** The unit starts while cloud-init still runs, so the agent waits
 before the run's next step, and the run reads "Waiting for cloud-init" meanwhile.
@@ -1023,8 +1025,8 @@ before the run's next step, and the run reads "Waiting for cloud-init" meanwhile
 - **A stop.** A run that is stopped on the web is over for the agent with its next report, which
   it sends every ten seconds. It asks the script and every process the script started to end,
   with SIGTERM, waits five seconds and ends what is left with SIGKILL. Then it removes itself.
-  When systemd stops the unit, as on the machine's way into a restart, systemd has sent SIGTERM
-  to every process of the unit already, so the agent sends none and only waits.
+  When systemd stops the unit, as on the machine's way into a restart, it signals the agent
+  alone, and the agent ends the script the same way, so a script's trap runs once.
 - **A step that was cut off** is not run again. After a stop of the unit, a power loss or a
   restart that the script made itself, nobody knows how far the step came, so it counts as
   failed when the agent starts again, and the run fails with it unless the step goes on after a
@@ -1160,14 +1162,16 @@ seed that holds a run, without mounting anything, and goes by what it finds:
   the run over. The agent asks the server, with a registration that names the run and carries no
   token. While that run goes on in the installed Linux, the server changes nothing: the machine
   keeps its approval and its tokens, nothing of the registration is stored, and the answer holds
-  no token. It counts the start, in `Detours` of the run, and writes a warning into the run's
-  log. The agent then names the disk's boot entry as the firmware's next start, in `BootNext`,
-  and restarts the machine ten seconds later. A call from the installed Linux sets the count
-  back to zero. At the fifth such start in a row with no call from the installed Linux in
-  between, the server ends the run, with "The machine started from the network 5 times in a row
-  while the run went on in the installed Linux ...", and the machine registers as after any
-  start. Where the server does not answer within 30 seconds, the agent goes by what the disk
-  says and restarts into it.
+  no token. It counts the start, in `Detours` of the run, writes a warning into the run's log
+  and a row into the audit log, with the address the question came from. The question carries
+  an id the agent makes once for each start, so a question that is asked again because its
+  answer got lost is not counted twice. The agent then names the disk's boot entry as the
+  firmware's next start, in `BootNext`, and restarts the machine ten seconds later. A call from
+  the installed Linux sets the count back to zero. At the fifth such start in a row with no call
+  from the installed Linux in between, the server ends the run, with "The machine started from
+  the network 5 times in a row while the run went on in the installed Linux ...", and the
+  machine registers as after any start. The agent asks up to four times within 30 seconds.
+  Where no answer comes in that time, it goes by what the disk says and restarts into it.
 - **The seed still holds the token,** so the installed Linux has not taken the run over. The
   agent registers with that token, which keeps the run, and reports the start. The server keeps
   the count in `BootReturns`, and the machine's page reads "The machine started from the network
@@ -1182,9 +1186,10 @@ seed that holds a run, without mounting anything, and goes by what it finds:
 
 Where several disks hold a run, the agent goes by the one whose run was assigned last, and says
 so. A seed that holds what a hand-over left, with no token and no state that names a run, makes
-the agent ask without a run's id. The server then answers for the run that machine has in its
-installed Linux, if it has one, and the agent waits for that answer without the 30 seconds'
-limit, since such a seed gives it nothing to go by.
+the agent ask without a run's id. So does a seed the agent cannot read, as one whose file system
+is damaged, and the agent leaves that one as it is. The server then answers for the run that
+machine has in its installed Linux, if it has one, and the agent waits for that answer without
+the 30 seconds' limit, since such a seed gives it nothing to go by.
 
 **The question at the console.** During the ten seconds before such a restart, the text console
 offers a way out: "To start over here instead, press a key within that time. The agent then asks
@@ -1295,10 +1300,11 @@ make, and what follows from that is accepted:
   A registration that asks first whether a handed-over run goes on changes nothing while a run
   of that machine goes on in the installed Linux, and gets no token. The question need not name
   the run: one without a run's id is answered for whatever run the machine has there. The answer
-  holds the machine's state, the run's id and the count. The question puts a warning into the
-  run's log, and the fifth in a row with no call from the installed Linux in between ends the
-  run. That someone at the machine chose to start over is the word of whoever registered, with
-  no secret behind it, and the run's error says it as a report.
+  holds the machine's state, the run's id and the count. A start that asks puts a warning into
+  the run's log and a row with its address into the audit log, and the fifth in a row with no
+  call from the installed Linux in between ends the run. What is a new start is the sender's
+  word too: the id in its question. That someone at the machine chose to start over is the word
+  of whoever registered, with no secret behind it, and the run's error says it as a report.
 - **What the removal cannot promise.** It overwrites what held a secret where the file system
   writes a file's bytes in place. It does not reach a file system that copies on write, nor the
   machine's journal, which keeps every line the agent and the scripts wrote.

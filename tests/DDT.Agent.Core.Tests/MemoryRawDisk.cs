@@ -29,9 +29,17 @@ internal sealed class MemoryRawDisk(long length, int sectorSize = 512) : IRawDis
     // The next write keeps this many of its bytes and then fails, as on a disk that stops answering half way.
     public int? FailNextWriteAfter { get; set; }
 
+    // A read that reaches this byte or one after it fails, as on a disk whose sectors there no longer answer.
+    public long? UnreadableFrom { get; set; }
+
     public void Read(long offset, Span<byte> buffer)
     {
         CheckWhole(offset, buffer.Length);
+
+        if (UnreadableFrom is { } from && offset + buffer.Length > from)
+        {
+            throw new DeploymentStepException($"The disk cannot be read at byte {Math.Max(offset, from)} (Input/output error).");
+        }
 
         for (int done = 0; done < buffer.Length;)
         {

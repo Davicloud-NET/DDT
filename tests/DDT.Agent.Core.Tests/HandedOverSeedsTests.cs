@@ -301,6 +301,38 @@ public sealed class HandedOverSeedsTests : IDisposable
             Assert.Single(await WarningsAsync()).Message);
     }
 
+    // The table names the seed, so it is there. Taken for a disk without one, the registration would end a live run.
+    [Fact]
+    public async Task ASeedTheDiskCannotReadIsSaidAndCountsAsASeedThatNamesNoRun()
+    {
+        await _seeded.HandedOverAsync();
+        Disk.UnreadableFrom = (_seeded.Kept.FirstSector * GptLayout.SectorSize) + 4096;
+
+        HandedOverSeed seed = Assert.Single(Find());
+
+        Assert.Equal((true, true, null, null), (seed.IsUnread, seed.IsTaken, seed.RunId, seed.Token));
+        Assert.Equal((0, _seeded.Kept.PartitionNumber, TestRawImage.EspId), (seed.Disk.Number, seed.Partition.Number, seed.SystemPartition?.PartitionId));
+        Assert.Equal(
+            HandedOverSeeds.SeedUnreadMessage(
+                FakeDeploymentTools.Disk(0),
+                $"The disk cannot be read at byte {(_seeded.Kept.FirstSector * GptLayout.SectorSize) + 4096} (Input/output error)."),
+            Assert.Single(await WarningsAsync()).Message);
+    }
+
+    // Without its table nothing says that the disk has a seed, so it holds none, as before.
+    [Fact]
+    public async Task ADiskWhoseTableCannotBeReadIsSaidAndHoldsNoRun()
+    {
+        await _seeded.HandedOverAsync();
+        Disk.UnreadableFrom = GptLayout.SectorSize;
+
+        Assert.Empty(Find());
+
+        Assert.Equal(
+            HandedOverSeeds.UnreadMessage(FakeDeploymentTools.Disk(0), $"The disk cannot be read at byte {GptLayout.SectorSize} (Input/output error)."),
+            Assert.Single(await WarningsAsync()).Message);
+    }
+
     // The state is fine, so the seed still names its run, and the agent asks about that run.
     [Fact]
     public async Task ATokenFileThatCannotBeReadIsSaidAndCountsAsNoToken()

@@ -165,11 +165,21 @@ public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider 
     private static bool IsSeed(GptPartition partition) =>
         partition.Name == CloudInitSeed.Label && partition.Sectors * GptLayout.SectorSize == CloudInitSeed.SizeBytes;
 
-    // Null for a seed that holds neither the state nor the token of a run. One whose file system cannot be read is
-    // not taken for empty: the registration that follows would end a run that goes on in the installed Linux.
+    // Null for a seed that holds neither the state nor the token of a run. One whose file system cannot be read, or
+    // whose sectors the disk does not give, is not taken for empty: the registration that follows would end a run
+    // that goes on in the installed Linux.
     private HandedOverSeed? Read(IRawDisk raw, LocalDisk disk, GptPartition partition, EspPartition? system)
     {
-        byte[] bytes = ReadPartition(raw, partition);
+        byte[] bytes;
+
+        try
+        {
+            bytes = ReadPartition(raw, partition);
+        }
+        catch (Exception exception) when (exception is DeploymentStepException or IOException)
+        {
+            return Unread(disk, partition, system, exception);
+        }
 
         try
         {
@@ -189,10 +199,16 @@ public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider 
         }
         catch (InvalidDataException exception)
         {
-            log.Warning(SeedUnreadMessage(disk, LogText.OneLine(exception)));
-
-            return new HandedOverSeed(disk, partition) { SystemPartition = system, IsUnread = true };
+            return Unread(disk, partition, system, exception);
         }
+    }
+
+    // The disk's table names the seed, so it is there, and only what it holds is not known.
+    private HandedOverSeed Unread(LocalDisk disk, GptPartition partition, EspPartition? system, Exception exception)
+    {
+        log.Warning(SeedUnreadMessage(disk, LogText.OneLine(exception)));
+
+        return new HandedOverSeed(disk, partition) { SystemPartition = system, IsUnread = true };
     }
 
     private static byte[] ReadPartition(IRawDisk raw, GptPartition partition)

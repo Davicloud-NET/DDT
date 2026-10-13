@@ -430,7 +430,8 @@ These constants could join a section later. They are not in M6.5 scope.
 - PollAfterSeconds (MachineRegistrar.cs:28). Other limits assume its value (MachineLogLimits.cs:22-24,
   DeploymentLimits.cs:20-22).
 - since M8, for a Linux run that goes on in the installed Linux: the five starts from the network
-  in a row after which the server ends such a run (NetworkDetours.cs), and the ten minutes after
+  in a row after which the server ends such a run (NetworkDetours.cs, and once more as a constant
+  of the web client, which says the limit on the machine's page), and the ten minutes after
   which a machine's page names what may keep the installed Linux from calling, a constant of the
   web client (deployments/handOver.ts). install.md section 4.9 says what both are for.
 

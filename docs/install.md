@@ -1127,7 +1127,7 @@ That holds on a file system that writes a file's bytes where they were, as ext4 
 FAT do: after whole runs in QEMU, no token and no piece of a state was found on the raw disk. On
 a root file system that copies on write it promises nothing, and none was tried. A file of more
 than 4 MiB is only deleted. The log is overwritten up to 256 MiB, and a longer one is deleted as
-it is, which a warning says.
+it is. A warning says so each time, with the file's name and size.
 
 The removal deletes only what is the agent's own, and follows no link. A link that a script left
 in the agent's folders is deleted itself, and what it points to stays. A folder in which
@@ -1165,13 +1165,15 @@ seed that holds a run, without mounting anything, and goes by what it finds:
   no token. It counts the start, in `Detours` of the run, writes a warning into the run's log
   and a row into the audit log, with the address the question came from. The question carries
   an id the agent makes once for each start, so a question that is asked again because its
-  answer got lost is not counted twice. The agent then names the disk's boot entry as the
-  firmware's next start, in `BootNext`, and restarts the machine ten seconds later. A call from
-  the installed Linux sets the count back to zero. At the fifth such start in a row with no call
-  from the installed Linux in between, the server ends the run, with "The machine started from
-  the network 5 times in a row while the run went on in the installed Linux ...", and the
-  machine registers as after any start. The agent asks up to four times within 30 seconds.
-  Where no answer comes in that time, it goes by what the disk says and restarts into it.
+  answer got lost is not counted twice. The machine's page says how often in a row the machine
+  came that way, and that the fifth time ends the run. The agent then names the disk's boot
+  entry as the firmware's next start, in `BootNext`, and restarts the machine ten seconds later.
+  A call from the installed Linux sets the count back to zero. At the fifth such start in a row
+  with no call from the installed Linux in between, the server ends the run, with "The machine
+  started from the network 5 times in a row while the run went on in the installed Linux ...",
+  and the machine registers as after any start. The agent asks up to four times within 30
+  seconds. Where no answer comes in that time, it goes by what the disk says and restarts into
+  it.
 - **The seed still holds the token,** so the installed Linux has not taken the run over. The
   agent registers with that token, which keeps the run, and reports the start. The server keeps
   the count in `BootReturns`, and the machine's page reads "The machine started from the network
@@ -1195,7 +1197,8 @@ the 30 seconds' limit, since such a seed gives it nothing to go by.
 offers a way out: "To start over here instead, press a key within that time. The agent then asks
 before it ends the run." A key only stops the countdown. The agent then wants the word `END`
 typed, in capitals, as `ERASE` is typed for a disk, and waits a minute for it. Any other answer,
-`end` among them, or none, restarts the machine into the installed Linux. After `END` the agent clears the seed and
+`end` among them, or none, restarts the machine into the installed Linux, and the agent says
+that only that word in capital letters ends the run. After `END` the agent clears the seed and
 registers without a token, which ends the run on the server, whose error then says that the
 agent reported someone at the machine chose to start over. The machine has to be authorized
 again. Nobody has to be signed in to do this: whoever sits at a netbooted machine can end its

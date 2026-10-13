@@ -165,7 +165,10 @@ agent registers from the installed Linux. `deployments/handOver.ts` reads them, 
 the panel's text, "Waiting for the installed Linux", and `machines/list/runDetail.ts` the list row's. After
 `FIRST_CALL_EXPECTED_MS`, ten minutes, the text names what may keep the installed Linux from calling. That age is
 taken on the server's clock: `deployments/useServerClockOffset.ts` asks the server's time, and only for a page that
-shows such a wait. The machine's summary also carries `sequenceVersion`, the newest sequence version its agent runs,
+shows such a wait. Once the installed Linux has the run, `detours` on the machine's summary counts the starts from the
+network in a row that the server answered by sending the machine back to its disk. `runs/panel/LinuxDetours.tsx` says
+it on the machine's page, with the server's limit of five as `MAX_NETWORK_DETOURS`, and it goes with the installed
+Linux's next call. The machine's summary also carries `sequenceVersion`, the newest sequence version its agent runs,
 and a sequence's summary its `version`, from which `startNotice` in `machines/bootEnvironment.ts` tells in the assign
 dialog and the approval that a run will wait for a newer agent.
 

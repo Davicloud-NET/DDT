@@ -13,7 +13,10 @@ public sealed class StartOverQuestion(IKeyWait keys, ISignInPrompt prompt, Agent
 {
     public const string Word = "END";
 
-    public const string NotConfirmed = $"{Word} was not typed, so the run goes on and the machine restarts into the installed Linux.";
+    // The word is compared as it is written, so whoever typed it in small letters is told what was missing.
+    public const string NotConfirmed =
+        $"{Word} was not typed. Only that word in capital letters ends the run, so the run goes on and the machine restarts into the " +
+        "installed Linux.";
 
     // How long the question waits for its answer. Nobody may be at the machine any more.
     public static readonly TimeSpan AnswerTime = TimeSpan.FromMinutes(1);

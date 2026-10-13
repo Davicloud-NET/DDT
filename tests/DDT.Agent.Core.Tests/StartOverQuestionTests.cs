@@ -60,6 +60,18 @@ public sealed class StartOverQuestionTests : IDisposable
         Assert.Contains($"INFO  {StartOverQuestion.NotConfirmed}", _console.ToString(), StringComparison.Ordinal);
     }
 
+    // The word is not compared without its case, so the line says what whoever typed it in small letters missed.
+    [Fact]
+    public async Task TheWordInSmallLettersIsToldThatItIsTypedInCapitalLetters()
+    {
+        Assert.False(await AskAsync(new FakeKeyWait { Pressed = true }, new ScriptedSignInPrompt("end")));
+
+        Assert.Contains(
+            "INFO  END was not typed. Only that word in capital letters ends the run, so the run goes on and the machine restarts into the installed Linux.",
+            _console.ToString(),
+            StringComparison.Ordinal);
+    }
+
     // Whoever pressed the key walked away. The prompt is taken back after a minute.
     [Fact]
     public async Task NoAnswerWithinAMinuteConfirmsNothing()

@@ -49,6 +49,9 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
     // loop would find it too late: by then the look's registration has started the machine over.
     public Func<string?>? Carried { get; init; }
 
+    // Names this start of the agent in its question, so the server counts a question asked again only once.
+    public Guid Start { get; init; } = Guid.NewGuid();
+
     public async Task<BootReturnOutcome> RunAsync(CancellationToken cancellationToken)
     {
         try
@@ -103,7 +106,7 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
         string? carried = Carried?.Invoke();
         AgentRegistrationResult? answer = await _registrar
             .RegisterAsync(
-                new RegistrationClaims { ResumeToken = carried, HandedOver = new AgentHandedOverRun(seed.RunId), GiveUpAfter = seed.RunId is null ? null : AskTime },
+                new RegistrationClaims { ResumeToken = carried, HandedOver = new AgentHandedOverRun(seed.RunId, Start), GiveUpAfter = seed.RunId is null ? null : AskTime },
                 cancellationToken)
             .ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();

@@ -68,9 +68,11 @@ public sealed class LinuxBootReturnAskTests : IDisposable
 
         BootReturnOutcome outcome = await _start.RunAsync();
 
-        // The question carries no token and names the run. The server's answer hands none out, and nothing else is said to it.
+        // The question carries no token and names the run and this start. The server's answer hands no token out, and
+        // nothing else is said to it.
         AgentRegistration question = Assert.Single(Server.Registrations);
-        Assert.Equal((new AgentHandedOverRun(StepRunnerFixture.RunId), AgentEnvironment.LinuxBoot), (question.HandedOver, question.Environment));
+        Assert.Equal(((Guid?)StepRunnerFixture.RunId, AgentEnvironment.LinuxBoot), (question.HandedOver?.RunId, question.Environment));
+        Assert.NotNull(question.HandedOver?.Start);
         Assert.Null(question.RunToken);
         Assert.Null(question.ResumeToken);
         Assert.Null(question.StartsOver);
@@ -91,6 +93,22 @@ public sealed class LinuxBootReturnAskTests : IDisposable
         Assert.Equal([GoesOn, BootReturnStart.RestartsUnlessKey, BootReturnStart.RestartsNow], _start.Lines()[3..]);
         Assert.Equal(before, TestSeed.Read(Seeded.Disk).Bytes);
         Assert.Empty(_start.Prompt.Labels);
+    }
+
+    // The server counts starts, so a start names itself. An agent that starts again is another start.
+    [Fact]
+    public async Task EachStartOfTheAgentNamesItselfWithAnIdOfItsOwn()
+    {
+        await TakenAsync();
+        Server.OnRegister(_ => BootReturnStart.GoesOn()).OnRegister(_ => BootReturnStart.GoesOn(2));
+
+        await _start.RunAsync();
+        await _start.RunAsync();
+
+        Guid?[] starts = [.. Server.Registrations.Select(registration => registration.HandedOver?.Start)];
+        Assert.Equal(2, starts.Length);
+        Assert.All(starts, start => Assert.NotNull(start));
+        Assert.NotEqual(starts[0], starts[1]);
     }
 
     // The proof's screen held the last two lines for a third of a second.
@@ -143,7 +161,9 @@ public sealed class LinuxBootReturnAskTests : IDisposable
         // After 0, 2, 6, 14 and 30 seconds, and no more. The last lines then stay for their two seconds.
         Assert.Equal(TimeSpan.FromSeconds(30), LinuxBootReturn.AskTime);
         Assert.Equal(5, Server.Registrations.Count);
-        Assert.All(Server.Registrations, registration => Assert.Equal(new AgentHandedOverRun(StepRunnerFixture.RunId), registration.HandedOver));
+        Assert.NotNull(Server.Registrations[0].HandedOver?.Start);
+        Assert.Equal(StepRunnerFixture.RunId, Server.Registrations[0].HandedOver?.RunId);
+        Assert.All(Server.Registrations, registration => Assert.Equal(Server.Registrations[0].HandedOver, registration.HandedOver));
         Assert.InRange(time.GetUtcNow() - began, TimeSpan.FromSeconds(32), TimeSpan.FromSeconds(33));
         Assert.Equal(AgentExitCodes.Restarting, outcome.ExitCode);
         Assert.Equal([(0, false)], _start.DiskStart.Starts.Select(start => (start.Disk, start.First)));
@@ -170,7 +190,9 @@ public sealed class LinuxBootReturnAskTests : IDisposable
 
         BootReturnOutcome outcome = await _start.RunAsync();
 
-        Assert.Equal(new AgentHandedOverRun(null), Assert.Single(Server.Registrations).HandedOver);
+        AgentHandedOverRun asked = Assert.IsType<AgentHandedOverRun>(Assert.Single(Server.Registrations).HandedOver);
+        Assert.Null(asked.RunId);
+        Assert.NotNull(asked.Start);
         Assert.Equal(AgentExitCodes.Restarting, outcome.ExitCode);
         Assert.Equal([(0, false)], _start.DiskStart.Starts.Select(start => (start.Disk, start.First)));
         Assert.Equal(
@@ -323,7 +345,7 @@ public sealed class LinuxBootReturnAskTests : IDisposable
             "2 disks hold a run that was handed over to the installed Linux: 0, 1. The agent goes by disk 1, whose run was assigned last: " +
             "a machine has one run at a time, so no older one can still go on. The other seeds stay as they are.",
             _start.Lines()[0]);
-        Assert.Equal(new AgentHandedOverRun(laterRun), Assert.Single(Server.Registrations).HandedOver);
+        Assert.Equal(laterRun, Assert.Single(Server.Registrations).HandedOver?.RunId);
         Assert.Equal([(1, false)], _start.DiskStart.Starts.Select(start => (start.Disk, start.First)));
         Assert.True(TestSeed.Read(Seeded.Disk).Holds(StepRunnerFixture.RunToken));
     }
@@ -339,7 +361,7 @@ public sealed class LinuxBootReturnAskTests : IDisposable
         BootReturnOutcome outcome = await _start.RunAsync();
 
         AgentRegistration question = Assert.Single(Server.Registrations);
-        Assert.Equal(("resume-carried", new AgentHandedOverRun(StepRunnerFixture.RunId)), (question.ResumeToken, question.HandedOver));
+        Assert.Equal(("resume-carried", (Guid?)StepRunnerFixture.RunId), (question.ResumeToken, question.HandedOver?.RunId));
         Assert.Equal(1, _start.CarriedTaken);
         Assert.Equal(BootReturnOutcome.GoesOn with { ResumeToken = "resume-1" }, outcome);
         Assert.Equal(NoLongerRuns, _start.Lines()[^1]);

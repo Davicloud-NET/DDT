@@ -267,6 +267,7 @@ jobs:
             build/LinuxBoot/rootfs/init build/LinuxBoot/rootfs/etc/init.d/rcS build/LinuxBoot/rootfs/usr/lib/ddt/* \
             build/LinuxBoot/placeholder/ddt-agent build/LinuxBoot/test/hooks/* build/LinuxBoot/test/watch/* \
             build/LinuxBoot/sources.sh
+          shellcheck --shell=sh src/DDT.Core/CloudInit/vendor-data.sh
 
       # GitHub's Linux runners have KVM, and its device belongs to a group the runner's user is not in. Without KVM
       # QEMU would emulate the processor, and the checks would take many times as long.

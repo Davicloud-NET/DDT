@@ -158,9 +158,10 @@ public sealed class LinuxBootReturnAskTests : IDisposable
 
         BootReturnOutcome outcome = await ThroughItsWaitsAsync(time, _start.Return(time: time).RunAsync(Server.Stop.Token));
 
-        // After 0, 2, 6, 14 and 30 seconds, and no more. The last lines then stay for their two seconds.
+        // After 0, 2, 6 and 14 seconds. A try at 30 seconds could not be answered within them, so the agent makes none
+        // and the wait before it ends there. The last lines then stay for their two seconds.
         Assert.Equal(TimeSpan.FromSeconds(30), LinuxBootReturn.AskTime);
-        Assert.Equal(5, Server.Registrations.Count);
+        Assert.Equal(4, Server.Registrations.Count);
         Assert.NotNull(Server.Registrations[0].HandedOver?.Start);
         Assert.Equal(StepRunnerFixture.RunId, Server.Registrations[0].HandedOver?.RunId);
         Assert.All(Server.Registrations, registration => Assert.Equal(Server.Registrations[0].HandedOver, registration.HandedOver));
@@ -173,6 +174,25 @@ public sealed class LinuxBootReturnAskTests : IDisposable
             "Linux. It goes by what the disk says.",
             _start.Lines());
         Assert.Equal([BootReturnStart.RestartsUnlessKey, BootReturnStart.RestartsNow], _start.Lines()[^2..]);
+    }
+
+    // The half minute ends a try too. A server that takes the call and says nothing would otherwise double it.
+    [Fact]
+    public async Task AServerThatTakesTheQuestionAndSaysNothingIsGivenUpAfterTheSameHalfMinute()
+    {
+        await TakenAsync();
+        ManualTimeProvider time = new();
+        DateTimeOffset began = time.GetUtcNow();
+        Server.LeavesRegistrationsUnanswered = true;
+
+        BootReturnOutcome outcome = await ThroughItsWaitsAsync(time, _start.Return(time: time).RunAsync(Server.Stop.Token));
+
+        Assert.Single(Server.Registrations);
+        Assert.InRange(time.GetUtcNow() - began, TimeSpan.FromSeconds(32), TimeSpan.FromSeconds(33));
+        Assert.Equal(AgentExitCodes.Restarting, outcome.ExitCode);
+        Assert.Equal([(0, false)], _start.DiskStart.Starts.Select(start => (start.Disk, start.First)));
+        Assert.Contains(LinuxBootReturnTexts.NotAsked, _start.Lines());
+        Assert.DoesNotContain(_start.Lines(), line => line.StartsWith("Cannot register with the server", StringComparison.Ordinal));
     }
 
     public static TheoryData<string> StatesThatNameNoRun => ["", "{ not json", "\0\0\0\0\0\0\0\0", "a folder"];

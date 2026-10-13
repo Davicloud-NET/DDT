@@ -82,6 +82,9 @@ internal sealed class ScriptedAgentServer : IAgentServer
 
     public List<AgentEnvironmentRequest> EnvironmentRequests { get; } = [];
 
+    // Takes every registration and never answers it, as a server does that accepts the call and says nothing.
+    public bool LeavesRegistrationsUnanswered { get; set; }
+
     // Answers every run report when set, ahead of the scripts.
     public Func<AgentRunReport, string, AgentRunReportResult>? AnswerRunReports { get; set; }
 
@@ -178,6 +181,11 @@ internal sealed class ScriptedAgentServer : IAgentServer
             _calls.Add("register");
             Registrations.Add(registration);
             _registrations.TryDequeue(out response);
+        }
+
+        if (LeavesRegistrationsUnanswered)
+        {
+            return UnansweredAsync<AgentRegistrationResult>(cancellationToken);
         }
 
         return response is null ? Stopped<AgentRegistrationResult>() : Task.FromResult(response(registration));
@@ -449,6 +457,14 @@ internal sealed class ScriptedAgentServer : IAgentServer
         {
             return Task.FromException<TResult>(exception);
         }
+    }
+
+    // Ends only when the caller gives the call up.
+    private static async Task<T> UnansweredAsync<T>(CancellationToken cancellationToken)
+    {
+        await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+
+        throw new InvalidOperationException("A wait without an end has ended.");
     }
 
     private Task<T> Stopped<T>()

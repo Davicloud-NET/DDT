@@ -30,52 +30,79 @@ internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, 
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            try
-            {
-                // Read it again on every attempt. The primary MAC is the adapter with the default route, and that
-                // may only be known once DHCP has finished.
-                MachineIdentity identity = machine.Identity.Read();
-                ReportIdentity(identity);
+            TimeSpan? left = Left(claims, began);
 
-                return await server.RegisterAsync(Registration(identity, eligibleDisks, claims), cancellationToken).ConfigureAwait(false);
-            }
-            catch (AgentTokenRejectedException exception)
+            if (left <= TimeSpan.Zero)
             {
-                failures++;
-                log.Warning("The server refused the registration. Trying again.");
-                status.Unreachable(exception);
+                break;
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                return null;
-            }
-            catch (NoNetworkAdapterException exception)
-            {
-                // An adapter on USB or in a dock may come later, so this is said once and asked again.
-                failures++;
-                status.Unreachable(exception);
 
-                if (!toldNoAdapter)
+            // The time that is left ends a try too. A server that takes the call and says nothing would double it.
+            using (CancellationTokenSource timeUp = new(Timeout.InfiniteTimeSpan, timeProvider))
+            using (CancellationTokenSource trying = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeUp.Token))
+            {
+                timeUp.CancelAfter(left ?? Timeout.InfiniteTimeSpan);
+
+                try
                 {
-                    toldNoAdapter = true;
-                    log.Warning(exception.Message);
+                    // Read it again on every attempt. The primary MAC is the adapter with the default route, and that
+                    // may only be known once DHCP has finished.
+                    MachineIdentity identity = machine.Identity.Read();
+                    ReportIdentity(identity);
+
+                    return await server.RegisterAsync(Registration(identity, eligibleDisks, claims), trying.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested || timeUp.IsCancellationRequested)
+                {
+                    return null;
+                }
+                catch (Exception exception) when (exception is AgentTokenRejectedException or NoNetworkAdapterException || LoopCallRules.IsTransient(exception))
+                {
+                    failures++;
+                    Say(exception, ref toldNoAdapter);
                 }
             }
-            catch (Exception exception) when (LoopCallRules.IsTransient(exception))
-            {
-                failures++;
-                log.Warning($"Cannot register with the server ({exception.Message}).");
-                status.Unreachable(exception);
-            }
 
-            if (timeProvider.GetElapsedTime(began) >= claims.GiveUpAfter
-                || !await CancellableDelay.WaitAsync(AgentLimits.RetryDelay(failures), timeProvider, cancellationToken).ConfigureAwait(false))
+            if (!await CancellableDelay.WaitAsync(Wait(failures, Left(claims, began)), timeProvider, cancellationToken).ConfigureAwait(false))
             {
                 return null;
             }
         }
 
         return null;
+    }
+
+    // The time the claims still give the server. Null when they give it all the time it takes.
+    private TimeSpan? Left(RegistrationClaims claims, long began) => claims.GiveUpAfter - timeProvider.GetElapsedTime(began);
+
+    // No wait goes past the time that is left.
+    private static TimeSpan Wait(int failures, TimeSpan? left)
+    {
+        TimeSpan delay = AgentLimits.RetryDelay(failures);
+
+        return left is not { } rest || rest >= delay ? delay : rest > TimeSpan.Zero ? rest : TimeSpan.Zero;
+    }
+
+    // An adapter on USB or in a dock may come later, so a machine without one says so once and asks again.
+    private void Say(Exception exception, ref bool toldNoAdapter)
+    {
+        switch (exception)
+        {
+            case AgentTokenRejectedException:
+                log.Warning("The server refused the registration. Trying again.");
+                break;
+            case NoNetworkAdapterException when toldNoAdapter:
+                break;
+            case NoNetworkAdapterException:
+                toldNoAdapter = true;
+                log.Warning(exception.Message);
+                break;
+            default:
+                log.Warning($"Cannot register with the server ({exception.Message}).");
+                break;
+        }
+
+        status.Unreachable(exception);
     }
 
     private AgentRegistration Registration(MachineIdentity identity, IReadOnlyList<AgentDisk>? eligibleDisks, RegistrationClaims claims) =>

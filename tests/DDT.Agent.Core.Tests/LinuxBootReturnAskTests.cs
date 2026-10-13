@@ -370,6 +370,82 @@ public sealed class LinuxBootReturnAskTests : IDisposable
         Assert.True(TestSeed.Read(Seeded.Disk).Holds(StepRunnerFixture.RunToken));
     }
 
+    // The newer seed's state cannot be read, so the older run's name must not be the one the agent asks about.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task WithASeedThatNamesNoRunBesideAnotherTheQuestionNamesNoneAndTheAnswerSaysWhichDisk(bool answerNamesTheOtherSeedsRun)
+    {
+        using SeededRun unnamed = new();
+        await TakenAsync();
+        await unnamed.HandedOverAsync();
+        unnamed.ChangeSeed(file => SeedVolume.SamePath(file.Path, LinuxAgentFiles.SeedState) ? file with { Content = [] }
+            : SeedVolume.SamePath(file.Path, LinuxAgentFiles.SeedToken) ? null
+            : file);
+        Seeded.Run.Tools.Disks.Add(FakeDeploymentTools.Disk(1));
+        Seeded.Run.RawDisks.Disks[1] = unnamed.Disk;
+        Guid goesOn = answerNamesTheOtherSeedsRun ? StepRunnerFixture.RunId : Guid.Parse("0199a4b2-0000-7000-8000-0000000000f3");
+        Server.OnRegister(_ => BootReturnStart.GoesOn() with { InstalledRun = new AgentInstalledRun(goesOn, 1, 5) });
+
+        Assert.Equal(AgentExitCodes.Restarting, (await _start.RunAsync()).ExitCode);
+
+        Assert.Equal(
+            "2 disks hold a run that was handed over to the installed Linux: 0, 1. The seed of disk 1 has no token and names no run the " +
+            "agent can read, so the agent cannot tell which run was assigned last. It asks the server, and goes by the disk whose seed " +
+            "names the run the server says goes on, or else by disk 1. The other seeds stay as they are.",
+            _start.Lines()[0]);
+        AgentHandedOverRun asked = Assert.IsType<AgentHandedOverRun>(Assert.Single(Server.Registrations).HandedOver);
+        Assert.Null(asked.RunId);
+        Assert.Equal([(answerNamesTheOtherSeedsRun ? 0 : 1, false)], _start.DiskStart.Starts.Select(start => (start.Disk, start.First)));
+        Assert.EndsWith($"The agent starts disk {(answerNamesTheOtherSeedsRun ? 0 : 1)} again.", _start.Lines()[^3], StringComparison.Ordinal);
+    }
+
+    // A file system that cannot be read is no proof that the installed Linux has no run. The server knows.
+    [Fact]
+    public async Task ASeedThatCannotBeReadAsksWithoutANameAndGoesBackToTheDiskWhileARunGoesOn()
+    {
+        await TakenAsync();
+        Seeded.DamageSeedEntry("DDT~1");
+        byte[] before = TestSeed.Read(Seeded.Disk).Bytes;
+        Server.OnRegister(_ => BootReturnStart.GoesOn());
+
+        BootReturnOutcome outcome = await _start.RunAsync();
+
+        AgentHandedOverRun asked = Assert.IsType<AgentHandedOverRun>(Assert.Single(Server.Registrations).HandedOver);
+        Assert.Null(asked.RunId);
+        Assert.Null(Server.Registrations[0].RunToken);
+        Assert.Equal(AgentExitCodes.Restarting, outcome.ExitCode);
+        Assert.Equal([(0, false)], _start.DiskStart.Starts.Select(start => (start.Disk, start.First)));
+        Assert.Equal(
+            [
+                HandedOverSeeds.SeedUnreadMessage(FakeDeploymentTools.Disk(0), "A cluster chain on the partition's FAT file system is damaged."),
+                "What the cloud-init seed of disk 0 holds is not known. A registration would end a run that goes on in the installed Linux, " +
+                    "so the agent first asks the server whether one of this machine goes on there.",
+            ],
+            _start.Lines()[..2]);
+        Assert.Equal(GoesOn, _start.Lines()[^3]);
+        Assert.Equal(before, TestSeed.Read(Seeded.Disk).Bytes);
+    }
+
+    [Fact]
+    public async Task ASeedThatCannotBeReadStaysAsItIsOnceTheServerSaysNoRunGoesOn()
+    {
+        await TakenAsync();
+        Seeded.DamageSeedEntry("DDT~1");
+        byte[] before = TestSeed.Read(Seeded.Disk).Bytes;
+        Server.OnRegister(_ => BootReturnStart.StartedOver());
+
+        BootReturnOutcome outcome = await _start.RunAsync();
+
+        Assert.Equal(BootReturnOutcome.GoesOn with { ResumeToken = "resume-0" }, outcome);
+        Assert.Equal(0, _start.Restarts);
+        Assert.Equal(before, TestSeed.Read(Seeded.Disk).Bytes);
+        Assert.Equal(
+            "The server says that no run of this machine goes on in the installed Linux. The cloud-init seed of disk 0, which the agent " +
+            "cannot read, stays as it is, and the agent goes on as after any start.",
+            _start.Lines()[^1]);
+    }
+
     // A later change of boot environment from Windows PE comes with a resume token, which keeps the machine signed in.
     [Fact]
     public async Task AResumeTokenTheFirmwareCarriesGoesAlongWithTheQuestionSoTheMachineIsNotStartedOver()

@@ -56,14 +56,16 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
     {
         try
         {
-            if (await FindAsync(cancellationToken).ConfigureAwait(false) is not { } seed)
+            IReadOnlyList<HandedOverSeed> found = await FindAsync(cancellationToken).ConfigureAwait(false);
+
+            if (found.Count == 0)
             {
                 return BootReturnOutcome.GoesOn;
             }
 
-            return seed.IsTaken
-                ? await AskAsync(seed, cancellationToken).ConfigureAwait(false)
-                : await NotTakenAsync(seed, cancellationToken).ConfigureAwait(false);
+            return found[0].IsTaken
+                ? await AskAsync(found, cancellationToken).ConfigureAwait(false)
+                : await NotTakenAsync(found[0], cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -71,8 +73,8 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
         }
     }
 
-    // The seed the agent goes by, or null when no disk it would offer holds a run.
-    private async Task<HandedOverSeed?> FindAsync(CancellationToken cancellationToken)
+    // The seeds that hold a run, the one the agent goes by first. None when no disk it would offer holds a run.
+    private async Task<IReadOnlyList<HandedOverSeed>> FindAsync(CancellationToken cancellationToken)
     {
         IReadOnlyList<LocalDisk> disks;
 
@@ -84,7 +86,7 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
         {
             log.Warning(LinuxBootReturnTexts.DisksUnread(exception.Message));
 
-            return null;
+            return [];
         }
 
         IReadOnlyList<HandedOverSeed> found = Seeds.Find(disks);
@@ -94,13 +96,14 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
             log.Information(LinuxBootReturnTexts.Believed(found));
         }
 
-        return found.Count == 0 ? null : found[0];
+        return found;
     }
 
     // No token is on the seed, so the installed Linux may have the run, or the seed is a leftover of one that is over.
     // The server knows which. A seed that names its run goes back to the disk when the server cannot be asked.
-    private async Task<BootReturnOutcome> AskAsync(HandedOverSeed seed, CancellationToken cancellationToken)
+    private async Task<BootReturnOutcome> AskAsync(IReadOnlyList<HandedOverSeed> found, CancellationToken cancellationToken)
     {
+        HandedOverSeed seed = found[0];
         log.Warning(LinuxBootReturnTexts.Asks(seed));
 
         string? carried = Carried?.Invoke();
@@ -117,6 +120,8 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
         }
         else if (answer.InstalledRun is { } installed)
         {
+            // A question without a name is answered with the run, which the seed of another disk may name.
+            seed = seed.RunId is null ? found.FirstOrDefault(other => other.RunId == installed.RunId) ?? seed : seed;
             log.Information(LinuxBootReturnTexts.GoesOn(seed, installed));
         }
         else if (answer.RunId is null)
@@ -209,7 +214,7 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
     // says all of it.
     private BootReturnOutcome NoLongerRuns(HandedOverSeed seed, string? resumeToken)
     {
-        log.Warning(LinuxBootReturnTexts.NoLongerRuns(seed, Seeds.TakeOff(seed)));
+        log.Warning(LinuxBootReturnTexts.NoLongerRuns(seed, !seed.IsUnread && Seeds.TakeOff(seed)));
 
         return BootReturnOutcome.GoesOn with { ResumeToken = resumeToken };
     }

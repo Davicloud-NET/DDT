@@ -12,7 +12,8 @@ using DDT.Core.Disks;
 namespace DDT.Agent.Sequences;
 
 // Looks at disks for a run that a hand-over put on a cloud-init seed, and takes such a run off its seed again. A seed
-// is read from its disk without mounting it. A disk that cannot be read holds none, which is said once.
+// is read from its disk without mounting it. A disk that cannot be read holds none, which is said once. A seed that
+// cannot be read may hold a run, so it counts as one that names none.
 public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider timeProvider)
 {
     // A token is a line of text. A file this large is none.
@@ -39,6 +40,22 @@ public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider 
             $"{MaxSeedsPerDisk} for a run that was handed over to the installed Linux, and not at the others.";
     }
 
+    public static string SeedUnreadMessage(LocalDisk disk, string why)
+    {
+        ArgumentNullException.ThrowIfNull(disk);
+
+        return $"The cloud-init seed of disk {disk.Number} cannot be read ({why}). A run that was handed over to the installed Linux " +
+            "may be on it, so the agent takes the seed for one that holds a run it cannot name.";
+    }
+
+    public static string TokenUnreadMessage(LocalDisk disk, string why)
+    {
+        ArgumentNullException.ThrowIfNull(disk);
+
+        return $"The file {LinuxAgentFiles.SeedToken} on the cloud-init seed of disk {disk.Number} cannot be read ({why}), so the agent " +
+            "has no token of a run from it.";
+    }
+
     public static string NoTokenMessage(LocalDisk disk, long bytes)
     {
         ArgumentNullException.ThrowIfNull(disk);
@@ -62,7 +79,8 @@ public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider 
             "one the server takes only while it runs that run. A later start from the network finds the seed again.";
     }
 
-    // The seeds that hold a run, the one whose run was assigned last first.
+    // The seeds that hold a run, the one whose run was assigned last first. Before them comes a seed without a token
+    // that names no run: its run may be the last one, and only the server knows.
     public IReadOnlyList<HandedOverSeed> Find(IEnumerable<LocalDisk> candidates)
     {
         ArgumentNullException.ThrowIfNull(candidates);
@@ -81,7 +99,7 @@ public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider 
             }
         }
 
-        return [.. found.OrderByDescending(seed => seed.RunTime)];
+        return [.. found.OrderByDescending(seed => seed is { IsTaken: true, RunId: null }).ThenByDescending(seed => seed.RunTime)];
     }
 
     // Writes the seed again without what the hand-over added, so no byte of the token stays in its partition. Never
@@ -147,23 +165,34 @@ public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider 
     private static bool IsSeed(GptPartition partition) =>
         partition.Name == CloudInitSeed.Label && partition.Sectors * GptLayout.SectorSize == CloudInitSeed.SizeBytes;
 
-    // Null for a seed that holds neither the state nor the token of a run.
+    // Null for a seed that holds neither the state nor the token of a run. One whose file system cannot be read is
+    // not taken for empty: the registration that follows would end a run that goes on in the installed Linux.
     private HandedOverSeed? Read(IRawDisk raw, LocalDisk disk, GptPartition partition, EspPartition? system)
     {
         byte[] bytes = ReadPartition(raw, partition);
-        FatVolume volume = FatVolume.Open(new MemoryStream(bytes, writable: false), 0, bytes.Length);
 
-        if (!string.Equals(volume.Label, CloudInitSeed.Label, StringComparison.OrdinalIgnoreCase))
+        try
         {
-            return null;
+            FatVolume volume = FatVolume.Open(new MemoryStream(bytes, writable: false), 0, bytes.Length);
+
+            if (!string.Equals(volume.Label, CloudInitSeed.Label, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            FatEntry? state = volume.Find(LinuxAgentFiles.SeedState);
+            string? token = volume.Find(LinuxAgentFiles.SeedToken) is { IsDirectory: false } entry ? Token(volume, entry, disk) : null;
+
+            return state is null && token is null
+                ? null
+                : new HandedOverSeed(disk, partition) { Token = token, RunId = RunId(volume, state), SystemPartition = system };
         }
+        catch (InvalidDataException exception)
+        {
+            log.Warning(SeedUnreadMessage(disk, LogText.OneLine(exception)));
 
-        FatEntry? state = volume.Find(LinuxAgentFiles.SeedState);
-        string? token = volume.Find(LinuxAgentFiles.SeedToken) is { IsDirectory: false } entry ? Token(volume, entry, disk) : null;
-
-        return state is null && token is null
-            ? null
-            : new HandedOverSeed(disk, partition) { Token = token, RunId = RunId(volume, state), SystemPartition = system };
+            return new HandedOverSeed(disk, partition) { SystemPartition = system, IsUnread = true };
+        }
     }
 
     private static byte[] ReadPartition(IRawDisk raw, GptPartition partition)
@@ -175,12 +204,18 @@ public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider 
     }
 
     // The script overwrites the token with zeros before it deletes it, and power may be lost between the two. A file
-    // that holds anything but a token is said and counts as none: sent as one, it would end the run on the server.
+    // that holds anything but a token, or cannot be read, is said and counts as none: sent as a token, other bytes
+    // would end the run on the server.
     private string? Token(FatVolume volume, FatEntry entry, LocalDisk disk)
     {
         if (entry.Size <= MaxTokenBytes)
         {
-            ReadOnlySpan<byte> line = RunFiles.Trimmed(volume.ReadFile(entry, MaxTokenBytes), zerosToo: true);
+            if (TokenBytes(volume, entry, disk) is not { } content)
+            {
+                return null;
+            }
+
+            ReadOnlySpan<byte> line = RunFiles.Trimmed(content, zerosToo: true);
 
             if (line.Length == 0)
             {
@@ -196,6 +231,21 @@ public sealed class HandedOverSeeds(IRawDisks disks, AgentLog log, TimeProvider 
         log.Warning(NoTokenMessage(disk, entry.Size));
 
         return null;
+    }
+
+    // Null, after a warning, for a file whose clusters cannot be read.
+    private byte[]? TokenBytes(FatVolume volume, FatEntry entry, LocalDisk disk)
+    {
+        try
+        {
+            return volume.ReadFile(entry, MaxTokenBytes);
+        }
+        catch (InvalidDataException exception)
+        {
+            log.Warning(TokenUnreadMessage(disk, LogText.OneLine(exception)));
+
+            return null;
+        }
     }
 
     // Only for the log and to tell an older run from a newer one, so a state that cannot be read names none.

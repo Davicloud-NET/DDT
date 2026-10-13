@@ -265,16 +265,57 @@ public sealed class HandedOverSeedsTests : IDisposable
         Assert.Equal(HandedOverSeeds.UnreadMessage(FakeDeploymentTools.Disk(0), BusyDisks.Message), Assert.Single(await WarningsAsync()).Message);
     }
 
+    // Taken for empty, the registration that follows would end a run that goes on in the installed Linux.
     [Fact]
-    public async Task APartitionNamedLikeASeedThatIsNoFatVolumeIsSaid()
+    public async Task APartitionNamedLikeASeedThatIsNoFatVolumeIsSaidAndCountsAsASeedThatNamesNoRun()
     {
         await _seeded.HandedOverAsync();
         byte[] noise = new byte[CloudInitSeed.SizeBytes];
         new Random(3).NextBytes(noise);
         _seeded.PutInSeedsPlace(noise);
 
-        Assert.Empty(Find());
-        Assert.StartsWith("Disk 0 could not be looked at for a run that was handed over to the installed Linux (", Assert.Single(await WarningsAsync()).Message, StringComparison.Ordinal);
+        HandedOverSeed seed = Assert.Single(Find());
+
+        Assert.Equal((true, true, null, null), (seed.IsUnread, seed.IsTaken, seed.RunId, seed.Token));
+        Assert.Equal((0, _seeded.Kept.PartitionNumber, TestRawImage.EspId), (seed.Disk.Number, seed.Partition.Number, seed.SystemPartition?.PartitionId));
+        AgentLogLine said = Assert.Single(await WarningsAsync());
+        Assert.StartsWith("The cloud-init seed of disk 0 cannot be read (", said.Message, StringComparison.Ordinal);
+        Assert.EndsWith(
+            "A run that was handed over to the installed Linux may be on it, so the agent takes the seed for one that holds a run it cannot name.",
+            said.Message,
+            StringComparison.Ordinal);
+    }
+
+    // The folder's cluster chain is damaged, so neither the state nor the token can be looked for.
+    [Fact]
+    public async Task ASeedWhoseFolderCannotBeReadCountsAsASeedThatNamesNoRun()
+    {
+        await _seeded.HandedOverAsync();
+        _seeded.DamageSeedEntry("DDT~1");
+
+        HandedOverSeed seed = Assert.Single(Find());
+
+        Assert.Equal((true, true, null), (seed.IsUnread, seed.IsTaken, seed.RunId));
+        Assert.Equal(
+            HandedOverSeeds.SeedUnreadMessage(FakeDeploymentTools.Disk(0), "A cluster chain on the partition's FAT file system is damaged."),
+            Assert.Single(await WarningsAsync()).Message);
+    }
+
+    // The state is fine, so the seed still names its run, and the agent asks about that run.
+    [Fact]
+    public async Task ATokenFileThatCannotBeReadIsSaidAndCountsAsNoToken()
+    {
+        await _seeded.HandedOverAsync();
+        _seeded.DamageSeedEntry("TOKEN~1");
+
+        HandedOverSeed seed = Assert.Single(Find());
+
+        Assert.Equal((false, true, StepRunnerFixture.RunId), (seed.IsUnread, seed.IsTaken, seed.RunId));
+        AgentLogLine said = Assert.Single(await WarningsAsync());
+        Assert.Equal(
+            HandedOverSeeds.TokenUnreadMessage(FakeDeploymentTools.Disk(0), "A cluster chain on the partition's FAT file system is damaged."),
+            said.Message);
+        Assert.DoesNotContain(StepRunnerFixture.RunToken, said.Message, StringComparison.Ordinal);
     }
 
     // A machine has one run at a time, so only the run that was assigned last can be one the server still runs.
@@ -304,6 +345,31 @@ public sealed class HandedOverSeedsTests : IDisposable
         AddDisk(_other.Disk);
 
         Assert.Equal([1, 0], Find().Select(seed => seed.Disk.Number));
+    }
+
+    // Its run may be the one that was assigned last, and only the server knows.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ASeedWithoutATokenThatNamesNoRunComesBeforeOneWhoseRunIsKnown(bool unread)
+    {
+        await _seeded.HandedOverAsync(s_laterRun);
+        await _other.HandedOverAsync();
+        AddDisk(_other.Disk);
+
+        if (unread)
+        {
+            _other.DamageSeedEntry("DDT~1");
+        }
+        else
+        {
+            _other.ChangeSeed(file => Is(file, LinuxAgentFiles.SeedState) ? file with { Content = [] } : Is(file, LinuxAgentFiles.SeedToken) ? null : file);
+        }
+
+        IReadOnlyList<HandedOverSeed> found = Find();
+
+        Assert.Equal([1, 0], found.Select(seed => seed.Disk.Number));
+        Assert.Equal((null, true, unread), (found[0].RunId, found[0].IsTaken, found[0].IsUnread));
     }
 
     [Fact]

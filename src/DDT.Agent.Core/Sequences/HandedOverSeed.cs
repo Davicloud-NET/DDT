@@ -23,6 +23,9 @@ public sealed class HandedOverSeed(LocalDisk disk, GptPartition partition)
     // The run the seed's state names. Null when the state is missing or cannot be read.
     public Guid? RunId { get; init; }
 
+    // The seed's file system could not be read, so whether it holds a run at all is not known.
+    public bool IsUnread { get; init; }
+
     // The disk's EFI system partition, which the firmware starts the installed Linux from. Null when it has none.
     public EspPartition? SystemPartition { get; init; }
 

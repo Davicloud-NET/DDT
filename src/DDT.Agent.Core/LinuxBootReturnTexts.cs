@@ -41,16 +41,26 @@ public static class LinuxBootReturnTexts
         ArgumentNullException.ThrowIfNull(found);
 
         string disks = string.Join(", ", found.Select(seed => seed.Disk.Number.ToString(CultureInfo.InvariantCulture)).Order(StringComparer.Ordinal));
+        string held = $"{found.Count} disks hold a run that was handed over to the installed Linux: {disks}.";
 
-        return $"{found.Count} disks hold a run that was handed over to the installed Linux: {disks}. The agent goes by disk " +
-            $"{found[0].Disk.Number}, whose run was assigned last: a machine has one run at a time, so no older one can still go on. " +
-            "The other seeds stay as they are.";
+        return found[0] is { IsTaken: true, RunId: null }
+            ? $"{held} The seed of disk {found[0].Disk.Number} has no token and names no run the agent can read, so the agent cannot " +
+              "tell which run was assigned last. It asks the server, and goes by the disk whose seed names the run the server says " +
+              $"goes on, or else by disk {found[0].Disk.Number}. The other seeds stay as they are."
+            : $"{held} The agent goes by disk {found[0].Disk.Number}, whose run was assigned last: a machine has one run at a time, " +
+              "so no older one can still go on. The other seeds stay as they are.";
     }
 
     // The seed holds no token. Its state names the run, or names none, which says even less of what the installed Linux has.
     public static string Asks(HandedOverSeed seed)
     {
         ArgumentNullException.ThrowIfNull(seed);
+
+        if (seed.IsUnread)
+        {
+            return $"What the cloud-init seed of disk {Disk(seed)} holds is not known. A registration would end a run that goes on in the " +
+                "installed Linux, so the agent first asks the server whether one of this machine goes on there.";
+        }
 
         return seed.RunId is { } id
             ? $"Run {id:D} of this machine was handed over to the installed Linux on disk {Disk(seed)}, and that disk's cloud-init seed " +
@@ -78,10 +88,18 @@ public static class LinuxBootReturnTexts
         "seed: the installed Linux has not taken the run over. The agent registers with the token.";
 
     // removed says whether what the hand-over left on the seed is gone. Where it is not, a warning before this said why.
-    public static string NoLongerRuns(HandedOverSeed seed, bool removed) =>
-        $"The server no longer runs the run that was handed over on disk {Disk(seed)}: it was stopped, it ended, or the machine has " +
-        $"had another since. {(removed ? "What the hand-over left on that disk's cloud-init seed is removed, and the agent" : "The agent")} " +
-        "goes on as after any start.";
+    // A seed that could not be read stays as it is, and nothing is known of a run on it.
+    public static string NoLongerRuns(HandedOverSeed seed, bool removed)
+    {
+        ArgumentNullException.ThrowIfNull(seed);
+
+        return seed.IsUnread
+            ? $"The server says that no run of this machine goes on in the installed Linux. The cloud-init seed of disk {Disk(seed)}, which " +
+              "the agent cannot read, stays as it is, and the agent goes on as after any start."
+            : $"The server no longer runs the run that was handed over on disk {Disk(seed)}: it was stopped, it ended, or the machine has " +
+              $"had another since. {(removed ? "What the hand-over left on that disk's cloud-init seed is removed, and the agent" : "The agent")} " +
+              "goes on as after any start.";
+    }
 
     public static string Again(int returns) =>
         $"The machine started from the network again before the installed Linux took the run over, for the {Ordinal(returns)} time. " +

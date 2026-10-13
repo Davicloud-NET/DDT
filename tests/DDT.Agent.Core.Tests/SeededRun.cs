@@ -112,6 +112,20 @@ internal sealed class SeededRun : IDisposable
 
     public void PutInSeedsPlace(byte[] volume) => Disk.Write(Kept.FirstSector * GptLayout.SectorSize, volume);
 
+    // Points a file's or a folder's first cluster outside the seed's volume, as a damaged file system has it. alias is
+    // the entry's 8.3 name.
+    public void DamageSeedEntry(string alias)
+    {
+        byte[] volume = Disk.ReadAt(Kept.FirstSector * GptLayout.SectorSize, (int)CloudInitSeed.SizeBytes);
+        byte[] name = System.Text.Encoding.ASCII.GetBytes(alias.PadRight(11));
+        int entry = Enumerable.Range(0, volume.Length / 32).Select(index => index * 32).First(at => volume.AsSpan(at, 11).SequenceEqual(name));
+
+        volume.AsSpan(entry + 20, 2).Clear();
+        volume[entry + 26] = 1;
+        volume[entry + 27] = 0;
+        PutInSeedsPlace(volume);
+    }
+
     // The disk's partition table, read as the hand-over reads it.
     public GptLayout Table() => GptLayout.Read(Disk.ReadAt(0, GptLayout.MaxHeadBytes));
 

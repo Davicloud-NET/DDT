@@ -16,8 +16,8 @@ internal sealed class CloudConfigScan
     {
     }
 
-    // Some line is none of what the scan knows, or a flow collection over several lines may end elsewhere than the
-    // scan counts. The keys found may then not be all there is.
+    // Some line is none of what the scan knows, a flow collection over several lines may end elsewhere than the scan
+    // counts, or a key holds a placeholder. The keys found may then not be all there is.
     public bool Unreadable { get; private set; }
 
     // The key's value, or null if the document does not set it.
@@ -71,6 +71,9 @@ internal sealed class CloudConfigScan
                 Close();
                 (name, beside, below) = (key, rest, []);
                 open = rest.StartsWith('{') || rest.StartsWith('[') ? Math.Max(0, scan.Flow(rest)) : 0;
+
+                // A placeholder in a key spells any key once the seed is written, vendor_data among them.
+                scan.Unreadable |= key.Contains("{{", StringComparison.Ordinal);
             }
             else if (!Says(line) || (line.TrimEnd() == "---" && name is null))
             {

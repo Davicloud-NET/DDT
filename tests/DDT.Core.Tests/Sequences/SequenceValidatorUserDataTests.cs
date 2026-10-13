@@ -283,6 +283,10 @@ public sealed class SequenceValidatorUserDataTests
     [InlineData("#cloud-config\nmotd: [a ' b]  # it's\nvendor_data: {enabled: false}\nfinal_message: done ]\n")]
     [InlineData("#cloud-config\nvendor_data: {\nenabled: false\n}\n")]
     [InlineData("#cloud-config\nvendor_data: {enabled: false, note: \"a\n  \", enabled: true}\n")]
+    [InlineData("#cloud-config\nven{{Part}}: false\n")]
+    [InlineData("#cloud-config\nhostname: a\n\"vendor_{{Part}}\": {enabled: false}\n")]
+    [InlineData("#cloud-config\n{{Key}}: false\n")]
+    [InlineData("#cloud-config\ncloud_{{Part}}_modules: [final-message]\n")]
     public void SaysWhenItCouldNotCheckTheUserData(string userData)
     {
         SequenceAnalysis analysis = Analyse(userData);

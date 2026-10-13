@@ -11,7 +11,7 @@ namespace DDT.Agent.Sequences;
 // folder above it is followed.
 internal static class Leftovers
 {
-    // A larger file is no token and no state of a run, and only deleted.
+    // A larger file is no token and no state of a run. It is only deleted, which is said.
     internal const long MaxWipedBytes = 4L * 1024 * 1024;
 
     // The agent's log grows with what a run's scripts print. Overwriting more than this would hold the removal up.
@@ -75,13 +75,14 @@ internal static class Leftovers
 
     // For a file the agent wrote itself and that held a secret. Deleting alone leaves its bytes on the disk, so they
     // are overwritten first. Only OwnFile's kind of file is opened, so nothing a script put in its place is written to.
-    public static void Wipe(string path, AgentLog log) => Wipe(path, log, MaxWipedBytes, saysLarger: false);
+    public static void Wipe(string path, AgentLog log) => Wipe(path, log, MaxWipedBytes);
 
-    // For the agent's log, which may hold what only root should read and is far longer than a token. One longer than
-    // the limit is deleted as it is, which is said: its bytes stay on the disk.
-    public static void WipeLog(string path, AgentLog log) => Wipe(path, log, MaxWipedLogBytes, saysLarger: true);
+    // For the agent's log, which may hold what only root should read and is far longer than a token.
+    public static void WipeLog(string path, AgentLog log) => Wipe(path, log, MaxWipedLogBytes);
 
-    private static void Wipe(string path, AgentLog log, long maxBytes, bool saysLarger)
+    // A file longer than the limit is deleted as it is, which is said: its bytes stay on the disk. The line names
+    // the file and its size, never what it holds.
+    private static void Wipe(string path, AgentLog log, long maxBytes)
     {
         try
         {
@@ -91,7 +92,7 @@ internal static class Leftovers
             {
                 Zero(file);
             }
-            else if (file is not null && saysLarger)
+            else if (file is not null)
             {
                 log.Warning(
                     $"{path} holds {ByteSize.Format(file.Length)}, more than the {ByteSize.Format(maxBytes)} the agent overwrites before it " +

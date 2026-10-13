@@ -212,6 +212,57 @@ public sealed class LinuxAgentRemovalTests : IDisposable
             Warnings());
     }
 
+    // A run's file that long is no token and no state. What it held stays on the disk, so that is said, by its name only.
+    [Fact]
+    public void ARunsFileLongerThanTheAgentOverwritesIsDeletedAsItIsAndSaidWithoutWhatItHolds()
+    {
+        string file = Path.Combine(_paths.State, "run-state.json");
+        Directory.CreateDirectory(_paths.State);
+
+        using (FileStream large = new(file, FileMode.CreateNew, FileAccess.Write))
+        {
+            large.Write("what-this-file-held"u8);
+            large.SetLength(Leftovers.MaxWipedBytes + (512 * 1024));
+        }
+
+        using FileStream before = new(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+
+        Leftovers.Wipe(file, _log);
+
+        byte[] start = new byte["what-this-file-held"u8.Length];
+        before.ReadExactly(start);
+        Assert.Equal("what-this-file-held"u8.ToArray(), start);
+        Assert.False(File.Exists(file));
+        Assert.Equal(
+            [$"{file} holds 4.5 MB, more than the 4 MB the agent overwrites before it deletes a file, so what it held stays on the disk until something else is written there."],
+            Warnings());
+        Assert.DoesNotContain("what-this-file-held", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    // At the limit a file is still overwritten, and nothing is said.
+    [Fact]
+    public void ARunsFileAsLongAsTheAgentOverwritesIsOverwrittenAndNothingIsSaid()
+    {
+        string file = Path.Combine(_paths.State, "run-state.json");
+        Directory.CreateDirectory(_paths.State);
+
+        using (FileStream large = new(file, FileMode.CreateNew, FileAccess.Write))
+        {
+            large.Write("state"u8);
+            large.SetLength(Leftovers.MaxWipedBytes);
+        }
+
+        using FileStream before = new(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+
+        Leftovers.Wipe(file, _log);
+
+        byte[] start = new byte[5];
+        before.ReadExactly(start);
+        Assert.Equal(new byte[5], start);
+        Assert.False(File.Exists(file));
+        Assert.Empty(Warnings());
+    }
+
     // Removing twice is what an agent does that was stopped half way, and at its next start finds nothing of a run.
     [Fact]
     public async Task ASecondRemovalFindsNothingLeftAndSaysNothingIsWrong()

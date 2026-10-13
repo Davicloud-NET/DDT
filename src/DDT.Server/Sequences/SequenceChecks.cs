@@ -37,10 +37,17 @@ public static class SequenceChecks
         List<SequenceProblem> problems = [.. analysis.Problems];
         List<SequenceProblem> warnings = [.. analysis.Warnings];
         bool addsAdministrator = false;
+        IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(definition);
 
-        foreach (SequenceStep step in SequenceTree.Nodes(definition))
+        for (int index = 0; index < nodes.Count; index++)
         {
-            addsAdministrator |= CheckNode(step, definition, references, problems, warnings);
+            addsAdministrator |= CheckNode(nodes[index], definition, references, problems, warnings);
+
+            // Linux signs in to every share with NTLM, so the advice to name the server changes nothing there.
+            if (!RunsOnlyInLinux(analysis.NodePhases.ElementAtOrDefault(index)))
+            {
+                CheckShareHosts(nodes[index], warnings);
+            }
         }
 
         CheckDeclaredSecrets(definition, warnings);
@@ -177,8 +184,6 @@ public static class SequenceChecks
                 break;
         }
 
-        CheckShareHosts(step, Warn);
-
         return addsAdministrator;
     }
 
@@ -297,9 +302,13 @@ public static class SequenceChecks
         }
     }
 
-    // A server named by its address gets no Kerberos ticket, so the password goes over NTLM, which a machine in the
-    // middle can relay. Only a literal host can be checked here. One made of values is only known when the step runs.
-    private static void CheckShareHosts(SequenceStep step, Action<string?, ServerMessage> warn)
+    // Whether every phase the node may run in is one of a Linux sequence. A node the analysis names no phase for is not.
+    private static bool RunsOnlyInLinux(NodePhase? node) =>
+        node is { Phases.Count: > 0 } && node.Phases.All(phase => SequenceKinds.Of(phase) == SequenceKind.Linux);
+
+    // Windows gets no Kerberos ticket for a server named by its address, so the password goes over NTLM, which a
+    // machine in the middle can relay. Only a literal host can be checked. One made of values is only known at the step.
+    private static void CheckShareHosts(SequenceStep step, List<SequenceProblem> warnings)
     {
         IReadOnlyList<ShareConnection?> shares = step.Shares ?? [];
 
@@ -307,9 +316,10 @@ public static class SequenceChecks
         {
             if (AccountRules.WrittenHost(shares[index]?.Path) is { } host && ValueTemplate.Parse(host).Placeholders.Count == 0 && IsAddress(host))
             {
-                warn(
+                warnings.Add(SequenceProblem.From(
+                    step.Id == Guid.Empty ? null : step.Id,
                     string.Create(CultureInfo.InvariantCulture, $"shares[{index}].path"),
-                    ServerMessages.SequenceShareHostAddressWarning.With("host", host));
+                    ServerMessages.SequenceShareHostAddressWarning.With("host", host)));
             }
         }
     }

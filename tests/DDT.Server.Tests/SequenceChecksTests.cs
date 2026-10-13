@@ -169,6 +169,27 @@ public sealed class SequenceChecksTests
         Assert.StartsWith("10.0.4.20 is an IP address, with which Windows cannot use Kerberos", warning.Message, StringComparison.Ordinal);
     }
 
+    // The installed Linux signs in to every share with NTLM, named or not, so the advice would change nothing there.
+    [Fact]
+    public void WarnsOfAShareNamedByItsAddressInTheInstalledWindowsAndNotInTheInstalledLinux()
+    {
+        ShareConnection[] shares = [new(@"\\10.0.4.20\tools", new AccountReference(Guid.NewGuid(), null))];
+        RunScriptStep inWindows = Script(SequencePhase.Windows) with { Shares = shares };
+        RunScriptStep inLinux = Script(SequencePhase.Linux) with { Interpreter = ScriptInterpreter.Shell, Shares = shares };
+        WriteRawImageStep write = new() { Id = Guid.NewGuid(), Name = "Write", ImageId = s_raw.Id };
+        WriteCloudInitSeedStep seed = new() { Id = Guid.NewGuid(), Name = "Seed", MetaData = "instance-id: \"a\"\n", UserData = "#cloud-config\n" };
+
+        SequenceDefinition linux = Definition(write, seed, inLinux);
+
+        SequenceValidation windows = SequenceChecks.Check(Definition(Partition(), Apply(s_windows.Id), inWindows), References());
+        SequenceValidation checkedLinux = SequenceChecks.Check(linux, References());
+
+        SequenceProblem warning = Assert.Single(windows.Warnings, warning => warning.Code == ServerMessages.SequenceShareHostAddressWarning.Code);
+        Assert.Equal((inWindows.Id, "shares[0].path"), (warning.StepId!.Value, warning.Field!));
+        Assert.Equal([SequencePhase.Linux], Assert.Single(SequenceChecks.NodePhases(linux), node => node.NodeId == inLinux.Id).Phases);
+        Assert.DoesNotContain(checkedLinux.Warnings, warning => warning.Code == ServerMessages.SequenceShareHostAddressWarning.Code);
+    }
+
     [Fact]
     public void NeedsAComputerNameForAJoinOnAnyBranchOrADeclaredComputerName()
     {

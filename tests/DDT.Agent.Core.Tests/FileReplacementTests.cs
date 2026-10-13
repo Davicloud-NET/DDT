@@ -61,24 +61,40 @@ public sealed class FileReplacementTests
         Assert.All(left, file => Assert.DoesNotContain("zeros", file, StringComparison.Ordinal));
     }
 
-    // On the real disk, where only Linux has a folder to write out. Said once: a save comes every few seconds.
-    [Fact]
-    public void AFolderThatCannotBeWrittenOutIsSaidOnceWithWhatFollowsFromIt()
+    // On the real disk, where only Linux has a folder to write out. /proc has folders that no file system writes out,
+    // and a name too long opens no folder at all. Said once: a save comes every few seconds.
+    [Theory]
+    [InlineData("/proc/self")]
+    [InlineData(null)]
+    public void AFolderThatCannotBeWrittenOutIsSaidOnceWithWhatFollowsFromIt(string? folder)
     {
         Assert.SkipUnless(OperatingSystem.IsLinux(), "Only Linux writes a folder out.");
         using StringWriter console = new();
         ReplacementDisk disk = new(new AgentLog(new ImmediateTimeProvider(), console));
-        string missing = Path.Combine(Path.GetTempPath(), $"ddt-no-folder-{Guid.NewGuid():N}");
+        string directory = folder ?? Path.Combine(Path.GetTempPath(), new string('n', 300));
 
-        Assert.False(disk.Flush(missing));
-        Assert.False(disk.Flush(missing));
+        Assert.False(disk.Flush(directory));
+        Assert.False(disk.Flush(directory));
 
         string said = Assert.Single(console.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
-        Assert.Contains($"WARN  The folder {missing} cannot be written out to the disk (", said, StringComparison.Ordinal);
+        Assert.Contains($"WARN  The folder {directory} cannot be written out to the disk (", said, StringComparison.Ordinal);
         Assert.EndsWith(
             "The copy a save replaces is therefore not overwritten, and its bytes stay on the disk until something else is written there.",
             said,
             StringComparison.Ordinal);
+    }
+
+    // A first save finds no folder yet, and a removal none any more. Neither holds a copy that could stay.
+    [Fact]
+    public void AFolderThatIsNotThereIsNotSaid()
+    {
+        Assert.SkipUnless(OperatingSystem.IsLinux(), "Only Linux writes a folder out.");
+        using StringWriter console = new();
+        ReplacementDisk disk = new(new AgentLog(new ImmediateTimeProvider(), console));
+
+        Assert.False(disk.Flush(Path.Combine(Path.GetTempPath(), $"ddt-no-folder-{Guid.NewGuid():N}")));
+
+        Assert.Equal("", console.ToString());
     }
 
     // The save before it was cut off between its rename and the folder's way to the disk.

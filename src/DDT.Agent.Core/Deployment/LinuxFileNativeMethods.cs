@@ -28,6 +28,9 @@ internal static partial class LinuxFileNativeMethods
     // O_RDONLY with O_CLOEXEC of fcntl.h, which x64 and arm64 number alike.
     public const int ReadOnlyCloseOnExec = 0x80000;
 
+    // ENOENT of errno.h.
+    public const int NoSuchFile = 2;
+
     [LibraryImport("libc", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
     internal static partial int statx(int directory, string path, int flags, uint mask, out Status status);
 

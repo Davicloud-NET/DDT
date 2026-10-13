@@ -66,7 +66,10 @@ internal sealed class ReplacementDisk(AgentLog log) : IReplacementDisk
 
         if (folder < 0)
         {
-            return NotWrittenOut(directory, Marshal.GetLastPInvokeError());
+            int error = Marshal.GetLastPInvokeError();
+
+            // A folder that is not there yet, or no longer, holds no copy a save replaced, so nothing is to be said.
+            return error != LinuxFileNativeMethods.NoSuchFile && NotWrittenOut(directory, error);
         }
 
         try

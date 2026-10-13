@@ -3,7 +3,6 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Globalization;
-using System.Runtime.InteropServices;
 
 namespace DDT.Agent.Deployment;
 
@@ -199,38 +198,8 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
         return (parent, started, fields[0] is not ("Z" or "X"));
     }
 
-    private int Send(Listed process, int number) => signal is null ? Signal(process, number) : signal(process.Id, number);
-
-    // Through a descriptor of the process, where the kernel has them, since 5.3. The number alone may be another
-    // process's by now, and a descriptor opened for that one shows another start than the one that was listed.
-    private int Signal(Listed process, int number)
-    {
-        int descriptor = (int)StrayNativeMethods.syscall(StrayNativeMethods.PidfdOpen, process.Id, 0, 0, 0);
-
-        if (descriptor < 0)
-        {
-            int error = Marshal.GetLastPInvokeError();
-
-            return error == StrayNativeMethods.NoSuchCall ? Kill(process.Id, number) : error;
-        }
-
-        try
-        {
-            if (Read(process.Id)?.Started != process.Started)
-            {
-                return StrayNativeMethods.NoSuchProcess;
-            }
-
-            return StrayNativeMethods.syscall(StrayNativeMethods.PidfdSendSignal, descriptor, number, 0, 0) == 0 ? 0 : Marshal.GetLastPInvokeError();
-        }
-        finally
-        {
-            _ = StrayNativeMethods.close(descriptor);
-        }
-    }
-
-    private static int Kill(int process, int number) =>
-        StrayNativeMethods.kill(process, number) == 0 ? 0 : Marshal.GetLastPInvokeError();
+    private int Send(Listed process, int number) =>
+        signal is null ? new LinuxProcessSignal(id => Read(id)?.Started).Send(process.Id, process.Started, number) : signal(process.Id, number);
 
     // A process as the list showed it: its number, and its start in clock ticks, which tells it from a later one.
     private readonly record struct Listed(int Id, long Started);

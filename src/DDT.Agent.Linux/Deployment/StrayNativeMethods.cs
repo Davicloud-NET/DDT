@@ -22,8 +22,7 @@ internal static partial class StrayNativeMethods
     public const int PidfdOpen = 434;
     public const int PidfdSendSignal = 424;
 
-    // ENOSYS and ESRCH of errno.h.
-    public const int NoSuchCall = 38;
+    // ESRCH of errno.h.
     public const int NoSuchProcess = 3;
 
     // Declared with every argument the kernel reads: prctl takes a variable number in C.

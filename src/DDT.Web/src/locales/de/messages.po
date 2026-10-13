@@ -8907,6 +8907,10 @@ msgstr "Gestartet {when} von {startedBy}"
 msgid "Started from the network again {ago} ({nth} time), still no call from the installed Linux"
 msgstr "Erneut per Netzwerk gestartet {ago} (zum {nth} Mal), immer noch keine Meldung vom installierten Linux"
 
+#: src/audit/auditView.ts
+msgid "Started from the network during a run"
+msgstr "Während einer Ausführung per Netzwerk gestartet"
+
 #: src/machines/bootEnvironment.ts
 msgid "Started the Linux boot environment"
 msgstr "Hat die Linux-Startumgebung gestartet"

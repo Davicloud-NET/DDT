@@ -8907,6 +8907,10 @@ msgstr "Started {when} by {startedBy}"
 msgid "Started from the network again {ago} ({nth} time), still no call from the installed Linux"
 msgstr "Started from the network again {ago} ({nth} time), still no call from the installed Linux"
 
+#: src/audit/auditView.ts
+msgid "Started from the network during a run"
+msgstr "Started from the network during a run"
+
 #: src/machines/bootEnvironment.ts
 msgid "Started the Linux boot environment"
 msgstr "Started the Linux boot environment"

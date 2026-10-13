@@ -1181,7 +1181,10 @@ seed that holds a run, without mounting anything, and goes by what it finds:
   sequence's files alone again, and goes on as after any start.
 
 Where several disks hold a run, the agent goes by the one whose run was assigned last, and says
-so.
+so. A seed that holds what a hand-over left, with no token and no state that names a run, makes
+the agent ask without a run's id. The server then answers for the run that machine has in its
+installed Linux, if it has one, and the agent waits for that answer without the 30 seconds'
+limit, since such a seed gives it nothing to go by.
 
 **The question at the console.** During the ten seconds before such a restart, the text console
 offers a way out: "To start over here instead, press a key within that time. The agent then asks
@@ -1288,12 +1291,14 @@ make, and what follows from that is accepted:
 - **Whoever sits at the machine** can end a run that goes on in the installed Linux, by starting
   the machine from the network and typing `END`, without signing in.
 - **Someone on the network who registers in a machine's name** ends its run with that one
-  registration, as before. A registration that asks first, by naming a run that was handed over,
-  changes nothing while that run goes on in the installed Linux and gets no token. It learns the
-  run's id, puts a warning into the run's log, and the fifth in a row with no call from the
-  installed Linux in between ends the run. That someone at the machine chose to start over is
-  the word of whoever registered, with no secret behind it, and the run's error says it as a
-  report.
+  registration, as before. It takes the machine's SMBIOS UUID and adapter address and no secret.
+  A registration that asks first whether a handed-over run goes on changes nothing while a run
+  of that machine goes on in the installed Linux, and gets no token. The question need not name
+  the run: one without a run's id is answered for whatever run the machine has there. The answer
+  holds the machine's state, the run's id and the count. The question puts a warning into the
+  run's log, and the fifth in a row with no call from the installed Linux in between ends the
+  run. That someone at the machine chose to start over is the word of whoever registered, with
+  no secret behind it, and the run's error says it as a report.
 - **What the removal cannot promise.** It overwrites what held a secret where the file system
   writes a file's bytes in place. It does not reach a file system that copies on write, nor the
   machine's journal, which keeps every line the agent and the scripts wrote.

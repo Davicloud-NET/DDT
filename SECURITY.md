@@ -69,10 +69,12 @@ not make. The same section says what such a run trusts. Accepted, and no vulnera
 - When the run is over, the agent overwrites what held the token before it deletes it. That holds
   where the file system writes a file's bytes in place. It is no promise for a file system that
   copies on write, and the machine's journal keeps the lines of the agent and of the scripts.
-- A registration that names a run that was handed over, and carries no token, changes nothing
-  while that run goes on in the installed Linux, and is answered without a token. It learns the
-  run's id, and five of them in a row end the run, as one registration in the machine's name
-  without that question does.
+- A registration that asks whether a handed-over run goes on, and carries no token, changes
+  nothing while a run of that machine goes on in the installed Linux, and is answered without a
+  token. It need not name the run. Whoever knows the machine's SMBIOS UUID and adapter address
+  so learns the machine's state, the run's id and how often the machine was sent back to its
+  disk. Five such questions in a row end the run, as one registration in the machine's name
+  without the question does.
 - Whoever sits at a netbooted machine can end a run that goes on in its installed Linux, by
   typing `END` there, without signing in.
 

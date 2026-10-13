@@ -51,7 +51,8 @@ public sealed class MachineArrivals(
             return Arrival.Refused(RegistrationRefusal.NothingToContinue);
         }
 
-        if (machine is not null && continuation == Continuation.None && NetworkDetours.Asks(registration, active))
+        // A resume token the firmware carried does not make a question a continuation: the installed Linux has the run.
+        if (machine is not null && !continuation.ByRunToken && NetworkDetours.Asks(registration, active))
         {
             Visit asking = new(machine, active, continuation, registration, remoteAddress, now);
             (bool goesOn, MachineLogLine? line) = await DetourAsync(asking, active, cancellationToken).ConfigureAwait(false);
@@ -60,6 +61,9 @@ public sealed class MachineArrivals(
             {
                 return new Arrival(machine, active, before, null, tested, RegistrationRefusal.None) { GoesOnInstalled = true, Detour = line };
             }
+
+            // The run ended at the limit, so the registration is one without a token, whatever it carried.
+            continuation = Continuation.None;
         }
 
         if (machine is null)

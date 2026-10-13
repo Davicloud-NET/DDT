@@ -217,4 +217,75 @@ public sealed class NetworkDetourStartTests(DdtApplication application) : IClass
         (await (await application.AdministratorAsync()).EndCurrentAsync(machine.Id)).EnsureSuccessStatusCode();
         Assert.Equal(DeploymentState.Failed, (await StoredAsync(run.Id)).State);
     }
+
+    // A resume token is from before the hand-over. The installed Linux has the run, so the question is one as any other.
+    [Fact]
+    public async Task AQuestionWithAValidResumeTokenAboutARunInTheInstalledLinuxChangesNothingEither()
+    {
+        (DeployingMachine machine, AgentRun run) = await InstalledAsync("LINUX-87");
+        using DeployingMachine owned = machine;
+        Machine before = await StoredMachineAsync(machine.Id);
+
+        AgentRegistrationResult answer = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(
+            machine.Registration with { ResumeToken = machine.ResumeToken, HandedOver = new AgentHandedOverRun(run.Id, Guid.NewGuid()) }));
+
+        Assert.Equal(new AgentInstalledRun(run.Id, 1, 5), answer.InstalledRun);
+        Assert.Null(answer.Token);
+        Assert.Null(answer.ResumeToken);
+        Assert.Null(answer.RunId);
+        Assert.Null(answer.RunToken);
+        Machine after = await StoredMachineAsync(machine.Id);
+        Assert.Equal(
+            (AgentEnvironment.Linux, before.TokenGeneration, before.State, before.LastSeenUtc),
+            (after.AgentEnvironment, after.TokenGeneration, after.State, after.LastSeenUtc));
+        Assert.Equal(1, (await StoredAsync(run.Id)).Detours);
+    }
+
+    // At the limit the run is over, so the resume token has nothing to continue and the machine starts over.
+    [Fact]
+    public async Task TheFifthStartEndsTheRunAlsoForAQuestionWithAValidResumeToken()
+    {
+        (DeployingMachine machine, AgentRun run) = await InstalledAsync("LINUX-88");
+        using DeployingMachine owned = machine;
+        AgentRegistration question = machine.Registration with { ResumeToken = machine.ResumeToken };
+
+        for (int detour = 1; detour < NetworkDetours.Max; detour++)
+        {
+            Assert.Equal(detour, (await HandedOverLinuxRun.AskAsync(machine, run.Id, Guid.NewGuid())).InstalledRun?.Detours);
+        }
+
+        AgentRegistrationResult fifth = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
+            await machine.Agent.RegisterAsync(question with { HandedOver = new AgentHandedOverRun(run.Id, Guid.NewGuid()) }));
+
+        Assert.Null(fifth.InstalledRun);
+        Assert.Null(fifth.RunId);
+        Assert.Null(fifth.RunToken);
+        Assert.Equal(MachineState.Pending, fifth.State);
+        Assert.Equal((DeploymentState.Failed, NetworkDetours.TooMany), ((await StoredAsync(run.Id)).State, (await StoredAsync(run.Id)).Error));
+    }
+
+    // A machine that came from Windows PE for a Linux sequence, whose disk still holds the seed of an earlier run.
+    [Fact]
+    public async Task AStaleSeedOnAMachineThatCarriesItsResumeTokenLeavesItARegistrationThatContinues()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        using DeployingMachine machine = await DeployingMachine.ApprovedAsync(application, administrator, [DeployingMachine.Disk(0)]);
+        Machine before = await StoredMachineAsync(machine.Id);
+
+        AgentRegistrationResult answer = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await machine.Agent.RegisterAsync(machine.Registration with
+        {
+            Environment = AgentEnvironment.LinuxBoot,
+            ResumeToken = machine.ResumeToken,
+            HandedOver = new AgentHandedOverRun(Guid.CreateVersion7(), Guid.NewGuid()),
+        }));
+
+        // The machine is not started over: it stays approved, its tokens stay good, and it is where it registered from.
+        Assert.Null(answer.InstalledRun);
+        Assert.Null(answer.RunId);
+        Assert.Equal(MachineState.Approved, answer.State);
+        Assert.NotNull(answer.Token);
+        Assert.NotNull(answer.ResumeToken);
+        Machine after = await StoredMachineAsync(machine.Id);
+        Assert.Equal((before.TokenGeneration, AgentEnvironment.LinuxBoot), (after.TokenGeneration, after.AgentEnvironment));
+    }
 }

@@ -1189,8 +1189,8 @@ limit, since such a seed gives it nothing to go by.
 **The question at the console.** During the ten seconds before such a restart, the text console
 offers a way out: "To start over here instead, press a key within that time. The agent then asks
 before it ends the run." A key only stops the countdown. The agent then wants the word `END`
-typed, as `ERASE` is typed for a disk, and waits a minute for it. Any other answer, or none,
-restarts the machine into the installed Linux. After `END` the agent clears the seed and
+typed, in capitals, as `ERASE` is typed for a disk, and waits a minute for it. Any other answer,
+`end` among them, or none, restarts the machine into the installed Linux. After `END` the agent clears the seed and
 registers without a token, which ends the run on the server, whose error then says that the
 agent reported someone at the machine chose to start over. The machine has to be authorized
 again. Nobody has to be signed in to do this: whoever sits at a netbooted machine can end its

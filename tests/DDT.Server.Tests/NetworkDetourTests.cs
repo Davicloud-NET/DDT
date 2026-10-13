@@ -24,9 +24,9 @@ public sealed class NetworkDetourTests(DdtApplication application) : IClassFixtu
 
     private const string TooMany =
         "The machine started from the network 5 times in a row while the run went on in the installed Linux, with no call from the " +
-        "installed Linux in between. Each time the agent of the boot environment sent it back to its disk, and it came from the " +
-        "network again, so the installed Linux is no longer reached. Check the firmware's boot order and whether the machine starts " +
-        "from its disk.";
+        "installed Linux in between. After each of the first 4 starts the agent of the boot environment sent it back to its disk, " +
+        "and it came from the network again, so the installed Linux is no longer reached. Check the firmware's boot order and " +
+        "whether the machine starts from its disk.";
 
     private static string Line(int detours) =>
         "The machine started from the network while this run goes on in the installed Linux, and the agent of the boot environment " +

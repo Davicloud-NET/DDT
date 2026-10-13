@@ -23,9 +23,9 @@ public static partial class NetworkDetours
     public static string TooMany { get; } = string.Create(
         CultureInfo.InvariantCulture,
         $"The machine started from the network {Max} times in a row while the run went on in the installed Linux, with no call from the " +
-        $"installed Linux in between. Each time the agent of the boot environment sent it back to its disk, and it came from the " +
-        $"network again, so the installed Linux is no longer reached. Check the firmware's boot order and whether the machine starts " +
-        $"from its disk.");
+        $"installed Linux in between. After each of the first {Max - 1} starts the agent of the boot environment sent it back to its " +
+        $"disk, and it came from the network again, so the installed Linux is no longer reached. Check the firmware's boot order and " +
+        $"whether the machine starts from its disk.");
 
     // Whether a registration without a valid token asks about a run that goes on in the installed Linux. A run it names
     // must be that run. One that names none, because the state it found cannot be read, asks about the machine's run.

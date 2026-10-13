@@ -19,32 +19,21 @@ public static class LinuxPhaseService
     // For an error nobody expected. systemd starts the unit again after it.
     public const int Crashed = 1;
 
-    // What systemd sets for every process it starts for a unit, and for one whose output it connected to the journal.
-    private const string InvocationId = "INVOCATION_ID";
+    // What systemd sets for a process whose output it connected to the journal.
     private const string JournalStream = "JOURNAL_STREAM";
 
     public static string NoSettings(string configuration) =>
         $"{configuration} is not there, so this system has no run for the DDT agent to go on with.";
 
     // systemd stops the unit with SIGTERM, also on the machine's way down for a restart. The run then ends cleanly
-    // at the step it is in. DDT's unit leaves KillMode as it is, so systemd sends the signal to every process of the
-    // unit at once, a script's among them.
+    // at the step it is in. The unit's KillMode is mixed, so the signal reaches the agent alone, and the agent asks
+    // its script to end. A SIGTERM from anyone else is the same to it.
     public static async Task<int> RunAsync()
     {
         using CancellationTokenSource stop = new();
-        bool underSystemd = Environment.GetEnvironmentVariable(InvocationId) is { Length: > 0 };
-        int terminated = 0;
-        using PosixSignalRegistration terminate = PosixSignalRegistration.Create(PosixSignal.SIGTERM, signal =>
-        {
-            Interlocked.Exchange(ref terminated, 1);
-            Stop(signal, stop);
-        });
+        using PosixSignalRegistration terminate = PosixSignalRegistration.Create(PosixSignal.SIGTERM, signal => Stop(signal, stop));
         using PosixSignalRegistration interrupt = PosixSignalRegistration.Create(PosixSignal.SIGINT, signal => Stop(signal, stop));
-        LinuxPhaseMachine machine = LinuxPhaseMachine.Own() with
-        {
-            UnitIsStopping = () => underSystemd && Volatile.Read(ref terminated) == 1,
-            OutputIsJournal = Environment.GetEnvironmentVariable(JournalStream) is { Length: > 0 },
-        };
+        LinuxPhaseMachine machine = LinuxPhaseMachine.Own() with { OutputIsJournal = Environment.GetEnvironmentVariable(JournalStream) is { Length: > 0 } };
 
         return await RunAsync(machine, stop.Token).ConfigureAwait(false);
     }
@@ -166,11 +155,7 @@ public static class LinuxPhaseService
         bool onLinux = OperatingSystem.IsLinux();
         ToolRunner tools = new(log, TimeProvider.System, Latin1Output.Decode)
         {
-            Strays = new LinuxStrayProcesses(machine.Paths.Root, log, Environment.ProcessId)
-            {
-                Adopts = onLinux && LinuxStrayProcesses.Adopt(),
-                UnitIsStopping = machine.UnitIsStopping,
-            },
+            Strays = new LinuxStrayProcesses(machine.Paths.Root, log, Environment.ProcessId) { Adopts = onLinux && LinuxStrayProcesses.Adopt() },
             FileModeMask = onLinux ? FileModeMask.Set : null,
             PlainErrorOutput = new HashSet<string>(StringComparer.Ordinal) { LinuxPhaseRebooter.Systemctl },
         };

@@ -22,10 +22,6 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
     // False where the kernel does not hand orphans to the agent. They go to the first process then, out of reach.
     public bool Adopts { get; init; }
 
-    // True while systemd stops the agent's unit. It has sent SIGTERM to every process of the unit by then, the script's
-    // among them, and a second one would run a script's trap twice.
-    public Func<bool>? UnitIsStopping { get; init; }
-
     // How long a script has to end after it was asked to, for what its trap still has to do.
     public TimeSpan Grace { get; init; } = TimeSpan.FromSeconds(5);
 
@@ -39,10 +35,9 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
     // none is left once the grace is over.
     public async Task<bool> AskStartedSinceAsync(long since, string tool)
     {
-        bool bySystemd = UnitIsStopping?.Invoke() == true;
         List<Listed> asked = Since(since);
 
-        foreach (Listed process in bySystemd ? [] : asked)
+        foreach (Listed process in asked)
         {
             Send(process, StrayNativeMethods.TerminateSignal);
         }
@@ -55,7 +50,7 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
             left = Since(since);
         }
 
-        Say(tool, asked.Count, left.Count, bySystemd);
+        Say(tool, asked.Count, left.Count);
 
         return left.Count == 0;
     }
@@ -86,27 +81,21 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
         Report(ended.Count, [.. left.Select(process => process.Id)]);
     }
 
-    // Who asked is said as it was: the agent, or systemd before it.
-    private void Say(string tool, int asked, int left, bool bySystemd)
+    private void Say(string tool, int asked, int left)
     {
         string grace = Grace.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture);
-        string systemd = "systemd stopped the unit and asked every process of it to end (SIGTERM)";
 
         if (left > 0)
         {
-            log.Warning(
-                $"{Count(left)} of {tool} still ran {grace} s after {(bySystemd ? systemd : $"{tool} was asked to end (SIGTERM)")}, " +
-                "so what is left is ended outright (SIGKILL).");
+            log.Warning($"{Count(left)} of {tool} still ran {grace} s after {tool} was asked to end (SIGTERM), so what is left is ended outright (SIGKILL).");
         }
         else if (asked > 1)
         {
-            log.Information(bySystemd
-                ? $"{tool} and the {Count(asked - 1)} it had started ended when {systemd}."
-                : $"{tool} and the {Count(asked - 1)} it had started ended when they were asked to (SIGTERM).");
+            log.Information($"{tool} and the {Count(asked - 1)} it had started ended when they were asked to (SIGTERM).");
         }
         else if (asked == 1)
         {
-            log.Information(bySystemd ? $"{tool} ended when {systemd}." : $"{tool} ended when it was asked to (SIGTERM).");
+            log.Information($"{tool} ended when it was asked to (SIGTERM).");
         }
     }
 

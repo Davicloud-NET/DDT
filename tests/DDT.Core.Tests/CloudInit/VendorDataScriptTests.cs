@@ -27,6 +27,7 @@ public sealed class VendorDataScriptTests
         UMask=0077
         Restart=on-failure
         RestartSec=15
+        KillMode=mixed
         TimeoutStopSec=120
 
         [Install]
@@ -84,6 +85,9 @@ public sealed class VendorDataScriptTests
         Assert.Contains($"ExecStart={LinuxAgentFiles.Agent} {LinuxAgentFiles.Argument}", unit.Split('\n'));
         Assert.Contains($"ConditionPathExists={LinuxAgentFiles.Agent}", unit.Split('\n'));
         Assert.Equal("--linux-phase", LinuxAgentFiles.Argument);
+
+        // systemd signals the agent alone at a stop. The agent asks its script to end, once, and gives it its moment.
+        Assert.Contains("KillMode=mixed", unit.Split('\n'));
 
         // Not ordered after cloud-init's last stage, so the agent can say that it waits for cloud-init.
         Assert.DoesNotContain("cloud", unit, StringComparison.Ordinal);

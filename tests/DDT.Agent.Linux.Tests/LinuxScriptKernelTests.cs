@@ -99,38 +99,18 @@ public sealed class LinuxScriptKernelTests : IDisposable
         Assert.Empty(Sleeping(_time));
     }
 
-    // systemctl stop sends SIGTERM to every process of the unit before the agent can. A second one from the agent ran a
-    // script's trap twice. The test plays systemd at the moment the agent asks whether the unit is stopping.
+    // The unit's KillMode is mixed, so systemd signals the agent alone and only the agent asks a script to end. A
+    // script's trap that does not end it runs once, and the script goes on to its end within its moment.
     [Fact]
-    public async Task AScriptSystemdAlreadyAskedToEndIsNotAskedASecondTime()
+    public async Task AScriptThatIsStoppedIsAskedToEndOnce()
     {
-        Assert.SkipUnless(OperatingSystem.IsLinux(), "This test calls the Linux kernel.");
-        Assert.SkipUnless(LinuxStrayProcesses.Adopt(), "This kernel hands a process no orphans.");
         string script = $"trap 'echo asked' TERM; echo started; sleep {_time} & wait; wait; sleep 1; echo over";
-        LinuxStrayProcesses strays = new("/", _log, Environment.ProcessId)
-        {
-            Adopts = true,
-            UnitIsStopping = () =>
-            {
-                foreach (int process in Sleeping(_time))
-                {
-                    LoopDisk.Run("kill", "-TERM", process.ToString(CultureInfo.InvariantCulture));
-                }
 
-                return true;
-            },
-        };
-        ToolRunner tools = new(_log, TimeProvider.System, Latin1Output.Decode) { Strays = strays };
-
-        await Assert.ThrowsAsync<DeploymentStepException>(() => tools.RunForExitCodeAsync(
-            "/bin/sh",
-            ["-c", script],
-            new ToolRunOptions(Timeout: TimeSpan.FromSeconds(3)),
-            TestContext.Current.CancellationToken));
+        await StoppedAsync(script);
 
         Assert.Single(Lines(), line => line == "INFO  asked");
         Assert.Contains("INFO  over", Lines());
-        Assert.Contains(Lines(), line => line.EndsWith("ended when systemd stopped the unit and asked every process of it to end (SIGTERM).", StringComparison.Ordinal));
+        Assert.Contains("INFO  sh and the 1 process it had started ended when they were asked to (SIGTERM).", Lines());
         Assert.Empty(Sleeping(_time));
     }
 

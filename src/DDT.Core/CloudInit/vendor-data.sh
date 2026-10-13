@@ -47,6 +47,7 @@ Environment=HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/s
 UMask=0077
 Restart=on-failure
 RestartSec=15
+KillMode=mixed
 TimeoutStopSec=120
 
 [Install]

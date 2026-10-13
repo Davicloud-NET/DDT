@@ -20,8 +20,6 @@ public sealed class LinuxStrayProcessesTests : IDisposable
     private readonly List<int> _killed = [];
     private readonly HashSet<int> _immortal = [];
     private readonly HashSet<int> _obedient = [];
-    private readonly List<int> _endingBySystemd = [];
-    private int _waits;
 
     public LinuxStrayProcessesTests()
     {
@@ -48,7 +46,7 @@ public sealed class LinuxStrayProcessesTests : IDisposable
 
     // Ending a process takes its folder away, as the kernel does once the process is gone. Only a process the test
     // names goes when it is asked to.
-    private LinuxStrayProcesses Strays(bool adopts = true, bool unitIsStopping = false) => new(
+    private LinuxStrayProcesses Strays(bool adopts = true) => new(
         _tree.Root,
         new AgentLog(new ImmediateTimeProvider(), _console),
         Agent,
@@ -65,23 +63,9 @@ public sealed class LinuxStrayProcessesTests : IDisposable
 
             return _immortal.Contains(process) ? 1 : Gone(process);
         },
-        _ =>
-        {
-            _waits++;
-
-            // What systemd asked to end goes while the agent waits for it.
-            foreach (int process in _endingBySystemd)
-            {
-                Gone(process);
-            }
-
-            _endingBySystemd.Clear();
-
-            return Task.CompletedTask;
-        })
+        _ => Task.CompletedTask)
     {
         Adopts = adopts,
-        UnitIsStopping = () => unitIsStopping,
     };
 
     // The script was process 200. Its own tree is gone already. One of its children had put itself into a session of
@@ -152,44 +136,6 @@ public sealed class LinuxStrayProcessesTests : IDisposable
         await stop.EndAsync();
 
         Assert.Equal([200, 301], _killed.Order());
-    }
-
-    // systemctl stop sends SIGTERM to every process of the unit at once. A second one from the agent ran a trap twice.
-    [Fact]
-    public async Task SignalsNobodyASecondTimeWhenSystemdStopsTheUnitAndOnlyWaitsForThemToEnd()
-    {
-        Process(200, Agent, 5000, "sh");
-        Process(301, 200, 5010);
-        _endingBySystemd.AddRange([200, 301]);
-        IToolStop stop = Strays(unitIsStopping: true).WatchFrom(200);
-
-        await stop.AskAsync("sh");
-        await stop.EndAsync();
-
-        Assert.Empty(_asked);
-        Assert.Empty(_killed);
-        Assert.Equal(1, _waits);
-        Assert.Equal(
-            "INFO  sh and the 1 process it had started ended when systemd stopped the unit and asked every process of it to end (SIGTERM).",
-            Assert.Single(Lines()));
-    }
-
-    // A trap that does not end its script: the grace is the same, and what is left goes as after the agent's own signal.
-    [Fact]
-    public async Task EndsOutrightWhatSystemdsSignalDidNotEnd()
-    {
-        Process(200, Agent, 5000, "sh");
-        IToolStop stop = Strays(unitIsStopping: true).WatchFrom(200);
-
-        await stop.AskAsync("sh");
-        await stop.EndAsync();
-
-        Assert.Empty(_asked);
-        Assert.Equal([200], _killed);
-        Assert.Equal(
-            "WARN  1 process of sh still ran 5 s after systemd stopped the unit and asked every process of it to end (SIGTERM), so " +
-            "what is left is ended outright (SIGKILL).",
-            Lines()[0]);
     }
 
     // The tool ended by itself between its time limit and the stop, and left nothing.

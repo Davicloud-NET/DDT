@@ -13,6 +13,7 @@ internal sealed class ReplacementDisk(AgentLog log) : IReplacementDisk
 {
     // Said once to each log: a save comes every few seconds.
     private static readonly ConditionalWeakTable<AgentLog, object> s_toldNoSecondName = [];
+    private static readonly ConditionalWeakTable<AgentLog, object> s_toldNotWrittenOut = [];
 
     public async Task WriteNewAsync(string path, byte[] content, CancellationToken cancellationToken)
     {
@@ -65,12 +66,12 @@ internal sealed class ReplacementDisk(AgentLog log) : IReplacementDisk
 
         if (folder < 0)
         {
-            return false;
+            return NotWrittenOut(directory, Marshal.GetLastPInvokeError());
         }
 
         try
         {
-            return LinuxFileNativeMethods.fsync(folder) == 0;
+            return LinuxFileNativeMethods.fsync(folder) == 0 || NotWrittenOut(directory, Marshal.GetLastPInvokeError());
         }
         finally
         {
@@ -88,5 +89,19 @@ internal sealed class ReplacementDisk(AgentLog log) : IReplacementDisk
         {
             Leftovers.Delete(path, log);
         }
+    }
+
+    // False, after saying what follows from it: a save then deletes the copy it replaced without overwriting it.
+    private bool NotWrittenOut(string directory, int error)
+    {
+        if (s_toldNotWrittenOut.TryAdd(log, log))
+        {
+            log.Warning(
+                $"The folder {directory} cannot be written out to the disk ({Marshal.GetPInvokeErrorMessage(error)}), so nothing says " +
+                "that a save's new file has its name there. The copy a save replaces is therefore not overwritten, and its bytes stay " +
+                "on the disk until something else is written there.");
+        }
+
+        return false;
     }
 }

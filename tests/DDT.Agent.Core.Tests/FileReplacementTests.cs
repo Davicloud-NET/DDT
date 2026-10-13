@@ -47,21 +47,6 @@ public sealed class FileReplacementTests
         Assert.Equal(["token"], disk.AfterPowerLoss()[^1].Keys);
     }
 
-    // The order this guards against: the zeros are on the disk at once, the new name is not.
-    [Fact]
-    public async Task OverwritingTheOldCopyBeforeTheFolderIsWrittenOutCouldLeaveTheFileOverwritten()
-    {
-        JournaledDisk disk = new();
-        disk.Put(s_path, s_old);
-
-        await disk.WriteNewAsync(s_path + FileReplacement.Temporary, s_new, TestContext.Current.CancellationToken);
-        disk.Link(s_path, s_path + FileReplacement.Replaced);
-        disk.Rename(s_path + FileReplacement.Temporary, s_path);
-        disk.Remove(s_path + FileReplacement.Replaced, overwrite: true);
-
-        Assert.Equal("zeros or new", File(disk));
-    }
-
     [Fact]
     public async Task TheOldCopyIsNotOverwrittenWhereTheFolderCannotBeWrittenOut()
     {
@@ -74,6 +59,26 @@ public sealed class FileReplacementTests
 
         Assert.Equal("delete token.old", disk.Steps[^1]);
         Assert.All(left, file => Assert.DoesNotContain("zeros", file, StringComparison.Ordinal));
+    }
+
+    // On the real disk, where only Linux has a folder to write out. Said once: a save comes every few seconds.
+    [Fact]
+    public void AFolderThatCannotBeWrittenOutIsSaidOnceWithWhatFollowsFromIt()
+    {
+        Assert.SkipUnless(OperatingSystem.IsLinux(), "Only Linux writes a folder out.");
+        using StringWriter console = new();
+        ReplacementDisk disk = new(new AgentLog(new ImmediateTimeProvider(), console));
+        string missing = Path.Combine(Path.GetTempPath(), $"ddt-no-folder-{Guid.NewGuid():N}");
+
+        Assert.False(disk.Flush(missing));
+        Assert.False(disk.Flush(missing));
+
+        string said = Assert.Single(console.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
+        Assert.Contains($"WARN  The folder {missing} cannot be written out to the disk (", said, StringComparison.Ordinal);
+        Assert.EndsWith(
+            "The copy a save replaces is therefore not overwritten, and its bytes stay on the disk until something else is written there.",
+            said,
+            StringComparison.Ordinal);
     }
 
     // The save before it was cut off between its rename and the folder's way to the disk.

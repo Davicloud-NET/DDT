@@ -31,8 +31,8 @@ public sealed class NetworkDetourTests(DdtApplication application) : IClassFixtu
 
     private static string Line(int detours) =>
         "The machine started from the network while this run goes on in the installed Linux, and the agent of the boot environment " +
-        $"sends it back to its disk. This is start {detours} of 5 in a row without a call from the installed Linux in between. At start 5, " +
-        "the server ends the run.";
+        "sends it back to its disk unless someone at the machine chooses to start over there. " +
+        $"This is start {detours} of 5 in a row without a call from the installed Linux in between. At start 5, the server ends the run.";
 
     // An agent that makes no id for its start, so each question is a start of its own.
     private static Task<AgentRegistrationResult> AskAsync(DeployingMachine machine, Guid? runId) => HandedOverLinuxRun.AskAsync(machine, runId);
@@ -223,6 +223,33 @@ public sealed class NetworkDetourTests(DdtApplication application) : IClassFixtu
         Assert.Null(answer.InstalledRun);
         Assert.Equal(MachineState.Pending, answer.State);
         Assert.Equal(DeploymentState.Failed, (await StoredAsync(run.Id)).State);
+    }
+
+    // The proof typed END after the question: the line said the machine went back to its disk, and it never did. The
+    // question was asked, so its count and audit row stay, and the run's error says what was chosen.
+    [Fact]
+    public async Task AStartOverChosenAfterTheQuestionLeavesALogThatSaysWhatHappened()
+    {
+        (DeployingMachine machine, AgentRun run) = await HandedOverLinuxRun.StartAsync(application, "LINUX-77C");
+        using DeployingMachine owned = machine;
+        await HandedOverLinuxRun.InstalledAsync(machine);
+        Guid start = Guid.NewGuid();
+        await HandedOverLinuxRun.AskAsync(machine, run.Id, start);
+
+        AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
+            await machine.Agent.RegisterAsync(machine.Registration with { StartsOver = true }));
+
+        Assert.Equal(MachineState.Pending, registered.State);
+        Deployment stored = await StoredAsync(run.Id);
+        Assert.Equal(DeploymentState.Failed, stored.State);
+        Assert.Equal(
+            "The machine started from the network during the run and registered without the run's token, which ended the run. Its " +
+            "agent there reported that someone at the machine chose to start over. The run went on in the installed Linux until then.",
+            stored.Error);
+        Assert.Equal(
+            [Line(1)],
+            (await RunLogAsync(machine.Id, run.Id)).Select(line => line.Message).Where(message => message.StartsWith("The machine started from the network", StringComparison.Ordinal)));
+        Assert.Equal([AuditActions.DeploymentDetoured, AuditActions.DeploymentFailed], (await AuditAsync(run.Id)).Select(e => e.Action));
     }
 
     // A firmware that drops the disk's boot entry, or a disk that no longer starts: the machine comes back for ever.

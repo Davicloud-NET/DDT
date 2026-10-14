@@ -68,7 +68,8 @@ public static partial class NetworkDetours
                 $"goes on in the installed Linux. Nothing else of the registration was taken."));
     }
 
-    // What the run's log says of a start the server answered so, counted in run.Detours.
+    // What the run's log says of a start the server answered so, counted in run.Detours. Someone at the machine may
+    // still start over there instead, which ends the run with an error that says so.
     public static MachineLogLine Line(Deployment run, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(run);
@@ -83,8 +84,9 @@ public static partial class NetworkDetours
             Message = string.Create(
                 CultureInfo.InvariantCulture,
                 $"The machine started from the network while this run goes on in the installed Linux, and the agent of the boot " +
-                $"environment sends it back to its disk. This is start {run.Detours} of {Max} in a row without a call from the installed " +
-                $"Linux in between. At start {Max}, the server ends the run."),
+                $"environment sends it back to its disk unless someone at the machine chooses to start over there. This is start " +
+                $"{run.Detours} of {Max} in a row without a call from the installed Linux in between. At start {Max}, the server ends " +
+                $"the run."),
             DeploymentId = run.Id,
         };
     }

@@ -32,6 +32,19 @@ public static class LinuxBoot
         return new LinuxAdapters(Root).WaitAsync(agent.Log, TimeProvider.System, cancellationToken);
     }
 
+    // The look before the update check, which opens the disks on its own as nothing is mounted yet. A server that is
+    // away must keep the machine from its disk no longer than the question alone would.
+    public static Task<TimeSpan?> UpdateCheckTimeAsync(HandedOverQuestionTime time, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(time);
+
+        AgentLog quiet = new(TimeProvider.System, TextWriter.Null);
+        LinuxRawDisks rawDisks = new(Root, new KernelBlockDevices());
+        HandedOverSeeds seeds = new(rawDisks, quiet, TimeProvider.System);
+
+        return time.ForUpdateCheckAsync(new LinuxDisks(Root, rawDisks, quiet), seeds, cancellationToken);
+    }
+
     // The machine restarts only once the agent has ended, so the server has the last lines of its log, and however it
     // ended: the server may have the run as done by then.
     public static async Task<int> RunAsync(Func<CancellationToken, Task<int>> agent, LinuxRestart restart, CancellationToken cancellationToken)
@@ -49,19 +62,28 @@ public static class LinuxBoot
         }
     }
 
-    public static Task<int> RunAsync(StartedAgent agent, LinuxRestart restart, CancellationToken cancellationToken)
+    public static Task<int> RunAsync(
+        StartedAgent agent,
+        LinuxRestart restart,
+        HandedOverQuestionTime time,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(agent);
         ArgumentNullException.ThrowIfNull(restart);
+        ArgumentNullException.ThrowIfNull(time);
 
-        return RunAsync(stop => StartAsync(agent, restart, stop), restart, cancellationToken);
+        return RunAsync(stop => StartAsync(agent, restart, time, stop), restart, cancellationToken);
     }
 
     // It first looks at the disks for a run that was handed over to the installed Linux, which a registration would
     // end, and only then registers. The look lists the disks without a line each, which the registration writes. Its
     // resume token crosses a restart into Windows PE in the firmware, and comes back the same way: to the look where
     // it registers, else to the loop.
-    private static async Task<int> StartAsync(StartedAgent agent, LinuxRestart restart, CancellationToken cancellationToken)
+    private static async Task<int> StartAsync(
+        StartedAgent agent,
+        LinuxRestart restart,
+        HandedOverQuestionTime time,
+        CancellationToken cancellationToken)
     {
         AgentLog log = agent.Log;
         LinuxUefiVariables firmware = new(Root);
@@ -87,6 +109,7 @@ public static class LinuxBoot
             DiskStart = new FirmwareDiskStart(firmware, log),
             Restart = rebooter.RestartIntoDiskAsync,
             Carried = carrier.Take,
+            Time = time,
         }.RunAsync(cancellationToken).ConfigureAwait(false);
 
         if (returned.ExitCode is { } exitCode)

@@ -85,6 +85,9 @@ internal sealed class ScriptedAgentServer : IAgentServer
     // Takes every registration and never answers it, as a server does that accepts the call and says nothing.
     public bool LeavesRegistrationsUnanswered { get; set; }
 
+    // Takes every question for the current agent and never answers it.
+    public bool LeavesReleasesUnanswered { get; set; }
+
     // Answers every run report when set, ahead of the scripts.
     public Func<AgentRunReport, string, AgentRunReportResult>? AnswerRunReports { get; set; }
 
@@ -238,6 +241,11 @@ internal sealed class ScriptedAgentServer : IAgentServer
         {
             _calls.Add("release");
             _releases.TryDequeue(out response);
+        }
+
+        if (LeavesReleasesUnanswered)
+        {
+            return UnansweredAsync<AgentRelease?>(cancellationToken);
         }
 
         return Task.FromResult(response?.Invoke());

@@ -58,7 +58,7 @@ internal sealed class BootReturnStart : IDisposable
         _console.Dispose();
     }
 
-    public LinuxBootReturn Return(IDisks? listsForTheLook = null, TimeProvider? time = null) =>
+    public LinuxBootReturn Return(IDisks? listsForTheLook = null, TimeProvider? time = null, HandedOverQuestionTime? questionTime = null) =>
         new(
             Server,
             new AgentMachine(new DryRunMachineIdentityReader(1), Seeded.Run.Tools, new LocalRunLocator([]), TestAgents.Version, AgentEnvironment.LinuxBoot),
@@ -83,6 +83,7 @@ internal sealed class BootReturnStart : IDisposable
 
                 return Carried;
             },
+            Time = questionTime,
         };
 
     public Task<BootReturnOutcome> RunAsync() => Return().RunAsync(Server.Stop.Token);

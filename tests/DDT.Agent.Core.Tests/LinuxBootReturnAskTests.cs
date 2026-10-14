@@ -38,18 +38,6 @@ public sealed class LinuxBootReturnAskTests : IDisposable
 
     private SeededRun Seeded => _start.Seeded;
 
-    // Moves the clock a second at a time, and only while the look waits on it, so a slow computer sees the same.
-    private static async Task<BootReturnOutcome> ThroughItsWaitsAsync(ManualTimeProvider time, Task<BootReturnOutcome> running)
-    {
-        while (!running.IsCompleted)
-        {
-            await time.AdvanceUntilAsync(TimeSpan.Zero, () => running.IsCompleted || time.PendingTimers > 0);
-            time.Advance(TimeSpan.FromSeconds(1));
-        }
-
-        return await running;
-    }
-
     // The seed as the installed Linux leaves it once it has the run: the state without the token.
     private async Task TakenAsync()
     {
@@ -156,7 +144,7 @@ public sealed class LinuxBootReturnAskTests : IDisposable
             Server.OnRegister(_ => throw new HttpRequestException("The connection was refused."));
         }
 
-        BootReturnOutcome outcome = await ThroughItsWaitsAsync(time, _start.Return(time: time).RunAsync(Server.Stop.Token));
+        BootReturnOutcome outcome = await time.ThroughWaitsAsync(_start.Return(time: time).RunAsync(Server.Stop.Token));
 
         // After 0, 2, 6 and 14 seconds. A try at 30 seconds could not be answered within them, so the agent makes none
         // and the wait before it ends there. The last lines then stay for their two seconds.
@@ -185,7 +173,7 @@ public sealed class LinuxBootReturnAskTests : IDisposable
         DateTimeOffset began = time.GetUtcNow();
         Server.LeavesRegistrationsUnanswered = true;
 
-        BootReturnOutcome outcome = await ThroughItsWaitsAsync(time, _start.Return(time: time).RunAsync(Server.Stop.Token));
+        BootReturnOutcome outcome = await time.ThroughWaitsAsync(_start.Return(time: time).RunAsync(Server.Stop.Token));
 
         Assert.Single(Server.Registrations);
         Assert.InRange(time.GetUtcNow() - began, TimeSpan.FromSeconds(32), TimeSpan.FromSeconds(33));
@@ -255,7 +243,7 @@ public sealed class LinuxBootReturnAskTests : IDisposable
 
         Server.OnRegister(_ => BootReturnStart.StartedOver());
 
-        BootReturnOutcome outcome = await ThroughItsWaitsAsync(time, _start.Return(time: time).RunAsync(Server.Stop.Token));
+        BootReturnOutcome outcome = await time.ThroughWaitsAsync(_start.Return(time: time).RunAsync(Server.Stop.Token));
 
         // Two and a half minutes of the usual waits between tries, five times the half minute a question with a name gets.
         Assert.Equal(BootReturnOutcome.GoesOn with { ResumeToken = "resume-0" }, outcome);

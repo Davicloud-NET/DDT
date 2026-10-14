@@ -29,6 +29,10 @@ public sealed record AgentPlatform
     // Null for a system that waits for nothing.
     public Func<StartedAgent, CancellationToken, Task<bool>>? ReadyAsync { get; init; }
 
+    // How long the update check may wait for the server, which a system can take from what its disks hold. Null, or a
+    // null answer, for a check that waits until the server answers.
+    public Func<StartedAgent, CancellationToken, Task<TimeSpan?>>? UpdateCheckTimeAsync { get; init; }
+
     // The executable carries the legal texts of what it is built from.
     public required Action<TextWriter> WriteStartupNotices { get; init; }
 

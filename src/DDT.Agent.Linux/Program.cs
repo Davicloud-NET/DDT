@@ -25,6 +25,9 @@ if (!Console.IsInputRedirected && !args.Contains(AgentStartup.LicensesArgument))
 // Scroll Lock and Ctrl+S must not hold the screen the agent writes to, or a run would wait with it.
 using ITimer? flowing = Console.IsOutputRedirected ? null : new LinuxTerminal().KeepFlowing(TimeProvider.System);
 
+// The question about a run on a disk gets its time once, and the update check before it takes from it.
+HandedOverQuestionTime questionTime = new(TimeProvider.System);
+
 AgentStartup startup = new(new AgentPlatform
 {
     BootEnvironment = AgentEnvironment.LinuxBoot,
@@ -34,8 +37,9 @@ AgentStartup startup = new(new AgentPlatform
     WriteStartupNotices = LinuxLegalNotices.WriteStartupNotices,
     WriteLicenses = LinuxLegalNotices.WriteLicenses,
     ReadyAsync = LinuxBoot.ReadyAsync,
+    UpdateCheckTimeAsync = (_, cancellationToken) => LinuxBoot.UpdateCheckTimeAsync(questionTime, cancellationToken),
     DryRunAsync = DryRunAsync,
-    RunAsync = RunAsync,
+    RunAsync = (agent, cancellationToken) => RunAsync(agent, questionTime, cancellationToken),
 });
 
 return await startup.RunAsync(args).ConfigureAwait(false);
@@ -66,9 +70,9 @@ static Task<int> DryRunAsync(StartedAgent agent, CancellationToken cancellationT
     return machine.RunAsync(cancellationToken);
 }
 
-static Task<int> RunAsync(StartedAgent agent, CancellationToken cancellationToken)
+static Task<int> RunAsync(StartedAgent agent, HandedOverQuestionTime questionTime, CancellationToken cancellationToken)
 {
     LinuxRestart restart = new(agent.Log);
 
-    return LinuxBoot.RunAsync(agent, restart, cancellationToken);
+    return LinuxBoot.RunAsync(agent, restart, questionTime, cancellationToken);
 }

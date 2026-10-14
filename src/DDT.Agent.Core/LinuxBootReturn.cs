@@ -52,6 +52,9 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
     // Names this start of the agent in its question, so the server counts a question asked again only once.
     public Guid Start { get; init; } = Guid.NewGuid();
 
+    // What is left of AskTime for the question once the update check has waited. Without it the question has all of it.
+    public HandedOverQuestionTime? Time { get; init; }
+
     public async Task<BootReturnOutcome> RunAsync(CancellationToken cancellationToken)
     {
         try
@@ -106,12 +109,13 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
         HandedOverSeed seed = found[0];
         log.Warning(LinuxBootReturnTexts.Asks(seed));
 
-        string? carried = Carried?.Invoke();
-        AgentRegistrationResult? answer = await _registrar
-            .RegisterAsync(
-                new RegistrationClaims { ResumeToken = carried, HandedOver = new AgentHandedOverRun(seed.RunId, Start), GiveUpAfter = seed.RunId is null ? null : AskTime },
-                cancellationToken)
-            .ConfigureAwait(false);
+        RegistrationClaims question = new()
+        {
+            ResumeToken = Carried?.Invoke(),
+            HandedOver = new AgentHandedOverRun(seed.RunId, Start),
+            GiveUpAfter = seed.RunId is null ? null : Time?.Left ?? AskTime,
+        };
+        AgentRegistrationResult? answer = await _registrar.RegisterAsync(question, cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (answer is null)

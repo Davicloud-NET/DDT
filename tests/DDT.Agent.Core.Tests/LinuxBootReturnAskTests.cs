@@ -335,6 +335,24 @@ public sealed class LinuxBootReturnAskTests : IDisposable
         _start.AssertNoLineNamesAToken();
     }
 
+    // The proof's screen showed disk 0's line twice after END, for this registration and for the loop's that follows.
+    [Fact]
+    public async Task TheRegistrationThatStartsOverListsTheDisksWithoutALineEach()
+    {
+        await TakenAsync();
+        _start.Keys.Pressed = true;
+        _start.Prompt = new ScriptedSignInPrompt("END");
+        Server.OnRegister(_ => BootReturnStart.GoesOn()).OnRegister(_ => BootReturnStart.StartedOver());
+        CountedDisks quiet = new([.. Seeded.Run.Tools.Disks]);
+
+        await _start.Return(quiet).RunAsync(Server.Stop.Token);
+
+        // The question's registration lists them on the screen. The look and the start over list them quietly.
+        Assert.Single(Seeded.Run.Tools.Calls, call => call == "list");
+        Assert.Equal(2, quiet.Listed);
+        Assert.Equal([0, 0], Server.Registrations.Select(registration => Assert.Single(registration.Disks ?? []).Number));
+    }
+
     [Fact]
     public async Task SaysWhichDiskItGoesByWhenTwoHoldARun()
     {

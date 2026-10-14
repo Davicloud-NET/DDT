@@ -31,11 +31,12 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
 
     private const int MaxFlushes = 10;
 
-    private readonly AgentRegistrar _registrar = new(server, machine, status, log, timeProvider);
+    private AgentRegistrar? _registrar;
 
     public required HandedOverSeeds Seeds { get; init; }
 
-    // What lists the disks for the look. Without it the machine's own does, which the registration asks again.
+    // What lists the disks for the look, and for a registration after the first, whose lines the screen has already.
+    // Without it the machine's own does each time.
     public IDisks? Disks { get; init; }
 
     public required StartOverQuestion StartOver { get; init; }
@@ -54,6 +55,8 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
 
     // What is left of AskTime for the question once the update check has waited. Without it the question has all of it.
     public HandedOverQuestionTime? Time { get; init; }
+
+    private AgentRegistrar Registrar => _registrar ??= new(server, machine, status, log, timeProvider) { QuietDisks = Disks };
 
     public async Task<BootReturnOutcome> RunAsync(CancellationToken cancellationToken)
     {
@@ -115,7 +118,7 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
             HandedOver = new AgentHandedOverRun(seed.RunId, Start),
             GiveUpAfter = seed.RunId is null ? null : Time?.Left ?? AskTime,
         };
-        AgentRegistrationResult? answer = await _registrar.RegisterAsync(question, cancellationToken).ConfigureAwait(false);
+        AgentRegistrationResult? answer = await Registrar.RegisterAsync(question, cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (answer is null)
@@ -154,7 +157,7 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
     {
         log.Information(LinuxBootReturnTexts.NotTaken(seed));
 
-        AgentRegistrationResult? registered = await _registrar
+        AgentRegistrationResult? registered = await Registrar
             .RegisterAsync(new RegistrationClaims { ResumeToken = Carried?.Invoke(), RunToken = seed.Token }, cancellationToken)
             .ConfigureAwait(false);
 
@@ -230,7 +233,7 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
         log.Warning(said);
         TakeOff(seed);
 
-        AgentRegistrationResult? registered = await _registrar
+        AgentRegistrationResult? registered = await Registrar
             .RegisterAsync(new RegistrationClaims { StartsOver = true }, cancellationToken)
             .ConfigureAwait(false);
 

@@ -12,8 +12,14 @@ namespace DDT.Agent;
 // Registers the machine with the facts it reads, and tries again until the server answers.
 internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, ConsoleStatus status, AgentLog log, TimeProvider timeProvider)
 {
+    private bool _disksSaid;
+
     // Kept because the run's conditions test it.
     public MachineIdentity? LastIdentity { get; private set; }
+
+    // Lists the disks without a line each once a registration of this registrar has listed them on the screen. Null
+    // to list them with the machine's own each time.
+    public IDisks? QuietDisks { get; init; }
 
     // Null once stopped.
     public Task<AgentRegistrationResult?> RegisterAsync(string? resumeToken, string? runToken, CancellationToken cancellationToken) =>
@@ -132,7 +138,9 @@ internal sealed class AgentRegistrar(IAgentServer server, AgentMachine machine, 
     {
         try
         {
-            IReadOnlyList<LocalDisk> eligible = await machine.Disks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
+            IDisks disks = _disksSaid && QuietDisks is { } quiet ? quiet : machine.Disks;
+            IReadOnlyList<LocalDisk> eligible = await disks.ListDisksAsync(cancellationToken).ConfigureAwait(false);
+            _disksSaid = true;
             status.DisksRead(eligible);
 
             return [.. eligible.Select(disk => disk.ToAgentDisk())];

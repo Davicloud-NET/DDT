@@ -340,6 +340,9 @@ for `linux-x64`. When that is another file, it downloads it, compares its size a
 what the server announced, and runs it in its own place. So an uploaded agent reaches machines at
 their next netboot and needs no new boot environment. When the download or the start fails, the
 agent from `ddt.img` goes on. In a release both are the same file, and nothing is downloaded.
+Where a disk holds a run that went on in the installed Linux, the check gets 30 seconds at most,
+counted from the agent's first look at the disks, so a server that is away cannot keep the
+machine from its disk (below).
 
 **The agent in the installed Linux.** A run that goes on in the installed Linux takes its agent
 along (section 4.9). The hand-over puts the file that runs in the boot environment onto the
@@ -1171,9 +1174,10 @@ seed that holds a run, without mounting anything, and goes by what it finds:
   A call from the installed Linux sets the count back to zero. At the fifth such start in a row
   with no call from the installed Linux in between, the server ends the run, with "The machine
   started from the network 5 times in a row while the run went on in the installed Linux ...",
-  and the machine registers as after any start. The agent asks up to four times within 30
-  seconds. Where no answer comes in that time, it goes by what the disk says and restarts into
-  it.
+  and the machine registers as after any start. The agent has 30 seconds for its update check
+  and the question together, counted from its first look at the disks, and asks up to four
+  times. Where no answer comes in that time, as when the server is away, it goes by what the disk
+  says, counts nothing and restarts into it.
 - **The seed still holds the token,** so the installed Linux has not taken the run over. The
   agent registers with that token, which keeps the run, and reports the start. The server keeps
   the count in `BootReturns`, and the machine's page reads "The machine started from the network
@@ -1380,7 +1384,8 @@ cloud-init said `done` at the next start. The hand-over, the unit, the steps, th
 removal were the same on both images.
 
 These ran there as well, each as described above: a stop on the web in a script, also one whose
-trap ignores SIGTERM, and a stop of the unit; a step that fails; a power cut in a script; a
+trap ignores SIGTERM; a stop of the unit with `systemctl stop` and of the agent with `kill`, after
+which a script's trap had run once; a step that fails; a power cut in a script; a
 server that was away for two minutes; user-data that restarts with `power_state` and with
 `reboot` in `runcmd`, that disables cloud-init's units, that fails in `runcmd`, and that is no
 YAML; a DNS server that answers the IPv6 question with an error, and one that does not answer; a
@@ -1388,15 +1393,20 @@ script that changed the seed, and one that left it mounted; a stop during the ha
 removal with links, a pipe and a mount left in the scripts' folder; and vendor data switched
 off, where the third start from the network gave the run up.
 
-The way back from the network ran there in an earlier form, in which the boot agent went back to
-its disk without asking the server and one key ended the run. `BootNext` started the disk each
-time, on Ubuntu too, which puts a boot entry of its own first at every start, and a run that
-paused in the installed Linux went on to Done afterwards. With the network card alone in OVMF's
-boot list the machine came round 16 times, until the lab stopped it: OVMF drops the disk's entry
-there. The limit of five comes from that. The question to the server and its limit, the typed
-word `END`, `BootNext` at the hand-over and the priorities in the journal are newer than those
-runs. They have run in tests, on a Linux kernel where they need one, and in dry runs against a
-real server, and not in QEMU.
+The way back from the network ran there too. A netboot during a Pause in the installed Linux was
+counted once, with its warning in the run's log, an audit row and the count on the machine's
+page, also when the server's answer was dropped and the agent asked again; the machine was back
+in its installed Linux 35 seconds after the netboot, and the run went on to Done. With the
+network first in the boot order at every start, the first start after the hand-over went to the
+disk, as `BootNext` names it, each later restart took the way through the boot environment, and
+the run ended Done. With the network card alone in OVMF's boot list, which drops the disk's entry
+at every start, the fifth start ended the run and the machine stopped coming round. At the
+console, a key and `end` in lower case, and a key and no answer, both sent the machine back to
+its disk with the run going on; a key and `END` ended the run and cleared the seed. A seed whose
+FAT was overwritten made the agent ask without a run's id, and the run went on. With the server
+away when the machine started from the network, the machine was back on its disk 48 seconds
+later, nothing counted, and the run went on once the server was back. In `journalctl -u
+ddt-agent -p warning` only warnings and errors showed. The disk held no token afterwards.
 
 Not tried yet: a PC of another make, and a firmware that trusts only Microsoft's 2023 CA. For the
 run in the installed Linux: Hyper-V and any physical PC, firmware other than OVMF for the way

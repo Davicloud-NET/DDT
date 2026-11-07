@@ -5,7 +5,6 @@
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
-using DDT.ConsoleProtocol;
 using DDT.MachineConsole.Agent;
 using DDT.MachineConsole.Machine;
 using DDT.MachineConsole.Texts;
@@ -66,60 +65,23 @@ public sealed class ConsoleStartup
         return window;
     }
 
-    // The installed Windows asks no questions, so no answers go back. F9 signs out once the run is over.
+    // The agent asks here too, like a Pause step does. The link sends each answer to the connection that asked. F9 signs
+    // out once the run is over.
     private static MainWindow OpenSession(Localizer localizer, IClassicDesktopStyleApplicationLifetime desktop, string pipeName)
     {
+        string program = $"DDT console {ConsoleBuild.Version}";
         CancellationTokenSource stop = new();
-        MainViewModel model = new(localizer, new WindowsPEPower(), new CommandPrompt(), (_, _) => { }, SessionSignOut.SignOut, session: true);
+        SessionLink link = new(
+            async cancellation => await ClientConnection.ConnectToSessionAgentAsync(pipeName, program, SessionConnectTimeout, cancellation)
+                .ConfigureAwait(false),
+            action => Dispatcher.UIThread.Post(action),
+            SessionRetry);
+        MainViewModel model = new(localizer, new WindowsPEPower(), new CommandPrompt(), link.Answer, SessionSignOut.SignOut, session: true);
         MainWindow window = new(model, fullScreen: true);
 
-        _ = Task.Run(() => ServeSessionAsync(model, pipeName, stop.Token));
+        _ = Task.Run(() => link.ServeAsync(model, stop.Token));
         desktop.Exit += (_, _) => stop.Cancel();
 
         return window;
-    }
-
-    private static async Task ServeSessionAsync(MainViewModel model, string pipeName, CancellationToken stop)
-    {
-        string program = $"DDT console {ConsoleBuild.Version}";
-
-        try
-        {
-            while (!stop.IsCancellationRequested)
-            {
-                ClientConnection connection;
-
-                try
-                {
-                    connection = await ClientConnection.ConnectToSessionAgentAsync(pipeName, program, SessionConnectTimeout, stop)
-                        .ConfigureAwait(false);
-                }
-                catch (Exception exception) when (exception is TimeoutException or IOException or UnauthorizedAccessException or ConsoleProtocolException)
-                {
-                    await Task.Delay(SessionRetry, stop).ConfigureAwait(false);
-
-                    continue;
-                }
-
-                AgentLink link = new(connection);
-
-                await using (link.ConfigureAwait(false))
-                {
-                    // One inbox per connection. The agent sends its state and newest lines again on every connection.
-                    Inbox inbox = new(action => Dispatcher.UIThread.Post(action));
-                    Dispatcher.UIThread.Post(() =>
-                    {
-                        model.Attached();
-                        inbox.Deliver(model.Receive, _ => model.Detached());
-                    });
-                    inbox.End(await link.ReadAsync(inbox.Add).ConfigureAwait(false));
-                }
-
-                await Task.Delay(SessionRetry, stop).ConfigureAwait(false);
-            }
-        }
-        catch (OperationCanceledException) when (stop.IsCancellationRequested)
-        {
-        }
     }
 }

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Collections.Concurrent;
 using System.IO.Pipes;
 using DDT.ConsoleProtocol;
 using DDT.MachineConsole.Agent;
@@ -97,39 +96,5 @@ public sealed class PipeFlowTests
     {
         Assert.Equal(Program.NoPipe, Program.Main([]));
         Assert.Equal(Program.NoPipe, Program.Main(["--pipe", @"\\.\pipe\not-the-agents"]));
-    }
-
-    // The UI thread of a test: what the inbox posts runs here, in order, while the test waits for what it expects.
-    private sealed class Pump
-    {
-        private readonly ConcurrentQueue<Action> _posted = new();
-
-        public void Post(Action action) => _posted.Enqueue(action);
-
-        public async Task<T> UntilAsync<T>(Func<T?> found)
-            where T : class
-        {
-            DateTime deadline = DateTime.UtcNow.AddSeconds(10);
-
-            while (true)
-            {
-                while (_posted.TryDequeue(out Action? action))
-                {
-                    action();
-                }
-
-                if (found() is { } value)
-                {
-                    return value;
-                }
-
-                if (DateTime.UtcNow > deadline)
-                {
-                    throw new TimeoutException("The console did not get there within 10 s.");
-                }
-
-                await Task.Delay(10, Cancellation);
-            }
-        }
     }
 }

@@ -548,7 +548,9 @@ def adapter(boot, out):
     check("adapter: without a network adapter the agent says what is wrong and what to do", said is not None and not trace
           and any("Connect a USB network adapter or a dock" in line for line in screen),
           " ".join(line for line in screen if "WARN" in line or "adapter" in line)[:400] if said is not None else machine.tail())
-    check("adapter: the start says that Linux shows no adapter and goes on looking", "ddt: network: Linux shows no network adapter, still looking" in start,
+    # A kernel message can cut the start's line in two on the serial port.
+    check("adapter: the start says that Linux shows no adapter and goes on looking",
+          any("ddt: network: Linux shows no network adapter, still looking" in line for line in start),
           " | ".join(start) or machine.tail())
     if said is not None:
         machine.monitor("device_add usb-net,netdev=late,id=latecard,bus=usb.0")

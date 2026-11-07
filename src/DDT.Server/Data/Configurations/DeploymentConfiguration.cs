@@ -17,6 +17,9 @@ internal sealed class DeploymentConfiguration : IEntityTypeConfiguration<Deploym
         builder.Property(d => d.Title).HasMaxLength(256);
         builder.Property(d => d.State).HasConversion<string>().HasMaxLength(16);
         builder.Property(d => d.State).IsConcurrencyToken();
+
+        // Questions in parallel read the same count. One of them adds to it, and the others decide again.
+        builder.Property(d => d.Detours).IsConcurrencyToken();
         builder.Property(d => d.Source).HasConversion<string>().HasMaxLength(16);
         builder.Property(d => d.BootEnvironment).HasConversion<string>().HasMaxLength(16);
         builder.Property(d => d.RequestedByName).HasMaxLength(256);

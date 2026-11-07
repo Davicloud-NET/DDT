@@ -50,7 +50,16 @@ export function ScriptResultFields({
           label={<Trans>Exit codes that ask for a restart</Trans>}
           field="rebootExitCodes"
           findings={findings}
-          hint={<Trans>The machine restarts and the sequence goes on with the next step.</Trans>}
+          hint={
+            step.phase === "Linux" ? (
+              <Trans>
+                The machine restarts and the sequence goes on with the next step. A shell makes 194
+                of exit 3010.
+              </Trans>
+            ) : (
+              <Trans>The machine restarts and the sequence goes on with the next step.</Trans>
+            )
+          }
           value={step.rebootExitCodes}
           onChange={(rebootExitCodes) => {
             onChange({ rebootExitCodes });

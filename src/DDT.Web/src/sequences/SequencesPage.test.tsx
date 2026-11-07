@@ -65,6 +65,7 @@ function sequence(overrides: Partial<SequenceSummary>): SequenceSummary {
     rawImageBootCapability: null,
     rawImageSignedUnder: null,
     kind: "Windows",
+    continuesInLinux: false,
     ...overrides,
   };
 }

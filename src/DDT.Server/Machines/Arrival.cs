@@ -17,5 +17,13 @@ public sealed record Arrival(
     string? Tested,
     RegistrationRefusal Refusal)
 {
+    // The registration only asked whether its handed-over run goes on in the installed Linux, and it does. Nothing of
+    // such a registration is taken.
+    public bool GoesOnInstalled { get; init; }
+
+    // The line the server wrote into the run's log for such a question, when it counted the start. Null for a start
+    // it had counted before, and for every other registration.
+    public MachineLogLine? Detour { get; init; }
+
     public static Arrival Refused(RegistrationRefusal refusal) => new(null, null, null, null, null, refusal);
 }

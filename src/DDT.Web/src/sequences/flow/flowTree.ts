@@ -193,9 +193,9 @@ export function sameSlot(a: Slot, b: Slot): boolean {
   return a.parent === b.parent && a.body === b.body && a.index === b.index;
 }
 
-// The server's SequenceTree.RequiredVersion: the lowest agent version that runs the definition as written. It's 2
-// for a raw image or cloud-init seed. It's 3 for tree parts (containers, Set variable, Pause, when, shares, runAs, a
-// join's account, variables, inputs, operators after Contains), and for condition names an older agent reads as false.
+// The server's SequenceTree.RequiredVersion: the lowest agent version that runs the definition as written. It's 3 for
+// tree parts (containers, Set variable, Pause, when, shares, runAs, a join's account, variables, inputs, operators after
+// Contains) and for condition names an older agent reads as false, 4 for Linux and 5 for the installed Linux.
 export function requiredVersion(definition: {
   steps: readonly SequenceStep[];
   variables?: readonly VariableDeclaration[] | null;
@@ -231,6 +231,10 @@ function minimumVersion(node: SequenceStep): number {
     case "pause":
       return 3;
     case "runScript":
+      if (node.phase === "Linux") {
+        return 5;
+      }
+
       if (node.interpreter === "Shell" || node.phase === "LinuxBoot") {
         return 4;
       }

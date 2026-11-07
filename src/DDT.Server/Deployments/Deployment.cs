@@ -40,6 +40,16 @@ public sealed class Deployment
     // How often the server told the machine to restart into BootEnvironment for this run. Zero again once it arrived.
     public int RestartsOrdered { get; set; }
 
+    // How often the boot environment started again after it handed the run over, as its reports of that said.
+    public int BootReturns { get; set; }
+
+    // How often in a row the machine started from the network while the installed Linux had the run, with no
+    // registration from there in between. See NetworkDetours.
+    public int Detours { get; set; }
+
+    // The start Detours counted last, by the id its agent made for it. Null when that agent named none.
+    public Guid? DetourStart { get; set; }
+
     public Guid? RequestedByUserId { get; set; }
 
     public string? RequestedByName { get; set; }

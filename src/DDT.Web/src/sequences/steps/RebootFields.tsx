@@ -16,8 +16,8 @@ export function RebootFields({ step, sequence }: KindFieldsProps<RebootStep>) {
       {sequence === "Linux" ? (
         <Trans>
           Restarts the machine, and the sequence goes on with the step after {name}. The Linux boot
-          environment keeps the run's state in memory, so a sequence that writes a raw disk image
-          cannot restart.
+          environment keeps the run's state in memory, so a restart is only possible in the
+          installed Linux.
         </Trans>
       ) : (
         <Trans>

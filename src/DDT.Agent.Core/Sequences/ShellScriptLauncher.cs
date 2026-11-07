@@ -80,7 +80,7 @@ public sealed class ShellScriptLauncher(bool dryRun = false) : IScriptLauncher
     {
         ArgumentNullException.ThrowIfNull(step);
 
-        string file = Path.Combine(directory, step.Id.ToString("D") + ".sh");
+        string file = Path.Combine(directory, step.Id.ToString("D") + StepFiles.ShellExtension);
         string text = Text(step.Script);
 
         // A file from an earlier turn of the step would keep the mode it has.
@@ -94,6 +94,20 @@ public sealed class ShellScriptLauncher(bool dryRun = false) : IScriptLauncher
         IReadOnlyList<string> interpreter = Named(text) ?? [DefaultShell];
 
         return new ScriptLaunch(interpreter[0], [.. interpreter.Skip(1), file]) { Environment = Environment };
+    }
+
+    // A zip carries no modes, and Linux starts no file without one. The files stay their owner's alone.
+    public void Unpacked(string package)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        foreach (string file in Directory.EnumerateFiles(package, "*", SearchOption.AllDirectories))
+        {
+            File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
     }
 
     // The kernel ends the line at LF alone and splits it at spaces and tabs alone.

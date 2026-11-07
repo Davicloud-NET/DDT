@@ -30,7 +30,7 @@ const rewrite: SequenceProblem = {
   stepId: "s",
   field: "phase",
   message:
-    "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment.",
+    "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment or in the installed Linux.",
   code: "sequence.windowsScriptInLinux",
 };
 
@@ -75,14 +75,17 @@ describe("SequenceEditorPage, a Linux sequence", () => {
     vi.useRealTimers();
   });
 
-  it("offers a script the Linux boot environment and the shell, and nothing that environment cannot do", async () => {
+  it("offers a script both Linux phases and the shell, and in the boot environment nothing that it cannot do", async () => {
     serve(administrator, linuxView(shell), { step: "s" });
 
     await opened("Install Linux");
 
     expect(screen.getByText(/^Runs as root in the Linux boot environment/)).toBeInTheDocument();
     expect(screen.getByText(/^Started with \/bin\/sh/)).toBeInTheDocument();
-    expect(await optionsOf("phase")).toEqual(["Linux boot environment"]);
+    expect(await optionsOf("phase")).toEqual([
+      "Linux boot environment, before the hand-over",
+      "Installed Linux, after the hand-over",
+    ]);
     expect(await optionsOf("interpreter")).toEqual(["Shell"]);
     expect(document.querySelector('[data-field="packageId"]')).toBeNull();
     expect(document.querySelector('[data-field="rebootExitCodes"]')).toBeNull();
@@ -127,7 +130,9 @@ describe("SequenceEditorPage, a Linux sequence", () => {
     expect(within(field("interpreter")).getByRole("button")).toHaveTextContent("cmd");
 
     press(within(field("phase")).getByRole("button"));
-    press(await screen.findByRole("option", { name: "Linux boot environment" }));
+    press(
+      await screen.findByRole("option", { name: "Linux boot environment, before the hand-over" }),
+    );
 
     await waitFor(() => {
       expect(saves.at(-1)?.definition.steps[0]).toMatchObject({
@@ -149,7 +154,7 @@ describe("SequenceEditorPage, a Linux sequence", () => {
 
     expect(
       screen.getByText(
-        "Restarts the machine, and the sequence goes on with the step after Restart. The Linux boot environment keeps the run's state in memory, so a sequence that writes a raw disk image cannot restart.",
+        "Restarts the machine, and the sequence goes on with the step after Restart. The Linux boot environment keeps the run's state in memory, so a restart is only possible in the installed Linux.",
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/In Windows PE this needs a partitioned disk/)).toBeNull();

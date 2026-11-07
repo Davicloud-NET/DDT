@@ -14,6 +14,7 @@ import {
   nodePhasesOf,
   parseFieldPath,
   sequenceFindings,
+  stepFindings,
   withFieldAt,
 } from "./problems";
 import type { SequenceStep } from "./sequences";
@@ -104,13 +105,36 @@ describe("the field a finding names", () => {
     expect(fieldFindings(findings, "when.parts[0].value")).toEqual({
       problems: [],
       warnings: ["Looks odd."],
+      notes: [],
     });
     expect(
       fieldFindings(
         withFieldAt(findings, "when.parts[0]", "when.parts[0].value"),
         "when.parts[0].value",
       ),
-    ).toEqual({ problems: ["Compare with something."], warnings: ["Looks odd."] });
+    ).toEqual({ problems: ["Compare with something."], warnings: ["Looks odd."], notes: [] });
+  });
+
+  it("keeps a note with its step and its field, apart from the warnings", () => {
+    const findings = {
+      problems: [],
+      warnings: [{ stepId: "c", field: "userData", message: "Vendor data is off." }],
+      notes: [
+        { stepId: "c", field: "userData", message: "The machine restarts." },
+        { stepId: "other", field: "userData", message: "Another seed's." },
+      ],
+    };
+    const own = stepFindings(findings, "c");
+
+    expect(fieldFindings(own, "userData")).toEqual({
+      problems: [],
+      warnings: ["Vendor data is off."],
+      notes: ["The machine restarts."],
+    });
+    expect(fieldFindings(withFieldAt(own, "userData", "metaData"), "metaData").notes).toEqual([
+      "The machine restarts.",
+    ]);
+    expect(fieldFindings({ problems: [], warnings: [] }, "userData").notes).toEqual([]);
   });
 
   it("belongs to the sequence where no node of the tree has it", () => {

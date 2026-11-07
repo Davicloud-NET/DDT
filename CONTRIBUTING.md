@@ -71,7 +71,7 @@ The CI workflow in [.github/workflows/ci.yml](.github/workflows/ci.yml) runs on 
 |---|---|
 | Windows | `dotnet build DDT.slnx`, `dotnet format whitespace DDT.slnx --verify-no-changes`, `Invoke-ScriptAnalyzer -Path build -Recurse` from the PSScriptAnalyzer module, and `dotnet test --solution DDT.slnx -- --filter-not-trait "Category=E2E" --ignore-exit-code 8` |
 | Linux | the tests of `DDT.Agent.Core`, `DDT.Agent.Linux`, `DDT.Core`, `DDT.Protocols`, `DDT.Pxe` and `DDT.Server`, with PostgreSQL and SQL Server in Docker |
-| Linux agent (`linux-agent`) | the agent for Linux published in its container, as `build/Publish-LinuxAgent.ps1` does it; a check that the file is static and carries its version; its licences printed in an empty container; and the end-to-end test for Linux with that file |
+| Linux agent (`linux-agent`) | the agent for Linux published in its container, as `build/Publish-LinuxAgent.ps1` does it; a check that the file is static and carries its version; its licences printed in an empty container; and the end-to-end tests for Linux with that file |
 | Linux boot environment (`linux-boot`) | the environment built around that agent, as `build/Build-LinuxBoot.ps1 -AgentFolder` does it; `base.img` compared with the hash the lock names; `shellcheck` over the start scripts; and the result booted in QEMU with Secure Boot on, as `build/Test-LinuxBoot.ps1` does it |
 | End to end | `dotnet test --project tests/DDT.E2E`, which needs the Visual C++ build tools |
 | Web client | from `src/DDT.Web`: `npm ci`, `npm run lint`, `npm run format`, `npm run build` and `npm test` |
@@ -96,6 +96,28 @@ git archive HEAD | docker run -i --rm mcr.microsoft.com/dotnet/sdk:10.0-noble ba
 The same line runs the tests of the agent for Linux with `tests/DDT.Agent.Linux.Tests` in the
 place of the server's. There the tests that call the kernel run too. Those that need a loop device
 run only when the container is started with `--privileged`, and say why they skip without it.
+
+**What only a Linux kernel tests.** A Linux run that goes on in the installed Linux is held by
+tests that Windows skips, each saying why:
+
+- in `tests/DDT.Agent.Linux.Tests`, those that mount a handed-over seed, save a run's files on
+  ext4 and on FAT and search the raw volume for what a save replaced, remove the agent past
+  links, pipes and mounts, and stop a real script with its signals. Most need root and a loop
+  device, so `--privileged`. The two that start the published agent in a folder as its `/` also
+  need `DDT_E2E_AGENT` to name that file;
+- in `tests/DDT.Core.Tests`, those that run the vendor-data script with `sh`, among stand-ins for
+  `systemctl`, `mount` and `blkid`;
+- in `tests/DDT.Agent.Core.Tests`, a few that look at file modes.
+
+So a green run on Windows has not run them. After a change to the hand-over, the seed, the agent
+in the installed Linux or the way back from the network, run those three projects in the
+privileged container, with `--privileged` after `--rm` in the line above.
+
+**Never call a global `sync` in a container.** A test that has to see its bytes on a disk writes
+out its own file or volume, with `sync -f <path>` or `dd conv=fsync`, never the whole system with
+a bare `sync`. On a Windows PC with Docker Desktop that call has hung in Docker's virtual machine
+and taken WSL and Docker down with it. The vendor-data script calls `sync` itself, on the machine
+it installs the agent on, so the tests that run it put a stand-in in its place.
 
 **A test that needs a database skips where it finds none.** With Docker stopped the PostgreSQL
 tests skip, and the run is green without them. So after touching a migration or the model, run
@@ -127,14 +149,37 @@ them from `artifacts/bundle`, as `linux-boot/` and `ddt-agent-linux-x64`.
 
 **The end-to-end tests on Linux** run with an agent they are handed, since they cannot start the
 container that publishes it. `DDT_E2E_AGENT` names the file, and the job `linux-agent` runs the
-part for Linux, a dry run of a Linux sequence:
+part for Linux: dry runs of Linux sequences against the real host, one that ends in the boot
+environment, and others that go on through the installed Linux and that start from the network
+again after the hand-over:
 
 ```bash
 DDT_E2E_AGENT=$PWD/artifacts/agent-linux/ddt-agent dotnet test --project tests/DDT.E2E -- --filter-trait "Agent=Linux" --fail-skips on
 ```
 
-On Windows the variable names a `ddt-agent.exe` to run in place of the one the tests publish, and
-the test for Linux skips.
+On Windows the variable names a `ddt-agent.exe` to run in place of the one the tests publish.
+There the agent for Windows stands in for the one for Linux, since both are the same library, so
+the dry runs through the installed Linux run on Windows too, and only the test that takes the
+Linux agent's own file skips.
+
+**A dry run of a Linux sequence.** `ddt-agent --dry-run` stands in for a machine: it registers
+with a real server and plays a run without changing the computer. A file is its disk, and tools
+and scripts are logged and not started, each script counting as ended with exit code 0. Two more
+switches say what the machine does around a Linux run, and both go with `--dry-run` alone:
+
+- `--dry-run-environment <WindowsPE|LinuxBoot>` names the boot environment the machine started.
+  The agent for Windows takes either, and so plays Linux runs. The agent for Linux takes
+  `LinuxBoot` alone. After a hand-over the dry run goes on in the installed Linux in the same
+  process: a folder of its own stands in for `/`, the run is installed from the seed in the disk
+  file as the vendor-data script would install it, and cloud-init, the mounts, systemd and the
+  restarts only log.
+- `--dry-run-netboot <OnceInLinux|OnceBeforeLinux|Always>` lets the machine start from the
+  network again after the hand-over: once when the installed Linux has taken the run over, once
+  before it has, or every time, with an installed Linux that never runs the agent's script.
+  Without it the machine starts from its disk.
+
+A dry run keeps its folder under the system's temporary folder by its `--dry-run-id`, and the
+same id goes on with the same machine and disk.
 
 **The lock.** `build/LinuxBoot/packages.lock.json` pins every Debian package of the boot
 environment by version and SHA-256, their source packages, the packages of the image that builds
@@ -181,6 +226,12 @@ what it asks for:
 
   The build enforces it for C#, and `SourceHeaderTests` for TypeScript, JavaScript, CSS, XAML,
   PowerShell, Python, shell scripts and Dockerfiles.
+- **The script that takes the agent into an installed Linux.**
+  `src/DDT.Core/CloudInit/vendor-data.sh` is what cloud-init runs on a deployed machine, with the
+  unit it writes. It ran on the cloud images of Debian 13 and Ubuntu 24.04 as it is, and
+  `VendorDataScriptTests` holds its text to that: the unit, the order in which the agent is
+  enabled, written out, the token wiped and the unit started, and the names
+  `LinuxAgentFiles` gives the files. A change to it is a change to try on real images again.
 - **Third-party notices.** A package whose code ends up in the server, the agent, the console or
   the web bundle is named in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), and its licence text
   is in [licenses/](licenses). For the web bundle, `npm run licences` writes

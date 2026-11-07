@@ -10,14 +10,15 @@ import type { ImageBootCapability } from "@/images/images";
 
 import type { ConditionNode, StepCondition } from "./sequenceConditions";
 
-// LinuxBoot (version 4) is the netbooted Linux that writes a Linux sequence's disk.
-export type SequencePhase = "WindowsPE" | "Windows" | "LinuxBoot";
+// LinuxBoot (version 4) is the netbooted Linux that writes a Linux sequence's disk. Linux (version 5) is the installed
+// Linux, where such a sequence goes on.
+export type SequencePhase = "WindowsPE" | "Windows" | "LinuxBoot" | "Linux";
 
 // Shell (version 4) runs in the Linux phases only.
 export type ScriptInterpreter = "Cmd" | "PowerShell" | "Shell";
 
 // What a sequence installs. A sequence that writes a raw disk image is a Linux sequence, which starts in the Linux
-// boot environment. Every other one starts in Windows PE.
+// boot environment and goes on in the installed Linux. Every other one starts in Windows PE.
 export type SequenceKind = "Windows" | "Linux";
 
 export type StepState = "Pending" | "Running" | "Done" | "Skipped" | "Failed";
@@ -268,11 +269,14 @@ export interface SequenceSummary {
   rawImageBootCapability: ImageBootCapability | null;
   rawImageSignedUnder: string | null;
   kind: SequenceKind;
+  continuesInLinux: boolean;
+  // The sequence version an agent has to run to be handed a run of it. An older server leaves it out or sends 0.
+  version?: number;
 }
 
 // SequenceDefinition.CurrentVersion: the highest version this page knows, and the one it writes. The server stores
 // each sequence with the lowest version it needs.
-export const SEQUENCE_VERSION = 4;
+export const SEQUENCE_VERSION = 5;
 
 // Every problem keeps the sequence from running. Warnings don't.
 export interface SequenceProblem {
@@ -301,6 +305,8 @@ export interface SequenceView {
   updatedBy: string | null;
   // The phases of every node of the tree, in pre-order.
   nodePhases?: NodePhase[] | null;
+  // What a setting will do, where that is neither wrong nor risky. A server from before notes sends none.
+  notes?: SequenceProblem[] | null;
 }
 
 // A starting point for a new sequence. name and description are the server's English text, next to their codes.

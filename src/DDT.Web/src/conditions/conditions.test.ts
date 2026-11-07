@@ -97,6 +97,30 @@ describe("the subjects of a condition", () => {
     expect(subjectFor(subjects, "Nothing")).toMatchObject({ kind: "text", label: "Nothing" });
   });
 
+  // The validator warns of a phase the sequence's kind never runs in, so the picker does not offer one.
+  it("offers a sequence the phases of its kind, and a rule or a run's path all four", () => {
+    const phasesOf = (kind?: "Windows" | "Linux") =>
+      subjectFor(
+        subjectsOf({ facts: factCatalogue, valueNames: [], variables: [], inputs: [], kind }),
+        "Phase",
+      ).choices;
+
+    expect(phasesOf("Windows")).toEqual([
+      { value: "WindowsPE", label: "Windows PE" },
+      { value: "Windows", label: "Windows" },
+    ]);
+    expect(phasesOf("Linux")).toEqual([
+      { value: "LinuxBoot", label: "Linux boot environment" },
+      { value: "Linux", label: "Installed Linux" },
+    ]);
+    expect(phasesOf().map((choice) => choice.value)).toEqual([
+      "WindowsPE",
+      "Windows",
+      "LinuxBoot",
+      "Linux",
+    ]);
+  });
+
   it("offers the operators that fit the kind", () => {
     expect(operatorsFor("yesNo")).toEqual(["Equals", "NotEquals", "Exists", "NotExists"]);
     expect(operatorsFor("ipv4")[0]).toBe("InSubnet");

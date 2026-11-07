@@ -23,6 +23,8 @@ public sealed class AgentStepRunner(
     public static string JoinDomainInBoot(SequencePhase phase) =>
         $"Joining the domain runs in Windows, after the hand-over, but this agent was asked to run it in {AgentEnvironments.OfBootPhase(phase)}.";
 
+    public const string JoinDomainInLinux = "Joining the domain runs in Windows, but this agent was asked to run it in the installed Linux.";
+
     public async Task<StepResult> RunAsync(SequenceStep step, StepContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(step);
@@ -77,9 +79,9 @@ public sealed class AgentStepRunner(
             return StepResult.RebootRequired();
         }
 
-        if (step is JoinDomainStep && SequenceKinds.IsBoot(context.Phase))
+        if (step is JoinDomainStep && context.Phase != SequencePhase.Windows)
         {
-            return StepResult.Failed(JoinDomainInBoot(context.Phase));
+            return StepResult.Failed(SequenceKinds.IsBoot(context.Phase) ? JoinDomainInBoot(context.Phase) : JoinDomainInLinux);
         }
 
         return runners.FirstOrDefault(runner => runner.Runs(step)) is { } kind

@@ -42,13 +42,28 @@ public sealed class MachineArrivals(
         Continuation continuation = machine is null ? Continuation.None : Continues(registration, machine, active, now);
 
         // The service in an installed system only ever continues a run. Starting over would make the machine Pending,
-        // and an approval would then hand boot steps to a running Windows. So the service changes nothing and removes
-        // itself.
+        // and an approval would then hand boot steps to a running Windows or Linux. So the service changes nothing and
+        // removes itself.
         if (!SequenceKinds.IsBoot(SequenceKinds.Phase(registration.Environment)) && !continuation.Resumes && continuation.Continued is null)
         {
-            RegistrationLog.NothingToContinue(logger, machine?.Id, address ?? "unknown");
+            RegistrationLog.NothingToContinue(logger, registration.Environment, machine?.Id, address ?? "unknown");
 
             return Arrival.Refused(RegistrationRefusal.NothingToContinue);
+        }
+
+        // A resume token the firmware carried does not make a question a continuation: the installed Linux has the run.
+        if (machine is not null && !continuation.ByRunToken && NetworkDetours.Asks(registration, active))
+        {
+            Visit asking = new(machine, active, continuation, registration, remoteAddress, now);
+            (bool goesOn, MachineLogLine? line) = await DetourAsync(asking, active, cancellationToken).ConfigureAwait(false);
+
+            if (goesOn)
+            {
+                return new Arrival(machine, active, before, null, tested, RegistrationRefusal.None) { GoesOnInstalled = true, Detour = line };
+            }
+
+            // The run ended at the limit, so the registration is one without a token, whatever it carried.
+            continuation = Continuation.None;
         }
 
         if (machine is null)
@@ -69,6 +84,43 @@ public sealed class MachineArrivals(
         RecordRefusedRunToken(new Visit(machine, active, continuation, registration, remoteAddress, now));
 
         return new Arrival(machine, active, before, continuation.Continued, tested, RegistrationRefusal.None);
+    }
+
+    // An attempt that lost a race is forgotten before the next one decides anew.
+    public void Forget() => database.ChangeTracker.Clear();
+
+    // A boot agent that found the run handed over asks before it registers. While that run goes on in the installed
+    // Linux, nothing of the registration is taken: the machine keeps its approval and the run its tokens. A start is
+    // counted once, however often its agent asks, and only a counted one writes a line. At the limit the run ends
+    // and does not go on.
+    private async Task<(bool GoesOn, MachineLogLine? Line)> DetourAsync(Visit visit, Deployment run, CancellationToken cancellationToken)
+    {
+        string? address = visit.RemoteAddress?.ToString();
+        Guid? start = visit.Registration.HandedOver?.Start;
+
+        if (NetworkDetours.IsRepeated(run, start))
+        {
+            NetworkDetours.AnsweredAgain(logger, visit.Machine.Id, address ?? "unknown", run.Id);
+
+            return (true, null);
+        }
+
+        run.Detours++;
+        run.DetourStart = start;
+
+        if (run.Detours >= NetworkDetours.Max)
+        {
+            await termination.EndForDetoursAsync(visit.Machine, run, address, cancellationToken).ConfigureAwait(false);
+
+            return (false, null);
+        }
+
+        MachineLogLine line = NetworkDetours.Line(run, visit.Now);
+        database.MachineLogLines.Add(line);
+        database.AuditEvents.Add(NetworkDetours.Audit(run, Actor.OfMachine(visit.Machine.Id, address), visit.Now));
+        NetworkDetours.Answered(logger, visit.Machine.Id, address ?? "unknown", run.Id, run.Detours);
+
+        return (true, line);
     }
 
     // Returns null if too many machines that nobody approved are waiting. Only those count, so a fleet that was
@@ -126,6 +178,13 @@ public sealed class MachineArrivals(
                 visit.Now,
                 $"Continued {continued.Title} ({continued.Id:D}) from {environment} with its {(continuation.ByRunToken ? "run" : "resume")} token."));
             RegistrationLog.Continued(logger, machine.Id, continued.Id, address ?? "unknown", environment);
+
+            // The installed system has called, so the machine reaches it
+            if (!SequenceKinds.IsBoot(SequenceKinds.Phase(environment)))
+            {
+                continued.Detours = 0;
+                continued.DetourStart = null;
+            }
         }
         else if (!continuation.Resumes)
         {
@@ -151,7 +210,7 @@ public sealed class MachineArrivals(
                 ? $"Kept approved for {kept.Title} assigned by {kept.RequestedByName}: netbooted from {address} in a zero touch network."
                 : $"Was {machine.State}."));
 
-        await termination.EndForRestartAsync(machine, active, address, visit.Registration.RunToken is not null, cancellationToken).ConfigureAwait(false);
+        await termination.EndForRestartAsync(machine, active, visit.Registration, address, cancellationToken).ConfigureAwait(false);
 
         // What was picked before a restart is offered again to whoever signs in after it, but only then.
         if (!PendingSwitch.Arrives(machine, visit.Registration.Environment, visit.Now))
@@ -234,9 +293,9 @@ public sealed class MachineArrivals(
         }
     }
 
-    // An agent that restarted during its run, in WinPE or as the service in Windows, continues it with the run token it
-    // kept on disk. The token must be from the current generation. The generation isn't bumped, so the agent's other
-    // tokens stay valid.
+    // An agent that restarted during its run, in WinPE or as the service in Windows or Linux, continues it with the run
+    // token it kept on disk. The token must be from the current generation. The generation isn't bumped, so the agent's
+    // other tokens stay valid.
     private bool ContinuesRun(NormalisedRegistration registration, Machine machine, Deployment? active) =>
         tokens.ValidateRunToken(registration.RunToken) is { } payload
         && payload.MachineId == machine.Id

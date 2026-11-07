@@ -37,7 +37,8 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate TemplateInstallLinuxDescription = Define(
         "template.installLinuxDescription",
-        "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine.");
+        "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine, then runs a " +
+        "script in the installed Linux.");
 
     // Task sequences: the requests that save them.
 
@@ -98,6 +99,15 @@ public static partial class ServerMessages
         "sequence.windowsNeedsImage",
         "A step in Windows needs an earlier step that applies the image without conditions.");
 
+    public static readonly MessageTemplate SequenceLinuxBootAfterLinux = Define(
+        "sequence.linuxBootAfterLinux",
+        "Steps in the Linux boot environment come first, and an earlier step already runs in the installed Linux.");
+
+    public static readonly MessageTemplate SequenceLinuxNeedsSeed = Define(
+        "sequence.linuxNeedsSeed",
+        "A step in the installed Linux needs an earlier step that writes the cloud-init seed, without conditions and without going " +
+        "on when it fails. The seed takes DDT's agent into the installed Linux.");
+
     public static readonly MessageTemplate SequenceRestartAfterRestart = Define(
         "sequence.restartAfterRestart",
         "A restart step restarts anyway, so it cannot restart again after it.");
@@ -108,11 +118,12 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate SequenceRestartWithRawImage = Define(
         "sequence.restartWithRawImage",
-        "A sequence that writes a raw disk image keeps its state in memory, so the Linux boot environment cannot restart during it.");
+        "The Linux boot environment keeps the run's state in memory, so it cannot restart during a run. The installed Linux can.");
 
     public static readonly MessageTemplate SequencePackageWithRawImage = Define(
         "sequence.packageWithRawImage",
-        "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one.");
+        "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one. A script in the " +
+        "installed Linux can.");
 
     public static readonly MessageTemplate SequenceWindowsWithRawImage = Define(
         "sequence.windowsWithRawImage",
@@ -121,15 +132,16 @@ public static partial class ServerMessages
     public static readonly MessageTemplate SequenceWindowsScriptInLinux = Define(
         "sequence.windowsScriptInLinux",
         "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in " +
-        "the Linux boot environment.");
+        "the Linux boot environment or in the installed Linux.");
 
     public static readonly MessageTemplate SequenceLinuxPhaseWithoutRawImage = Define(
         "sequence.linuxPhaseWithoutRawImage",
-        "The Linux boot environment only runs sequences that write a raw disk image. Choose Windows PE or Windows.");
+        "The Linux boot environment and the installed Linux only run sequences that write a raw disk image. Choose Windows PE or " +
+        "Windows.");
 
     public static readonly MessageTemplate SequenceSharesNotInLinuxBoot = Define(
         "sequence.sharesNotInLinuxBoot",
-        "The Linux boot environment cannot connect shares. Remove them from this step.");
+        "The Linux boot environment cannot connect shares. Only a step in the installed Linux can have them.");
 
     public static readonly MessageTemplate SequenceOneImage = Define("sequence.oneImage", "A sequence can apply only one image.");
 
@@ -231,7 +243,7 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate SequenceLinuxNeedsShell = Define(
         "sequence.linuxNeedsShell",
-        "The Linux boot environment runs only shell scripts. Choose the shell and rewrite the script for it.");
+        "The Linux boot environment and the installed Linux run only shell scripts. Choose the shell and rewrite the script for it.");
 
     public static readonly MessageTemplate SequenceScriptEmpty = Define("sequence.scriptEmpty", "Enter the script.");
 
@@ -258,6 +270,10 @@ public static partial class ServerMessages
     public static readonly MessageTemplate SequenceShellExitCodes = Define(
         "sequence.shellExitCodes",
         "A shell script ends with an exit code from 0 to 255.");
+
+    public static readonly MessageTemplate SequenceShellRebootExitCodes = Define(
+        "sequence.shellRebootExitCodes",
+        "A shell script ends with an exit code from 0 to 255. For a restart use 194, which is what a shell makes of exit 3010.");
 
     public static readonly MessageTemplate SequencePackageBeforePartition = Define(
         "sequence.packageBeforePartition",
@@ -321,7 +337,7 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate SequencePhaseValueOtherKindWarning = Define(
         "sequence.phaseValueOtherKindWarning",
-        "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot and never {value}.} " +
+        "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot or Linux and never {value}.} " +
         "other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}");
 
     public static readonly MessageTemplate SequenceNoAdministratorWarning = Define(

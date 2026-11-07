@@ -23,6 +23,7 @@ internal static class RunProgress
     {
         (Deployment run, AgentRunReport report) = (received.Run, received.Report);
         Dictionary<Guid, DeploymentStep> byId = received.Steps.ToDictionary(s => s.StepId);
+        HashSet<Guid> failedBefore = [.. received.Steps.Where(s => s.State == StepState.Failed).Select(s => s.StepId)];
 
         foreach (StepRunState reported in report.Steps)
         {
@@ -39,6 +40,9 @@ internal static class RunProgress
             return DeploymentDecision.Invalid("currentStepId", $"The report names a current step the run does not have. {AskAgain}");
         }
 
+        // A failure at none of its steps shows none: the step that was current before has ended by then.
+        DeploymentStep? shown = current ?? (lenient ? FailedAt(received, failedBefore) : null);
+
         int percent = Math.Clamp(report.Percent, 0, 100);
 
         if (current is { State: StepState.Running })
@@ -49,18 +53,13 @@ internal static class RunProgress
         // The steps a list counts are those of the path, which grows and shrinks as IFs decide.
         IReadOnlyList<Guid> path = RunPaths.Leaves(received.Tree, received.Steps);
         run.StepCount = path.Count;
-
-        // A failure names no current step, and the run keeps showing the step it failed at.
-        if (current is not null || !lenient)
-        {
-            run.CurrentStepIndex = current is null ? null : RunPaths.Number(path, received.Steps, current);
-            run.CurrentStepName = current?.Name;
-        }
-
+        run.CurrentStepIndex = shown is null ? null : RunPaths.Number(path, received.Steps, shown);
+        run.CurrentStepName = shown?.Name;
         run.Percent = percent;
         run.CurrentPhase = report.Phase;
         run.Activity = report.Activity;
         run.UpdatedUtc = received.Now;
+        run.BootReturns = Math.Max(run.BootReturns, report.BootReturns ?? 0);
         Waits(run, byId, current, report);
 
         return null;
@@ -104,6 +103,26 @@ internal static class RunProgress
 
     public static string Word<T>(T value)
         where T : struct, Enum => value.ToString().ToLowerInvariant();
+
+    // The step a failure ended the run at when its report names none: the last one that this report fails with the
+    // run's own error, or that still runs and so fails with it. A step that may fail carries its own error. Null if
+    // the run failed at none.
+    private static DeploymentStep? FailedAt(ReceivedReport received, HashSet<Guid> failedBefore)
+    {
+        string? error = received.Report.Error;
+        HashSet<Guid> failedWithIt =
+        [
+            .. received.Report.Steps
+                .Where(reported => error is not null && reported.State == StepState.Failed && string.Equals(reported.Error, error, StringComparison.Ordinal))
+                .Select(reported => reported.StepId),
+        ];
+
+        return received.Steps
+            .Where(step => !RunSnapshots.IsContainer(step))
+            .Where(step => step.State == StepState.Running
+                || (step.State == StepState.Failed && failedWithIt.Contains(step.StepId) && !failedBefore.Contains(step.StepId)))
+            .MaxBy(step => step.Index);
+    }
 
     // Null if the step moved, or lenient left it where it is.
     private static DeploymentDecision? Move(DeploymentStep? step, StepRunState reported, SequencePhase phase, DateTimeOffset now, bool lenient)

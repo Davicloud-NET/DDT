@@ -16,6 +16,8 @@ export function environmentName(environment: AgentEnvironment): string {
       return t`Linux boot environment`;
     case "Windows":
       return t`Installed Windows`;
+    case "Linux":
+      return t`Installed Linux`;
   }
 }
 
@@ -111,17 +113,30 @@ export interface StartNotice {
   text: string;
 }
 
-// A machine in one of these states sits in the boot environment it started, where its agent waits for a run.
+// A machine in one of these states sits in the boot environment it started, where its agent waits for a run. One
+// that last registered from an installed system is in neither, and the server restarts none from there.
 function waitsInBootEnvironment(machine: MachineSummary): boolean {
+  const started = machine.agentEnvironment;
+
   return (
+    (started === "WindowsPE" || started === "LinuxBoot") &&
     !isActive(machine.deployment) &&
     (machine.state === "Pending" || machine.state === "Approved" || machine.state === "Failed")
   );
 }
 
-// Null when there is nothing to say: the machine waits where the sequence starts, or it waits nowhere and netboot
-// starts it there the next time. existing are the boot environments the server can start, and undefined for a server
-// that does not say.
+// Whether the agent the machine waits with is too old for the sequence. The server then hands it no run of it where
+// the machine waits. False where the server names no versions.
+function agentTooOld(machine: MachineSummary, sequence: SequenceSummary): boolean {
+  const runs = machine.sequenceVersion ?? null;
+  const needs = sequence.version ?? 0;
+
+  return runs !== null && needs > 0 && runs < needs;
+}
+
+// Null when there is nothing to say: the machine waits where the sequence starts with an agent that runs it, or it
+// waits nowhere and netboot starts it there the next time, with the server's agent. existing are the boot
+// environments the server can start, and undefined for a server that does not say.
 export function startNotice(
   machine: MachineSummary,
   sequence: SequenceSummary | null,
@@ -136,8 +151,17 @@ export function startNotice(
   const needed = startsIn(sequence);
   const name = sequence.name;
 
-  if (started === needed || !waitsInBootEnvironment(machine)) {
+  if (!waitsInBootEnvironment(machine)) {
     return null;
+  }
+
+  if (started === needed) {
+    return agentTooOld(machine, sequence)
+      ? {
+          warning: true,
+          text: t`${name} needs a newer agent than this machine runs, so it does not start. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.`,
+        }
+      : null;
   }
 
   if (!existing.includes(needed)) {
@@ -161,6 +185,7 @@ export function startNotice(
     };
   }
 
+  // Also with an agent too old for the sequence: the restart starts the server's agent in the other environment.
   return {
     warning: false,
     text:

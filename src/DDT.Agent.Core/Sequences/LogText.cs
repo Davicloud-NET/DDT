@@ -23,6 +23,7 @@ internal static class LogText
     {
         nameof(SequencePhase.WindowsPE) => "Windows PE",
         nameof(SequencePhase.LinuxBoot) => "Linux boot environment",
+        nameof(SequencePhase.Linux) => "installed Linux",
         _ => name,
     };
 

@@ -11,7 +11,7 @@ import type { StepCatalog } from "../useStepCatalog";
 // change to make. chosen means a switch made the change, so it's saved at once, even if it sets a text field.
 export interface KindFieldsProps<S extends SequenceStep> {
   step: S;
-  // What the step's sequence installs. A Linux sequence runs in the Linux boot environment.
+  // What the step's sequence installs, which decides the phases and the interpreters it offers.
   sequence: SequenceKind;
   findings: Findings;
   catalog: StepCatalog;

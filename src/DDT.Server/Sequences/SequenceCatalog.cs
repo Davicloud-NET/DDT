@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Sequences;
+using DDT.Core.Sequences;
 using DDT.Server.Accounts;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
@@ -49,7 +50,8 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
         ArgumentNullException.ThrowIfNull(sequence);
 
         SequenceDefinition definition = SequenceDocuments.Read(sequence.Definition);
-        SequenceValidation validation = SequenceChecks.Check(definition, references);
+        SequenceAnalysis analysis = SequenceValidator.Analyse(definition);
+        SequenceValidation validation = SequenceChecks.Check(definition, references, analysis);
 
         return new SequenceView(
             sequence.Id,
@@ -62,7 +64,8 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
             validation.Warnings,
             sequence.UpdatedUtc,
             sequence.UpdatedByName,
-            SequenceChecks.NodePhases(definition));
+            analysis.NodePhases,
+            validation.Notes);
     }
 
     public static SequenceSummary Summary(TaskSequence sequence, SequenceReferences references)
@@ -70,7 +73,8 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
         ArgumentNullException.ThrowIfNull(sequence);
 
         SequenceDefinition definition = SequenceDocuments.Read(sequence.Definition);
-        SequenceValidation validation = SequenceChecks.Check(definition, references);
+        SequenceAnalysis analysis = SequenceValidator.Analyse(definition);
+        SequenceValidation validation = SequenceChecks.Check(definition, references, analysis);
 
         return new SequenceSummary(
             sequence.Id,
@@ -82,12 +86,14 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
             validation.Warnings.Count,
             SequenceTree.Nodes(definition).Any(step => step.ErasesDisk),
             SequenceChecks.ComputerNameUse(definition) is not null,
-            SequenceChecks.ContinuesInWindows(definition),
+            SequenceChecks.ContinuesInWindows(analysis.NodePhases),
             sequence.UpdatedUtc,
             sequence.UpdatedByName,
             SequenceChecks.RawImage(definition, references)?.Name,
             SequenceChecks.RawImage(definition, references)?.BootCapability,
             SequenceChecks.RawImage(definition, references)?.SignedUnder,
-            SequenceKinds.Of(definition));
+            SequenceKinds.Of(definition),
+            SequenceChecks.ContinuesInLinux(analysis.NodePhases),
+            definition.Version);
     }
 }

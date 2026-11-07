@@ -114,7 +114,7 @@ internal static class ScriptRules
         // Where no code may ask for a restart, that is the problem to show, not the code's size.
         if (shell && !stateInMemory && !script.RebootExitCodes.All(InShellRange))
         {
-            add("rebootExitCodes", ServerMessages.SequenceShellExitCodes.With());
+            add("rebootExitCodes", ServerMessages.SequenceShellRebootExitCodes.With());
         }
     }
 

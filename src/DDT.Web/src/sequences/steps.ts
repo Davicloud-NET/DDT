@@ -56,15 +56,42 @@ const phaseLabels: Record<SequencePhase, MessageDescriptor> = {
   WindowsPE: msg`Windows PE`,
   Windows: msg`Windows`,
   LinuxBoot: msg`Linux boot environment`,
+  Linux: msg`Installed Linux`,
 };
 
 export function phaseLabel(phase: SequencePhase): string {
   return i18n._(phaseLabels[phase]);
 }
 
+// The phase as a sentence says where something runs. Its preposition is part of it, because German's changes with
+// the phase: "in Windows", "im installierten Linux".
+const phasePlaces: Record<SequencePhase, MessageDescriptor> = {
+  WindowsPE: msg`in Windows PE`,
+  Windows: msg`in Windows`,
+  LinuxBoot: msg`in the Linux boot environment`,
+  Linux: msg`in the installed Linux`,
+};
+
+export function inPhase(phase: SequencePhase): string {
+  return i18n._(phasePlaces[phase]);
+}
+
 // cloud-init's instance id and the machine's name. cloud-init runs its first-boot modules once per instance id.
 export const defaultMetaData =
   'instance-id: "{{SmbiosUuid}}"\nlocal-hostname: "{{ComputerName}}"\n';
+
+// What the server's install-linux template starts with. cloud-init's schema check takes it, where it calls a
+// document with the header alone an empty cloud config.
+export const defaultUserData = [
+  "#cloud-config",
+  "# Every viewer of DDT can read this. Put in public keys, and passwords only hashed.",
+  '# "default" is the image\'s own user, such as ubuntu or debian. The keys below are for it.',
+  "users:",
+  "  - default",
+  "# ssh_authorized_keys:",
+  "#   - ssh-ed25519 AAAA... name@example.org",
+  "",
+].join("\n");
 
 // The placeholders the agent fills in the seed files, as {{Name}}.
 export const seedPlaceholders = [
@@ -245,7 +272,7 @@ export function newStep(
         ...common,
         kind,
         metaData: defaultMetaData,
-        userData: "#cloud-config\n",
+        userData: defaultUserData,
         networkConfig: null,
       };
     case "setVariable":

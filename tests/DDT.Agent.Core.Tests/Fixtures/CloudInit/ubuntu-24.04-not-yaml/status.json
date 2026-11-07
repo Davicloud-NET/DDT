@@ -1,0 +1,36 @@
+{
+ "v1": {
+  "datasource": "DataSourceNoCloud [seed=/dev/nvme0n1p2]",
+  "init": {
+   "errors": [],
+   "finished": 6.7,
+   "recoverable_errors": {
+    "WARNING": [
+     "Failed loading yaml blob. Invalid format at line 4 column 1: \"while scanning for the next token\nfound character '\\t' that cannot start any token\n  in \"<unicode string>\", line 4, column 1:\n    \tcontent: broken\n    ^\"",
+     "Failed loading yaml blob. Invalid format at line 4 column 1: \"while scanning for the next token\nfound character '\\t' that cannot start any token\n  in \"<unicode string>\", line 4, column 1:\n    \tcontent: broken\n    ^\"",
+     "Failed at merging in cloud config part from part-001: empty cloud config"
+    ]
+   },
+   "start": 5.88
+  },
+  "init-local": {
+   "errors": [],
+   "finished": 4.47,
+   "recoverable_errors": {},
+   "start": 4.0
+  },
+  "modules-config": {
+   "errors": [],
+   "finished": 8.39,
+   "recoverable_errors": {},
+   "start": 7.14
+  },
+  "modules-final": {
+   "errors": [],
+   "finished": 9.39,
+   "recoverable_errors": {},
+   "start": 9.02
+  },
+  "stage": null
+ }
+}

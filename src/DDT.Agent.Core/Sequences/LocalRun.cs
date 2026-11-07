@@ -7,8 +7,9 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// A run that an earlier start of the agent left at Root, which is a Windows volume such as C:\. It holds the state and
-// the run token kept with it. The token resumes the run if the server still has it running.
+// A run that an earlier start of the agent left at Root: a Windows volume such as C:\, or the agent's own directory
+// in an installed Linux. It holds the state and the run token kept with it. The token resumes the run if the server
+// still has it running.
 public sealed record LocalRun(string Root, RunFiles Files, SequenceState State, string? RunToken)
 {
     // Null when the root holds no state this agent can continue.

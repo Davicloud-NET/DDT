@@ -23,7 +23,13 @@ import {
   upsertSummary,
   withNewStepIds,
 } from "./sequenceList";
-import type { SequenceSummary, SequenceView, WriteCloudInitSeedStep } from "./sequences";
+import type {
+  GroupStep,
+  IfStep,
+  SequenceSummary,
+  SequenceView,
+  WriteCloudInitSeedStep,
+} from "./sequences";
 import { sequencesSearch, sequenceSearch } from "./sequenceSearch";
 import { newStep } from "./steps";
 
@@ -45,6 +51,7 @@ function summary(overrides: Partial<SequenceSummary> = {}): SequenceSummary {
     rawImageBootCapability: null,
     rawImageSignedUnder: null,
     kind: "Windows",
+    continuesInLinux: false,
     ...overrides,
   };
 }
@@ -146,6 +153,11 @@ describe("the sequence list", () => {
       "goes on in the installed Windows",
       "needs a computer name",
     ]);
+    expect(sequenceFacts(summary({ rawImageName: "noble", continuesInLinux: true }))).toEqual([
+      "Erases the disk",
+      "writes noble",
+      "goes on in the installed Linux",
+    ]);
     expect(sequenceFacts(summary({ erasesDisk: false }))).toEqual(["Keeps the disk"]);
     expect(findingCounts(0, 0)).toBeNull();
     expect(findingCounts(2, 1)).toBe("2 problems, 1 warning");
@@ -184,6 +196,75 @@ describe("the sequence list", () => {
       rawImageName: "noble",
       rawImageBootCapability: "NotSigned",
       kind: "Linux",
+      continuesInLinux: false,
+    });
+    expect(
+      summaryOf(
+        view({
+          definition: {
+            version: 5,
+            steps: [newStep("writeRawImage", "w"), seed, newStep("runScript", "s", "Linux")],
+          },
+          stepPhases: ["LinuxBoot", "LinuxBoot", "Linux"],
+        }),
+      ),
+    ).toMatchObject({
+      kind: "Linux",
+      continuesInLinux: true,
+      continuesInWindows: false,
+      // The version the server stored it with, which the assign dialog holds against the machine's agent.
+      version: 5,
+    });
+  });
+
+  // A group and an IF have no phase of their own among the top-level steps, and may hold the step that decides.
+  it("finds what an entry says inside a group and an IF too", () => {
+    const group: GroupStep = {
+      ...(newStep("group", "g") as GroupStep),
+      steps: [newStep("runScript", "s", "Linux")],
+    };
+    const branch: IfStep = {
+      ...(newStep("if", "i") as IfStep),
+      then: [newStep("partition", "p")],
+      else: [newStep("joinDomain", "j")],
+    };
+
+    expect(
+      summaryOf(
+        view({
+          definition: {
+            version: 5,
+            steps: [newStep("writeRawImage", "w"), newStep("writeCloudInitSeed", "c"), group],
+          },
+          stepPhases: ["LinuxBoot", "LinuxBoot", "LinuxBoot"],
+          nodePhases: [
+            { nodeId: "w", phases: ["LinuxBoot"] },
+            { nodeId: "c", phases: ["LinuxBoot"] },
+            { nodeId: "g", phases: ["LinuxBoot", "Linux"] },
+            { nodeId: "s", phases: ["Linux"] },
+          ],
+        }),
+      ),
+    ).toMatchObject({ stepCount: 3, continuesInLinux: true, continuesInWindows: false });
+    expect(
+      summaryOf(
+        view({
+          definition: { version: 3, steps: [branch] },
+          stepPhases: ["WindowsPE"],
+          nodePhases: [
+            { nodeId: "i", phases: ["WindowsPE", "Windows"] },
+            { nodeId: "p", phases: ["WindowsPE"] },
+            { nodeId: "j", phases: ["Windows"] },
+          ],
+        }),
+      ),
+    ).toMatchObject({
+      stepCount: 2,
+      erasesDisk: true,
+      needsComputerName: true,
+      continuesInWindows: true,
+      continuesInLinux: false,
+      kind: "Windows",
     });
   });
 

@@ -16,6 +16,13 @@ import {
 } from "@/test/builders";
 
 import { flowDefinition, flowPhases, flowProblems, windowsImageId } from "@/test/flowSequence";
+import {
+  linuxMachine,
+  linuxMachineId,
+  linuxRunId,
+  linuxRunLines,
+  linuxRunView,
+} from "@/test/linuxRun";
 import { treeMachine, treeMachineId, treeRunId, treeRunView } from "@/test/treeRun";
 import { node } from "@/test/treeSequence";
 
@@ -202,6 +209,53 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(page.getByText("Joined corp.example as PC-G2341KXQ.")).toBeAttached();
 
       await expect(page).toHaveScreenshot(`machine-run-${scheme}.png`);
+    });
+  });
+}
+
+// A Linux run twelve minutes after the machine started from the network again, with no call from the installed
+// Linux: the panel that says since when the run waits, what DDT did and where to look. In English and in German,
+// whose sentences are the longer ones.
+const linuxRun = linuxRunView();
+const linuxAnswers = {
+  "GET /api/machines": [linuxMachine(), ...machines],
+  [`GET /api/machines/${linuxMachineId}/deployments`]: [linuxRun.summary],
+  [`GET /api/machines/${linuxMachineId}/sequence`]: sequenceResolution({
+    source: "Assigned",
+    sequenceId: linuxRun.summary.sequenceId,
+    sequenceName: linuxRun.summary.title,
+    explanation: "anna assigned Install Linux on the web, which comes before every rule.",
+  }),
+  [`GET /api/deployments/${linuxRunId}`]: linuxRun,
+  [`GET /api/machines/${linuxMachineId}/log`]: { lines: linuxRunLines, hasOlder: false },
+  "GET /api/deployments/options": {
+    domainConfigured: false,
+    requireWebApproval: false,
+    zeroTouchEnabled: false,
+    serverUtc: now.toISOString(),
+    bootEnvironments: ["WindowsPE", "LinuxBoot"],
+  },
+};
+
+for (const [name, scheme, locale] of [
+  ["light", "light", "en-US"],
+  ["dark-de", "dark", "de-AT"],
+] as const) {
+  test.describe(`waiting for the installed Linux, ${name}`, () => {
+    test.use({ colorScheme: scheme, locale });
+
+    // As tall as the picture of a machine's run, so the flow below the panel is in it.
+    test("a machine whose installed Linux has not called", async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 1080 });
+      await show(page, `/machines/${linuxMachineId}`, linuxAnswers);
+      await expect(
+        page.getByRole("group", {
+          name: locale === "de-AT" ? "Ablauf dieser Ausführung" : "Flow of this run",
+        }),
+      ).toBeVisible();
+      await expect(page.getByText("The machine restarts into the installed Linux.")).toBeAttached();
+
+      await expect(page).toHaveScreenshot(`machine-linux-wait-${name}.png`);
     });
   });
 }

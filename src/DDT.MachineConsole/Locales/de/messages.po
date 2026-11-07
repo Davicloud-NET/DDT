@@ -60,8 +60,8 @@ msgid "Asks for a name"
 msgstr "Fragt nach einem Namen"
 
 #: ViewModels/ComputerNameViewModel.cs
-msgid "At most {max} characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first."
-msgstr "Höchstens {max} Zeichen: die Buchstaben A bis Z, Ziffern und Bindestriche. Nicht nur Ziffern und kein Bindestrich am Anfang."
+msgid "At most {max} characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first or last."
+msgstr "Höchstens {max} Zeichen: die Buchstaben A bis Z, Ziffern und Bindestriche. Nicht nur Ziffern und kein Bindestrich am Anfang oder am Ende."
 
 #: ViewModels/SignInViewModel.cs
 msgid "Authenticator code"

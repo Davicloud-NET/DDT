@@ -4,5 +4,8 @@
 
 namespace DDT.Contracts.Sequences;
 
-// Problems keep a sequence from running; warnings do not.
-public sealed record SequenceValidation(IReadOnlyList<SequenceProblem> Problems, IReadOnlyList<SequenceProblem> Warnings);
+// Problems keep a sequence from running; warnings do not. A note only says what a setting will do.
+public sealed record SequenceValidation(
+    IReadOnlyList<SequenceProblem> Problems,
+    IReadOnlyList<SequenceProblem> Warnings,
+    IReadOnlyList<SequenceProblem>? Notes = null);

@@ -15,6 +15,7 @@ import { formatDuration } from "@/lib/format";
 import { formatMac, type MachineSummary } from "@/machines/machines";
 import { walk } from "@/sequences/flow/flowTree";
 import type { ConditionOperator, StepCondition } from "@/sequences/sequenceConditions";
+import { isBootPhase } from "@/sequences/sequenceKinds";
 import type { SequenceDefinition, SequencePhase, SequenceStep } from "@/sequences/sequences";
 import { operatorTakesValue, phaseLabel, variableLabel } from "@/sequences/steps";
 
@@ -174,8 +175,21 @@ function gap(from: string, to: string): string {
   return formatDuration(Date.parse(to) - Date.parse(from));
 }
 
+// What the timeline says of a hand-over into phase. took is how much later the agent went on there, null until it did.
+function handOverText(phase: SequencePhase, took: string | null): string {
+  if (phase === "Linux") {
+    return took === null
+      ? t`The hand-over to the installed Linux began`
+      : t`Handed over to the installed Linux; the agent continued there ${took} later`;
+  }
+
+  return took === null
+    ? t`The hand-over to Windows began`
+    : t`Handed over to Windows; after Windows setup the agent continued there ${took} later`;
+}
+
 // The run's timeline from what the server records: the machine's first registration, the assignment or approval, the
-// start, each restart and the hand-over to Windows as the step times show them, and the end.
+// start, each restart and the hand-over to the installed system as the step times show them, and the end.
 export function runTimeline(
   machine: MachineSummary | null,
   run: DeploymentSummary,
@@ -218,7 +232,8 @@ export function runTimeline(
     // Skipped steps never start. So the machine was back when the next step that did start began.
     const next = leaves.slice(position + 1).find((later) => later.startedUtc !== null) ?? null;
     const back = next?.startedUtc ?? null;
-    const handsOver = step.phase === "WindowsPE" && leaves[position + 1]?.phase === "Windows";
+    const after = leaves[position + 1]?.phase;
+    const handsOver = isBootPhase(step.phase) && after !== undefined && !isBootPhase(after);
     const restarts = step.kind === "reboot" || planned.get(step.stepId)?.rebootAfter === true;
     const number = numbers.get(step.stepId) ?? step.index + 1;
     const name = step.name;
@@ -228,10 +243,7 @@ export function runTimeline(
       entries.push({
         key: `handover-${step.stepId}`,
         utc: step.finishedUtc,
-        text:
-          back === null || next?.phase !== "Windows"
-            ? t`The hand-over to Windows began`
-            : t`Handed over to Windows; after Windows setup the agent continued there ${took} later`,
+        text: handOverText(after, back === null || next?.phase !== after ? null : took),
       });
     } else if (restarts) {
       entries.push({

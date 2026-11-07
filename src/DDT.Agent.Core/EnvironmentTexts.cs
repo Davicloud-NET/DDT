@@ -6,6 +6,7 @@ using System.Globalization;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Sequences;
 
 namespace DDT.Agent;
 
@@ -14,7 +15,8 @@ public static class EnvironmentTexts
 {
     public const string LinuxUsage =
         "Usage: ddt-agent [--config <agent.json>] [--server <https url>] [--root-certificate <pem file>] " +
-        "[--no-update] [--dry-run [--dry-run-id <number>] [--dry-run-secure-boot]], or ddt-agent --licenses";
+        "[--no-update] [--dry-run [--dry-run-id <number>] [--dry-run-secure-boot] [--dry-run-netboot <OnceInLinux|OnceBeforeLinux|Always>]], " +
+        "or ddt-agent --licenses";
 
     public const string LinuxNoDisk =
         "No internal disk was found. The Linux boot environment may have no driver for this PC's storage controller, or the " +
@@ -49,6 +51,34 @@ public static class EnvironmentTexts
         (true, true) => "The machine restarts into the installed Linux, where the agent goes on with the run.",
         (true, false) => "The machine restarts into the Linux boot environment, and the run goes on after the restart.",
     };
+
+    // A restart a step asked for in the installed system.
+    public static string InstalledSystemRestarts(AgentEnvironment environment) => IsLinux(environment)
+        ? "Linux restarts, and the run goes on after the restart."
+        : "Windows restarts, and the run goes on after the restart.";
+
+    // The Linux boot environment keeps a run in memory, so there a stop is the end of it. In the installed Linux the
+    // run goes on, but not past a step that was cut off: interrupted is that step, or null between steps.
+    public static string Stopped(AgentEnvironment environment, SequenceStep? interrupted = null) => (environment, interrupted) switch
+    {
+        (AgentEnvironment.LinuxBoot, _) =>
+            "The agent was stopped. The Linux boot environment keeps a run's state in memory, so the run does not go on after a restart.",
+        (AgentEnvironment.Linux, { ContinueOnError: true } step) =>
+            $"The agent was stopped while step {step.Name} ran. The run's state stays on the disk. Nobody knows how far the step came, so it " +
+            "counts as failed when the agent starts again, and the run goes on after it, if the server still runs it.",
+        (AgentEnvironment.Linux, { } step) =>
+            $"The agent was stopped while step {step.Name} ran. The run's state stays on the disk. Nobody knows how far the step came, so it " +
+            "counts as failed when the agent starts again, and the run fails with it.",
+        (AgentEnvironment.Linux, null) =>
+            "The agent was stopped. The run's state stays on the disk, so the run goes on when the agent starts again, if the server still runs it.",
+        _ => "The agent was stopped. The run's state stays on the disk, so the run goes on after a restart if the server still runs it.",
+    };
+
+    // A step of the boot environment that the engine meets in the installed system.
+    public static string BootStepAfterInstalled(AgentEnvironment environment) => IsLinux(environment)
+        ? "A step that runs in the Linux boot environment follows the steps in the installed Linux, and the run cannot go back " +
+            "to the boot environment. Move the step before the first step in the installed Linux, then run the sequence again."
+        : SequenceRunner.WindowsPEAfterWindowsMessage;
 
     public static string HandingOverAgain(AgentEnvironment environment, int returns, int most) => IsLinux(environment)
         ? $"The run goes on in the installed Linux, but the machine started the Linux boot environment. Handing the run over again ({returns} of {most} times)."
@@ -110,5 +140,6 @@ public static class EnvironmentTexts
     public static string ExitCode(AgentEnvironment environment, int exitCode) =>
         IsLinux(environment) ? exitCode.ToString(CultureInfo.InvariantCulture) : $"0x{exitCode:X8}";
 
-    private static bool IsLinux(AgentEnvironment environment) => environment == AgentEnvironment.LinuxBoot;
+    // The installed Linux runs the same executable, and has a case of its own where its sentence differs.
+    private static bool IsLinux(AgentEnvironment environment) => SequenceKinds.Of(environment) == SequenceKind.Linux;
 }

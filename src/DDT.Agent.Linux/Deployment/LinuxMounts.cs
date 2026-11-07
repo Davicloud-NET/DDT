@@ -2,21 +2,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 
 namespace DDT.Agent.Deployment;
 
-// The file systems mounted from a disk, as the kernel lists them, and their unmounting before the machine restarts.
-// unmount returns 0 or the error.
-public sealed partial class LinuxMounts(string root, AgentLog log, Func<string, int>? unmount = null)
+// The file systems mounted from a disk, as the kernel lists them, and their unmounting before the machine restarts
+// or the agent opens a disk alone. unmount returns 0 or the error.
+public sealed class LinuxMounts(string root, AgentLog log, Func<string, int>? unmount = null)
 {
+    public const string TheRestart = "the restart";
+
+    public const string TheHandOver = "the hand-over writes the cloud-init seed";
+
     private readonly Func<string, int> _unmount = unmount ?? Unmount;
 
-    // A script may have left a partition of the disk it changed mounted, and the kernel restarts without unmounting.
-    // What lies deepest goes first. A failure is only said: the restart happens anyway.
-    public void UnmountFrom(IReadOnlyCollection<string> disks)
+    // A script may have left a partition mounted, of any disk the agent opened, and the kernel restarts without
+    // unmounting. What lies deepest goes first. A failure is only said: what comes after before happens anyway.
+    public void UnmountFrom(IReadOnlyCollection<string> disks, string before = TheRestart)
     {
         ArgumentNullException.ThrowIfNull(disks);
 
@@ -26,11 +28,11 @@ public sealed partial class LinuxMounts(string root, AgentLog log, Func<string, 
 
             if (error == 0)
             {
-                log.Information($"Unmounted {target}, which was still mounted from {device}, before the restart.");
+                log.Information($"Unmounted {target}, which was still mounted from {device}, before {before}.");
             }
             else
             {
-                log.Warning($"{target} is still mounted from {device} and could not be unmounted (error {error}), so its file system is not closed before the restart.");
+                log.Warning($"{target} is still mounted from {device} and could not be unmounted (error {error}), so its file system is not closed before {before}.");
             }
         }
     }
@@ -46,9 +48,9 @@ public sealed partial class LinuxMounts(string root, AgentLog log, Func<string, 
         {
             string[] fields = line.Split(' ');
 
-            if (fields.Length >= 2 && disks.Any(disk => IsOn(Unescape(fields[0]), disk)))
+            if (fields.Length >= 2 && disks.Any(disk => IsOn(MountList.Unescape(fields[0]), disk)))
             {
-                found.Add((Unescape(fields[0]), Unescape(fields[1])));
+                found.Add((MountList.Unescape(fields[0]), MountList.Unescape(fields[1])));
             }
         }
 
@@ -63,7 +65,7 @@ public sealed partial class LinuxMounts(string root, AgentLog log, Func<string, 
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            log.Warning($"The kernel's list of what is mounted cannot be read ({exception.Message}), so nothing is unmounted before the restart.");
+            log.Warning($"The kernel's list of what is mounted cannot be read ({exception.Message}), so nothing is unmounted.");
 
             return [];
         }
@@ -79,13 +81,6 @@ public sealed partial class LinuxMounts(string root, AgentLog log, Func<string, 
             && (name == diskName || Directory.Exists(Path.Combine(root, "sys", "block", diskName, name)));
     }
 
-    // The list writes a space, a tab, a line end and a backslash as a backslash and three octal digits.
-    private static string Unescape(string field) =>
-        Escape().Replace(field, match => ((char)Convert.ToInt32(match.Groups[1].Value, 8)).ToString(CultureInfo.InvariantCulture));
-
     private static int Unmount(string target) =>
-        RestartNativeMethods.umount2(target, 0) == 0 ? 0 : Marshal.GetLastPInvokeError();
-
-    [GeneratedRegex(@"\\([0-7]{3})")]
-    private static partial Regex Escape();
+        MountNativeMethods.umount2(target, 0) == 0 ? 0 : Marshal.GetLastPInvokeError();
 }

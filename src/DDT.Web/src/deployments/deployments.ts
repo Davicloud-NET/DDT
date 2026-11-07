@@ -26,6 +26,7 @@ export type DeploymentSource = "Web" | "Console" | "Rule";
 
 // What the agent does between steps, so the page can say why no step is running. WaitingForInput: the run waits at
 // its start for answers to its inputs. Paused: a Pause step waits for someone to continue the run.
+// WaitingForCloudInit: the agent in the installed Linux lets cloud-init finish before its steps run.
 export type RunActivity =
   | "Preparing"
   | "Step"
@@ -35,7 +36,8 @@ export type RunActivity =
   | "Finishing"
   | "Removing"
   | "WaitingForInput"
-  | "Paused";
+  | "Paused"
+  | "WaitingForCloudInit";
 
 // A run of a task sequence. A deployment from before task sequences has no steps.
 export interface DeploymentSummary {
@@ -155,9 +157,9 @@ export interface AssignSequenceRequest {
 }
 
 // The server's AgentEnvironment: where a machine's agent registered from. Windows PE and the Linux boot environment
-// are the boot environments, which a machine starts from the network. Windows is the installed one, while a run goes
-// on there.
-export type AgentEnvironment = "WindowsPE" | "Windows" | "LinuxBoot";
+// are the boot environments, which a machine starts from the network. Windows and Linux are the installed ones, while
+// a run goes on there.
+export type AgentEnvironment = "WindowsPE" | "Windows" | "LinuxBoot" | "Linux";
 
 export interface DeploymentOptionsView {
   domainConfigured: boolean;
@@ -215,21 +217,29 @@ export function assignedBy(deployment: DeploymentSummary): string {
   }
 }
 
-// Null while a step runs, because the step describes itself.
-export function activityLabel(activity: RunActivity | null): string | null {
+// Null while a step runs, because the step describes itself. phase is the run's, which says whether it hands over to
+// Windows or to Linux.
+export function activityLabel(
+  activity: RunActivity | null,
+  phase: SequencePhase | null = null,
+): string | null {
+  const linux = phase === "LinuxBoot" || phase === "Linux";
+
   switch (activity) {
     case "Preparing":
       return t`Preparing`;
     case "HandingOver":
-      return t`Handing over to Windows`;
+      return linux ? t`Handing over to the installed Linux` : t`Handing over to Windows`;
     case "Restarting":
       return t`Restarting`;
     case "WaitingForWindowsSetup":
       return t`Waiting for Windows setup`;
+    case "WaitingForCloudInit":
+      return t`Waiting for cloud-init`;
     case "Finishing":
       return t`Finishing`;
     case "Removing":
-      return t`Removing the agent from Windows`;
+      return linux ? t`Removing the agent from Linux` : t`Removing the agent from Windows`;
     case "WaitingForInput":
       return t`Waiting for answers`;
     case "Paused":
@@ -241,7 +251,7 @@ export function activityLabel(activity: RunActivity | null): string | null {
 }
 
 // The agent doesn't report while the machine restarts or Windows sets itself up. So the last contact is what tells a
-// slow setup from a machine that's gone.
+// slow setup from a machine that's gone. While it waits for cloud-init in Linux it does report.
 export function isSilentActivity(activity: RunActivity | null): boolean {
   return (
     activity === "Restarting" || activity === "HandingOver" || activity === "WaitingForWindowsSetup"

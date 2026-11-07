@@ -6,10 +6,12 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// What SequenceValidator finds. Problems keep a sequence from running. Warnings don't.
+// What SequenceValidator finds. Problems keep a sequence from running. Warnings don't, and a note only says what a
+// setting will do.
 public sealed record SequenceAnalysis(
     IReadOnlyList<SequenceProblem> Problems,
     IReadOnlyList<SequenceProblem> Warnings,
+    IReadOnlyList<SequenceProblem> Notes,
     // One entry per node in SequenceTree.Nodes order, each with Windows PE listed first. A container runs in the phase
     // it starts in and in the phases of its nodes.
     IReadOnlyList<NodePhase> NodePhases,

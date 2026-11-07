@@ -7,22 +7,19 @@ using DDT.Contracts.Sequences;
 
 namespace DDT.Core.Sequences;
 
-// The rules for each node of a sequence. SequencePaths checks them when it reaches the node.
-internal sealed class StepRules(SequenceNames names, SequenceKind kind)
+// The rules for each node of a sequence. SequencePaths checks them when it reaches the node. goesOnInLinux says that
+// some step runs in the installed Linux, where only the seed can take the agent.
+internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goesOnInLinux)
 {
-    // Before Partition, the run's state only exists in memory, so a restart in the boot phase would lose the run. A
-    // raw disk image leaves no partition where DDT could keep the run's state or unpack a package.
+    // Before Partition, the run's state only exists in memory, so a restart in the boot phase would lose the run. The
+    // Linux boot environment keeps it in memory throughout, and has no partition to unpack a package on.
     private readonly MessageTemplate _noRestart =
         kind == SequenceKind.Linux ? ServerMessages.SequenceRestartWithRawImage : ServerMessages.SequenceRestartBeforePartition;
 
     private bool Linux => kind == SequenceKind.Linux;
 
-    // In a Linux sequence, the Windows installation rules would only restate the same problem in other words. A script
-    // in a Windows phase counts too.
-    public bool InstallsWindows(SequenceStep step, SequencePhase? required) =>
-        Linux
-        && (step is PartitionStep or ApplyImageStep or InjectDriversStep or WriteUnattendStep or JoinDomainStep
-            || (required is { } phase && SequenceKinds.Of(phase) == SequenceKind.Windows));
+    // A step of a Windows installation in a Linux sequence, or one in a Linux phase of a sequence that installs Windows.
+    public bool OtherKind(SequencePhase? required) => required is { } phase && SequenceKinds.Of(phase) != kind;
 
     // SequencePaths checks the id, which depends on the nodes before this one.
     public void CheckNode(SequenceStep step, int depth, StepProblems problems)
@@ -57,15 +54,22 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind)
 
     public void CheckLeaf(SequenceStep step, StepPlace place, StepProblems problems)
     {
-        CheckPhase(step, place, problems);
-        CheckRestartAfterStep(step, place, problems);
+        bool otherKind = OtherKind(place.Required);
+
+        // A step of the other kind has no place among this kind's phases, so neither its order nor its restart is judged.
+        if (!otherKind)
+        {
+            PhaseOrder.Check(place, kind, message => problems.Add(PhaseField(step), message));
+            CheckRestartAfterStep(step, place, problems);
+        }
 
         if (place.InRepeat && RunsOnce(step))
         {
             problems.Add(null, ServerMessages.SequenceOnceInRepeat.With());
         }
 
-        if (InstallsWindows(step, place.Required))
+        // In a Linux sequence, the Windows installation rules would only restate the same problem in other words.
+        if (otherKind && Linux)
         {
             // A sequence stored before version 4 may hold a script for Windows PE, so that one is told what to change.
             MessageTemplate elsewhere = step is RunScriptStep { Phase: SequencePhase.WindowsPE }
@@ -152,8 +156,6 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind)
 
     private static string? PhaseField(SequenceStep step) => step is RunScriptStep ? "phase" : null;
 
-    private static PhaseSet Of(SequencePhase phase) => SequenceKinds.IsBoot(phase) ? PhaseSet.Boot : PhaseSet.Installed;
-
     private void CheckConditions(SequenceStep step, StepProblems problems)
     {
         int tests = ConditionChecks.Legacy(step.Conditions, problems.Add);
@@ -179,33 +181,6 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind)
         Count((step as IfStep)?.Test, ConditionEvaluator.TestPath);
         Count((step as RepeatStep)?.Until, ConditionEvaluator.UntilPath);
         PhaseConditions.Check(step, kind, problems.Warn);
-    }
-
-    private void CheckPhase(SequenceStep step, StepPlace place, StepProblems problems)
-    {
-        PathPhases before = place.Before.Phases;
-        bool afterInstalled = place.Required is { } asked
-            ? SequenceKinds.IsBoot(asked) && (before & (PathPhases.Installed | PathPhases.BootAfterInstalled)) != 0
-            : (before & PathPhases.BootAfterInstalled) != 0;
-
-        if (afterInstalled)
-        {
-            problems.Add(PhaseField(step), ServerMessages.SequenceWindowsPEAfterWindows.With());
-        }
-
-        if (place.InRepeat && place.Required is { } phase && place.Before.Current != Of(phase))
-        {
-            problems.Add(PhaseField(step), ServerMessages.SequencePhaseChangeInRepeat.With());
-        }
-
-        if (place.Required == SequencePhase.Windows && !Linux && !place.Before.MustHave(Happened.ImageEveryTime))
-        {
-            // When only some paths apply an image, the paths are the problem, not the step's conditions.
-            MessageTemplate needsImage = !place.Before.MustHave(Happened.ImageApplied) && place.Before.MayHave(Happened.ImageApplied)
-                ? ServerMessages.SequenceWindowsNeedsImageOnEveryPath
-                : ServerMessages.SequenceWindowsNeedsImage;
-            problems.Add(PhaseField(step), needsImage.With());
-        }
     }
 
     private void CheckRestartAfterStep(SequenceStep step, StepPlace place, StepProblems problems)
@@ -324,7 +299,7 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind)
 
         if (script.RunAs is not null)
         {
-            // A boot environment has no accounts to log on with. A script there runs as SYSTEM, or as root.
+            // A boot environment has no accounts to log on with, and a script in Linux runs as root.
             if (script.Phase != SequencePhase.Windows)
             {
                 problems.Add("runAs", ServerMessages.SequenceRunAsWindowsOnly.With("phase", script.Phase));
@@ -344,7 +319,7 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind)
         SequenceValidator.CheckRunsEveryTime(step, "rawImage", problems.Add);
     }
 
-    private static void CheckSeed(WriteCloudInitSeedStep seed, StepPlace place, StepProblems problems)
+    private void CheckSeed(WriteCloudInitSeedStep seed, StepPlace place, StepProblems problems)
     {
         if (!place.Before.MustHave(Happened.RawImageWritten))
         {
@@ -357,6 +332,11 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind)
         }
 
         SequenceValidator.CheckSeed(seed, problems.Add);
+
+        if (goesOnInLinux)
+        {
+            UserDataRules.Check(seed, problems);
+        }
     }
 
     private void CheckPause(PauseStep pause, StepPlace place, StepProblems problems)

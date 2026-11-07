@@ -17,14 +17,15 @@ public static class ServerConnection
 {
     private static readonly HttpRequestOptionsKey<Progress> s_progress = new("DDT.ServerConnection");
 
-    public static async ValueTask<Stream> ConnectAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+    public static async ValueTask<Stream> ConnectAsync(SocketsHttpConnectionContext context, ServerLookup lookup, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(lookup);
+
         Progress progress = new();
         context.InitialRequestMessage.Options.Set(s_progress, progress);
 
-        IPAddress[] addresses = IPAddress.TryParse(context.DnsEndPoint.Host, out IPAddress? literal)
-            ? [literal]
-            : await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken).ConfigureAwait(false);
+        IPAddress[] addresses = await lookup.AddressesAsync(context.DnsEndPoint.Host, cancellationToken).ConfigureAwait(false);
 
         progress.Resolved(addresses);
 
@@ -43,6 +44,11 @@ public static class ServerConnection
         }
 
         progress.Connected(socket.RemoteEndPoint);
+
+        if (socket.RemoteEndPoint is IPEndPoint remote)
+        {
+            lookup.Reached(remote.Address);
+        }
 
         return new NetworkStream(socket, ownsSocket: true);
     }

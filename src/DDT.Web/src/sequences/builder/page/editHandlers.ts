@@ -36,7 +36,8 @@ export function editHandlers({ editor, index, selection, announce }: EditContext
   };
 
   const add = (slot: Slot, kind: StepKind) => {
-    const insert = insertNode(slot, kind, sequenceKind(editor.draft.steps));
+    const { steps } = editor.draft;
+    const insert = insertNode(slot, kind, sequenceKind(steps), steps);
     const [node] = insert.nodes;
 
     edit(insert);

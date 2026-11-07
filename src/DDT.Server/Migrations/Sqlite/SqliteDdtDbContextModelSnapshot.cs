@@ -345,6 +345,9 @@ namespace DDT.Server.Migrations.Sqlite
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("BootReturns")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("ContinuePass")
                         .HasColumnType("INTEGER");
 
@@ -368,6 +371,13 @@ namespace DDT.Server.Migrations.Sqlite
                     b.Property<string>("CurrentStepName")
                         .HasMaxLength(128)
                         .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("DetourStart")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Detours")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
 
                     b.Property<int?>("DiskNumber")
                         .HasColumnType("INTEGER");

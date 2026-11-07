@@ -5,6 +5,7 @@
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Sequences;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -114,6 +115,73 @@ public sealed class EnvironmentTextsTests
         Assert.Equal("Carrying on with the agent the Linux boot environment brought.", EnvironmentTexts.OwnAgent(LinuxBoot));
         Assert.Equal("ddt-agent-0123456789ab", EnvironmentTexts.DownloadedAgent(LinuxBoot, "0123456789ABCDEF"));
         Assert.Equal("139", EnvironmentTexts.ExitCode(LinuxBoot, 139));
+    }
+
+    // As the installed Windows speaks like Windows PE. The agent that runs there brings what it says differently.
+    [Fact]
+    public void TheInstalledLinuxSpeaksLikeTheLinuxBootEnvironment()
+    {
+        const AgentEnvironment Linux = AgentEnvironment.Linux;
+
+        Assert.Equal(EnvironmentTexts.LinuxUsage, EnvironmentTexts.Usage(Linux));
+        Assert.Equal("ddt-agent-0123456789ab", EnvironmentTexts.DownloadedAgent(Linux, "0123456789ABCDEF"));
+        Assert.Equal("139", EnvironmentTexts.ExitCode(Linux, 139));
+        Assert.Equal("this machine's firmware", EnvironmentTexts.SecureBootTeller(Linux));
+        Assert.Equal("the installed Linux", AgentEnvironments.Name(Linux));
+        Assert.Equal("the installed Windows", AgentEnvironments.Name(AgentEnvironment.Windows));
+        Assert.Equal(("installed Linux", "Linux boot environment", "Windows"), (LogText.Phase("Linux"), LogText.Phase("LinuxBoot"), LogText.Phase("Windows")));
+    }
+
+    // Windows keeps its words. The Linux boot environment keeps a run in memory, so a stop there ends the run, while
+    // the installed Linux goes on with it at the agent's next start.
+    [Fact]
+    public void EachSystemSaysWhatAStopARestartAndAStepOfTheBootEnvironmentMeanThere()
+    {
+        foreach (AgentEnvironment windows in (AgentEnvironment[])[AgentEnvironment.WindowsPE, AgentEnvironment.Windows])
+        {
+            Assert.Equal(
+                "The agent was stopped. The run's state stays on the disk, so the run goes on after a restart if the server still runs it.",
+                EnvironmentTexts.Stopped(windows));
+            Assert.Equal("Windows restarts, and the run goes on after the restart.", EnvironmentTexts.InstalledSystemRestarts(windows));
+            Assert.Equal(SequenceRunner.WindowsPEAfterWindowsMessage, EnvironmentTexts.BootStepAfterInstalled(windows));
+        }
+
+        Assert.Equal(
+            "The agent was stopped. The Linux boot environment keeps a run's state in memory, so the run does not go on after a restart.",
+            EnvironmentTexts.Stopped(AgentEnvironment.LinuxBoot));
+        Assert.Equal(
+            "The agent was stopped. The run's state stays on the disk, so the run goes on when the agent starts again, if the server still runs it.",
+            EnvironmentTexts.Stopped(AgentEnvironment.Linux));
+        Assert.Equal("Linux restarts, and the run goes on after the restart.", EnvironmentTexts.InstalledSystemRestarts(AgentEnvironment.Linux));
+    }
+
+    // The agent's next start fails a step that was cut off, so the stop must not promise that the run goes on.
+    [Fact]
+    public void AStopInAStepOfTheInstalledLinuxSaysWhatTheNextStartDoesWithThatStep()
+    {
+        RunScriptStep step = new() { Id = Guid.NewGuid(), Name = "Sleep long", Phase = SequencePhase.Linux, Script = "sleep 600" };
+
+        Assert.Equal(
+            "The agent was stopped while step Sleep long ran. The run's state stays on the disk. Nobody knows how far the step came, so it " +
+            "counts as failed when the agent starts again, and the run fails with it.",
+            EnvironmentTexts.Stopped(AgentEnvironment.Linux, step));
+        Assert.Equal(
+            "The agent was stopped while step Sleep long ran. The run's state stays on the disk. Nobody knows how far the step came, so it " +
+            "counts as failed when the agent starts again, and the run goes on after it, if the server still runs it.",
+            EnvironmentTexts.Stopped(AgentEnvironment.Linux, step with { ContinueOnError = true }));
+
+        // Windows and the boot environment keep their words.
+        Assert.Equal(EnvironmentTexts.Stopped(AgentEnvironment.Windows), EnvironmentTexts.Stopped(AgentEnvironment.Windows, step));
+        Assert.Equal(EnvironmentTexts.Stopped(AgentEnvironment.LinuxBoot), EnvironmentTexts.Stopped(AgentEnvironment.LinuxBoot, step));
+    }
+
+    [Fact]
+    public void AStepOfTheBootEnvironmentAfterTheInstalledLinuxIsSaidInLinuxsWords()
+    {
+        Assert.Equal(
+            "A step that runs in the Linux boot environment follows the steps in the installed Linux, and the run cannot go back to the boot " +
+            "environment. Move the step before the first step in the installed Linux, then run the sequence again.",
+            EnvironmentTexts.BootStepAfterInstalled(AgentEnvironment.Linux));
     }
 
     // An NVMe disk behind a controller in RAID or RST mode is no device Linux sees, whatever drivers it has.

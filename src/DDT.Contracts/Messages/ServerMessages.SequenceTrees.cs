@@ -22,6 +22,11 @@ public static partial class ServerMessages
         "sequence.windowsNeedsImageOnEveryPath",
         "A step in Windows needs the image applied before it on every path through the sequence, and on some path no step applies it.");
 
+    public static readonly MessageTemplate SequenceLinuxNeedsSeedOnEveryPath = Define(
+        "sequence.linuxNeedsSeedOnEveryPath",
+        "A step in the installed Linux needs the cloud-init seed written before it on every path through the sequence, and on some " +
+        "path no step writes it.");
+
     public static readonly MessageTemplate SequenceIfNeedsTest = Define("sequence.ifNeedsTest", "Enter the condition the IF tests.");
 
     public static readonly MessageTemplate SequenceIfOnlyTest = Define(
@@ -40,7 +45,9 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate SequencePhaseChangeInRepeat = Define(
         "sequence.phaseChangeInRepeat",
-        "A run cannot change between Windows PE and Windows inside a repeat. Move this step, or the steps before it, out of the repeat.");
+        "{kind, select, Linux {A run cannot change between the Linux boot environment and the installed Linux inside a repeat.} " +
+        "other {A run cannot change between Windows PE and Windows inside a repeat.}} Move this step, or the steps before it, out of " +
+        "the repeat.");
 
     public static readonly MessageTemplate SequenceConditionTooDeep = Define(
         "sequence.conditionTooDeep",
@@ -149,7 +156,7 @@ public static partial class ServerMessages
     public static readonly MessageTemplate SequenceRunAsWindowsOnly = Define(
         "sequence.runAsWindowsOnly",
         "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} " +
-        "other {In Windows PE it runs as SYSTEM.}}");
+        "Linux {In the installed Linux it runs as root.} other {In Windows PE it runs as SYSTEM.}}");
 
     public static readonly MessageTemplate SequenceTooManyShares = Define(
         "sequence.tooManyShares",

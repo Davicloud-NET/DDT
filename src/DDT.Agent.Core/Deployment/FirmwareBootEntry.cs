@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace DDT.Agent.Deployment;
 
-// Puts a firmware boot entry for a loader on the new EFI system partition first in BootOrder. An entry is recognised by
+// Puts a firmware boot entry for a loader on an EFI system partition first in BootOrder. An entry is recognised by
 // the partition and file it starts, never by its description. A dead entry from an earlier installation has the same
 // description.
 public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
@@ -20,12 +20,24 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
 
     private const string BootOrder = "BootOrder";
 
+    // How the log names the partition. A deployment has just made it. A machine that came back has had it all along.
+    public string Partition { get; init; } = "the new EFI system partition";
+
     // Takes every other entry for an erased EFI system partition out of the firmware. Off, they stay, as in Windows PE.
     public bool RemovesDeadEntries { get; init; }
 
+    // The entry in the boot order that starts the loader on the partition, by its number. Null when none does.
+    public ushort? Find(EspPartition esp, string loaderPath)
+    {
+        ArgumentNullException.ThrowIfNull(esp);
+        ArgumentException.ThrowIfNullOrEmpty(loaderPath);
+
+        return FindEntries(ReadOrder(variables.Read(BootOrder)), esp, loaderPath, []).Existing;
+    }
+
     // diskpart gives every new partition a new GUID. So an entry for an EFI system partition the deployment erased is
-    // reused rather than left behind as a dead entry.
-    public void MakeFirst(EspPartition esp, string loaderPath, string description, IReadOnlyCollection<Guid> erasedPartitionIds)
+    // reused rather than left behind as a dead entry. Returns the entry's number.
+    public ushort MakeFirst(EspPartition esp, string loaderPath, string description, IReadOnlyCollection<Guid> erasedPartitionIds)
     {
         ArgumentNullException.ThrowIfNull(esp);
         ArgumentException.ThrowIfNullOrEmpty(loaderPath);
@@ -66,6 +78,8 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
         {
             Remove(OptionName(number));
         }
+
+        return entry;
     }
 
     // The loader is first by now, so an entry the firmware keeps is only said.
@@ -125,18 +139,18 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
         if (existed)
         {
             log.Information(moved
-                ? $"Firmware boot entry {name} already starts {description} on the new EFI system partition. It is now first in the boot order."
-                : $"Firmware boot entry {name} already starts {description} on the new EFI system partition and is first in the boot order.");
+                ? $"Firmware boot entry {name} already starts {description} on {Partition}. It is now first in the boot order."
+                : $"Firmware boot entry {name} already starts {description} on {Partition} and is first in the boot order.");
         }
         else if (reusedErased)
         {
             log.Information(
                 $"Firmware boot entry {name} pointed at the EFI system partition this deployment erased. It now starts {description} on " +
-                "the new EFI system partition and is first in the boot order.");
+                $"{Partition} and is first in the boot order.");
         }
         else
         {
-            log.Information($"Added firmware boot entry {name} for {description} on the new EFI system partition and put it first in the boot order.");
+            log.Information($"Added firmware boot entry {name} for {description} on {Partition} and put it first in the boot order.");
         }
     }
 
@@ -157,7 +171,7 @@ public sealed class FirmwareBootEntry(IUefiVariables variables, AgentLog log)
         throw new DeploymentStepException($"Every firmware boot entry number is in use, so no entry for {description} can be added.");
     }
 
-    private static string OptionName(ushort number) => string.Create(CultureInfo.InvariantCulture, $"Boot{number:X4}");
+    public static string OptionName(ushort number) => string.Create(CultureInfo.InvariantCulture, $"Boot{number:X4}");
 
     // An array of UINT16. A stray last byte is ignored.
     private static List<ushort> ReadOrder(byte[]? value)

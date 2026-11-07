@@ -7,7 +7,7 @@ import { t } from "@lingui/core/macro";
 import type { DeploymentSummary } from "@/deployments/deployments";
 import { formattingLocale } from "@/i18n/i18n";
 import { formatDuration } from "@/lib/format";
-import { phaseLabel } from "@/sequences/steps";
+import { inPhase } from "@/sequences/steps";
 
 import type { PathNode } from "../runPath";
 import { stepDuration } from "../runs";
@@ -31,12 +31,12 @@ export function timeText(node: PathNode, run: DeploymentSummary, now: number): s
     return t`Not started yet.`;
   }
 
-  const phase = phaseLabel(step.phase);
+  const where = inPhase(step.phase);
 
   if (step.startedUtc === null) {
     const at = clock(step.finishedUtc ?? run.updatedUtc);
 
-    return t`Skipped at ${at} in ${phase}.`;
+    return t`Skipped at ${at} ${where}.`;
   }
 
   const start = clock(step.startedUtc);
@@ -50,17 +50,17 @@ export function timeText(node: PathNode, run: DeploymentSummary, now: number): s
         : formatDuration(Date.parse(step.startedUtc) - Date.parse(run.startedUtc));
 
     return into === null
-      ? t`Decided at ${start} in ${phase}.`
-      : t`Decided at ${start} in ${phase}, ${into} into the run.`;
+      ? t`Decided at ${start} ${where}.`
+      : t`Decided at ${start} ${where}, ${into} into the run.`;
   }
 
   if (step.finishedUtc === null) {
     return node.state === "paused"
-      ? t`Paused since ${start} in ${phase}, for ${took}.`
-      : t`Running since ${start} in ${phase}, for ${took}.`;
+      ? t`Paused since ${start} ${where}, for ${took}.`
+      : t`Running since ${start} ${where}, for ${took}.`;
   }
 
   const end = clock(step.finishedUtc);
 
-  return t`Ran from ${start} to ${end} in ${phase}, took ${took}.`;
+  return t`Ran from ${start} to ${end} ${where}, took ${took}.`;
 }

@@ -21,6 +21,11 @@ export function ScriptIntro({ step }: { step: RunScriptStep }) {
           Runs as root in the Linux boot environment, before the machine starts from the disk image.
           Everyone who can sign in to DDT can read the script, so it must hold no passwords.
         </Trans>
+      ) : step.phase === "Linux" ? (
+        <Trans>
+          Runs as root in the installed Linux, after the machine started from the disk image.
+          Everyone who can sign in to DDT can read the script, so it must hold no passwords.
+        </Trans>
       ) : (
         <Trans>
           Runs as SYSTEM on the machine. Everyone who can sign in to DDT can read the script, so it

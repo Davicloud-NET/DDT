@@ -17,4 +17,9 @@
     <ProjectReference Include="..\..\src\DDT.Core\DDT.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The user-data files of the lab that tried the hand-over on real cloud images, as it wrote them. -->
+    <None Include="Sequences\UserData\*.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

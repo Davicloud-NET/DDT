@@ -35,13 +35,17 @@ public sealed class WriteCloudInitSeedStepRunner(IRawDisks disks, RunSession ses
         using IRawDisk raw = disks.Open(disk);
         GptLayout layout = WithSeedPartition(raw, disk);
         GptPartition seed = layout.Partitions.MaxBy(partition => partition.FirstLba)!;
-        byte[] volume = CloudInitSeed.Build(
+        WrittenSeed kept = new(
             new CloudInitSeedFiles(metaData, userData, networkConfig),
+            seed.Number,
+            seed.FirstLba,
             BitConverter.ToUInt32(RandomNumberGenerator.GetBytes(4)),
-            timeProvider.GetUtcNow().UtcDateTime,
-            seed.FirstLba);
+            timeProvider.GetUtcNow().UtcDateTime);
 
-        Write(raw, layout, seed, volume);
+        Write(raw, layout, seed, CloudInitSeed.Build(kept.Files, kept.SerialNumber, kept.Timestamp, kept.FirstSector));
+
+        // A hand-over to the installed Linux writes the volume again, with the agent beside these files.
+        session.Seed = kept;
 
         try
         {

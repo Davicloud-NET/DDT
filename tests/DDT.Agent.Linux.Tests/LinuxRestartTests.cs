@@ -56,9 +56,43 @@ public sealed class LinuxRestartTests : IDisposable
         Assert.Contains("The next start comes from boot entry Boot0004 again, the one this start came from.", _console.ToString(), StringComparison.Ordinal);
     }
 
-    // The run put the disk first, so the firmware's own order leads there.
+    // The run put the disk first. A firmware that tries the network before its order at every start would bring the
+    // machine back once for nothing, and the server would count a return that is none.
     [Fact]
-    public async Task IntoTheInstalledSystemTheRestartIsPlain()
+    public async Task IntoTheInstalledSystemTheNextStartIsTheFirstEntryOfTheBootOrder()
+    {
+        _tree.WriteVariable("BootCurrent", LinuxUefiVariables.Global, 0x04, 0x00);
+        _tree.WriteVariable("BootOrder", LinuxUefiVariables.Global, 0x06, 0x00, 0x04, 0x00);
+        _tree.WriteVariable("BootNext", LinuxUefiVariables.Global, 0x04, 0x00);
+        LinuxRestart restart = Restart();
+
+        await new LinuxBootRebooter(_variables, restart, Log()).RebootAsync(RestartInto.InstalledSystem, TestContext.Current.CancellationToken);
+
+        Assert.Equal([0x06, 0x00], _variables.Read("BootNext"));
+        Assert.Equal([0x06, 0x00, 0x04, 0x00], _variables.Read("BootOrder"));
+        Assert.True(restart.Issued);
+        Assert.Contains(
+            "INFO  The next start comes from boot entry Boot0006, the first in the boot order, also where the firmware tries the network before it.",
+            _console.ToString(),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AFirstEntryThatCannotBeNamedIsSaidAndTheRestartIsIssuedAnyway()
+    {
+        _tree.WriteVariable("BootOrder", LinuxUefiVariables.Global, 0x06, 0x00);
+        LinuxUefiVariables refusing = new(_tree.Root, _ => { }, (_, _) => throw new IOException("Operation not permitted"));
+        LinuxRestart restart = Restart();
+
+        await new LinuxBootRebooter(refusing, restart, Log()).RebootAsync(RestartInto.InstalledSystem, TestContext.Current.CancellationToken);
+
+        Assert.True(restart.Issued);
+        Assert.Contains("WARN  The next start could not be set to the first entry of the boot order (", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    // A firmware without a boot order has nothing to name, and its own choice leads to the disk.
+    [Fact]
+    public async Task IntoTheInstalledSystemTheRestartIsPlainWhereTheFirmwareHasNoBootOrder()
     {
         _tree.WriteVariable("BootCurrent", LinuxUefiVariables.Global, 0x04, 0x00);
         LinuxRestart restart = Restart();

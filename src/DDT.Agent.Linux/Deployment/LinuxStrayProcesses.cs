@@ -6,58 +6,99 @@ using System.Globalization;
 
 namespace DDT.Agent.Deployment;
 
-// Finds what a script started and no longer holds. The agent asks the kernel to become the parent of every process
-// below it whose own parent ends, so such a process stays below the agent whatever session it moved to. kill returns
-// 0 or the error.
-public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Func<int, int>? kill = null, Action<TimeSpan>? wait = null) : IStrayProcesses
+// Stops a script with what it started. The agent asks the kernel to become the parent of every process below it
+// whose own parent ends, so such a process stays below the agent whatever session it moved to. A script shares the
+// agent's process group, so each of its processes gets the signal itself. signal returns 0 or the error.
+public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Func<int, int, int>? signal = null, Func<TimeSpan, Task>? wait = null) : IStrayProcesses
 {
     // A process can start another while it is being ended, so the list is read again a few times.
     private const int Rounds = 20;
 
     private static readonly TimeSpan s_betweenRounds = TimeSpan.FromMilliseconds(50);
 
-    private readonly Func<int, int> _kill = kill ?? Kill;
-    private readonly Action<TimeSpan> _wait = wait ?? Thread.Sleep;
+    private readonly Func<TimeSpan, Task> _wait = wait ?? (time => Task.Delay(time, TimeProvider.System));
 
     // False where the kernel does not hand orphans to the agent. They go to the first process then, out of reach.
     public bool Adopts { get; init; }
+
+    // How long a script has to end after it was asked to, for what its trap still has to do.
+    public TimeSpan Grace { get; init; } = TimeSpan.FromSeconds(5);
 
     // Asks the kernel to hand this process every process below it whose parent ends, for as long as it lives. False
     // where the kernel refuses.
     public static bool Adopt() => StrayNativeMethods.prctl(StrayNativeMethods.SetChildSubreaper, 1, 0, 0, 0) == 0;
 
-    public Action WatchFrom(int processId)
-    {
-        long since = Read(processId)?.Started ?? long.MaxValue;
+    public IToolStop WatchFrom(int processId) => new Stop(this, Read(processId)?.Started ?? long.MaxValue);
 
-        return () => EndStartedSince(since);
+    // SIGTERM to every process below the agent that started no earlier than the tool, the tool among them. True when
+    // none is left once the grace is over.
+    public async Task<bool> AskStartedSinceAsync(long since, string tool)
+    {
+        List<Listed> asked = Since(since);
+
+        foreach (Listed process in asked)
+        {
+            Send(process, StrayNativeMethods.TerminateSignal);
+        }
+
+        List<Listed> left = asked;
+
+        for (TimeSpan waited = TimeSpan.Zero; left.Count > 0 && waited < Grace; waited += s_betweenRounds)
+        {
+            await _wait(s_betweenRounds).ConfigureAwait(false);
+            left = Since(since);
+        }
+
+        Say(tool, asked.Count, left.Count);
+
+        return left.Count == 0;
     }
 
-    // Ends every process below the agent that started no earlier than the tool. What an earlier script left stays.
-    public void EndStartedSince(long since)
+    // SIGKILL to every process below the agent that started no earlier than the tool. What an earlier script left stays.
+    public async Task EndStartedSinceAsync(long since)
     {
         HashSet<int> ended = [];
-        List<int> left = [];
+        List<Listed> left = [];
 
         for (int round = 0; round < Rounds; round++)
         {
-            left = [.. Below().Where(process => process.Started >= since).Select(process => process.Id)];
+            left = Since(since);
 
             if (left.Count == 0)
             {
                 break;
             }
 
-            foreach (int process in left.Where(process => _kill(process) == 0))
+            foreach (Listed process in left.Where(process => Send(process, StrayNativeMethods.KillSignal) == 0))
             {
-                ended.Add(process);
+                ended.Add(process.Id);
             }
 
-            _wait(s_betweenRounds);
+            await _wait(s_betweenRounds).ConfigureAwait(false);
         }
 
-        Report(ended.Count, left);
+        Report(ended.Count, [.. left.Select(process => process.Id)]);
     }
+
+    private void Say(string tool, int asked, int left)
+    {
+        string grace = Grace.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture);
+
+        if (left > 0)
+        {
+            log.Warning($"{Count(left)} of {tool} still ran {grace} s after {tool} was asked to end (SIGTERM), so what is left is ended outright (SIGKILL).");
+        }
+        else if (asked > 1)
+        {
+            log.Information($"{tool} and the {Count(asked - 1)} it had started ended when they were asked to (SIGTERM).");
+        }
+        else if (asked == 1)
+        {
+            log.Information($"{tool} ended when it was asked to (SIGTERM).");
+        }
+    }
+
+    private static string Count(int processes) => processes == 1 ? "1 process" : $"{processes} processes";
 
     private void Report(int ended, List<int> left)
     {
@@ -77,8 +118,10 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
         }
     }
 
-    // The living processes that descend from the agent. One that has ended and waits to be collected is not among them.
-    private List<(int Id, long Started)> Below()
+    // The living processes below the agent that the tool started, or that it may have: none of them and none between
+    // them and the agent is older than the tool. What a daemon of an earlier step starts later is that daemon's.
+    // One that has ended and waits to be collected is not among them.
+    private List<Listed> Since(long since)
     {
         Dictionary<int, (int Parent, long Started, bool Alive)> all = [];
 
@@ -90,16 +133,21 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
             }
         }
 
-        return [.. all.Where(process => process.Value.Alive && IsBelow(process.Key, all)).Select(process => (process.Key, process.Value.Started))];
+        return [.. all.Where(process => process.Value.Alive && IsBelow(process.Key, since, all)).Select(process => new Listed(process.Key, process.Value.Started))];
     }
 
-    private bool IsBelow(int process, Dictionary<int, (int Parent, long Started, bool Alive)> all)
+    private bool IsBelow(int process, long since, Dictionary<int, (int Parent, long Started, bool Alive)> all)
     {
         int current = process;
 
         // A chain longer than the list has a circle in it, which a list read while it changes can show.
         for (int steps = 0; steps <= all.Count && all.TryGetValue(current, out (int Parent, long Started, bool Alive) entry); steps++)
         {
+            if (entry.Started < since)
+            {
+                return false;
+            }
+
             if (entry.Parent == agent)
             {
                 return process != agent;
@@ -150,6 +198,17 @@ public sealed class LinuxStrayProcesses(string root, AgentLog log, int agent, Fu
         return (parent, started, fields[0] is not ("Z" or "X"));
     }
 
-    private static int Kill(int process) =>
-        StrayNativeMethods.kill(process, StrayNativeMethods.KillSignal) == 0 ? 0 : System.Runtime.InteropServices.Marshal.GetLastPInvokeError();
+    private int Send(Listed process, int number) =>
+        signal is null ? new LinuxProcessSignal(id => Read(id)?.Started).Send(process.Id, process.Started, number) : signal(process.Id, number);
+
+    // A process as the list showed it: its number, and its start in clock ticks, which tells it from a later one.
+    private readonly record struct Listed(int Id, long Started);
+
+    // One tool's stop, by the moment the tool started.
+    private sealed class Stop(LinuxStrayProcesses strays, long since) : IToolStop
+    {
+        public Task AskAsync(string tool) => strays.AskStartedSinceAsync(since, tool);
+
+        public Task EndAsync() => strays.EndStartedSinceAsync(since);
+    }
 }

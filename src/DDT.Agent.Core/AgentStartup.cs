@@ -146,6 +146,9 @@ public sealed class AgentStartup(AgentPlatform platform)
             return null;
         }
 
+        TimeSpan? checkTime = platform.UpdateCheckTimeAsync is { } timeOf
+            ? await timeOf(agent, cancellationToken).ConfigureAwait(false)
+            : null;
         string current = await ReleaseFiles.Sha256Async(Environment.ProcessPath!, cancellationToken).ConfigureAwait(false);
         ProcessAgentRelauncher relauncher = new(() =>
         {
@@ -162,7 +165,10 @@ public sealed class AgentStartup(AgentPlatform platform)
             {
                 Environment = platform.BootEnvironment,
             },
-            agent.Status);
+            agent.Status)
+        {
+            GiveUpAfter = checkTime,
+        };
 
         return await update.RunAsync(cancellationToken).ConfigureAwait(false);
     }

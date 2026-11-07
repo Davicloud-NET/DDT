@@ -104,6 +104,21 @@ internal sealed class ManualTimeProvider : TimeProvider
         throw new TimeoutException("The condition did not hold after 1000 steps of time.");
     }
 
+    // Moves the clock a second at a time until the code under test is done, and only while it waits on a timer, so a
+    // slow computer sees the same.
+    public async Task<T> ThroughWaitsAsync<T>(Task<T> running)
+    {
+        ArgumentNullException.ThrowIfNull(running);
+
+        while (!running.IsCompleted)
+        {
+            await AdvanceUntilAsync(TimeSpan.Zero, () => running.IsCompleted || PendingTimers > 0);
+            Advance(TimeSpan.FromSeconds(1));
+        }
+
+        return await running;
+    }
+
     internal void Schedule(ManualTimer timer, TimeSpan dueTime, TimeSpan period)
     {
         lock (_lock)

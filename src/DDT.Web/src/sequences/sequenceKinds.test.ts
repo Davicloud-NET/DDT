@@ -12,15 +12,18 @@ import { nodePhasesOf } from "./problems";
 import { sequenceEdits } from "./sequenceEdits";
 import {
   bootPhase,
+  connectsShares,
+  installedPhase,
   isBootPhase,
   kindOfNodes,
   kindOfPhase,
+  restartCodes,
   scriptInterpreters,
   scriptPhases,
   sequenceKind,
 } from "./sequenceKinds";
 import type { GroupStep, IfStep, SequenceStep } from "./sequences";
-import { interpreterLabel, interpreters, newStep, phaseLabel } from "./steps";
+import { inPhase, interpreterLabel, interpreters, newStep, phaseLabel } from "./steps";
 
 const raw = newStep("writeRawImage", "w");
 const seed = newStep("writeCloudInitSeed", "c");
@@ -52,12 +55,15 @@ describe("a sequence's kind", () => {
     expect(kindOfPhase("WindowsPE")).toBe("Windows");
     expect(kindOfPhase("Windows")).toBe("Windows");
     expect(kindOfPhase("LinuxBoot")).toBe("Linux");
-    expect((["WindowsPE", "Windows", "LinuxBoot"] as const).filter(isBootPhase)).toEqual([
+    expect(kindOfPhase("Linux")).toBe("Linux");
+    expect((["WindowsPE", "Windows", "LinuxBoot", "Linux"] as const).filter(isBootPhase)).toEqual([
       "WindowsPE",
       "LinuxBoot",
     ]);
+    expect(installedPhase("Windows")).toBe("Windows");
+    expect(installedPhase("Linux")).toBe("Linux");
     expect(scriptPhases("Windows")).toEqual(["WindowsPE", "Windows"]);
-    expect(scriptPhases("Linux")).toEqual(["LinuxBoot"]);
+    expect(scriptPhases("Linux")).toEqual(["LinuxBoot", "Linux"]);
     expect(scriptInterpreters("Windows")).toEqual(["Cmd", "PowerShell"]);
     expect(scriptInterpreters("Linux")).toEqual(["Shell"]);
     expect([...scriptInterpreters("Windows"), ...scriptInterpreters("Linux")]).toEqual(
@@ -65,9 +71,37 @@ describe("a sequence's kind", () => {
     );
   });
 
-  it("names the Linux boot environment and the shell", () => {
+  // 194 is what a shell makes of exit 3010, and the Linux boot environment cannot restart.
+  it("gives a script the restart codes of the phase it runs in", () => {
+    expect(restartCodes("WindowsPE")).toEqual([3010]);
+    expect(restartCodes("Windows")).toEqual([3010]);
+    expect(restartCodes("LinuxBoot")).toEqual([]);
+    expect(restartCodes("Linux")).toEqual([194]);
+  });
+
+  it("names the Linux boot environment, the installed Linux and the shell", () => {
     expect(phaseLabel("LinuxBoot")).toBe("Linux boot environment");
+    expect(phaseLabel("Linux")).toBe("Installed Linux");
     expect(interpreters.map(interpreterLabel)).toEqual(["cmd", "PowerShell", "Shell"]);
+  });
+
+  // A label is a name on its own. A sentence needs the article, and in German another preposition.
+  it("names each phase as a sentence says where something runs", () => {
+    expect((["WindowsPE", "Windows", "LinuxBoot", "Linux"] as const).map(inPhase)).toEqual([
+      "in Windows PE",
+      "in Windows",
+      "in the Linux boot environment",
+      "in the installed Linux",
+    ]);
+  });
+
+  it("connects shares for a step in Windows or in the installed Linux alone", () => {
+    expect(connectsShares("Linux", ["Linux"])).toBe(true);
+    expect(connectsShares("Linux", ["LinuxBoot"])).toBe(false);
+    // A step that may run in either is in the boot environment on some path.
+    expect(connectsShares("Linux", ["LinuxBoot", "Linux"])).toBe(false);
+    expect(connectsShares("Windows", ["WindowsPE"])).toBe(true);
+    expect(connectsShares("Windows", ["WindowsPE", "Windows"])).toBe(true);
   });
 });
 

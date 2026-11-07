@@ -17,6 +17,7 @@ import { bootPhase, kindOfNodes } from "@/sequences/sequenceKinds";
 
 import type { RunPath } from "../runPath";
 import { CurrentStep } from "./CurrentStep";
+import { LinuxHandOverWait } from "./LinuxHandOverWait";
 
 interface RunActivityProps {
   run: DeploymentSummary;
@@ -24,12 +25,27 @@ interface RunActivityProps {
   path: RunPath | null;
   // The machine's last contact with the server.
   lastSeenUtc: string;
+  // Since when a Linux run waits for the installed Linux's first call after its hand-over. Null otherwise.
+  handedOverUtc?: string | null;
+  // How often the machine has started from the network again since that hand-over.
+  bootReturns?: number;
+  // What to add to now for the server's clock, on which the wait after a hand-over is measured.
+  clockOffsetMs?: number;
   now: number;
 }
 
 // A running run that isn't waiting for anyone. Shows the step it's on, or what the agent does between steps and
 // how long the machine has been silent while it restarts.
-export function RunActivity({ run, view, path, lastSeenUtc, now }: RunActivityProps) {
+export function RunActivity({
+  run,
+  view,
+  path,
+  lastSeenUtc,
+  handedOverUtc = null,
+  bootReturns = 0,
+  clockOffsetMs = 0,
+  now,
+}: RunActivityProps) {
   const current = path?.current ?? null;
   const running =
     current?.state === "running" && current.step !== null && current.entry.number !== null
@@ -39,7 +55,7 @@ export function RunActivity({ run, view, path, lastSeenUtc, now }: RunActivityPr
     running === null
       ? null
       : (view?.artifacts.find((candidate) => candidate.stepId === running.node.id) ?? null);
-  const activity = activityLabel(run.activity);
+  const activity = activityLabel(run.activity, run.phase);
   const after = currentStepLabel(run);
   const silentFor = formatDuration(now - Date.parse(lastSeenUtc));
 
@@ -52,6 +68,17 @@ export function RunActivity({ run, view, path, lastSeenUtc, now }: RunActivityPr
         boot={bootPhase(kindOfNodes((path?.nodes ?? []).map((node) => node.node)))}
         artifact={artifact}
         now={now}
+      />
+    );
+  }
+
+  if (handedOverUtc !== null) {
+    return (
+      <LinuxHandOverWait
+        sinceUtc={handedOverUtc}
+        returns={bootReturns}
+        after={after}
+        now={now + clockOffsetMs}
       />
     );
   }
@@ -70,6 +97,11 @@ export function RunActivity({ run, view, path, lastSeenUtc, now }: RunActivityPr
         <span className="type-small text-ink-2">
           {run.activity === "Restarting" ? (
             <Trans>No contact for {silentFor}, as the machine restarts.</Trans>
+          ) : run.phase === "LinuxBoot" || run.phase === "Linux" ? (
+            <Trans>
+              No contact for {silentFor}. The installed Linux starts before the agent goes on there,
+              which can take a while.
+            </Trans>
           ) : (
             <Trans>
               No contact for {silentFor}. Windows setup runs before the agent starts again, which

@@ -97,7 +97,7 @@ public sealed class SequenceEndpointTests(DdtApplication application) : IClassFi
 
         IReadOnlyList<SequenceSummary> listed = await ReadAsync<IReadOnlyList<SequenceSummary>>(await administrator.GetAsync(SequenceRequests.Sequences));
         Assert.Equal(
-            new SequenceSummary(view.Id, name, "For the lab.", 1, 2, 1, 0, true, false, false, view.UpdatedUtc, view.UpdatedBy),
+            new SequenceSummary(view.Id, name, "For the lab.", 1, 2, 1, 0, true, false, false, view.UpdatedUtc, view.UpdatedBy) { Version = 1 },
             Assert.Single(listed, s => s.Id == view.Id));
 
         AuditEvent audit = Assert.Single(await AuditAsync(view.Id));

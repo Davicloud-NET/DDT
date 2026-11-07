@@ -5,13 +5,14 @@
 import { useLingui } from "@lingui/react/macro";
 
 import { NODE_WIDTH, type WireRoute } from "@/sequences/flow/flowGeometry";
+import { HandoverLine } from "@/sequences/flow/HandoverLine";
+import { kindOfNodes } from "@/sequences/sequenceKinds";
 import { FlowDots } from "@/ui/FlowDots";
 import { FlowFrame } from "@/ui/FlowFrame";
 import { FlowViewport } from "@/ui/FlowViewport";
 import { FlowWires, type WireTone } from "@/ui/FlowWires";
 
 import { FollowToggle } from "./FollowToggle";
-import { HandoverLine } from "./HandoverLine";
 import { nodeDetail } from "./nodeDetail";
 import { RunFlowNode } from "./RunFlowNode";
 import { handover, minimapItems } from "./runFlowView";
@@ -29,7 +30,7 @@ interface RunFlowCanvasProps {
   now: number;
 }
 
-// The run's flow: taken wires in ink, the others dashed, and a line where the run handed over to Windows.
+// The run's flow: taken wires in ink, the others dashed, and a line where the run handed over to the installed system.
 export function RunFlowCanvas({
   model,
   follow,
@@ -69,7 +70,13 @@ export function RunFlowCanvas({
         />
       ))}
 
-      {handBox === undefined ? null : <HandoverLine top={handBox.y} width={layout.width} />}
+      {handBox === undefined ? null : (
+        <HandoverLine
+          top={handBox.y}
+          width={layout.width}
+          kind={kindOfNodes(path.nodes.map((node) => node.node))}
+        />
+      )}
 
       <FlowWires
         width={layout.width}

@@ -138,7 +138,7 @@ internal sealed class PhaseRunner(
                 run.Heartbeat.Activity = RunActivity.Finishing;
                 break;
             case SequenceOutcome.PhaseChangeRequired when run.InInstalledSystem:
-                throw new DeploymentStepException(SequenceRunner.WindowsPEAfterWindowsMessage);
+                throw new DeploymentStepException(EnvironmentTexts.BootStepAfterInstalled(run.Session.Environment));
             case SequenceOutcome.PhaseChangeRequired:
                 run.Heartbeat.Activity = RunActivity.HandingOver;
                 await handOver.HandOverAsync(run, bootOrder, cancellationToken).ConfigureAwait(false);
@@ -157,10 +157,13 @@ internal sealed class PhaseRunner(
         bool restartDue,
         CancellationToken cancellationToken)
     {
+        // However the run ends here, what a hand-over staged outside its own files goes first: the Linux boot
+        // environment keeps a run in memory, so no later start of it could take the run up from a seed.
         if (cancellationToken.IsCancellationRequested)
         {
+            handOver.Withdraw(run, HandOverEnd.Stopped);
             await bootOrder.RestoreAsync(run).ConfigureAwait(false);
-            log.Warning("The agent was stopped. The run's state stays on the disk, so the run goes on after a restart if the server still runs it.");
+            log.Warning(EnvironmentTexts.Stopped(run.Session.Environment, Interrupted(run.State)));
 
             return new RunResult(RunOutcome.Stopped);
         }
@@ -181,24 +184,57 @@ internal sealed class PhaseRunner(
 
         if (failure is AgentTokenRejectedException)
         {
+            handOver.Withdraw(run, HandOverEnd.TokenRejected);
+
             return await ending.TokenRejectedAsync(run).ConfigureAwait(false);
         }
 
         if (failure is { } refusal)
         {
-            return await ending.FailAsync(run, LogText.OneLine(refusal), cancellationToken).ConfigureAwait(false);
+            return await FailAsync(run, LogText.OneLine(refusal), cancellationToken).ConfigureAwait(false);
         }
 
         return outcome switch
         {
             SequenceOutcome.Completed => await ending.FinishAsync(run, cancellationToken).ConfigureAwait(false),
             SequenceOutcome.RebootRequired => await ending.RestartAsync(run, run.SamePhase, cancellationToken).ConfigureAwait(false),
-            SequenceOutcome.PhaseChangeRequired => await ending.RestartAsync(run, RestartInto.InstalledSystem, cancellationToken).ConfigureAwait(false),
+            SequenceOutcome.PhaseChangeRequired => await RestartIntoInstalledAsync(run, cancellationToken).ConfigureAwait(false),
             SequenceOutcome.Stopped => new RunResult(RunOutcome.Stopped),
-            _ => await ending.FailAsync(run, error ?? "The run failed.", cancellationToken).ConfigureAwait(false),
+            _ => await FailAsync(run, error ?? "The run failed.", cancellationToken).ConfigureAwait(false),
         };
+    }
+
+    // The run is over, also where a hand-over staged it for the installed system.
+    private Task<RunResult> FailAsync(SequenceRun run, string error, CancellationToken cancellationToken)
+    {
+        handOver.Withdraw(run, HandOverEnd.Failed);
+
+        return ending.FailAsync(run, error, cancellationToken);
+    }
+
+    // Only the restart was left of the hand-over. Where it does not come, a hand-over that staged the run outside the
+    // run's own files takes it back, and the machine then must not start the installed system for it.
+    private async Task<RunResult> RestartIntoInstalledAsync(SequenceRun run, CancellationToken cancellationToken)
+    {
+        RunResult result = await ending.RestartAsync(run, RestartInto.InstalledSystem, cancellationToken).ConfigureAwait(false);
+
+        if (result.Outcome is RunOutcome.Stopped or RunOutcome.TokenRejected
+            && handOver.Withdraw(run, result.Outcome == RunOutcome.Stopped ? HandOverEnd.Stopped : HandOverEnd.TokenRejected))
+        {
+            await bootOrder.RestoreAsync(run).ConfigureAwait(false);
+        }
+
+        return result;
     }
 
     private static bool IsSet(SequenceState state, string variable) =>
         state.Variables.TryGetValue(variable, out string? value) && value == RunVariables.Set;
+
+    // The step a stop cut off, which the next start fails. Null between steps, and for a step that can be taken up again.
+    private static SequenceStep? Interrupted(SequenceState state)
+    {
+        HashSet<Guid> running = [.. state.Steps.Where(step => step.State == StepState.Running).Select(step => step.StepId)];
+
+        return SequenceTree.Nodes(state.Definition).FirstOrDefault(node => !node.IsContainer && !node.Resumable && running.Contains(node.Id));
+    }
 }

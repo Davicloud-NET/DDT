@@ -23,27 +23,32 @@ public sealed class HttpAgentServerTests
     private static readonly Guid s_runId = Guid.Parse("0197a3c0-0000-7000-8000-00000000000b");
     private static readonly Guid s_stepId = Guid.Parse("0197a3c0-0000-7000-8000-00000000000c");
 
-    // Only for the tests of the timeout itself. A request that is answered must not race it on a busy computer.
+    // Only for the tests of the timeout itself, which pass it on their own clock once the server has the request. A
+    // deadline on the computer's clock runs out before that on a busy computer, or after the answer.
     private static readonly TimeSpan s_requestTimeout = TimeSpan.FromMilliseconds(200);
 
     private static readonly TimeSpan s_answeredInTime = TimeSpan.FromSeconds(30);
 
-    // The server's download queue, as the agent sees it: an answer that only starts after a while.
-    private static readonly TimeSpan s_queueWait = TimeSpan.FromSeconds(1);
-
+    // The server's download queue, as the agent sees it: the request is in, and the answer only starts after a while.
     [Fact]
     public async Task ADownloadWaitsInTheServersQueueLongerThanARequestMay()
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
         byte[] content = RandomNumberGenerator.GetBytes(4096);
+        ManualTimeProvider time = new();
+        HeldAnswer held = new();
         using TcpListener listener = new(IPAddress.Loopback, 0);
         listener.Start();
 
-        Task serving = AnswerLateAsync(listener, "application/octet-stream", content, cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        Task serving = AnswerLateAsync(listener, "application/octet-stream", content, held, cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout) { TimeProvider = time };
         using MemoryStream destination = new();
 
-        await server.DownloadReleaseAsync(destination, cancellationToken);
+        Task download = server.DownloadReleaseAsync(destination, cancellationToken);
+        await held.Asked.WaitAsync(cancellationToken);
+        time.Advance(s_requestTimeout * 20);
+        held.Release();
+        await download;
         await serving;
 
         Assert.Equal(content, destination.ToArray());
@@ -84,10 +89,18 @@ public sealed class HttpAgentServerTests
         using TcpListener listener = new(IPAddress.Loopback, 0);
         listener.Start();
 
-        Task serving = AnswerLateAsync(listener, "application/json", """{"sha256":"00","size":1}"""u8.ToArray(), cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout);
+        ManualTimeProvider time = new();
+        HeldAnswer held = new();
+        Task serving = AnswerLateAsync(listener, "application/json", """{"sha256":"00","size":1}"""u8.ToArray(), held, cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_requestTimeout) { TimeProvider = time };
 
-        ServerTimeoutException timeout = await Assert.ThrowsAsync<ServerTimeoutException>(() => server.GetReleaseAsync(cancellationToken));
+        // The time passes once the server has the request and keeps its answer, and no earlier.
+        Task<AgentRelease?> request = server.GetReleaseAsync(cancellationToken);
+        await held.Asked.WaitAsync(cancellationToken);
+        time.Advance(s_requestTimeout);
+
+        ServerTimeoutException timeout = await Assert.ThrowsAsync<ServerTimeoutException>(() => request);
+        held.Release();
         await serving;
 
         Assert.Equal("the server did not answer within 0.2 s", timeout.Message);
@@ -96,6 +109,7 @@ public sealed class HttpAgentServerTests
 
     // The connect timeout covers the TLS handshake. A listener that never accepts leaves it unanswered once the kernel
     // has taken the TCP connection. The request timeout is far away, so only the connect timeout can end the request.
+    // It is the handler's own and runs on the computer's clock: how long the connection took is whatever it took.
     [Fact]
     public async Task SaysWhenTheServerTookTheConnectionButNotTheTlsHandshake()
     {
@@ -109,7 +123,7 @@ public sealed class HttpAgentServerTests
             () => server.GetReleaseAsync(TestContext.Current.CancellationToken));
 
         Assert.Matches(
-            $@"^the server at 127\.0\.0\.1:{port} accepted a connection at 127\.0\.0\.1:{port} after 0\.\d s, but the TLS handshake did not finish within 0\.3 s$",
+            $@"^the server at 127\.0\.0\.1:{port} accepted a connection at 127\.0\.0\.1:{port} after \d+\.\d s, but the TLS handshake did not finish within 0\.3 s$",
             timeout.Message);
         Assert.Equal(ConnectionStage.SecureConnection, timeout.Stage);
     }
@@ -151,11 +165,19 @@ public sealed class HttpAgentServerTests
         using TcpListener listener = new(IPAddress.Loopback, 0);
         listener.Start();
 
-        Task serving = StallAsync(listener, cancellationToken);
-        using HttpAgentServer server = new(AddressOf(listener), null, downloadTimeout: TimeSpan.FromMilliseconds(300));
+        ManualTimeProvider time = new();
+        TimeSpan deadline = TimeSpan.FromMilliseconds(300);
+        TaskCompletionSource stalled = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task serving = StallAsync(listener, stalled, cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, downloadTimeout: deadline) { TimeProvider = time };
         using MemoryStream destination = new();
 
-        ServerTimeoutException timeout = await Assert.ThrowsAsync<ServerTimeoutException>(() => server.DownloadReleaseAsync(destination, cancellationToken));
+        // The deadline passes once the server has sent the first bytes and sends no more, and no earlier.
+        Task download = server.DownloadReleaseAsync(destination, cancellationToken);
+        await stalled.Task.WaitAsync(cancellationToken);
+        time.Advance(deadline);
+
+        ServerTimeoutException timeout = await Assert.ThrowsAsync<ServerTimeoutException>(() => download);
         await serving;
 
         Assert.Equal("the download did not finish within 0.3 s", timeout.Message);
@@ -170,12 +192,17 @@ public sealed class HttpAgentServerTests
         listener.Start();
 
         using CancellationTokenSource stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        Task serving = StallAsync(listener, TestContext.Current.CancellationToken);
+        TaskCompletionSource stalled = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task serving = StallAsync(listener, stalled, TestContext.Current.CancellationToken);
         using HttpAgentServer server = new(AddressOf(listener), null);
         using MemoryStream destination = new();
-        stop.CancelAfter(s_requestTimeout);
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => server.DownloadReleaseAsync(destination, stop.Token));
+        // Stopped once the download has stalled, so it is the download that the stop ends.
+        Task download = server.DownloadReleaseAsync(destination, stop.Token);
+        await stalled.Task.WaitAsync(TestContext.Current.CancellationToken);
+        await stop.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => download);
         await serving;
     }
 
@@ -517,7 +544,8 @@ public sealed class HttpAgentServerTests
     private static Uri AddressOf(TcpListener listener) =>
         new($"http://127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}/");
 
-    private static async Task AnswerLateAsync(TcpListener listener, string contentType, byte[] body, CancellationToken cancellationToken)
+    // Takes the request, says so, and answers only once the test lets it.
+    private static async Task AnswerLateAsync(TcpListener listener, string contentType, byte[] body, HeldAnswer held, CancellationToken cancellationToken)
     {
         using TcpClient client = await listener.AcceptTcpClientAsync(cancellationToken);
         NetworkStream stream = client.GetStream();
@@ -531,7 +559,7 @@ public sealed class HttpAgentServerTests
             read += received;
         }
 
-        await Task.Delay(s_queueWait, cancellationToken);
+        await held.WaitAsync(cancellationToken);
 
         byte[] headers = Encoding.ASCII.GetBytes(
             $"HTTP/1.1 200 OK\r\nContent-Type: {contentType}\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n");
@@ -547,8 +575,8 @@ public sealed class HttpAgentServerTests
         }
     }
 
-    // Answers with the headers and the first bytes of a release, then sends nothing more.
-    private static async Task StallAsync(TcpListener listener, CancellationToken cancellationToken)
+    // Answers with the headers and the first bytes of a release, says so, then sends nothing more.
+    private static async Task StallAsync(TcpListener listener, TaskCompletionSource stalled, CancellationToken cancellationToken)
     {
         using TcpClient client = await listener.AcceptTcpClientAsync(cancellationToken);
         NetworkStream stream = client.GetStream();
@@ -563,6 +591,7 @@ public sealed class HttpAgentServerTests
         }
 
         await stream.WriteAsync((byte[])[.. "HTTP/1.1 200 OK\r\nContent-Length: 4096\r\n\r\n"u8, .. new byte[16]], cancellationToken);
+        stalled.TrySetResult();
 
         try
         {

@@ -123,19 +123,14 @@ static AgentMachine Machine(DiskpartPartitioner disks, EnvironmentSwitch change,
     return new(identity, disks, new LocalRunLocator(WindowsFixedDrives.Roots()), version, AgentEnvironment.WindowsPE) { Switch = change };
 }
 
-// The agent.json it stages into Windows only holds what it takes to reach the server.
-static WindowsHandOver HandOver(StartedAgent agent, ToolRunner tools)
-{
-    AgentConfiguration staged = new(agent.Options.ServerUrl.AbsoluteUri, agent.Options.RootCertificate?.ExportCertificatePem(), null);
-
-    return new WindowsHandOver(
+static WindowsHandOver HandOver(StartedAgent agent, ToolRunner tools) =>
+    new(
         new OfflineServiceRegistration(tools, agent.Log, dryRun: false),
         Environment.ProcessPath!,
-        staged,
+        agent.Options.ForInstalledSystem(),
         agent.Log,
         dryRun: false,
         () => ConsoleForWindows(agent));
-}
 
 // The console that goes into the installed Windows with the run. It's the one that ran here, but only if it spoke
 // this agent's version of the protocol. A console of another version couldn't show DDT's session there.

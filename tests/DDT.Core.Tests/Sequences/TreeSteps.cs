@@ -45,6 +45,9 @@ internal static class TreeSteps
     // A script as a Linux sequence takes it: for the shell, in the Linux boot environment.
     public static RunScriptStep Shell() => Script(SequencePhase.LinuxBoot) with { Interpreter = ScriptInterpreter.Shell, Script = "exit 0" };
 
+    // The same in the installed Linux, where a Linux sequence goes on after its seed.
+    public static RunScriptStep InLinux() => Shell() with { Phase = SequencePhase.Linux };
+
     public static RebootStep Reboot() => new() { Id = Guid.NewGuid(), Name = "Restart" };
 
     public static WriteRawImageStep WriteRawImage() => new() { Id = Guid.NewGuid(), Name = "Write the raw image", ImageId = Guid.NewGuid() };

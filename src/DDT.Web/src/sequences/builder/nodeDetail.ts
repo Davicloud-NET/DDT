@@ -10,7 +10,7 @@ import type { Subject } from "@/conditions/conditionSubjects";
 
 import { findingText, type Findings } from "../problems";
 import type { AccountReference, SequenceStep } from "../sequences";
-import { EMPTY_ID, interpreterLabel, phaseLabel } from "../steps";
+import { EMPTY_ID, inPhase, interpreterLabel } from "../steps";
 import type { StepCatalog } from "../useStepCatalog";
 
 // The line a node's card shows under its name. That's its first problem if it has one. Otherwise it's when the node
@@ -88,9 +88,9 @@ export function nodeDetail(
       );
     case "runScript": {
       const interpreter = interpreterLabel(node.interpreter);
-      const phase = phaseLabel(node.phase);
+      const where = inPhase(node.phase);
 
-      return plain(t`${interpreter}, in ${phase}`);
+      return plain(t`${interpreter}, ${where}`);
     }
     case "reboot":
       return plain(t`Restarts the machine`);

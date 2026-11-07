@@ -14,8 +14,8 @@ public sealed record SequenceDefinition(int Version, IReadOnlyList<SequenceStep>
     // Version 2 adds WriteRawImageStep and WriteCloudInitSeedStep. Version 3 makes the steps a tree (group, if,
     // repeat). It also adds Set variable, Pause, When, Shares, RunAs, a join's Account, Variables, Inputs and the
     // operators after Contains. Version 4 moves raw disk images and their seed to the LinuxBoot phase and adds shell
-    // scripts.
-    public const int CurrentVersion = 4;
+    // scripts. Version 5 adds the Linux phase, the installed Linux.
+    public const int CurrentVersion = 5;
 
     // Null is none. Left out of the JSON while unset, so a document without them reads and writes as before.
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

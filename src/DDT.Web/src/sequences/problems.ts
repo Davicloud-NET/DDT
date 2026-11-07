@@ -15,10 +15,12 @@ import type {
   StepKind,
 } from "./sequences";
 
-// Problems keep a sequence from running. Warnings are shown the same way but don't.
+// Problems keep a sequence from running. Warnings are shown the same way but don't. A note only says what a setting
+// will do: it shows at its field and is counted nowhere.
 export interface Findings {
   problems: SequenceProblem[];
   warnings: SequenceProblem[];
+  notes?: SequenceProblem[];
 }
 
 // The fields each kind of node shows, besides name, the flags, its conditions and its shares. A problem with another
@@ -170,6 +172,7 @@ export function stepFindings(findings: Findings, stepId: string): Findings {
   return {
     problems: findings.problems.filter((problem) => problem.stepId === stepId),
     warnings: findings.warnings.filter((problem) => problem.stepId === stepId),
+    notes: (findings.notes ?? []).filter((note) => note.stepId === stepId),
   };
 }
 
@@ -226,15 +229,19 @@ export function findingText(finding: SequenceProblem): string {
 }
 
 // The messages for one field, such as "script" or "when.parts[1].value", split by kind. A problem marks the field
-// invalid. A warning is only information.
+// invalid. A warning is only information, and a note is no more than a hint.
 export function fieldFindings(
   findings: Findings,
   field: string,
-): { problems: string[]; warnings: string[] } {
+): { problems: string[]; warnings: string[]; notes: string[] } {
   const of = (list: SequenceProblem[]) =>
     list.filter((problem) => problem.field === field).map(findingText);
 
-  return { problems: of(findings.problems), warnings: of(findings.warnings) };
+  return {
+    problems: of(findings.problems),
+    warnings: of(findings.warnings),
+    notes: of(findings.notes ?? []),
+  };
 }
 
 // The findings, with one field's findings moved to another field, such as a whole condition's to its value.
@@ -242,7 +249,11 @@ export function withFieldAt(findings: Findings, from: string, to: string): Findi
   const moved = (problem: SequenceProblem) =>
     problem.field === from ? { ...problem, field: to } : problem;
 
-  return { problems: findings.problems.map(moved), warnings: findings.warnings.map(moved) };
+  return {
+    problems: findings.problems.map(moved),
+    warnings: findings.warnings.map(moved),
+    notes: (findings.notes ?? []).map(moved),
+  };
 }
 
 // The phases each node may run in, as the server worked them out for its copy. They come from nodePhases, or from

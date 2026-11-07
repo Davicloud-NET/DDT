@@ -31,6 +31,9 @@ public static class DeploymentLimits
     // How often the server restarts a machine for a run of the other boot environment. Netboot may never start it there.
     public const int RestartOrders = 2;
 
+    // Far more starts of the boot environment after a hand-over than an agent counts before it gives the run up.
+    public const int MaxBootReturns = 100;
+
     // How long an agent told to restart counts as about to. It restarts at once, so one that still polls then did not.
     public static readonly TimeSpan RestartOrderOpen = TimeSpan.FromSeconds(30);
 }

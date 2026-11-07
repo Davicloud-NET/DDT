@@ -18,4 +18,7 @@ public sealed record AgentMachine(
 {
     // How the machine gets into the other boot environment. Null where nothing restarts it for that.
     public EnvironmentSwitch? Switch { get; init; }
+
+    // The resume token of a registration this start made before its loop, as for a run it found handed over.
+    public string? ResumeToken { get; init; }
 }

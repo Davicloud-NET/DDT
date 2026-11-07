@@ -180,6 +180,33 @@ public sealed class StepStateLogTests
         Assert.Equal([TestTree.OnLatitude.Id, TestTree.UntilItWorks.Id, TestTree.UntilItWorks.Id, TestTree.Twice.Id, TestTree.Twice.Id, TestTree.Failing.Id], runner.Ran);
     }
 
+    // The engine sets a variable itself and asks no runner, so this is the only line a Set variable step leaves. The
+    // value stays out of it: a sequence may put a secret together there.
+    [Fact]
+    public async Task SaysThatAStepSetItsVariableAndNotWhatItSetItTo()
+    {
+        SetVariableStep set = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000b1"), Name = "Name the PC", Variable = "Asset", Value = "PC-{{SerialNumber}}" };
+        SetVariableStep undeclared = set with { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000b2"), Name = "Name it again", Variable = "Other", ContinueOnError = true };
+        SequenceDefinition definition = new(SequenceDefinition.CurrentVersion, [set, undeclared])
+        {
+            Variables = [new VariableDeclaration { Name = "Asset", SetBySteps = true }],
+        };
+        SequenceState start = SequenceStates.Start(Guid.NewGuid(), definition);
+        StepStateLog steps = new(_log, start, s_machine);
+
+        SequenceRunResult result = await new SequenceEngine(new TestTree.Runner(), new TestTree.Store(steps.Saved), new Progress<StepPercent>())
+            .RunAsync(start, s_machine, TestContext.Current.CancellationToken);
+
+        Assert.Equal("PC-SN-1", result.State.Variables["Asset"]);
+        Assert.Equal(
+            [
+                "INFO  Step Name the PC set Asset.",
+                "ERROR Step Name it again failed: Other cannot be set: the sequence does not declare it as a variable that steps may set.",
+            ],
+            Lines());
+        Assert.DoesNotContain("SN-1", _console.ToString(), StringComparison.Ordinal);
+    }
+
     // After a restart the log continues from the state found and says nothing twice.
     [Fact]
     public async Task SaysNothingOfATreesDecisionsBeforeTheRunWentOn()

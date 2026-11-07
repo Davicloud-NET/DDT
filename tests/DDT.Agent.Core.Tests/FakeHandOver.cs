@@ -15,4 +15,7 @@ internal sealed class FakeHandOver(FakeDeploymentTools tools) : IHandOver
 
         return Task.CompletedTask;
     }
+
+    // Not in the journal, which holds what the tools did for a run that ended.
+    bool IHandOver.Withdraw(SequenceRun run, HandOverEnd end) => false;
 }

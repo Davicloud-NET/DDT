@@ -12,12 +12,14 @@ import type {
   StepKind,
   VariableDeclaration,
 } from "../sequences";
+import { restartCodes } from "../sequenceKinds";
 import { newStep } from "../steps";
 import type { ConditionChange, ConditionField, ConditionPath } from "./conditionTree";
 import { moveIn, named, renamed } from "./declarationEdits";
 import { bodiesOf, type Slot } from "./flowTree";
 import { conditionEdited, patchedNode } from "./nodeEdits";
 import { sameName } from "./references";
+import { scriptPhaseAt } from "./scriptPlace";
 import { inserted, moved, unwrapped, wrapped } from "./structureEdits";
 import { insertAt, replaceNode, withBody, without, withSteps } from "./treeChanges";
 
@@ -68,13 +70,27 @@ export type FlowEdit =
   | { type: "removeInput"; name: string }
   | { type: "moveInput"; name: string; to: number };
 
-// A new node of the kind at the slot, as a sequence of that kind starts it. Its id is nodes[0].id.
+// A new node of the kind at the slot, as a sequence of that kind starts it. Its id is nodes[0].id. In a Linux
+// sequence a script starts where its place in steps lets it run: in the installed Linux once the seed is written.
 export function insertNode(
   slot: Slot,
   kind: StepKind,
   sequence: SequenceKind = "Windows",
+  steps: readonly SequenceStep[] = [],
 ): Extract<FlowEdit, { type: "insertNodes" }> {
-  return { type: "insertNodes", slot, nodes: [newStep(kind, crypto.randomUUID(), sequence)] };
+  const node = newStep(kind, crypto.randomUUID(), sequence);
+
+  if (node.kind !== "runScript" || sequence !== "Linux") {
+    return { type: "insertNodes", slot, nodes: [node] };
+  }
+
+  const phase = scriptPhaseAt(steps, slot);
+
+  return {
+    type: "insertNodes",
+    slot,
+    nodes: [{ ...node, phase, rebootExitCodes: restartCodes(phase) }],
+  };
 }
 
 // Copies of nodes, such as those on the clipboard, with new ids for them and everything inside them.

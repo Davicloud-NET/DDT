@@ -24,25 +24,36 @@ public static class SequenceChecks
     // Parts of a name that say its value is a password or another secret, ignoring case.
     private static readonly string[] s_secretNames = ["password", "passwd", "passwort", "kennwort", "pwd", "secret", "token"];
 
-    public static SequenceValidation Check(SequenceDefinition definition, SequenceReferences references)
+    public static SequenceValidation Check(SequenceDefinition definition, SequenceReferences references) =>
+        Check(definition, references, SequenceValidator.Analyse(definition));
+
+    // With the analysis a caller already has. Each analysis walks every path and reads every seed's user-data.
+    public static SequenceValidation Check(SequenceDefinition definition, SequenceReferences references, SequenceAnalysis analysis)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(references);
+        ArgumentNullException.ThrowIfNull(analysis);
 
-        SequenceAnalysis analysis = SequenceValidator.Analyse(definition);
         List<SequenceProblem> problems = [.. analysis.Problems];
         List<SequenceProblem> warnings = [.. analysis.Warnings];
         bool addsAdministrator = false;
+        IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(definition);
 
-        foreach (SequenceStep step in SequenceTree.Nodes(definition))
+        for (int index = 0; index < nodes.Count; index++)
         {
-            addsAdministrator |= CheckNode(step, definition, references, problems, warnings);
+            addsAdministrator |= CheckNode(nodes[index], definition, references, problems, warnings);
+
+            // Linux signs in to every share with NTLM, so the advice to name the server changes nothing there.
+            if (!RunsOnlyInLinux(analysis.NodePhases.ElementAtOrDefault(index)))
+            {
+                CheckShareHosts(nodes[index], warnings);
+            }
         }
 
         CheckDeclaredSecrets(definition, warnings);
 
         // Some path reaches Windows, and no answer file on any path adds the administrator.
-        if (InWindows(analysis.NodePhases) && !addsAdministrator)
+        if (ContinuesInWindows(analysis.NodePhases) && !addsAdministrator)
         {
             warnings.Add(SequenceProblem.From(null, null, ServerMessages.SequenceNoAdministratorWarning.With()));
         }
@@ -56,7 +67,7 @@ public static class SequenceChecks
             .Where(name => !references.ValueNames.Contains(name))
             .Select(name => SequenceProblem.From(null, null, ServerMessages.SequenceValueUndefined.With("name", name))));
 
-        return new SequenceValidation(problems, warnings);
+        return new SequenceValidation(problems, warnings, analysis.Notes);
     }
 
     // A step on any branch may run, so a sequence that erases a disk on one branch counts as erasing.
@@ -78,8 +89,21 @@ public static class SequenceChecks
     // The phases each node may run in, in SequenceTree.Nodes order. A node has more than one if it depends on the path.
     public static IReadOnlyList<NodePhase> NodePhases(SequenceDefinition definition) => SequenceValidator.Analyse(definition).NodePhases;
 
-    // Whether some path through the sequence continues in Windows.
-    public static bool ContinuesInWindows(SequenceDefinition definition) => InWindows(NodePhases(definition));
+    // Whether some path through the sequence continues in Windows, from the phases of its nodes.
+    public static bool ContinuesInWindows(IReadOnlyList<NodePhase> nodes)
+    {
+        ArgumentNullException.ThrowIfNull(nodes);
+
+        return nodes.Any(node => node.Phases.Contains(SequencePhase.Windows));
+    }
+
+    // The same for the installed Linux, where the seed carries the agent.
+    public static bool ContinuesInLinux(IReadOnlyList<NodePhase> nodes)
+    {
+        ArgumentNullException.ThrowIfNull(nodes);
+
+        return nodes.Any(node => node.Phases.Contains(SequencePhase.Linux));
+    }
 
     // Why a sequence needs a computer name, or null if it doesn't. It joins the domain under that name, a cloud-init
     // seed names the machine with it, or it declares the ComputerName variable. A join or a seed on any branch counts.
@@ -160,8 +184,6 @@ public static class SequenceChecks
                 break;
         }
 
-        CheckShareHosts(step, Warn);
-
         return addsAdministrator;
     }
 
@@ -179,8 +201,6 @@ public static class SequenceChecks
                 written.BootDetail ?? ""));
         }
     }
-
-    private static bool InWindows(IReadOnlyList<NodePhase> nodes) => nodes.Any(node => node.Phases.Contains(SequencePhase.Windows));
 
     private static void CheckImage(Guid imageId, ImageKind kind, SequenceReferences references, Action<string?, ServerMessage> add)
     {
@@ -282,9 +302,13 @@ public static class SequenceChecks
         }
     }
 
-    // A server named by its address gets no Kerberos ticket, so the password goes over NTLM, which a machine in the
-    // middle can relay. Only a literal host can be checked here. One made of values is only known when the step runs.
-    private static void CheckShareHosts(SequenceStep step, Action<string?, ServerMessage> warn)
+    // Whether every phase the node may run in is one of a Linux sequence. A node the analysis names no phase for is not.
+    private static bool RunsOnlyInLinux(NodePhase? node) =>
+        node is { Phases.Count: > 0 } && node.Phases.All(phase => SequenceKinds.Of(phase) == SequenceKind.Linux);
+
+    // Windows gets no Kerberos ticket for a server named by its address, so the password goes over NTLM, which a
+    // machine in the middle can relay. Only a literal host can be checked. One made of values is only known at the step.
+    private static void CheckShareHosts(SequenceStep step, List<SequenceProblem> warnings)
     {
         IReadOnlyList<ShareConnection?> shares = step.Shares ?? [];
 
@@ -292,9 +316,10 @@ public static class SequenceChecks
         {
             if (AccountRules.WrittenHost(shares[index]?.Path) is { } host && ValueTemplate.Parse(host).Placeholders.Count == 0 && IsAddress(host))
             {
-                warn(
+                warnings.Add(SequenceProblem.From(
+                    step.Id == Guid.Empty ? null : step.Id,
                     string.Create(CultureInfo.InvariantCulture, $"shares[{index}].path"),
-                    ServerMessages.SequenceShareHostAddressWarning.With("host", host));
+                    ServerMessages.SequenceShareHostAddressWarning.With("host", host)));
             }
         }
     }

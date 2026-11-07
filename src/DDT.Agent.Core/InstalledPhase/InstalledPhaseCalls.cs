@@ -4,6 +4,7 @@
 
 using System.Net;
 using DDT.Agent.Deployment;
+using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
 
@@ -18,6 +19,8 @@ internal sealed class InstalledPhaseCalls(
     AgentLog log,
     TimeProvider timeProvider)
 {
+    private const int MaxLastBatches = 5;
+
     // Every attempt but the first waits a little first. Returns null when the server no longer has the run going on
     // this machine.
     public async Task<InstalledPhaseContact?> RegisterAsync(string? runToken, Guid runId, int attempt, CancellationToken cancellationToken)
@@ -80,6 +83,30 @@ internal sealed class InstalledPhaseCalls(
         }
     }
 
+    // For an agent that is being stopped, which gets no later moment. The system's own log has every line, so a line
+    // that does not get through is not said again.
+    public async Task SendLastLinesAsync(InstalledPhaseContact contact)
+    {
+        if (options.Profile.LastLines is not { } limit)
+        {
+            return;
+        }
+
+        using CancellationTokenSource deadline = new(limit, timeProvider);
+
+        try
+        {
+            for (int batch = 0; batch < MaxLastBatches && log.QueuedLines > 0; batch++)
+            {
+                await log.FlushAsync(server, contact.MachineId, contact.Tokens.Token, deadline.Token).ConfigureAwait(false);
+            }
+        }
+        catch (Exception exception) when (exception is OperationCanceledException or AgentTokenRejectedException || ServerCallRules.IsTransient(exception, deadline.Token))
+        {
+            // The agent ends now, and nothing could be done about it
+        }
+    }
+
     // Returns the registration with the identity it used. Null when the server has nothing for this service.
     private async Task<(AgentRegistrationResult Registration, MachineIdentity Identity)?> RegisterUntilAnsweredAsync(
         string? runToken,
@@ -124,7 +151,7 @@ internal sealed class InstalledPhaseCalls(
         identity.SerialNumber,
         options.AgentVersion,
         RunToken: runToken,
-        SequenceVersion: SequenceDefinition.CurrentVersion,
+        SequenceVersion: SupportedSequences.Version,
         Environment: options.Profile.Environment,
         SecureBootEnabled: identity.SecureBootEnabled,
         TrustedUefiCas: identity.TrustedUefiCas,

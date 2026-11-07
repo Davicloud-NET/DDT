@@ -1,8 +1,9 @@
 # Security
 
-DDT decides which machines receive task sequences that run as SYSTEM, the passwords of a local
-administrator and of a domain join account, and the images that end up on the disks of a network's
-computers. A flaw in it can reach every machine it deploys, so please report one privately.
+DDT decides which machines receive task sequences that run as SYSTEM or as root, the passwords of
+a local administrator and of a domain join account, and the images that end up on the disks of a
+network's computers. A flaw in it can reach every machine it deploys, so please report one
+privately.
 
 ## Reporting a vulnerability
 
@@ -18,8 +19,9 @@ A useful report says:
 - what an attacker can do, and from where: the provisioning network, the web UI signed in with
   which role, a machine being deployed, or a package or image someone uploads;
 - the commit of DDT it was found in, and which role or program it concerns: the `web` or `pxe`
-  role, the agent for Windows PE or for Linux, the console at the machine,
-  `build/Build-BootImage.ps1`, or the Linux boot environment and its build in `build/LinuxBoot`;
+  role, the agent for Windows PE or for Linux, in the boot environment or in the installed system,
+  the console at the machine, `build/Build-BootImage.ps1`, or the Linux boot environment and its
+  build in `build/LinuxBoot`;
 - the steps to reproduce it, with a proof of concept if there is one.
 
 You will get an answer to say that the report arrived, and then word of what is being done about
@@ -54,6 +56,29 @@ no vulnerability by itself:
   TFTP transfers or have the server reset a machine's HTTP boot downloads, which makes that
   machine's start slower or fail once.
 
+A Linux run that goes on in the installed Linux leaves the boot environment for a system DDT did
+not make. The same section says what such a run trusts. Accepted, and no vulnerability by itself:
+
+- The run's token lies on the cloud-init seed in plain text, from the hand-over until the
+  installed Linux has run DDT's script, and for as long as an image never runs it. Whoever reads
+  the machine's disk in that time has it. The server takes it for that run alone, while it runs
+  that run.
+- Root in the installed Linux has the run's token and state and can go on with the run as the
+  agent does, with what the server hands that run's steps. The image and the sequence's own
+  scripts are trusted with that.
+- When the run is over, the agent overwrites what held the token before it deletes it. That holds
+  where the file system writes a file's bytes in place. It is no promise for a file system that
+  copies on write, and the machine's journal keeps the lines of the agent and of the scripts.
+- A registration that asks whether a handed-over run goes on, and carries no token, changes
+  nothing while a run of that machine goes on in the installed Linux, and is answered without a
+  token. It need not name the run. Whoever knows the machine's SMBIOS UUID and adapter address
+  so learns the machine's state, the run's id and how often the machine was sent back to its
+  disk. Each question names its start with an id the sender chooses, and five starts in a row end
+  the run, as one registration in the machine's name without the question does. Each counted
+  start is in the audit log with the address it came from.
+- Whoever sits at a netbooted machine can end a run that goes on in its installed Linux, by
+  typing `END` there, without signing in.
+
 A way around what the security model promises is a vulnerability, for example:
 
 - a machine that reads a task sequence, an image, a package or a secret before an operator or
@@ -69,7 +94,14 @@ A way around what the security model promises is a vulnerability, for example:
   kernel command line;
 - a machine somebody registered under an identity of their own that changes which boot environment
   another, approved machine is named, or a datagram that resets another machine's downloads
-  without a forged source address.
+  without a forged source address;
+- a run's token or a share's password in the run's log, in the journal or the kernel's log of an
+  installed Linux, or left on its disk after the agent removed itself, where the file system
+  writes in place;
+- the agent's removal overwriting or deleting what is not its own, as through a link a script
+  left in its folders;
+- a question about a handed-over run that is answered with a token, or that changes the machine
+  it names while that run goes on.
 
 A vulnerability in a library DDT uses belongs with that library's maintainers first. Tell DDT as
 well when DDT is affected in a way its users need to know about.

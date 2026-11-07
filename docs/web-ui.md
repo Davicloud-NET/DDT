@@ -119,6 +119,23 @@ seconds; the toast and the history are two ways to the same undo.
 "Network shares" for a step and never for a group, an IF or a Repeat, and the server refuses shares on a container
 (`sequence.sharesOnlyOnSteps`) and hands a container no account. A new kind of container keeps it so.
 
+**Windows and Linux sequences.** A sequence is of one kind, and `sequences/sequenceKinds.ts` says what follows from
+it: the phases a script can run in, the installed phase its run is handed over to, the restart codes a new script
+starts with (3010 in Windows, 194 in the installed Linux, none in the Linux boot environment) and whether a step can
+have shares. `sequences/flow/scriptPlace.ts` chooses the phase of a new Run script step from the slot it is put in,
+so that the server's validator has nothing to say about its place: the installed Linux once a seed step runs before
+the slot on every path, and the Linux boot environment otherwise, also where a later step still asks for the boot
+environment. `sequences/flow/HandoverLine.tsx` draws the line between the boot phase and the installed one, for the
+builder and for a run's flow, worded by the kind. A phase inside a sentence comes from `inPhase` in
+`sequences/steps.ts`, preposition included, so that German can decline it. The default user-data of a new seed step,
+`defaultUserData` there, is the Install Linux template's, which a test holds to the server's.
+
+**Problems, warnings and notes.** The server's findings for a sequence come as three lists (`Findings` in
+`sequences/problems.ts`). A problem keeps a sequence from running. A warning is shown the same way and does not, and
+under its field it has the attention colour. A note says what a setting will do where that is neither wrong nor
+risky, such as user-data whose `power_state` restarts the machine: it shows under its field in the hint's colour
+(`sequences/fields/findingProps.tsx`), is counted nowhere and marks no node. A server from before notes sends none.
+
 **Loading and tests.** The builder's route is loaded when it is opened (`lazyRouteComponent` in `app/router.tsx`),
 and a machine's page loads `RunFlow` the same way; both import the same layout and canvas modules. The pure modules
 have unit tests, the layout's among them against overlaps, children outside their frames and for 300 nodes in under
@@ -139,6 +156,21 @@ lists the path's nodes with their place in the tree and that line. The canvas fo
 any move it did not make itself, and "Follow the run" takes it up again while the run goes on.
 `machines/RunWaiting.tsx` is the notice of a run that waits at a Pause or for answers, with its keys for operators,
 and `src/inputs` asks a sequence's inputs there, in the assign dialog and in the approval.
+
+**A Linux run after its hand-over.** Between the boot environment's last report and the first call from the installed
+Linux the server knows nothing new of a run, so the machine's summary says since when: `handedOverUtc`, and
+`bootReturns` once the machine has started from the network again meanwhile. Both are on the machine and not on the
+run, because only the machine knows which environment registered last, and its changes come by push. Both go when the
+agent registers from the installed Linux. `deployments/handOver.ts` reads them, `runs/panel/LinuxHandOverWait.tsx` is
+the panel's text, "Waiting for the installed Linux", and `machines/list/runDetail.ts` the list row's. After
+`FIRST_CALL_EXPECTED_MS`, ten minutes, the text names what may keep the installed Linux from calling. That age is
+taken on the server's clock: `deployments/useServerClockOffset.ts` asks the server's time, and only for a page that
+shows such a wait. Once the installed Linux has the run, `detours` on the machine's summary counts the starts from the
+network in a row that the server answered by sending the machine back to its disk. `runs/panel/LinuxDetours.tsx` says
+it on the machine's page, with the server's limit of five as `MAX_NETWORK_DETOURS`, and it goes with the installed
+Linux's next call. The machine's summary also carries `sequenceVersion`, the newest sequence version its agent runs,
+and a sequence's summary its `version`, from which `startNotice` in `machines/bootEnvironment.ts` tells in the assign
+dialog and the approval that a run will wait for a newer agent.
 
 ## Motion
 
@@ -182,7 +214,8 @@ Every text a person reads goes through Lingui: `t`, `plural` and `msg` from `@li
 
 German texts use the formal "Sie" and Microsoft's terms: Gerät, Tasksequenz, Bereitstellung, Image, Treiber,
 Datenträger, Ausführung for a run, Freigabe for an approval, Startimage for the boot image, Startumgebung for a
-boot environment and Linux-Startumgebung for the Linux one.
+boot environment and Linux-Startumgebung for the Linux one, "das installierte Linux" for the installed Linux and
+Übergabe for a hand-over.
 
 ### What the server says
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text.Json.Serialization;
 using DDT.Contracts.Machines;
 
 namespace DDT.Contracts.Agents;
@@ -26,4 +27,9 @@ public sealed record AgentRegistrationResult(
     string? ConsoleLogoSha256 = null,
     // The keyboard layout of the console in the Linux boot environment, by its keymap's name, such as de. Null where
     // the settings name none, and for an agent in another environment.
-    string? ConsoleKeyboardLayout = null);
+    string? ConsoleKeyboardLayout = null,
+    // With RunId: how often the run's reports said that the boot environment started again since it handed the run over.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? BootReturns = null,
+    // Set, with no token, for a registration that asked with HandedOver while that run goes on in the installed system.
+    // Nothing was registered or changed, and the agent sends the machine back to its disk.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AgentInstalledRun? InstalledRun = null);

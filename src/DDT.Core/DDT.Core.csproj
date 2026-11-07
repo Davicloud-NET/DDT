@@ -10,4 +10,9 @@
     <ProjectReference Include="..\DDT.Contracts\DDT.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The script a hand-over to the installed Linux puts on the cloud-init seed. VendorDataScript reads it. -->
+    <EmbeddedResource Include="CloudInit\vendor-data.sh" LogicalName="cloud-init/vendor-data.sh" />
+  </ItemGroup>
+
 </Project>

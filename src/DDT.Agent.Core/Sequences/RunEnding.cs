@@ -96,9 +96,6 @@ internal sealed class RunEnding(
     {
         bool handingOver = !run.InInstalledSystem && into == RestartInto.InstalledSystem;
         run.Heartbeat.Activity = RunActivity.Restarting;
-        log.Information(run.InInstalledSystem
-            ? "Windows restarts, and the run goes on after the restart."
-            : EnvironmentTexts.Restarts(run.Session.Environment, handingOver));
         rebooter.LetGo();
 
         try
@@ -123,6 +120,11 @@ internal sealed class RunEnding(
             log.Warning($"The server could not be told of the restart ({LogText.OneLine(exception)}). The machine restarts anyway.");
         }
 
+        // Only now: a run the server stopped meanwhile has refused the report above, and does not restart.
+        log.Information(run.InInstalledSystem
+            ? EnvironmentTexts.InstalledSystemRestarts(run.Session.Environment)
+            : EnvironmentTexts.Restarts(run.Session.Environment, handingOver));
+
         if (!await FlushAllAsync(run.Heartbeat, cancellationToken).ConfigureAwait(false) && handingOver)
         {
             return await TokenRejectedAsync(run).ConfigureAwait(false);
@@ -136,8 +138,9 @@ internal sealed class RunEnding(
             cancellationToken).ConfigureAwait(false);
     }
 
-    // The state and answer file stay, and the registration with the run token decides what happens to them. Until then
-    // the machine starts from the network.
+    // The run's own files stay, the state and the answer file, and the registration with the run token decides what
+    // happens to them. Until then the machine starts from the network. What a hand-over staged elsewhere, as on a
+    // Linux seed, is the phase runner's to take back.
     public async Task<RunResult> TokenRejectedAsync(SequenceRun run)
     {
         await bootOrder.RestoreAsync(run).ConfigureAwait(false);

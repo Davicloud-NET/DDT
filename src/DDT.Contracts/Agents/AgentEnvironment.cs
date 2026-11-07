@@ -11,4 +11,6 @@ public enum AgentEnvironment
     Windows,
     // The netbooted Linux, which runs Linux sequences.
     LinuxBoot,
+    // The temporary service in the installed Linux that finishes a run there.
+    Linux,
 }

@@ -1,0 +1,2 @@
+#!/bin/sh
+echo "M8G-ORDER user-script up=$(cut -d' ' -f1 /proc/uptime) ddt-agent.service=$(systemctl is-active ddt-agent.service)" | tee -a /var/log/m8g-order.log > /dev/ttyS0

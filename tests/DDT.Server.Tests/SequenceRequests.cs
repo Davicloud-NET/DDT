@@ -37,6 +37,20 @@ internal static class SequenceRequests
             UserData = Server.Sequences.SequenceTemplates.LinuxUserData,
         });
 
+    // The same, and then steps in the installed Linux, where the seed takes the agent. One shell script if none is given.
+    public static SequenceDefinition LinuxWithInstalledSteps(Guid imageId, params SequenceStep[] installed) =>
+        Definition([.. Linux(imageId).Steps, .. installed.Length > 0 ? installed : [InLinux()]]);
+
+    public static RunScriptStep InLinux() => new()
+    {
+        Id = Guid.NewGuid(),
+        Name = "Install the tools",
+        Phase = SequencePhase.Linux,
+        Interpreter = ScriptInterpreter.Shell,
+        Script = "apt-get -y install htop",
+        RebootExitCodes = [194],
+    };
+
     // Erases nothing and needs no library: one cmd script in Windows PE.
     public static SequenceDefinition ScriptOnly() => Definition(
         new RunScriptStep

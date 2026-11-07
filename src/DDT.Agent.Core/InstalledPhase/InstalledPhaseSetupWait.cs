@@ -90,7 +90,7 @@ internal sealed class InstalledPhaseSetupWait(
 
         while (pending is not null)
         {
-            await Task.Delay(InstalledPhaseLoop.SetupPollInterval, timeProvider, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(profile.SetupPollInterval, timeProvider, cancellationToken).ConfigureAwait(false);
             pending = _setup.Pending();
             TimeSpan waited = timeProvider.GetElapsedTime(started);
 

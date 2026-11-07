@@ -80,6 +80,140 @@ public sealed class RunFilesTests : IDisposable
         Assert.Equal(["state.json", "token"], Directory.EnumerateFiles(Path.Combine(RunDirectory, "run")).Select(Path.GetFileName).Order());
     }
 
+    // The vendor-data script installs them for root alone, and a save puts a new file in the place of each.
+    [Fact]
+    public async Task EachFileStaysItsOwnersAloneThroughEverySave()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Windows has no file modes.");
+        AgentRunReport report = new(DeploymentState.Failed, SequencePhase.Linux, [], null, 0, RunActivity.Step, "The step failed.");
+
+        for (int save = 0; save < 2; save++)
+        {
+            await _files.SaveStateAsync(s_state, TestContext.Current.CancellationToken);
+            await _files.SaveTokenAsync($"run-token-{save}", TestContext.Current.CancellationToken);
+            await _files.SaveFinalReportAsync(report, TestContext.Current.CancellationToken);
+        }
+
+        foreach (string file in (string[])[_files.StatePath, _files.TokenPath, _files.FinalReportPath])
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(file));
+            }
+        }
+    }
+
+    // A save that lost power left its temporary file, and one that had already replaced the file left the old one.
+    [Fact]
+    public async Task ASaveTakesAwayWhatAnEarlierSaveLeftBehind()
+    {
+        await _files.SaveTokenAsync("run-token-1", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(_files.TokenPath + FileReplacement.Temporary, "half a tok", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(_files.StatePath + FileReplacement.Replaced, "{}", TestContext.Current.CancellationToken);
+
+        _files.Recover();
+
+        Assert.Equal(["token"], Directory.EnumerateFiles(Path.Combine(RunDirectory, "run")).Select(Path.GetFileName));
+        Assert.Equal("run-token-1", await _files.LoadTokenAsync(TestContext.Current.CancellationToken));
+        Assert.Empty(_console.ToString());
+    }
+
+    // An overwrite that reached the disk before its rename did: zeros under the name, and the save's own copy beside it.
+    [Fact]
+    public async Task AtAStartAWholeCopyTakesThePlaceOfAFileThatCannotBeRead()
+    {
+        await _files.SaveTokenAsync("run-token-1", TestContext.Current.CancellationToken);
+        await _files.SaveStateAsync(s_state, TestContext.Current.CancellationToken);
+        await File.WriteAllBytesAsync(_files.TokenPath, new byte[11], TestContext.Current.CancellationToken);
+        await File.WriteAllBytesAsync(_files.StatePath, new byte[400], TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(_files.TokenPath + FileReplacement.Temporary, "run-token-2", TestContext.Current.CancellationToken);
+        await File.WriteAllBytesAsync(_files.StatePath + FileReplacement.Temporary, RunFiles.StateContent(s_state with { NextIndex = 2 }), TestContext.Current.CancellationToken);
+
+        _files.Recover();
+
+        Assert.Equal("run-token-2", await _files.LoadTokenAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(2, (await _files.LoadStateAsync(TestContext.Current.CancellationToken))?.NextIndex);
+        Assert.Equal(["state.json", "token"], Directory.EnumerateFiles(Path.Combine(RunDirectory, "run")).Select(Path.GetFileName).Order());
+        Assert.Contains(
+            $"WARN  {_files.TokenPath} could not be read after a save that was cut off. The copy that save had written whole is in its place now.",
+            _console.ToString(),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ACopyThatIsNotWholeTakesNoPlace()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_files.StatePath)!);
+        await File.WriteAllBytesAsync(_files.TokenPath, new byte[11], TestContext.Current.CancellationToken);
+        await File.WriteAllBytesAsync(_files.StatePath, new byte[400], TestContext.Current.CancellationToken);
+        await File.WriteAllBytesAsync(_files.TokenPath + FileReplacement.Temporary, [(byte)'r', 0, 0], TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(_files.StatePath + FileReplacement.Temporary, "{ \"format\": 2, \"run", TestContext.Current.CancellationToken);
+
+        _files.Recover();
+
+        Assert.Equal(new byte[11], await File.ReadAllBytesAsync(_files.TokenPath, TestContext.Current.CancellationToken));
+        Assert.Equal(["state.json", "token"], Directory.EnumerateFiles(Path.Combine(RunDirectory, "run")).Select(Path.GetFileName).Order());
+        Assert.Empty(_console.ToString());
+    }
+
+    // An overwritten token must not be sent to the server as a line of NUL characters.
+    [Fact]
+    public async Task ATokenFileOfZerosHoldsNoToken()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_files.TokenPath)!);
+        await File.WriteAllBytesAsync(_files.TokenPath, new byte[64], TestContext.Current.CancellationToken);
+
+        Assert.Null(await _files.LoadTokenAsync(TestContext.Current.CancellationToken));
+    }
+
+    public static TheoryData<string> LinkedNames => ["token" + FileReplacement.Temporary, "token" + FileReplacement.Replaced, "token"];
+
+    // File.Exists follows a link, so one that points nowhere looks like nothing, and a plain create would write its target.
+    [Theory]
+    [MemberData(nameof(LinkedNames))]
+    public async Task ALinkThatPointsNowhereIsNeitherWrittenThroughNorLeft(string name)
+    {
+        string run = Path.Combine(RunDirectory, "run");
+        string target = Path.Combine(_windows, "planted");
+        Directory.CreateDirectory(run);
+        LinkOrSkip(Path.Combine(run, name), target);
+
+        await _files.SaveTokenAsync("run-token-1", TestContext.Current.CancellationToken);
+        await _files.SaveTokenAsync("run-token-2", TestContext.Current.CancellationToken);
+
+        Assert.False(File.Exists(target));
+        Assert.Equal("run-token-2", await _files.LoadTokenAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(["token"], Directory.EnumerateFileSystemEntries(run).Select(Path.GetFileName));
+        Assert.Null(new FileInfo(_files.TokenPath).LinkTarget);
+    }
+
+    [Fact]
+    public async Task DiscardRemovesALinkThatPointsNowhereItself()
+    {
+        await _files.SaveTokenAsync("run-token-1", TestContext.Current.CancellationToken);
+        string target = Path.Combine(_windows, "planted");
+        LinkOrSkip(_files.StatePath, target);
+
+        _files.Discard();
+
+        Assert.False(Directory.Exists(Path.Combine(RunDirectory, "run")));
+        Assert.False(File.Exists(target));
+        Assert.Empty(_console.ToString());
+    }
+
+    // Windows lets only an administrator or a developer's computer make a link.
+    private static void LinkOrSkip(string path, string target)
+    {
+        try
+        {
+            File.CreateSymbolicLink(path, target);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Assert.Skip($"This system lets the test make no link ({exception.Message}).");
+        }
+    }
+
     [Fact]
     public async Task NoFilesMeanNoRun()
     {

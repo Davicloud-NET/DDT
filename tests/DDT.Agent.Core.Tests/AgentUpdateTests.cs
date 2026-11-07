@@ -18,7 +18,13 @@ public sealed class AgentUpdateTests : IDisposable
 
     private readonly string _directory = Directory.CreateTempSubdirectory("ddt-agent-update-").FullName;
 
-    public void Dispose() => Directory.Delete(_directory, recursive: true);
+    private readonly StringWriter _console = new();
+
+    public void Dispose()
+    {
+        _console.Dispose();
+        Directory.Delete(_directory, recursive: true);
+    }
 
     private static AgentRelease ReleaseOf(byte[] content) =>
         new(Convert.ToHexStringLower(SHA256.HashData(content)), content.Length);
@@ -116,6 +122,82 @@ public sealed class AgentUpdateTests : IDisposable
             ],
             console.States.Select(state => state.Server));
         Assert.All(console.States, state => Assert.Equal(ConsoleStage.Starting, state.Stage));
+    }
+
+    private const string NotAnswered =
+        "The server did not answer within 30 seconds when asked for the current agent. Carrying on with the agent the Linux boot " +
+        "environment brought.";
+
+    private (AgentUpdate Update, ManualTimeProvider Time) WithinHalfAMinute(ScriptedAgentServer server)
+    {
+        ManualTimeProvider time = new();
+        AgentUpdate update = new(
+            server,
+            new ScriptedRelauncher(() => 0),
+            new AgentLog(time, _console),
+            time,
+            new RunningAgent(CurrentSha256, _directory, []) { Environment = AgentEnvironment.LinuxBoot })
+        {
+            GiveUpAfter = TimeSpan.FromSeconds(30),
+        };
+
+        return (update, time);
+    }
+
+    // A Linux boot agent with a run on its disk asks the server about it within half a minute. The check comes first,
+    // so a server that is away must not keep the machine from its disk for longer.
+    [Fact]
+    public async Task AServerThatIsAwayIsAskedForTheCurrentAgentNoLongerThanTheCheckMayWait()
+    {
+        ScriptedAgentServer server = new();
+
+        for (int attempt = 0; attempt < 12; attempt++)
+        {
+            server.OnRelease(() => throw new HttpRequestException(HttpRequestError.ConnectionError, "the connection was refused"));
+        }
+
+        (AgentUpdate update, ManualTimeProvider time) = WithinHalfAMinute(server);
+        DateTimeOffset began = time.GetUtcNow();
+
+        Assert.Null(await time.ThroughWaitsAsync(update.RunAsync(TestContext.Current.CancellationToken)));
+
+        // After 0, 2, 6 and 14 seconds. The wait after the fourth ends at 30 seconds, where the check gives up.
+        Assert.Equal(4, server.Calls.Count(call => call == "release"));
+        Assert.InRange(time.GetUtcNow() - began, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(31));
+        Assert.EndsWith(NotAnswered, _console.ToString().TrimEnd());
+    }
+
+    [Fact]
+    public async Task AServerThatTakesTheQuestionForTheCurrentAgentAndSaysNothingIsGivenUpInTheSameTime()
+    {
+        ScriptedAgentServer server = new() { LeavesReleasesUnanswered = true };
+        (AgentUpdate update, ManualTimeProvider time) = WithinHalfAMinute(server);
+        DateTimeOffset began = time.GetUtcNow();
+
+        Assert.Null(await time.ThroughWaitsAsync(update.RunAsync(TestContext.Current.CancellationToken)));
+
+        Assert.Equal(["release"], server.Calls);
+        Assert.InRange(time.GetUtcNow() - began, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(31));
+        Assert.EndsWith(NotAnswered, _console.ToString().TrimEnd());
+    }
+
+    [Fact]
+    public async Task AServerThatAnswersWithinTheTimeIsTakenAtItsWord()
+    {
+        byte[] content = RandomNumberGenerator.GetBytes(3000);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRelease(() => throw new HttpRequestException(HttpRequestError.ConnectionError, "the connection was refused"))
+            .OnRelease(() => ReleaseOf(content))
+            .OnDownload(content);
+        ScriptedRelauncher relauncher = new(() => AgentExitCodes.Restarting);
+        ManualTimeProvider time = new();
+        AgentUpdate update = new(server, relauncher, new AgentLog(time, TextWriter.Null), time, new RunningAgent(CurrentSha256, _directory, []))
+        {
+            GiveUpAfter = TimeSpan.FromSeconds(30),
+        };
+
+        Assert.Equal(AgentExitCodes.Restarting, await time.ThroughWaitsAsync(update.RunAsync(TestContext.Current.CancellationToken)));
+        Assert.Single(relauncher.Started);
     }
 
     [Fact]

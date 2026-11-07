@@ -23,6 +23,7 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool
     private readonly List<string> _heldConsoleLines = [];
     private long _nextSequence;
     private int _dropped;
+    private int _troubles;
     private bool _consoleHeld;
     private Guid? _stepId;
     private IMachineConsole? _machineConsole;
@@ -100,6 +101,18 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool
         }
     }
 
+    // How many warnings and errors were written so far, for what has to say whether anything went wrong meanwhile.
+    public int Troubles
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _troubles;
+            }
+        }
+    }
+
     public int QueuedLines
     {
         get
@@ -166,9 +179,18 @@ public sealed class AgentLog(TimeProvider timeProvider, TextWriter console, bool
             {
                 _heldConsoleLines.Add(text);
             }
+            else if (console is ILeveledOutput leveled)
+            {
+                leveled.WriteLine(level, text);
+            }
             else
             {
                 console.WriteLine(text);
+            }
+
+            if (level != AgentLogLevel.Information)
+            {
+                _troubles++;
             }
 
             if (_pending.Count >= MaxQueuedLines)

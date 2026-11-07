@@ -26,7 +26,7 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
     // Without it the fake machine cannot change its boot environment.
     public IVendorVariables? Firmware { get; init; }
 
-    public Task<int> RunAsync(CancellationToken cancellationToken)
+    public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
         log.Information("Dry run: the fake machine started the Linux boot environment, which runs the sequences that write a raw disk image.");
 
@@ -37,12 +37,44 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
             disks,
             new LocalRunLocator([]),
             options.AgentVersion,
-            AgentEnvironment.LinuxBoot)
+            AgentEnvironment.LinuxBoot);
+        ResumeCarrier? carrier = Firmware is null ? null : new ResumeCarrier(Firmware, AgentEnvironment.LinuxBoot, log);
+        BootReturnOutcome returned = await ReturnAsync(machine, rebooter, carrier, cancellationToken).ConfigureAwait(false);
+
+        if (returned.ExitCode is { } exitCode)
         {
-            Switch = Firmware is null ? null : new EnvironmentSwitch(new ResumeCarrier(Firmware, AgentEnvironment.LinuxBoot, log), rebooter),
+            return exitCode;
+        }
+
+        machine = machine with
+        {
+            Switch = carrier is null ? null : new EnvironmentSwitch(carrier, rebooter),
+            ResumeToken = returned.ResumeToken,
         };
 
-        return new AgentLoop(server, machine, status, Runner(disks, rebooter), log, timeProvider).RunAsync(cancellationToken);
+        return await new AgentLoop(server, machine, status, Runner(disks, rebooter), log, timeProvider).RunAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    // What the boot environment does first on a machine whose disk holds a run that was handed over. A fake machine
+    // that has written no disk yet has none, and the look must not make the file.
+    private async Task<BootReturnOutcome> ReturnAsync(AgentMachine machine, DryRunRebooter rebooter, ResumeCarrier? carrier, CancellationToken cancellationToken)
+    {
+        if (!File.Exists(FileRawDisks.PathFor(options.Root, DryRunDisks.Disk.Number)))
+        {
+            return BootReturnOutcome.GoesOn;
+        }
+
+        LinuxBootReturn returns = new(server, machine, status, log, timeProvider)
+        {
+            Seeds = new HandedOverSeeds(new FileRawDisks(options.Root, log, MakeSparse), log, timeProvider),
+            Disks = new DryRunDisks(options.Root, new AgentLog(timeProvider, TextWriter.Null)),
+            StartOver = new StartOverQuestion(new ConsoleKeyWait(timeProvider), new ConsoleSignInPrompt(log, timeProvider, keyboardLayout: null), log, timeProvider),
+            DiskStart = new DryRunDiskStart(log),
+            Restart = () => rebooter.RebootAsync(RestartInto.InstalledSystem, CancellationToken.None),
+            Carried = carrier is null ? null : carrier.Take,
+        };
+
+        return await returns.RunAsync(cancellationToken).ConfigureAwait(false);
     }
 
     // The root stands in for the agent's directory, which the run's end deletes.
@@ -72,7 +104,7 @@ public sealed class LinuxBootDryRun(DryRunMachineOptions options, IAgentServer s
             BootOrder = bootOrder,
             Rebooter = rebooter,
             RestartMarker = new FileRestartMarker(options.Root, log, dryRun: true) { DryRunNote = RestartNote },
-            HandOver = new NoHandOver(),
+            HandOver = new LinuxHandOver(rawDisks, options.AgentPath, options.Agent.ForInstalledSystem(), log),
             Log = log,
             TimeProvider = timeProvider,
             Options = runnerOptions,

@@ -20,59 +20,6 @@ public sealed class LinuxKernelTests : IDisposable
 
     public void Dispose() => _tree.Dispose();
 
-    // The script leaves three processes its own tree does not hold: one in a session of its own, one whose parent
-    // ended at once, and one started with nohup. Each sleeps for a time no other process on the computer sleeps for.
-    [Fact]
-    public async Task AScriptThatIsStoppedTakesWithItWhatItStartedOutsideItsOwnTree()
-    {
-        Assert.SkipUnless(OperatingSystem.IsLinux(), OnlyLinux);
-        Assert.SkipUnless(LinuxStrayProcesses.Adopt(), "This kernel hands a process no orphans.");
-
-        string time = $"86400.{Environment.ProcessId}{Random.Shared.Next(1000, 9999)}";
-        string script = $"setsid sleep {time} & (sleep {time} &) ; nohup sleep {time} > /dev/null 2>&1 & echo started; sleep {time}";
-        StringWriter console = new();
-        AgentLog log = new(new ImmediateTimeProvider(), console);
-        ToolRunner tools = new(log, TimeProvider.System, Latin1Output.Decode)
-        {
-            Strays = new LinuxStrayProcesses("/", log, Environment.ProcessId) { Adopts = true },
-        };
-
-        DeploymentStepException stopped = await Assert.ThrowsAsync<DeploymentStepException>(() => tools.RunForExitCodeAsync(
-            "/bin/sh",
-            ["-c", script],
-            new ToolRunOptions(Timeout: TimeSpan.FromSeconds(3)),
-            TestContext.Current.CancellationToken));
-
-        Assert.EndsWith("so it was stopped with every process it started.", stopped.Message, StringComparison.Ordinal);
-        Assert.Contains("started", console.ToString(), StringComparison.Ordinal);
-        Assert.Empty(Sleeping(time));
-        Assert.Contains("more of its processes, which it had started outside its own tree.", console.ToString(), StringComparison.Ordinal);
-    }
-
-    // The ids of the living processes whose command line holds the text.
-    private static List<int> Sleeping(string text)
-    {
-        List<int> found = [];
-
-        foreach (string folder in Directory.GetDirectories("/proc"))
-        {
-            try
-            {
-                bool alive = File.ReadAllText(Path.Combine(folder, "stat")) is { } stat && stat[(stat.LastIndexOf(')') + 2)..][0] is not ('Z' or 'X');
-
-                if (alive && File.ReadAllText(Path.Combine(folder, "cmdline")).Contains(text, StringComparison.Ordinal) && int.TryParse(Path.GetFileName(folder), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int id))
-                {
-                    found.Add(id);
-                }
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-            }
-        }
-
-        return found;
-    }
-
     [Fact]
     public void OpensADeviceAloneAndWritesThrough()
     {

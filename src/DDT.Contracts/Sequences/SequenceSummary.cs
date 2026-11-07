@@ -23,4 +23,7 @@ public sealed record SequenceSummary(
     string? RawImageName = null,
     ImageBootCapability? RawImageBootCapability = null,
     UefiCa? RawImageSignedUnder = null,
-    SequenceKind Kind = SequenceKind.Windows);
+    SequenceKind Kind = SequenceKind.Windows,
+    bool ContinuesInLinux = false,
+    // The sequence version an agent has to run to be handed a run of it. Zero from a server that does not say.
+    int Version = 0);

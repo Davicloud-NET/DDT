@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
@@ -29,9 +30,11 @@ public sealed record AgentOptions(
     public const string Usage =
         "Usage: ddt-agent [--config <agent.json>] [--server <https url>] [--root-certificate <pem file>] " +
         "[--no-update] [--console <ddt-console.exe>] [--dry-run [--dry-run-id <number>] [--dry-run-secure-boot] " +
-        "[--dry-run-environment <WindowsPE|LinuxBoot>]], or ddt-agent --licenses";
+        "[--dry-run-environment <WindowsPE|LinuxBoot>] [--dry-run-netboot <OnceInLinux|OnceBeforeLinux|Always>]], or ddt-agent --licenses";
 
     public const string DryRunEnvironmentArgument = "--dry-run-environment";
+
+    public const string DryRunNetbootArgument = "--dry-run-netboot";
 
     // The fake machine of a dry run says that Secure Boot is on.
     public bool DryRunSecureBoot { get; init; }
@@ -39,8 +42,17 @@ public sealed record AgentOptions(
     // The boot environment the fake machine of a dry run started. Null is the one this agent is built for.
     public AgentEnvironment? DryRunEnvironment { get; init; }
 
+    // Whether the fake machine of a dry run starts from the network again after a hand-over to the installed Linux.
+    public DryRunNetboot DryRunNetboot { get; init; }
+
     // Starts this console instead of the ddt-console.exe beside the agent, even in a dry run or with input redirected.
     public string? ConsolePath { get; init; }
+
+    // The address agent.json gives for the server beside its name. Null when it gives none.
+    public IPAddress? ServerAddress { get; init; }
+
+    // The agent.json a hand-over stages for the installed system. It only holds what it takes to reach the server.
+    public AgentConfiguration ForInstalledSystem() => new(ServerUrl.AbsoluteUri, RootCertificate?.ExportCertificatePem(), null);
 
     // Arguments override agent.json, which by default sits next to the executable.
     public static bool TryParse(IReadOnlyList<string> args, out AgentOptions? options, out string error) =>
@@ -68,7 +80,9 @@ public sealed record AgentOptions(
         {
             DryRunSecureBoot = parsed.DryRunSecureBoot,
             DryRunEnvironment = parsed.DryRunEnvironment,
+            DryRunNetboot = parsed.DryRunNetboot,
             ConsolePath = parsed.ConsolePath,
+            ServerAddress = parsed.ServerAddress,
         };
 
         return true;
@@ -134,6 +148,10 @@ public sealed record AgentOptions(
                 parsed.DryRunEnvironment = environment;
 
                 return true;
+            case DryRunNetbootArgument when Netboot(value) is { } netboot:
+                parsed.DryRunNetboot = netboot;
+
+                return true;
             default:
                 error = $"Unknown or invalid argument {argument}. {parsed.Usage}";
 
@@ -141,12 +159,18 @@ public sealed record AgentOptions(
         }
     }
 
-    // A run starts in a boot environment, so the installed Windows is none a dry run can start.
+    // A run starts in a boot environment, so an installed system is none a dry run can start.
     private static AgentEnvironment? BootEnvironment(string name) =>
         Enum.GetValues<AgentEnvironment>()
             .Where(environment => SequenceKinds.IsBoot(SequenceKinds.Phase(environment)))
             .Cast<AgentEnvironment?>()
             .FirstOrDefault(environment => string.Equals(environment.ToString(), name, StringComparison.OrdinalIgnoreCase));
+
+    // By its name, as the usage spells it. A number is none.
+    private static DryRunNetboot? Netboot(string name) =>
+        Enum.GetValues<DryRunNetboot>()
+            .Cast<DryRunNetboot?>()
+            .FirstOrDefault(netboot => string.Equals(netboot.ToString(), name, StringComparison.OrdinalIgnoreCase));
 
     // Only the default agent.json may be missing. A file named on the command line must exist.
     private static bool TryApplyConfigFile(Arguments parsed, out string error)
@@ -173,6 +197,7 @@ public sealed record AgentOptions(
             parsed.Server ??= file?.ServerUrl;
             parsed.RootPem ??= file?.RootCertificate;
             parsed.KeyboardLayout = file?.KeyboardLayout;
+            parsed.ServerAddress = IPAddress.TryParse(file?.ServerAddress, out IPAddress? address) ? address : null;
 
             return true;
         }
@@ -254,6 +279,8 @@ public sealed record AgentOptions(
 
         public string? KeyboardLayout { get; set; }
 
+        public IPAddress? ServerAddress { get; set; }
+
         public string? ConsolePath { get; set; }
 
         public bool DryRun { get; private set; }
@@ -266,10 +293,13 @@ public sealed record AgentOptions(
 
         public AgentEnvironment? DryRunEnvironment { get; set; }
 
-        // The environment only says what a dry run's machine started.
+        public DryRunNetboot DryRunNetboot { get; set; }
+
+        // Both only say what a dry run's machine does.
         public bool TryCheckDryRun(out string error)
         {
-            error = DryRunEnvironment is null || DryRun ? string.Empty : $"{DryRunEnvironmentArgument} goes with --dry-run. {Usage}";
+            string? alone = DryRun ? null : DryRunEnvironment is not null ? DryRunEnvironmentArgument : DryRunNetboot != DryRunNetboot.Never ? DryRunNetbootArgument : null;
+            error = alone is null ? string.Empty : $"{alone} goes with --dry-run. {Usage}";
 
             return error.Length == 0;
         }

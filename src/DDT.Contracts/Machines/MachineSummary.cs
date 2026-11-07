@@ -40,4 +40,14 @@ public sealed record MachineSummary(
     // Whether the machine's agent can restart into the other boot environment and stay signed in.
     bool? ChangesBootEnvironment = null,
     // The boot environment the machine did not start after restarting for its run. The server orders no more, and the run waits.
-    AgentEnvironment? RestartsFailed = null);
+    AgentEnvironment? RestartsFailed = null,
+    // The newest sequence version the machine's agent said it runs when it last registered.
+    int? SequenceVersion = null,
+    // When the boot environment handed the machine's run over to the installed system, until the agent there calls.
+    DateTimeOffset? HandedOverUtc = null,
+    // How often the machine has started its boot environment again since then, which each time handed the run over
+    // again at HandedOverUtc. Null when it has not.
+    int? BootReturns = null,
+    // How often in a row the machine started from the network while its run goes on in the installed Linux, with no
+    // call from there in between. The server ends the run at five. Null when it has not, and once that Linux has called.
+    int? Detours = null);

@@ -80,19 +80,17 @@ public sealed class RunTermination(DdtDbContext database, RunQueries queries, Ti
     public async Task EndForRestartAsync(
         Machine machine,
         Deployment? active,
+        NormalisedRegistration registration,
         string? address,
-        bool presentedRunToken,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(registration);
 
         switch (active)
         {
             case { State: DeploymentState.Running }:
-                string error = presentedRunToken
-                    ? "The machine started again during the run, with a run token the server no longer accepts."
-                    : "The machine started again during the run, without the run's token, so the run could not continue.";
-                await FailAsync(machine, active, Actor.OfMachine(machine.Id, address), error, cancellationToken).ConfigureAwait(false);
+                await FailAsync(machine, active, Actor.OfMachine(machine.Id, address), RestartError(machine, active, registration), cancellationToken).ConfigureAwait(false);
                 break;
 
             case { State: DeploymentState.Assigned, Source: DeploymentSource.Console or DeploymentSource.Rule }:
@@ -101,13 +99,48 @@ public sealed class RunTermination(DdtDbContext database, RunQueries queries, Ti
         }
     }
 
+    // What the server knows of a registration that ends a running run. That someone chose to start over is what the
+    // agent reported, without any secret, so it is said as that. Called before the registration is copied to the
+    // machine, which still says whether the installed system ever called.
+    private static string RestartError(Machine machine, Deployment run, NormalisedRegistration registration)
+    {
+        if (registration.RunToken is not null)
+        {
+            return "The machine started again during the run, with a run token the server no longer accepts.";
+        }
+
+        if (!registration.StartsOver || run.CurrentPhase is not { } phase || SequenceKinds.IsBoot(phase))
+        {
+            return "The machine started again during the run, without the run's token, so the run could not continue.";
+        }
+
+        string installed = PhaseRules.Name(SequenceKinds.InstalledEnvironment(SequenceKinds.Of(phase)));
+
+        return "The machine started from the network during the run and registered without the run's token, which ended the run. " +
+            "Its agent there reported that someone at the machine chose to start over. " +
+            (HandOvers.Since(machine, run) is null
+                ? $"The run went on in {installed} until then."
+                : $"The run was handed over to {installed}, which had not called yet.");
+    }
+
+    // For a run in the installed Linux whose machine keeps starting from the network (see NetworkDetours). The
+    // registration that follows starts the machine over, as any without a token does.
+    public Task EndForDetoursAsync(Machine machine, Deployment running, string? address, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(running);
+
+        return FailAsync(machine, running, Actor.OfMachine(machine.Id, address), NetworkDetours.TooMany, cancellationToken);
+    }
+
     // For a running run whose agent has been silent for longer than a run token lasts (see AbandonedRunSweeper).
     public async Task EndForLostContactAsync(Machine machine, Deployment running, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
         ArgumentNullException.ThrowIfNull(running);
 
-        string error = $"The agent has not been in contact since {machine.LastSeenUtc:u} and could no longer resume the run.";
+        string error = HandOvers.NeverCalled(machine, running)
+            ?? $"The agent has not been in contact since {machine.LastSeenUtc:u} and could no longer resume the run.";
 
         await FailAsync(machine, running, Actor.Nobody, error, cancellationToken).ConfigureAwait(false);
         machine.State = MachineState.Failed;

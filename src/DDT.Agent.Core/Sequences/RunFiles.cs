@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
@@ -11,15 +12,14 @@ using DDT.Core.Sequences;
 namespace DDT.Agent.Sequences;
 
 // A run's files in the run folder of its directory. state.json uses Format 1 for a list and Format 2 for a tree. token
-// holds the run token, a secret that's never logged. Each file is replaced through a temporary file written through to
-// disk, so a power loss leaves the old file or the new one, never part of one.
+// holds the run token, a secret that's never logged. FileReplacement saves each, so a power loss leaves a whole file.
 public sealed class RunFiles(string runDirectory, AgentLog log)
 {
     public string StatePath => Path.Combine(runDirectory, "run", "state.json");
 
     public string TokenPath => Path.Combine(runDirectory, "run", "token");
 
-    // In the installed Windows, the report of how the run ended, which stays with the token until the server has it.
+    // In the installed system, the report of how the run ended, which stays with the token until the server has it.
     public string FinalReportPath => Path.Combine(runDirectory, "run", "final-report.json");
 
     // A run's directory under root: DDT on a Windows volume such as C:\, and the root itself where the agent has a
@@ -31,18 +31,83 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
     // Where a root keeps a run's state, if it has one.
     public static string StatePathIn(string root) => Path.Combine(DirectoryIn(root), "run", "state.json");
 
-    public Task SaveStateAsync(SequenceState state, CancellationToken cancellationToken) =>
-        ReplaceAsync(StatePath, JsonSerializer.SerializeToUtf8Bytes(state, AgentJsonContext.Default.SequenceState), cancellationToken);
+    // What state.json and token hold, for a hand-over that puts them where the installed system's own files come from.
+    public static byte[] StateContent(SequenceState state) => JsonSerializer.SerializeToUtf8Bytes(state, AgentJsonContext.Default.SequenceState);
 
-    public Task SaveTokenAsync(string token, CancellationToken cancellationToken)
+    public static byte[] TokenContent(string token)
     {
         ArgumentException.ThrowIfNullOrEmpty(token);
 
-        return ReplaceAsync(TokenPath, Encoding.ASCII.GetBytes(token), cancellationToken);
+        return Encoding.ASCII.GetBytes(token);
     }
 
+    public Task SaveStateAsync(SequenceState state, CancellationToken cancellationToken) =>
+        FileReplacement.ReplaceAsync(StatePath, StateContent(state), log, cancellationToken);
+
+    public Task SaveTokenAsync(string token, CancellationToken cancellationToken) =>
+        FileReplacement.ReplaceAsync(TokenPath, TokenContent(token), log, cancellationToken);
+
     public Task SaveFinalReportAsync(AgentRunReport report, CancellationToken cancellationToken) =>
-        ReplaceAsync(FinalReportPath, JsonSerializer.SerializeToUtf8Bytes(report, AgentJsonContext.Default.AgentRunReport), cancellationToken);
+        FileReplacement.ReplaceAsync(FinalReportPath, JsonSerializer.SerializeToUtf8Bytes(report, AgentJsonContext.Default.AgentRunReport), log, cancellationToken);
+
+    // For the agent's start, while nothing saves: overwrites and removes what a save that was cut off left behind. A
+    // file such a save left unreadable gets the whole copy the save had written, if there is one.
+    public void Recover()
+    {
+        FileReplacement.Recover(TokenPath, bytes => IsToken(bytes), log);
+        FileReplacement.Recover(StatePath, bytes => Parses(bytes, AgentJsonContext.Default.SequenceState), log);
+        FileReplacement.Recover(FinalReportPath, bytes => Parses(bytes, AgentJsonContext.Default.AgentRunReport), log);
+    }
+
+    // A token is a line of printable ASCII. A file of zeros, as an overwritten one is, holds none. Loops by hand: with
+    // MemoryExtensions.ContainsAnyExceptInRange here, ILCompiler 10.0.12 crashes on most publishes of the Windows agent.
+    internal static bool IsToken(ReadOnlySpan<byte> content)
+    {
+        ReadOnlySpan<byte> token = Trimmed(content, zerosToo: false);
+
+        foreach (byte value in token)
+        {
+            if (value is < 0x21 or > 0x7E)
+            {
+                return false;
+            }
+        }
+
+        return token.Length > 0;
+    }
+
+    // The bytes without the blanks and line ends around them, and without the zeros there where those count as none.
+    internal static ReadOnlySpan<byte> Trimmed(ReadOnlySpan<byte> content, bool zerosToo)
+    {
+        int start = 0;
+        int end = content.Length;
+
+        while (start < end && IsBlank(content[start], zerosToo))
+        {
+            start++;
+        }
+
+        while (end > start && IsBlank(content[end - 1], zerosToo))
+        {
+            end--;
+        }
+
+        return content[start..end];
+    }
+
+    private static bool IsBlank(byte value, bool zerosToo) => value is 0x20 or 0x09 or 0x0D or 0x0A || (zerosToo && value == 0);
+
+    private static bool Parses<T>(byte[] json, JsonTypeInfo<T> type)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize(json, type) is not null;
+        }
+        catch (Exception exception) when (exception is JsonException or NotSupportedException)
+        {
+            return false;
+        }
+    }
 
     // Null when there's none. Also null, after a warning, when it can't be read.
     public async Task<AgentRunReport?> LoadFinalReportAsync(CancellationToken cancellationToken)
@@ -106,9 +171,9 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
 
         try
         {
-            string token = (await File.ReadAllTextAsync(TokenPath, Encoding.ASCII, cancellationToken).ConfigureAwait(false)).Trim();
+            byte[] content = await File.ReadAllBytesAsync(TokenPath, cancellationToken).ConfigureAwait(false);
 
-            return token.Length > 0 ? token : null;
+            return IsToken(content) ? Encoding.ASCII.GetString(content).Trim() : null;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -134,28 +199,18 @@ public sealed class RunFiles(string runDirectory, AgentLog log)
             && (state.Cursor is not { } cursor || nodes.Any(node => node.Id == cursor.NodeId));
     }
 
-    // The token goes first. Without it, the rest can no longer act as the machine.
+    // The token goes first. Without it, the rest can no longer act as the machine. Each is overwritten, because a
+    // deleted file's bytes stay on the disk.
     public void Discard()
     {
-        Leftovers.Delete(TokenPath, log);
-        Leftovers.Delete(StatePath, log);
-        Leftovers.Delete(FinalReportPath, log);
-        Leftovers.Delete(Path.Combine(runDirectory, "run"), log);
-    }
-
-    private static async Task ReplaceAsync(string path, byte[] content, CancellationToken cancellationToken)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        string temporary = path + ".tmp";
-
-        FileStream file = new(temporary, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 4096, FileOptions.WriteThrough);
-
-        await using (file.ConfigureAwait(false))
+        foreach (string path in (string[])[TokenPath, StatePath, FinalReportPath])
         {
-            await file.WriteAsync(content, cancellationToken).ConfigureAwait(false);
-            file.Flush(flushToDisk: true);
+            FileReplacement.Sweep(path, log);
         }
 
-        File.Move(temporary, path, overwrite: true);
+        Leftovers.Wipe(TokenPath, log);
+        Leftovers.Wipe(StatePath, log);
+        Leftovers.Wipe(FinalReportPath, log);
+        Leftovers.Delete(Path.Combine(runDirectory, "run"), log);
     }
 }

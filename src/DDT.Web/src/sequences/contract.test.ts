@@ -6,8 +6,10 @@ import { describe, expect, it } from "vitest";
 
 import everyNodeJson from "@/test/fixtures/every-node.sequence.json";
 import everyStep from "@/test/fixtures/every-step.sequence.json";
+import installLinux from "@/test/fixtures/install-linux.sequence.json";
 import fixture from "@/test/fixtures/install-windows.sequence.json";
 
+import { insertNode } from "./flow/flowEdits";
 import { requiredVersion, walk } from "./flow/flowTree";
 import type { ConditionNode } from "./sequenceConditions";
 import {
@@ -18,6 +20,7 @@ import {
   type InputKind,
   type SequenceDefinition,
   type SequencePhase,
+  type SequenceStep,
   type SequenceTemplate,
   type ShareConnection,
   type VariableDeclaration,
@@ -48,6 +51,10 @@ function sameShape(value: unknown, mirror: unknown): boolean {
   return typeof value === typeof mirror;
 }
 
+function isStep(step: SequenceStep | undefined): step is SequenceStep {
+  return step !== undefined;
+}
+
 function expectMirrored(kind: string, sent: object, mirror: object) {
   const mirrored = mirror as Record<string, unknown>;
 
@@ -66,7 +73,7 @@ function expectMirrored(kind: string, sent: object, mirror: object) {
 }
 
 // Every phase, kind of input and place to ask. If the server adds one, this fails to compile.
-const phases = { WindowsPE: true, Windows: true, LinuxBoot: true } satisfies Record<
+const phases = { WindowsPE: true, Windows: true, LinuxBoot: true, Linux: true } satisfies Record<
   SequencePhase,
   true
 >;
@@ -134,7 +141,7 @@ describe("the sequence mirror", () => {
     expect(Object.keys(everyStep).sort()).toEqual(["steps", "version"]);
     expect(Object.keys(everyNode).sort()).toEqual(["inputs", "steps", "variables", "version"]);
     // The server stores a sequence with the lowest version it needs: 1 for Windows alone, 3 for a tree, 4 with a raw
-    // disk image.
+    // disk image and 5 with a step in the installed Linux.
     expect(fixture.definition.version).toBe(1);
     expect(everyStep.version).toBe(SEQUENCE_VERSION);
     expect(everyNode.version).toBe(3);
@@ -287,5 +294,43 @@ describe("the sequence mirror", () => {
       "writeUnattend",
       "joinDomain",
     ]);
+  });
+});
+
+// The server's install-linux template, whose user-data passes cloud-init's schema check on real images.
+describe("the install-linux template", () => {
+  const { definition } = installLinux as unknown as SequenceTemplate;
+  const [raw, seed, sample] = definition.steps;
+
+  it("goes on in the installed Linux, which takes version 5", () => {
+    expect(definition.steps.map((step) => step.kind)).toEqual([
+      "writeRawImage",
+      "writeCloudInitSeed",
+      "runScript",
+    ]);
+    expect(definition.version).toBe(5);
+    expect(requiredVersion(definition)).toBe(5);
+  });
+
+  it("has the seed files a new seed step starts with", () => {
+    expect(seed).toMatchObject({ kind: "writeCloudInitSeed" });
+    expect(newStep("writeCloudInitSeed", "c")).toMatchObject({
+      metaData: seed?.kind === "writeCloudInitSeed" ? seed.metaData : null,
+      userData: seed?.kind === "writeCloudInitSeed" ? seed.userData : null,
+      networkConfig: null,
+    });
+  });
+
+  it("has its sample script where and how a new script after the seed starts", () => {
+    const slot = { parent: null, body: "steps" as const, index: 2 };
+    const added = insertNode(slot, "runScript", "Linux", [raw, seed].filter(isStep)).nodes[0];
+
+    expect(sample).toMatchObject({ kind: "runScript", phase: "Linux", rebootExitCodes: [194] });
+    expect(added).toMatchObject({
+      ...sample,
+      id: added?.id,
+      name: added?.name,
+      script: "",
+    });
   });
 });

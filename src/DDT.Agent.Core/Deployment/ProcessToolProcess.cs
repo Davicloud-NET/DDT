@@ -13,15 +13,17 @@ internal sealed class ProcessToolProcess : IToolProcess
 {
     private readonly Process _process;
     private readonly AgentLog _log;
-    private readonly Action? _endStrays;
+    private readonly string _tool;
+    private readonly IToolStop? _stop;
 
-    // The process's input is already closed by ToolRunner.Start, so no tool waits on a question. endStrays ends what
-    // the tool started outside its own tree, where the system can find that.
-    public ProcessToolProcess(Process process, AgentLog log, Action? endStrays = null)
+    // The process's input is already closed by ToolRunner.Start, so no tool waits on a question. stop asks the tool
+    // to end first and ends what it started outside its own tree, where the system has a way to.
+    public ProcessToolProcess(Process process, AgentLog log, string tool, IToolStop? stop = null)
     {
         _process = process;
         _log = log;
-        _endStrays = endStrays;
+        _tool = tool;
+        _stop = stop;
     }
 
     public Stream StandardOutput => _process.StandardOutput.BaseStream;
@@ -32,18 +34,26 @@ internal sealed class ProcessToolProcess : IToolProcess
 
     public Task WaitForExitAsync(CancellationToken cancellationToken) => _process.WaitForExitAsync(cancellationToken);
 
-    public void Kill()
+    public async Task KillAsync()
     {
+        if (_stop is not null)
+        {
+            await _stop.AskAsync(_tool).ConfigureAwait(false);
+        }
+
         try
         {
             _process.Kill(entireProcessTree: true);
         }
         catch (Exception exception) when (exception is InvalidOperationException or Win32Exception)
         {
-            _log.Warning($"{_process.ProcessName} could not be stopped ({exception.Message}).");
+            _log.Warning($"{_tool} could not be stopped ({exception.Message}).");
         }
 
-        _endStrays?.Invoke();
+        if (_stop is not null)
+        {
+            await _stop.EndAsync().ConfigureAwait(false);
+        }
     }
 
     public void Dispose() => _process.Dispose();

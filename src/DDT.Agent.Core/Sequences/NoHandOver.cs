@@ -6,11 +6,13 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Sequences;
 
-// For a boot environment whose runs end in it, as the Linux boot environment's do.
+// The hand-over of an agent that runs in the installed system already, where a run has nowhere left to go.
 public sealed class NoHandOver : IHandOver
 {
-    public const string Message = "This boot environment hands no run over to an installed system, so the run cannot go on there.";
+    public const string Message = "The run is in the installed system already, so it cannot be handed over to it.";
 
     Task IHandOver.HandOverAsync(SequenceRun run, RunBootOrder bootOrder, CancellationToken cancellationToken) =>
         Task.FromException(new DeploymentStepException(Message));
+
+    bool IHandOver.Withdraw(SequenceRun run, HandOverEnd end) => false;
 }

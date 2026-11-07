@@ -19,7 +19,8 @@ public static class PhaseRules
     {
         AgentEnvironment.WindowsPE => phase is SequencePhase.WindowsPE or SequencePhase.Windows,
         AgentEnvironment.Windows => phase == SequencePhase.Windows,
-        AgentEnvironment.LinuxBoot => phase == SequencePhase.LinuxBoot,
+        AgentEnvironment.LinuxBoot => phase is SequencePhase.LinuxBoot or SequencePhase.Linux,
+        AgentEnvironment.Linux => phase == SequencePhase.Linux,
         _ => false,
     };
 
@@ -42,8 +43,14 @@ public static class PhaseRules
     {
         AgentEnvironment.WindowsPE => "Windows PE",
         AgentEnvironment.LinuxBoot => "the Linux boot environment",
+        AgentEnvironment.Linux => "the installed Linux",
         _ => "Windows",
     };
+
+    // What the agent of an installed system reads when it has no run to go on with. Linux has no DDT service.
+    public static string NothingToContinue(AgentEnvironment environment) => environment == AgentEnvironment.Linux
+        ? "This machine has no run for the DDT agent in the installed Linux to continue. The agent removes itself."
+        : "This machine has no run for the DDT service to continue. The service removes itself.";
 
     // Why the agent's report is refused, or null when it may report the phase.
     public static string? ReportRefusal(AgentEnvironment environment, SequencePhase phase) =>
@@ -52,17 +59,16 @@ public static class PhaseRules
             : $"This machine registered from {Name(environment)}, so its run cannot be in the {PhaseName(phase)} phase. " +
               $"An agent in {Name(EnvironmentOf(phase))} registers before it reports.";
 
-    private static AgentEnvironment EnvironmentOf(SequencePhase phase) => phase switch
-    {
-        SequencePhase.Windows => AgentEnvironment.Windows,
-        SequencePhase.LinuxBoot => AgentEnvironment.LinuxBoot,
-        _ => AgentEnvironment.WindowsPE,
-    };
+    // The environment whose agent runs the phase's steps.
+    private static AgentEnvironment EnvironmentOf(SequencePhase phase) => SequenceKinds.IsBoot(phase)
+        ? SequenceKinds.BootEnvironment(SequenceKinds.Of(phase))
+        : SequenceKinds.InstalledEnvironment(SequenceKinds.Of(phase));
 
     private static string PhaseName(SequencePhase phase) => phase switch
     {
         SequencePhase.WindowsPE => "Windows PE",
         SequencePhase.LinuxBoot => "Linux boot environment",
+        SequencePhase.Linux => "installed Linux",
         _ => "Windows",
     };
 }

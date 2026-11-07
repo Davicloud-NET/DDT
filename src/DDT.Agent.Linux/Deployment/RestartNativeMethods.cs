@@ -17,7 +17,4 @@ internal static partial class RestartNativeMethods
 
     [LibraryImport("libc", SetLastError = true)]
     internal static partial int reboot(int type);
-
-    [LibraryImport("libc", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
-    internal static partial int umount2(string target, int flags);
 }

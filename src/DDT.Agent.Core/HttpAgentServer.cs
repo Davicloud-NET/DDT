@@ -58,6 +58,12 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
     // The agent's platform as AgentPlatforms names it. Null asks the frozen routes, which answer for Windows.
     public string? ReleasePlatform { get; init; }
 
+    // How the server's name becomes the addresses of a connection, and where the newest connection went.
+    public ServerLookup Lookup { get; init; } = new();
+
+    // The clock the deadlines of a request and of a download run on. The connect timeout is the handler's own.
+    public TimeProvider TimeProvider { get; init; } = TimeProvider.System;
+
     // Called before the agent starts a newer one. WinPE's next start reuses the client ports, which would collide with
     // connections a restart left open on the server. Later requests open new connections.
     public void CloseConnections() => Interlocked.Exchange(ref _client, NewClient()).Dispose();
@@ -242,7 +248,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             UseProxy = false,
             ConnectTimeout = _connectTimeout,
             PooledConnectionLifetime = TimeSpan.FromMinutes(2),
-            ConnectCallback = ServerConnection.ConnectAsync,
+            ConnectCallback = (context, cancellationToken) => ServerConnection.ConnectAsync(context, Lookup, cancellationToken),
         };
 
         _tls?.Apply(handler.SslOptions);
@@ -292,8 +298,8 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
     // download timeout limits it.
     private async Task DownloadAsync(string route, Stream destination, CancellationToken cancellationToken)
     {
-        using CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(_downloadTimeout);
+        using CancellationTokenSource timer = new(_downloadTimeout, TimeProvider);
+        using CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timer.Token);
 
         try
         {
@@ -350,8 +356,8 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         TimeSpan timeout,
         CancellationToken cancellationToken)
     {
-        using CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(timeout);
+        using CancellationTokenSource timer = new(timeout, TimeProvider);
+        using CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timer.Token);
 
         try
         {

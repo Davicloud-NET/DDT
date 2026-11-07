@@ -48,8 +48,8 @@ public sealed class SequenceChoices(
                 || await users.IsInRoleAsync(user, DdtRoleNames.Administrator).ConfigureAwait(false));
     }
 
-    // Only the sequences that can run on this agent, each with what it needs and the boot environment that starts it.
-    // Those of the other boot environment are among them when the machine can restart into it.
+    // The sequences this agent can run where the machine is, each with what it needs and the boot environment that
+    // starts it. Those of the other boot environment are among them when the machine can restart into it.
     public async Task<IReadOnlyList<AgentSequenceChoice>> ChoicesAsync(Machine machine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -97,8 +97,9 @@ public sealed class SequenceChoices(
         return Suggested(listing, pending, await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false));
     }
 
-    // Whether the machine lists the sequence: its agent runs the version, and the sequence starts in the boot
-    // environment the machine started, or in the one it can restart into.
+    // Whether the machine lists the sequence. One that starts where the machine is needs an agent that runs its
+    // version. One that starts in the boot environment the machine can restart into is listed whatever this agent
+    // runs: that start comes from the network, with the server's agent, which updates itself before it registers.
     public static bool Offered(Machine machine, SequenceDefinition definition, AgentEnvironment? reachable)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -106,7 +107,7 @@ public sealed class SequenceChoices(
 
         AgentEnvironment starts = PhaseRules.StartsIn(definition);
 
-        return definition.RequiredVersion() <= machine.SequenceVersion && (starts == machine.AgentEnvironment || starts == reachable);
+        return starts == machine.AgentEnvironment ? definition.RequiredVersion() <= machine.SequenceVersion : starts == reachable;
     }
 
     private static AgentSequenceChoice Choice(

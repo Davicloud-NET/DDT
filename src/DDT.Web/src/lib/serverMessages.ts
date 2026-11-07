@@ -117,6 +117,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "computerName.empty",
     message: "Enter a computer name.",
   }),
+  "computerName.endsWithHyphen": msg({
+    context: "computerName.endsWithHyphen",
+    message: "A computer name cannot end with a hyphen.",
+  }),
   "computerName.startsWithHyphen": msg({
     context: "computerName.startsWithHyphen",
     message: "A computer name cannot start with a hyphen.",
@@ -1201,13 +1205,25 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.keyboard",
     message: "''{keyboard}'' is not an input locale. Use a name such as de-DE or a code such as 0407:00000407.",
   }),
+  "sequence.linuxBootAfterLinux": msg({
+    context: "sequence.linuxBootAfterLinux",
+    message: "Steps in the Linux boot environment come first, and an earlier step already runs in the installed Linux.",
+  }),
+  "sequence.linuxNeedsSeed": msg({
+    context: "sequence.linuxNeedsSeed",
+    message: "A step in the installed Linux needs an earlier step that writes the cloud-init seed, without conditions and without going on when it fails. The seed takes DDT's agent into the installed Linux.",
+  }),
+  "sequence.linuxNeedsSeedOnEveryPath": msg({
+    context: "sequence.linuxNeedsSeedOnEveryPath",
+    message: "A step in the installed Linux needs the cloud-init seed written before it on every path through the sequence, and on some path no step writes it.",
+  }),
   "sequence.linuxNeedsShell": msg({
     context: "sequence.linuxNeedsShell",
-    message: "The Linux boot environment runs only shell scripts. Choose the shell and rewrite the script for it.",
+    message: "The Linux boot environment and the installed Linux run only shell scripts. Choose the shell and rewrite the script for it.",
   }),
   "sequence.linuxPhaseWithoutRawImage": msg({
     context: "sequence.linuxPhaseWithoutRawImage",
-    message: "The Linux boot environment only runs sequences that write a raw disk image. Choose Windows PE or Windows.",
+    message: "The Linux boot environment and the installed Linux only run sequences that write a raw disk image. Choose Windows PE or Windows.",
   }),
   "sequence.locale": msg({
     context: "sequence.locale",
@@ -1283,7 +1299,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.packageWithRawImage": msg({
     context: "sequence.packageWithRawImage",
-    message: "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one.",
+    message: "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one. A script in the installed Linux can.",
   }),
   "sequence.partitionAfterImage": msg({
     context: "sequence.partitionAfterImage",
@@ -1299,11 +1315,11 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.phaseChangeInRepeat": msg({
     context: "sequence.phaseChangeInRepeat",
-    message: "A run cannot change between Windows PE and Windows inside a repeat. Move this step, or the steps before it, out of the repeat.",
+    message: "{kind, select, Linux {A run cannot change between the Linux boot environment and the installed Linux inside a repeat.} other {A run cannot change between Windows PE and Windows inside a repeat.}} Move this step, or the steps before it, out of the repeat.",
   }),
   "sequence.phaseValueOtherKindWarning": msg({
     context: "sequence.phaseValueOtherKindWarning",
-    message: "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}",
+    message: "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot or Linux and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}",
   }),
   "sequence.rawImageNotStarting": msg({
     context: "sequence.rawImageNotStarting",
@@ -1339,11 +1355,11 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.restartWithRawImage": msg({
     context: "sequence.restartWithRawImage",
-    message: "A sequence that writes a raw disk image keeps its state in memory, so the Linux boot environment cannot restart during it.",
+    message: "The Linux boot environment keeps the run's state in memory, so it cannot restart during a run. The installed Linux can.",
   }),
   "sequence.runAsWindowsOnly": msg({
     context: "sequence.runAsWindowsOnly",
-    message: "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} other {In Windows PE it runs as SYSTEM.}}",
+    message: "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} Linux {In the installed Linux it runs as root.} other {In Windows PE it runs as SYSTEM.}}",
   }),
   "sequence.scriptEmpty": msg({
     context: "sequence.scriptEmpty",
@@ -1403,7 +1419,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.sharesNotInLinuxBoot": msg({
     context: "sequence.sharesNotInLinuxBoot",
-    message: "The Linux boot environment cannot connect shares. Remove them from this step.",
+    message: "The Linux boot environment cannot connect shares. Only a step in the installed Linux can have them.",
   }),
   "sequence.sharesOnlyOnSteps": msg({
     context: "sequence.sharesOnlyOnSteps",
@@ -1416,6 +1432,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.shellNeedsLinux": msg({
     context: "sequence.shellNeedsLinux",
     message: "Windows PE and Windows run no shell scripts. Choose cmd or PowerShell.",
+  }),
+  "sequence.shellRebootExitCodes": msg({
+    context: "sequence.shellRebootExitCodes",
+    message: "A shell script ends with an exit code from 0 to 255. For a restart use 194, which is what a shell makes of exit 3010.",
   }),
   "sequence.stepCount": msg({
     context: "sequence.stepCount",
@@ -1493,6 +1513,30 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.unreadable",
     message: "The sequence is not a document DDT can read. Every step needs an id and a kind this version of DDT knows.",
   }),
+  "sequence.userDataFinalModulesWarning": msg({
+    context: "sequence.userDataFinalModulesWarning",
+    message: "{how, select, missing {The user-data sets cloud_final_modules, and the list names neither scripts_vendor nor scripts-vendor, so cloud-init runs no vendor scripts.} other {DDT could not read what the user-data sets cloud_final_modules to. If the list does not name scripts_vendor, cloud-init runs no vendor scripts.}} DDT's script, which installs the agent in the installed Linux, is a vendor script, and without it the steps there never run. Add scripts_vendor to the list.",
+  }),
+  "sequence.userDataNotCheckedWarning": msg({
+    context: "sequence.userDataNotCheckedWarning",
+    message: "DDT could not check this user-data: it reads only a #cloud-config document whose top level has one key per line. The run goes on in the installed Linux only if cloud-init runs vendor scripts there, so vendor_data has to stay enabled, and cloud_final_modules, if set, has to name scripts_vendor.",
+  }),
+  "sequence.userDataPowerStateNote": msg({
+    context: "sequence.userDataPowerStateNote",
+    message: "{mode, select, reboot {The user-data restarts the machine with power_state. The run waits for that restart and then goes on with its steps in the installed Linux.} off {The user-data shuts the machine down with power_state. The run waits until someone switches the machine on again, and then goes on with its steps in the installed Linux.} other {The user-data sets power_state, so cloud-init may restart the machine or shut it down. The run waits for that before its steps in the installed Linux, and after a shutdown until someone switches the machine on again.}}",
+  }),
+  "sequence.userDataVendorDataWarning": msg({
+    context: "sequence.userDataVendorDataWarning",
+    message: "{how, select, notMapping {The user-data sets vendor_data to something that is not a mapping, so cloud-init reads no vendor data.} notEnabled {The user-data sets enabled under vendor_data to something other than true, so cloud-init reads no vendor data.} other {DDT could not read what the user-data sets vendor_data to. It may switch vendor data off.}} DDT's agent gets into the installed Linux as vendor data, and without it the steps there never run. Leave vendor_data out, or set its enabled to true.",
+  }),
+  "sequence.userDataVendorHandlersWarning": msg({
+    context: "sequence.userDataVendorHandlersWarning",
+    message: "{how, select, named {The user-data names text/x-shellscript in disabled_handlers under vendor_data, so cloud-init runs no shell script from vendor data.} other {DDT could not read what the user-data sets disabled_handlers under vendor_data to. If it names text/x-shellscript, cloud-init runs no shell script from vendor data.}} DDT's script, which installs the agent in the installed Linux, is a shell script, and without it the steps there never run. Leave text/x-shellscript out of disabled_handlers.",
+  }),
+  "sequence.userDataVendorPrefixWarning": msg({
+    context: "sequence.userDataVendorPrefixWarning",
+    message: "The user-data sets prefix under vendor_data, so cloud-init starts vendor scripts through that command. One of them is DDT's, which installs the agent in the installed Linux. If the command does not run it to its end, the steps there never run.",
+  }),
   "sequence.valueName": msg({
     context: "sequence.valueName",
     message: "A name starts with a letter and has at most {max} letters, digits and underscores.",
@@ -1539,7 +1583,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.windowsScriptInLinux": msg({
     context: "sequence.windowsScriptInLinux",
-    message: "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment.",
+    message: "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment or in the installed Linux.",
   }),
   "sequence.windowsWithRawImage": msg({
     context: "sequence.windowsWithRawImage",
@@ -2151,7 +2195,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "template.installLinuxDescription": msg({
     context: "template.installLinuxDescription",
-    message: "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine.",
+    message: "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine, then runs a script in the installed Linux.",
   }),
   "template.installWindows": msg({
     context: "template.installWindows",

@@ -57,8 +57,12 @@ public sealed class LinuxBootDryRunTests : IDisposable
         }
 
         File.Delete(FileRawDisks.PathFor(_root, 0));
+        File.Delete(AgentPath);
         _console.Dispose();
     }
+
+    // Beside the root, which stands in for the agent's own directory.
+    private string AgentPath => _root + "-agent";
 
     private AgentRun Run(params SequenceStep[] steps) =>
         new(
@@ -90,7 +94,7 @@ public sealed class LinuxBootDryRunTests : IDisposable
         };
 
         return new(
-            new DryRunMachineOptions(options, _root, "ddt-agent", Timeout.InfiniteTimeSpan, TestAgents.Version),
+            new DryRunMachineOptions(options, _root, AgentPath, Timeout.InfiniteTimeSpan, TestAgents.Version),
             server,
             TestAgents.Status(new ScriptedSignInPrompt { IsAvailable = false }, log),
             log,
@@ -114,7 +118,7 @@ public sealed class LinuxBootDryRunTests : IDisposable
 
         Assert.Equal(AgentExitCodes.Deployed, exitCode);
         Assert.Equal(AgentEnvironment.LinuxBoot, Assert.Single(server.Registrations).Environment);
-        Assert.Equal(SequenceDefinition.CurrentVersion, server.Registrations[0].SequenceVersion);
+        Assert.Equal(5, server.Registrations[0].SequenceVersion);
         Assert.All(server.RunReports, report => Assert.Equal(SequencePhase.LinuxBoot, report.Phase));
         Assert.Equal(DeploymentState.Done, server.RunReports[^1].State);
         Assert.Equal(Enumerable.Repeat(StepState.Done, 3), server.RunReports[^1].Steps.Select(step => step.State));
@@ -152,6 +156,58 @@ public sealed class LinuxBootDryRunTests : IDisposable
         string[] lines = Lines();
         Assert.Equal(expected, lines.Where(expected.Contains).Distinct());
         Assert.DoesNotContain(lines, line => line.Contains("Windows PE", StringComparison.Ordinal) || line.Contains("diskpart", StringComparison.Ordinal));
+    }
+
+    // The same hand-over as on a machine, onto the file that stands in for the disk. This part of the dry run ends
+    // where the machine would start the installed Linux.
+    [Fact]
+    public async Task HandsARunWithStepsInTheInstalledLinuxOverOnTheSeedOfTheFileThatIsItsDisk()
+    {
+        RunScriptStep installed = s_script with
+        {
+            Id = Guid.Parse("0193a4b2-0000-7000-8000-00000000c002"),
+            Name = "In the installed Linux",
+            Phase = SequencePhase.Linux,
+            RebootExitCodes = [194],
+        };
+        byte[] agent = new byte[150_000];
+        new Random(3).NextBytes(agent);
+        await File.WriteAllBytesAsync(AgentPath, agent, TestContext.Current.CancellationToken);
+        ScriptedAgentServer server = Server(Run(s_write, s_seed, installed));
+
+        int exitCode = await Machine(server).RunAsync(server.Stop.Token);
+
+        Assert.Equal(AgentExitCodes.Restarting, exitCode);
+        Assert.Equal(5, Assert.Single(server.Registrations).SequenceVersion);
+        AgentRunReport last = server.RunReports[^1];
+        Assert.Equal((DeploymentState.Running, SequencePhase.Linux, RunActivity.Restarting), (last.State, last.Phase, last.Activity));
+        Assert.Equal([StepState.Done, StepState.Done], last.Steps.Select(step => step.State));
+
+        using (FileStream disk = new(FileRawDisks.PathFor(_root, 0), FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            TestSeed seed = TestSeed.Read(disk);
+
+            Assert.Equal(["meta-data", "user-data", "vendor-data", "ddt"], seed.Names());
+            Assert.Equal(["ddt-agent", "agent.json", "state.json", "token"], seed.Names(LinuxAgentFiles.SeedFolder));
+            Assert.Equal(VendorDataScript.Bytes(), seed.File(CloudInitSeed.VendorData));
+            Assert.Equal(agent, seed.File(LinuxAgentFiles.SeedAgent));
+            Assert.Equal("{\"serverUrl\":\"https://ddt.example:8443/\"}", seed.Text(LinuxAgentFiles.SeedConfiguration));
+            Assert.Equal("run-token-1", seed.Text(LinuxAgentFiles.SeedToken));
+            Assert.Contains("\"phase\":\"Linux\"", seed.Text(LinuxAgentFiles.SeedState), StringComparison.Ordinal);
+        }
+
+        string[] expected =
+        [
+            "The cloud-init seed is partition 3 of disk 0, 64 MB labelled CIDATA, with meta-data and user-data.",
+            "The agent (146 KB), its settings and the run are on the cloud-init seed, partition 3 of disk 0, which has 64 MB left.",
+            LinuxHandOver.GoesOnMessage,
+            "The machine restarts into the installed Linux, where the agent goes on with the run.",
+            "Dry run: this computer is not restarted. In the Linux boot environment, the machine would restart now.",
+        ];
+        string[] lines = Lines();
+        Assert.Equal(expected, lines.Where(expected.Contains));
+        Assert.Contains(lines, line => line.StartsWith("Dry run: the firmware boot order is not changed. A boot entry noble-test for", StringComparison.Ordinal));
+        Assert.DoesNotContain(lines, line => line.Contains("run-token-1", StringComparison.Ordinal));
     }
 
     // The fake machine started the other boot environment, so nothing is written for a sequence that installs Windows.

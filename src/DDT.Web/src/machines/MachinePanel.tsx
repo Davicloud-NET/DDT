@@ -7,7 +7,8 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { IconX } from "@tabler/icons-react";
 import { Button as AriaButton } from "react-aria-components";
 
-import { activityLabel, isActive, isWaiting } from "@/deployments/deployments";
+import { isActive, isWaiting } from "@/deployments/deployments";
+import { activityOf } from "@/deployments/handOver";
 import { formatDuration } from "@/lib/format";
 import { relativeTime } from "@/lib/relativeTime";
 import { formatMac, type MachineSummary } from "@/machines/machines";
@@ -53,7 +54,7 @@ export function MachinePanel({
   const steps =
     detail.view?.summary.id === run?.id && detail.view ? railFromView(detail.view) : null;
   const rail = steps ?? (run === null ? [] : railFromSummary(run));
-  const activity = run === null ? null : activityLabel(run.activity);
+  const activity = activityOf(machine);
   const running = run?.state === "Running";
   const signedInBy = machine.signedInBy;
   const tag = machineTag(machine);

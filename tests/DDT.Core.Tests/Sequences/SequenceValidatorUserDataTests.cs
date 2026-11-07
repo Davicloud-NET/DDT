@@ -1,0 +1,463 @@
+// Copyright (C) 2026 Davicloud
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+using System.Diagnostics;
+using DDT.Contracts.Sequences;
+using DDT.Core.CloudInit;
+using DDT.Core.Sequences;
+using Xunit;
+using static DDT.Core.Tests.Sequences.TreeSteps;
+
+namespace DDT.Core.Tests.Sequences;
+
+// A seed's user-data can keep cloud-init from running the vendor-data script that takes the agent into the installed
+// Linux. The files under UserData are those the lab wrote when it tried that on Debian 13 and Ubuntu 24.04 images.
+public sealed class SequenceValidatorUserDataTests
+{
+    private const string NotChecked = "sequence.userDataNotCheckedWarning";
+    private const string VendorData = "sequence.userDataVendorDataWarning";
+    private const string VendorPrefix = "sequence.userDataVendorPrefixWarning";
+    private const string VendorHandlers = "sequence.userDataVendorHandlersWarning";
+    private const string FinalModules = "sequence.userDataFinalModulesWarning";
+    private const string PowerState = "sequence.userDataPowerStateNote";
+
+    private static string Lab(string name) => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Sequences", "UserData", $"{name}.txt"));
+
+    // A sequence that goes on in the installed Linux, or one that ends in the Linux boot environment.
+    private static SequenceAnalysis Analyse(string userData, bool goesOn = true)
+    {
+        WriteCloudInitSeedStep seed = WriteSeed() with { UserData = userData };
+        SequenceAnalysis analysis = SequenceValidator.Analyse(Definition(WriteRawImage(), seed, goesOn ? InLinux() : Shell()));
+
+        Assert.Empty(analysis.Problems);
+        Assert.All(analysis.Warnings.Concat(analysis.Notes), finding => Assert.Equal((seed.Id, "userData"), (finding.StepId, finding.Field)));
+
+        return analysis;
+    }
+
+    // Each finding as its code and the form of its sentence, such as "notEnabled".
+    private static string[] Said(IEnumerable<SequenceProblem> findings) =>
+        [.. findings.Select(finding => finding.Args is { Count: > 0 } args ? $"{finding.Code} {args.Values.Single()}" : finding.Code ?? "")];
+
+    private const string CloudConfigHeader = "#cloud-config\n";
+
+    // What a scan of the longest user-data may take at most. A computer of 2026 needs a few milliseconds.
+    private static readonly TimeSpan s_scanTime = TimeSpan.FromMilliseconds(250);
+
+    private static string Document(string keys) => $"#cloud-config\n{keys}\n";
+
+    // What real cloud-init did with each: the script ran, or it did not and the run's token stayed on the seed.
+    [Theory]
+    [InlineData("admin-a")]
+    [InlineData("admin-b")]
+    [InlineData("fail-runcmd")]
+    [InlineData("runcmd-reboot")]
+    [InlineData("vendor-prefix")]
+    [InlineData("shell-script")]
+    [InlineData("vendor-off", $"{VendorData} notEnabled")]
+    [InlineData("vendor-false", $"{VendorData} notMapping")]
+    [InlineData("final-modules", $"{FinalModules} missing")]
+    [InlineData("invalid-yaml", NotChecked)]
+    public void WarnsOfTheLabsUserDataThatKeptTheAgentOutOfLinux(string file, params string[] warnings)
+    {
+        SequenceAnalysis analysis = Analyse(Lab(file));
+
+        Assert.Equal(warnings, Said(analysis.Warnings));
+        Assert.Empty(analysis.Notes);
+    }
+
+    [Theory]
+    [InlineData("power-state")]
+    [InlineData("power-delay")]
+    public void NotesTheRestartOfTheLabsUserDataWithoutWarning(string file)
+    {
+        SequenceAnalysis analysis = Analyse(Lab(file));
+
+        Assert.Empty(analysis.Warnings);
+        Assert.Equal([$"{PowerState} reboot"], Said(analysis.Notes));
+        Assert.Equal(
+            "The user-data restarts the machine with power_state. The run waits for that restart and then goes on with its steps in the " +
+            "installed Linux.",
+            analysis.Notes[0].Message);
+    }
+
+    [Theory]
+    [InlineData("vendor_data: {enabled: false}", "notEnabled")]
+    [InlineData("vendor_data: { enabled : no , prefix: [] }", "notEnabled")]
+    [InlineData("vendor_data: {\"enabled\":false}", "notEnabled")]
+    [InlineData("vendor_data:\n  enabled: false", "notEnabled")]
+    [InlineData("vendor_data:\n    # switched off for now\n    enabled: Off   # really", "notEnabled")]
+    [InlineData("\"vendor_data\":\n  'enabled': \"0\"", "notEnabled")]
+    [InlineData("vendor_data:\n  enabled:", "notEnabled")]
+    [InlineData("vendor_data: {enabled:\n  false}", "notEnabled")]
+    [InlineData("vendor_data: false", "notMapping")]
+    [InlineData("vendor_data: off", "notMapping")]
+    [InlineData("vendor_data:", "notMapping")]
+    [InlineData("vendor_data: ~", "notMapping")]
+    [InlineData("vendor_data: [enabled]", "notMapping")]
+    [InlineData("vendor_data:\n  - enabled: false", "notMapping")]
+    [InlineData("vendor_data: *defaults", "unread")]
+    [InlineData("vendor_data: &vendor {enabled: true}", "unread")]
+    [InlineData("vendor_data: {enabled: \"{{VendorData}}\"}", "unread")]
+    [InlineData("vendor_data:\n  enabled: !!bool yes", "unread")]
+    [InlineData("off: &off {enabled: false}\nvendor_data: {<<: *off}", "unread")]
+    [InlineData("off: &off {enabled: false}\nvendor_data: { prefix: [], << : *off }", "unread")]
+    [InlineData("off: &off\n  enabled: false\nvendor_data:\n  <<: *off", "unread")]
+    [InlineData("vendor_data:\n  prefix: []\n  <<: [*on, *off]", "unread")]
+    [InlineData("vendor_data: {\"en\\x61bled\": false}", "unread")]
+    [InlineData("vendor_data:\n  \"en\\u0061bled\": false", "unread")]
+    [InlineData("vendor_data:\n  &flag enabled: false", "unread")]
+    public void WarnsOfVendorDataThatIsOffInBlockAndInFlowStyle(string keys, string how)
+    {
+        SequenceAnalysis analysis = Analyse(Document(keys));
+
+        Assert.Equal([$"{VendorData} {how}"], Said(analysis.Warnings));
+    }
+
+    [Theory]
+    [InlineData("vendor_data: {enabled: true}")]
+    [InlineData("vendor_data: {enabled: True, disabled_handlers: []}")]
+    [InlineData("vendor_data:\n  enabled: yes")]
+    [InlineData("vendor_data:\n  enabled: \"ON\"")]
+    [InlineData("vendor_data:\n  enabled: 1")]
+    [InlineData("vendor_data: {}")]
+    [InlineData("vendor_data: {prefix: []}")]
+    [InlineData("vendor_data:\n  prefix:")]
+    [InlineData("# vendor_data: {enabled: false}")]
+    [InlineData("  # vendor_data: false")]
+    [InlineData("write_files:\n  - path: /etc/cloud/cloud.cfg.d/99.cfg\n    content: |\n      vendor_data: {enabled: false}\n      cloud_final_modules: []")]
+    [InlineData("users:\n  - name: admin\n    vendor_data: false")]
+    [InlineData("final_message: \"vendor_data: {enabled: false}\"")]
+    [InlineData("bootcmd:\n- [sh, -c, 'echo vendor_data: false']")]
+    [InlineData("---\nhostname: \"{{ComputerName}}\"\nmessage: it's { fine\nusers: [default]")]
+    [InlineData("vendor_data: {disabled_handlers: [text/cloud-boothook, 'text/cloud-config']}")]
+    [InlineData("vendor_data:\n  disabled_handlers:\n    - text/x-shellscript-per-boot\n    - text/x-shellscripts")]
+    [InlineData("vendor_data:\n  enabled: true\n  disabled_handlers: ~")]
+    public void SaysNothingWhileVendorDataStaysOn(string keys)
+    {
+        SequenceAnalysis analysis = Analyse(Document(keys));
+
+        Assert.Empty(analysis.Warnings);
+        Assert.Empty(analysis.Notes);
+    }
+
+    // A key set twice keeps its last value in YAML. One of the two may be text in a quoted scalar over several lines,
+    // which the scan does not follow, so it says "may" whatever the last one says.
+    [Theory]
+    [InlineData("vendor_data: {enabled: true}\nruncmd: [ls]\nvendor_data: {enabled: false}", $"{VendorData} unread")]
+    [InlineData("vendor_data: {enabled: false}\nvendor_data: {enabled: true}", $"{VendorData} unread")]
+    [InlineData("vendor_data: {enabled: false}\nmotd: \"\nvendor_data:\n  enabled: true\n  end: \"", $"{VendorData} unread")]
+    [InlineData("vendor_data:\n  enabled: false\n  enabled: true", $"{VendorData} unread")]
+    [InlineData("vendor_data:\n  prefix: [timeout, 30]\n  prefix: []", VendorPrefix)]
+    [InlineData("cloud_final_modules: [scripts_user]\ncloud_final_modules: [scripts_vendor]", $"{FinalModules} unread")]
+    public void SaysMayOfAKeyTheUserDataSetsTwice(string keys, string warning)
+    {
+        SequenceAnalysis analysis = Analyse(Document(keys));
+
+        Assert.Equal([warning], Said(analysis.Warnings));
+    }
+
+    // cloud-init hands vendor data of a listed content type to no handler, and takes any part of a text for a type.
+    [Theory]
+    [InlineData("vendor_data: {enabled: true, disabled_handlers: [text/x-shellscript]}", "named")]
+    [InlineData("vendor_data:\n  disabled_handlers:\n    - text/cloud-config\n    - \"text/x-shellscript\"", "named")]
+    [InlineData("vendor_data:\n  disabled_handlers: text/x-shellscript-per-boot", "named")]
+    [InlineData("vendor_data: {disabled_handlers: {text/x-shellscript: off}}", "named")]
+    [InlineData("vendor_data: {disabled_handlers: *handlers}", "unread")]
+    [InlineData("vendor_data:\n  disabled_handlers: [\"text/x\\x2dshellscript\"]", "unread")]
+    public void WarnsOfVendorDataWhoseShellScriptsAreNotRun(string keys, string how)
+    {
+        const string End =
+            " DDT's script, which installs the agent in the installed Linux, is a shell script, and without it the steps there never " +
+            "run. Leave text/x-shellscript out of disabled_handlers.";
+        SequenceAnalysis analysis = Analyse(Document(keys));
+
+        Assert.Equal([$"{VendorHandlers} {how}"], Said(analysis.Warnings));
+        Assert.Equal(
+            how == "named"
+                ? "The user-data names text/x-shellscript in disabled_handlers under vendor_data, so cloud-init runs no shell script " +
+                  "from vendor data." + End
+                : "DDT could not read what the user-data sets disabled_handlers under vendor_data to. If it names text/x-shellscript, " +
+                  "cloud-init runs no shell script from vendor data." + End,
+            analysis.Warnings[0].Message);
+    }
+
+    [Theory]
+    [InlineData("vendor_data: {prefix: [timeout, 30]}")]
+    [InlineData("vendor_data:\n  enabled: true\n  prefix:\n    - /usr/bin/ltrace")]
+    [InlineData("vendor_data:\n  prefix: /usr/bin/time")]
+    public void WarnsOfAPrefixThatVendorScriptsAreStartedThrough(string keys)
+    {
+        SequenceAnalysis analysis = Analyse(Document(keys));
+
+        Assert.Equal([VendorPrefix], Said(analysis.Warnings));
+        Assert.Equal(
+            "The user-data sets prefix under vendor_data, so cloud-init starts vendor scripts through that command. One of them is DDT's, " +
+            "which installs the agent in the installed Linux. If the command does not run it to its end, the steps there never run.",
+            analysis.Warnings[0].Message);
+    }
+
+    [Theory]
+    [InlineData("cloud_final_modules:\n  - scripts_user\n  - final_message", "missing")]
+    [InlineData("cloud_final_modules:\n- scripts-user\n- [final-message, always]", "missing")]
+    [InlineData("cloud_final_modules: [scripts_user, final_message]", "missing")]
+    [InlineData("cloud_final_modules: []", "missing")]
+    [InlineData("cloud_final_modules:\n  # - scripts_vendor\n  - scripts_user   # not scripts_vendor", "missing")]
+    [InlineData("cloud_final_modules:\n  - scripts_vendors\n  - my-scripts_vendor", "missing")]
+    [InlineData("cloud_final_modules:\n  - {scripts_vendor: always}\n  - scripts_vendor.sh\n  - cc_scripts_user", "missing")]
+    [InlineData("cloud_final_modules:", "unread")]
+    [InlineData("cloud_final_modules: *modules", "unread")]
+    [InlineData("cloud_final_modules: [\"{{Modules}}\"]", "unread")]
+    public void WarnsOfFinalModulesWithoutTheOneThatRunsVendorScripts(string keys, string how)
+    {
+        SequenceAnalysis analysis = Analyse(Document(keys));
+
+        Assert.Equal([$"{FinalModules} {how}"], Said(analysis.Warnings));
+    }
+
+    // Debian's cloud.cfg writes the module with a dash, Ubuntu's with an underscore, and cloud-init reads both. It
+    // also takes an entry as a mapping with the name, and the name with the cc_ and the .py of the module's file.
+    [Theory]
+    [InlineData("cloud_final_modules:\n  - {name: scripts_vendor}\n  - scripts_user")]
+    [InlineData("cloud_final_modules: [{name: scripts-vendor, frequency: always}]")]
+    [InlineData("cloud_final_modules:\n  - name: scripts_vendor\n    frequency: once-per-instance")]
+    [InlineData("cloud_final_modules:\n  - cc_scripts_vendor")]
+    [InlineData("cloud_final_modules: [scripts_user, scripts_vendor.py]")]
+    [InlineData("cloud_final_modules:\n- \"cc_scripts-vendor.PY\"")]
+    [InlineData("cloud_final_modules:\n  - scripts_vendor\n  - scripts_user")]
+    [InlineData("cloud_final_modules:\n- scripts-vendor\n- scripts-user")]
+    [InlineData("cloud_final_modules: [package_update_upgrade_install, [scripts_vendor, always], scripts_user]")]
+    [InlineData("cloud_final_modules: [\n  'scripts-vendor',\n  \"final_message\"\n]\nruncmd: [ls]")]
+    [InlineData("cloud_init_modules:\n  - seed_random\ncloud_config_modules:\n  - runcmd")]
+    public void SaysNothingOfFinalModulesThatNameIt(string keys) => Assert.Empty(Analyse(Document(keys)).Warnings);
+
+    [Theory]
+    [InlineData("power_state:\n  mode: reboot\n  delay: now", "reboot")]
+    [InlineData("power_state: {mode: reboot, condition: true}", "reboot")]
+    [InlineData("power_state: {delay: 5, mode: \"poweroff\"}", "off")]
+    [InlineData("power_state:\n  mode: halt", "off")]
+    [InlineData("power_state:\n  mode: reboot\n  condition: test -e /run/restart-wanted", "unread")]
+    [InlineData("power_state:\n  mode: \"{{PowerMode}}\"", "unread")]
+    [InlineData("power_state:\n  delay: now", "unread")]
+    [InlineData("power_state: *power", "unread")]
+    [InlineData("power_state: {<<: *power, mode: reboot}", "unread")]
+    [InlineData("power_state: {mode: reboot}\npower_state: {mode: reboot, condition: false}", "unread")]
+    [InlineData("power_state:\n  mode: poweroff\n  mode: reboot", "unread")]
+    public void NotesWhatPowerStateDoesToTheRun(string keys, string mode)
+    {
+        SequenceAnalysis analysis = Analyse(Document(keys));
+
+        Assert.Empty(analysis.Warnings);
+        Assert.Equal([$"{PowerState} {mode}"], Said(analysis.Notes));
+    }
+
+    // cloud-init then leaves the machine as it is, as the agent saw on real images.
+    [Theory]
+    [InlineData("power_state:\n  mode: reboot\n  condition: false")]
+    [InlineData("power_state: {mode: poweroff, condition: False}")]
+    [InlineData("runcmd:\n  - [reboot]")]
+    public void NotesNoPowerStateWhoseConditionIsFalse(string keys) => Assert.Empty(Analyse(Document(keys)).Notes);
+
+    [Theory]
+    [InlineData("Content-Type: multipart/mixed; boundary=\"==BOUNDARY==\"\nMIME-Version: 1.0\n\n--==BOUNDARY==\n")]
+    [InlineData("#include\nhttps://example.org/user-data\n")]
+    [InlineData("#include-once\nhttps://example.org/user-data\n")]
+    [InlineData("## template: jinja\n#cloud-config\nvendor_data: {enabled: false}\n")]
+    [InlineData("#cloud-config-archive\n- type: text/cloud-config\n  content: \"vendor_data: {enabled: false}\"\n")]
+    [InlineData("#cloud-config-jsonp\n[{ \"op\": \"add\", \"path\": \"/vendor_data\", \"value\": false }]\n")]
+    [InlineData("#cloud-boothook\n#!/bin/sh\necho early\n")]
+    [InlineData("\u001f\u008b\u0008binary")]
+    [InlineData("{{UserData}}")]
+    [InlineData("vendor_data: {enabled: false}\n")]
+    [InlineData("#cloud-config\n{vendor_data: {enabled: false}}\n")]
+    [InlineData("#cloud-config\nbase: &base\n  enabled: false\n<<: *base\n")]
+    [InlineData("#cloud-config\n? vendor_data\n: false\n")]
+    [InlineData("#cloud-config\nruncmd:\n\t- ls\n")]
+    [InlineData("#cloud-config\nruncmd: [ 'echo never',\n")]
+    [InlineData("#cloud-config\nhostname: a\n---\nvendor_data: false\n")]
+    [InlineData("#cloud-config\n  vendor_data: false\n")]
+    [InlineData("#cloud-config\n\"vendor\\x5fdata\": {enabled: false}\n")]
+    [InlineData("#cloud-config\nwrite_files: [{path: /x, content: \"a\n  [ b\"}]\nvendor_data: {enabled: false}\nfinal_message: done ]\n")]
+    [InlineData("#cloud-config\nruncmd: [ 'echo a\n  ] b' ]\nvendor_data: {enabled: false}\n")]
+    [InlineData("#cloud-config\nmotd: [a ' b]  # it's\nvendor_data: {enabled: false}\nfinal_message: done ]\n")]
+    [InlineData("#cloud-config\nvendor_data: {\nenabled: false\n}\n")]
+    [InlineData("#cloud-config\nvendor_data: {enabled: false, note: \"a\n  \", enabled: true}\n")]
+    [InlineData("#cloud-config\nven{{Part}}: false\n")]
+    [InlineData("#cloud-config\nhostname: a\n\"vendor_{{Part}}\": {enabled: false}\n")]
+    [InlineData("#cloud-config\n{{Key}}: false\n")]
+    [InlineData("#cloud-config\ncloud_{{Part}}_modules: [final-message]\n")]
+    public void SaysWhenItCouldNotCheckTheUserData(string userData)
+    {
+        SequenceAnalysis analysis = Analyse(userData);
+
+        Assert.Equal([NotChecked], Said(analysis.Warnings));
+        Assert.Empty(analysis.Notes);
+        Assert.Equal(
+            "DDT could not check this user-data: it reads only a #cloud-config document whose top level has one key per line. The run " +
+            "goes on in the installed Linux only if cloud-init runs vendor scripts there, so vendor_data has to stay enabled, and " +
+            "cloud_final_modules, if set, has to name scripts_vendor.",
+            analysis.Warnings[0].Message);
+    }
+
+    // cloud-init skips white space before the header, and a byte order mark is none of the text.
+    [Theory]
+    [InlineData("")]
+    [InlineData(" \n\t\n")]
+    [InlineData("#cloud-config")]
+    [InlineData("#cloud-config\n")]
+    [InlineData("\uFEFF\n\n#cloud-config\r\nusers:\r\n  - default\r\n")]
+    [InlineData("#cloud-config\n# Only comments.\n\n")]
+    public void SaysNothingOfUserDataThatSetsNothing(string userData)
+    {
+        SequenceAnalysis analysis = Analyse(userData);
+
+        Assert.Empty(analysis.Warnings);
+        Assert.Empty(analysis.Notes);
+    }
+
+    // The lab saw cloud-init run DDT's vendor script beside a script as user-data. What the script does is its own.
+    [Theory]
+    [InlineData("#!/bin/sh\necho hello\n")]
+    [InlineData("\uFEFF\n #!/usr/bin/env python3\nprint('vendor_data: {enabled: false}')\n")]
+    public void SaysNothingOfAScriptAsUserData(string userData)
+    {
+        SequenceAnalysis analysis = Analyse(userData);
+
+        Assert.Empty(analysis.Warnings);
+        Assert.Empty(analysis.Notes);
+    }
+
+    // The seed gets every line end as a line feed, so a key after any of them is a line of its own to cloud-init.
+    [Theory]
+    [InlineData("\r")]
+    [InlineData("\r\n")]
+    [InlineData("\f")]
+    [InlineData("\u0085")]
+    [InlineData("\u2028")]
+    [InlineData("\u2029")]
+    public void ReadsTheUserDataWithTheLineEndsTheSeedGets(string lineEnd)
+    {
+        string userData = string.Join(lineEnd, "#cloud-config", "vendor_data:", "  enabled: false", "cloud_final_modules: [scripts_user]", "");
+        string onTheSeed = CloudInitTemplate.Render(userData, new Dictionary<string, string?>());
+
+        Assert.Equal("#cloud-config\nvendor_data:\n  enabled: false\ncloud_final_modules: [scripts_user]\n", onTheSeed);
+        Assert.Equal([$"{VendorData} notEnabled", $"{FinalModules} missing"], Said(Analyse(userData).Warnings));
+        Assert.Equal(Said(Analyse(onTheSeed).Warnings), Said(Analyse(userData).Warnings));
+    }
+
+    // The limit's own problem is all that such text draws. Nothing in it is read.
+    [Fact]
+    public void ScansNoUserDataThatIsOverTheLimit()
+    {
+        const string SwitchesOff = "#cloud-config\nvendor_data: {enabled: false}\npower_state: {mode: reboot}\n# ";
+        WriteCloudInitSeedStep seed = WriteSeed() with { UserData = SwitchesOff.PadRight(SequenceValidator.MaxSeedFileBytes, 'x') };
+
+        Assert.NotEmpty(Analyse(seed.UserData).Warnings);
+
+        SequenceAnalysis analysis = SequenceValidator.Analyse(Definition(WriteRawImage(), seed with { UserData = seed.UserData + "x" }, InLinux()));
+
+        Assert.Equal([(seed.Id, "userData", "sequence.seedFileTooLarge")], TreeSteps.Said(analysis.Problems));
+        Assert.Empty(analysis.Warnings);
+        Assert.Empty(analysis.Notes);
+    }
+
+    // Each is as long as the limit lets it be. A scan that began again at every comma took seconds for the first two,
+    // so the best of a few tries, which a busy computer does not stretch, stays far below that.
+    [Theory]
+    [InlineData("vendor_data: {", ",", "}")]
+    [InlineData("power_state: {", "a,", "}")]
+    [InlineData("vendor_data: {enabled: ", "[", "}")]
+    [InlineData("vendor_data: {enabled: true, disabled_handlers: [", "'',", "]}")]
+    [InlineData("cloud_final_modules: [", "a: b, ", "]")]
+    [InlineData("cloud_final_modules:", "\n- a", "")]
+    [InlineData("vendor_data:", "\n  a: {b: c}", "")]
+    [InlineData("vendor_data: {", "a: '", "}")]
+    public void ScansTheLongestUserDataInTimeThatGrowsWithItsLength(string before, string repeated, string after)
+    {
+        int times = (SequenceValidator.MaxSeedFileBytes - CloudConfigHeader.Length - before.Length - after.Length) / repeated.Length;
+        string userData = CloudConfigHeader + before + string.Concat(Enumerable.Repeat(repeated, times)) + after;
+        SequenceDefinition definition = Definition(WriteRawImage(), WriteSeed() with { UserData = userData }, InLinux());
+        TimeSpan best = TimeSpan.MaxValue;
+
+        for (int attempt = 0; attempt < 5 && best > s_scanTime; attempt++)
+        {
+            long started = Stopwatch.GetTimestamp();
+            Assert.Empty(SequenceValidator.Analyse(definition).Problems);
+            best = TimeSpan.FromTicks(Math.Min(best.Ticks, Stopwatch.GetElapsedTime(started).Ticks));
+        }
+
+        Assert.True(userData.Length > SequenceValidator.MaxSeedFileBytes - repeated.Length);
+        Assert.True(best < s_scanTime, $"Scanning {userData.Length} characters took {best.TotalMilliseconds:F0} ms at best.");
+    }
+
+    [Fact]
+    public void SaysEveryKeyItFoundAndReadsCarriageReturns()
+    {
+        SequenceAnalysis analysis = Analyse(
+            "#cloud-config\r\nvendor_data:\r\n  enabled: false\r\ncloud_final_modules:\r\n  - scripts_user\r\npower_state:\r\n  mode: poweroff\r\n");
+
+        Assert.Equal([$"{VendorData} notEnabled", $"{FinalModules} missing"], Said(analysis.Warnings));
+        Assert.Equal([$"{PowerState} off"], Said(analysis.Notes));
+    }
+
+    // Without steps in the installed Linux the run ends before cloud-init starts, and the user-data is the image's own business.
+    [Theory]
+    [InlineData("#cloud-config\nvendor_data: {enabled: false}\ncloud_final_modules: []\npower_state: {mode: reboot}\n")]
+    [InlineData("#!/bin/sh\nreboot\n")]
+    public void SaysNothingOfASequenceThatEndsInTheLinuxBootEnvironment(string userData)
+    {
+        SequenceAnalysis analysis = Analyse(userData, goesOn: false);
+
+        Assert.Empty(analysis.Warnings);
+        Assert.Empty(analysis.Notes);
+    }
+
+    [Fact]
+    public void SaysWhatSwitchedVendorDataOffAndWhatToDo()
+    {
+        const string End =
+            " DDT's agent gets into the installed Linux as vendor data, and without it the steps there never run. Leave vendor_data out, " +
+            "or set its enabled to true.";
+
+        Assert.Equal(
+            "The user-data sets enabled under vendor_data to something other than true, so cloud-init reads no vendor data." + End,
+            Analyse(Document("vendor_data: {enabled: false}")).Warnings[0].Message);
+        Assert.Equal(
+            "The user-data sets vendor_data to something that is not a mapping, so cloud-init reads no vendor data." + End,
+            Analyse(Document("vendor_data: false")).Warnings[0].Message);
+        Assert.Equal(
+            "DDT could not read what the user-data sets vendor_data to. It may switch vendor data off." + End,
+            Analyse(Document("vendor_data: *defaults")).Warnings[0].Message);
+    }
+
+    [Fact]
+    public void SaysWhichModuleTheFinalModulesLack()
+    {
+        const string End =
+            " DDT's script, which installs the agent in the installed Linux, is a vendor script, and without it the steps there never " +
+            "run. Add scripts_vendor to the list.";
+
+        Assert.Equal(
+            "The user-data sets cloud_final_modules, and the list names neither scripts_vendor nor scripts-vendor, so cloud-init runs no " +
+            "vendor scripts." + End,
+            Analyse(Document("cloud_final_modules: [scripts_user]")).Warnings[0].Message);
+        Assert.Equal(
+            "DDT could not read what the user-data sets cloud_final_modules to. If the list does not name scripts_vendor, cloud-init runs " +
+            "no vendor scripts." + End,
+            Analyse(Document("cloud_final_modules: *modules")).Warnings[0].Message);
+    }
+
+    [Fact]
+    public void SaysWhatTheRunWaitsForAfterAShutdownAndWhenItCannotTell()
+    {
+        Assert.Equal(
+            "The user-data shuts the machine down with power_state. The run waits until someone switches the machine on again, and then " +
+            "goes on with its steps in the installed Linux.",
+            Analyse(Document("power_state: {mode: poweroff}")).Notes[0].Message);
+        Assert.Equal(
+            "The user-data sets power_state, so cloud-init may restart the machine or shut it down. The run waits for that before its " +
+            "steps in the installed Linux, and after a shutdown until someone switches the machine on again.",
+            Analyse(Document("power_state:\n  condition: test -e /run/restart-wanted")).Notes[0].Message);
+    }
+}

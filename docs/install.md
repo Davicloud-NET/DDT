@@ -25,8 +25,9 @@ without a Windows PC. Once a network card is chosen, such a server can:
   firmware trusts one of Microsoft's third-party UEFI CAs, 2011 or 2023;
 - register the machine, show it on the Machines page and let a technician sign in at its console,
   which is text in this environment;
-- run a Linux sequence on it: write a raw disk image with its cloud-init seed and start the
-  installed Linux.
+- run a Linux sequence on it: write a raw disk image with its cloud-init seed, start the
+  installed Linux, and go on with the sequence's steps there where the image has cloud-init and
+  systemd.
 
 It cannot:
 
@@ -339,6 +340,15 @@ for `linux-x64`. When that is another file, it downloads it, compares its size a
 what the server announced, and runs it in its own place. So an uploaded agent reaches machines at
 their next netboot and needs no new boot environment. When the download or the start fails, the
 agent from `ddt.img` goes on. In a release both are the same file, and nothing is downloaded.
+Where a disk holds a run that went on in the installed Linux, the check gets 30 seconds at most,
+counted from the agent's first look at the disks, so a server that is away cannot keep the
+machine from its disk (below).
+
+**The agent in the installed Linux.** A run that goes on in the installed Linux takes its agent
+along (section 4.9). The hand-over puts the file that runs in the boot environment onto the
+cloud-init seed, so after an update that is the one the server offers. The copy in the installed
+Linux asks the server for no newer agent: it is there for one run and removes itself when that
+run is over.
 
 **From source.** Two configuration keys stand in for what a release brings.
 `DDT:Agent:LinuxBinaryPath` names the agent for Linux, and while it is set, uploads answer 409
@@ -695,7 +705,8 @@ configured, that is the one target (src/DDT.Pxe/PxeSetup.cs), and the Network bo
 image of sections 4.7 and 4.8, runs Windows sequences. The Linux boot environment, from
 `linux-boot/` (section 4.2), runs Linux sequences, which are those that write a raw disk image.
 Neither runs the other's: the server hands a run only to the environment its sequence starts in,
-and an agent refuses a run of the other kind before anything is erased.
+and an agent refuses a run of the other kind before anything is erased. A Windows run goes on in
+the installed Windows, and a Linux run can go on in the installed Linux (below).
 
 **Which one a machine starts.** ProxyDHCP names the boot file in its answer, so the server chooses
 for each request of a 64-bit UEFI machine that starts with PXE, in this order:
@@ -870,6 +881,377 @@ the ways above give is:
   for GRUB there. Windows PE is not affected. The Network boot page says so next to the setting.
 - **Beside WDS.** WDS loads DDT's `boot.wim`, so machines start Windows PE and never Linux.
 
+**The run goes on in the installed Linux.** A Linux sequence can have steps that run after the
+image has started: a Run script step set to the installed Linux, and the Pause, Set variable and
+Restart steps, groups, IFs and repeats that follow it. The template Install Linux ends with one
+such script. Such a run does not end when the disk is written. The Linux boot environment hands
+it over on the cloud-init seed and restarts the machine into its disk. There cloud-init installs
+a copy of the agent as a systemd unit, which runs the remaining steps as root, reports each with
+its log, reports the run Done after the last one and then removes itself. A sequence without a
+step in the installed Linux ends in the boot environment, as before.
+
+The sequence editor holds a sequence to the order this takes:
+
+- A step in the installed Linux needs a step before it that writes the cloud-init seed, on every
+  path through the sequence, without conditions and without going on when it fails. The seed
+  carries the agent.
+- Steps in the Linux boot environment come first. None can follow a step in the installed Linux,
+  and a repeat cannot hold steps of both.
+- Scripts are shell scripts. No step runs as an account, and none joins a domain.
+- Packages, shares and restarts are for the installed Linux alone. The boot environment keeps a
+  run in memory, so it cannot restart during one, and has no partition to unpack a package on.
+
+**What the image needs.** Three things, and DDT sees none of them in an image when it writes it:
+
+- cloud-init with the NoCloud data source, which reads the seed at the first start;
+- systemd, which runs the agent's unit;
+- vendor data left on. DDT's script is the seed's `vendor-data`, and cloud-init runs it once, as
+  it runs any vendor script, unless the user-data switches that off (below).
+
+An image without one of them starts, and nothing of DDT's does: no agent is installed, and nobody
+calls the server. The server cannot tell that from a first start that takes long, so the
+machine's page says what it knows:
+
+- From the hand-over on, its run reads "Waiting for the installed Linux", with the time of the
+  hand-over and "The installed Linux has not called yet."
+- Ten minutes later, by the server's clock, it names what may be wrong: the machine did not start
+  from its disk, the image has no cloud-init or no systemd, the user-data keeps cloud-init from
+  running DDT's script, or that script failed. It names where to look, too: the machine's own
+  screen and, in the installed Linux, `/var/log/cloud-init-output.log` and
+  `journalctl -u ddt-agent`. It still says that Linux may only be installing packages. The
+  Machines list has the wait in one line.
+- The run stays Running until someone stops it on the web, or until the server has not seen the
+  machine for seven days, which is how long a run's token lasts. The server looks once an hour
+  and then fails the run with "The installed Linux has not called since the run was handed over
+  at ...", and the machine is Failed.
+
+A machine that starts from the network again tells DDT more. That is described further down.
+
+**The seed after the hand-over.** The seed is the FAT volume of 64 MiB labelled `CIDATA` at the
+end of the disk, as the seed step wrote it. The hand-over reads it back from the disk and writes
+it again with its own files beside the ones it holds:
+
+| On the seed | What it holds |
+|---|---|
+| `meta-data`, `user-data`, `network-config` | The sequence's files, as the disk holds them. A file that a script changed or added after the seed step stays as the script left it, and the log says which. |
+| `vendor-data` | DDT's script, which cloud-init runs at the first start and which installs the agent. |
+| `ddt/ddt-agent` | The agent that ran in the boot environment, about 20 MB. |
+| `ddt/agent.json` | The server's URL, its root certificate, and the address at which the boot agent reached the server. |
+| `ddt/state.json` | The run as it goes on: the sequence the run took, with its scripts and the seed's texts, the state of each step and the variables that steps set. |
+| `ddt/token` | The run's token, in plain text. |
+
+cloud-init does not read the `ddt` folder. The names `vendor-data` and `ddt` are DDT's on such a
+seed: a sequence has no field for vendor data, and the hand-over refuses a seed on which a script
+put a file of either name. It also refuses, before it writes anything, a seed whose partition
+moved or is gone, a volume that is no longer FAT labelled `CIDATA`, and one that the agent and
+the run do not fit on. A partition of the disk that a script left mounted is unmounted first.
+
+The token is the one secret among these files. It lies on the seed in plain text, on a file
+system without permissions, from the hand-over until DDT's script has installed the agent: the
+script then overwrites the file with zeros and deletes it, and the agent does the same at its
+start where the script did not get that far. In QEMU that took 12 to 14 seconds. On an image that
+never runs the script, the token stays there with the agent and the run's state, until the boot
+agent takes the run off the seed (below) or the disk is erased. A run that ends in the boot
+environment after it was put on the seed, because it failed there, was stopped, or the server no
+longer took the machine's token, is taken off again, and the seed is written back as the
+hand-over found it.
+
+**Where the agent lives in the installed Linux.** DDT's script installs these, and the agent
+makes the rest below `/var/lib/ddt` as it needs it:
+
+| Path | Mode | What it is |
+|---|---|---|
+| `/usr/local/lib/ddt/ddt-agent` | 0755 | The agent, one static program. |
+| `/etc/systemd/system/ddt-agent.service` | | The unit. It is enabled, so it starts the agent as root with `--linux-phase` at every start of Linux, once the network is online. |
+| `/var/lib/ddt` | 0700 | The agent's state, which only root reads. |
+| `/var/lib/ddt/agent.json`, `run/state.json`, `run/token` | 0600 | What the seed's `ddt` folder held. |
+| `/var/lib/ddt/logs/agent.log` | 0600 | The agent's log, beside the journal. |
+| `/var/lib/ddt/scripts`, `packages`, `cache` | 0700 | The scripts of the steps, their packages while they run, and the downloads. |
+| `/run/ddt` | | The note of a restart that is due, and the places where shares are mounted. Gone at every start. |
+
+The unit has `UMask=0077`, so every file the agent makes is root's alone, through every save. A
+script does not get that mask: the agent starts each script with 022, the mask of a root shell,
+so a file a script makes is readable by others unless the script says otherwise. In QEMU a
+script's `umask` printed 0022, and a file it made had mode 644. The unit also has
+`Restart=on-failure`: an agent that ended on an error nobody expected starts again 15 seconds
+later. After its removal the agent ends with exit code 0, so no failed unit stays. And it has
+`KillMode=mixed`: systemd, when it stops the unit, signals the agent alone, and the agent ends
+its script itself.
+
+**The wait for cloud-init.** The unit starts while cloud-init still runs, so the agent waits
+before the run's next step, and the run reads "Waiting for cloud-init" meanwhile.
+
+- It waits for `/run/cloud-init/result.json`, for as long as cloud-init shows that it runs. A
+  long `runcmd` in the user-data so makes the wait longer and breaks nothing. Every 30 minutes a
+  warning says that the run still waits.
+- Where cloud-init is not to run at this start, the agent does not wait. Where cloud-init is
+  enabled and has written no status two minutes after the agent started, as after user-data that
+  disabled cloud-init's units and restarted, the agent says so and goes on.
+- How cloud-init ended does not fail the run: how an image sets itself up is the administrator's
+  business. Its errors and warnings go into the run's log as warnings, 20 at most.
+- Then a restart gets its time. `power_state` in the user-data is waited for, for its delay,
+  its timeout and two minutes more, and so is a shutdown that systemd has scheduled, until two
+  minutes past its time. After that the agent warns and goes on, as it must where a `condition`
+  called the restart off. Without such a sign the agent waits 12 seconds, for a `reboot` in
+  `runcmd`, which nothing announces. After a `power_state` that powers the machine off, the run
+  goes on when someone switches it on again.
+- The wait happens once for a run. At a later start of Linux, the agent waits only for what
+  cloud-init does at every start, two minutes at most, and not for `power_state` again, which
+  cloud-init acts on at the first start alone.
+
+**Steps in the installed Linux.**
+
+- **Scripts** run as root. The interpreter is the one the script's first line names with `#!`,
+  and `/bin/sh` without such a line, which is dash on Debian and Ubuntu and not bash. The agent
+  writes the script to `/var/lib/ddt/scripts`, with mode 0700, and starts it there, or in its
+  package's folder. Its environment holds the unit's `PATH` and `HOME=/root`, `DDT_PHASE=Linux`,
+  `DDT_RUN_ID` and `DDT_STEP_ID`, and the run's values as `DDT_VAR_<Name>`. What it prints goes
+  to the run's log, its error output as warnings.
+- **The restart code is 194.** A shell ends with a code from 0 to 255, so the editor takes no
+  restart code above that. `exit 3010`, the restart code a script in Windows starts with, comes
+  out of a shell as 194, and that is the restart code a new script in the installed Linux starts
+  with.
+- **Packages.** A script's package is unpacked to `/var/lib/ddt/packages/<step id>`, which is
+  then the script's working directory and `DDT_PACKAGE`, and deleted when the step ends. A zip
+  carries no modes, so every file gets 0700. It is not unpacked below `/run`, where the run's
+  other short-lived files are: on both images tried, `/run` is mounted `noexec`, and nothing
+  there could be started.
+- **Variables.** A Set variable step sets a variable, and a script sets those the sequence lets
+  steps set, by writing `Name=Value` lines to the file that `DDT_VARIABLES_OUT` names. The log
+  names the variable and never its value.
+- **A Pause** waits until someone lets the run go on on the web, or until its own time is over.
+  Nobody is asked at the machine: the agent in the installed Linux has no console. A graphical
+  console on Linux, there and in the boot environment, is the third part of M8 and not built.
+- **Restarts.** A Restart step, "Restart after" on a step and a script's restart code restart
+  Linux with `systemctl reboot`. The unit starts again after the restart, and the run goes on at
+  its next step.
+- **A stop.** A run that is stopped on the web is over for the agent with its next report, which
+  it sends every ten seconds. It asks the script and every process the script started to end,
+  with SIGTERM, waits five seconds and ends what is left with SIGKILL. Then it removes itself.
+  When systemd stops the unit, as on the machine's way into a restart, it signals the agent
+  alone, and the agent ends the script the same way, so a script's trap runs once.
+- **A step that was cut off** is not run again. After a stop of the unit, a power loss or a
+  restart that the script made itself, nobody knows how far the step came, so it counts as
+  failed when the agent starts again, and the run fails with it unless the step goes on after a
+  failure. So a script asks for a restart with its exit code and does not call `reboot`.
+- **While the server cannot be reached,** the step that runs goes on, and its lines are sent
+  afterwards.
+
+**Shares in the installed Linux.** The agent connects a step's shares itself, with the kernel's
+own mount call and the kernel's CIFS file system. It needs no helper such as `mount.cifs`, which
+not every image has.
+
+- Each share is mounted at `/run/ddt/shares/<step id>/<number>`, and the script finds the places
+  in `DDT_SHARE_1`, `DDT_SHARE_2` and so on, in the order the step lists its shares.
+- The mount is root's alone, with `file_mode=0700`, `dir_mode=0700`, `nosuid` and `nodev`, so
+  root can start a program from it. It goes when the step ends, also with files still open.
+- The kernel has to have its `cifs` module. The cloud images of Debian 13 and Ubuntu 24.04 have
+  it. Where it is missing the step fails and says what to do: add the kernel modules package to
+  the image or install it in an earlier step.
+- The agent looks the host's name up itself, because the kernel resolves none, and tries each of
+  the host's addresses, IPv4 first.
+- The account signs in with NTLM, by an address and by a name alike. `DOMAIN\user` names the
+  domain, `.\user` the server's own accounts, and `user@domain` goes to the server as it is.
+  Kerberos is not supported, and DDT joins a Linux machine to no domain.
+- The password reaches no log. The kernel splits its mount options at commas, so the agent
+  doubles every comma. It refuses an account whose user name, domain or password holds a comma
+  followed by `context=`, `fscontext=`, `defcontext=`, `rootcontext=` or `seclabel`: a kernel
+  with SELinux takes such a word for a mount option of its own and writes what follows into its
+  log. The step then fails before any mount is tried.
+
+**The server's name in the installed Linux.** The boot environment has the server's name and
+address from the server itself. The installed Linux asks its own DNS, which may not find the
+name. So the agent there looks the server up in this order:
+
+1. The name, as the system resolves it.
+2. After an error, the name for IPv4 alone. The agent's resolver gives a name up when the DNS
+   server answers the IPv6 question with an error, though it answered the IPv4 one.
+3. `serverAddress` from `agent.json`, which is the address at which the boot agent's connection
+   reached the server and which the hand-over wrote there. While that address is known, the
+   lookup gets four seconds.
+
+A warning in the log says which of the last two it took. The server's certificate is checked
+against the name each time. A share's host is looked up by the first two.
+
+**The machine's name.** Where the seed names the machine, as the template's `meta-data` does
+with `{{ComputerName}}`, the run needs a computer name: at most 15 characters, the letters A to
+Z, digits and hyphens, not only digits, and no hyphen first or last. That a name cannot end with
+a hyphen is new. cloud-init does not take such a name and keeps `localhost`. A name that was
+stored for a machine before and ends with a hyphen fails the run as it starts, with "The run's
+values have problems, so it did not start", and has to be changed first. The rule holds for
+Windows too.
+
+**What the editor says of user-data.** For a sequence with a step in the installed Linux, the
+editor reads the seed's user-data for what keeps the agent out of the installed Linux. It has no
+YAML reader. It reads a `#cloud-config` document whose top level has one key per line, up to the
+64 KiB a seed's file may have, and says "may" where it cannot be sure of a value. Its warnings,
+under the field:
+
+- `vendor_data` set to something that is no mapping, or its `enabled` set to something other
+  than true: cloud-init then reads no vendor data.
+- `prefix` under `vendor_data`: cloud-init starts vendor scripts through that command, DDT's
+  among them.
+- `disabled_handlers` under `vendor_data` that names `text/x-shellscript`: DDT's script is a
+  shell script.
+- `cloud_final_modules` without `scripts_vendor`, however cloud-init spells that module: no
+  vendor script runs.
+- "DDT could not check this user-data" for anything it does not read: a MIME multipart document,
+  `#include`, a jinja template, an archive, a boothook, a document without a header, and
+  cloud-config whose top level is written another way.
+
+A warning does not keep a sequence from being saved or run. User-data that is a script, with
+`#!` as its first line, draws nothing, since cloud-init runs DDT's script beside it, and neither
+does empty user-data. The editor does not look into other keys, such as a `write_files` that
+rewrites cloud-init's own configuration, and it knows nothing of the image.
+
+Beside problems and warnings the editor has a third kind since this part, notes, which say what
+a setting will do where that is neither wrong nor risky. A note stands under its field, is
+counted nowhere and marks no step. So far there is one, for `power_state`: that the run waits
+for the restart and then goes on, or, for `poweroff` and `halt`, that it waits until someone
+switches the machine on again. A `power_state` whose `condition` is false draws none.
+
+**The end of a run in the installed Linux.** Such a run is Done when the agent in the installed
+Linux has reported its last step, not when the disk is written. However the run ends there,
+Done, failed or stopped, the agent then removes itself:
+
+1. The run's own files go first: the token, the state and the last report.
+2. On the seed, `ddt/token`, `ddt/state.json` and `ddt/agent.json`, then the `ddt` folder, and
+   `vendor-data` where it is DDT's script. `meta-data`, `user-data` and `network-config` stay.
+3. cloud-init's copy of the script below `/var/lib/cloud/instance/scripts/vendor`.
+4. The scripts and variable files the agent wrote for steps, its log, the packages, the cache
+   and `agent.json`.
+5. The unit, which is disabled and deleted, and last the program with its folder.
+
+The token, the state and `agent.json` on the seed, and in `/var/lib/ddt` the token, the state,
+the report, the scripts' texts, the variable files and the log, are overwritten with zeros where
+they lie before they are deleted, because deleting alone leaves a file's bytes on the disk. The
+same is done during the run with the copy that each save of the token and of the state replaces.
+That holds on a file system that writes a file's bytes where they were, as ext4 and the seed's
+FAT do: after whole runs in QEMU, no token and no piece of a state was found on the raw disk. On
+a root file system that copies on write it promises nothing, and none was tried. A file of more
+than 4 MiB is only deleted. The log is overwritten up to 256 MiB, and a longer one is deleted as
+it is. A warning says so each time, with the file's name and size.
+
+The removal deletes only what is the agent's own, and follows no link. A link that a script left
+in the agent's folders is deleted itself, and what it points to stays. A folder in which
+something is still mounted is not deleted. `/var/lib/ddt` and `/usr/local/lib/ddt` go only when
+they are empty: a DDT server on the same system keeps its store under the first name. Each thing
+that stays is named in a warning, and the last line then reads "The agent is removed from this
+Linux, but for what the lines above say stays." What a script made anywhere else is not the
+agent's and stays. So do the lines in the machine's journal.
+
+**The logs of such a run.** The agent's lines and what scripts print go to the run's log on the
+server, as from Windows. On the machine they are in the journal, `journalctl -u ddt-agent`,
+where warnings and errors carry their priority, so `journalctl -u ddt-agent -p warning` shows
+those alone, and in `/var/lib/ddt/logs/agent.log` until the removal.
+
+- Of cloud-init the run's log gets the errors and warnings it ended with, and one line that says
+  where its output is. No line of `/var/log/cloud-init-output.log` is ever sent, because
+  cloud-init can print passwords it made there.
+- When the unit is stopped, as for a restart the user-data asked for, the agent sends the lines
+  it still holds, for five seconds at most.
+- After a stop on the web the server no longer takes the agent's token, so the lines that follow
+  are in the journal alone: which signal ended the script, and the removal.
+- The removal's own lines are in the journal alone after any run.
+
+**A machine that starts from the network again.** While its run is in the installed Linux, a
+machine is meant to start from its disk. Where it starts from the network instead, because
+someone chose that at the machine or the firmware tries the network first, the server names it
+the Linux boot environment, as any machine with a Linux run. A registration without the run's
+token would end the run. So before the agent registers, it looks at the disks for a cloud-init
+seed that holds a run, without mounting anything, and goes by what it finds:
+
+- **The seed holds the run's state and no token,** as it does once the installed Linux has taken
+  the run over. The agent asks the server, with a registration that names the run and carries no
+  token. While that run goes on in the installed Linux, the server changes nothing: the machine
+  keeps its approval and its tokens, nothing of the registration is stored, and the answer holds
+  no token. It counts the start, in `Detours` of the run, writes a warning into the run's log
+  and a row into the audit log, with the address the question came from. The question carries
+  an id the agent makes once for each start, so a question that is asked again because its
+  answer got lost is not counted twice. The machine's page says how often in a row the machine
+  came that way, and that the fifth time ends the run. The agent then names the disk's boot
+  entry as the firmware's next start, in `BootNext`, and restarts the machine ten seconds later.
+  A call from the installed Linux sets the count back to zero. At the fifth such start in a row
+  with no call from the installed Linux in between, the server ends the run, with "The machine
+  started from the network 5 times in a row while the run went on in the installed Linux ...",
+  and the machine registers as after any start. The agent has 30 seconds for its update check
+  and the question together, counted from its first look at the disks, and asks up to four
+  times. Where no answer comes in that time, as when the server is away, it goes by what the disk
+  says, counts nothing and restarts into it.
+- **The seed still holds the token,** so the installed Linux has not taken the run over. The
+  agent registers with that token, which keeps the run, and reports the start. The server keeps
+  the count in `BootReturns`, and the machine's page reads "The machine started from the network
+  again ..., for the 1st time since the hand-over", with the causes and the places to look at
+  once. A first start can fail or be cut short, so the first and the second time the agent puts
+  the disk first in the boot order again and restarts into it. The third time it gives the run
+  up: the run fails with a sentence that names the causes, the seed is cleared, and the machine
+  is Failed, not Pending.
+- **The server no longer runs that run,** because it was stopped, it ended, or the machine has
+  had another since. The agent removes what the hand-over left on the seed, which then holds the
+  sequence's files alone again, and goes on as after any start.
+
+Where several disks hold a run, the agent goes by the one whose run was assigned last, and says
+so. A seed that holds what a hand-over left, with no token and no state that names a run, makes
+the agent ask without a run's id. So does a seed the agent cannot read, as one whose file system
+is damaged, and the agent leaves that one as it is. The server then answers for the run that
+machine has in its installed Linux, if it has one, and the agent waits for that answer without
+the 30 seconds' limit, since such a seed gives it nothing to go by.
+
+**The question at the console.** During the ten seconds before such a restart, the text console
+offers a way out: "To start over here instead, press a key within that time. The agent then asks
+before it ends the run." A key only stops the countdown. The agent then wants the word `END`
+typed, in capitals, as `ERASE` is typed for a disk, and waits a minute for it. Any other answer,
+`end` among them, or none, restarts the machine into the installed Linux, and the agent says
+that only that word in capital letters ends the run. After `END` the agent clears the seed and
+registers without a token, which ends the run on the server, whose error then says that the
+agent reported someone at the machine chose to start over. The machine has to be authorized
+again. Nobody has to be signed in to do this: whoever sits at a netbooted machine can end its
+run, as they are root on it. Keys pressed while the machine started do not count.
+
+**Getting a machine back.** A machine whose run hangs in its installed Linux, or should not go
+on there:
+
+1. Stop the run on the machine's page. An agent that still runs in the installed Linux stops its
+   script and removes itself.
+2. Start the machine from the network. The boot agent hears from the server that the run is
+   over, clears the seed of what the hand-over left there and registers as after any start.
+
+Without the stop, the boot agent sends the machine back to its disk, as above, until someone
+types `END` at its console or the server ends the run at the fifth start.
+
+**A firmware that tries the network first at every start.** At the hand-over the boot agent
+names the first entry of the boot order, where the run has just put the disk, as the next start
+in `BootNext` as well. So the first start of the installed Linux comes from the disk also where
+the firmware tries the network before its boot order. The same is done at the end of a Linux run
+that ends in the boot environment. Every later restart of the installed Linux, for a restart
+code or a Restart step, comes through the network on such a machine and takes the way above:
+the boot agent asks, names the disk and restarts, which adds a netboot to each restart. The
+installed Linux calls after each, so the five in a row are not reached. A firmware that ignores
+`BootNext`, or that drops the disk's boot entry, sends the machine round until the server ends
+the run.
+
+**Sequence versions and older agents.** A sequence with a step in the installed Linux is of
+version 5, and any other keeps the version it needs. An agent tells the server the newest
+version it runs, and the server hands it no newer sequence:
+
+- At the machine, a version 5 sequence is not in the list of an older agent that started the
+  Linux boot environment, and a pick is refused with "... needs a newer agent than this machine
+  runs. Start the machine from the network again, so it gets the server's agent, and choose it
+  then."
+- A run assigned on the web or by a rule stays assigned, and the agent's console and log say
+  why. The assign dialog says it before: "... needs a newer agent than this machine runs, so it
+  does not start. The run stays assigned and starts once the machine is started from the network
+  again, where it takes the server's agent."
+- An older agent in Windows PE is restarted into the Linux boot environment like any other,
+  since the agent it takes there is the server's.
+- An agent that is handed a sequence newer than it runs refuses the run before anything is
+  erased, and says to start the machine from the network again.
+
+Nothing has to be built for version 5. An agent updates itself from the server before it
+registers, in Windows PE and in the Linux boot environment (section 4.2), so machines run the
+new agent from their next netboot after an upgrade, with the boot image and the boot environment
+they have.
+
 **What netboot trusts.** DDT signs nothing a machine loads from the network, in either
 environment. With Secure Boot on, the firmware checks shim by Microsoft's signature, and shim and
 GRUB check GRUB and the kernel by Debian's. Nothing checks `base.img`, `ddt.img`, `grub.cfg` or
@@ -903,6 +1285,36 @@ cannot read a file outside the boot directory and the files the environment's de
 put a word into `grub.cfg`, reset another machine's downloads with a request on UDP 4011 that
 only names its address, or change what an approved machine is named by registering a row of their
 own with its adapter.
+
+**What a run in the installed Linux trusts.** The hand-over puts a run into a system DDT did not
+make, and what follows from that is accepted:
+
+- **The image.** Whatever runs as root in the installed Linux can read
+  `/var/lib/ddt/run/token` and the run's state beside it. The agent there has nothing else, so
+  whoever has those two can go on with the run as it does, with what the server hands that run's
+  steps, a share's account among them. The sequence's own scripts run as root there, and DDT
+  checks no image for what it does.
+- **The disk.** The token lies on the seed in plain text from the hand-over until the installed
+  Linux has run DDT's script, and for as long as an image never runs it. Whoever reads the disk
+  in that time, from another system started on the machine or with the disk taken out, has it.
+  The server takes it for that run alone and only while it runs that run. The run's state on the
+  seed holds the sequence with its scripts and the values of its variables, which everyone who
+  can sign in to DDT reads on the web as well.
+- **Whoever sits at the machine** can end a run that goes on in the installed Linux, by starting
+  the machine from the network and typing `END`, without signing in.
+- **Someone on the network who registers in a machine's name** ends its run with that one
+  registration, as before. It takes the machine's SMBIOS UUID and adapter address and no secret.
+  A registration that asks first whether a handed-over run goes on changes nothing while a run
+  of that machine goes on in the installed Linux, and gets no token. The question need not name
+  the run: one without a run's id is answered for whatever run the machine has there. The answer
+  holds the machine's state, the run's id and the count. A start that asks puts a warning into
+  the run's log and a row with its address into the audit log, and the fifth in a row with no
+  call from the installed Linux in between ends the run. What is a new start is the sender's
+  word too: the id in its question. That someone at the machine chose to start over is the word
+  of whoever registered, with no secret behind it, and the run's error says it as a report.
+- **What the removal cannot promise.** It overwrites what held a secret where the file system
+  writes a file's bytes in place. It does not reach a file system that copies on write, nor the
+  machine's journal, which keeps every line the agent and the scripts wrote.
 
 Tried in QEMU with OVMF and Secure Boot on, with the server in its container on a Linux host.
 From an image that holds the Linux files as a release does, a machine the server knew nothing of
@@ -959,7 +1371,48 @@ after a Windows sequence was picked in the Linux boot environment Windows PE arr
 The firmware started the network entry that `BootNext` named each time, and neither `BootNext` nor
 `DdtResume` was left afterwards.
 
-Not tried yet: a PC of another make, and a firmware that trusts only Microsoft's 2023 CA.
+The run in the installed Linux has been tried in QEMU alone so far, with OVMF and Secure Boot on,
+against the server in its container, on the cloud images of Debian 13 and Ubuntu 24.04:
+cloud-init 25.1 and 26.1, kernel 6.12 and 6.8, systemd 257 and 255. On both, a sequence of 14
+steps, the Install Linux template's among them, ran to Done: scripts as root, a package,
+variables set by a step and by a script, a restart for exit code 194, a share on a Samba server
+connected with NTLM, and a Pause that was continued on the web. The agent's first call came 10
+to 17 seconds after the hand-over and its first step 24 to 33 seconds after it, 12 of them the
+wait for a restart nobody announced. The agent was gone half a second after Done. The unit was
+not found then, nothing had failed, the seed held `meta-data` and `user-data` alone, and
+cloud-init said `done` at the next start. The hand-over, the unit, the steps, the share and the
+removal were the same on both images.
+
+These ran there as well, each as described above: a stop on the web in a script, also one whose
+trap ignores SIGTERM; a stop of the unit with `systemctl stop` and of the agent with `kill`, after
+which a script's trap had run once; a step that fails; a power cut in a script; a
+server that was away for two minutes; user-data that restarts with `power_state` and with
+`reboot` in `runcmd`, that disables cloud-init's units, that fails in `runcmd`, and that is no
+YAML; a DNS server that answers the IPv6 question with an error, and one that does not answer; a
+script that changed the seed, and one that left it mounted; a stop during the hand-over; a
+removal with links, a pipe and a mount left in the scripts' folder; and vendor data switched
+off, where the third start from the network gave the run up.
+
+The way back from the network ran there too. A netboot during a Pause in the installed Linux was
+counted once, with its warning in the run's log, an audit row and the count on the machine's
+page, also when the server's answer was dropped and the agent asked again; the machine was back
+in its installed Linux 35 seconds after the netboot, and the run went on to Done. With the
+network first in the boot order at every start, the first start after the hand-over went to the
+disk, as `BootNext` names it, each later restart took the way through the boot environment, and
+the run ended Done. With the network card alone in OVMF's boot list, which drops the disk's entry
+at every start, the fifth start ended the run and the machine stopped coming round. At the
+console, a key and `end` in lower case, and a key and no answer, both sent the machine back to
+its disk with the run going on; a key and `END` ended the run and cleared the seed. A seed whose
+FAT was overwritten made the agent ask without a run's id, and the run went on. With the server
+away when the machine started from the network, the machine was back on its disk 48 seconds
+later, nothing counted, and the run went on once the server was back. In `journalctl -u
+ddt-agent -p warning` only warnings and errors showed. The disk held no token afterwards.
+
+Not tried yet: a PC of another make, and a firmware that trusts only Microsoft's 2023 CA. For the
+run in the installed Linux: Hyper-V and any physical PC, firmware other than OVMF for the way
+back, an image with SELinux, a root file system that copies on write, a share with Kerberos or
+on a host with several addresses, an image without cloud-init or systemd, and a `power_state`
+that powers off.
 
 Hyper-V's Default Switch does not stand in for a network here. Its DHCP is Windows' connection
 sharing, and on the test host it answered no machine on the switch any more from the moment DDT,

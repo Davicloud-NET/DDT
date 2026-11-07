@@ -21,4 +21,7 @@ public enum RunActivity
 
     // A Pause step waits for someone to continue the run.
     Paused,
+
+    // The installed Linux lets cloud-init finish before its steps run.
+    WaitingForCloudInit,
 }

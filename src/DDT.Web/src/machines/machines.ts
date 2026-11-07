@@ -87,6 +87,16 @@ export interface MachineSummary {
   changesBootEnvironment?: boolean | null;
   // The boot environment the machine did not start after restarting for its run. The server orders no more, the run waits.
   restartsFailed?: AgentEnvironment | null;
+  // The newest sequence version the machine's agent said it runs when it last registered.
+  sequenceVersion?: number | null;
+  // When the boot environment handed the machine's run over to the installed system, until the agent there calls.
+  handedOverUtc?: string | null;
+  // How often the machine has started its boot environment again since, which each time handed the run over again
+  // at handedOverUtc. Null when it has not.
+  bootReturns?: number | null;
+  // How often in a row the machine started from the network while its run goes on in the installed Linux, with no
+  // call from there in between. Null when it has not, and once the installed Linux has called.
+  detours?: number | null;
 }
 
 // A hardware model as the machine's firmware reports it. Comparisons ignore case and runs of spaces. A null

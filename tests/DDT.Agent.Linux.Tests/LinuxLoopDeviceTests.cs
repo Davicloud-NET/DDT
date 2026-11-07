@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Diagnostics;
 using DDT.Agent.Deployment;
 using Xunit;
 
@@ -15,76 +14,32 @@ public sealed class LinuxLoopDeviceTests : IDisposable
 {
     private readonly string _folder = Directory.CreateTempSubdirectory("ddt-loop-").FullName;
     private readonly StringWriter _console = new();
-    private readonly List<string> _nodes = [];
-    private string? _device;
+    private LoopDisk? _loop;
 
     public void Dispose()
     {
-        if (_device is not null)
-        {
-            Run("umount", Path.Combine(_folder, "esp"));
-            Run("losetup", "--detach", _device);
-        }
-
-        foreach (string node in _nodes)
-        {
-            File.Delete(node);
-        }
-
+        _loop?.Dispose();
         Directory.Delete(_folder, recursive: true);
     }
 
     private AgentLog Log() => new(new ImmediateTimeProvider(), _console);
 
-    private static (int ExitCode, string Output) Run(string tool, params string[] arguments)
-    {
-        try
-        {
-            using Process process = Process.Start(new ProcessStartInfo(tool, arguments) { RedirectStandardOutput = true, RedirectStandardError = true })
-                ?? throw new InvalidOperationException($"{tool} did not start.");
-            string output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
-            process.WaitForExit();
-
-            return (process.ExitCode, output.Trim());
-        }
-        catch (System.ComponentModel.Win32Exception exception)
-        {
-            return (-1, exception.Message);
-        }
-    }
-
-    // The test image as a disk, with a device for each of its partitions. A container has no device manager that
-    // would make those, so the test makes them from what the kernel says of each.
+    // The test image as a disk, with a device for each of its partitions.
     private LocalDisk Attach()
     {
-        Assert.SkipUnless(OperatingSystem.IsLinux(), "This test calls the Linux kernel.");
+        LoopDisk.SkipUnlessLinux();
 
         string file = Path.Combine(_folder, "disk.img");
         File.WriteAllBytes(file, new TestRawImage().Disk);
-        (int exitCode, string output) = Run("losetup", "--find", "--show", "--partscan", file);
-        Assert.SkipUnless(exitCode == 0, $"This system gives the tests no loop device ({output}).");
-        _device = output;
-        string name = Path.GetFileName(_device);
+        _loop = LoopDisk.Attach(file, partitions: 2);
 
-        foreach (string partition in Directory.GetDirectories(Path.Combine("/sys/block", name), name + "p*"))
-        {
-            string node = Path.Combine("/dev", Path.GetFileName(partition));
-            string[] numbers = File.ReadAllText(Path.Combine(partition, "dev")).Trim().Split(':');
-
-            if (!File.Exists(node) && Run("mknod", node, "b", numbers[0], numbers[1]).ExitCode == 0)
-            {
-                _nodes.Add(node);
-            }
-        }
-
-        return new LocalDisk(0, null, TestRawImage.Sectors * 512, StorageBusType.Virtual, 2) { Device = _device };
+        return _loop.Disk;
     }
 
     private string MountSystemPartition()
     {
-        string place = Directory.CreateDirectory(Path.Combine(_folder, "esp")).FullName;
-        (int exitCode, string output) = Run("mount", "-t", "vfat", _device + "p1", place);
-        Assert.SkipUnless(exitCode == 0, $"This system cannot mount the image's EFI system partition ({output}).");
+        string place = Path.Combine(_folder, "esp");
+        _loop?.Mount(TestRawImage.EspNumber, place);
 
         return place;
     }

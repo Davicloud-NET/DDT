@@ -388,6 +388,9 @@ namespace DDT.Server.Migrations.SqlServer
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
 
+                    b.Property<int>("BootReturns")
+                        .HasColumnType("int");
+
                     b.Property<int?>("ContinuePass")
                         .HasColumnType("int");
 
@@ -413,6 +416,13 @@ namespace DDT.Server.Migrations.SqlServer
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)")
                         .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<Guid?>("DetourStart")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Detours")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int");
 
                     b.Property<int?>("DiskNumber")
                         .HasColumnType("int");

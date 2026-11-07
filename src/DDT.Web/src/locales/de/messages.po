@@ -370,6 +370,10 @@ msgstr "{count, plural, one {# Schritt eingefügt.} other {# Schritte eingefügt
 msgid "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
 msgstr "{count, plural, one {Die Bibliothek enthält jetzt # Image aus {file}.} other {Die Bibliothek enthält jetzt # Images aus {file}.}}"
 
+#: src/runs/panel/LinuxDetours.tsx
+msgid "{count, plural, one {The machine started from the network once while its run goes on in the installed Linux and was sent back to its disk, and at {max} such starts in a row the server ends the run.} other {The machine started from the network # times in a row while its run goes on in the installed Linux and was sent back to its disk each time, and at {max} such starts in a row the server ends the run.}}"
+msgstr "{count, plural, one {Das Gerät wurde einmal per Netzwerk gestartet, während seine Ausführung im installierten Linux weiterläuft, und wieder von seinem Datenträger gestartet, und bei {max} solchen Starts in Folge beendet der Server die Ausführung.} other {Das Gerät wurde #-mal in Folge per Netzwerk gestartet, während seine Ausführung im installierten Linux weiterläuft, und jedes Mal wieder von seinem Datenträger gestartet, und bei {max} solchen Starts in Folge beendet der Server die Ausführung.}}"
+
 #: src/accounts/DeleteAccountDialog.tsx
 msgid "{count, plural, one {The sequence {list} uses this account. Choose another account there first.} other {The sequences {list} use this account. Choose another account there first.}}"
 msgstr "{count, plural, one {Die Tasksequenz {list} verwendet dieses Konto. Wählen Sie dort zuerst ein anderes Konto.} other {Die Tasksequenzen {list} verwenden dieses Konto. Wählen Sie dort zuerst ein anderes Konto.}}"
@@ -469,6 +473,21 @@ msgid "{hours} h {minutes} min"
 msgstr "{hours} Std. {minutes} Min."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.userDataFinalModulesWarning"
+msgid "{how, select, missing {The user-data sets cloud_final_modules, and the list names neither scripts_vendor nor scripts-vendor, so cloud-init runs no vendor scripts.} other {DDT could not read what the user-data sets cloud_final_modules to. If the list does not name scripts_vendor, cloud-init runs no vendor scripts.}} DDT's script, which installs the agent in the installed Linux, is a vendor script, and without it the steps there never run. Add scripts_vendor to the list."
+msgstr "{how, select, missing {Die Datei user-data setzt cloud_final_modules, und die Liste nennt weder scripts_vendor noch scripts-vendor, daher führt cloud-init keine Vendor-Skripte aus.} other {DDT konnte nicht lesen, worauf die Datei user-data cloud_final_modules setzt. Nennt die Liste scripts_vendor nicht, führt cloud-init keine Vendor-Skripte aus.}} Das Skript von DDT, das den Agent im installierten Linux installiert, ist ein Vendor-Skript, und ohne es laufen die Schritte dort nie. Nehmen Sie scripts_vendor in die Liste auf."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.userDataVendorHandlersWarning"
+msgid "{how, select, named {The user-data names text/x-shellscript in disabled_handlers under vendor_data, so cloud-init runs no shell script from vendor data.} other {DDT could not read what the user-data sets disabled_handlers under vendor_data to. If it names text/x-shellscript, cloud-init runs no shell script from vendor data.}} DDT's script, which installs the agent in the installed Linux, is a shell script, and without it the steps there never run. Leave text/x-shellscript out of disabled_handlers."
+msgstr "{how, select, named {Die Datei user-data nennt text/x-shellscript in disabled_handlers unter vendor_data, daher führt cloud-init kein Shell-Skript aus den Vendor-Daten aus.} other {DDT konnte nicht lesen, worauf die Datei user-data disabled_handlers unter vendor_data setzt. Nennt disabled_handlers text/x-shellscript, führt cloud-init kein Shell-Skript aus den Vendor-Daten aus.}} Das Skript von DDT, das den Agent im installierten Linux installiert, ist ein Shell-Skript, und ohne es laufen die Schritte dort nie. Lassen Sie text/x-shellscript aus disabled_handlers heraus."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.userDataVendorDataWarning"
+msgid "{how, select, notMapping {The user-data sets vendor_data to something that is not a mapping, so cloud-init reads no vendor data.} notEnabled {The user-data sets enabled under vendor_data to something other than true, so cloud-init reads no vendor data.} other {DDT could not read what the user-data sets vendor_data to. It may switch vendor data off.}} DDT's agent gets into the installed Linux as vendor data, and without it the steps there never run. Leave vendor_data out, or set its enabled to true."
+msgstr "{how, select, notMapping {Die Datei user-data setzt vendor_data auf etwas, das keine Zuordnung ist, daher liest cloud-init keine Vendor-Daten.} notEnabled {Die Datei user-data setzt enabled unter vendor_data auf etwas anderes als true, daher liest cloud-init keine Vendor-Daten.} other {DDT konnte nicht lesen, worauf die Datei user-data vendor_data setzt. Möglicherweise schaltet sie die Vendor-Daten ab.}} Der Agent von DDT kommt als Vendor-Daten ins installierte Linux, und ohne sie laufen die Schritte dort nie. Lassen Sie vendor_data weg, oder setzen Sie dessen enabled auf true."
+
+#: src/lib/serverMessages.ts
 msgctxt "deployment.notStartingWithSecureBoot"
 msgid "{image} {starting, select, maybe {may not start} other {will not start}} with Secure Boot on, and this machine has Secure Boot on. Allow it for this run, or turn Secure Boot off in the machine's firmware first."
 msgstr "{image} {starting, select, maybe {startet mit aktiviertem Secure Boot möglicherweise nicht} other {startet mit aktiviertem Secure Boot nicht}}, und auf diesem Gerät ist Secure Boot aktiviert. Lassen Sie es für diese Ausführung zu, oder deaktivieren Sie zuerst Secure Boot in der Firmware des Geräts."
@@ -537,8 +556,8 @@ msgid "{installed} installed"
 msgstr "{installed} installiert"
 
 #: src/sequences/builder/nodeDetail.ts
-msgid "{interpreter}, in {phase}"
-msgstr "{interpreter}, in {phase}"
+msgid "{interpreter}, {where}"
+msgstr "{interpreter}, {where}"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.emptyContainerWarning"
@@ -546,9 +565,14 @@ msgid "{kind, select, if {This IF has no steps in Then or Else} repeat {This rep
 msgstr "{kind, select, if {Dieses IF hat weder unter Dann noch unter Sonst Schritte} repeat {Diese Wiederholung hat keine Schritte} other {Diese Gruppe hat keine Schritte}} und bewirkt daher nichts."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.phaseChangeInRepeat"
+msgid "{kind, select, Linux {A run cannot change between the Linux boot environment and the installed Linux inside a repeat.} other {A run cannot change between Windows PE and Windows inside a repeat.}} Move this step, or the steps before it, out of the repeat."
+msgstr "{kind, select, Linux {Innerhalb einer Wiederholung kann eine Ausführung nicht zwischen der Linux-Startumgebung und dem installierten Linux wechseln.} other {Innerhalb einer Wiederholung kann eine Ausführung nicht zwischen Windows PE und Windows wechseln.}} Verschieben Sie diesen Schritt oder die Schritte davor aus der Wiederholung."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.phaseValueOtherKindWarning"
-msgid "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}"
-msgstr "{kind, select, Linux {Diese Tasksequenz schreibt ein Raw-Datenträgerimage, daher ist ihre Phase LinuxBoot und nie {value}.} other {Diese Tasksequenz installiert Windows, daher ist ihre Phase WindowsPE oder Windows und nie {value}.}}"
+msgid "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot or Linux and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}"
+msgstr "{kind, select, Linux {Diese Tasksequenz schreibt ein Raw-Datenträgerimage, daher ist ihre Phase LinuxBoot oder Linux und nie {value}.} other {Diese Tasksequenz installiert Windows, daher ist ihre Phase WindowsPE oder Windows und nie {value}.}}"
 
 #: src/runs/steps/RunStepItem.tsx
 msgid "{kind}, {phase}"
@@ -567,8 +591,8 @@ msgid "{kind}, {phase}, started {started}, running for {took}"
 msgstr "{kind}, {phase}, gestartet {started}, läuft seit {took}"
 
 #: src/sequences/builder/inspector/NodeSummary.tsx
-msgid "{kind}, in {phaseName}."
-msgstr "{kind}, in {phaseName}."
+msgid "{kind}, {where}."
+msgstr "{kind}, {where}."
 
 #: src/runs/panel/CurrentStep.tsx
 msgid "{kind}: {file}, {size}"
@@ -667,6 +691,11 @@ msgstr "{message} Ihre letzten Änderungen sind nicht gespeichert, und beim Verl
 #: src/lib/format.ts
 msgid "{minutes} min {seconds} s"
 msgstr "{minutes} Min. {seconds} s"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.userDataPowerStateNote"
+msgid "{mode, select, reboot {The user-data restarts the machine with power_state. The run waits for that restart and then goes on with its steps in the installed Linux.} off {The user-data shuts the machine down with power_state. The run waits until someone switches the machine on again, and then goes on with its steps in the installed Linux.} other {The user-data sets power_state, so cloud-init may restart the machine or shut it down. The run waits for that before its steps in the installed Linux, and after a shutdown until someone switches the machine on again.}}"
+msgstr "{mode, select, reboot {Die Datei user-data startet das Gerät mit power_state neu. Die Ausführung wartet auf diesen Neustart und fährt dann mit ihren Schritten im installierten Linux fort.} off {Die Datei user-data fährt das Gerät mit power_state herunter. Die Ausführung wartet, bis jemand das Gerät wieder einschaltet, und fährt dann mit ihren Schritten im installierten Linux fort.} other {Die Datei user-data setzt power_state, daher startet cloud-init das Gerät möglicherweise neu oder fährt es herunter. Die Ausführung wartet darauf, bevor ihre Schritte im installierten Linux laufen, und nach dem Herunterfahren, bis jemand das Gerät wieder einschaltet.}}"
 
 #: src/lib/serverMessages.ts
 msgctxt "package.targetTwice"
@@ -858,6 +887,10 @@ msgid "{name} looks like a password or another secret, and everyone who can sign
 msgstr "{name} sieht nach einem Kennwort oder einem anderen Geheimnis aus, und alle, die sich bei DDT anmelden können, können die Werte von Tasksequenzen und Ausführungen lesen. Bewahren Sie es in einem Konto auf, gespeichert oder für die Ausführung abgefragt, das nur der Schritt erhält, der es verwendet."
 
 #: src/machines/bootEnvironment.ts
+msgid "{name} needs a newer agent than this machine runs, so it does not start. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent."
+msgstr "{name} braucht einen neueren Agent, als dieses Gerät ausführt, und beginnt daher nicht. Die Ausführung bleibt zugewiesen und beginnt, sobald das Gerät erneut per Netzwerk gestartet wird und dabei den Agent des Servers erhält."
+
+#: src/machines/bootEnvironment.ts
 msgid "{name} runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."
 msgstr "{name} läuft in der Linux-Startumgebung, und dieses Gerät hat Windows PE mit einem Agent gestartet, der zu alt ist, um dorthin neu zu starten. Die Ausführung bleibt zugewiesen und beginnt, sobald das Gerät erneut per Netzwerk gestartet wird."
 
@@ -1047,6 +1080,11 @@ msgstr "{result} Die Gruppenzuordnung gibt keine Rolle, daher wird eine Anmeldun
 msgctxt "settings.ldapTest.role"
 msgid "{result} The group map makes the account {role}."
 msgstr "{result} Die Gruppenzuordnung gibt dem Konto die Rolle {role}."
+
+#: src/machines/list/runDetail.ts
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "{returns, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
+msgstr "{returns, selectordinal, other {#.}}"
 
 #: src/machines/approval.ts
 msgid "{rule} chooses {name}, but it has {problems} and cannot run until they are fixed. Approving authorizes {label} without running anything."
@@ -1432,6 +1470,11 @@ msgid "A computer name cannot consist of digits only."
 msgstr "Ein Computername darf nicht nur aus Ziffern bestehen."
 
 #: src/lib/serverMessages.ts
+msgctxt "computerName.endsWithHyphen"
+msgid "A computer name cannot end with a hyphen."
+msgstr "Ein Computername darf nicht mit einem Bindestrich enden."
+
+#: src/lib/serverMessages.ts
 msgctxt "computerName.startsWithHyphen"
 msgid "A computer name cannot start with a hyphen."
 msgstr "Ein Computername darf nicht mit einem Bindestrich beginnen."
@@ -1471,6 +1514,10 @@ msgstr "einem Gerätemerkmal"
 msgctxt "package.filesHaveNoTargets"
 msgid "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets."
 msgstr "Ein Dateipaket wird für die Schritte „Skript ausführen“ entpackt, die es nennen, nicht nach dem Modell des Geräts, daher hat es keine Ziele."
+
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "A first start can fail or be cut short, so DDT tries the disk again, and ends the run if the machine keeps coming back. If it does, the image has no cloud-init or no systemd, the user-data keeps cloud-init from running DDT's script, the machine does not start from its disk, or that script failed. Look at the machine's own screen, and in the installed Linux at <0>{output}</0> and <1>{journal}</1>."
+msgstr "Ein erster Start kann fehlschlagen oder abgebrochen werden. Deshalb versucht DDT den Datenträger erneut und beendet die Ausführung, wenn das Gerät immer wieder per Netzwerk gestartet wird. In diesem Fall hat das Image kein cloud-init oder kein systemd, die Datei user-data hindert cloud-init daran, das Skript von DDT auszuführen, das Gerät startet nicht von seinem Datenträger, oder dieses Skript ist fehlgeschlagen. Sehen Sie am Bildschirm des Geräts nach und im installierten Linux in <0>{output}</0> und mit <1>{journal}</1>."
 
 #: src/settings/directory/GroupsAndRolesGroup.tsx
 msgid "A group added here gives Viewer until you choose its role."
@@ -1619,11 +1666,6 @@ msgctxt "rule.conditionTooLarge"
 msgid "A rule's condition can have at most {tests} tests, with groups nested at most {depth} deep."
 msgstr "Die Bedingung einer Regel kann höchstens {tests} Prüfungen haben, mit Gruppen, die höchstens {depth} Ebenen tief verschachtelt sind."
 
-#: src/lib/serverMessages.ts
-msgctxt "sequence.phaseChangeInRepeat"
-msgid "A run cannot change between Windows PE and Windows inside a repeat. Move this step, or the steps before it, out of the repeat."
-msgstr "Innerhalb einer Wiederholung kann eine Ausführung nicht zwischen Windows PE und Windows wechseln. Verschieben Sie diesen Schritt oder die Schritte davor aus der Wiederholung."
-
 #: src/runs/RunHistoryPage.tsx
 msgid "A run starts when a machine is assigned a task sequence, is approved with the one a rule chose, or someone chooses one at the machine."
 msgstr "Eine Ausführung beginnt, wenn einem Gerät eine Tasksequenz zugewiesen wird, es mit der von einer Regel gewählten freigegeben wird oder jemand am Gerät eine wählt."
@@ -1635,8 +1677,8 @@ msgstr "Ein Skript darf höchstens {max} KiB haben."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.runAsWindowsOnly"
-msgid "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} other {In Windows PE it runs as SYSTEM.}}"
-msgstr "Ein Skript läuft nur in Windows unter einem Konto. {phase, select, LinuxBoot {In der Linux-Startumgebung läuft es als root.} other {In Windows PE läuft es als SYSTEM.}}"
+msgid "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} Linux {In the installed Linux it runs as root.} other {In Windows PE it runs as SYSTEM.}}"
+msgstr "Ein Skript läuft nur in Windows unter einem Konto. {phase, select, LinuxBoot {In der Linux-Startumgebung läuft es als root.} Linux {Im installierten Linux läuft es als root.} other {In Windows PE läuft es als SYSTEM.}}"
 
 #: src/tokens/TokenSecret.tsx
 msgid "A script sends it in the Authorization header: Bearer, a space, then the token. It has the role {tokenRole}, and never more rights than your account has."
@@ -1719,14 +1761,14 @@ msgid "A sequence that is gone"
 msgstr "Eine Tasksequenz, die es nicht mehr gibt"
 
 #: src/lib/serverMessages.ts
-msgctxt "sequence.restartWithRawImage"
-msgid "A sequence that writes a raw disk image keeps its state in memory, so the Linux boot environment cannot restart during it."
-msgstr "Eine Tasksequenz, die ein Raw-Datenträgerimage schreibt, hält ihren Zustand im Arbeitsspeicher, daher kann die Linux-Startumgebung währenddessen nicht neu starten."
-
-#: src/lib/serverMessages.ts
 msgctxt "sequence.shellExitCodes"
 msgid "A shell script ends with an exit code from 0 to 255."
 msgstr "Ein Shell-Skript endet mit einem Exitcode von 0 bis 255."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.shellRebootExitCodes"
+msgid "A shell script ends with an exit code from 0 to 255. For a restart use 194, which is what a shell makes of exit 3010."
+msgstr "Ein Shell-Skript endet mit einem Exitcode von 0 bis 255. Verwenden Sie für einen Neustart 194, denn das macht eine Shell aus exit 3010."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.tooManyShares"
@@ -1737,6 +1779,16 @@ msgstr "Ein Schritt kann höchstens {max} Netzwerkfreigaben verbinden."
 msgctxt "sequence.tooManyConditions"
 msgid "A step can have at most {max} conditions."
 msgstr "Ein Schritt darf höchstens {max} Bedingungen haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.linuxNeedsSeed"
+msgid "A step in the installed Linux needs an earlier step that writes the cloud-init seed, without conditions and without going on when it fails. The seed takes DDT's agent into the installed Linux."
+msgstr "Ein Schritt im installierten Linux braucht einen früheren Schritt, der den cloud-init-Seed schreibt, ohne Bedingungen und ohne bei einem Fehler fortzufahren. Der Seed bringt den Agent von DDT ins installierte Linux."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.linuxNeedsSeedOnEveryPath"
+msgid "A step in the installed Linux needs the cloud-init seed written before it on every path through the sequence, and on some path no step writes it."
+msgstr "Ein Schritt im installierten Linux braucht auf jedem Pfad durch die Tasksequenz einen zuvor geschriebenen cloud-init-Seed, und auf mindestens einem Pfad schreibt ihn kein Schritt."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.windowsNeedsImage"
@@ -2191,9 +2243,14 @@ msgstr "Administrator"
 msgid "Advertise boot server discovery"
 msgstr "Suche nach Bootservern ankündigen"
 
+#: src/runs/panel/LinuxHandOverWait.tsx
 #: src/runs/panel/RunActivity.tsx
 msgid "After {after}"
 msgstr "Nach {after}"
+
+#: src/machines/assign/AssignConsequences.tsx
+msgid "After the disk image is written, the run goes on in the installed Linux, where the agent runs as a service until the run ends."
+msgstr "Nach dem Schreiben des Datenträgerimages geht die Ausführung im installierten Linux weiter, wo der Agent als Dienst läuft, bis die Ausführung endet."
 
 #: src/machines/assign/AssignConsequences.tsx
 msgid "After the image is applied, the run goes on in the installed Windows, where the agent runs as a service until the run ends."
@@ -2287,7 +2344,7 @@ msgstr "Ein Konto kann höchstens {max} Server nennen."
 msgid "An account for this run only, which DDT uses and never shows or hands to a script."
 msgstr "Ein Konto nur für diese Ausführung, das DDT verwendet und nie anzeigt oder an ein Skript weitergibt."
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "An account in the installed Windows, signed in for the script alone."
 msgstr "Ein Konto im installierten Windows, nur für das Skript angemeldet."
 
@@ -2674,6 +2731,10 @@ msgstr "Mindestens 12 Zeichen."
 #: src/conditions/conditions.ts
 msgid "At least one of these holds"
 msgstr "Mindestens eine dieser Bedingungen gilt"
+
+#: src/machines/assign/AssignFields.tsx
+msgid "At most 15 characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first or last."
+msgstr "Höchstens 15 Zeichen: die Buchstaben A bis Z, Ziffern und Bindestriche. Nicht nur Ziffern und kein Bindestrich am Anfang oder am Ende."
 
 #: src/sequences/builder/variables/MaxLengthSetting.tsx
 msgid "At most this many characters"
@@ -3406,6 +3467,11 @@ msgctxt "settings.apply.pxeBindFailed"
 msgid "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} dhcpServerHere {A DHCP server on this computer holds the port. Turn on LeaveDhcpPort, and DDT answers on UDP 4011 alone, which machines reach once that DHCP server sends option 60, PXEClient. UDP 4011 and TFTP are serving meanwhile.} other {Check that no other service holds the port.}}"
 msgstr "DDT konnte UDP {port} für {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE-Bootserver} tftp {TFTP} tftpSinglePort {TFTP (ein Port)} other {{protocol}}} nicht binden ({error}). {advice, select, privilegedPort {Der Prozess darf keinen privilegierten Port binden. Gewähren Sie NET_BIND_SERVICE, wie build/compose.yaml es tut.} heldOnWindows {Ein anderer Dienst belegt diesen Port für sich allein, meist WDS oder der DHCP-Server. Beenden Sie ihn, oder betreiben Sie DDT hier ohne die Rolle pxe.} inUse {Ein anderer DHCP-, PXE- oder TFTP-Dienst belegt diesen Port auf diesem Host bereits. Beenden Sie ihn, oder betreiben Sie DDT hier ohne die Rolle pxe.} dhcpServerHere {Ein DHCP-Server auf diesem Computer belegt den Port. Schalten Sie LeaveDhcpPort ein, dann antwortet DDT nur auf UDP 4011, wohin die Geräte gelangen, sobald dieser DHCP-Server Option 60, PXEClient, sendet. UDP 4011 und TFTP bedienen die Geräte inzwischen weiter.} other {Prüfen Sie, dass kein anderer Dienst den Port belegt.}}"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.userDataNotCheckedWarning"
+msgid "DDT could not check this user-data: it reads only a #cloud-config document whose top level has one key per line. The run goes on in the installed Linux only if cloud-init runs vendor scripts there, so vendor_data has to stay enabled, and cloud_final_modules, if set, has to name scripts_vendor."
+msgstr "DDT konnte die Datei user-data nicht prüfen: Es liest nur ein #cloud-config-Dokument, dessen oberste Ebene einen Schlüssel pro Zeile hat. Die Ausführung geht im installierten Linux nur weiter, wenn cloud-init dort Vendor-Skripte ausführt. Deshalb muss vendor_data aktiviert bleiben, und cloud_final_modules muss, falls gesetzt, scripts_vendor nennen."
+
 #: src/app/RouteError.tsx
 msgid "DDT could not reach its server. Check that the server is running and that this computer can reach it, then try again."
 msgstr "DDT erreicht seinen Server nicht. Prüfen Sie, ob der Server läuft und dieser Computer ihn erreicht, und versuchen Sie es dann erneut."
@@ -3525,12 +3591,12 @@ msgid "Debian packages as of"
 msgstr "Debian-Pakete vom"
 
 #: src/runs/flow/detailsText.ts
-msgid "Decided at {start} in {phase}, {into} into the run."
-msgstr "Um {start} in {phase} entschieden, {into} nach dem Start der Ausführung."
+msgid "Decided at {start} {where}, {into} into the run."
+msgstr "Um {start} {where} entschieden, {into} nach dem Start der Ausführung."
 
 #: src/runs/flow/detailsText.ts
-msgid "Decided at {start} in {phase}."
-msgstr "Um {start} in {phase} entschieden."
+msgid "Decided at {start} {where}."
+msgstr "Um {start} {where} entschieden."
 
 #: src/settings/ConfigurationOrigin.tsx
 msgid "default"
@@ -4734,6 +4800,10 @@ msgid "Go to…"
 msgstr "Gehe zu…"
 
 #: src/sequences/sequenceList.ts
+msgid "goes on in the installed Linux"
+msgstr "läuft im installierten Linux weiter"
+
+#: src/sequences/sequenceList.ts
 msgid "goes on in the installed Windows"
 msgstr "läuft im installierten Windows weiter"
 
@@ -4778,9 +4848,29 @@ msgstr "Gruppen, IFs und Wiederholungen lassen sich höchstens {max} Ebenen tief
 msgid "GRUB"
 msgstr "GRUB"
 
+#: src/machines/list/runDetail.ts
+msgid "Handed over {ago}, no call from the installed Linux yet"
+msgstr "Übergeben {ago}, noch keine Meldung vom installierten Linux"
+
+#: src/machines/list/runDetail.ts
+msgid "Handed over {ago}, still no call from the installed Linux"
+msgstr "Übergeben {ago}, immer noch keine Meldung vom installierten Linux"
+
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "Handed over {when}, {ago} ago. The installed Linux has not called yet."
+msgstr "Übergeben am {when}, vor {ago}. Das installierte Linux hat sich noch nicht gemeldet."
+
+#: src/runs/runs.ts
+msgid "Handed over to the installed Linux; the agent continued there {took} later"
+msgstr "An das installierte Linux übergeben; der Agent hat {took} später dort weitergemacht"
+
 #: src/runs/runs.ts
 msgid "Handed over to Windows; after Windows setup the agent continued there {took} later"
 msgstr "An Windows übergeben; nach dem Windows-Setup hat der Agent {took} später dort weitergemacht"
+
+#: src/deployments/deployments.ts
+msgid "Handing over to the installed Linux"
+msgstr "Übergabe an das installierte Linux"
 
 #: src/deployments/deployments.ts
 msgid "Handing over to Windows"
@@ -4897,22 +4987,45 @@ msgstr "In {placeholder} nimmt {filter} keine Zahl. Entfernen Sie den Doppelpunk
 msgid "In the image"
 msgstr "Im Image"
 
+#: src/sequences/steps.ts
+msgid "in the installed Linux"
+msgstr "im installierten Linux"
+
+#: src/runs/panel/RunRail.tsx
+msgid "In the installed Linux"
+msgstr "Im installierten Linux"
+
+#: src/sequences/flow/HandoverLine.tsx
+msgid "In the installed Linux, after the hand-over"
+msgstr "Im installierten Linux, nach der Übergabe"
+
 #: src/runs/panel/RunRail.tsx
 msgid "In the installed Windows"
 msgstr "Im installierten Windows"
 
-#: src/runs/flow/HandoverLine.tsx
-#: src/sequences/builder/canvas/CanvasBackdrop.tsx
+#: src/sequences/flow/HandoverLine.tsx
 msgid "In the installed Windows, after the hand-over"
 msgstr "Im installierten Windows, nach der Übergabe"
 
+#: src/sequences/steps.ts
+msgid "in the Linux boot environment"
+msgstr "in der Linux-Startumgebung"
+
 #: src/runs/panel/RunRail.tsx
+#: src/sequences/flow/HandoverLine.tsx
 msgid "In the Linux boot environment"
 msgstr "In der Linux-Startumgebung"
 
-#: src/runs/flow/HandoverLine.tsx
+#: src/sequences/steps.ts
+msgid "in Windows"
+msgstr "in Windows"
+
+#: src/sequences/steps.ts
+msgid "in Windows PE"
+msgstr "in Windows PE"
+
 #: src/runs/panel/RunRail.tsx
-#: src/sequences/builder/canvas/CanvasBackdrop.tsx
+#: src/sequences/flow/HandoverLine.tsx
 msgid "In Windows PE"
 msgstr "In Windows PE"
 
@@ -4995,6 +5108,15 @@ msgstr "Windows installieren"
 #: src/images/ImageFacts.tsx
 msgid "Installed"
 msgstr "Installiert"
+
+#: src/machines/bootEnvironment.ts
+#: src/sequences/steps.ts
+msgid "Installed Linux"
+msgstr "Installiertes Linux"
+
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "Installed Linux, after the hand-over"
+msgstr "Installiertes Linux, nach der Übergabe"
 
 #: src/machines/bootEnvironment.ts
 msgid "Installed Windows"
@@ -5140,6 +5262,10 @@ msgstr "Das gibt es auf dem Server nicht mehr, daher wird nichts mehr gespeicher
 #: src/machines/MachinePage.tsx
 msgid "It registers as a new machine at its next netboot."
 msgstr "Es registriert sich beim nächsten Netzwerkstart als neues Gerät."
+
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "It starts first, and cloud-init sets it up before DDT's agent starts there. Packages it installs take their time."
+msgstr "Es startet zuerst, und cloud-init richtet es ein, bevor der Agent von DDT dort startet. Pakete, die es dabei installiert, brauchen ihre Zeit."
 
 #: src/machines/assign/assignText.ts
 msgid "It stays waiting until someone signs in at it or it netboots from a zero touch network."
@@ -5434,12 +5560,14 @@ msgid "Linked to {provider}"
 msgstr "Verknüpft mit {provider}"
 
 #: src/boot/LinuxEnvironment.tsx
-#: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/sequences/steps.ts
-#: src/sequences/steps/RunScriptFields.tsx
 msgid "Linux boot environment"
 msgstr "Linux-Startumgebung"
+
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "Linux boot environment, before the hand-over"
+msgstr "Linux-Startumgebung, vor der Übergabe"
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.pxe.linuxDefaultUnavailable"
@@ -6205,6 +6333,10 @@ msgid "No contact for {silentFor}, as the machine restarts."
 msgstr "Seit {silentFor} kein Kontakt, da das Gerät neu startet."
 
 #: src/runs/panel/RunActivity.tsx
+msgid "No contact for {silentFor}. The installed Linux starts before the agent goes on there, which can take a while."
+msgstr "Seit {silentFor} kein Kontakt. Das installierte Linux startet, bevor der Agent dort weitermacht, was eine Weile dauern kann."
+
+#: src/runs/panel/RunActivity.tsx
 msgid "No contact for {silentFor}. Windows setup runs before the agent starts again, which can take a while."
 msgstr "Seit {silentFor} kein Kontakt. Das Windows-Setup läuft, bevor der Agent wieder startet, was eine Weile dauern kann."
 
@@ -6800,11 +6932,15 @@ msgctxt "machine.cannotBeRemoved"
 msgid "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
 msgstr "Nur ein abgelehntes Gerät oder ein wartendes Gerät, das nie freigegeben wurde und keine zugewiesene Ausführung hat, kann entfernt werden."
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
+msgid "Only a script in Windows runs as an account; in the installed Linux it runs as root."
+msgstr "Nur ein Skript in Windows läuft als Konto; im installierten Linux läuft es als root."
+
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Only a script in Windows runs as an account; in the Linux boot environment it runs as root."
 msgstr "Nur ein Skript in Windows läuft als Konto; in der Linux-Startumgebung läuft es als root."
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM."
 msgstr "Nur ein Skript in Windows läuft als Konto; in Windows PE läuft es als SYSTEM."
 
@@ -7202,8 +7338,8 @@ msgid "Paused for {took}"
 msgstr "Seit {took} angehalten"
 
 #: src/runs/flow/detailsText.ts
-msgid "Paused since {start} in {phase}, for {took}."
-msgstr "Seit {start} in {phase} angehalten, seit {took}."
+msgid "Paused since {start} {where}, for {took}."
+msgstr "Seit {start} {where} angehalten, seit {took}."
 
 #: src/settings/certificate/UploadDialog.tsx
 msgid "PEM files"
@@ -7365,8 +7501,8 @@ msgid "Ran {passes} times, the last is shown."
 msgstr "{passes}-mal ausgeführt, der letzte Durchlauf wird gezeigt."
 
 #: src/runs/flow/detailsText.ts
-msgid "Ran from {start} to {end} in {phase}, took {took}."
-msgstr "Lief von {start} bis {end} in {phase}, dauerte {took}."
+msgid "Ran from {start} to {end} {where}, took {took}."
+msgstr "Lief von {start} bis {end} {where}, dauerte {took}."
 
 #: src/images/images.ts
 #: src/sequences/steps/WriteRawImageFields.tsx
@@ -7591,6 +7727,10 @@ msgid "Removed. Machines that start the Linux boot environment from now on no lo
 msgstr "Entfernt. Geräte, die ab jetzt die Linux-Startumgebung starten, erhalten diesen Agent nicht mehr."
 
 #: src/deployments/deployments.ts
+msgid "Removing the agent from Linux"
+msgstr "Agent wird aus Linux entfernt"
+
+#: src/deployments/deployments.ts
 msgid "Removing the agent from Windows"
 msgstr "Agent wird aus Windows entfernt"
 
@@ -7736,8 +7876,8 @@ msgid "Restarts the machine, and the sequence goes on with the step after {name}
 msgstr "Startet das Gerät neu, und die Tasksequenz fährt mit dem Schritt nach {name} fort. In Windows PE braucht das einen partitionierten Datenträger, auf dem der Stand der Ausführung gespeichert wird."
 
 #: src/sequences/steps/RebootFields.tsx
-msgid "Restarts the machine, and the sequence goes on with the step after {name}. The Linux boot environment keeps the run's state in memory, so a sequence that writes a raw disk image cannot restart."
-msgstr "Startet das Gerät neu, und die Tasksequenz fährt mit dem Schritt nach {name} fort. Die Linux-Startumgebung hält den Stand der Ausführung im Arbeitsspeicher, daher kann eine Tasksequenz, die ein Raw-Datenträgerimage schreibt, nicht neu starten."
+msgid "Restarts the machine, and the sequence goes on with the step after {name}. The Linux boot environment keeps the run's state in memory, so a restart is only possible in the installed Linux."
+msgstr "Startet das Gerät neu, und die Tasksequenz fährt mit dem Schritt nach {name} fort. Die Linux-Startumgebung hält den Stand der Ausführung im Arbeitsspeicher, daher ist ein Neustart nur im installierten Linux möglich."
 
 #: src/app/palette/Palette.tsx
 msgid "Results"
@@ -7817,7 +7957,7 @@ msgstr "Rolle eines neuen Kontos"
 msgid "Role that {key} gives"
 msgstr "Rolle, die {key} gibt"
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "root"
 msgstr "root"
 
@@ -7875,7 +8015,7 @@ msgid "Rules reordered"
 msgstr "Regeln neu geordnet"
 
 #: src/accounts/list/AccountsTable.tsx
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Run as"
 msgstr "Ausführen als"
 
@@ -7947,13 +8087,17 @@ msgid "Running for {took}"
 msgstr "Läuft seit {took}"
 
 #: src/runs/flow/detailsText.ts
-msgid "Running since {start} in {phase}, for {took}."
-msgstr "Läuft seit {start} in {phase}, seit {took}."
+msgid "Running since {start} {where}, for {took}."
+msgstr "Läuft seit {start} {where}, seit {took}."
 
 #: src/audit/auditView.ts
 #: src/runs/history/RunHistoryTable.tsx
 msgid "Runs"
 msgstr "Ausführungen"
+
+#: src/sequences/steps/ScriptIntro.tsx
+msgid "Runs as root in the installed Linux, after the machine started from the disk image. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
+msgstr "Läuft als root im installierten Linux, nachdem das Gerät vom Datenträgerimage gestartet ist. Jeder, der sich bei DDT anmelden kann, kann das Skript lesen, daher darf es keine Kennwörter enthalten."
 
 #: src/sequences/steps/ScriptIntro.tsx
 msgid "Runs as root in the Linux boot environment, before the machine starts from the disk image. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
@@ -8637,8 +8781,8 @@ msgid "Skipped"
 msgstr "Übersprungen"
 
 #: src/runs/flow/detailsText.ts
-msgid "Skipped at {at} in {phase}."
-msgstr "Um {at} in {phase} übersprungen."
+msgid "Skipped at {at} {where}."
+msgstr "Um {at} {where} übersprungen."
 
 #: src/runs/decisions.ts
 msgid "Skipped, because its condition did not hold"
@@ -8762,6 +8906,14 @@ msgstr "gestartet {started}"
 #: src/boot/JobPanel.tsx
 msgid "Started {when} by {startedBy}"
 msgstr "Gestartet {when} von {startedBy}"
+
+#: src/machines/list/runDetail.ts
+msgid "Started from the network again {ago} ({nth} time), still no call from the installed Linux"
+msgstr "Erneut per Netzwerk gestartet {ago} (zum {nth} Mal), immer noch keine Meldung vom installierten Linux"
+
+#: src/audit/auditView.ts
+msgid "Started from the network during a run"
+msgstr "Während einer Ausführung per Netzwerk gestartet"
 
 #: src/machines/bootEnvironment.ts
 msgid "Started the Linux boot environment"
@@ -8924,6 +9076,11 @@ msgid "Steps cannot set {name}. Let steps set it where the variable is declared.
 msgstr "Schritte können {name} nicht setzen. Erlauben Sie es in der Deklaration der Variable."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.linuxBootAfterLinux"
+msgid "Steps in the Linux boot environment come first, and an earlier step already runs in the installed Linux."
+msgstr "Schritte in der Linux-Startumgebung kommen zuerst, und ein früherer Schritt läuft bereits im installierten Linux."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.windowsPEAfterWindows"
 msgid "Steps in Windows PE come first, and an earlier step already runs in Windows."
 msgstr "Schritte in Windows PE kommen zuerst, und ein früherer Schritt läuft bereits in Windows."
@@ -9025,7 +9182,7 @@ msgstr "Etwa OU=Workstations,DC=example,DC=com. Leer gilt der Standard von der S
 msgid "Swedish"
 msgstr "Schwedisch"
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "SYSTEM"
 msgstr "SYSTEM"
 
@@ -9131,6 +9288,10 @@ msgstr "Dieser Code ist ungültig. Prüfen Sie die Uhrzeit des Geräts, das ihn 
 #: src/settings/parts/useReauthForm.ts
 msgid "That did not work."
 msgstr "Das hat nicht funktioniert."
+
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "That is longer than a first start usually takes. It may still be installing packages. Otherwise the machine did not start from its disk, the image has no cloud-init or no systemd, the user-data keeps cloud-init from running DDT's script, or that script failed. Look at the machine's own screen, and in the installed Linux at <0>{output}</0> and <1>{journal}</1>."
+msgstr "Das ist länger, als ein erster Start üblicherweise dauert. Möglicherweise installiert es noch Pakete. Andernfalls ist das Gerät nicht von seinem Datenträger gestartet, das Image hat kein cloud-init oder kein systemd, die Datei user-data hindert cloud-init daran, das Skript von DDT auszuführen, oder dieses Skript ist fehlgeschlagen. Sehen Sie am Bildschirm des Geräts nach und im installierten Linux in <0>{output}</0> und mit <1>{journal}</1>."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.linuxAgent.notExecutable"
@@ -9787,6 +9948,10 @@ msgid "The GUID partition table of the disk image is damaged. The file ends insi
 msgstr "Die GUID-Partitionstabelle des Datenträgerimages ist beschädigt. Die Datei endet innerhalb der Partitionstabelle."
 
 #: src/runs/runs.ts
+msgid "The hand-over to the installed Linux began"
+msgstr "Die Übergabe an das installierte Linux hat begonnen"
+
+#: src/runs/runs.ts
 msgid "The hand-over to Windows began"
 msgstr "Die Übergabe an Windows hat begonnen"
 
@@ -9926,19 +10091,29 @@ msgid "The Linux boot environment"
 msgstr "Die Linux-Startumgebung"
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.linuxPhaseWithoutRawImage"
+msgid "The Linux boot environment and the installed Linux only run sequences that write a raw disk image. Choose Windows PE or Windows."
+msgstr "Die Linux-Startumgebung und das installierte Linux führen nur Tasksequenzen aus, die ein Raw-Datenträgerimage schreiben. Wählen Sie Windows PE oder Windows."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.linuxNeedsShell"
+msgid "The Linux boot environment and the installed Linux run only shell scripts. Choose the shell and rewrite the script for it."
+msgstr "Die Linux-Startumgebung und das installierte Linux führen nur Shell-Skripte aus. Wählen Sie die Shell und schreiben Sie das Skript dafür um."
+
+#: src/lib/serverMessages.ts
 msgctxt "linuxBoot.noRoot"
 msgid "The Linux boot environment cannot be started, because this server has no root certificate of its own to hand to the machines: its certificate comes from an administrator. A machine in that environment trusts the server only through the root it is handed. Let DDT issue the server's certificate, or start machines in Windows PE."
 msgstr "Die Linux-Startumgebung kann nicht gestartet werden, weil dieser Server kein eigenes Stammzertifikat hat, das er den Geräten mitgeben könnte: Sein Zertifikat stammt von einem Administrator. Ein Gerät in dieser Umgebung vertraut dem Server nur über das Stammzertifikat, das es mitbekommt. Lassen Sie DDT das Zertifikat des Servers ausstellen, oder starten Sie Geräte in Windows PE."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.sharesNotInLinuxBoot"
-msgid "The Linux boot environment cannot connect shares. Remove them from this step."
-msgstr "Die Linux-Startumgebung kann keine Netzwerkfreigaben verbinden. Entfernen Sie sie aus diesem Schritt."
+msgid "The Linux boot environment cannot connect shares. Only a step in the installed Linux can have them."
+msgstr "Die Linux-Startumgebung kann keine Netzwerkfreigaben verbinden. Nur ein Schritt im installierten Linux kann welche haben."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.packageWithRawImage"
-msgid "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one."
-msgstr "Die Linux-Startumgebung hat keine Partition, auf der ein Paket entpackt werden kann, daher kann ein Skript dort keines haben."
+msgid "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one. A script in the installed Linux can."
+msgstr "Die Linux-Startumgebung hat keine Partition, auf der ein Paket entpackt werden kann, daher kann ein Skript dort keines haben. Ein Skript im installierten Linux kann eines haben."
 
 #: src/lib/serverMessages.ts
 msgctxt "linuxBoot.damaged"
@@ -9946,19 +10121,14 @@ msgid "The Linux boot environment in {folder} is damaged: {reason, select, unrea
 msgstr "Die Linux-Startumgebung in {folder} ist beschädigt: {reason, select, unreadable {Die Beschreibung, {name}, lässt sich nicht lesen} incomplete {Die Beschreibung führt {name} nicht auf} missing {{name} fehlt} size {{name} hat eine andere Größe, als die Beschreibung angibt} hash {{name} ist nicht die Datei, die die Beschreibung nennt} changed {{name} wurde ersetzt oder entfernt, nachdem der Server die Datei geprüft hatte} signatures {{name} trägt andere Signaturen, als die Beschreibung angibt} other {{name} lässt sich nicht lesen}}. Installieren Sie dieses Release von DDT erneut, das den Ordner neu mitbringt."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.restartWithRawImage"
+msgid "The Linux boot environment keeps the run's state in memory, so it cannot restart during a run. The installed Linux can."
+msgstr "Die Linux-Startumgebung hält den Zustand der Ausführung im Arbeitsspeicher, daher kann sie während einer Ausführung nicht neu starten. Das installierte Linux kann es."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.deployment.keyboardLayoutUnknown"
 msgid "The Linux boot environment of this server has no keyboard layout ''{value}''. It has {layouts}."
 msgstr "Die Linux-Startumgebung dieses Servers hat kein Tastaturlayout ''{value}''. Sie hat {layouts}."
-
-#: src/lib/serverMessages.ts
-msgctxt "sequence.linuxPhaseWithoutRawImage"
-msgid "The Linux boot environment only runs sequences that write a raw disk image. Choose Windows PE or Windows."
-msgstr "Die Linux-Startumgebung führt nur Tasksequenzen aus, die ein Raw-Datenträgerimage schreiben. Wählen Sie Windows PE oder Windows."
-
-#: src/lib/serverMessages.ts
-msgctxt "sequence.linuxNeedsShell"
-msgid "The Linux boot environment runs only shell scripts. Choose the shell and rewrite the script for it."
-msgstr "Die Linux-Startumgebung führt nur Shell-Skripte aus. Wählen Sie die Shell und schreiben Sie das Skript dafür um."
 
 #: src/log/LogStatusBar.tsx
 msgid "The live connection is down. New lines appear once it is back."
@@ -10048,6 +10218,10 @@ msgstr "Das Gerät meldete keinen Wert."
 msgid "The machine restarts and the sequence goes on with the next step."
 msgstr "Das Gerät startet neu, und die Tasksequenz fährt mit dem nächsten Schritt fort."
 
+#: src/sequences/steps/ScriptResultFields.tsx
+msgid "The machine restarts and the sequence goes on with the next step. A shell makes 194 of exit 3010."
+msgstr "Das Gerät startet neu, und die Tasksequenz fährt mit dem nächsten Schritt fort. Aus exit 3010 macht eine Shell 194."
+
 #: src/sequences/builder/inspector/FailureSettings.tsx
 msgid "The machine restarts once the step is done."
 msgstr "Das Gerät startet neu, sobald der Schritt fertig ist."
@@ -10059,6 +10233,10 @@ msgstr "der Geräterolle {name}"
 #: src/roles/MachineRolesPage.tsx
 msgid "The machine roles could not be loaded."
 msgstr "Die Geräterollen konnten nicht geladen werden."
+
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "The machine started from the network again {when}, {ago} ago, for the {nth} time since the hand-over. DDT restarted it into its disk, and the installed Linux has not called since."
+msgstr "Das Gerät wurde am {when}, vor {ago}, erneut per Netzwerk gestartet, zum {nth} Mal seit der Übergabe. DDT hat es wieder von seinem Datenträger gestartet, und das installierte Linux hat sich seitdem nicht gemeldet."
 
 #: src/lib/serverMessages.ts
 msgctxt "deployment.machineRejected"
@@ -10695,6 +10873,11 @@ msgstr "Der hochgeladene Agent wurde nicht entfernt. {reason}"
 msgid "The uploaded console was not removed. {reason}"
 msgstr "Die hochgeladene Konsole wurde nicht entfernt. {reason}"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.userDataVendorPrefixWarning"
+msgid "The user-data sets prefix under vendor_data, so cloud-init starts vendor scripts through that command. One of them is DDT's, which installs the agent in the installed Linux. If the command does not run it to its end, the steps there never run."
+msgstr "Die Datei user-data setzt prefix unter vendor_data, daher startet cloud-init Vendor-Skripte über diesen Befehl. Eines davon ist das von DDT, das den Agent im installierten Linux installiert. Führt der Befehl es nicht bis zum Ende aus, laufen die Schritte dort nie."
+
 #: src/sequences/builder/variables/InputDefault.tsx
 msgid "The value of a choice; several separated by semicolons."
 msgstr "Der Wert einer Auswahl; mehrere durch Semikolons getrennt."
@@ -11025,8 +11208,8 @@ msgstr "Diese Ausführung"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.windowsScriptInLinux"
-msgid "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment."
-msgstr "Dieses Skript wurde für Windows PE geschrieben, das keine Linux-Tasksequenzen mehr ausführt. Schreiben Sie es für die Shell um und lassen Sie es in der Linux-Startumgebung laufen."
+msgid "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment or in the installed Linux."
+msgstr "Dieses Skript wurde für Windows PE geschrieben, das keine Linux-Tasksequenzen mehr ausführt. Schreiben Sie es für die Shell um und lassen Sie es in der Linux-Startumgebung oder im installierten Linux laufen."
 
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "This sequence declares no variables or inputs yet."
@@ -11090,6 +11273,10 @@ msgstr "Dieser Server speichert keine Einstellungen"
 msgctxt "sequence.onceInRepeat"
 msgid "This step can run only once in a run, so it cannot be inside a repeat."
 msgstr "Dieser Schritt kann in einer Ausführung nur einmal laufen und daher nicht in einer Wiederholung stehen."
+
+#: src/machines/actions/StopConfirm.tsx
+msgid "This stops the run on {label}, which runs in its installed Linux. The agent there stops at its next contact with the server and removes itself; Linux stays installed as it is, with the steps done so far."
+msgstr "Damit wird die Ausführung auf {label} beendet, die in seinem installierten Linux läuft. Der Agent dort hält bei seinem nächsten Kontakt mit dem Server an und entfernt sich; Linux bleibt so installiert, wie es ist, mit den bisher erledigten Schritten."
 
 #: src/machines/actions/StopConfirm.tsx
 msgid "This stops the run on {label}, which runs in its installed Windows. The agent there stops at its next contact with the server and removes itself; Windows stays installed as it is, with the steps done so far."
@@ -11374,10 +11561,6 @@ msgstr "Auflösen"
 #: src/sequences/builder/inspector/NodeKeys.tsx
 msgid "Unwrap {name}"
 msgstr "{name} auflösen"
-
-#: src/machines/assign/AssignFields.tsx
-msgid "Up to 15 letters A to Z, digits and hyphens."
-msgstr "Bis zu 15 Buchstaben A bis Z, Ziffern und Bindestriche."
 
 #: src/uploads/UploadPanel.tsx
 msgid "Upload"
@@ -11679,6 +11862,15 @@ msgid "Waiting for answers"
 msgstr "Wartet auf Antworten"
 
 #: src/deployments/deployments.ts
+msgid "Waiting for cloud-init"
+msgstr "Wartet auf cloud-init"
+
+#: src/deployments/handOver.ts
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "Waiting for the installed Linux"
+msgstr "Wartet auf das installierte Linux"
+
+#: src/deployments/deployments.ts
 msgid "Waiting for Windows setup"
 msgstr "Wartet auf das Windows-Setup"
 
@@ -11840,7 +12032,6 @@ msgstr "Ganze Zahlen von 0 bis 255, durch Kommas getrennt."
 msgid "Whole numbers, separated by commas."
 msgstr "Ganze Zahlen, durch Kommas getrennt."
 
-#: src/conditions/conditionSubjects.ts
 #: src/sequences/steps.ts
 msgid "Windows"
 msgstr "Windows"
@@ -11869,7 +12060,6 @@ msgstr "Die Windows-Bereitstellungsdienste laufen auf diesem Computer und belege
 msgid "Windows image"
 msgstr "Windows-Image"
 
-#: src/conditions/conditionSubjects.ts
 #: src/machines/bootEnvironment.ts
 #: src/packages/PackageName.tsx
 #: src/sequences/steps.ts
@@ -12023,8 +12213,8 @@ msgstr "schreibt {image}"
 
 #: src/lib/serverMessages.ts
 msgctxt "template.installLinuxDescription"
-msgid "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine."
-msgstr "Schreibt ein Raw-Datenträgerimage, etwa das Cloud-Image einer Distribution, und einen cloud-init-Seed, der das Gerät benennt."
+msgid "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine, then runs a script in the installed Linux."
+msgstr "Schreibt ein Raw-Datenträgerimage, etwa das Cloud-Image einer Distribution, und einen cloud-init-Seed, der das Gerät benennt, und führt dann ein Skript im installierten Linux aus."
 
 #: src/sequences/steps/WriteUnattendFields.tsx
 msgid "Writes the answer file Windows setup reads at its first start. An empty setting takes the server's default."

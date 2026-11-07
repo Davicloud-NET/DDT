@@ -376,6 +376,25 @@ public sealed class RunReportTests(DdtApplication application) : IClassFixture<D
         Assert.True((await application.MachineAsync(machine.Id)).LastSeenUtc > longAgo);
     }
 
+    // A page counts the machine's silence from its last contact, and after a hand-over that silence may never end.
+    [Fact]
+    public async Task AReportThatAnnouncesARestartIsTheLastContactAsItCame()
+    {
+        (DeployingMachine machine, AgentRun run) = await AssignedAsync();
+        using DeployingMachine _ = machine;
+
+        await machine.ReportOkAsync(run.Id, Running(Step(Partition(run), StepState.Running)));
+        await application.ChangeMachineAsync(machine.Id, m => m.LastSeenUtc = DateTimeOffset.UtcNow - TimeSpan.FromSeconds(5));
+        DateTimeOffset justNow = (await application.MachineAsync(machine.Id)).LastSeenUtc;
+
+        // Within the resolution, a report of a step leaves the row as it is.
+        await machine.ReportOkAsync(run.Id, Running(Step(Partition(run), StepState.Running)) with { Percent = 50 });
+        Assert.Equal(justNow, (await application.MachineAsync(machine.Id)).LastSeenUtc);
+
+        await machine.ReportOkAsync(run.Id, Running(Step(Partition(run), StepState.Done)) with { Activity = RunActivity.Restarting });
+        Assert.True((await application.MachineAsync(machine.Id)).LastSeenUtc > justNow);
+    }
+
     [Fact]
     public async Task ARunEndedOnTheWebTakesNoFurtherReports()
     {

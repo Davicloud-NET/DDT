@@ -32,6 +32,10 @@ public sealed class RunSession(Guid machineId, AgentRun run, DeploymentTokens to
 
     public TargetVolumes? Volumes { get; set; }
 
+    // The cloud-init seed on Disk, once its step wrote it. Kept in memory, like the rest of a run in a Linux boot
+    // environment.
+    public WrittenSeed? Seed { get; set; }
+
     // The root of the running system, such as C:\, while the run continues in it.
     public string? RunRoot { get; set; }
 

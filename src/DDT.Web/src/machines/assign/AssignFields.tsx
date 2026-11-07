@@ -69,7 +69,7 @@ export function AssignFields({
         isRequired={form.nameRequired}
         isInvalid={form.fieldProblem !== null}
         errorMessage={form.fieldProblem}
-        hint={`${nameHint(machine, sequence, form.valuesName)} ${translate`Up to 15 letters A to Z, digits and hyphens.`}`}
+        hint={`${nameHint(machine, sequence, form.valuesName)} ${translate`At most 15 characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first or last.`}`}
       />
 
       <AssignAnswers

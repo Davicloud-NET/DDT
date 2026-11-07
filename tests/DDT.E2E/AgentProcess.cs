@@ -4,6 +4,8 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using DDT.Core.CloudInit;
+using DDT.Core.Disks;
 
 namespace DDT.E2E;
 
@@ -36,6 +38,23 @@ internal sealed class AgentProcess : IAsyncDisposable
 
     public static string DiskPathOf(int dryRunId) => $"{RootOf(dryRunId)}-disk0.img";
 
+    // Where the installed Windows of the dry run downloads to, and where its installed Linux does. On Windows a run's
+    // directory is the folder DDT of its root.
+    public string WindowsCache => Path.Combine(Root, "W", "DDT", "cache");
+
+    public string LinuxCache => Path.Combine(Root, "linux", "var", "lib", "ddt", OperatingSystem.IsWindows() ? "DDT" : string.Empty, "cache");
+
+    // The names of the files in the root of the cloud-init seed on the dry run's disk, as its file holds them now.
+    public string[] SeedFiles()
+    {
+        using FileStream disk = new(DiskPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        byte[] head = new byte[GptLayout.MaxHeadBytes];
+        disk.ReadExactly(head);
+        GptPartition partition = GptLayout.Read(head).Partitions.Single(candidate => candidate.Name == CloudInitSeed.Label);
+
+        return [.. FatVolume.Open(disk, partition.FirstLba * GptLayout.SectorSize, partition.Sectors * GptLayout.SectorSize).List("").Select(entry => entry.Name)];
+    }
+
     public static AgentProcess Start(AgentStartInfo agent)
     {
         ArgumentNullException.ThrowIfNull(agent);
@@ -51,6 +70,7 @@ internal sealed class AgentProcess : IAsyncDisposable
             agent.RootCertificatePath,
             .. agent.SecureBoot ? (string[])["--dry-run-secure-boot"] : [],
             .. agent.Environment is { } environment ? (string[])["--dry-run-environment", environment.ToString()] : [],
+            .. agent.Netboot is { } netboot ? (string[])["--dry-run-netboot", netboot] : [],
         ];
         ProcessStartInfo start = new(agent.AgentPath, arguments)
         {
@@ -72,11 +92,16 @@ internal sealed class AgentProcess : IAsyncDisposable
         return new AgentProcess(process, output, agent.DryRunId);
     }
 
+    // Into the installed Windows' cache.
+    public Task WaitForDownloadAsync(string sha256, TimeSpan timeout, CancellationToken cancellationToken) =>
+        WaitForDownloadAsync(sha256, WindowsCache, timeout, cancellationToken);
+
     // Returns while the file with this hash is downloading into the run's cache, in either phase. The step that
-    // downloads it runs until the download is done. Polled often, so even a quick download is seen.
-    public async Task WaitForDownloadAsync(string sha256, TimeSpan timeout, CancellationToken cancellationToken)
+    // downloads it runs until the download is done. Polled often, so even a quick download is seen. cache is where the
+    // run downloads to.
+    public async Task WaitForDownloadAsync(string sha256, string cache, TimeSpan timeout, CancellationToken cancellationToken)
     {
-        string part = Path.Combine(Root, "W", "DDT", "cache", $"{sha256}.part");
+        string part = Path.Combine(cache, $"{sha256}.part");
 
         await Eventually.WaitAsync(
             new Expectation($"Agent {DryRunId}'s download of {part}", timeout, () => Output.Tail())

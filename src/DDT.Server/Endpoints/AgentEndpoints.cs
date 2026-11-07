@@ -4,6 +4,7 @@
 
 using DDT.Contracts.Agents;
 using DDT.Server.Authentication;
+using DDT.Server.Deployments;
 using DDT.Server.Machines;
 using DDT.Server.Security;
 using Microsoft.AspNetCore.Builder;
@@ -76,7 +77,7 @@ public static class AgentEndpoints
                 title: "Too many machines are waiting to be authorized. Approve or remove some on the Machines page.",
                 statusCode: StatusCodes.Status429TooManyRequests),
             RegistrationRefusal.NothingToContinue => TypedResults.Problem(
-                title: "This machine has no run for the DDT service to continue. The service removes itself.",
+                title: PhaseRules.NothingToContinue(registration.Environment),
                 statusCode: StatusCodes.Status409Conflict),
             _ => TypedResults.Ok(registered.Result! with
             {

@@ -1,0 +1,47 @@
+#cloud-config
+# Spike G: the administrator's own seed. It marks when each of its parts runs.
+vendor_data: {prefix: []}
+bootcmd:
+  - [sh, -c, 'echo "M8G-ORDER bootcmd up=$(cut -d" " -f1 /proc/uptime) agent-file=$([ -e /usr/local/lib/ddt/ddt-agent ] && echo yes || echo no)" | tee -a /var/log/m8g-order.log > /dev/ttyS0']
+write_files:
+  - path: /etc/m8g-written.txt
+    content: |
+      written by the administrator's write_files
+  - path: /usr/local/sbin/m8g-mark.sh
+    permissions: '0755'
+    content: |
+      #!/bin/sh
+      # Lab only: says when a part of the administrator's user-data runs and what DDT's part has done by then.
+      line="M8G-ORDER $1 up=$(cut -d' ' -f1 /proc/uptime) ddt-agent.service=$(systemctl is-active ddt-agent.service 2>&1) enabled=$(systemctl is-enabled ddt-agent.service 2>&1 | head -n 1) agent-file=$([ -e /usr/local/lib/ddt/ddt-agent ] && echo yes || echo no) written=$([ -e /etc/m8g-written.txt ] && echo yes || echo no)"
+      echo "$line" >> /var/log/m8g-order.log
+      echo "$line" > /dev/ttyS0
+      echo "$line"
+  - path: /usr/local/sbin/m8g-shell.sh
+    permissions: '0755'
+    content: |
+      #!/bin/sh
+      # Lab only: a root command loop on the second serial port.
+      stty -F /dev/ttyS1 raw -echo 115200
+      exec 3<>/dev/ttyS1
+      echo "@@READY" >&3
+      while IFS= read -r line <&3; do
+          sh -c "$line" >&3 2>&1 </dev/null
+          echo "@@END $?" >&3
+      done
+  - path: /etc/systemd/system/m8g-shell.service
+    content: |
+      [Unit]
+      Description=Lab only: root command loop on ttyS1
+      
+      [Service]
+      ExecStart=/bin/sh /usr/local/sbin/m8g-shell.sh
+      Restart=always
+      RestartSec=1
+      
+      [Install]
+      WantedBy=multi-user.target
+runcmd:
+  - [/usr/local/sbin/m8g-mark.sh, runcmd-first]
+  - [systemctl, daemon-reload]
+  - [systemctl, enable, --now, --no-block, m8g-shell.service]
+  - [/usr/local/sbin/m8g-mark.sh, runcmd-last]

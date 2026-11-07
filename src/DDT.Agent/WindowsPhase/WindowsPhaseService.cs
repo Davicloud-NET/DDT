@@ -58,7 +58,7 @@ public static class WindowsPhaseService
         using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate);
         ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode, new AccountProcessStarter(log));
         ServiceParts parts = new(windowsRoot, log, server, tools, new WindowsRebooter(tools), version);
-        AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
+        AgentConfiguration staged = options.ForInstalledSystem();
 
         // The console of DDT's session, which Windows starts at its auto-logon, gets the run just like the console in
         // WinPE. Its pipe opens once the session is prepared, and only for the session's account.

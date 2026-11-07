@@ -158,6 +158,32 @@ public sealed class LinuxRunTests : IDisposable
         Assert.Equal(BootEnvironmentCheck.Message(SequenceKind.Windows, AgentEnvironment.LinuxBoot), server.RunReports[^1].Error);
     }
 
+    // The server hands an agent nothing newer than the agent says it runs. Should it ever, the run ends before
+    // anything is erased, with what to do about it.
+    [Fact]
+    public async Task RefusesASequenceOfANewerVersionThanItRunsBeforeTheDiskIsTouched()
+    {
+        LaterStep later = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-00000000e009"), Name = "From a newer DDT" };
+
+        (RunResult result, ScriptedAgentServer server, _) = await RunAsync(Run(steps: [s_write, s_seed, later]));
+
+        Assert.Equal(RunOutcome.Failed, result.Outcome);
+        Assert.Empty(_tools.Calls);
+        Assert.Empty(_toolRunner.Calls);
+        Assert.Equal(
+            $"Install Linux has steps of version {SupportedSequences.Version + 1}, and this agent runs sequences up to version " +
+            $"{SupportedSequences.Version}. Start the machine from the network again, so it gets the server's agent. Nothing was erased.",
+            server.RunReports[^1].Error);
+    }
+
+    // A kind of step from a version after this agent's.
+    private sealed record LaterStep : SequenceStep
+    {
+        public override SequencePhase? RequiredPhase => null;
+
+        public override int MinimumVersion => SupportedSequences.Version + 1;
+    }
+
     // A run assigned before the sequence was rewritten for the shell, and one whose script asks for what the boot
     // environment cannot do. The validator's sentence says what to change, and nothing is erased.
     [Fact]
@@ -176,10 +202,26 @@ public sealed class LinuxRunTests : IDisposable
         Assert.Empty(_toolRunner.Calls);
         Assert.Equal(
             "Install Linux cannot run: This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for " +
-            "the shell and let it run in the Linux boot environment. Correct the sequence and assign it again.",
+            "the shell and let it run in the Linux boot environment or in the installed Linux. Correct the sequence and assign it again.",
             oldServer.RunReports[^1].Error);
-        Assert.StartsWith("Install Linux cannot run: A sequence that writes a raw disk image keeps its state in memory", restartServer.RunReports[^1].Error, StringComparison.Ordinal);
+        Assert.StartsWith("Install Linux cannot run: The Linux boot environment keeps the run's state in memory", restartServer.RunReports[^1].Error, StringComparison.Ordinal);
         Assert.StartsWith("Install Linux cannot run: The Linux boot environment has no partition to unpack a package on", packageServer.RunReports[^1].Error, StringComparison.Ordinal);
+    }
+
+    // The agent says version 5, so the server hands it such a run, and the boot environment asks for the hand-over at
+    // the first step in the installed Linux.
+    [Fact]
+    public async Task TakesARunWithStepsInTheInstalledLinuxAndHandsItOverAfterTheSeed()
+    {
+        RunScriptStep installed = s_script with { Id = Guid.NewGuid(), Phase = SequencePhase.Linux };
+
+        (RunResult result, ScriptedAgentServer server, _) = await RunAsync(Run(steps: [s_write, s_seed, installed]));
+
+        Assert.Equal(5, SupportedSequences.Version);
+        Assert.Equal(RunOutcome.Restarting, result.Outcome);
+        Assert.Equal(["list", "clean 0", "hand over", "reboot"], _tools.Calls);
+        Assert.Empty(_toolRunner.Calls);
+        Assert.Equal((DeploymentState.Running, RunActivity.Restarting), (server.RunReports[^1].State, server.RunReports[^1].Activity));
     }
 
     [Fact]

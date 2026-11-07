@@ -351,6 +351,9 @@ namespace DDT.Server.Migrations.PostgreSql
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
 
+                    b.Property<int>("BootReturns")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("ContinuePass")
                         .HasColumnType("integer");
 
@@ -374,6 +377,13 @@ namespace DDT.Server.Migrations.PostgreSql
                     b.Property<string>("CurrentStepName")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
+
+                    b.Property<Guid?>("DetourStart")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Detours")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
 
                     b.Property<int?>("DiskNumber")
                         .HasColumnType("integer");

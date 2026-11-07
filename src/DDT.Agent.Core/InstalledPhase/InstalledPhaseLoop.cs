@@ -24,6 +24,7 @@ public sealed class InstalledPhaseLoop
     private readonly InstalledPhaseOptions _options;
     private readonly InstalledPhaseProfile _profile;
     private readonly AgentLog _log;
+    private InstalledPhaseContact? _contact;
 
     // Internal, like its parts. InstalledPhaseLoopBuilder puts it together.
     internal InstalledPhaseLoop(
@@ -45,21 +46,31 @@ public sealed class InstalledPhaseLoop
 
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
+        int exitCode;
+
         try
         {
-            return await GoOnAsync(cancellationToken).ConfigureAwait(false);
+            exitCode = await GoOnAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             _log.Information("The agent was stopped. The run goes on when the service starts again.");
-
-            return AgentExitCodes.Stopped;
+            exitCode = AgentExitCodes.Stopped;
         }
+
+        // No heartbeat runs any more, and the server would hear of the lines since its last beat only after the restart
+        if (cancellationToken.IsCancellationRequested && !_exit.Removed && _contact is { } contact)
+        {
+            await _calls.SendLastLinesAsync(contact).ConfigureAwait(false);
+        }
+
+        return exitCode;
     }
 
     private async Task<int> GoOnAsync(CancellationToken cancellationToken)
     {
         _log.Information(_profile.Texts.Started(_options.AgentVersion));
+        RunFiles.In(_options.Root, _log).Recover();
 
         if (await LocalRun.LoadAsync(_options.Root, _log, cancellationToken).ConfigureAwait(false) is not { } local)
         {
@@ -111,6 +122,7 @@ public sealed class InstalledPhaseLoop
         }
 
         next.RunToken = contact.Tokens.RunToken;
+        _contact = contact;
 
         if (await _calls.AskAsync(contact, cancellationToken).ConfigureAwait(false) is not { } answer)
         {

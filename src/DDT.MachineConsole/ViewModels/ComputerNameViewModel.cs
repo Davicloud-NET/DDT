@@ -46,7 +46,7 @@ public sealed class ComputerNameViewModel : QuestionViewModel
     public string Label => T("Computer name");
 
     public string Rules => F(
-        "At most {max} characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first.",
+        "At most {max} characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first or last.",
         ("max", L.Number(_question.MaxLength)));
 
     // The agent's error message about the previous name.

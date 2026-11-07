@@ -51,6 +51,7 @@ internal sealed class RestartOrders(DdtDbContext database, RunQueries queries, B
             return new RestartOrder(null, $"{where} {GaveUp(starts)}", open);
         }
 
+        // Whatever sequence version the agent here runs: the other boot environment's agent comes from the server.
         Order(machine, run, starts, Actor.OfMachine(machine.Id, address), now);
 
         return new RestartOrder(starts, null, true);

@@ -49,8 +49,14 @@ internal sealed class FakeDeploymentTools
     // Runs when Windows is put first in the boot order, before FailAt is checked.
     public Action? PuttingWindowsFirst { get; set; }
 
-    // When set, putting Windows first completes FirmwareStarted once it is recorded and then waits for it.
+    // Runs when a disk image is put first in the boot order, before FailAt is checked.
+    public Action? PuttingImageFirst { get; set; }
+
+    // When set, putting Windows or a disk image first completes FirmwareStarted once it is recorded and then waits for it.
     public TaskCompletionSource? FirmwareGate { get; set; }
+
+    // The real boot order writes the firmware's variables whatever stops the run meanwhile. When set, so does this one.
+    public bool FirmwareIgnoresStop { get; set; }
 
     public TaskCompletionSource FirmwareStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -178,17 +184,22 @@ internal sealed class FakeDeploymentTools
         return Task.FromResult<IReadOnlyList<Guid>>([ErasedSystemPartitionId]);
     }
 
-    // The journal names the loader and the partition it is on.
-    public Task PutFirstAsync(
+    // The journal names the loader and the partition it is on. It waits at the same gate as putting Windows first.
+    public async Task PutFirstAsync(
         EspPartition esp,
         string loaderPath,
         string description,
         IReadOnlyCollection<Guid> erasedSystemPartitionIds,
         CancellationToken cancellationToken)
     {
+        PuttingImageFirst?.Invoke();
         Record("firmware", $" {description} {loaderPath} on partition {esp.PartitionNumber}");
+        FirmwareStarted.TrySetResult();
 
-        return Task.CompletedTask;
+        if (FirmwareGate is { } gate)
+        {
+            await gate.Task.WaitAsync(FirmwareIgnoresStop ? CancellationToken.None : cancellationToken);
+        }
     }
 
     public Task<TargetVolumes> FindAsync(RunDiskIds ids, string windowsRoot, CancellationToken cancellationToken)

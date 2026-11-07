@@ -32,6 +32,7 @@ const linux: SequenceSummary = {
   rawImageBootCapability: "NotSigned",
   rawImageSignedUnder: null,
   kind: "Linux",
+  continuesInLinux: false,
 };
 
 describe("linuxBootRefusal", () => {

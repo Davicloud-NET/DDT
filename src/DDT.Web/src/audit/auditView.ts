@@ -43,6 +43,7 @@ const actionLabels: Record<string, MessageDescriptor> = {
   "deployment.failed": msg`Run failed`,
   "deployment.secret-read": msg`Password read by a run`,
   "deployment.run-token-refused": msg`Run token refused`,
+  "deployment.detoured": msg`Started from the network during a run`,
   "sequence.created": msg`Sequence created`,
   "sequence.changed": msg`Sequence changed`,
   "sequence.deleted": msg`Sequence deleted`,

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using DDT.Agent.Consoles;
@@ -22,6 +23,9 @@ public sealed class AgentUpdate(
 {
     // Six retries wait 90 seconds in all, longer than the server's one minute window.
     private const int MaxRefusals = 6;
+
+    // How long the server is tried for the current agent. Null to try until it answers.
+    public TimeSpan? GiveUpAfter { get; init; }
 
     // Returns the exit code to end with when the new agent ran, or null to carry on as this agent. Nothing that goes
     // wrong here may stop the machine, because the agent and the console from the boot image still work.
@@ -87,20 +91,37 @@ public sealed class AgentUpdate(
     }
 
     // Waits for the server the way registration does. Any answer settles it, except a few refusals from a busy
-    // server. If the server can't say what the current agent is, this agent carries on.
+    // server. If the server can't say what the current agent is, or not in the time it has, this agent carries on.
     private async Task<AgentRelease?> CheckAsync(CancellationToken cancellationToken)
     {
+        long began = timeProvider.GetTimestamp();
         int failures = 0;
         int refusals = 0;
 
         while (!cancellationToken.IsCancellationRequested)
         {
+            TimeSpan? left = Left(began);
+
+            if (left <= TimeSpan.Zero)
+            {
+                return NotAnswered();
+            }
+
+            // The time that is left ends a try too, or a server that takes the call and says nothing would double it.
+            using CancellationTokenSource timeUp = new(Timeout.InfiniteTimeSpan, timeProvider);
+            using CancellationTokenSource trying = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeUp.Token);
+            timeUp.CancelAfter(left ?? Timeout.InfiniteTimeSpan);
+
             try
             {
-                AgentRelease? release = await server.GetReleaseAsync(cancellationToken).ConfigureAwait(false);
+                AgentRelease? release = await server.GetReleaseAsync(trying.Token).ConfigureAwait(false);
                 status?.Answered();
 
                 return release;
+            }
+            catch (OperationCanceledException) when (timeUp.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                return NotAnswered();
             }
             catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.TooManyRequests && ++refusals <= MaxRefusals)
             {
@@ -121,8 +142,29 @@ public sealed class AgentUpdate(
                 return null;
             }
 
-            await Task.Delay(AgentLimits.RetryDelay(failures), timeProvider, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(Wait(failures, Left(began)), timeProvider, cancellationToken).ConfigureAwait(false);
         }
+
+        return null;
+    }
+
+    // Null when the server has all the time it takes.
+    private TimeSpan? Left(long began) => GiveUpAfter - timeProvider.GetElapsedTime(began);
+
+    // No wait goes past the time that is left.
+    private static TimeSpan Wait(int failures, TimeSpan? left)
+    {
+        TimeSpan delay = AgentLimits.RetryDelay(failures);
+
+        return left is not { } rest || rest >= delay ? delay : rest > TimeSpan.Zero ? rest : TimeSpan.Zero;
+    }
+
+    private AgentRelease? NotAnswered()
+    {
+        log.Warning(string.Create(
+            CultureInfo.InvariantCulture,
+            $"The server did not answer within {GiveUpAfter?.TotalSeconds:0} seconds when asked for the current agent. " +
+            $"{EnvironmentTexts.OwnAgent(agent.Environment)}"));
 
         return null;
     }

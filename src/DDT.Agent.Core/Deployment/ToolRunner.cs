@@ -21,8 +21,20 @@ public sealed class ToolRunner(
     // script ended. So the rest of the output isn't waited for beyond this.
     public static readonly TimeSpan OutputGrace = TimeSpan.FromSeconds(10);
 
+    // The mask a root shell has, 022: a file a tool makes can be read by everyone, as its author expects.
+    public const int ToolFileModeMask = 0x12;
+
+    // The mask is the whole process's, so one tool starts at a time while it is changed.
+    private static readonly Lock s_starting = new();
+
     // Finds what a stopped tool started outside its own process tree. Null where only the tree itself can be ended.
     public IStrayProcesses? Strays { get; init; }
+
+    // Sets the process's file mode mask and returns the one before. Null where a tool starts with the agent's own.
+    public Func<int, int>? FileModeMask { get; init; }
+
+    // Tools that say what they did on their error output, as systemctl does. Their lines there are no warnings.
+    public IReadOnlySet<string> PlainErrorOutput { get; init; } = new HashSet<string>(StringComparer.Ordinal);
 
     public async Task<IReadOnlyList<string>> RunAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
@@ -41,7 +53,7 @@ public sealed class ToolRunner(
             lines.Add(line);
             log.Information(line);
         });
-        Task errors = ToolOutput.ForwardAsync(process.StandardError.BaseStream, decoder, log.Warning);
+        Task errors = ToolOutput.ForwardAsync(process.StandardError.BaseStream, decoder, PlainErrorOutput.Contains(tool) ? log.Information : log.Warning);
 
         try
         {
@@ -60,13 +72,11 @@ public sealed class ToolRunner(
         int exitCode = process.ExitCode;
         log.Information(string.Create(
             CultureInfo.InvariantCulture,
-            $"{tool} ended with exit code 0x{exitCode:X8} after {elapsed.TotalSeconds:0.0} s."));
+            $"{tool} ended with exit code {ExitCodeText(exitCode)} after {elapsed.TotalSeconds:0.0} s."));
 
         if (exitCode != 0)
         {
-            throw new DeploymentStepException(string.Create(
-                CultureInfo.InvariantCulture,
-                $"{tool} failed with exit code 0x{exitCode:X8}. Its output is in the machine log."));
+            throw new DeploymentStepException($"{tool} failed with exit code {ExitCodeText(exitCode)}. Its output is in the machine log.");
         }
 
         return lines;
@@ -100,7 +110,7 @@ public sealed class ToolRunner(
         }
         catch (OperationCanceledException)
         {
-            process.Kill();
+            await process.KillAsync().ConfigureAwait(false);
 
             // The last lines often say why it hung.
             await DrainAsync(output, errors, tool).ConfigureAwait(false);
@@ -154,8 +164,12 @@ public sealed class ToolRunner(
 
         Process process = Start(start, tool);
 
-        return new ProcessToolProcess(process, log, Strays?.WatchFrom(process.Id));
+        return new ProcessToolProcess(process, log, tool, Strays?.WatchFrom(process.Id));
     }
+
+    // As the system's own tools write it: Windows names its errors by their hexadecimal number, Linux counts to 255.
+    public static string ExitCodeText(int exitCode) =>
+        OperatingSystem.IsWindows() ? string.Create(CultureInfo.InvariantCulture, $"0x{exitCode:X8}") : exitCode.ToString(CultureInfo.InvariantCulture);
 
     public static string CommandLine(string fileName, IReadOnlyList<string> arguments)
     {
@@ -183,13 +197,13 @@ public sealed class ToolRunner(
         return start;
     }
 
-    private static Process Start(ProcessStartInfo start, string tool)
+    private Process Start(ProcessStartInfo start, string tool)
     {
         Process process;
 
         try
         {
-            process = Process.Start(start) ?? throw new DeploymentStepException($"{tool} did not start.");
+            process = StartWithMask(start) ?? throw new DeploymentStepException($"{tool} did not start.");
         }
         catch (Win32Exception exception)
         {
@@ -200,6 +214,29 @@ public sealed class ToolRunner(
         process.StandardInput.Close();
 
         return process;
+    }
+
+    // A process starts with its parent's mask, so the agent has the tool's for the moment of the start.
+    private Process? StartWithMask(ProcessStartInfo start)
+    {
+        if (FileModeMask is not { } setMask)
+        {
+            return Process.Start(start);
+        }
+
+        lock (s_starting)
+        {
+            int own = setMask(ToolFileModeMask);
+
+            try
+            {
+                return Process.Start(start);
+            }
+            finally
+            {
+                setMask(own);
+            }
+        }
     }
 
     private async Task DrainAsync(Task output, Task errors, string tool)

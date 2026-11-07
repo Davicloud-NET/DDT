@@ -77,6 +77,28 @@ public sealed class AgentOptionsTests
         Assert.Contains("[--dry-run-environment <WindowsPE|LinuxBoot>]", AgentOptions.Usage, StringComparison.Ordinal);
     }
 
+    // What a dry run's machine does after a hand-over to the installed Linux, for either executable.
+    [Fact]
+    public void ReadsHowADryRunsMachineStartsAfterAHandOverToLinux()
+    {
+        string[] dryRun = ["--server", "https://ddt.example:7152", "--dry-run"];
+
+        Assert.True(AgentOptions.TryParse(dryRun, out AgentOptions? plain, out string error), error);
+        Assert.True(AgentOptions.TryParse([.. dryRun, "--dry-run-netboot", "OnceInLinux"], out AgentOptions? once, out error), error);
+        Assert.True(AgentOptions.TryParse([.. dryRun, "--dry-run-netboot", "always"], AgentEnvironment.LinuxBoot, out AgentOptions? always, out error), error);
+        Assert.True(AgentOptions.TryParse([.. dryRun, "--dry-run-netboot", "OnceBeforeLinux"], out AgentOptions? before, out error), error);
+        Assert.False(AgentOptions.TryParse([.. dryRun, "--dry-run-netboot", "2"], out _, out string number));
+        Assert.False(AgentOptions.TryParse(["--server", "https://ddt.example:7152", "--dry-run-netboot", "Always"], AgentEnvironment.LinuxBoot, out _, out string alone));
+
+        Assert.Equal(
+            (DryRunNetboot.Never, DryRunNetboot.OnceInLinux, DryRunNetboot.Always, DryRunNetboot.OnceBeforeLinux),
+            (plain!.DryRunNetboot, once!.DryRunNetboot, always!.DryRunNetboot, before!.DryRunNetboot));
+        Assert.StartsWith("Unknown or invalid argument --dry-run-netboot.", number, StringComparison.Ordinal);
+        Assert.Equal($"--dry-run-netboot goes with --dry-run. {EnvironmentTexts.LinuxUsage}", alone);
+        Assert.Contains("[--dry-run-netboot <OnceInLinux|OnceBeforeLinux|Always>]", AgentOptions.Usage, StringComparison.Ordinal);
+        Assert.Contains("[--dry-run-netboot <OnceInLinux|OnceBeforeLinux|Always>]", EnvironmentTexts.LinuxUsage, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void NamesAGraphicalConsoleOnlyWhenAsked()
     {
@@ -100,6 +122,28 @@ public sealed class AgentOptionsTests
             Assert.True(AgentOptions.TryParse(["--config", path], out AgentOptions? options, out string error), error);
             Assert.Equal(new Uri("https://ddt.example:7152"), options!.ServerUrl);
             Assert.False(options.NoUpdate);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    // The hand-over to an installed Linux adds the address at which the boot environment reached the server.
+    [Theory]
+    [InlineData("10.77.0.1", "10.77.0.1")]
+    [InlineData("fd00::17", "fd00::17")]
+    [InlineData("not an address", null)]
+    public void ReadsTheServersAddressFromAnAgentJsonThatNamesOne(string written, string? read)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"agent-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, $$"""{ "serverUrl": "https://ddt.example:7152", "serverAddress": "{{written}}" }""");
+
+        try
+        {
+            Assert.True(AgentOptions.TryParse(["--config", path], out AgentOptions? options, out string error), error);
+            Assert.Equal(read is null ? null : System.Net.IPAddress.Parse(read), options!.ServerAddress);
+            Assert.Null(options.ForInstalledSystem().ServerAddress);
         }
         finally
         {

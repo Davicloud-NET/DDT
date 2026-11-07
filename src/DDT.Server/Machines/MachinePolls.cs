@@ -53,6 +53,9 @@ internal sealed class MachinePolls(
             restart = RestartOrder.None;
         }
 
+        // A run that waits where it starts waits for a newer agent, and the person at the machine is told so.
+        string? waits = restart.WaitReason
+            ?? (active is null || run is not null ? null : await queries.TooOldAsync(machine, active, cancellationToken).ConfigureAwait(false));
         bool canPick = await choices.CanPickAsync(machine, cancellationToken).ConfigureAwait(false);
 
         return new AgentNextResult(
@@ -69,7 +72,7 @@ internal sealed class MachinePolls(
             CanPickSequence: canPick,
             SuggestedSequenceId: canPick ? await choices.SuggestedAsync(machine, cancellationToken).ConfigureAwait(false) : null,
             RestartInto: restart.Into,
-            WaitReason: restart.WaitReason);
+            WaitReason: waits);
     }
 
     // False if the save lost to a change that made the machine start over. Last seen can wait for the next poll.

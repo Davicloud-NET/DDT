@@ -63,9 +63,12 @@ public sealed class RunDownloads(
 
         try
         {
-            if (Directory.Exists(target))
+            // A step visited again left its folder there, and its script may have left anything in it
+            if (Directory.Exists(target) && Leftovers.DeleteDirectory(target) is { } reason)
             {
-                Directory.Delete(target, recursive: true);
+                throw new DeploymentStepException(
+                    $"{target} is left from an earlier turn of this step and cannot be emptied for the package, because {reason}. " +
+                    "Unmount it, then run the step again.");
             }
 
             await PackageExtractor.ExtractAsync(zip, target, name, freeSpace.AvailableBytes(target), cancellationToken).ConfigureAwait(false);

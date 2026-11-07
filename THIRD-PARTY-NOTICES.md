@@ -318,7 +318,7 @@ for machines to take when theirs is another. Besides DDT's own code, from `DDT.A
   Tim J. Hudson, under the Apache License 2.0, text in
   [licenses/openssl/LICENSE.txt](licenses/openssl/LICENSE.txt), from OpenSSL 3.5.9. DDT does not
   change it. The build names the package by this version and takes no other.
-- musl 1.2.6, Alpine's C library, from its `musl-dev` package 1.2.6-r2, which the build names by
+- musl 1.2.6, Alpine's C library, from its `musl-dev` package 1.2.6-r3, which the build names by
   that version too. Copyright (c) 2005-2020 Rich Felker, et al., under the MIT licence, with parts
   by others under licences alike that [licenses/musl/COPYRIGHT](licenses/musl/COPYRIGHT) names, the
   file of musl 1.2.6.

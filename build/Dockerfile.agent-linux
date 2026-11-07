@@ -8,8 +8,8 @@
 # the context:
 #   docker build -f build/Dockerfile.agent-linux --target export --output artifacts/agent-linux .
 
-# Alpine 3.24 with the .NET SDK 10.0.401. The digest is the tag's of 2026-10-08, so the image is the same every time.
-ARG DOTNET_SDK=mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:3cc3bbbbf93d82104892f42aa9106b6be4d120346dea0649643a97c801525256
+# Alpine 3.24 with the .NET SDK 10.0.403. The digest is the tag's of 2026-11-05, so the image is the same every time.
+ARG DOTNET_SDK=mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:5562fd626eec39f6f53218f9b7d7856ab7195d51d846568304fbe85071a3b6e6
 
 FROM ${DOTNET_SDK} AS build
 # NativeAOT links with clang. StaticOpenSslLinking compiles the runtime's OpenSSL shim with cmake against the static
@@ -17,7 +17,7 @@ FROM ${DOTNET_SDK} AS build
 # versions here. Alpine keeps only its newest build of a package, so this step fails once Alpine has a newer one,
 # and the versions here and in the notices are moved on together.
 ARG OPENSSL=3.5.9-r0
-ARG MUSL=1.2.6-r2
+ARG MUSL=1.2.6-r3
 RUN apk add --no-cache clang build-base cmake "openssl-dev=${OPENSSL}" "openssl-libs-static=${OPENSSL}" "musl-dev=${MUSL}"
 WORKDIR /src
 COPY global.json nuget.config Directory.Build.props Directory.Build.targets Directory.Packages.props .editorconfig ./

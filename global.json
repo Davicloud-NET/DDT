@@ -4,8 +4,8 @@
     "rollForward": "latestFeature"
   },
   "msbuild-sdks": {
-    "Aspire.AppHost.Sdk": "13.6.0",
-    "WixToolset.Sdk": "7.0.0"
+    "Aspire.AppHost.Sdk": "13.6.4",
+    "WixToolset.Sdk": "7.0.1"
   },
   "test": {
     "runner": "Microsoft.Testing.Platform"

@@ -4856,7 +4856,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ====================================================================================================
-rolldown 1.2.8
+rolldown 1.2.16
 Licence: MIT
 A development dependency. The bundler adds its runtime helpers for CommonJS interoperability
 to the bundle, and injects the module preload polyfill through its Vite plugin. Its licence
@@ -4976,7 +4976,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
 IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ====================================================================================================
-seroval 1.6.7
+seroval 1.7.10
 Licence: MIT
 ----------------------------------------------------------------------------------------------------
 
@@ -5326,7 +5326,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ====================================================================================================
-vite 8.3.0
+vite 8.3.4
 Licence: MIT
 A development dependency. Vite asks Rolldown to inject its module preload polyfill into the
 bundle. The text below is the Vite core licence section of its LICENSE.md. The rest of that

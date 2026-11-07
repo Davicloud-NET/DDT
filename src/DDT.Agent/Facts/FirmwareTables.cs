@@ -7,9 +7,6 @@ namespace DDT.Agent.Facts;
 // The firmware tables through kernel32, which needs no privilege for them.
 public sealed class FirmwareTables : IFirmwareTables
 {
-    public const uint RawSmbiosProvider = NativeMethods.RawSmbiosProvider;
-    public const uint AcpiProvider = NativeMethods.AcpiProvider;
-
     public byte[]? List(uint provider) =>
         Call(buffer => NativeMethods.EnumSystemFirmwareTables(provider, buffer, (uint)(buffer?.Length ?? 0)));
 

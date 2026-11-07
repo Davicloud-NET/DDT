@@ -12,6 +12,9 @@ import type { PxeForm } from "../networkBoot";
 const PLACED_FIELDS = [
   "interfaces",
   "enableProxyDhcp",
+  "leaveDhcpPort",
+  "defaultBootEnvironment",
+  "linuxKernelArguments",
   "enableTftp",
   "tftpSinglePort",
   "tftpMaxWindowSize",

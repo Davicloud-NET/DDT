@@ -19,7 +19,7 @@ public static class MachineServiceCollectionExtensions
         services.AddOptions<AgentReleaseOptions>().BindConfiguration(AgentReleaseOptions.SectionName);
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton(new BundledReleases(AppContext.BaseDirectory));
-        services.AddSingleton<AgentReleaseStore>();
+        services.AddSingleton<AgentReleaseStores>();
         services.AddSingleton<ConsoleReleaseStore>();
         services.AddSingleton<ConsoleLogoStore>();
         services.AddSingleton<WaitingMachineSweeper>();
@@ -28,6 +28,9 @@ public static class MachineServiceCollectionExtensions
         services.AddScoped<RegistrationPublisher>();
         services.AddScoped<MachineRegistrar>();
         services.AddScoped<MachinePolls>();
+        services.AddScoped<MachinePollSaves>();
+        services.AddScoped<RestartOrders>();
+        services.AddScoped<EnvironmentSwitches>();
         services.AddScoped<MachineSignIn>();
         services.AddScoped<SignInApprovals>();
         services.AddScoped<MachineLogs>();

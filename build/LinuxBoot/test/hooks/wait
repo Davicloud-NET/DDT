@@ -1,0 +1,15 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# Run by the placeholder agent in the session check: an agent that stays, for the test to press Ctrl+C at.
+
+PATH=/usr/bin
+export PATH
+
+# An error of the kernel's, which must reach its log and stay off the agent's screen.
+echo "<3>ddt-test: an error line of the kernel" > /dev/kmsg
+echo "wait: the kernel's log has $(dmesg | grep -c 'ddt-test: an error line') error line of the test"
+echo "wait: waiting"
+sleep 600

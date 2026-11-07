@@ -16,6 +16,7 @@ import { SetupChecklist } from "@/setup/SetupChecklist";
 import { AgentPanel } from "../AgentPanel";
 import { CertificatePanel } from "../CertificatePanel";
 import { ConsolePanel } from "../ConsolePanel";
+import { LinuxAgentPanel } from "../LinuxAgentPanel";
 import { LogFiles } from "../logging/LogFiles";
 import { LoggingPanel } from "../LoggingPanel";
 import { ProxiesPanel } from "../ProxiesPanel";
@@ -95,6 +96,7 @@ export function ServerSettings() {
         </TabPanel>
         <TabPanel id="agent" className="flex flex-col gap-4">
           <AgentPanel />
+          <LinuxAgentPanel />
           <ConsolePanel />
         </TabPanel>
         <TabPanel id="logging" className="flex flex-col gap-4">

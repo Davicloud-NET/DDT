@@ -15,7 +15,7 @@ public static class MachineVariableNames
     public const string MacAddress = "MacAddress";
     public const string ComputerName = "ComputerName";
 
-    // WindowsPE or Windows: the phase the step would run in.
+    // WindowsPE, Windows or LinuxBoot: the phase the step would run in.
     public const string Phase = "Phase";
 
     // Version 3. Laptop, Desktop and so on, as DeviceKind names them.

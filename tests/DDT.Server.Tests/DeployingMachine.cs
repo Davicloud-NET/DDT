@@ -41,35 +41,47 @@ public sealed class DeployingMachine : IDisposable
     public static AgentDisk Disk(int number, string model = "Msft Virtual Disk", long sizeBytes = 64L * 1024 * 1024 * 1024) =>
         new(number, model, sizeBytes, "SCSI", 0);
 
-    public static async Task<DeployingMachine> RegisterAsync(
+    public static Task<DeployingMachine> RegisterAsync(
         DdtApplication application,
         IReadOnlyList<AgentDisk>? disks = null,
         bool? secureBootEnabled = null,
         int? sequenceVersion = null,
-        UefiCa? trustedUefiCas = null)
-    {
-        ArgumentNullException.ThrowIfNull(application);
-
-        AgentClient agent = new(application.CreateDefaultClient(), TestRemoteAddress.Unique());
-        AgentRegistration registration = AgentClient.Registration(
-            Guid.NewGuid().ToString("D"),
-            "02" + Convert.ToHexString(Guid.NewGuid().ToByteArray(), 0, 5)) with
+        UefiCa? trustedUefiCas = null) =>
+        RegisterAsync(application, registration => registration with
         {
             Disks = disks,
             SecureBootEnabled = secureBootEnabled,
             TrustedUefiCas = trustedUefiCas,
-        };
+            SequenceVersion = sequenceVersion ?? registration.SequenceVersion,
+        });
 
-        if (sequenceVersion is { } version)
-        {
-            registration = registration with { SequenceVersion = version };
-        }
+    // A machine whose agent registers as change makes it, such as from the Linux boot environment.
+    public static async Task<DeployingMachine> RegisterAsync(DdtApplication application, Func<AgentRegistration, AgentRegistration> change)
+    {
+        ArgumentNullException.ThrowIfNull(application);
+        ArgumentNullException.ThrowIfNull(change);
+
+        AgentClient agent = new(application.CreateDefaultClient(), TestRemoteAddress.Unique());
+        AgentRegistration registration = change(AgentClient.Registration(
+            Guid.NewGuid().ToString("D"),
+            "02" + Convert.ToHexString(Guid.NewGuid().ToByteArray(), 0, 5)));
 
         AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
             await agent.RegisterAsync(registration));
 
         return new DeployingMachine(agent, registration, registered);
     }
+
+    // A registration from the Linux boot environment, which starts the sequences that write a raw disk image, with one
+    // disk.
+    public static Func<AgentRegistration, AgentRegistration> LinuxBoot(bool? secureBootEnabled = null, UefiCa? trustedUefiCas = null) =>
+        registration => registration with
+        {
+            Environment = AgentEnvironment.LinuxBoot,
+            Disks = [Disk(0)],
+            SecureBootEnabled = secureBootEnabled,
+            TrustedUefiCas = trustedUefiCas,
+        };
 
     // A machine an operator signed in at. It's approved and may choose a sequence at the machine.
     public static async Task<DeployingMachine> SignedInAsync(
@@ -81,13 +93,22 @@ public sealed class DeployingMachine : IDisposable
     {
         DeployingMachine machine = await RegisterAsync(application, disks, secureBootEnabled: secureBootEnabled, sequenceVersion: sequenceVersion);
 
+        return await machine.SignInAsync(userName);
+    }
+
+    // A machine an operator signed in at, whose agent registered as change makes it.
+    public static async Task<DeployingMachine> SignedInAsync(DdtApplication application, string userName, Func<AgentRegistration, AgentRegistration> change) =>
+        await (await RegisterAsync(application, change)).SignInAsync(userName);
+
+    public async Task<DeployingMachine> SignInAsync(string userName)
+    {
         AgentSignInResult signedIn = await RegisteredMachine.ReadAsync<AgentSignInResult>(
-            await machine.Agent.SignInAsync(machine.Id, machine.Token, new AgentSignInRequest(userName, DdtApplication.Password, null)));
+            await Agent.SignInAsync(Id, Token, new AgentSignInRequest(userName, DdtApplication.Password, null)));
 
         Assert.Equal(AgentSignInStatus.Succeeded, signedIn.Status);
-        await machine.NextAsync();
+        await NextAsync();
 
-        return machine;
+        return this;
     }
 
     // A machine approved on the web. Nobody signed in at it, so only a web assignment gives it a run.
@@ -140,11 +161,28 @@ public sealed class DeployingMachine : IDisposable
         Assert.True(response.IsSuccessStatusCode, $"{(int)response.StatusCode} {await response.Content.ReadAsStringAsync()}");
     }
 
-    // Registers again without the resume token, like a new agent process after the machine netbooted again.
-    public async Task<AgentRegistrationResult> RegisterAgainAsync(AgentClient? from = null)
+    // Registers again without the resume token, like a new agent process after the machine netbooted again. environment
+    // is the boot environment that netboot started, when it is another than before.
+    public async Task<AgentRegistrationResult> RegisterAgainAsync(AgentClient? from = null, AgentEnvironment? environment = null)
     {
         AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(
-            await (from ?? Agent).RegisterAsync(Registration));
+            await (from ?? Agent).RegisterAsync(environment is { } started ? Registration with { Environment = started } : Registration));
+
+        if (registered.Token is not null)
+        {
+            Token = registered.Token;
+            ResumeToken = registered.ResumeToken!;
+        }
+
+        return registered;
+    }
+
+    // Registers from the boot environment the machine restarted into, with the resume token its agent took along. Without
+    // it when carried is false, as after a firmware that lost it.
+    public async Task<AgentRegistrationResult> RestartIntoAsync(AgentEnvironment environment, bool carried = true)
+    {
+        AgentRegistrationResult registered = await RegisteredMachine.ReadAsync<AgentRegistrationResult>(await Agent.RegisterAsync(
+            Registration with { Environment = environment, ResumeToken = carried ? ResumeToken : null }));
 
         if (registered.Token is not null)
         {

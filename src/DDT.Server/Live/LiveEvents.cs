@@ -81,6 +81,9 @@ public static class LiveEvents
     // administrators.
     public const string AgentChanged = "agentChanged";
 
+    // The same for the agent for Linux, as GET /api/settings/agent/linux returns it. Goes to administrators.
+    public const string LinuxAgentChanged = "linuxAgentChanged";
+
     // The same for the console, as GET /api/settings/agent/console returns it, when a console was uploaded. Goes to
     // administrators.
     public const string ConsoleChanged = "consoleChanged";

@@ -30,6 +30,7 @@ public sealed record RunScriptStep : SequenceStep
     [JsonIgnore]
     public override SequencePhase? RequiredPhase => Phase;
 
+    // Version 4 for a shell script or the LinuxBoot phase, which older agents do not know.
     [JsonIgnore]
-    public override int MinimumVersion => RunAs is null ? 1 : 3;
+    public override int MinimumVersion => Interpreter == ScriptInterpreter.Shell || Phase == SequencePhase.LinuxBoot ? 4 : RunAs is null ? 1 : 3;
 }

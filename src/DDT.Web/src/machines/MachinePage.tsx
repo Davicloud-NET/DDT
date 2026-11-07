@@ -20,7 +20,9 @@ import { Page } from "@/ui/Page";
 import { Skeleton } from "@/ui/Skeleton";
 
 import { MachineActionErrors } from "./MachineActionErrors";
+import { LinuxBootNotice } from "./page/LinuxBootNotice";
 import { MachineHeader } from "./page/MachineHeader";
+import { RestartsFailedNotice } from "./page/RestartsFailedNotice";
 import { RunDetails } from "./page/RunDetails";
 import { useStepLog } from "./page/useStepLog";
 import { RunWaiting } from "./RunWaiting";
@@ -73,6 +75,8 @@ export function MachinePage() {
             now={now}
           />
           <MachineActionErrors actions={actions} />
+          <LinuxBootNotice machine={machine} />
+          <RestartsFailedNotice machine={machine} />
         </>
       )}
 

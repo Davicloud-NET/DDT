@@ -77,13 +77,48 @@ model grows with it:
 - **A Pause step** that waits until someone at the machine or on the web lets the run go on.
   [LTISuspend]
 
-## M8 The Linux phase
+## M8 Linux
 
-A run goes on in the installed Linux as it goes on in the installed Windows. The cloud-init seed
-starts a Linux build of the agent, which runs the sequence's steps there, bash scripts, files
-packages and restarts included, fetches secrets when a step needs them, reports each step with its
-log, and ends the run only when those steps are done. Until then a run that writes a raw disk image
-ends when the disk is written, and DDT does not watch what cloud-init does at the first start.
+Three parts, each a pull request that works by itself. The first is built.
+
+1. **The Linux boot environment and the agent for Linux.** Built. A netbooted Linux environment
+   writes Linux images, and Windows PE is used for Windows only: the ADK's licence allows Windows
+   PE for installing and recovering Windows and names no other purpose
+   ([install.md](install.md), section 8, question 5).
+   - The environment comes with every release, so a server starts machines in it without the ADK
+     and without a build: Debian's signed shim, GRUB and kernel from packages pinned by version and
+     hash, DDT's start scripts, and the agent for Linux as one static file. Every release publishes
+     the packages' source code.
+   - The server serves it over TFTP and HTTP beside Windows PE, and names each 64-bit UEFI machine
+     the boot file of the environment its task sequence needs. A setting says what machines without
+     a run start.
+   - A sequence that writes a raw disk image is a Linux sequence. It runs in this environment, with
+     shell scripts before and after the image, and ends when the disk is written and first in the
+     boot order.
+   - A machine that started the other environment restarts into the right one. Its sign-in goes
+     along in a UEFI variable, and where the firmware does not keep that, someone signs in again.
+   - The console in this environment is text.
+2. **The run goes on in the installed Linux**, as it goes on in the installed Windows. Not built.
+   The cloud-init seed starts the agent for Linux there, which runs the sequence's steps, shell
+   scripts, file packages, restarts and shares included, reports each step with its log, ends the
+   run only when those steps are done, and then removes itself. Until then a run that writes a raw
+   disk image ends when the disk is written, and DDT does not watch what cloud-init does at the
+   first start.
+3. **The graphical console on Linux**, in the boot environment and in the installed Linux. Not
+   built. Until then the Linux boot environment keeps its text console.
+
+Decided for all three parts:
+
+- **No "run as" for Linux scripts.** They run as root, and a script that wants another user
+  switches to it itself.
+- **No domain join for Linux.**
+- **Shares only in the installed Linux**, so with part 2. The Linux boot environment connects none.
+- **One boot environment per site** where the DHCP server names the boot file itself in options 66
+  and 67, or where machines boot through WDS: DDT chooses per machine only in its own ProxyDHCP
+  answer.
+- **The source code of the Linux boot environment goes out with each release**, not on request.
+- **The kernel moves only with the lock**: a release gets a newer kernel when someone changes the
+  pinned packages and the environment passes its checks again.
 
 ## M9 Applications and Windows configuration
 
@@ -145,10 +180,9 @@ is the most complete description.
   from the shop's own CA and renews it by itself, the whole way: browsers, agents and the boot
   image all work with it, so nobody in the domain has to trust DDT's root. Until then IIS in front
   of DDT serves the shop's certificate. Planned, in no milestone yet.
-- **A boot environment built on Linux**, beside Windows PE or in its place: small enough to come
-  with every release, so a server netboots machines without the ADK and without a build. Secure
-  Boot through a distribution's signed shim, GRUB and kernel, so DDT buys no certificate for it,
-  and the same graphical console. Not planned yet.
+- **Windows from the Linux boot environment.** M8's Linux boot environment stands beside Windows
+  PE and writes Linux images only. Installing Windows from it, so that a server needs no ADK and
+  no boot image build at all, is not planned.
 
 ## Not planned
 

@@ -18,7 +18,7 @@ public sealed class WindowsHandOver(
     AgentConfiguration configuration,
     AgentLog log,
     bool dryRun,
-    Func<string?>? consoleDirectory = null)
+    Func<string?>? consoleDirectory = null) : IHandOver
 {
     public const string AgentDirectory = "agent";
     public const string AgentFileName = "ddt-agent.exe";
@@ -27,6 +27,16 @@ public sealed class WindowsHandOver(
 
     // SYSTEM may change the console. The session's account, a member of Users, may only read and start it.
     public const string ConsoleSddl = "D:P(A;OICI;FA;;;SY)(A;OICI;0x1200a9;;;BU)";
+
+    async Task IHandOver.HandOverAsync(SequenceRun run, RunBootOrder bootOrder, CancellationToken cancellationToken)
+    {
+        SequenceState handedOver = run.State;
+        await bootOrder.MakeBootableAsync(
+            run,
+            run.Session.RequireVolumes(),
+            () => StageAsync(run.Session, run.Store, handedOver, cancellationToken),
+            cancellationToken).ConfigureAwait(false);
+    }
 
     public async Task StageAsync(RunSession session, FileRunStateStore store, SequenceState state, CancellationToken cancellationToken)
     {

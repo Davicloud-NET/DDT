@@ -20,6 +20,9 @@ public static class SettingWarningCodes
     // Only informs. An entry of Interfaces doesn't match any interface on a host that runs the PXE role.
     public const string PxeInterfaceNotFound = "pxe.interfaceNotFound";
 
+    // Only informs. Linux is the default, and this server cannot start the Linux boot environment.
+    public const string PxeLinuxDefaultUnavailable = "pxe.linuxDefaultUnavailable";
+
     // The warnings a save is refused for until the update confirms them.
     public static IReadOnlySet<string> NeedConfirmation { get; } = new HashSet<string>(StringComparer.Ordinal)
     {

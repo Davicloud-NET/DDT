@@ -10,12 +10,6 @@ namespace DDT.Agent;
 // neither WMI nor the TPM Base Services.
 internal static partial class NativeMethods
 {
-    // 'RSMB': the SMBIOS structure table.
-    public const uint RawSmbiosProvider = 0x52534D42;
-
-    // 'ACPI': the ACPI tables, each under its four letter signature.
-    public const uint AcpiProvider = 0x41435049;
-
     // LOGICAL_PROCESSOR_RELATIONSHIP's RelationProcessorCore.
     public const int RelationProcessorCore = 0;
 

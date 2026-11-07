@@ -16,9 +16,15 @@ public static class SequenceDocuments
     public static string Write(SequenceDefinition definition) =>
         JsonSerializer.Serialize(definition.Normalised(), DdtJsonContext.Default.SequenceDefinition);
 
-    public static SequenceDefinition Read(string definition) =>
-        JsonSerializer.Deserialize(definition, DdtJsonContext.Default.SequenceDefinition)
-        ?? throw new InvalidDataException("A stored sequence definition is null.");
+    // A document stored before a kind's version went up reads at the version it needs now. So a raw disk image stored
+    // as version 2 only goes to agents that run it in the Linux boot environment.
+    public static SequenceDefinition Read(string definition)
+    {
+        SequenceDefinition read = JsonSerializer.Deserialize(definition, DdtJsonContext.Default.SequenceDefinition)
+            ?? throw new InvalidDataException("A stored sequence definition is null.");
+
+        return read.Steps is null ? read : read with { Version = Math.Max(read.Version, read.RequiredVersion()) };
+    }
 
     // Why a document cannot be stored at all. Anything else, however wrong, is stored and reported as a problem.
     public static string? Malformation(SequenceDefinition? definition)

@@ -7,6 +7,6 @@ using DDT.Contracts.Settings;
 
 namespace DDT.Server.Machines;
 
-// An agent file on the server: where it is, what machines are told about it, its file version if it has one, and
-// whether it was uploaded, came with the server or is named in configuration.
+// An agent file on the server: where it is, what machines are told about it, the version it carries if it has one,
+// and whether it was uploaded, came with the server or is named in configuration.
 public sealed record StoredAgent(string Path, AgentRelease Release, Version? Version, AgentBinarySource Source);

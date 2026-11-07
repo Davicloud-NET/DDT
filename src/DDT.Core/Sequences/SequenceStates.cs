@@ -15,8 +15,8 @@ public static class SequenceStates
     // The highest version a definition may need and still start as Format 1.
     private const int FlatVersion = 2;
 
-    // Starts in Windows PE with one entry per node, in pre-order. A definition that a version 1 or 2 agent could run
-    // starts as Format 1, so an older agent can still resume it. One that needs the tree starts as Format 2.
+    // Starts in the kind's boot phase with one entry per node, in pre-order. A definition that a version 1 or 2 agent
+    // could run starts as Format 1, so an older agent can still resume it. Any other starts as Format 2.
     public static SequenceState Start(Guid runId, SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -24,17 +24,18 @@ public static class SequenceStates
         IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(definition);
         StepRunState[] steps = [.. nodes.Select(node => new StepRunState(node.Id, StepState.Pending, null))];
         Dictionary<string, string> variables = new(StringComparer.Ordinal);
+        SequencePhase boot = SequenceKinds.BootPhase(definition);
 
         if (definition.RequiredVersion() <= FlatVersion)
         {
-            return new SequenceState(SequenceState.CurrentFormat, runId, definition, SequencePhase.WindowsPE, 0, steps, variables);
+            return new SequenceState(SequenceState.CurrentFormat, runId, definition, boot, 0, steps, variables);
         }
 
         return new SequenceState(
             SequenceState.TreeFormat,
             runId,
             definition,
-            SequencePhase.WindowsPE,
+            boot,
             NoNextIndex,
             steps,
             variables,

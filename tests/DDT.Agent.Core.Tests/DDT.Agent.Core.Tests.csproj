@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The tests of DDT.Agent.Core, which run on every system. They keep the namespace of DDT.Agent.Tests, which
+       compiles the fakes and other helpers here into its own tests. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>DDT.Agent.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DDT.Agent.Core\DDT.Agent.Core.csproj" />
+  </ItemGroup>
+
+</Project>

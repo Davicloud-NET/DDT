@@ -35,7 +35,7 @@ public static class RunSnapshots
         .ToFrozenSet(StringComparer.Ordinal);
 
     // One row per node in pre-order, containers included. A node whose phase depends on an IF starts with the first
-    // phase it may run in. It gets the phase the agent reports when it runs.
+    // phase it may run in, or else the sequence's boot phase. It gets the phase the agent reports when it runs.
     public static IReadOnlyList<DeploymentStep> Steps(Guid runId, SequenceDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -43,6 +43,7 @@ public static class RunSnapshots
         IReadOnlyList<SequenceStep> nodes = SequenceTree.Nodes(definition);
         IReadOnlyDictionary<Guid, NodePosition> positions = SequenceTree.Index(definition);
         IReadOnlyList<NodePhase> phases = SequenceChecks.NodePhases(definition);
+        SequencePhase boot = SequenceKinds.BootPhase(definition);
 
         return
         [
@@ -53,7 +54,7 @@ public static class RunSnapshots
                 Index = order,
                 Name = StoredText.Bound(node.Name, DeploymentLimits.MaxStepNameLength) ?? "",
                 Kind = Kind(node),
-                Phase = order < phases.Count && phases[order].Phases is [var first, ..] ? first : SequencePhase.WindowsPE,
+                Phase = order < phases.Count && phases[order].Phases is [var first, ..] ? first : boot,
                 State = StepState.Pending,
                 ParentId = positions[node.Id].ParentId,
                 Depth = positions[node.Id].Depth,

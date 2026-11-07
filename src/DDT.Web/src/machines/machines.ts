@@ -5,7 +5,7 @@
 import { t } from "@lingui/core/macro";
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
-import { isActive, type DeploymentSummary } from "@/deployments/deployments";
+import { isActive, type AgentEnvironment, type DeploymentSummary } from "@/deployments/deployments";
 import type { InputAnswer } from "@/inputs/inputs";
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
 import { removeByIds, upsertById } from "@/lib/listCache";
@@ -79,6 +79,14 @@ export interface MachineSummary {
   // The facts the agent sent at its last registration. Null for agents older than version 3 sequences. Servers older
   // than that leave it out.
   facts?: MachineFacts | null;
+  // Where the machine's agent last registered from. Servers from before the Linux boot environment leave it out.
+  agentEnvironment?: AgentEnvironment;
+  // The boot environment the machine was asked to restart into, until it registers from there.
+  nextEnvironment?: AgentEnvironment | null;
+  // Whether the machine's agent can restart into the other boot environment and stay signed in.
+  changesBootEnvironment?: boolean | null;
+  // The boot environment the machine did not start after restarting for its run. The server orders no more, the run waits.
+  restartsFailed?: AgentEnvironment | null;
 }
 
 // A hardware model as the machine's firmware reports it. Comparisons ignore case and runs of spaces. A null

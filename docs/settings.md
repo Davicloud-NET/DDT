@@ -113,7 +113,10 @@ Some keys are not settings at all and never appear on the page:
   - decides which machines deploy unattended
   - runs code as SYSTEM on netbooting machines
 - Viewers keep GET /api/deployments/options (DeploymentEndpoints.cs:26). It returns three booleans
-  (DeploymentEndpoints.cs:33-39) and must stay limited to them once it reads the snapshot.
+  (DeploymentEndpoints.cs:33-39) and must stay limited to them once it reads the snapshot. Beside
+  them it carries the server's time, the boot environments the server can start and the certificate
+  authorities the Linux boot environment's shim is signed under, none of which comes from a
+  settings section.
 
 **Fields marked "Admin, re-auth".** These also need a fresh proof of identity, a re-auth token from
 section 6.
@@ -121,7 +124,8 @@ section 6.
 - The token needs the admin's password, and the TOTP code when the account has one.
 - An account without a local or directory password cannot change these fields.
 - The main reason is the agent upload. It turns an admin session into code that runs as SYSTEM on
-  every netbooting machine, and the agent checks only the size and hash announced by the same server
+  every netbooting machine, or as root where the machine starts the Linux boot environment, and the
+  agent checks only the size and hash announced by the same server
   (AgentUpdate.cs:128-135, README "Security model"). README's security model has to say this.
 
 **How a change applies.**
@@ -153,6 +157,7 @@ administrator here stay the defaults (see "Accounts in M7" below).
 | Locale | culture name | unset: image language, else en-US | | live | Admin |
 | Keyboard | input locale | unset: the locale | | live | Admin |
 | ConsoleLanguage | en or de | unset: the language of Windows PE | | live, from the next registration | Admin |
+| ConsoleKeyboardLayout | a keymap of the Linux boot environment, such as de | unset: us | | live, from the next netboot | Admin |
 | LocalAdministrator:Name | 1 to 20 characters | Admin | | live | Admin |
 | LocalAdministrator:Password | text | unset: no account, Windows asks | yes | live | Admin |
 | Domain:Name | DNS name | unset: workgroup | | live | Admin |
@@ -164,6 +169,16 @@ administrator here stay the defaults (see "Accounts in M7" below).
 Domain:Controller is used only by the join account check on the page (POST
 /api/deployments/domain-check), which reads the section at every check, so the page can offer the
 check next to the fields it tests.
+
+ConsoleKeyboardLayout is the keyboard layout of the console in the Linux boot environment. The page
+offers the layouts that environment has keymaps for, which its description lists (LinuxBootReading.cs):
+us, uk, de, ch, fr, it and es. A save refuses what is no keymap name, and a name the environment of
+this server lacks (SettingsSaveChecks.cs). The server puts the name onto the kernel command line as
+`ddt.keymap` when it generates grub.cfg, or `us` where the environment lacks it, so a change reaches a
+machine at its next netboot. The `agent.json` it generates names the layout as well, which the agent
+shows at the sign-in. The registration answer to an agent in that environment carries the setting
+too, for the graphical console, which the Linux boot environment does not have yet. Windows PE keeps
+the layout its boot image was built with (section 4).
 
 The same page holds the console's logo, which is a file rather than a value of the section: a PNG of
 at most 512 KB and 2048 by 2048 pixels, uploaded as `PUT /api/settings/console-logo` (image/png) and
@@ -194,16 +209,75 @@ in progress (TftpListener.cs:72-80), and the page says so.
 |---|---|---|---|---|---|
 | Interfaces | interface names or local IPv4 addresses | empty: serve nothing | | restart: PXE | Admin |
 | EnableProxyDhcp | bool | true | | restart: PXE | Admin |
+| LeaveDhcpPort | bool | false | | restart: PXE | Admin |
 | EnableTftp | bool | true | | restart: PXE | Admin |
 | TftpSinglePort | bool | false | | restart: PXE | Admin |
 | TftpMaxWindowSize | integer, 1 to 64 | 16 | | restart: PXE | Admin |
 | MaxConcurrentTftpTransfers | integer, at least 1 | 128 | | restart: PXE | Admin |
 | AuthorisedRelayAgents | IPv4 addresses | empty | | restart: PXE | Admin |
+| DefaultBootEnvironment | Auto, WindowsPE or Linux | Auto | | restart: PXE | Admin |
+| LinuxKernelArguments | words, at most 256 characters | empty | | restart: PXE | Admin |
 | BootTargets:{arch}:Method | Tftp or Http | no targets | | restart: PXE | Admin |
 | BootTargets:{arch}:BootFile | path, or http(s) URL for Http | none | | restart: PXE | Admin |
 | BootTargets:{arch}:ServerAddress | IPv4 | address of the arrival interface | | restart: PXE | Admin |
 | BootTargets:{arch}:ServerHostName | ASCII, at most 63 | the server address | | restart: PXE | Admin |
 | BootTargets:{arch}:AdvertiseBootServerDiscovery | bool | false | | restart: PXE | Admin |
+
+LeaveDhcpPort leaves UDP 67 to a DHCP server on the same computer, so DDT answers on UDP 4011 alone and
+machines reach it once that DHCP server sends option 60, PXEClient. Where Microsoft's DHCP Server is
+installed DDT does this by itself (DhcpServerRole.cs). Without the setting, a DHCP port that does not
+bind is reported as a failed apply, with the advice to turn the setting on, and UDP 4011 and TFTP go
+on serving (PxeHost.cs). A host whose interfaces are named in configuration does not start then.
+
+DefaultBootEnvironment decides what a 64-bit UEFI machine without a run starts from PXE. A machine
+with a run, or one that was asked to restart into the other boot environment no more than 15 minutes
+ago, starts what that needs (BootChoices.cs, BootEnvironmentChoice.cs). Auto is Windows PE once the
+boot directory holds the boot file of the X64Uefi boot target, which a built boot image brings, or
+once that target names another server (NetbootChoice.cs), and the Linux boot environment until then,
+so a server that is upgraded keeps starting Windows PE. Other architectures and UEFI HTTP Boot keep
+their boot targets.
+
+The Linux boot environment is named only while the server can start it: the folder's files are what
+their description says (below), EnableTftp is on, and the server has a root certificate of DDT's own
+to hand to the machines. A machine with Secure Boot on whose firmware trusts none of the certificate
+authorities the shim is signed under is named the Windows PE boot file instead. The server takes that
+from the machine's last registration and only from a row that was approved once, so a row somebody
+merely registered keeps no machine out of Linux. It holds only where Windows PE can start: without
+it the machine is named the shim all the same. Where Linux is the default and the server cannot
+start it, machines without a run are named the Windows PE boot file, and the section's view carries
+the warning `pxe.linuxDefaultUnavailable` with the reason, which only informs.
+
+LinuxKernelArguments is added to the kernel command line of the Linux boot environment, for example
+`console=ttyS0,115200`. The words go into the grub.cfg DDT generates, which GRUB runs as a script on
+every machine, so each word may hold only letters, digits and `_ . : , = + / @ -`, and none may start
+with a hyphen (KernelArguments.cs). `init`, `rdinit`, `initrd`, `BOOT_IMAGE` and every word that starts
+with `ddt.` are refused, because DDT sets them itself; `ddt.shell` is the one exception, and opens the
+root shell on the machine's second screen and serial port from the start, which otherwise opens there
+once the agent has failed. The field needs no fresh password: it runs no code of the administrator's,
+it only passes words to Debian's kernel and to DDT's own start scripts.
+
+The Linux boot environment itself is no setting. A release puts it into the folder `linux-boot` next
+to the server's program files, and DDT:LinuxBoot:Path names another folder for a server run from
+source, as Start-DevHost.ps1 does (LinuxBootEnvironment.cs). The key is no page field, and the Server
+panel lists it with whether it is set. The Boot image page and `linux` in GET /api/boot-image say
+whether machines can be started in it, and otherwise why, as `problem` in English and `problemText`
+as a code with its values:
+
+- `linuxBoot.missing`: the folder holds no `ddt-linux-boot.json`.
+- `linuxBoot.noRoot`: the server has no root certificate of DDT's own to hand to the machines, as
+  when its certificate is an administrator's.
+- `linuxBoot.damaged`, with the file's `name` and a `reason`:
+
+| Reason | What the server found |
+|---|---|
+| unreadable | The description cannot be read: it is no JSON, larger than 1 MB, lists no file, lists a name twice, or lists a name that is no plain file name of at most 64 characters. |
+| incomplete | The description does not list one of `shimx64.efi`, `grubx64.efi`, `vmlinuz`, `base.img` and `ddt.img`. |
+| missing | A listed file is not there. |
+| size | A listed file has another size than the description says. |
+| signatures | The shim carries other signatures than the description says. |
+| hash | A listed file's SHA-256 is not the one the description names. The server compares them in the background after its first look, and before it serves anything from a folder that changed under an unchanged description. |
+| changed | Netboot was about to serve a listed file and found it gone or of another size or time than at the server's look. The environment stays unavailable until the next look, at most five seconds later, has read the folder again. |
+| other | A listed file cannot be read, or is a link. |
 
 How the page fills in these fields:
 
@@ -284,6 +358,7 @@ Certificate actions have these limits:
 | Key | Type | Default | Secret | Applies | Who |
 |---|---|---|---|---|---|
 | Agent binary (replaces DDT:Agent:BinaryPath) | upload of ddt-agent.exe | the agent the server came with; without one, machines keep the boot image agent | | live: next netboot | Admin, re-auth to upload |
+| Agent for Linux (replaces DDT:Agent:LinuxBinaryPath) | upload of ddt-agent-linux-x64, a 64-bit Linux program for x86-64 | the agent for Linux the server came with; without one, machines keep the agent the Linux boot environment brings | | live: next netboot | Admin, re-auth to upload |
 | Console (replaces DDT:Agent:ConsolePath) | upload of a zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll | the console the server came with; without one, machines keep the boot image console | | live: next netboot | Admin, re-auth to upload |
 
 - The upload goes to the default path `<StorePath>/agent/ddt-agent.exe` (AgentReleaseStore.cs).
@@ -293,9 +368,24 @@ Certificate actions have these limits:
   from its first start. The view names the source (`Uploaded`, `Bundled`, `Configuration`, `None`)
   and the file version, which the server reads out of the executable (ExecutableVersion.cs), on
   Linux as well.
-- `DELETE /api/settings/agent/binary` and `DELETE /api/settings/agent/console` remove an upload
-  again, audited as `agent.upload-removed` and `console.upload-removed`, without a fresh password:
-  it only takes machines back to what the server came with. While an upload is older than the
+- The agent for Linux is a second agent beside the one for Windows PE, with the same rules
+  (AgentReleaseStores.cs). Its upload goes to `<StorePath>/agent/ddt-agent-linux-x64`, a release puts
+  `ddt-agent-linux-x64` next to DDT.Host, and DDT:Agent:LinuxBinaryPath is its development override,
+  which Start-DevHost.ps1 points at the file Publish-LinuxAgent.ps1 writes. An ELF file has no
+  version resource, so the agent's build writes `DDT-AGENT-VERSION:` and the version into it, and
+  the server reads that (ElfAgentVersion.cs).
+- The server takes an upload for Linux only when its header says it is a 64-bit program for
+  x86-64 (ElfHeader.cs), as it takes one for Windows PE only when it starts with MZ. Neither check
+  says where a file comes from or what it does: DDT signs no agent for Linux, and every machine
+  that starts the Linux boot environment runs the upload as root. The fresh password and the audit
+  row are what stand between an administrator's session and that.
+- Agents ask for the one built for their system: `GET /api/agents/releases/{platform}` and
+  `.../binary`, with `windows-x64` and `linux-x64` as platforms (AgentPlatforms.cs). They answer as
+  the frozen `api/agents/release` routes do, which stay the Windows PE agent's.
+- `DELETE /api/settings/agent/binary`, `DELETE /api/settings/agent/linux/binary` and
+  `DELETE /api/settings/agent/console` remove an upload again, audited as `agent.upload-removed`,
+  `agent.linux.upload-removed` and `console.upload-removed`, without a fresh password: it only
+  takes machines back to what the server came with. While an upload is older than the
   bundled file, the view says so in `newerBundledVersion`, and the page offers the removal.
 - DDT:Agent:BinaryPath stays only as a configuration override for development (Start-DevHost.ps1).
   While it is set, uploads answer 409, and the bundled agent is not offered.
@@ -723,7 +813,7 @@ stated requirement.
 - settings.imported, settings.changed, settings.refused, settings.reset
 - settings.applied, settings.apply-failed
 - certificate.replaced, certificate.rolled-back
-- agent.uploaded
+- agent.uploaded, agent.linux.uploaded
 - administrator.created
 
 **Row contents.**
@@ -928,8 +1018,12 @@ ring, so it also works for the streamed agent upload.
 | POST /api/settings/certificate | Upload. Needs re-auth; a new root also needs `certificate.newRoot`. |
 | POST /api/settings/certificate/generate | Uses the stored server names. Needs re-auth and `certificate.newRoot`. |
 | POST /api/settings/certificate/confirm | Makes a provisional pair permanent. Accepted only from a connection that was served the new pair. |
-| GET /api/settings/agent | `{ sha256, size, uploadedUtc, uploadedBy, source }`. |
-| PUT /api/settings/agent/binary | Streamed application/octet-stream with a size limit and an MZ header check. Written to a temporary file, then renamed. Returns `{ sha256, size }` and audits `agent.uploaded` with the hash. Answers 409 while DDT:Agent:BinaryPath is set in configuration. Needs re-auth. |
+| GET /api/settings/agent | `{ sha256, size, uploadedUtc, uploadedBy, source, version, newerBundledVersion }`. `source` is Uploaded, Bundled, Configuration or None, and the values are null while there is no agent. |
+| PUT /api/settings/agent/binary | Streamed application/octet-stream of at most 128 MB with an MZ header check. Written to a temporary file, then renamed. Returns the view and audits `agent.uploaded` with the hash. Answers 409 while DDT:Agent:BinaryPath is set in configuration. Needs re-auth. |
+| DELETE /api/settings/agent/binary | Removes the upload and returns the view, audited as `agent.upload-removed`. 404 when nothing was uploaded. Needs no re-auth. |
+| GET /api/settings/agent/linux | The same view for the agent for Linux. `version` comes from the marker its build writes. |
+| PUT /api/settings/agent/linux/binary | As PUT /api/settings/agent/binary, with a check of the ELF header for a 64-bit x86-64 program in place of MZ. Audits `agent.linux.uploaded`. Answers 409 while DDT:Agent:LinuxBinaryPath is set in configuration. Needs re-auth. |
+| DELETE /api/settings/agent/linux/binary | Removes the upload and returns the view, audited as `agent.linux.upload-removed`. 404 when nothing was uploaded. Needs no re-auth. |
 | GET /api/settings/agent/console | The same view for the console: the SHA-256 of ddt-console.exe and the size of the three files. |
 | PUT /api/settings/agent/console | A zip of the console's three files, at the root or in one folder, each starting with MZ, at most 128 MB zipped and unpacked. Repacked to a temporary file, then renamed. Returns the view and audits `console.uploaded` with the hash of ddt-console.exe. Answers 409 while DDT:Agent:ConsolePath is set in configuration. Needs re-auth. |
 | GET /api/auth/external/providers | Anonymous. The enabled providers with their DisplayName, for the sign-in page. |

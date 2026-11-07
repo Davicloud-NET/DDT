@@ -1,4 +1,8 @@
 # syntax=docker/dockerfile:1
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
 ARG DOTNET_SDK=mcr.microsoft.com/dotnet/sdk:10.0-noble
 ARG DOTNET_RUNTIME=mcr.microsoft.com/dotnet/aspnet:10.0-noble
 ARG NODE=node:24-trixie-slim
@@ -44,12 +48,17 @@ COPY --from=build /app ./
 # The build script, which the builder for a Windows PC hands out. Linux builds no boot image itself.
 COPY build/Build-BootImage.ps1 build/boot-image-trim.txt ./
 COPY build/BootImage/ ./BootImage/
-# The Windows agent and console of this release, which the server offers until others are uploaded. Only Windows
-# compiles them, so the release workflow puts them into artifacts/bundle. A build without them offers none.
+# The agents and the console of this release, which the server offers until others are uploaded, and the Linux boot
+# environment it starts machines in. Only Windows compiles the Windows ones, and the Linux ones are built in
+# containers of their own, so the release workflow puts them all into artifacts/bundle. A build without them offers
+# none. The files of the boot environment are served to machines, so everyone may read them.
 RUN --mount=type=bind,target=/context \
-    for file in ddt-agent.exe ddt-console.zip; do \
+    for file in ddt-agent.exe ddt-console.zip ddt-agent-linux-x64; do \
         if [ -f "/context/artifacts/bundle/$file" ]; then cp "/context/artifacts/bundle/$file" /app/; fi; \
-    done
+    done; \
+    if [ -f /context/artifacts/bundle/linux-boot/ddt-linux-boot.json ]; then \
+        cp -R /context/artifacts/bundle/linux-boot /app/linux-boot && chmod -R u=rwX,go=rX /app/linux-boot; \
+    fi
 # Defaults of the image rather than of the code: a declared Kestrel endpoint makes Kestrel ignore the URLs Aspire
 # and launch profiles assign, and both certificate paths make DDT write a certificate at startup.
 ENV DDT__StorePath=/var/lib/ddt \

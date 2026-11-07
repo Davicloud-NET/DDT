@@ -5,7 +5,10 @@
 using System.Text;
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
+using DDT.Agent.Facts;
+using DDT.Agent.InstalledPhase;
 using DDT.Agent.Sequences;
+using DDT.Contracts.Agents;
 using Microsoft.Win32;
 
 namespace DDT.Agent.WindowsPhase;
@@ -14,7 +17,7 @@ namespace DDT.Agent.WindowsPhase;
 // run. Nobody watches its console, so it logs to DDT\logs\agent.log as well as to the server.
 public static class WindowsPhaseService
 {
-    public static string LogPathIn(string windowsRoot) => Path.Combine(windowsRoot, "DDT", "logs", "agent.log");
+    public static string LogPathIn(string windowsRoot) => Path.Combine(RunFiles.DirectoryIn(windowsRoot), "logs", "agent.log");
 
     public static async Task<int> RunAsync(CancellationToken cancellationToken)
     {
@@ -53,7 +56,7 @@ public static class WindowsPhaseService
 
         string version = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "unknown";
         using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate);
-        ToolRunner tools = new(log, TimeProvider.System, new AccountProcessStarter(log));
+        ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode, new AccountProcessStarter(log));
         ServiceParts parts = new(windowsRoot, log, server, tools, new WindowsRebooter(tools), version);
         AgentConfiguration staged = new(options.ServerUrl.AbsoluteUri, options.RootCertificate?.ExportCertificatePem(), null);
 
@@ -74,7 +77,7 @@ public static class WindowsPhaseService
                 TimeProvider.System,
                 (sid, pipeName) => console.Start(() => SessionMachineConsole.CreatePipe(pipeName, sid)));
 
-            WindowsPhaseLoop loop = Loop(parts, Runner(parts, staged, status), session, status);
+            InstalledPhaseLoop loop = Loop(parts, Runner(parts, staged, status), session, status);
 
             // The control manager only needs to know whether the service failed.
             return await loop.RunAsync(cancellationToken).ConfigureAwait(false) switch
@@ -89,40 +92,56 @@ public static class WindowsPhaseService
     {
         AgentLog log = parts.Log;
         ToolRunner tools = parts.Tools;
+        DiskpartPartitioner disks = new(tools, log, TimeProvider.System, parts.Directory);
+        BcdbootWriter bcdWriter = new(tools, new UefiVariables(), log);
+        WimImageApplier applier = new(log, AppContext.BaseDirectory, Path.Combine(parts.Directory, "logs", "wimlib.log"));
+        SequenceRunnerOptions options = new(RunHeartbeat.DefaultInterval, parts.Directory, DryRun: false) { Environment = AgentEnvironment.Windows };
 
         return new SequenceRunnerBuilder
         {
             Server = parts.Server,
-            Partitioner = new DiskpartPartitioner(tools, log, TimeProvider.System, parts.Directory),
-            RawDisks = new PhysicalDisks(),
-            Applier = new WimImageApplier(log, AppContext.BaseDirectory, Path.Combine(parts.Directory, "logs", "wimlib.log")),
-            BcdWriter = new BcdbootWriter(tools, new UefiVariables(), log),
+            Disks = disks,
+            Partitioner = disks,
+            FreeSpace = new DriveFreeSpace(),
+            PreflightChecks = [new BootImageToolsCheck(Environment.SystemDirectory), new ImageApplierCheck(applier)],
+            StepRunners = new WindowsStepRunners
+            {
+                Server = parts.Server,
+                Partitioner = disks,
+                Applier = applier,
+                Tools = tools,
+                Joiner = new NetJoinDomainJoiner(),
+                Log = log,
+                TimeProvider = TimeProvider.System,
+                Options = options,
+            },
+            BcdWriter = bcdWriter,
+            BootOrder = bcdWriter,
             Rebooter = parts.Rebooter,
-            RestartMarker = new WindowsPERestartMarker(parts.Directory, log, dryRun: false),
-            Tools = tools,
-            Joiner = new NetJoinDomainJoiner(),
+            RestartMarker = new FileRestartMarker(parts.Directory, log, dryRun: false),
             HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: false), Environment.ProcessPath!, staged, log, dryRun: false),
             Log = log,
             TimeProvider = TimeProvider.System,
-            Options = new SequenceRunnerOptions(RunHeartbeat.DefaultInterval, parts.Directory, Environment.SystemDirectory, DryRun: false),
+            Options = options,
             Status = status,
+            AccountTools = WindowsAccountTools.Create(log),
         }.Build();
     }
 
-    private static WindowsPhaseLoop Loop(ServiceParts parts, SequenceRunner runner, DeploySession session, ConsoleStatus status) =>
-        new WindowsPhaseLoopBuilder
+    private static InstalledPhaseLoop Loop(ServiceParts parts, SequenceRunner runner, DeploySession session, ConsoleStatus status) =>
+        new InstalledPhaseLoopBuilder
         {
             Server = parts.Server,
-            IdentityReader = new HardwareMachineIdentityReader(),
+            IdentityReader = new HardwareMachineIdentityReader(new FirmwareTables(), new SystemHardware(), new UefiVariables(), new WindowsSecureBoot()),
             Runner = runner,
-            Setup = new RegistrySetupProbe(),
+            Profile = WindowsPhaseProfile.With(new RegistrySetupProbe()),
             Rebooter = parts.Rebooter,
             RestartMarker = new VolatileRestartMarker(parts.Log),
             Removal = new AgentRemoval(parts.WindowsRoot, parts.Tools, new MoveFileRestartDeleter(parts.Log), parts.Log),
             Log = parts.Log,
             TimeProvider = TimeProvider.System,
             HeartbeatInterval = RunHeartbeat.DefaultInterval,
-            WindowsRoot = parts.WindowsRoot,
+            Root = parts.WindowsRoot,
             AgentVersion = parts.Version,
             DryRun = false,
             Session = session,
@@ -133,6 +152,6 @@ public static class WindowsPhaseService
     // What the service's runner and loop share.
     private sealed record ServiceParts(string WindowsRoot, AgentLog Log, HttpAgentServer Server, ToolRunner Tools, WindowsRebooter Rebooter, string Version)
     {
-        public string Directory => Path.Combine(WindowsRoot, "DDT");
+        public string Directory => RunFiles.DirectoryIn(WindowsRoot);
     }
 }

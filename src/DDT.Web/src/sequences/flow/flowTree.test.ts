@@ -120,10 +120,23 @@ describe("slotsOf", () => {
 describe("requiredVersion", () => {
   const script = leaf("s");
 
-  it("is 1 for Windows steps and 2 with a raw disk image or a seed", () => {
+  it("is 1 for Windows steps", () => {
     expect(requiredVersion({ steps: [script, newStep("reboot", "r")] })).toBe(1);
-    expect(requiredVersion({ steps: [script, newStep("writeCloudInitSeed", "c")] })).toBe(2);
     expect(requiredVersion({ steps: [script], variables: [], inputs: null })).toBe(1);
+  });
+
+  it("is 4 with a raw disk image, a seed, a shell script or the Linux boot environment", () => {
+    const when = { kind: "all" as const, parts: [] };
+
+    expect(requiredVersion({ steps: [newStep("writeRawImage", "w")] })).toBe(4);
+    expect(requiredVersion({ steps: [script, newStep("writeCloudInitSeed", "c")] })).toBe(4);
+    expect(requiredVersion({ steps: [{ ...script, interpreter: "Shell" }] })).toBe(4);
+    expect(requiredVersion({ steps: [{ ...script, phase: "LinuxBoot" }] })).toBe(4);
+
+    // Something of the tree after it does not lower it.
+    expect(
+      requiredVersion({ steps: [newStep("writeRawImage", "w"), { ...script, id: "t", when }] }),
+    ).toBe(4);
   });
 
   it("is 3 for anything of the tree", () => {

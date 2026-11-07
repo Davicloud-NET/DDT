@@ -9,7 +9,7 @@ using Microsoft.Win32.SafeHandles;
 namespace DDT.Agent.Deployment;
 
 // Finds disks with IOCTLs and partitions one with diskpart. workDirectory holds the script (X:\DDT in Windows PE).
-public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimeProvider timeProvider, string workDirectory) : IDiskPartitioner
+public sealed class DiskpartPartitioner(IToolRunner tools, AgentLog log, TimeProvider timeProvider, string workDirectory) : IDisks, IDiskPartitioner
 {
     // Disk numbers can have gaps, so a missing number does not end the search.
     private const int MaxDisks = 32;

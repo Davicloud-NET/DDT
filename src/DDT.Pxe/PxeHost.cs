@@ -19,6 +19,7 @@ public sealed class PxeHost : IHostedService, IDisposable
 {
     private readonly PxeHostSource _source;
     private readonly PxeListenerBinding _binding;
+    private readonly BootConnections _connections;
     private readonly TimeProvider _timeProvider;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger _logger;
@@ -26,10 +27,16 @@ public sealed class PxeHost : IHostedService, IDisposable
     private readonly List<Func<Task>> _stops = [];
     private readonly CancellationTokenSource _stopping = new();
     private PxeSetup? _applied;
+    private BootFiles? _files;
     private long _version = -1;
     private IDisposable? _subscription;
 
-    public PxeHost(PxeHostSource source, TimeProvider timeProvider, ILoggerFactory loggerFactory, PxeListenerBinding? binding = null)
+    public PxeHost(
+        PxeHostSource source,
+        TimeProvider timeProvider,
+        ILoggerFactory loggerFactory,
+        PxeListenerBinding? binding = null,
+        BootConnections? connections = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -37,6 +44,7 @@ public sealed class PxeHost : IHostedService, IDisposable
 
         _source = source;
         _binding = binding ?? PxeListenerBinding.Standard;
+        _connections = connections ?? new BootConnections(timeProvider);
         _timeProvider = timeProvider;
         _loggerFactory = loggerFactory;
         _logger = loggerFactory.CreateLogger<PxeHost>();
@@ -45,6 +53,9 @@ public sealed class PxeHost : IHostedService, IDisposable
     // The setup whose listeners are running. The HTTP boot gate reads it on every request. Null while nothing is
     // served.
     public PxeSetup? Applied => Volatile.Read(ref _applied);
+
+    // What TFTP and the HTTP boot port answer from, for the setup that is running. Null while nothing is served.
+    public BootFiles? Files => Volatile.Read(ref _files);
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -68,7 +79,7 @@ public sealed class PxeHost : IHostedService, IDisposable
         try
         {
             await StopListenersAsync().ConfigureAwait(false);
-            Volatile.Write(ref _applied, null);
+            Serve(null, null);
         }
         finally
         {
@@ -97,7 +108,7 @@ public sealed class PxeHost : IHostedService, IDisposable
             if (desired.Options is null)
             {
                 await StopListenersAsync().ConfigureAwait(false);
-                Volatile.Write(ref _applied, null);
+                Serve(null, null);
                 PxeLog.Stopped(_logger, desired.Refusal?.Text ?? "nothing is configured");
                 result = new PxeApplyResult(desired.Version, desired.Refusal is null, desired.Refusal?.Text, null, desired.Refusal);
             }
@@ -137,31 +148,32 @@ public sealed class PxeHost : IHostedService, IDisposable
         }
 
         await StopListenersAsync().ConfigureAwait(false);
-        Volatile.Write(ref _applied, null);
+        Serve(null, null);
 
         try
         {
-            Start(next);
-            Volatile.Write(ref _applied, next);
-
-            return new PxeApplyResult(desired.Version, true, null, next.Interfaces);
+            // Without the DHCP port the rest still serves, and the result says what is missing.
+            return Start(next) is { } dhcpPort
+                ? new PxeApplyResult(desired.Version, false, dhcpPort.Message, next.Interfaces, dhcpPort.Reason)
+                : new PxeApplyResult(desired.Version, true, null, next.Interfaces);
         }
         catch (InvalidOperationException failure)
         {
             await StopListenersAsync().ConfigureAwait(false);
+            Serve(null, null);
             PxeLog.ApplyFailed(_logger, failure.Message);
 
             if (previous is not null)
             {
                 try
                 {
-                    Start(previous);
-                    Volatile.Write(ref _applied, previous);
+                    _ = Start(previous);
                     PxeLog.RolledBack(_logger);
                 }
                 catch (InvalidOperationException again)
                 {
                     await StopListenersAsync().ConfigureAwait(false);
+                    Serve(null, null);
                     PxeLog.ApplyFailed(_logger, again.Message);
                 }
             }
@@ -191,26 +203,46 @@ public sealed class PxeHost : IHostedService, IDisposable
         }
     }
 
-    private void Start(PxeSetup setup)
+    // The setup counts as applied once its listeners run, also when it serves no interface. Returns why the DHCP port
+    // could not be bound, when everything else could.
+    private PxeBindException? Start(PxeSetup setup)
     {
-        if (!LogInterfaces(setup.Interfaces))
+        BootFiles files = new(setup.Files, _source.Linux, setup.Options.HttpBootPort, _connections, _timeProvider, _logger);
+        PxeBindException? dhcpPort = null;
+
+        if (LogInterfaces(setup.Interfaces))
         {
-            return;
+            NetbootChoice choice = new(setup, _source.Choice, files);
+            NetbootReader reader = new(_source.Linux, choice, _timeProvider, _logger);
+
+            // The first look at the files comes before any listener, and every later one in the background.
+            reader.Read();
+            reader.Start();
+            _stops.Add(async () => await reader.DisposeAsync().ConfigureAwait(false));
+            PxeStartLog.BootTargets(_logger, setup, _source.Linux is null ? null : files, choice.CanStartWindowsPE);
+
+            if (setup.Options.EnableProxyDhcp)
+            {
+                dhcpPort = StartProxyDhcp(setup, choice);
+            }
+
+            if (setup.Options.EnableTftp)
+            {
+                StartTftp(setup, files);
+            }
+
+            PxeLog.HttpBootListening(_logger, setup.Options.HttpBootPort, setup.Files.Root);
         }
 
-        LogBootTargets(setup);
+        Serve(setup, files);
 
-        if (setup.Options.EnableProxyDhcp)
-        {
-            StartProxyDhcp(setup);
-        }
+        return dhcpPort;
+    }
 
-        if (setup.Options.EnableTftp)
-        {
-            StartTftp(setup);
-        }
-
-        PxeLog.HttpBootListening(_logger, setup.Options.HttpBootPort, setup.Files.Root);
+    private void Serve(PxeSetup? setup, BootFiles? files)
+    {
+        Volatile.Write(ref _files, files);
+        Volatile.Write(ref _applied, setup);
     }
 
     // False when no interface is served, which leaves nothing to start.
@@ -238,13 +270,18 @@ public sealed class PxeHost : IHostedService, IDisposable
         return true;
     }
 
-    private void StartProxyDhcp(PxeSetup setup)
+    private PxeBindException? StartProxyDhcp(PxeSetup setup, NetbootChoice choice)
     {
-        ProxyDhcpHandler handler = new(setup.ProxyDhcp, setup.Interfaces);
+        ProxyDhcpHandler handler = new(setup.ProxyDhcp, setup.Interfaces, _connections, choice);
+        PxeBindException? dhcpPort = null;
 
         // Microsoft's DHCP Server takes its address on this port for itself alone. That fails once DDT holds the port,
         // and the DHCP server then serves no one.
-        if (_binding.DhcpServerHere())
+        if (setup.Options.LeaveDhcpPort)
+        {
+            PxeLog.DhcpPortLeftBySetting(_logger, _binding.DhcpPort, _binding.BootServerPort);
+        }
+        else if (_binding.DhcpServerHere())
         {
             PxeLog.DhcpPortLeft(_logger, _binding.DhcpPort, _binding.BootServerPort);
         }
@@ -256,7 +293,17 @@ public sealed class PxeHost : IHostedService, IDisposable
                 handler,
                 setup.Interfaces,
                 _loggerFactory.CreateLogger<ProxyDhcpListener>());
-            Bind(dhcp, "ProxyDHCP", "proxyDhcp", _binding.DhcpPort);
+
+            // A DHCP server on this computer holds the port. Machines it sends to the boot server port still start.
+            try
+            {
+                Bind(dhcp, "ProxyDHCP", "proxyDhcp", _binding.DhcpPort);
+            }
+            catch (PxeBindException exception)
+            {
+                PxeLog.DhcpPortNotBound(_logger, _binding.BootServerPort, exception.Message);
+                dhcpPort = exception;
+            }
         }
 
         ProxyDhcpListener bootServer = new(
@@ -266,15 +313,17 @@ public sealed class PxeHost : IHostedService, IDisposable
             setup.Interfaces,
             _loggerFactory.CreateLogger<ProxyDhcpListener>());
         Bind(bootServer, "PXE boot server", "bootServer", _binding.BootServerPort);
+
+        return dhcpPort;
     }
 
-    private void StartTftp(PxeSetup setup)
+    private void StartTftp(PxeSetup setup, BootFiles files)
     {
         PxeOptions options = setup.Options;
         TftpListener tftp = new(
             new IPEndPoint(_binding.Address, _binding.TftpPort),
             setup.Interfaces,
-            setup.Files,
+            files,
             new TftpServing(setup.TftpLimits, options.MaxConcurrentTftpTransfers, options.TftpSinglePort),
             _timeProvider,
             _loggerFactory.CreateLogger<TftpListener>());
@@ -309,7 +358,7 @@ public sealed class PxeHost : IHostedService, IDisposable
             string advice = exception.SocketErrorCode switch
             {
                 SocketError.AccessDenied => OperatingSystem.IsWindows() ? "heldOnWindows" : "privilegedPort",
-                SocketError.AddressAlreadyInUse => "inUse",
+                SocketError.AddressAlreadyInUse => port == _binding.DhcpPort && kind == "proxyDhcp" ? "dhcpServerHere" : "inUse",
                 _ => "other",
             };
 
@@ -320,25 +369,5 @@ public sealed class PxeHost : IHostedService, IDisposable
 
         _stops.Add(listener.StopAsync);
         PxeLog.Listening(_logger, protocol, port);
-    }
-
-    private void LogBootTargets(PxeSetup setup)
-    {
-        // A site DHCP server that names DDT in options 66 and 67 needs no boot targets at all.
-        if (setup.ProxyDhcp.BootTargets.Count == 0 && setup.Options.EnableProxyDhcp)
-        {
-            PxeLog.NoBootTargets(_logger);
-        }
-
-        foreach (BootTarget target in setup.ProxyDhcp.BootTargets.Values)
-        {
-            PxeLog.BootTarget(_logger, target.Architecture, target.Method, target.BootFile);
-
-            // A missing boot manager is the commonest cause of "DHCP works, nothing boots".
-            if (target.Method == BootMethod.Tftp && target.ServerAddress is null && !setup.Files.TryResolve(target.BootFile, out _))
-            {
-                PxeLog.BootFileMissing(_logger, target.Architecture, target.BootFile, setup.Files.Serving);
-            }
-        }
     }
 }

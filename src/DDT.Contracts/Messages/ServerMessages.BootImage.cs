@@ -37,6 +37,28 @@ public static partial class ServerMessages
         "bootImage.noSuchBuild",
         "The boot directory holds no such build.");
 
+    // The Linux boot environment a release brings.
+
+    public static readonly MessageTemplate LinuxBootMissing = Define(
+        "linuxBoot.missing",
+        "This server has no Linux boot environment: {folder} holds no ddt-linux-boot.json. A release of DDT brings the folder " +
+        "with it.");
+
+    // Reason says what is wrong. Name is the file it is about.
+    public static readonly MessageTemplate LinuxBootDamaged = Define(
+        "linuxBoot.damaged",
+        "The Linux boot environment in {folder} is damaged: {reason, select, unreadable {its description, {name}, cannot be read} " +
+        "incomplete {its description does not list {name}} missing {{name} is not there} size {{name} has another size than its " +
+        "description says} hash {{name} is not the file its description names} changed {{name} was replaced or removed after the " +
+        "server had checked it} signatures {{name} carries other signatures than its description says} other {{name} cannot be " +
+        "read}}. Install this release of DDT again, which brings the folder anew.");
+
+    public static readonly MessageTemplate LinuxBootNoRoot = Define(
+        "linuxBoot.noRoot",
+        "The Linux boot environment cannot be started, because this server has no root certificate of its own to hand to the " +
+        "machines: its certificate comes from an administrator. A machine in that environment trusts the server only through " +
+        "the root it is handed. Let DDT issue the server's certificate, or start machines in Windows PE.");
+
     // Netboot next to this computer's DHCP server and WDS.
 
     public static readonly MessageTemplate NetbootNoHelper = Define(

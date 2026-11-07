@@ -6,4 +6,5 @@ namespace DDT.Contracts.Server;
 
 // What a new server still needs before its first deployment, each true once the server sees it done: the first
 // password changed, an interface answering netboot, a boot image, a Windows image, a task sequence, a machine.
-public sealed record SetupChecklist(bool Password, bool Netboot, bool BootImage, bool Image, bool Sequence, bool Machine);
+// BootImage means Windows PE. LinuxBoot says the Linux boot environment can be started, which needs no build.
+public sealed record SetupChecklist(bool Password, bool Netboot, bool BootImage, bool Image, bool Sequence, bool Machine, bool LinuxBoot = false);

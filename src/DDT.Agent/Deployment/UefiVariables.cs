@@ -7,16 +7,18 @@ using System.Runtime.InteropServices;
 
 namespace DDT.Agent.Deployment;
 
-// The EFI global variables through the Windows firmware variable functions, and the signature database db. They need
-// SeSystemEnvironmentPrivilege, which WinPE's SYSTEM account holds but has to enable first.
-public sealed class UefiVariables : IUefiVariables
+// The EFI global variables through the Windows firmware variable functions, the signature database db, and variables
+// under a vendor's own GUID. They need SeSystemEnvironmentPrivilege, which WinPE's SYSTEM account holds but has to
+// enable first.
+public sealed class UefiVariables : IUefiVariables, IVendorVariables
 {
     private const string GlobalVariableGuid = "{8BE4DF61-93CA-11D2-AA0D-00E098032B8C}";
 
     // EFI_IMAGE_SECURITY_DATABASE_GUID, under which db and dbx live.
     private const string ImageSecurityDatabaseGuid = "{D719B2CB-3D3A-4596-A3BC-DAD00E67656F}";
 
-    // NON_VOLATILE | BOOTSERVICE_ACCESS | RUNTIME_ACCESS, which the specification requires for boot variables.
+    // NON_VOLATILE | BOOTSERVICE_ACCESS | RUNTIME_ACCESS, which the specification requires for boot variables. A
+    // vendor's variable gets the same, so it outlasts the restart and the next boot environment reads it.
     private const uint BootVariableAttributes = 0x7;
 
     private const int InitialLength = 1024;
@@ -28,6 +30,16 @@ public sealed class UefiVariables : IUefiVariables
     private bool _privilegeEnabled;
 
     public byte[]? Read(string name) => Read(name, GlobalVariableGuid);
+
+    public byte[]? Read(string name, Guid vendor) => Read(name, Braced(vendor));
+
+    public void Write(string name, byte[] value) => Write(name, GlobalVariableGuid, value);
+
+    public void Write(string name, Guid vendor, byte[] value) => Write(name, Braced(vendor), value);
+
+    public void Delete(string name) => Delete(name, GlobalVariableGuid);
+
+    public void Delete(string name, Guid vendor) => Delete(name, Braced(vendor));
 
     // The certificates and hashes the firmware trusts with Secure Boot on. Null when there are none.
     public byte[]? ReadSignatureDatabase() => Read("db", ImageSecurityDatabaseGuid);
@@ -72,7 +84,7 @@ public sealed class UefiVariables : IUefiVariables
         throw new DeploymentStepException($"The firmware variable {name} is larger than {MaxLength} bytes.");
     }
 
-    public unsafe void Write(string name, byte[] value)
+    private unsafe void Write(string name, string guid, byte[] value)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
         ArgumentNullException.ThrowIfNull(value);
@@ -80,7 +92,7 @@ public sealed class UefiVariables : IUefiVariables
 
         fixed (byte* input = value)
         {
-            if (!FirmwareNativeMethods.SetFirmwareEnvironmentVariableEx(name, GlobalVariableGuid, input, (uint)value.Length, BootVariableAttributes))
+            if (!FirmwareNativeMethods.SetFirmwareEnvironmentVariableEx(name, guid, input, (uint)value.Length, BootVariableAttributes))
             {
                 throw new DeploymentStepException($"The firmware variable {name} cannot be written (Windows error {Marshal.GetLastPInvokeError()}).");
             }
@@ -88,12 +100,12 @@ public sealed class UefiVariables : IUefiVariables
     }
 
     // A size of zero deletes the variable.
-    public unsafe void Delete(string name)
+    private unsafe void Delete(string name, string guid)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
         EnablePrivilege();
 
-        if (!FirmwareNativeMethods.SetFirmwareEnvironmentVariableEx(name, GlobalVariableGuid, null, 0, BootVariableAttributes))
+        if (!FirmwareNativeMethods.SetFirmwareEnvironmentVariableEx(name, guid, null, 0, BootVariableAttributes))
         {
             int error = Marshal.GetLastPInvokeError();
 
@@ -103,6 +115,9 @@ public sealed class UefiVariables : IUefiVariables
             }
         }
     }
+
+    // The form the Windows functions take a GUID in.
+    private static string Braced(Guid vendor) => vendor.ToString("B").ToUpperInvariant();
 
     private unsafe void EnablePrivilege()
     {

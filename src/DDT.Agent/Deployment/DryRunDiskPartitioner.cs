@@ -8,20 +8,15 @@ namespace DDT.Agent.Deployment;
 
 // Stands in for a disk with three directories under root, which the runner deletes when the run ends. The partitions
 // always have the same ids: SystemPartitionId, WindowsPartitionId and RecoveryPartitionId.
-public sealed class DryRunDiskPartitioner(string root, AgentLog log) : IDiskPartitioner
+public sealed class DryRunDiskPartitioner(string root, AgentLog log) : IDisks, IDiskPartitioner
 {
     public static readonly Guid SystemPartitionId = Guid.Parse("d7c1a5e0-0000-4000-8000-000000000001");
     public static readonly Guid WindowsPartitionId = Guid.Parse("d7c1a5e0-0000-4000-8000-000000000002");
     public static readonly Guid RecoveryPartitionId = Guid.Parse("d7c1a5e0-0000-4000-8000-000000000003");
 
-    private static readonly LocalDisk s_disk = new(0, "Dry run disk", 128L * 1024 * 1024 * 1024, StorageBusType.Virtual, 0);
+    private readonly DryRunDisks _disks = new(root, log);
 
-    public Task<IReadOnlyList<LocalDisk>> ListDisksAsync(CancellationToken cancellationToken)
-    {
-        log.Information($"Dry run: {s_disk.Describe()} stands in for this computer's disks.");
-
-        return Task.FromResult<IReadOnlyList<LocalDisk>>([s_disk]);
-    }
+    public Task<IReadOnlyList<LocalDisk>> ListDisksAsync(CancellationToken cancellationToken) => _disks.ListDisksAsync(cancellationToken);
 
     public async Task<TargetVolumes> PartitionAsync(
         LocalDisk disk,

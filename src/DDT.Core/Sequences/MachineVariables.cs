@@ -66,7 +66,7 @@ public sealed record MachineVariables(
             MachineVariableNames.SmbiosUuid => One(SmbiosUuid),
             MachineVariableNames.MacAddress => MacAddresses,
             MachineVariableNames.ComputerName => One(Variable(MachineVariableNames.ComputerName) ?? ComputerName),
-            MachineVariableNames.Phase => [PhaseName],
+            MachineVariableNames.Phase => [Phase.ToString()],
             MachineVariableNames.DeviceKind => One(DeviceKind?.ToString()),
             MachineVariableNames.FriendlyModel => One(FriendlyModel),
             MachineVariableNames.MemoryMegabytes => One(Number(Facts?.MemoryMegabytes)),
@@ -138,8 +138,6 @@ public sealed record MachineVariables(
 
         return null;
     }
-
-    private string PhaseName => Phase == SequencePhase.Windows ? nameof(SequencePhase.Windows) : nameof(SequencePhase.WindowsPE);
 
     private static IReadOnlyList<string> One(string? value) => value is null ? [] : [value];
 

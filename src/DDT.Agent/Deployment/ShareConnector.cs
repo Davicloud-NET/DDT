@@ -14,7 +14,7 @@ public sealed class ShareConnector(INetworkConnections network, AgentLog log) : 
     // ERROR_SESSION_CREDENTIAL_CONFLICT.
     public const int SessionCredentialConflict = 1219;
 
-    public async Task<IAsyncDisposable> ConnectAsync(
+    public async Task<IConnectedShares> ConnectAsync(
         IReadOnlyList<AgentShareConnection> shares,
         IAccountSession? account,
         CancellationToken cancellationToken)
@@ -74,10 +74,12 @@ public sealed class ShareConnector(INetworkConnections network, AgentLog log) : 
 
     private sealed record Connection(string RemoteName, string UserName);
 
-    private sealed class Connections(INetworkConnections network, IAccountSession? account, AgentLog log) : IAsyncDisposable
+    private sealed class Connections(INetworkConnections network, IAccountSession? account, AgentLog log) : IConnectedShares
     {
         private readonly List<Connection> _connected = [];
         private bool _disposed;
+
+        public IReadOnlyList<string> LocalPaths => [];
 
         private string Where => account is null ? string.Empty : $", for {account.UserName}";
 

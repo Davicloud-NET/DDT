@@ -15,11 +15,14 @@ internal sealed class SequencePaths
     // Each pass can only add to what a repeat starts with, and the state has few bits, so this is never reached.
     private const int MaxPasses = 32;
 
+    private readonly SequenceKind _kind;
     private readonly StepRules _rules;
     private readonly List<SequenceProblem> _problems;
     private readonly List<SequenceProblem> _warnings;
     private readonly HashSet<Guid> _ids = [];
-    private readonly Dictionary<SequenceStep, PhaseSet> _phases = new(ReferenceEqualityComparer.Instance);
+
+    // The phases each node may run in, one bit per SequencePhase.
+    private readonly Dictionary<SequenceStep, int> _phases = new(ReferenceEqualityComparer.Instance);
 
     // One entry per container with ContinueOnError around the node, innermost last. Each holds the join of the states
     // that failures inside it left.
@@ -37,7 +40,8 @@ internal sealed class SequencePaths
         _warnings = warnings;
 
         // A sequence either installs Windows or writes a raw disk image. The raw image step may be anywhere in it.
-        _rules = new StepRules(names, SequenceTree.Nodes(definition).Any(node => node is WriteRawImageStep));
+        _kind = SequenceKinds.Of(definition);
+        _rules = new StepRules(names, _kind);
     }
 
     public void Walk(IReadOnlyList<SequenceStep?> steps) => Series(steps, PathState.Start, 0, inRepeat: false);
@@ -47,24 +51,21 @@ internal sealed class SequencePaths
         .. SequenceTree.Nodes(definition).Select(node => new NodePhase(node.Id, Listed(_phases.GetValueOrDefault(node)))),
     ];
 
-    private static List<SequencePhase> Listed(PhaseSet phases)
-    {
-        List<SequencePhase> listed = [];
+    // Boot phases come first, as a run meets them.
+    private static List<SequencePhase> Listed(int phases) =>
+    [
+        .. Enum.GetValues<SequencePhase>().Where(phase => (phases & Bit(phase)) != 0).OrderBy(phase => SequenceKinds.IsBoot(phase) ? 0 : 1),
+    ];
 
-        if ((phases & PhaseSet.WindowsPE) != 0)
-        {
-            listed.Add(SequencePhase.WindowsPE);
-        }
+    private static int Bit(SequencePhase phase) => 1 << (int)phase;
 
-        if ((phases & PhaseSet.Windows) != 0)
-        {
-            listed.Add(SequencePhase.Windows);
-        }
+    private static PhaseSet Of(SequencePhase phase) => SequenceKinds.IsBoot(phase) ? PhaseSet.Boot : PhaseSet.Installed;
 
-        return listed;
-    }
-
-    private static PhaseSet Of(SequencePhase phase) => phase == SequencePhase.Windows ? PhaseSet.Windows : PhaseSet.WindowsPE;
+    // The kind's phases for the roles. Only a Windows step takes a Linux sequence out of its boot phase, and that
+    // step is refused.
+    private int In(PhaseSet roles) =>
+        ((roles & PhaseSet.Boot) != 0 ? Bit(SequenceKinds.BootPhase(_kind)) : 0)
+        | ((roles & PhaseSet.Installed) != 0 ? Bit(SequenceKinds.InstalledPhase(_kind) ?? SequencePhase.Windows) : 0);
 
     // A node's own conditions are its list and its When. An IF's Test and a repeat's Until don't count.
     private static bool HasOwnConditions(SequenceStep step) => step.Conditions is not { Count: 0 } || step.When is not null;
@@ -133,7 +134,7 @@ internal sealed class SequencePaths
 
         if (!_silent)
         {
-            _phases[step] = _phases.GetValueOrDefault(step) | runsIn;
+            _phases[step] = _phases.GetValueOrDefault(step) | (required is { } named ? Bit(named) : In(runsIn));
             _rules.CheckLeaf(step, new StepPlace(input, required, runsIn, inRepeat), problems);
         }
 
@@ -228,13 +229,13 @@ internal sealed class SequencePaths
     // A container runs in the phase it's entered in, and in every phase its steps run in.
     private void RecordPhases(SequenceStep container, PathState input)
     {
-        PhaseSet phases = input.Current;
+        int phases = In(input.Current);
 
         foreach (StepBody body in container.Bodies)
         {
             foreach (SequenceStep? inside in body.Steps)
             {
-                phases |= inside is null ? PhaseSet.None : _phases.GetValueOrDefault(inside);
+                phases |= inside is null ? 0 : _phases.GetValueOrDefault(inside);
             }
         }
 
@@ -242,7 +243,7 @@ internal sealed class SequencePaths
     }
 
     // Each iteration starts where the last one ended, in the phase the repeat started in. A phase change inside a
-    // repeat is refused separately. Otherwise it would come back as Windows PE after Windows.
+    // repeat is refused separately. Otherwise it would come back as the boot phase after the installed one.
     private PathState Repeat(IReadOnlyList<SequenceStep?> body, PathState input, int depth)
     {
         bool silent = _silent;

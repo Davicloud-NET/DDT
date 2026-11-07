@@ -196,7 +196,7 @@ public sealed class DryRunMachineTests : IDisposable
 
         return
         [
-            $"Dry run: not run in {scripts}, and taken as exit code 0: {ToolRunner.CommandLine(RunScriptStepRunner.CmdPath, ["/d", "/c", Path.Combine(scripts, $"{inWindowsPE.Id:D}.cmd")])}",
+            $"Dry run: not run in {scripts}, and taken as exit code 0: {ToolRunner.CommandLine(WindowsScriptLauncher.CmdPath, ["/d", "/c", Path.Combine(scripts, $"{inWindowsPE.Id:D}.cmd")])}",
             "Dry run: this computer is not restarted. In Windows PE, BootNext would be set to BootCurrent, so the machine starts from the network again, and wpeutil reboot would run now.",
             restart,
             $"The agent is in {Path.Combine(Windows, "DDT", "agent")}, to go on with the run in Windows.",
@@ -204,7 +204,7 @@ public sealed class DryRunMachineTests : IDisposable
             restart,
             service,
             $"Deleted the answer file {UnattendFile.PathIn(Windows)}, which holds passwords.",
-            $"Dry run: not run in {scripts}, and taken as exit code 0: {ToolRunner.CommandLine(RunScriptStepRunner.CmdPath, ["/d", "/c", Path.Combine(scripts, $"{inWindows.Id:D}.cmd")])}",
+            $"Dry run: not run in {scripts}, and taken as exit code 0: {ToolRunner.CommandLine(WindowsScriptLauncher.CmdPath, ["/d", "/c", Path.Combine(scripts, $"{inWindows.Id:D}.cmd")])}",
             shutdown,
             restart,
             service,

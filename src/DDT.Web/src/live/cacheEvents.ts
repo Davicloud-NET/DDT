@@ -59,7 +59,12 @@ import {
   settingsOverviewQuery,
   type SettingsSectionView,
 } from "@/settings/settings";
-import { agentBinaryQuery, consoleBinaryQuery, type AgentBinaryView } from "@/settings/agentBinary";
+import {
+  agentBinaryQuery,
+  consoleBinaryQuery,
+  linuxAgentBinaryQuery,
+  type AgentBinaryView,
+} from "@/settings/agentBinary";
 import { consoleLogoQuery, type ConsoleLogoView } from "@/settings/consoleLogo";
 import { serverCertificateQuery } from "@/server/serverCertificate";
 import { pxeInterfacesQuery, type PxeHostInterfaces } from "@/settings/networkBoot";
@@ -178,6 +183,10 @@ function libraryEvents(queryClient: QueryClient) {
       queryClient.setQueryData(bootImageQuery.queryKey, view);
       putJob(queryClient, view.job);
       setChecklistItem(queryClient, "bootImage", view.builds.length > 0);
+
+      if (view.linux !== null && view.linux !== undefined) {
+        setChecklistItem(queryClient, "linuxBoot", view.linux.available);
+      }
     },
     bootImageJobOutput: (output: BootImageJobOutput) => {
       appendJobOutput(queryClient, output);
@@ -227,6 +236,10 @@ function administrationEvents(queryClient: QueryClient) {
     // Administrators receive an uploaded agent.
     agentChanged: (agent: AgentBinaryView) => {
       queryClient.setQueryData(agentBinaryQuery.queryKey, agent);
+    },
+    // Administrators receive an uploaded agent for Linux.
+    linuxAgentChanged: (agent: AgentBinaryView) => {
+      queryClient.setQueryData(linuxAgentBinaryQuery.queryKey, agent);
     },
     // Administrators receive an uploaded console as well.
     consoleChanged: (console: AgentBinaryView) => {
@@ -286,6 +299,7 @@ export function reconnectKeys(): QueryKey[] {
     settingsOverviewQuery.queryKey,
     certificateKey,
     agentBinaryQuery.queryKey,
+    linuxAgentBinaryQuery.queryKey,
     consoleBinaryQuery.queryKey,
     consoleLogoQuery.queryKey,
     serverCertificateQuery.queryKey,

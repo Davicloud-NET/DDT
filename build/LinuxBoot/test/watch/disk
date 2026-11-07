@@ -1,0 +1,31 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# For the disks check, which asks for it with ddt.test=disk on the kernel command line: takes the NVMe disk away once
+# the start scripts have loaded the drivers and gives it back two seconds later, as a controller does that shows its
+# disks late. The agent must still find the disk.
+
+PATH=/usr/bin
+export PATH
+
+# /init mounts /proc and /sys after this has started.
+until [ -r /proc/cmdline ] && [ -d /sys/bus ]; do
+    sleep 1
+done
+case " $(cat /proc/cmdline) " in
+    *" ddt.test=disk "*) ;;
+    *) exit 0 ;;
+esac
+
+until dmesg | grep -q "ddt: drivers: .* modules loaded"; do
+    usleep 100000
+done
+controller=$(readlink /sys/block/nvme0n1/device/device)
+controller=${controller##*/}
+echo "$controller" > /sys/bus/pci/drivers/nvme/unbind
+echo "disk: took $controller away" > /dev/ttyS0
+sleep 2
+echo "$controller" > /sys/bus/pci/drivers/nvme/bind
+echo "disk: gave $controller back" > /dev/ttyS0

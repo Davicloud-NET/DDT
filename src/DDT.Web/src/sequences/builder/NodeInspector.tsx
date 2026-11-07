@@ -10,7 +10,7 @@ import { EditorLock } from "../editorLock";
 import { TextSetting } from "../fields/TextSetting";
 import type { Findings } from "../problems";
 import type { SequenceEdit, StepPatch } from "../sequenceEdits";
-import type { SequencePhase, SequenceStep } from "../sequences";
+import type { SequenceKind, SequencePhase, SequenceStep } from "../sequences";
 import { StepFields } from "../steps/StepFields";
 import { isContainer } from "../steps";
 import type { StepCatalog } from "../useStepCatalog";
@@ -25,6 +25,8 @@ interface NodeInspectorProps {
   node: SequenceStep;
   // Where the node is, such as "Step 2 of Then of 'If: Is it a Latitude?'".
   place: string;
+  // What the node's sequence installs, which decides where its steps run.
+  sequence: SequenceKind;
   phases: readonly SequencePhase[];
   // This node's findings.
   findings: Findings;
@@ -36,11 +38,18 @@ interface NodeInspectorProps {
   onShift: (by: -1 | 1) => void;
 }
 
+// The Linux boot environment connects no shares, so a Linux sequence's step only shows those it still has, to
+// remove them.
+function connectsShares(sequence: SequenceKind, node: SequenceStep): boolean {
+  return sequence !== "Linux" || (node.shares ?? []).length > 0;
+}
+
 // The node chosen in the flow, with everything it does. Alt+Up or Alt+Down in its fields moves it within its list,
 // like on the canvas.
 export function NodeInspector({
   node,
   place,
+  sequence,
   phases,
   findings,
   catalog,
@@ -85,11 +94,17 @@ export function NodeInspector({
       />
       {container ? null : (
         <div className="flex flex-col gap-4">
-          <StepFields step={node} findings={findings} catalog={catalog} onChange={change} />
+          <StepFields
+            step={node}
+            sequence={sequence}
+            findings={findings}
+            catalog={catalog}
+            onChange={change}
+          />
         </div>
       )}
       <NodeConditions node={node} findings={findings} onEdit={onEdit} change={change} />
-      {container ? null : (
+      {container || !connectsShares(sequence, node) ? null : (
         <SharesSetting
           shares={node.shares ?? []}
           findings={findings}

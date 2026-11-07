@@ -15,7 +15,7 @@ internal static class RepositoryPaths
         "src",
         "DDT.Host",
         Path.GetRelativePath(Path.Combine(Root, "tests", "DDT.E2E"), AppContext.BaseDirectory),
-        "DDT.Host.exe");
+        OperatingSystem.IsWindows() ? "DDT.Host.exe" : "DDT.Host");
 
     public static string PublishAgentScript { get; } = Path.Combine(Root, "build", "Publish-Agent.ps1");
 

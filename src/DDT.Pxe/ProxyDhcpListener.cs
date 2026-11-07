@@ -109,6 +109,7 @@ public sealed class ProxyDhcpListener : IPxeListener, IAsyncDisposable
                         egressInterface = outcome.EgressInterface;
                     }
 
+                    LogReset(outcome, source.Address);
                     await SendAsync(socket, reply.AsMemory(0, outcome.Length), outcome, port, cancellationToken)
                         .ConfigureAwait(false);
                 }
@@ -125,6 +126,15 @@ public sealed class ProxyDhcpListener : IPxeListener, IAsyncDisposable
             {
                 PxeLog.DatagramFailed(_logger, port, exception);
             }
+        }
+    }
+
+    // The address is the datagram's source, whose connections were reset, whatever the packet names.
+    private void LogReset(ProxyDhcpOutcome outcome, IPAddress source)
+    {
+        if (outcome.ConnectionsReset > 0)
+        {
+            PxeLog.BootConnectionsReset(_logger, outcome.ConnectionsReset, source);
         }
     }
 
@@ -203,7 +213,8 @@ public sealed class ProxyDhcpListener : IPxeListener, IAsyncDisposable
             or ProxyDhcpSilenceReason.MalformedClientArchitecture
             or ProxyDhcpSilenceReason.NoBootTargetForArchitecture
             or ProxyDhcpSilenceReason.BootMethodDoesNotMatchVendorClass
-            or ProxyDhcpSilenceReason.RelayNotAuthorised;
+            or ProxyDhcpSilenceReason.RelayNotAuthorised
+            or ProxyDhcpSilenceReason.NoBootEnvironmentForMachine;
 
     private static string FormatMac(ProxyDhcpOutcome outcome) =>
         outcome.Message is { } message ? Convert.ToHexString(message.ClientHardwareAddress.Span) : string.Empty;

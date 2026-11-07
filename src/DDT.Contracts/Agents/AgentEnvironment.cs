@@ -9,4 +9,6 @@ public enum AgentEnvironment
     WindowsPE,
     // The temporary service in the installed Windows that finishes a run there.
     Windows,
+    // The netbooted Linux, which runs Linux sequences.
+    LinuxBoot,
 }

@@ -18,6 +18,7 @@ internal sealed class DeploymentConfiguration : IEntityTypeConfiguration<Deploym
         builder.Property(d => d.State).HasConversion<string>().HasMaxLength(16);
         builder.Property(d => d.State).IsConcurrencyToken();
         builder.Property(d => d.Source).HasConversion<string>().HasMaxLength(16);
+        builder.Property(d => d.BootEnvironment).HasConversion<string>().HasMaxLength(16);
         builder.Property(d => d.RequestedByName).HasMaxLength(256);
         builder.Property(d => d.CurrentStepName).HasMaxLength(DeploymentLimits.MaxStepNameLength);
         builder.Property(d => d.CurrentPhase).HasConversion<string>().HasMaxLength(16);

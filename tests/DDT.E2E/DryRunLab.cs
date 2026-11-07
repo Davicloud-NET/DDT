@@ -22,7 +22,8 @@ using Xunit;
 namespace DDT.E2E;
 
 // The host, the published agent, a signed-in administrator, a live connection and the uploads that all dry runs share.
-// Everything lives in a temporary directory, which is deleted with the dry runs' disks when the tests end.
+// Everything lives in a temporary directory, which is deleted with the dry runs' disks when the tests end. On Linux
+// the agent is the one for Linux, which the tests are handed, and the host is the server as its container runs it.
 public sealed partial class DryRunLab : IAsyncLifetime
 {
     public const string LocalAdministratorPassword = "E2e-Local-Admin-7Qx4";
@@ -52,6 +53,9 @@ public sealed partial class DryRunLab : IAsyncLifetime
     public string? SkipReason { get; private set; }
 
     internal HostProcess Host => _host!;
+
+    // Where the host is told to look for the Linux boot environment. Empty unless a test offers it.
+    private string LinuxBootFolder => Path.Combine(_directory, "linux-boot");
 
     internal AdminApi Api => _api!;
 
@@ -124,14 +128,25 @@ public sealed partial class DryRunLab : IAsyncLifetime
 
     // dryRunId continues with an earlier agent's machine and disk. With slowDownloads, the agent reaches the host
     // through SlowRelay.
-    internal AgentProcess StartAgent(int? dryRunId = null, bool slowDownloads = false, bool secureBoot = false)
+    internal AgentProcess StartAgent(int? dryRunId = null, bool slowDownloads = false, bool secureBoot = false) =>
+        Start(dryRunId, slowDownloads, secureBoot, null);
+
+    // A machine that started the Linux boot environment, which runs the sequences that write a raw disk image.
+    internal AgentProcess StartLinuxBootAgent(bool secureBoot = false) => Start(null, false, secureBoot, AgentEnvironment.LinuxBoot);
+
+    private AgentProcess Start(int? dryRunId, bool slowDownloads, bool secureBoot, AgentEnvironment? environment)
     {
         int id = dryRunId ?? NewDryRunId();
         string log = Path.Combine(_directory, $"agent-{id}-{Environment.TickCount64}.log");
         Uri server = slowDownloads ? _relay!.Url : Host.Url;
+        AgentStartInfo start = new(_agentPath!, server, Host.RootCertificatePath, id, log) { SecureBoot = secureBoot, Environment = environment };
 
-        return AgentProcess.Start(new AgentStartInfo(_agentPath!, server, Host.RootCertificatePath, id, log) { SecureBoot = secureBoot });
+        return AgentProcess.Start(start);
     }
+
+    // Until the result is disposed, the host can start both boot environments, so a machine gets from one into the
+    // other. Otherwise it has neither, and every dry run stays in the boot environment it started.
+    internal BootEnvironmentFiles OfferBothBootEnvironments() => new(Host.StorePath, LinuxBootFolder);
 
     internal Task<SequenceView> CreateSequenceAsync(string name, IReadOnlyList<SequenceStep> steps, CancellationToken cancellationToken) =>
         CreateSequenceAsync(name, new SequenceDefinition(SequenceDefinition.CurrentVersion, steps), cancellationToken);
@@ -229,8 +244,8 @@ public sealed partial class DryRunLab : IAsyncLifetime
     internal Task<MachineLogPage> LogAsync(Guid machineId, string query, CancellationToken cancellationToken) =>
         Api.GetAsync($"api/machines/{machineId:D}/log?{query}", DdtJsonContext.Default.MachineLogPage, cancellationToken);
 
-    // The audit events about a run, read from the host's database.
-    internal async Task<IReadOnlyList<AuditEvent>> AuditAsync(Guid runId, CancellationToken cancellationToken)
+    // The audit events about a run or a machine, read from the host's database.
+    internal async Task<IReadOnlyList<AuditEvent>> AuditAsync(Guid subjectId, CancellationToken cancellationToken)
     {
         DbContextOptions<SqliteDdtDbContext> options = new DbContextOptionsBuilder<SqliteDdtDbContext>()
             .UseSqlite($"Data Source={Host.DatabasePath};Mode=ReadOnly;Pooling=False")
@@ -239,7 +254,7 @@ public sealed partial class DryRunLab : IAsyncLifetime
 
         await using (database.ConfigureAwait(false))
         {
-            string subject = runId.ToString("D");
+            string subject = subjectId.ToString("D");
 
             return await database.AuditEvents.AsNoTracking().Where(audit => audit.SubjectId == subject).ToListAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -292,7 +307,19 @@ public sealed partial class DryRunLab : IAsyncLifetime
         }
     }
 
-    internal void SkipWhenUnavailable() => Assert.SkipWhen(SkipReason is not null, SkipReason ?? string.Empty);
+    // For the dry runs of the agent for Windows, which stands in for both boot environments and for Windows.
+    internal void SkipWhenUnavailable()
+    {
+        Assert.SkipWhen(SkipReason is not null, SkipReason ?? string.Empty);
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "This dry run takes the agent for Windows, which runs on Windows alone.");
+    }
+
+    // For the dry runs of the agent for Linux itself, the file a release ships.
+    internal void SkipUnlessLinuxAgent()
+    {
+        Assert.SkipUnless(OperatingSystem.IsLinux(), "This dry run takes the agent for Linux, which runs on Linux alone.");
+        Assert.SkipWhen(SkipReason is not null, SkipReason ?? string.Empty);
+    }
 
     // The agent's console lines start with the time and the level.
     [GeneratedRegex(@"^\d\d:\d\d:\d\d (WARN|ERROR) ")]
@@ -343,6 +370,7 @@ public sealed partial class DryRunLab : IAsyncLifetime
                 ["DDT:Deployment:Domain:Name"] = Domain,
                 ["DDT:Deployment:Domain:UserName"] = @"E2E\ddt-join",
                 ["DDT:Deployment:Domain:Password"] = JoinPassword,
+                ["DDT:LinuxBoot:Path"] = LinuxBootFolder,
             },
             cancellationToken).ConfigureAwait(false);
 

@@ -5,8 +5,9 @@
 import { Trans } from "@lingui/react/macro";
 
 import type { DeploymentOptionsView } from "@/deployments/deployments";
+import { startNotice, startsIn } from "@/machines/bootEnvironment";
 import { machineLabel, type MachineSummary } from "@/machines/machines";
-import type { SecureBootRisk } from "@/machines/secureBoot";
+import { linuxBootRefusal, type SecureBootRisk } from "@/machines/secureBoot";
 import type { SequenceSummary } from "@/sequences/sequences";
 import { Notice } from "@/ui/Notice";
 
@@ -26,8 +27,8 @@ interface AssignConsequencesProps {
   now: number;
 }
 
-// What the assignment does to this machine: its disk, Secure Boot, Windows, and for a waiting machine whether the
-// assignment also authorizes it.
+// What the assignment does to this machine: its disk, Secure Boot, the boot environment it restarts into, Windows, and
+// for a waiting machine whether the assignment also authorizes it.
 export function AssignConsequences({
   machine,
   sequence,
@@ -40,6 +41,13 @@ export function AssignConsequences({
 }: AssignConsequencesProps) {
   const label = machineLabel(machine);
   const sequenceName = sequence?.name ?? "";
+  // A Linux sequence starts in the Linux boot environment, which this machine's firmware may refuse.
+  const refused =
+    sequence !== null && startsIn(sequence) === "LinuxBoot"
+      ? linuxBootRefusal(machine, options?.linuxShimSignedUnder, options?.bootEnvironments)
+      : null;
+  // A machine that is not started there is not restarted for it either, and the refusal says so.
+  const start = refused === null ? startNotice(machine, sequence, options?.bootEnvironments) : null;
 
   return (
     <div className="flex flex-col gap-2">
@@ -63,6 +71,14 @@ export function AssignConsequences({
           <span id={warningId}>{risk.warning}</span>
         </Notice>
       ) : null}
+      {start !== null ? (
+        start.warning ? (
+          <Notice tone="attention">{start.text}</Notice>
+        ) : (
+          <p>{start.text}</p>
+        )
+      ) : null}
+      {refused !== null ? <Notice tone="attention">{refused}</Notice> : null}
       {sequence?.continuesInWindows === true ? (
         <p>
           <Trans>

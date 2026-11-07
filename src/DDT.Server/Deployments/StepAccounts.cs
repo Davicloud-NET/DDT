@@ -89,8 +89,14 @@ public sealed class StepAccounts(DdtDbContext database, RunQueries queries, Step
             return "Only a script in Windows runs as an account.";
         }
 
+        // It could use no share's account, so it gets none.
+        if (machine.AgentEnvironment == AgentEnvironment.LinuxBoot && step.Shares is { Count: > 0 })
+        {
+            return "The Linux boot environment connects no shares, so it gets no account for one.";
+        }
+
         return runAs is not null && machine.AgentEnvironment != AgentEnvironment.Windows
-            ? "A script runs as an account in Windows, and this agent registered from Windows PE."
+            ? $"A script runs as an account in Windows, and this agent registered from {PhaseRules.Name(machine.AgentEnvironment)}."
             : null;
     }
 

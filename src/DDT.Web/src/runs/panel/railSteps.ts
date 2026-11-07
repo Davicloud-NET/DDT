@@ -23,11 +23,12 @@ export function railSteps(run: DeploymentSummary, path: RunPath | null, now: num
 }
 
 // The phase of each leaf, for the labels above the rail. A leaf the server hasn't reported yet is assumed to run
-// in the same phase as the one before it.
+// in the same phase as the one before it, and the first in boot, the phase the run starts in.
 export function phasesOf(
   leaves: readonly PathNode[],
+  boot: DeploymentStepView["phase"] = "WindowsPE",
 ): Pick<DeploymentStepView, "index" | "phase">[] {
-  let phase: DeploymentStepView["phase"] = "WindowsPE";
+  let phase = boot;
 
   return leaves.map((leaf, index) => {
     phase = leaf.step?.phase ?? phase;

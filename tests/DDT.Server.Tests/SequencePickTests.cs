@@ -261,6 +261,35 @@ public sealed class SequencePickTests(DdtApplication application) : IClassFixtur
         Assert.Equal(HttpStatusCode.OK, (await PickAsync(machine, sequence.Id, computerName: null)).StatusCode);
     }
 
+    // A group needs sequence version 3. The boot environment is the right one, so only the agent's version stands in the way.
+    [Fact]
+    public async Task AnAgentTooOldForASequenceIsNotListedItAndCannotChooseIt()
+    {
+        string operatorName = await application.CreateUserAsync(DdtRoleNames.Operator);
+        using DeployingMachine older = await DeployingMachine.SignedInAsync(application, operatorName, sequenceVersion: 2);
+        using DeployingMachine current = await DeployingMachine.SignedInAsync(application, operatorName, sequenceVersion: 3);
+        SequenceView flat = await SequenceAsync(SequenceRequests.ScriptOnly());
+        SequenceDefinition grouped = SequenceRequests.ScriptOnly();
+        SequenceView tree = await SequenceAsync(SequenceRequests.Definition(new GroupStep { Id = Guid.NewGuid(), Name = "Tools", Steps = grouped.Steps }));
+
+        Assert.Equal(3, tree.Definition.Version);
+        Assert.Contains(await ChoicesAsync(current), choice => choice.Id == tree.Id);
+
+        IReadOnlyList<AgentSequenceChoice> choices = await ChoicesAsync(older);
+        Assert.Contains(choices, choice => choice.Id == flat.Id);
+        Assert.DoesNotContain(choices, choice => choice.Id == tree.Id);
+
+        HttpResponseMessage refused = await PickAsync(older, tree.Id, diskNumber: null);
+        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+        Assert.Equal(
+            $"{tree.Name} needs a newer agent than this machine runs. Start the machine from the network again, so it gets the server's agent, and choose it then.",
+            await TestDatabase.TitleAsync(refused));
+        Assert.Null((await application.MachineAsync(older.Id)).ActiveDeploymentId);
+
+        Assert.Equal(HttpStatusCode.OK, (await PickAsync(current, tree.Id, diskNumber: null)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await PickAsync(older, flat.Id, diskNumber: null)).StatusCode);
+    }
+
     // Holding the library lock stands in for an image deletion that runs between the lookup and the save.
     [Fact]
     public async Task AChoiceWaitsForTheImageLibrary()

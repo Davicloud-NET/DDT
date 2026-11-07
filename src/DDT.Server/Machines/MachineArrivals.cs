@@ -6,6 +6,7 @@ using System.Net;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
+using DDT.Contracts.Sequences;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Rules;
@@ -38,11 +39,12 @@ public sealed class MachineArrivals(
         string? tested = machine is null ? null : RuleRecount.Tested(machine);
         Deployment? active = machine is null ? null : await queries.ActiveAsync(machine, cancellationToken).ConfigureAwait(false);
         DeploymentState? before = active?.State;
-        Continuation continuation = machine is null ? Continuation.None : Continues(registration, machine, active);
+        Continuation continuation = machine is null ? Continuation.None : Continues(registration, machine, active, now);
 
-        // The service in Windows only ever continues a run. Starting over would make the machine Pending, and an
-        // approval would then hand WinPE steps to a running Windows. So the service changes nothing and removes itself.
-        if (registration.Environment == AgentEnvironment.Windows && !continuation.Resumes && continuation.Continued is null)
+        // The service in an installed system only ever continues a run. Starting over would make the machine Pending,
+        // and an approval would then hand boot steps to a running Windows. So the service changes nothing and removes
+        // itself.
+        if (!SequenceKinds.IsBoot(SequenceKinds.Phase(registration.Environment)) && !continuation.Resumes && continuation.Continued is null)
         {
             RegistrationLog.NothingToContinue(logger, machine?.Id, address ?? "unknown");
 
@@ -61,6 +63,7 @@ public sealed class MachineArrivals(
         else
         {
             await RecordReturnAsync(new Visit(machine, active, continuation, registration, remoteAddress, now), cancellationToken).ConfigureAwait(false);
+            EndSwitch(machine, before == DeploymentState.Assigned ? active : null, registration.Environment, now);
         }
 
         RecordRefusedRunToken(new Visit(machine, active, continuation, registration, remoteAddress, now));
@@ -150,6 +153,12 @@ public sealed class MachineArrivals(
 
         await termination.EndForRestartAsync(machine, active, address, visit.Registration.RunToken is not null, cancellationToken).ConfigureAwait(false);
 
+        // What was picked before a restart is offered again to whoever signs in after it, but only then.
+        if (!PendingSwitch.Arrives(machine, visit.Registration.Environment, visit.Now))
+        {
+            machine.PendingSequenceId = null;
+        }
+
         machine.TokenGeneration++;
         machine.SignedInByUserId = null;
         machine.SignedInUserName = null;
@@ -187,9 +196,9 @@ public sealed class MachineArrivals(
 
     // A resume keeps the machine's run too, so it's answered as a continuation. An agent that's told of no run assumes
     // the run is over.
-    private Continuation Continues(NormalisedRegistration registration, Machine machine, Deployment? active)
+    private Continuation Continues(NormalisedRegistration registration, Machine machine, Deployment? active, DateTimeOffset now)
     {
-        bool resumes = Resumes(registration, machine);
+        bool resumes = Resumes(registration, machine) && Crosses(registration, machine, now);
         bool byRunToken = ContinuesRun(registration, machine, active);
 
         return new Continuation(resumes, byRunToken, byRunToken || (resumes && active is { State: DeploymentState.Running }) ? active : null);
@@ -200,6 +209,30 @@ public sealed class MachineArrivals(
         && tokens.Validate(presented, MachineTokenPurpose.Resume) is { } payload
         && payload.MachineId == machine.Id
         && payload.TokenGeneration == machine.TokenGeneration;
+
+    // A resume token goes along into another environment than the machine last registered from. While the machine is
+    // asked to restart into the other boot environment, it does so only for as long as that restart may take.
+    private static bool Crosses(NormalisedRegistration registration, Machine machine, DateTimeOffset now) =>
+        registration.Environment == machine.AgentEnvironment || machine.NextEnvironment is null || PendingSwitch.IsOpen(machine, now);
+
+    // An arrival ends the restart the machine asked for, and any the server ordered for its assigned run.
+    private static void EndSwitch(Machine machine, Deployment? assigned, AgentEnvironment environment, DateTimeOffset now)
+    {
+        // Where its run starts, the restarts that failed before count for nothing any more.
+        if (assigned is not null && assigned.BootEnvironment == environment)
+        {
+            assigned.RestartsOrdered = 0;
+        }
+
+        if (machine.NextEnvironment == environment || (assigned is not null && machine.NextEnvironment is not null))
+        {
+            PendingSwitch.End(machine);
+        }
+        else
+        {
+            PendingSwitch.Expire(machine, now);
+        }
+    }
 
     // An agent that restarted during its run, in WinPE or as the service in Windows, continues it with the run token it
     // kept on disk. The token must be from the current generation. The generation isn't bumped, so the agent's other

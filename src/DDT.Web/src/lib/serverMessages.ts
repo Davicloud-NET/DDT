@@ -597,6 +597,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "iso.noWindowsImage",
     message: "This ISO holds no sources\\install.wim or install.esd, so it is no Windows installation medium.",
   }),
+  "linuxBoot.damaged": msg({
+    context: "linuxBoot.damaged",
+    message: "The Linux boot environment in {folder} is damaged: {reason, select, unreadable {its description, {name}, cannot be read} incomplete {its description does not list {name}} missing {{name} is not there} size {{name} has another size than its description says} hash {{name} is not the file its description names} changed {{name} was replaced or removed after the server had checked it} signatures {{name} carries other signatures than its description says} other {{name} cannot be read}}. Install this release of DDT again, which brings the folder anew.",
+  }),
+  "linuxBoot.missing": msg({
+    context: "linuxBoot.missing",
+    message: "This server has no Linux boot environment: {folder} holds no ddt-linux-boot.json. A release of DDT brings the folder with it.",
+  }),
+  "linuxBoot.noRoot": msg({
+    context: "linuxBoot.noRoot",
+    message: "The Linux boot environment cannot be started, because this server has no root certificate of its own to hand to the machines: its certificate comes from an administrator. A machine in that environment trusts the server only through the root it is handed. Let DDT issue the server's certificate, or start machines in Windows PE.",
+  }),
   "mac.enterFull": msg({
     context: "mac.enterFull",
     message: "Enter a MAC address of 12 hex digits, such as 00:15:5D:01:02:03.",
@@ -1189,6 +1201,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.keyboard",
     message: "''{keyboard}'' is not an input locale. Use a name such as de-DE or a code such as 0407:00000407.",
   }),
+  "sequence.linuxNeedsShell": msg({
+    context: "sequence.linuxNeedsShell",
+    message: "The Linux boot environment runs only shell scripts. Choose the shell and rewrite the script for it.",
+  }),
+  "sequence.linuxPhaseWithoutRawImage": msg({
+    context: "sequence.linuxPhaseWithoutRawImage",
+    message: "The Linux boot environment only runs sequences that write a raw disk image. Choose Windows PE or Windows.",
+  }),
   "sequence.locale": msg({
     context: "sequence.locale",
     message: "''{locale}'' is not a language and region that Windows knows. Use a name such as de-DE.",
@@ -1263,7 +1283,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.packageWithRawImage": msg({
     context: "sequence.packageWithRawImage",
-    message: "A sequence that writes a raw disk image has no partition to unpack a package on, so its scripts cannot have one.",
+    message: "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one.",
   }),
   "sequence.partitionAfterImage": msg({
     context: "sequence.partitionAfterImage",
@@ -1280,6 +1300,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.phaseChangeInRepeat": msg({
     context: "sequence.phaseChangeInRepeat",
     message: "A run cannot change between Windows PE and Windows inside a repeat. Move this step, or the steps before it, out of the repeat.",
+  }),
+  "sequence.phaseValueOtherKindWarning": msg({
+    context: "sequence.phaseValueOtherKindWarning",
+    message: "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}",
   }),
   "sequence.rawImageNotStarting": msg({
     context: "sequence.rawImageNotStarting",
@@ -1315,11 +1339,11 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.restartWithRawImage": msg({
     context: "sequence.restartWithRawImage",
-    message: "A sequence that writes a raw disk image keeps its state in memory, so Windows PE cannot restart during it.",
+    message: "A sequence that writes a raw disk image keeps its state in memory, so the Linux boot environment cannot restart during it.",
   }),
   "sequence.runAsWindowsOnly": msg({
     context: "sequence.runAsWindowsOnly",
-    message: "A script runs as an account only in Windows. In Windows PE it runs as SYSTEM.",
+    message: "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} other {In Windows PE it runs as SYSTEM.}}",
   }),
   "sequence.scriptEmpty": msg({
     context: "sequence.scriptEmpty",
@@ -1327,11 +1351,11 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.scriptInterpreter": msg({
     context: "sequence.scriptInterpreter",
-    message: "Choose cmd or PowerShell.",
+    message: "Choose cmd, PowerShell or the shell.",
   }),
   "sequence.scriptPhase": msg({
     context: "sequence.scriptPhase",
-    message: "Choose Windows PE or Windows.",
+    message: "Choose where the script runs.",
   }),
   "sequence.scriptTimeout": msg({
     context: "sequence.scriptTimeout",
@@ -1377,9 +1401,21 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.sharePath",
     message: "Enter the share as \\\\host\\share, such as \\\\files.example.com\\drivers.",
   }),
+  "sequence.sharesNotInLinuxBoot": msg({
+    context: "sequence.sharesNotInLinuxBoot",
+    message: "The Linux boot environment cannot connect shares. Remove them from this step.",
+  }),
   "sequence.sharesOnlyOnSteps": msg({
     context: "sequence.sharesOnlyOnSteps",
     message: "Only a step connects shares, for as long as it runs. Give them to the steps inside that need them.",
+  }),
+  "sequence.shellExitCodes": msg({
+    context: "sequence.shellExitCodes",
+    message: "A shell script ends with an exit code from 0 to 255.",
+  }),
+  "sequence.shellNeedsLinux": msg({
+    context: "sequence.shellNeedsLinux",
+    message: "Windows PE and Windows run no shell scripts. Choose cmd or PowerShell.",
   }),
   "sequence.stepCount": msg({
     context: "sequence.stepCount",
@@ -1501,6 +1537,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.windowsPEAfterWindows",
     message: "Steps in Windows PE come first, and an earlier step already runs in Windows.",
   }),
+  "sequence.windowsScriptInLinux": msg({
+    context: "sequence.windowsScriptInLinux",
+    message: "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment.",
+  }),
   "sequence.windowsWithRawImage": msg({
     context: "sequence.windowsWithRawImage",
     message: "A sequence either installs Windows or writes a raw disk image. This step belongs to installing Windows.",
@@ -1531,7 +1571,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "settings.apply.pxeBindFailed": msg({
     context: "settings.apply.pxeBindFailed",
-    message: "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}",
+    message: "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} dhcpServerHere {A DHCP server on this computer holds the port. Turn on LeaveDhcpPort, and DDT answers on UDP 4011 alone, which machines reach once that DHCP server sends option 60, PXEClient. UDP 4011 and TFTP are serving meanwhile.} other {Check that no other service holds the port.}}",
   }),
   "settings.apply.pxeClosed": msg({
     context: "settings.apply.pxeClosed",
@@ -1661,6 +1701,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "settings.deployment.domainUserNameRequired",
     message: "Required when Domain:Name is set. Name the account that joins the machines, as DOMAIN\\user or user@domain.example.",
   }),
+  "settings.deployment.keyboardLayoutInvalid": msg({
+    context: "settings.deployment.keyboardLayoutInvalid",
+    message: "''{value}'' is not the name of a keyboard layout. Use one the Linux boot environment has, such as us or de, or leave it empty for us.",
+  }),
+  "settings.deployment.keyboardLayoutUnknown": msg({
+    context: "settings.deployment.keyboardLayoutUnknown",
+    message: "The Linux boot environment of this server has no keyboard layout ''{value}''. It has {layouts}.",
+  }),
   "settings.deployment.localeUnknown": msg({
     context: "settings.deployment.localeUnknown",
     message: "''{value}'' is not a culture name. Use one such as de-DE or en-US, or leave it empty for the image's own language.",
@@ -1784,6 +1832,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "settings.ldapTest.sendValues": msg({
     context: "settings.ldapTest.sendValues",
     message: "Send the values to test.",
+  }),
+  "settings.linuxAgent.configured": msg({
+    context: "settings.linuxAgent.configured",
+    message: "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration, so it cannot be uploaded here. Remove the key to upload it on this page.",
+  }),
+  "settings.linuxAgent.notExecutable": msg({
+    context: "settings.linuxAgent.notExecutable",
+    message: "That is not a 64-bit Linux program for x86-64. Upload ddt-agent as Publish-LinuxAgent.ps1 builds it, or ddt-agent-linux-x64 from a DDT release.",
   }),
   "settings.logging.levelUnknown": msg({
     context: "settings.logging.levelUnknown",
@@ -1925,6 +1981,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "settings.pxe.bootDirectoryIsRoot",
     message: "''{directory}'' is the root of a filesystem, which would serve every file on it. Use a directory of its own, such as {suggested}.",
   }),
+  "settings.pxe.bootEnvironmentInvalid": msg({
+    context: "settings.pxe.bootEnvironmentInvalid",
+    message: "''{value}'' is not a boot environment. Use Auto, WindowsPE or Linux.",
+  }),
   "settings.pxe.bootFileRequired": msg({
     context: "settings.pxe.bootFileRequired",
     message: "Must be set.",
@@ -1944,6 +2004,22 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "settings.pxe.interfaceNotFound": msg({
     context: "settings.pxe.interfaceNotFound",
     message: "''{name}'' names no interface on {host}, which serves nothing for it.",
+  }),
+  "settings.pxe.kernelArgumentsInvalid": msg({
+    context: "settings.pxe.kernelArgumentsInvalid",
+    message: "''{word}'' cannot be added to the kernel command line. Use words of letters, digits and _ . : , = + / @ - with spaces between them, and start none with a hyphen. Nothing else is taken, because the words go into the boot loader's script.",
+  }),
+  "settings.pxe.kernelArgumentsLength": msg({
+    context: "settings.pxe.kernelArgumentsLength",
+    message: "Use at most {max} characters.",
+  }),
+  "settings.pxe.kernelArgumentsReserved": msg({
+    context: "settings.pxe.kernelArgumentsReserved",
+    message: "''{word}'' would replace what DDT sets itself. Leave out init, rdinit, initrd, BOOT_IMAGE and every word that starts with ddt., except ddt.shell, which opens a root shell at the machine.",
+  }),
+  "settings.pxe.linuxDefaultUnavailable": msg({
+    context: "settings.pxe.linuxDefaultUnavailable",
+    message: "Linux is the default, but this server cannot start the Linux boot environment, so machines without a run are named the Windows PE boot file. {problem}",
   }),
   "settings.pxe.methodForArchitecture": msg({
     context: "settings.pxe.methodForArchitecture",

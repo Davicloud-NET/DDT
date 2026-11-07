@@ -10,16 +10,23 @@ import { NumberSetting } from "../fields/NumberSetting";
 import type { PauseStep } from "../sequences";
 import type { KindFieldsProps } from "./kindFields";
 
-export function PauseFields({ step, findings, onChange }: KindFieldsProps<PauseStep>) {
+export function PauseFields({ step, sequence, findings, onChange }: KindFieldsProps<PauseStep>) {
   const minutes = step.continueAfterMinutes;
 
   return (
     <>
       <p className="text-ink-2 sm:col-span-2">
-        <Trans>
-          Waits until someone lets the run go on, at the machine or on its page. A restart in
-          Windows PE before the disk is partitioned ends the run instead.
-        </Trans>
+        {sequence === "Linux" ? (
+          <Trans>
+            Waits until someone lets the run go on, at the machine or on its page. A restart in the
+            Linux boot environment ends the run instead.
+          </Trans>
+        ) : (
+          <Trans>
+            Waits until someone lets the run go on, at the machine or on its page. A restart in
+            Windows PE before the disk is partitioned ends the run instead.
+          </Trans>
+        )}
       </p>
       <TemplateField
         label={<Trans>Message</Trans>}

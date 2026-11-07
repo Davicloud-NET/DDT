@@ -4,6 +4,7 @@
 
 import { t } from "@lingui/core/macro";
 
+import type { AgentEnvironment } from "@/deployments/deployments";
 import type { MachineSummary } from "@/machines/machines";
 import type { SequenceSummary } from "@/sequences/sequences";
 
@@ -91,6 +92,37 @@ function untrusted(trusted: string | null, signedUnder: string | null): boolean 
     file.size > 0 &&
     [...file].every((ca) => !firmware.has(ca))
   );
+}
+
+// How many of the two CAs a flags value names. None for a value nobody knows.
+export function uefiCaCount(value: string | null): number {
+  return uefiCas(value)?.size ?? 0;
+}
+
+// Why netboot does not start this machine in the Linux boot environment: Secure Boot is on, and its firmware trusts
+// none of the CAs the environment's shim is signed under. Null when nothing is known to keep it from starting, also
+// on a server that cannot start Windows PE instead (existing), where netboot names the shim all the same.
+export function linuxBootRefusal(
+  machine: MachineSummary,
+  shimSignedUnder: string | null | undefined,
+  existing?: readonly AgentEnvironment[] | null,
+): string | null {
+  const signedUnder = shimSignedUnder ?? null;
+  const windowsPE = existing === undefined || existing === null || existing.includes("WindowsPE");
+
+  if (
+    !windowsPE ||
+    machine.secureBootEnabled !== true ||
+    !untrusted(machine.trustedUefiCas, signedUnder)
+  ) {
+    return null;
+  }
+
+  const cas = describeUefiCas(signedUnder);
+
+  return uefiCaCount(signedUnder) > 1
+    ? t`This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware trusts neither of ${cas}, which sign the environment's first loader. Allow one of them in the firmware setup, or turn Secure Boot off there.`
+    : t`This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware does not trust ${cas}, which signs the environment's first loader. Allow it in the firmware setup, or turn Secure Boot off there.`;
 }
 
 // "Microsoft's third-party UEFI CA 2011", "... CA 2023" or "... CAs 2011 and 2023".

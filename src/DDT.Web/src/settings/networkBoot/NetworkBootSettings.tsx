@@ -16,6 +16,7 @@ import { pxeConfigurationQuery, pxeInterfacesQuery, type PxeSettings } from "../
 import { SettingsSection } from "../parts/SettingsSection";
 import { useSettingsForm } from "../useSettingsForm";
 
+import { BootEnvironmentGroup } from "./BootEnvironmentGroup";
 import { BootTargetsGroup } from "./BootTargetsGroup";
 import { ConfigurationGroup } from "./ConfigurationGroup";
 import { InterfacesGroup } from "./InterfacesGroup";
@@ -63,6 +64,7 @@ export function NetworkBootSettings() {
             hosts={hosts.data ?? []}
             configuration={configuration}
           />
+          <BootEnvironmentGroup form={form} />
           <NeighboursGroup />
           <ConfigurationGroup configuration={configuration} />
           {form.dirty ? (

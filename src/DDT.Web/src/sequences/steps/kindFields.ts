@@ -4,13 +4,15 @@
 
 import type { Findings } from "../problems";
 import type { StepPatch } from "../sequenceEdits";
-import type { SequenceStep } from "../sequences";
+import type { SequenceKind, SequenceStep } from "../sequences";
 import type { StepCatalog } from "../useStepCatalog";
 
 // The props every kind's fields get: the step, the server's findings for it, the lists to choose from, and the
 // change to make. chosen means a switch made the change, so it's saved at once, even if it sets a text field.
 export interface KindFieldsProps<S extends SequenceStep> {
   step: S;
+  // What the step's sequence installs. A Linux sequence runs in the Linux boot environment.
+  sequence: SequenceKind;
   findings: Findings;
   catalog: StepCatalog;
   onChange: (patch: StepPatch, chosen?: boolean) => void;

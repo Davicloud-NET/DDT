@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Agent.Deployment;
+using DDT.Agent.InstalledPhase;
 using DDT.Agent.Sequences;
 using DDT.Agent.WindowsPhase;
 using DDT.Contracts.Agents;
@@ -78,26 +79,26 @@ public abstract class WindowsPhaseLoopTestBase : IDisposable
         options ??= new ServiceRunOptions();
         TimeProvider time = options.Time ?? new ImmediateTimeProvider();
         AgentLog log = options.Log ?? new AgentLog(time, TextWriter.Null);
-        SequenceRunner runner = TestAgents.Runner(
+        SequenceRunner runner = WindowsTestAgents.Runner(
             server,
             _tools,
             log,
             time,
-            new() { ToolRunner = _toolRunner, SystemDirectory = TestAgents.SystemDirectory(_tools), DryRun = false, Status = options.Status });
+            new() { ToolRunner = _toolRunner, SystemDirectory = WindowsTestAgents.SystemDirectory(_tools), DryRun = false, Status = options.Status });
 
-        WindowsPhaseLoop loop = new WindowsPhaseLoopBuilder
+        InstalledPhaseLoop loop = new InstalledPhaseLoopBuilder
         {
             Server = server,
             IdentityReader = new DryRunMachineIdentityReader(1),
             Runner = runner,
-            Setup = _tools,
+            Profile = WindowsPhaseProfile.With(_tools),
             Rebooter = _tools,
             RestartMarker = _tools,
             Removal = options.Removal ?? _tools,
             Log = log,
             TimeProvider = time,
             HeartbeatInterval = Timeout.InfiniteTimeSpan,
-            WindowsRoot = _tools.Volumes.Windows,
+            Root = _tools.Volumes.Windows,
             AgentVersion = TestAgents.Version,
             DryRun = options.DryRun,
             Session = options.Session,

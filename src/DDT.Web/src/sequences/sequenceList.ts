@@ -12,6 +12,7 @@ import type { MachineSummary } from "@/machines/machines";
 import type { RuleView } from "@/rules/rules";
 import { ruleName, ruleNames } from "@/rules/ruleText";
 
+import { sequenceKind } from "./sequenceKinds";
 import {
   sequencesQuery,
   type SequenceDefinition,
@@ -192,6 +193,7 @@ export function summaryOf(view: SequenceView, previous?: SequenceSummary): Seque
     rawImageName: writesRaw ? (previous?.rawImageName ?? null) : null,
     rawImageBootCapability: writesRaw ? (previous?.rawImageBootCapability ?? null) : null,
     rawImageSignedUnder: writesRaw ? (previous?.rawImageSignedUnder ?? null) : null,
+    kind: sequenceKind(steps),
   };
 }
 

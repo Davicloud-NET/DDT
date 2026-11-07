@@ -18,7 +18,7 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
 
     private readonly IPEndPoint _bindTo;
     private readonly NetworkInterfaceMap _interfaces;
-    private readonly BootFileResolver _files;
+    private readonly BootFiles _files;
     private readonly TftpServing _serving;
     private readonly TftpTransferServices _transferServices;
     private readonly ILogger _logger;
@@ -34,7 +34,7 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
     public TftpListener(
         IPEndPoint bindTo,
         NetworkInterfaceMap interfaces,
-        BootFileResolver files,
+        BootFiles files,
         TftpServing serving,
         TimeProvider timeProvider,
         ILogger<TftpListener> logger)
@@ -163,10 +163,11 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
             return;
         }
 
-        await AcceptReadAsync(socket, request, localAddress, client, cancellationToken).ConfigureAwait(false);
+        AcceptRead(socket, request, localAddress, client, cancellationToken);
     }
 
-    private async Task AcceptReadAsync(
+    // Nothing here looks at the disk or waits: this is the loop every machine's request comes through.
+    private void AcceptRead(
         Socket socket,
         TftpReadRequest request,
         IPAddress localAddress,
@@ -187,17 +188,42 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
             return;
         }
 
-        if (!_files.TryResolve(request.FileName, out FileInfo? file))
+        if (_files.Starting(request.FileName, client.Address) is > 0 and int reset)
         {
-            PxeLog.TftpNotFound(_logger, request.FileName, client);
-            using ITftpTransport refusal = CreateTransport(socket, localAddress, client);
-            await SendErrorAsync(refusal, TftpErrorCode.FileNotFound, "File not found", cancellationToken).ConfigureAwait(false);
-
-            return;
+            PxeLog.BootConnectionsReset(_logger, reset, client.Address);
         }
 
-        PxeLog.TftpRead(_logger, request.FileName, client, file.FullName);
-        StartTransfer(CreateTransport(socket, localAddress, client), client, file, request, cancellationToken);
+        BootRequest asked = new(localAddress, client.Address);
+
+        StartTransfer(CreateTransport(socket, localAddress, client), client, () => Find(request.FileName, asked, client), request, cancellationToken);
+    }
+
+    // Runs in the transfer, since it looks at the disk. Null when there is no such file to send.
+    private BootContent? Find(string requested, BootRequest asked, IPEndPoint client)
+    {
+        if (!_files.TryFind(requested, asked, out BootContent? content))
+        {
+            LogNotFound(requested, client);
+
+            return null;
+        }
+
+        PxeLog.TftpRead(_logger, requested, client, content.Description);
+
+        return content;
+    }
+
+    // shim and GRUB ask for a handful of files at every start that DDT does not have, and go on without them.
+    private void LogNotFound(string requested, IPEndPoint client)
+    {
+        if (BootFiles.Normalized(requested) is { } name && BootProbes.IsProbe(name))
+        {
+            PxeLog.TftpProbe(_logger, requested, client);
+        }
+        else
+        {
+            PxeLog.TftpNotFound(_logger, requested, client);
+        }
     }
 
     // In single port mode every datagram from a client with a running transfer goes to it, except a new read request.
@@ -234,11 +260,11 @@ public sealed class TftpListener : IPxeListener, IAsyncDisposable
     private void StartTransfer(
         ITftpTransport transport,
         IPEndPoint client,
-        FileInfo file,
+        Func<BootContent?> find,
         TftpReadRequest request,
         CancellationToken cancellationToken)
     {
-        TftpTransfer transfer = new(transport, client, file, request, _transferServices, cancellationToken);
+        TftpTransfer transfer = new(transport, client, find, request, _transferServices, cancellationToken);
 
         _transfers[transfer] = client;
 

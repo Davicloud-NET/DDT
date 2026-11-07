@@ -179,6 +179,7 @@ public sealed class NewRuns(
             DiskNumber = run.DiskNumber,
             State = DeploymentState.Assigned,
             Source = run.Source,
+            BootEnvironment = SequenceKinds.BootEnvironment(SequenceKinds.Of(sequence.Definition)),
             RequestedByUserId = run.Request.Giver.UserId,
             RequestedByName = run.Request.Giver.Name,
             StepCount = RunPaths.Leaves(sequence.Definition, steps).Count,
@@ -194,6 +195,9 @@ public sealed class NewRuns(
         database.DeploymentArtifacts.AddRange(RunSnapshots.Artifacts(deployment.Id, sequence.Definition, sequence.References, machine));
         machine.ActiveDeploymentId = deployment.Id;
         machine.LastDeploymentId = deployment.Id;
+
+        // From here on the run says where the machine starts, and what was picked before a restart is picked or not.
+        PendingSwitch.Forget(machine);
 
         return deployment;
     }

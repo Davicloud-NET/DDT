@@ -110,7 +110,7 @@ public sealed class DryRunResumeTests : IDisposable
 
         SequenceRunResult first = await Engine(firstSession, firstStore, firstDisk, firstLog)
             .RunAsync(SequenceStates.Start(s_runId, s_definition), s_machine, cancellationToken);
-        await new DryRunRebooter(firstLog).RebootAsync(RestartInto.WindowsPE, cancellationToken);
+        await new DryRunRebooter(firstLog).RebootAsync(RestartInto.BootEnvironment, cancellationToken);
 
         Assert.Equal(SequenceOutcome.RebootRequired, first.Outcome);
         Assert.Equal(3, first.State.NextIndex);
@@ -172,7 +172,7 @@ public sealed class DryRunResumeTests : IDisposable
         Assert.True(File.Exists(RunFiles.StatePathIn(Path.Combine(_root, "W"))));
 
         // Its end was the restart, so the next start does not restart again.
-        Assert.False(File.Exists(Path.Combine(_root, WindowsPERestartMarker.FileName)));
+        Assert.False(File.Exists(Path.Combine(_root, FileRestartMarker.FileName)));
 
         _server.OnRegister(registration => Registered() with { RunId = s_runId, RunToken = registration.RunToken })
             .OnNext(_ => Next("session-3", s_run with { DiskNumber = null }));
@@ -290,7 +290,7 @@ public sealed class DryRunResumeTests : IDisposable
     private AgentLoop Agent(AgentLog log) =>
         new(
             _server,
-            new AgentMachine(new DryRunMachineIdentityReader(1), new DryRunDiskPartitioner(_root, log), new LocalRunLocator([Path.Combine(_root, "W")]), TestAgents.Version),
+            new AgentMachine(new DryRunMachineIdentityReader(1), new DryRunDiskPartitioner(_root, log), new LocalRunLocator([Path.Combine(_root, "W")]), TestAgents.Version, AgentEnvironment.WindowsPE),
             TestAgents.Status(new ScriptedSignInPrompt { IsAvailable = false }, log),
             Runner(log),
             log,
@@ -300,22 +300,43 @@ public sealed class DryRunResumeTests : IDisposable
     private SequenceRunner Runner(AgentLog log)
     {
         DryRunToolRunner tools = new(log);
+        DryRunDiskPartitioner disks = new(_root, log);
+        DryRunBcdWriter bcdWriter = new(log);
+        DryRunImageApplier applier = new(log);
+        SequenceRunnerOptions options = new(Timeout.InfiniteTimeSpan, _root, DryRun: true);
 
         return new SequenceRunnerBuilder
         {
             Server = _server,
-            Partitioner = new DryRunDiskPartitioner(_root, log),
-            RawDisks = new FileRawDisks(_root, log),
-            Applier = new DryRunImageApplier(log),
-            BcdWriter = new DryRunBcdWriter(log),
+            Disks = disks,
+            Partitioner = disks,
+            FreeSpace = new DriveFreeSpace(),
+            PreflightChecks =
+            [
+                new BootEnvironmentCheck(AgentEnvironment.WindowsPE),
+                new BootImageToolsCheck(Environment.SystemDirectory),
+                new ImageApplierCheck(applier),
+            ],
+            StepRunners = new WindowsStepRunners
+            {
+                Server = _server,
+                Partitioner = disks,
+                Applier = applier,
+                Tools = tools,
+                Joiner = new DryRunDomainJoiner(log),
+                Log = log,
+                TimeProvider = _time,
+                Options = options,
+            },
+            BcdWriter = bcdWriter,
+            BootOrder = bcdWriter,
             Rebooter = new DryRunRebooter(log),
-            RestartMarker = new WindowsPERestartMarker(_root, log, dryRun: true),
-            Tools = tools,
-            Joiner = new DryRunDomainJoiner(log),
+            RestartMarker = new FileRestartMarker(_root, log, dryRun: true),
             HandOver = new WindowsHandOver(new OfflineServiceRegistration(tools, log, dryRun: true), Environment.ProcessPath!, TestAgents.Configuration, log, dryRun: true),
             Log = log,
             TimeProvider = _time,
-            Options = new SequenceRunnerOptions(Timeout.InfiniteTimeSpan, _root, Environment.SystemDirectory, DryRun: true),
+            Options = options,
+            AccountTools = WindowsAccountTools.DryRun(log),
         }.Build();
     }
 
@@ -330,7 +351,7 @@ public sealed class DryRunResumeTests : IDisposable
     private SequenceEngine Engine(RunSession session, FileRunStateStore store, DryRunDiskPartitioner disk, AgentLog log)
     {
         DryRunToolRunner tools = new(log);
-        RunDownloads downloads = new(_server, session, log, _time, TimeSpan.FromSeconds(10));
+        RunDownloads downloads = new(_server, session, new DriveFreeSpace(), log, _time, TimeSpan.FromSeconds(10));
         AgentStepRunner steps = new(
             [
                 new PartitionStepRunner(disk, session, store, log, dryRun: true),
@@ -338,11 +359,9 @@ public sealed class DryRunResumeTests : IDisposable
                 new InjectDriversStepRunner(tools, downloads, session, log),
                 new WriteUnattendStepRunner(_server, session, _ => Task.CompletedTask, log, _time),
                 new JoinDomainStepRunner(new DryRunDomainJoiner(log), _server, session, _ => Task.CompletedTask, log, _time),
-                new RunScriptStepRunner(tools, downloads, session, log, _root),
-                new WriteRawImageStepRunner(disk, new FileRawDisks(_root, log), downloads, session, log),
-                new WriteCloudInitSeedStepRunner(new FileRawDisks(_root, log), session, log, _time),
+                new RunScriptStepRunner(tools, new WindowsScriptLauncher(), downloads, session, log, _root),
             ],
-            new StepAccounts(_server, session, _ => Task.CompletedTask, AccountTools.DryRun(log), log, _time),
+            new StepAccounts(_server, session, _ => Task.CompletedTask, WindowsAccountTools.DryRun(log), log, _time),
             _ => { },
             log,
             _time);

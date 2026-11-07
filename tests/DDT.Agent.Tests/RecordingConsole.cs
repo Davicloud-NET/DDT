@@ -12,6 +12,8 @@ internal sealed class RecordingConsole(List<ConsoleState> shown) : IMachineConso
 {
     public bool CanAsk => false;
 
+    public bool AnswersLater => false;
+
     public void Show(ConsoleState state)
     {
         lock (shown)

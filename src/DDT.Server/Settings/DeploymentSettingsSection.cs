@@ -19,6 +19,7 @@ public sealed class DeploymentSettingsSection() : SettingsSectionDefinition<Depl
         new("Locale"),
         new("Keyboard"),
         new("ConsoleLanguage"),
+        new("ConsoleKeyboardLayout"),
         new("LocalAdministrator:Name"),
         new("LocalAdministrator:Password", SettingFieldKind.Secret),
         new("Domain:Name"),

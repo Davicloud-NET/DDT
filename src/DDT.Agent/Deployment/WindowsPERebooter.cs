@@ -2,60 +2,30 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Buffers.Binary;
-using System.Globalization;
+using DDT.Contracts.Agents;
 
 namespace DDT.Agent.Deployment;
 
 // Restarts WinPE with wpeutil, because the agent's exit leaves startnet.cmd's prompt open. For a restart back into
-// WinPE it sets BootNext to BootCurrent, so the network starts next whatever the boot order says. If the firmware made
-// that entry only for a one-time boot menu, it warns and restarts plainly. The disk has no loader yet, so the firmware
-// falls through to the network.
+// WinPE the network starts next whatever the boot order says. Where that cannot be set, the restart is plain. The
+// disk has no loader yet, so the firmware falls through to the network.
 public sealed class WindowsPERebooter(IToolRunner tools, IUefiVariables variables, AgentLog log) : IRebooter
 {
-    private const string BootCurrent = "BootCurrent";
-    private const string BootNext = "BootNext";
+    private readonly NextStart _next = new(variables, log, AgentEnvironment.WindowsPE);
 
-    public async Task RebootAsync(RestartInto into, CancellationToken cancellationToken)
+    public Task RebootAsync(RestartInto into, CancellationToken cancellationToken) => RebootAsync(into, () => Task.CompletedTask, cancellationToken);
+
+    // wpeutil takes Windows PE down at once, so the lines written until here go to the server before it runs.
+    public async Task RebootAsync(RestartInto into, Func<Task> lastLines, CancellationToken cancellationToken)
     {
-        if (into == RestartInto.WindowsPE)
+        ArgumentNullException.ThrowIfNull(lastLines);
+
+        if (into == RestartInto.BootEnvironment)
         {
-            StartNextFromThisEntry();
+            _next.FromThisEntry();
         }
 
+        await lastLines().ConfigureAwait(false);
         await tools.RunAsync(Path.Combine(Environment.SystemDirectory, "wpeutil.exe"), ["reboot"], cancellationToken).ConfigureAwait(false);
-    }
-
-    private const string Plainly =
-        "The machine restarts without choosing where it starts next, so it comes back to Windows PE only if its boot order " +
-        "starts from the network before the disk.";
-
-    private void StartNextFromThisEntry()
-    {
-        try
-        {
-            if (variables.Read(BootCurrent) is not { Length: >= 2 } current)
-            {
-                log.Warning($"The firmware does not say which boot entry this start came from. {Plainly}");
-
-                return;
-            }
-
-            string entry = string.Create(CultureInfo.InvariantCulture, $"Boot{BinaryPrimitives.ReadUInt16LittleEndian(current):X4}");
-
-            if (variables.Read(entry) is null)
-            {
-                log.Warning($"The boot entry this start came from, {entry}, is gone, as after a one-time boot menu. {Plainly}");
-
-                return;
-            }
-
-            variables.Write(BootNext, current[..2]);
-            log.Information($"The next start comes from boot entry {entry} again, the one this start came from.");
-        }
-        catch (DeploymentStepException exception)
-        {
-            log.Warning($"The next start could not be set to this start's boot entry ({exception.Message}). {Plainly}");
-        }
     }
 }

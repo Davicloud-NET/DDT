@@ -20,6 +20,7 @@ import { LinkButton } from "@/ui/LinkButton";
 import { SequenceRail } from "@/ui/SequenceRail";
 import { StateTag } from "@/ui/StateTag";
 
+import { environmentFacts } from "./bootEnvironment";
 import { MachineActions } from "./MachineActions";
 import {
   deviceKind,
@@ -133,6 +134,7 @@ export function MachinePanel({
               ? []
               : [{ label: <Trans>Address</Trans>, value: machine.lastSeenAddress, mono: true }]),
             { label: <Trans>Secure Boot</Trans>, value: secureBootFact(machine) },
+            ...environmentFacts(machine),
             ...(machine.disks === null
               ? []
               : [{ label: <Trans>Disks</Trans>, value: machine.disks }]),

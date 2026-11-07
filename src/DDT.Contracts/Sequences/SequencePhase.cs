@@ -4,8 +4,11 @@
 
 namespace DDT.Contracts.Sequences;
 
+// Stored and sent by name. New phases go at the end.
 public enum SequencePhase
 {
     WindowsPE,
     Windows,
+    // The netbooted Linux that writes a Linux sequence's disk. Version 4.
+    LinuxBoot,
 }

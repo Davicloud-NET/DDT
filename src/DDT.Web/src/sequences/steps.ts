@@ -10,6 +10,7 @@ import type {
   ContainerKind,
   ContainerStep,
   ScriptInterpreter,
+  SequenceKind,
   SequencePhase,
   SequenceStep,
   StepKind,
@@ -51,8 +52,14 @@ export function isStepKind(kind: string): kind is StepKind {
   return Object.hasOwn(kindLabels, kind);
 }
 
+const phaseLabels: Record<SequencePhase, MessageDescriptor> = {
+  WindowsPE: msg`Windows PE`,
+  Windows: msg`Windows`,
+  LinuxBoot: msg`Linux boot environment`,
+};
+
 export function phaseLabel(phase: SequencePhase): string {
-  return phase === "WindowsPE" ? i18n._(msg`Windows PE`) : i18n._(msg`Windows`);
+  return i18n._(phaseLabels[phase]);
 }
 
 // cloud-init's instance id and the machine's name. cloud-init runs its first-boot modules once per instance id.
@@ -138,10 +145,18 @@ export function operatorLabel(operator: ConditionOperator): string {
   return i18n._(operatorLabels[operator]);
 }
 
-export const interpreters: ScriptInterpreter[] = ["Cmd", "PowerShell"];
+// Names every language writes the same way.
+const interpreterLabels: Record<ScriptInterpreter, string> = {
+  Cmd: "cmd",
+  PowerShell: "PowerShell",
+  Shell: "Shell",
+};
+
+// Every interpreter, in the server's order.
+export const interpreters = Object.keys(interpreterLabels) as ScriptInterpreter[];
 
 export function interpreterLabel(interpreter: ScriptInterpreter): string {
-  return interpreter === "Cmd" ? "cmd" : "PowerShell";
+  return interpreterLabels[interpreter];
 }
 
 // The server reads a sequence's numbers as Int32 and refuses the whole document when one is larger.
@@ -171,8 +186,13 @@ export function newUntil(): ConditionNode {
   return { kind: "test", variable: "LastStepFailed", operator: "Equals", value: "false" };
 }
 
-// A new step with the server's defaults, named after its kind.
-export function newStep(kind: StepKind, id: string): SequenceStep {
+// A new step with the server's defaults, named after its kind. A script starts as the sequence's kind runs it: a
+// shell script in the Linux boot environment, which cannot restart, or cmd in Windows PE.
+export function newStep(
+  kind: StepKind,
+  id: string,
+  sequence: SequenceKind = "Windows",
+): SequenceStep {
   const common = {
     id,
     name: i18n._(kindLabels[kind]),
@@ -208,13 +228,13 @@ export function newStep(kind: StepKind, id: string): SequenceStep {
       return {
         ...common,
         kind,
-        phase: "WindowsPE",
-        interpreter: "Cmd",
+        phase: sequence === "Linux" ? "LinuxBoot" : "WindowsPE",
+        interpreter: sequence === "Linux" ? "Shell" : "Cmd",
         script: "",
         packageId: null,
         timeoutMinutes: 60,
         successExitCodes: [0],
-        rebootExitCodes: [3010],
+        rebootExitCodes: sequence === "Linux" ? [] : [3010],
       };
     case "reboot":
       return { ...common, kind };

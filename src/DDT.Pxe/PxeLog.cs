@@ -30,6 +30,13 @@ internal static partial class PxeLog
     [LoggerMessage(EventId = 504, Level = LogLevel.Warning, Message = "Boot target {Architecture} names {BootFile}, which is not in {BootDirectory}")]
     public static partial void BootFileMissing(ILogger logger, ClientArchitecture architecture, string bootFile, string bootDirectory);
 
+    [LoggerMessage(
+        EventId = 532,
+        Level = LogLevel.Information,
+        Message = "Boot target {Architecture} names {BootFile}, which comes with the boot image. " +
+            "Until one is built, machines start the Linux boot environment")]
+    public static partial void BootFileAwaitsBootImage(ILogger logger, ClientArchitecture architecture, string bootFile);
+
     [LoggerMessage(EventId = 505, Level = LogLevel.Warning, Message = "No boot targets are configured, so every PXE client is ignored")]
     public static partial void NoBootTargets(ILogger logger);
 
@@ -46,6 +53,46 @@ internal static partial class PxeLog
             "Machines find DDT on UDP {BootServerPort} once the DHCP server sends option 60, PXEClient, or through its options 66 and 67")]
     public static partial void DhcpPortLeft(ILogger logger, int port, int bootServerPort);
 
+    [LoggerMessage(
+        EventId = 509,
+        Level = LogLevel.Warning,
+        Message = "The pxe settings leave UDP {Port} to a DHCP server on this computer, so ProxyDHCP does not listen there. " +
+            "Machines find DDT on UDP {BootServerPort} once that DHCP server sends option 60, PXEClient")]
+    public static partial void DhcpPortLeftBySetting(ILogger logger, int port, int bootServerPort);
+
+    [LoggerMessage(
+        EventId = 525,
+        Level = LogLevel.Error,
+        Message = "ProxyDHCP does not answer broadcasts, while UDP {BootServerPort} and TFTP go on serving: {Reason}")]
+    public static partial void DhcpPortNotBound(ILogger logger, int bootServerPort, string reason);
+
+    [LoggerMessage(
+        EventId = 526,
+        Level = LogLevel.Information,
+        Message = "Linux boot environment: Tftp {BootFile} from {Folder}. Machines without a run start {Default}")]
+    public static partial void LinuxBoot(ILogger logger, string bootFile, string folder, string @default);
+
+    [LoggerMessage(EventId = 527, Level = LogLevel.Information, Message = "Linux boot environment: not offered, since {Reason}")]
+    public static partial void NoLinuxBoot(ILogger logger, string reason);
+
+    [LoggerMessage(
+        EventId = 528,
+        Level = LogLevel.Error,
+        Message = "Asking for the Linux boot environment failed. Until it works again, machines are answered as if this server had none")]
+    public static partial void LinuxBootFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(EventId = 529, Level = LogLevel.Information, Message = "Asking for the Linux boot environment works again")]
+    public static partial void LinuxBootAnswersAgain(ILogger logger);
+
+    [LoggerMessage(
+        EventId = 530,
+        Level = LogLevel.Error,
+        Message = "Looking at the boot files failed. Until it works again, machines are answered from what the look before found")]
+    public static partial void BootFilesReadFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(EventId = 531, Level = LogLevel.Information, Message = "Looking at the boot files works again")]
+    public static partial void BootFilesReadAgain(ILogger logger);
+
     [LoggerMessage(EventId = 520, Level = LogLevel.Warning, Message = "Netboot is not served: {Reason}")]
     public static partial void Stopped(ILogger logger, string reason);
 
@@ -57,6 +104,12 @@ internal static partial class PxeLog
 
     [LoggerMessage(EventId = 523, Level = LogLevel.Error, Message = "Applying the pxe settings failed")]
     public static partial void ApplyCrashed(ILogger logger, Exception exception);
+
+    [LoggerMessage(
+        EventId = 524,
+        Level = LogLevel.Information,
+        Message = "Reset {Count} HTTP boot connections still open from {Client}, which starts from the network again")]
+    public static partial void BootConnectionsReset(ILogger logger, int count, IPAddress client);
 
     // A successful bind proves nothing on Windows. Another process holding a specific address on the same port
     // silently takes the unicast traffic. The first datagram is the real sign that the listener works.
@@ -149,9 +202,16 @@ internal static partial class PxeLog
     [LoggerMessage(EventId = 608, Level = LogLevel.Debug, Message = "{Client} never answered the TFTP transfer of {Path}")]
     public static partial void TftpUnanswered(ILogger logger, IPEndPoint client, string path);
 
+    // shim and GRUB ask for these at every start, and go on without them.
+    [LoggerMessage(EventId = 609, Level = LogLevel.Debug, Message = "TFTP read of {Requested} by {Client} refused: a file shim or GRUB only looks for")]
+    public static partial void TftpProbe(ILogger logger, string requested, IPEndPoint client);
+
     [LoggerMessage(EventId = 700, Level = LogLevel.Information, Message = "HTTP boot {Method} {Path} by {Client}")]
     public static partial void HttpBoot(ILogger logger, string method, string path, string? client);
 
     [LoggerMessage(EventId = 701, Level = LogLevel.Information, Message = "HTTP boot {Method} {Path} by {Client} refused: no such file in the boot directory")]
     public static partial void HttpBootNotFound(ILogger logger, string method, string path, string? client);
+
+    [LoggerMessage(EventId = 702, Level = LogLevel.Debug, Message = "HTTP boot {Method} {Path} by {Client} refused: a file shim or GRUB only looks for")]
+    public static partial void HttpBootProbe(ILogger logger, string method, string path, string? client);
 }

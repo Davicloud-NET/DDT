@@ -33,7 +33,7 @@ public sealed class SequenceRunnerResumeTests : SequenceRunnerTestBase
 
         Assert.Equal(RunOutcome.Restarting, first.Outcome);
         Assert.Equal(["list", "prepare", "partition 0"], _tools.Calls);
-        Assert.Equal(RestartInto.WindowsPE, RestartDue());
+        Assert.Equal(RestartInto.BootEnvironment, RestartDue());
         Assert.Equal(["BootNext"], firmware.Writes);
         Assert.EndsWith("wpeutil.exe reboot", _toolRunner.Calls[^1], StringComparison.Ordinal);
         Assert.Equal(RunActivity.Restarting, server.RunReports[^1].Activity);
@@ -137,7 +137,7 @@ public sealed class SequenceRunnerResumeTests : SequenceRunnerTestBase
         Assert.Equal(new RunResult(RunOutcome.Stopped), result);
         Assert.Equal(["list", "prepare", "partition 0"], _tools.Calls);
         Assert.DoesNotContain(server.RunReports, report => report.Activity == RunActivity.Restarting);
-        Assert.Equal(RestartInto.WindowsPE, RestartDue());
+        Assert.Equal(RestartInto.BootEnvironment, RestartDue());
     }
 
     // The run asked for the restart, so the machine restarts anyway. If that fails, the next start restarts it.
@@ -151,7 +151,7 @@ public sealed class SequenceRunnerResumeTests : SequenceRunnerTestBase
 
         Assert.Equal(RunOutcome.Restarting, result.Outcome);
         Assert.Equal(["list", "prepare", "partition 0", "reboot into Windows PE"], _tools.Calls);
-        Assert.Equal(RestartInto.WindowsPE, RestartDue());
+        Assert.Equal(RestartInto.BootEnvironment, RestartDue());
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public sealed class SequenceRunnerResumeTests : SequenceRunnerTestBase
 
         Assert.Equal(RunOutcome.Restarting, result.Outcome);
         Assert.Equal(["list", "prepare", "partition 0", "reboot into Windows PE"], _tools.Calls);
-        Assert.Equal(RestartInto.WindowsPE, RestartDue());
+        Assert.Equal(RestartInto.BootEnvironment, RestartDue());
     }
 
     [Fact]

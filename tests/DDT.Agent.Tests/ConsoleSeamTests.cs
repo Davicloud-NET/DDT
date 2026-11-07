@@ -71,7 +71,7 @@ public sealed class ConsoleSeamTests : IDisposable
         ImmediateTimeProvider time = new();
         AgentLog log = new(time, TextWriter.Null) { MachineConsole = console };
 
-        return TestAgents.Loop(server, TestAgents.Status(console), new(_tools, log, time) { Identity = identity });
+        return WindowsTestAgents.Loop(server, TestAgents.Status(console), new(_tools, log, time) { Identity = identity });
     }
 
     [Fact]

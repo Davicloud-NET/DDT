@@ -10,9 +10,15 @@ import type { ImageBootCapability } from "@/images/images";
 
 import type { ConditionNode, StepCondition } from "./sequenceConditions";
 
-export type SequencePhase = "WindowsPE" | "Windows";
+// LinuxBoot (version 4) is the netbooted Linux that writes a Linux sequence's disk.
+export type SequencePhase = "WindowsPE" | "Windows" | "LinuxBoot";
 
-export type ScriptInterpreter = "Cmd" | "PowerShell";
+// Shell (version 4) runs in the Linux phases only.
+export type ScriptInterpreter = "Cmd" | "PowerShell" | "Shell";
+
+// What a sequence installs. A sequence that writes a raw disk image is a Linux sequence, which starts in the Linux
+// boot environment. Every other one starts in Windows PE.
+export type SequenceKind = "Windows" | "Linux";
 
 export type StepState = "Pending" | "Running" | "Done" | "Skipped" | "Failed";
 
@@ -261,11 +267,12 @@ export interface SequenceSummary {
   rawImageName: string | null;
   rawImageBootCapability: ImageBootCapability | null;
   rawImageSignedUnder: string | null;
+  kind: SequenceKind;
 }
 
 // SequenceDefinition.CurrentVersion: the highest version this page knows, and the one it writes. The server stores
 // each sequence with the lowest version it needs.
-export const SEQUENCE_VERSION = 3;
+export const SEQUENCE_VERSION = 4;
 
 // Every problem keeps the sequence from running. Warnings don't.
 export interface SequenceProblem {

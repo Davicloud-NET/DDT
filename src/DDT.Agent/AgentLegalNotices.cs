@@ -8,10 +8,8 @@ namespace DDT.Agent;
 // to it. The start-up lines are the GPL's Appropriate Legal Notices. The LGPL wants wimlib's copyright among them.
 public static class AgentLegalNotices
 {
-    public const string LicensesArgument = "--licenses";
-
     // Additional term 1 in NOTICE requires this exact text.
-    public const string AttributionNotice = "DDT, the Davicloud Deployment Toolkit. Copyright (C) 2026 Davicloud.";
+    public const string AttributionNotice = LegalTexts.AttributionNotice;
 
     // wimlib's COPYING names no holder. This is the line wimlib's own programs print with their version.
     public const string WimlibCopyright = "Copyright 2012-2023 Eric Biggers";
@@ -19,11 +17,10 @@ public static class AgentLegalNotices
     public static IReadOnlyList<string> StartupLines { get; } =
     [
         AttributionNotice,
-        "This program comes with ABSOLUTELY NO WARRANTY.",
-        "It is free software: you can redistribute it and modify it under the GNU General Public License, " +
-        "version 3 or later, with additional terms.",
+        LegalTexts.NoWarranty,
+        LegalTexts.FreeSoftware,
         $"It uses wimlib, {WimlibCopyright}, which is under the GNU Lesser General Public License, version 3 or later.",
-        $"Run ddt-agent {LicensesArgument} to read the licences.",
+        LegalTexts.HowToReadTheLicences,
     ];
 
     // Embedded under these names by DDT.Agent.csproj, and printed in this order.
@@ -44,42 +41,12 @@ public static class AgentLegalNotices
         "licenses/zstd/LICENSE",
     ];
 
-    public static void WriteStartupNotices(TextWriter output)
-    {
-        ArgumentNullException.ThrowIfNull(output);
+    // After the lists it prints, which are made in the order they stand here.
+    private static readonly LegalTexts s_texts = new(typeof(AgentLegalNotices).Assembly, StartupLines, Files);
 
-        foreach (string line in StartupLines)
-        {
-            output.WriteLine(line);
-        }
+    public static void WriteStartupNotices(TextWriter output) => s_texts.WriteStartupNotices(output);
 
-        output.WriteLine();
-    }
+    public static void WriteLicenses(TextWriter output) => s_texts.WriteLicenses(output);
 
-    // A text carried twice, such as the GPL as LICENSE and as wimlib's COPYING.GPLv3, is printed once.
-    public static void WriteLicenses(TextWriter output)
-    {
-        ArgumentNullException.ThrowIfNull(output);
-
-        Dictionary<string, string> printed = new(StringComparer.Ordinal);
-
-        foreach (string file in Files)
-        {
-            string text = ReadText(file).TrimEnd().ReplaceLineEndings(output.NewLine);
-
-            output.WriteLine($"======== {file} ========");
-            output.WriteLine();
-            output.WriteLine(printed.TryAdd(text, file) ? text : $"The same text as {printed[text]} above.");
-            output.WriteLine();
-        }
-    }
-
-    public static string ReadText(string file)
-    {
-        using Stream resource = typeof(AgentLegalNotices).Assembly.GetManifestResourceStream(file)
-            ?? throw new InvalidOperationException($"This agent was built without {file}.");
-        using StreamReader reader = new(resource);
-
-        return reader.ReadToEnd();
-    }
+    public static string ReadText(string file) => s_texts.ReadText(file);
 }

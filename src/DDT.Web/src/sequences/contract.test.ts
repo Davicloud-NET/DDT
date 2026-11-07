@@ -33,8 +33,8 @@ import {
 } from "./steps";
 
 // The server writes the fixtures (SequenceFixtureTests), so a field, kind or value renamed on only one side fails
-// here. The version 3 fixture is a sequence that can run, and a run either installs Windows or writes a raw disk
-// image. So the raw image's steps are in the version 2 fixture. The defaults from newStep and newCondition stand for
+// here. The tree's fixture is a sequence that can run, and a run either installs Windows or writes a raw disk
+// image. So the raw image's steps are in the flat fixture. The defaults from newStep and newCondition stand for
 // the mirror's types. null stands for a text or a number that may be missing.
 function sameShape(value: unknown, mirror: unknown): boolean {
   if (mirror === null) {
@@ -66,7 +66,10 @@ function expectMirrored(kind: string, sent: object, mirror: object) {
 }
 
 // Every phase, kind of input and place to ask. If the server adds one, this fails to compile.
-const phases = { WindowsPE: true, Windows: true } satisfies Record<SequencePhase, true>;
+const phases = { WindowsPE: true, Windows: true, LinuxBoot: true } satisfies Record<
+  SequencePhase,
+  true
+>;
 const inputKinds = {
   Text: true,
   Choice: true,
@@ -130,16 +133,16 @@ describe("the sequence mirror", () => {
     expect(Object.keys(fixture.definition).sort()).toEqual(["steps", "version"]);
     expect(Object.keys(everyStep).sort()).toEqual(["steps", "version"]);
     expect(Object.keys(everyNode).sort()).toEqual(["inputs", "steps", "variables", "version"]);
-    // The server stores a sequence with the lowest version it needs: 1 for Windows alone, 2 with a raw disk image,
-    // 3 for a tree.
+    // The server stores a sequence with the lowest version it needs: 1 for Windows alone, 3 for a tree, 4 with a raw
+    // disk image.
     expect(fixture.definition.version).toBe(1);
-    expect(everyStep.version).toBe(2);
-    expect(everyNode.version).toBe(SEQUENCE_VERSION);
+    expect(everyStep.version).toBe(SEQUENCE_VERSION);
+    expect(everyNode.version).toBe(3);
   });
 
   it("works out the version a document needs as the server does", () => {
     expect(requiredVersion(fixture.definition as SequenceDefinition)).toBe(1);
-    expect(requiredVersion(everyStep as SequenceDefinition)).toBe(2);
+    expect(requiredVersion(everyStep as SequenceDefinition)).toBe(SEQUENCE_VERSION);
     expect(requiredVersion(everyNode)).toBe(3);
   });
 

@@ -9,7 +9,7 @@ namespace DDT.Agent.Deployment;
 // Logs each share instead of connecting it, so a dry run reaches no server with the step's accounts.
 public sealed class DryRunShareConnector(AgentLog log) : IShareConnector
 {
-    public Task<IAsyncDisposable> ConnectAsync(
+    public Task<IConnectedShares> ConnectAsync(
         IReadOnlyList<AgentShareConnection> shares,
         IAccountSession? account,
         CancellationToken cancellationToken)
@@ -22,12 +22,14 @@ public sealed class DryRunShareConnector(AgentLog log) : IShareConnector
             log.Information($"Dry run: not connected: {ShareConnector.RemoteName(share.Path)} as {share.UserName}{where}.");
         }
 
-        return Task.FromResult<IAsyncDisposable>(Nothing.Instance);
+        return Task.FromResult<IConnectedShares>(Nothing.Instance);
     }
 
-    private sealed class Nothing : IAsyncDisposable
+    private sealed class Nothing : IConnectedShares
     {
         public static readonly Nothing Instance = new();
+
+        public IReadOnlyList<string> LocalPaths => [];
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }

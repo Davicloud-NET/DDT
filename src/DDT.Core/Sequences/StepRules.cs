@@ -8,18 +8,21 @@ using DDT.Contracts.Sequences;
 namespace DDT.Core.Sequences;
 
 // The rules for each node of a sequence. SequencePaths checks them when it reaches the node.
-internal sealed class StepRules(SequenceNames names, bool writesRawImage)
+internal sealed class StepRules(SequenceNames names, SequenceKind kind)
 {
-    // Before Partition, the run's state only exists in memory, so a restart in Windows PE would lose the run. A raw
-    // disk image leaves no partition where DDT could keep the run's state or unpack a package.
+    // Before Partition, the run's state only exists in memory, so a restart in the boot phase would lose the run. A
+    // raw disk image leaves no partition where DDT could keep the run's state or unpack a package.
     private readonly MessageTemplate _noRestart =
-        writesRawImage ? ServerMessages.SequenceRestartWithRawImage : ServerMessages.SequenceRestartBeforePartition;
+        kind == SequenceKind.Linux ? ServerMessages.SequenceRestartWithRawImage : ServerMessages.SequenceRestartBeforePartition;
 
-    // With a raw disk image, the Windows installation rules would only restate the same problem in other words.
+    private bool Linux => kind == SequenceKind.Linux;
+
+    // In a Linux sequence, the Windows installation rules would only restate the same problem in other words. A script
+    // in a Windows phase counts too.
     public bool InstallsWindows(SequenceStep step, SequencePhase? required) =>
-        writesRawImage
+        Linux
         && (step is PartitionStep or ApplyImageStep or InjectDriversStep or WriteUnattendStep or JoinDomainStep
-            || required == SequencePhase.Windows);
+            || (required is { } phase && SequenceKinds.Of(phase) == SequenceKind.Windows));
 
     // SequencePaths checks the id, which depends on the nodes before this one.
     public void CheckNode(SequenceStep step, int depth, StepProblems problems)
@@ -64,19 +67,29 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
 
         if (InstallsWindows(step, place.Required))
         {
-            problems.Add(PhaseField(step), ServerMessages.SequenceWindowsWithRawImage.With());
+            // A sequence stored before version 4 may hold a script for Windows PE, so that one is told what to change.
+            MessageTemplate elsewhere = step is RunScriptStep { Phase: SequencePhase.WindowsPE }
+                ? ServerMessages.SequenceWindowsScriptInLinux
+                : ServerMessages.SequenceWindowsWithRawImage;
+            problems.Add(PhaseField(step), elsewhere.With());
 
             return;
+        }
+
+        // The Linux boot environment has no way to connect a share.
+        if (Linux && place.InBoot && step.Shares is { Count: > 0 })
+        {
+            problems.Add("shares", ServerMessages.SequenceSharesNotInLinuxBoot.With());
         }
 
         CheckKind(step, place, problems);
     }
 
-    // After a container, its paths decide whether a restart is safe. Some may still be in Windows PE without a
+    // After a container, its paths decide whether a restart is safe. Some may still be in the boot phase without a
     // partition.
     public void CheckRestartAfterContainer(SequenceStep container, PathState after, StepProblems problems)
     {
-        if (container.RebootAfter && (after.Current & PhaseSet.WindowsPE) != 0 && !after.MustHave(Happened.Partitioned))
+        if (container.RebootAfter && (after.Current & PhaseSet.Boot) != 0 && !after.MustHave(Happened.Partitioned))
         {
             problems.Add("rebootAfter", _noRestart.With());
         }
@@ -139,7 +152,7 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
 
     private static string? PhaseField(SequenceStep step) => step is RunScriptStep ? "phase" : null;
 
-    private static PhaseSet Of(SequencePhase phase) => phase == SequencePhase.Windows ? PhaseSet.Windows : PhaseSet.WindowsPE;
+    private static PhaseSet Of(SequencePhase phase) => SequenceKinds.IsBoot(phase) ? PhaseSet.Boot : PhaseSet.Installed;
 
     private void CheckConditions(SequenceStep step, StepProblems problems)
     {
@@ -165,16 +178,17 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
         Count(step.When, ConditionEvaluator.WhenPath);
         Count((step as IfStep)?.Test, ConditionEvaluator.TestPath);
         Count((step as RepeatStep)?.Until, ConditionEvaluator.UntilPath);
+        PhaseConditions.Check(step, kind, problems.Warn);
     }
 
     private void CheckPhase(SequenceStep step, StepPlace place, StepProblems problems)
     {
         PathPhases before = place.Before.Phases;
-        bool afterWindows = place.Required == SequencePhase.WindowsPE
-            ? (before & (PathPhases.Windows | PathPhases.WindowsPEAfterWindows)) != 0
-            : place.Required is null && (before & PathPhases.WindowsPEAfterWindows) != 0;
+        bool afterInstalled = place.Required is { } asked
+            ? SequenceKinds.IsBoot(asked) && (before & (PathPhases.Installed | PathPhases.BootAfterInstalled)) != 0
+            : (before & PathPhases.BootAfterInstalled) != 0;
 
-        if (afterWindows)
+        if (afterInstalled)
         {
             problems.Add(PhaseField(step), ServerMessages.SequenceWindowsPEAfterWindows.With());
         }
@@ -184,7 +198,7 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
             problems.Add(PhaseField(step), ServerMessages.SequencePhaseChangeInRepeat.With());
         }
 
-        if (place.Required == SequencePhase.Windows && !writesRawImage && !place.Before.MustHave(Happened.ImageEveryTime))
+        if (place.Required == SequencePhase.Windows && !Linux && !place.Before.MustHave(Happened.ImageEveryTime))
         {
             // When only some paths apply an image, the paths are the problem, not the step's conditions.
             MessageTemplate needsImage = !place.Before.MustHave(Happened.ImageApplied) && place.Before.MayHave(Happened.ImageApplied)
@@ -200,7 +214,7 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
         {
             problems.Add("rebootAfter", ServerMessages.SequenceRestartAfterRestart.With());
         }
-        else if (step.RebootAfter && place.InWindowsPE && !place.Partitioned && step is not PartitionStep)
+        else if (step.RebootAfter && place.InBoot && !place.Partitioned && step is not PartitionStep)
         {
             problems.Add("rebootAfter", _noRestart.With());
         }
@@ -233,7 +247,7 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
                 CheckScript(script, place, problems);
                 break;
             case RebootStep:
-                if (place.InWindowsPE && !place.Partitioned)
+                if (place.InBoot && !place.Partitioned)
                 {
                     problems.Add(null, _noRestart.With());
                 }
@@ -306,14 +320,14 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
 
     private void CheckScript(RunScriptStep script, StepPlace place, StepProblems problems)
     {
-        SequenceValidator.CheckScript(script, script.Phase == SequencePhase.WindowsPE && !place.Partitioned, writesRawImage, problems.Add);
+        ScriptRules.Check(script, kind, SequenceKinds.IsBoot(script.Phase) && !place.Partitioned, problems.Add);
 
         if (script.RunAs is not null)
         {
-            // Windows PE has no accounts to log on with, and a script there runs as SYSTEM.
+            // A boot environment has no accounts to log on with. A script there runs as SYSTEM, or as root.
             if (script.Phase != SequencePhase.Windows)
             {
-                problems.Add("runAs", ServerMessages.SequenceRunAsWindowsOnly.With());
+                problems.Add("runAs", ServerMessages.SequenceRunAsWindowsOnly.With("phase", script.Phase));
             }
 
             names.CheckAccount(script.RunAs, "runAs", problems.Add);
@@ -355,7 +369,7 @@ internal sealed class StepRules(SequenceNames names, bool writesRawImage)
         names.CheckTemplate(pause.Message, "message", problems.Add);
 
         // Someone may restart the machine while it waits, and before Partition that ends the run.
-        if (place.InWindowsPE && (writesRawImage || !place.Partitioned))
+        if (place.InBoot && (Linux || !place.Partitioned))
         {
             problems.Warn(null, ServerMessages.SequencePauseBeforePartitionWarning.With());
         }

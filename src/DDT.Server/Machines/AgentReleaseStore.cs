@@ -5,29 +5,26 @@
 using System.Security.Cryptography;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Settings;
-using DDT.Server.Configuration;
-using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Machines;
 
-// Machines get the file configuration names, else the uploaded agent, else the one the server came with. Hashing an
-// agent on every check would read it every time a machine boots. So the hash is kept until the file's length or write
-// time changes. That's also how a replaced file is noticed without a restart.
-public sealed class AgentReleaseStore(IOptions<AgentReleaseOptions> options, IOptions<DdtOptions> ddt, BundledReleases bundled)
+// One platform's agent. Machines get the file configuration names, else the uploaded agent, else the one the server
+// came with. Hashing an agent on every check would read it every time a machine boots. So the hash is kept until the
+// file's length or write time changes. That's also how a replaced file is noticed without a restart.
+public sealed class AgentReleaseStore(AgentSlot slot)
 {
-    // ddt-agent.exe is about 11 MB. The limit leaves room for a debug build and keeps a stray upload from filling the store.
+    // ddt-agent.exe is about 11 MB and the agent for Linux about 20 MB. The limit leaves room for a debug build and
+    // keeps a stray upload from filling the store.
     public const long MaxBytes = 128L * 1024 * 1024;
 
     private readonly Lock _lock = new();
     private readonly Dictionary<string, (long Length, DateTime WriteTimeUtc, StoredAgent Agent)> _cached = new(StringComparer.Ordinal);
 
     // True when configuration names its own file. An upload wouldn't replace that file.
-    public bool Configured => !string.IsNullOrWhiteSpace(options.Value.BinaryPath);
+    public bool Configured => !string.IsNullOrWhiteSpace(slot.ConfiguredPath);
 
     // The file configuration names, or where an upload goes
-    public string BinaryPath => Path.GetFullPath(Configured
-        ? options.Value.BinaryPath
-        : Path.Combine(ddt.Value.StorePath, "agent", "ddt-agent.exe"));
+    public string BinaryPath => Path.GetFullPath(Configured ? slot.ConfiguredPath : slot.UploadPath);
 
     public async Task<AgentRelease?> CurrentAsync(CancellationToken cancellationToken) =>
         (await OfferedAsync(cancellationToken).ConfigureAwait(false))?.Release;
@@ -38,7 +35,7 @@ public sealed class AgentReleaseStore(IOptions<AgentReleaseOptions> options, IOp
             ?? (Configured ? null : await BundledAsync(cancellationToken).ConfigureAwait(false));
 
     public Task<StoredAgent?> BundledAsync(CancellationToken cancellationToken) =>
-        DescribeAsync(bundled.AgentPath, AgentBinarySource.Bundled, cancellationToken);
+        DescribeAsync(slot.BundledPath, AgentBinarySource.Bundled, cancellationToken);
 
     // Saves the agent an administrator uploads, and hashes it while writing.
     public async Task<(ReleaseUploadStatus Status, AgentRelease? Release)> SaveAsync(Stream content, CancellationToken cancellationToken)
@@ -52,7 +49,7 @@ public sealed class AgentReleaseStore(IOptions<AgentReleaseOptions> options, IOp
         try
         {
             using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-            byte[] header = new byte[2];
+            byte[] header = new byte[slot.HeaderLength];
             byte[] buffer = new byte[81920];
 
             await using (FileStream file = new(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, buffer.Length, useAsync: true))
@@ -78,8 +75,7 @@ public sealed class AgentReleaseStore(IOptions<AgentReleaseOptions> options, IOp
                 }
             }
 
-            // Every Windows executable starts with the DOS header's MZ.
-            if (size < header.Length || header[0] != (byte)'M' || header[1] != (byte)'Z')
+            if (size < header.Length || !slot.Accepts(header))
             {
                 return (ReleaseUploadStatus.Refused, null);
             }
@@ -95,7 +91,8 @@ public sealed class AgentReleaseStore(IOptions<AgentReleaseOptions> options, IOp
         }
     }
 
-    // Machines then get the agent the server came with, or keep their boot image's. False when nothing was uploaded.
+    // Machines then get the agent the server came with, or keep the one they started with. False when nothing was
+    // uploaded.
     public bool RemoveUpload()
     {
         if (Configured || !File.Exists(BinaryPath))
@@ -126,7 +123,7 @@ public sealed class AgentReleaseStore(IOptions<AgentReleaseOptions> options, IOp
         }
 
         using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        ExecutableVersion version = new();
+        IEmbeddedVersion version = slot.NewVersion();
         byte[] buffer = new byte[81920];
         int read;
 

@@ -20,7 +20,7 @@ public sealed class WriteUnattendStepRunnerTests : IDisposable
         LocalAdministrator = true,
     };
 
-    private readonly StepRunnerFixture _run = new([s_step]);
+    private readonly WindowsStepRunnerFixture _run = new([s_step]);
     private readonly TargetVolumes _volumes;
 
     public WriteUnattendStepRunnerTests()

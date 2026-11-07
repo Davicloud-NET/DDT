@@ -26,6 +26,7 @@ internal sealed class MachineConfiguration : IEntityTypeConfiguration<Machine>
         builder.Property(m => m.State).HasConversion<string>().HasMaxLength(16);
         builder.Property(m => m.AgentEnvironment).HasConversion<string>().HasMaxLength(16).HasDefaultValue(AgentEnvironment.WindowsPE);
         builder.Property(m => m.TrustedUefiCas).HasConversion<string>().HasMaxLength(32);
+        builder.Property(m => m.NextEnvironment).HasConversion<string>().HasMaxLength(16);
 
         // State and generation are checked on save, so an approval, a rejection and a registration that starts over
         // can't silently overwrite one another. The loser retries or reports a conflict.

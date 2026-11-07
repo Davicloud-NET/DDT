@@ -1,0 +1,101 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# Brings DHCP up on the adapter the machine booted from, named by ddt.bootif on the kernel command line,
+# or on the first adapter with a cable. Without one it goes on looking after the start, for a dock or a cable.
+
+. /usr/lib/ddt/common.sh
+
+# Type 1 is Ethernet, which leaves out the loopback.
+adapters() {
+    for path in /sys/class/net/*; do
+        if [ "$(cat "$path/type" 2> /dev/null)" = 1 ]; then
+            echo "${path##*/}"
+        fi
+    done
+}
+
+by_address() {
+    for name in $(adapters); do
+        if [ "$(cat "/sys/class/net/$name/address")" = "$1" ]; then
+            echo "$name"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# An adapter reports its cable only while it is up.
+with_cable() {
+    for name in $(adapters); do
+        ip link set "$name" up 2> /dev/null
+    done
+    for name in $(adapters); do
+        if [ "$(cat "/sys/class/net/$name/carrier" 2> /dev/null)" = 1 ]; then
+            echo "$name"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# The adapter the machine booted from, or after 5 s any adapter with a cable: the named one is not coming then.
+# Sets adapter, to nothing when none is there.
+look() {
+    adapter=
+    if [ -n "$wanted" ]; then
+        adapter=$(by_address "$wanted")
+    fi
+    if [ -z "$adapter" ] && { [ -z "$wanted" ] || [ "$tries" -ge 10 ]; }; then
+        adapter=$(with_cable)
+    fi
+}
+
+# $1 says the lines: stage during the start, note after it, when the console is the agent's screen.
+ask_dhcp() {
+    ip link set "$adapter" up
+    "$1" "network: asking DHCP on $adapter"
+    # Ten tries, 3 s apart, cover a switch port that takes 30 s to forward. After that udhcpc goes on in the background.
+    # Its own lines stay off the console, which is the agent's screen when a lease is renewed.
+    udhcpc -i "$adapter" -t 10 -T 3 -b -p /run/udhcpc.pid -s /usr/lib/ddt/lease > /dev/null 2>&1
+    if [ -f /run/ddt/lease ]; then
+        "$1" "network: $(cat /run/ddt/lease)"
+    else
+        "$1" "network: no answer from DHCP on $adapter yet, still asking"
+    fi
+}
+
+# GRUB writes the address as the kernel does, but a hand-written command line may not.
+wanted=$(argument ddt.bootif | tr 'A-F-' 'a-f:')
+adapter=
+tries=0
+# 15 s: a USB adapter appears a moment after its driver loads, and a link takes a few seconds to come up.
+while [ "$tries" -lt 30 ]; do
+    look
+    if [ -n "$adapter" ]; then
+        break
+    fi
+    usleep 500000
+    tries=$((tries + 1))
+done
+
+if [ -z "$adapter" ]; then
+    if [ -z "$(adapters)" ]; then
+        stage "network: Linux shows no network adapter, still looking"
+    else
+        stage "network: no adapter with a cable, still looking"
+    fi
+    # A dock, an adapter on USB or the cable can come after the start, and nobody else would ask DHCP then.
+    (
+        while [ -z "$adapter" ]; do
+            sleep 2
+            look
+        done
+        ask_dhcp note
+    ) > /dev/null 2>&1 < /dev/null &
+    exit 1
+fi
+
+ask_dhcp stage

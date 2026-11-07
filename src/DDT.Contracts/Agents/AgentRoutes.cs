@@ -31,6 +31,9 @@ public static class AgentRoutes
 
     public static string Runs(Guid machineId) => $"api/agents/{machineId:D}/runs";
 
+    // POST an AgentEnvironmentRequest before the machine restarts into the other boot environment.
+    public static string Environment(Guid machineId) => $"api/agents/{machineId:D}/environment";
+
     public static string RunReport(Guid machineId, Guid runId) => $"api/agents/{machineId:D}/runs/{runId:D}/report";
 
     // POST the AgentInputAnswers given at the machine while the run waits to start.
@@ -61,4 +64,9 @@ public static class AgentRoutes
     public static string ConsoleReleaseFile(string name) => $"api/agents/release/console/{Uri.EscapeDataString(name)}";
 
     public const string ConsoleLogo = "api/agents/console/logo";
+
+    // Frozen as well. The agent built for a platform, named as in AgentPlatforms, answered with an AgentRelease too.
+    public static string PlatformRelease(string platform) => $"api/agents/releases/{Uri.EscapeDataString(platform)}";
+
+    public static string PlatformReleaseBinary(string platform) => $"api/agents/releases/{Uri.EscapeDataString(platform)}/binary";
 }

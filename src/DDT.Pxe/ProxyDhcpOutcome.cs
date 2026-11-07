@@ -23,4 +23,7 @@ public sealed record ProxyDhcpOutcome
 
     // Zero leaves the choice of interface to the routing table.
     public int EgressInterface { get; init; }
+
+    // How many HTTP boot connections of the machine's start before were reset, because it starts again.
+    public int ConnectionsReset { get; init; }
 }

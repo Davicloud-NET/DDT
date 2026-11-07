@@ -12,11 +12,11 @@ public sealed record WriteRawImageStep : SequenceStep
     public required Guid ImageId { get; init; }
 
     [JsonIgnore]
-    public override SequencePhase? RequiredPhase => SequencePhase.WindowsPE;
+    public override SequencePhase? RequiredPhase => SequencePhase.LinuxBoot;
 
     [JsonIgnore]
     public override bool ErasesDisk => true;
 
     [JsonIgnore]
-    public override int MinimumVersion => 2;
+    public override int MinimumVersion => 4;
 }

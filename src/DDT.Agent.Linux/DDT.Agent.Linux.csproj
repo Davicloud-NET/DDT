@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The agent for Linux: one static file that runs in the Linux boot environment and in any installed Linux. It is
+       published in a container, by build/Publish-LinuxAgent.ps1, because NativeAOT does not compile across systems. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>linux-musl-x64</RuntimeIdentifier>
+    <PublishAot>true</PublishAot>
+    <!-- No interpreter and no shared library, so the file needs nothing of the system it runs on. -->
+    <StaticExecutable>true</StaticExecutable>
+    <StaticOpenSslLinking>true</StaticOpenSslLinking>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AssemblyName>ddt-agent</AssemblyName>
+    <RootNamespace>DDT.Agent</RootNamespace>
+    <!-- Required by the LibraryImport source generator. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition="'$(_IsPublishing)' == 'true'">$(DefineConstants);DDT_PUBLISHED</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- A static executable cannot load a library at run time, so the linker binds the libc calls. -->
+    <DirectPInvoke Include="libc" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DDT.Agent.Linux.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The legal texts the agent prints, under the names LinuxLegalNotices.Files lists. -->
+    <EmbeddedResource Include="..\..\NOTICE;..\..\LICENSE;..\..\THIRD-PARTY-NOTICES.md" LogicalName="%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\licenses\dotnet\*" LogicalName="licenses/dotnet/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\licenses\zstd\*" LogicalName="licenses/zstd/%(Filename)%(Extension)" />
+    <!-- Of what the linker adds to the static file in build/Dockerfile.agent-linux. -->
+    <EmbeddedResource Include="..\..\licenses\openssl\*" LogicalName="licenses/openssl/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\licenses\musl\*" LogicalName="licenses/musl/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\licenses\gcc\*" LogicalName="licenses/gcc/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- The server reads an agent's version without running it, and a Linux executable has no place for one as a
+       Windows one has. So the build puts it into the file, as the text that follows DDT-AGENT-VERSION: there. -->
+  <Target Name="WriteVersionMarker" BeforeTargets="AssignTargetPaths" DependsOnTargets="GetAssemblyVersion">
+    <PropertyGroup>
+      <DdtVersionMarker>$(IntermediateOutputPath)ddt-agent-version</DdtVersionMarker>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(DdtVersionMarker)" Lines="DDT-AGENT-VERSION:$(Version)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <EmbeddedResource Include="$(DdtVersionMarker)" LogicalName="ddt-agent-version" />
+      <FileWrites Include="$(DdtVersionMarker)" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DDT.Agent.Core\DDT.Agent.Core.csproj" />
+    <ProjectReference Include="..\DDT.ConsoleProtocol\DDT.ConsoleProtocol.csproj" />
+    <ProjectReference Include="..\DDT.Contracts\DDT.Contracts.csproj" />
+    <ProjectReference Include="..\DDT.Core\DDT.Core.csproj" />
+  </ItemGroup>
+
+</Project>

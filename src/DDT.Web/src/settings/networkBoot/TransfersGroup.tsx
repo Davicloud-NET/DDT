@@ -28,6 +28,19 @@ export function TransfersGroup({ form }: { form: PxeForm }) {
       />
       <SettingSwitch
         form={form}
+        field="leaveDhcpPort"
+        canChange
+        label={<Trans>Leave UDP 67 to a DHCP server on this computer</Trans>}
+        hint={
+          <Trans>
+            DDT then answers on UDP 4011 alone, and machines find it there once that DHCP server
+            sends option 60, PXEClient. Where Microsoft's DHCP Server is installed, DDT does this by
+            itself.
+          </Trans>
+        }
+      />
+      <SettingSwitch
+        form={form}
         field="enableTftp"
         canChange
         label={<Trans>Serve boot files over TFTP</Trans>}

@@ -13,6 +13,10 @@ Builds the web UI, publishes DDT.Host self-contained for win-x64, so the server 
 build/Installer/DDT.Installer.wixproj around it with the WiX Toolset. Next to the server go the agent and the console
 of the same version, which it offers until others are uploaded, and Build-BootImage.ps1 with its module.
 
+The Linux boot environment and the agent for Linux go in too, as linux-boot\ and ddt-agent-linux-x64, when they are
+built: Docker builds them, with Publish-LinuxAgent.ps1 and then Build-LinuxBoot.ps1 -AgentFolder, and this script
+does not. Without them the script says so, and the server starts no machine in the Linux boot environment.
+
 The MSI installs the server as the DDT service, running as NT SERVICE\DDT, adds its firewall rules, and writes
 ddt.ini, the bootstrap file, to %ProgramData%\DDT. It takes these properties, as in msiexec /i DDT.msi PORT=443:
 
@@ -56,6 +60,15 @@ and goes on with -Staged.
 .PARAMETER Staged
 Builds the MSI from what -StageOnly left. It zips the console again, since its program may be signed by now.
 
+.PARAMETER LinuxBoot
+The folder Build-LinuxBoot.ps1 wrote the Linux boot environment to, artifacts\linux-boot by default. Either half of
+a build in two halves takes it, since a release builds it on Linux while the programs are signed.
+
+.PARAMETER LinuxAgent
+The agent for Linux as Publish-LinuxAgent.ps1 wrote it, artifacts\agent-linux\ddt-agent by default. It has to be the
+file in the boot environment's ddt.img and of this build's version: a build in two halves, as a release is, stops
+when it is not, and any other build warns.
+
 .EXAMPLE
 .\build\Build-Installer.ps1
 #>
@@ -74,7 +87,11 @@ param(
 
     [switch] $StageOnly,
 
-    [switch] $Staged
+    [switch] $Staged,
+
+    [string] $LinuxBoot,
+
+    [string] $LinuxAgent
 )
 
 Set-StrictMode -Version Latest
@@ -83,8 +100,12 @@ $ErrorActionPreference = 'Stop'
 # Defaults are set here instead of in param(), because Windows PowerShell leaves $PSScriptRoot empty
 # there when the script is started with powershell -File.
 if (-not $Output) { $Output = Join-Path $PSScriptRoot '..\artifacts\installer' }
+if (-not $LinuxBoot) { $LinuxBoot = Join-Path $PSScriptRoot '..\artifacts\linux-boot' }
+if (-not $LinuxAgent) { $LinuxAgent = Join-Path $PSScriptRoot '..\artifacts\agent-linux\ddt-agent' }
 
 $Output = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Output)
+$LinuxBoot = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($LinuxBoot)
+$LinuxAgent = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($LinuxAgent)
 $root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $work = Join-Path $root 'artifacts\installer-work'
 $payload = Join-Path $work 'payload'
@@ -101,7 +122,11 @@ function Invoke-Checked {
         [string[]] $ArgumentList = @()
     )
 
+    # vite and others warn on stderr. Windows PowerShell makes errors of that when the caller redirects it,
+    # and they would end the script here.
+    $ErrorActionPreference = 'Continue'
     & $FilePath @ArgumentList
+    $ErrorActionPreference = 'Stop'
     if ($LASTEXITCODE -ne 0) {
         throw "$FilePath $($ArgumentList -join ' ') failed with exit code $LASTEXITCODE."
     }
@@ -126,6 +151,36 @@ function ConvertTo-Rtf {
     }
 
     "{\rtf1\ansi\deff0{\fonttbl{\f0 Segoe UI;}}\fs18`r`n" + ($paragraphs -join "\par\par`r`n") + "\par}`r`n"
+}
+
+# What is wrong with the Linux files in the payload, or nothing. A machine takes the server's agent when it is not
+# the one its boot environment brought, so from one build the two are one file, of the server's version.
+function Get-LinuxFileProblem {
+    param(
+        [Parameter(Mandatory)] [string] $BootFolder,
+        [Parameter(Mandatory)] [string] $AgentPath,
+        [Parameter(Mandatory)] [string] $Version
+    )
+
+    $manifest = Join-Path $BootFolder 'ddt-linux-boot.json'
+    if (-not (Test-Path -LiteralPath $manifest) -or -not (Test-Path -LiteralPath $AgentPath)) {
+        return
+    }
+
+    $inside = (Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json).PSObject.Properties['agent']
+    if (-not $inside) {
+        return 'The Linux boot environment holds a placeholder instead of the agent. Build it with Build-LinuxBoot.ps1 -AgentFolder.'
+    }
+
+    $hash = (Get-FileHash -LiteralPath $AgentPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($inside.Value.sha256 -ne $hash) {
+        return ('The agent for Linux is not the one in the Linux boot environment, so every machine would download it at each ' +
+            'start. Build both in one go: Publish-LinuxAgent.ps1, then Build-LinuxBoot.ps1 -AgentFolder.')
+    }
+
+    if ($inside.Value.version -ne $Version) {
+        return "The agent for Linux is version $($inside.Value.version), and this build is $Version. Publish it again with -Version $Version."
+    }
 }
 
 if (-not $Version) { $Version = & (Join-Path $PSScriptRoot 'Get-Version.ps1') -AllowShallow }
@@ -182,6 +237,38 @@ else {
 
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Build-BootImage.ps1'), (Join-Path $PSScriptRoot 'boot-image-trim.txt') -Destination $payload
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'BootImage') -Destination $payload -Recurse
+}
+
+# The Linux boot environment and the agent for Linux, which Docker builds and this script does not. A release builds
+# them on Linux while the programs are signed, so either half takes them when they are there.
+$stagedLinuxBoot = Join-Path $payload 'linux-boot'
+$stagedLinuxAgent = Join-Path $payload 'ddt-agent-linux-x64'
+$how = if ($StageOnly) { '-Staged takes it when it is there by then.' } else { 'Publish-LinuxAgent.ps1 and Build-LinuxBoot.ps1 -AgentFolder build them.' }
+
+if (Test-Path -LiteralPath (Join-Path $LinuxBoot 'ddt-linux-boot.json')) {
+    if (Test-Path -LiteralPath $stagedLinuxBoot) {
+        Remove-Item -LiteralPath $stagedLinuxBoot -Recurse -Force
+    }
+
+    Copy-Item -LiteralPath $LinuxBoot -Destination $stagedLinuxBoot -Recurse
+}
+elseif (-not (Test-Path -LiteralPath $stagedLinuxBoot)) {
+    Write-Host "There is no Linux boot environment in $LinuxBoot, so the server would start no machine in one. $how"
+}
+
+if (Test-Path -LiteralPath $LinuxAgent -PathType Leaf) {
+    Copy-Item -LiteralPath $LinuxAgent -Destination $stagedLinuxAgent -Force
+}
+elseif (-not (Test-Path -LiteralPath $stagedLinuxAgent)) {
+    Write-Host "There is no agent for Linux at $LinuxAgent, so the server would offer none. $how"
+}
+
+$problem = Get-LinuxFileProblem -BootFolder $stagedLinuxBoot -AgentPath $stagedLinuxAgent -Version $Version
+if ($problem -and ($StageOnly -or $Staged)) {
+    throw $problem
+}
+elseif ($problem) {
+    Write-Warning $problem
 }
 
 if ($StageOnly) {

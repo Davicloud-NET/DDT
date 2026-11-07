@@ -1,0 +1,44 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# Called by udhcpc with the lease in its environment: sets address, default route and name servers.
+
+. /usr/lib/ddt/common.sh
+
+# What udhcpc hands over. A server may leave any of it out.
+interface=${interface:-} ip=${ip:-} mask=${mask:-24} router=${router:-} domain=${domain:-} dns=${dns:-}
+
+case $1 in
+    deconfig)
+        ip addr flush dev "$interface"
+        ip link set "$interface" up
+        ;;
+    bound | renew)
+        if [ "$1" = bound ]; then
+            ip addr flush dev "$interface"
+        fi
+        ip addr replace "$ip/$mask" dev "$interface"
+        # udhcpc lists every router the server names; the first one is the default route.
+        if [ -n "$router" ]; then
+            ip route replace default via "${router%% *}" dev "$interface"
+        fi
+        {
+            if [ -n "$domain" ]; then
+                echo "search $domain"
+            fi
+            for server in $dns; do
+                echo "nameserver $server"
+            done
+        } > /etc/resolv.conf.new
+        mv /etc/resolv.conf.new /etc/resolv.conf
+        echo "$ip/$mask on $interface, router ${router:-none}, name servers ${dns:-none}" > /run/ddt/lease
+        if [ "$1" = bound ]; then
+            note "network: lease $(cat /run/ddt/lease)"
+        fi
+        ;;
+    leasefail | nak)
+        note "network: DHCP on $interface gave no lease ($1)"
+        ;;
+esac

@@ -94,19 +94,92 @@ public sealed class PxeHostTests : IDisposable
         using PxeHost host = Host();
         await host.StartAsync(TestContext.Current.CancellationToken);
         PxeSetup running = host.Applied!;
-        using Socket taken = Hold(_binding.DhcpPort);
+        using Socket taken = Hold(_binding.BootServerPort);
 
         await ChangeAsync(Desired(2, tftp: true, dhcp: true), results: 2);
 
         PxeApplyResult failed = _results[^1];
         Assert.False(failed.Succeeded);
         Assert.Equal(2, failed.Version);
-        Assert.Contains($"could not bind UDP {_binding.DhcpPort} for ProxyDHCP", failed.Message, StringComparison.Ordinal);
+        Assert.Contains($"could not bind UDP {_binding.BootServerPort} for PXE boot server", failed.Message, StringComparison.Ordinal);
         Assert.Equal(ServerMessages.SettingsApplyPxeBindFailed.Code, failed.Text?.Code);
-        Assert.Equal("proxyDhcp", failed.Text?.Args["protocol"]);
+        Assert.Equal("bootServer", failed.Text?.Args["protocol"]);
         Assert.Same(running, host.Applied);
         Assert.True(IsBound(_binding.TftpPort));
+        Assert.False(IsBound(_binding.DhcpPort));
 
+        await host.StopAsync(TestContext.Current.CancellationToken);
+    }
+
+    // A DHCP server on the same computer holds the DHCP port. The machines it sends to the boot server port must still
+    // find DDT there and load over TFTP, and the page must still learn what is missing.
+    [Fact]
+    public async Task ADhcpPortThatDoesNotBindLeavesTheBootServerPortAndTftpServing()
+    {
+        using Socket dhcpServer = Hold(_binding.DhcpPort);
+        _desired = Desired(1, tftp: true, dhcp: true);
+        using PxeHost host = Host();
+
+        await host.StartAsync(TestContext.Current.CancellationToken);
+
+        PxeApplyResult result = Assert.Single(_results);
+        Assert.False(result.Succeeded);
+        Assert.Contains($"could not bind UDP {_binding.DhcpPort} for ProxyDHCP", result.Message, StringComparison.Ordinal);
+        Assert.Contains("Turn on LeaveDhcpPort", result.Message, StringComparison.Ordinal);
+        Assert.Equal("dhcpServerHere", result.Text?.Args["advice"]);
+        Assert.NotNull(host.Applied);
+        Assert.NotNull(host.Files);
+        Assert.True(IsBound(_binding.BootServerPort));
+        Assert.True(IsBound(_binding.TftpPort));
+
+        await host.StopAsync(TestContext.Current.CancellationToken);
+    }
+
+    // With the setting, DDT does not ask for the DHCP port at all, so nothing fails beside a DHCP server.
+    [Fact]
+    public async Task TheSettingLeavesTheDhcpPortToADhcpServerOnThisComputer()
+    {
+        using Socket dhcpServer = Hold(_binding.DhcpPort);
+        _desired = Desired(1, tftp: true, dhcp: true, leaveDhcpPort: true);
+        using PxeHost host = Host();
+
+        await host.StartAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(Assert.Single(_results).Succeeded);
+        Assert.True(IsBound(_binding.BootServerPort));
+        Assert.True(IsBound(_binding.TftpPort));
+
+        await host.StopAsync(TestContext.Current.CancellationToken);
+        dhcpServer.Dispose();
+        Assert.False(IsBound(_binding.DhcpPort));
+    }
+
+    [Fact]
+    public async Task WithTheSettingNothingListensOnTheDhcpPort()
+    {
+        _desired = Desired(1, tftp: false, dhcp: true, leaveDhcpPort: true);
+        using PxeHost host = Host();
+
+        await host.StartAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(Assert.Single(_results).Succeeded);
+        Assert.False(IsBound(_binding.DhcpPort));
+        Assert.True(IsBound(_binding.BootServerPort));
+
+        await host.StopAsync(TestContext.Current.CancellationToken);
+    }
+
+    // Configuration named what to serve, so a DHCP port that does not bind still stops the host with the advice.
+    [Fact]
+    public async Task ADhcpPortThatDoesNotBindStillStopsAHostWhoseConfigurationDecided()
+    {
+        using Socket dhcpServer = Hold(_binding.DhcpPort);
+        _desired = Desired(1, tftp: true, dhcp: true) with { StopHostOnFailure = true };
+        using PxeHost host = Host();
+
+        InvalidOperationException refusal = await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync(TestContext.Current.CancellationToken));
+
+        Assert.Contains("Turn on LeaveDhcpPort", refusal.Message, StringComparison.Ordinal);
         await host.StopAsync(TestContext.Current.CancellationToken);
     }
 
@@ -196,8 +269,11 @@ public sealed class PxeHostTests : IDisposable
         }
     }
 
-    private PxeDesiredSetup Desired(long version, bool tftp, bool dhcp) =>
-        new(version, new PxeOptions { Interfaces = Loopback.InterfaceName, BootDirectory = _boot, EnableTftp = tftp, EnableProxyDhcp = dhcp }, null, false);
+    private PxeDesiredSetup Desired(long version, bool tftp, bool dhcp, bool leaveDhcpPort = false) => new(
+        version,
+        new PxeOptions { Interfaces = Loopback.InterfaceName, BootDirectory = _boot, EnableTftp = tftp, EnableProxyDhcp = dhcp, LeaveDhcpPort = leaveDhcpPort },
+        null,
+        false);
 
     private static int FreePort()
     {

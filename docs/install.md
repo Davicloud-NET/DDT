@@ -17,6 +17,28 @@ this repository, no file copied by hand, no configuration file edited. What only
 can decide is asked on screen, at most five questions, each with an answer already chosen. The same
 holds on a Linux host with Docker, except that the boot image needs a Windows PC with the ADK.
 
+**Before a boot image is built.** Since M8 a release brings a Linux boot environment (sections 4.2
+and 4.9), so a fresh server netboots machines without the ADK, without a build, and on a Linux host
+without a Windows PC. Once a network card is chosen, such a server can:
+
+- start a 64-bit UEFI machine from the network with PXE, also with Secure Boot on, where the
+  firmware trusts one of Microsoft's third-party UEFI CAs, 2011 or 2023;
+- register the machine, show it on the Machines page and let a technician sign in at its console,
+  which is text in this environment;
+- run a Linux sequence on it: write a raw disk image with its cloud-init seed and start the
+  installed Linux.
+
+It cannot:
+
+- install Windows. Windows sequences run in Windows PE alone, and its boot image is built with the
+  shop's own ADK (sections 4.7, 4.8 and 6);
+- start a machine with Secure Boot on whose firmware trusts neither of them, a BIOS or 32-bit
+  machine, or one that uses UEFI HTTP Boot;
+- start any machine while a DHCP server names another boot file, or while the server's certificate
+  is an administrator's own and not from DDT's root (section 4.9).
+
+The measure above is about Windows and stands as it is.
+
 **Who it is measured against.** An MDT shop runs a Windows Server with the Deployment Workbench, a
 deployment share, the Windows ADK with its Windows PE add-on, and WDS for PXE. The Microsoft DHCP
 server often runs on the same server or the one next to it, in an Active Directory domain, sometimes
@@ -158,7 +180,9 @@ pulls the new image. The database is migrated at start, as PostgreSQL is today
 (src/DDT.Server/Data/DatabaseInitializer.cs:27-31). The agent and the console come with the server
 (section 4.2), so machines run the new agent from their next boot. A boot image is built again only
 when the release notes say that Windows PE changed, and the Boot image page says so too (section
-4.7).
+4.7). The Linux boot environment comes with the server as well, so an upgrade replaces it and there
+is nothing to build. A server that has a boot image keeps starting machines without a run in
+Windows PE after the upgrade (section 4.9).
 
 Removing DDT keeps `%ProgramData%\DDT` unless the removal is asked to delete it: the store holds the
 root key, and a new root means building every boot image again. What setup fetched from Microsoft
@@ -178,12 +202,34 @@ A workflow that a maintainer starts by hand:
 - A Windows job publishes the agent and the console with NativeAOT, as Publish-Agent.ps1 and
   Publish-Console.ps1 do, and the server self-contained for win-x64, so the host needs no .NET
   runtime. It builds the MSI with WiX, and the programs and the MSI are signed (Signing, below).
-- A Linux job builds the image with the agent and the console the Windows job published. NativeAOT
-  does not compile for Windows on Linux, so build/Dockerfile takes them as files rather than building
-  them. It pushes to `ghcr.io/davicloud-net/ddt` with the version and `latest`, x64 first, with a
-  provenance attestation.
-- The release carries the MSI, a zip of the same files, `install.ps1`, `install.sh`, `compose.yaml`
-  and `SHA256SUMS`, and a winget manifest goes to winget-pkgs.
+- A Linux job publishes the agent for Linux and builds the Linux boot environment around it
+  (section 4.2), each in a container and without a cache: `build/Dockerfile.agent-linux` and
+  `build/LinuxBoot/Dockerfile`. It stops unless `base.img` has the SHA-256 the lock names
+  (`build/LinuxBoot/packages.lock.json`), every file is the one `ddt-linux-boot.json` lists, and
+  the agent in `ddt.img` is the file the server will offer, with the release's version. Then it
+  collects the Debian source packages of everything in the environment, each checked against the
+  lock, as `ddt-linux-boot-sources.tar`. The job has no secret.
+- The MSI takes the Linux files beside the Windows ones: `ddt-agent-linux-x64` next to
+  `DDT.Host.exe`, and the folder `linux-boot` with `shimx64.efi`, `grubx64.efi`, `vmlinuz`,
+  `base.img`, `ddt.img` and `ddt-linux-boot.json`.
+- Another Linux job builds the image with the agents, the console and the Linux boot environment
+  as the MSI holds them, so both carry the same files. NativeAOT does not compile for Windows on Linux,
+  so build/Dockerfile takes them as files rather than building them. It pushes to
+  `ghcr.io/davicloud-net/ddt` with the version and `latest`, x64 first, with a provenance
+  attestation. Before that it pushes `ghcr.io/davicloud-net/ddt-sources` under the same tags, an
+  image that holds `ddt-linux-boot-sources.tar` and nothing that runs.
+- The release carries `DDT.msi`, `install.ps1`, `install.sh`, `compose.yaml`,
+  `ddt-linux-boot-sources.tar` and `SHA256SUMS`, which lists the other five, and a winget manifest
+  goes to winget-pkgs.
+
+**The source code of the Linux boot environment.** The environment is made of Debian packages under
+the GPL and other licences, so every release publishes their source at both places it publishes
+the programs: `ddt-linux-boot-sources.tar` beside the MSI, and the `ddt-sources` image beside the
+server's image. `licenses/linux-boot/SOURCES.md`, which the server also serves from its `legal`
+folder, lists each file with its SHA-256 and its address in Debian's archive. The network card
+firmware has no source code: its makers publish it in binary form only, and of it the archive
+holds Debian's packaging alone. [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md) names every
+package and licence.
 
 **Versions.** Decided 2026-10-02: a version is Year.Major.Build, as 26.1.412.
 
@@ -235,7 +281,12 @@ account's secrets can sign anything in the maintainer's name, and the repository
 
 This does not help against a build that is wrong to begin with: what the run built from master is
 what gets signed. Not signed: DDT's managed libraries next to `DDT.Host.exe`, the custom action
-library inside the MSI, and `install.ps1`. Not run yet: the signing jobs need the environment and a
+library inside the MSI, and `install.ps1`. The Linux files are not code-signed by DDT either:
+`ddt-agent-linux-x64`, `base.img` and `ddt.img` carry no signature, and `shimx64.efi`,
+`grubx64.efi` and `vmlinuz` carry Microsoft's and Debian's, as Debian's packages bring them. What
+vouches for them is `SHA256SUMS` for the MSI that holds them, the hashes in `ddt-linux-boot.json`,
+which the server checks the folder's files against, and the lock that pins every Debian package
+(section 4.9, What netboot trusts). Not run yet: the signing jobs need the environment and a
 release from master.
 
 ### 4.2 The agent and the console come with the server
@@ -256,6 +307,45 @@ them into the MSI, with `Build-BootImage.ps1` and its module; the release workfl
 container image, since only Windows compiles them. The server reads the version out of each
 executable to tell which is newer. Run from the server's folder, `Build-BootImage.ps1` also names
 the server by its DNS name and port, trusts its root and writes into its boot directory.
+
+**The Linux files.** A release puts two more things next to `DDT.Host`:
+
+- `ddt-agent-linux-x64`, the agent for Linux: one static program for x64 that needs no library of
+  the system it runs on. The server offers it by the same rule as the Windows agent: what an
+  administrator uploaded on the Server page, which goes to `<StorePath>/agent/ddt-agent-linux-x64`,
+  and otherwise this file. An ELF file has no version resource, so the build writes
+  `DDT-AGENT-VERSION:` and the version into the program, and the server reads that.
+- `linux-boot/`, the Linux boot environment: `shimx64.efi`, `grubx64.efi`, `vmlinuz`, `base.img`
+  and `ddt.img`, with their description `ddt-linux-boot.json`. The server looks for it in that
+  folder, next to its own program files. It needs no build, and nothing of a particular server is
+  in it: the server's address and root certificate reach a machine in a small archive the server
+  generates at each netboot (section 4.9).
+
+The description lists each file with its size and SHA-256. The server starts machines from the
+folder only while the description can be read and lists the five files, each is there in its size
+and is no link, and the shim carries the signatures the description says. It compares each file's
+SHA-256 with the description in the background and stops serving when one differs. The Boot image
+page shows the environment with its kernel, shim and GRUB versions and its keyboard layouts, or
+says why no machine can be started in it.
+
+**An agent for each system.** An agent asks for the one built for its system:
+`GET /api/agents/releases/{platform}` and `.../binary`, with `windows-x64` or `linux-x64` as the
+platform. The routes without a platform, `api/agents/release` and `/binary`, stay the Windows PE
+agent's, which the agent in a boot image asks.
+
+**The agent updates itself in the Linux boot environment too.** `ddt.img` holds the agent of the
+release it was built in. Before it registers, that agent asks the server which agent it offers
+for `linux-x64`. When that is another file, it downloads it, compares its size and SHA-256 with
+what the server announced, and runs it in its own place. So an uploaded agent reaches machines at
+their next netboot and needs no new boot environment. When the download or the start fails, the
+agent from `ddt.img` goes on. In a release both are the same file, and nothing is downloaded.
+
+**From source.** Two configuration keys stand in for what a release brings.
+`DDT:Agent:LinuxBinaryPath` names the agent for Linux, and while it is set, uploads answer 409
+and the bundled agent is not offered, as with `DDT:Agent:BinaryPath`. `DDT:LinuxBoot:Path` names
+the folder of the Linux boot environment. `build/Start-DevHost.ps1` points the first at
+`artifacts\agent-linux\ddt-agent` and, when `Build-LinuxBoot.ps1` has built one, the second at
+`artifacts\linux-boot`. The Server page lists both keys with whether they are set.
 
 ### 4.3 The server as a service
 
@@ -515,6 +605,10 @@ Done, the helper and the button:
   name, runs the script, and copies the result into `boot\builds\<name>`. The image carries the
   agent and console the release came with, not an uploaded one, which machines get at netboot
   anyway (section 4.2).
+- The helper reads the store and the boot directory from `ddt.ini` once, as it starts
+  (src/DDT.Host/Helper/HelperPaths.cs), and so does the server. After a change of `DDT:StorePath`
+  there, restart the service `DDTHelper` together with `DDT`: a helper left running builds the next
+  boot image into the store it started with.
 - A build's name is its start in UTC, `20261001-100000`. The file `boot\current` names the build
   that TFTP and HTTP boot serve (src/DDT.Pxe/BootBuilds.cs); without it they serve the boot
   directory itself, as before, so a build copied there by hand keeps working and shows in the list
@@ -542,10 +636,18 @@ and started.
 Run next to an installed server without `-Destination`, it builds into `boot\builds` and marks its
 build current, as the button does.
 
+**The Linux boot environment on the same page.** The boot image is for Windows sequences. The
+page's second panel shows the Linux boot environment, which comes with the release and has nothing
+to build (section 4.2): its kernel, shim and GRUB, the day its Debian packages are from, the boot
+file machines load, its keyboard layouts, which certificate authorities its shim is signed under,
+and a link to the list of its source packages. `GET /api/boot-image` carries the same as `linux`.
+A server that deploys Linux alone never builds a boot image.
+
 ### 4.8 The boot image from another PC
 
-A Linux server, or a Windows server without the ADK, gets its boot image from any Windows PC that has
-one:
+Until it has a boot image, a server starts machines in the Linux boot environment, which runs Linux
+sequences only (section 4.9). A Linux server, or a Windows server without the ADK, gets its boot
+image from any Windows PC that has one:
 
 - The Boot image page hands out a builder: a zip with `Build-BootImage.ps1` and its `BootImage`
   module folder, the trim list, the
@@ -588,6 +690,98 @@ chosen, from the list `GET /api/settings/pxe/interfaces` gives today.
 (PxeHost.cs:299). Without a configured one, `X64Uefi` boots `x64/bootmgfw.efi` over TFTP, the 2011
 boot manager that is already the default. Done: with ProxyDHCP and TFTP on and no boot target
 configured, that is the one target (src/DDT.Pxe/PxeSetup.cs), and the Network boot page says so.
+
+**Two boot environments.** The server starts a machine in one of two. Windows PE, from the boot
+image of sections 4.7 and 4.8, runs Windows sequences. The Linux boot environment, from
+`linux-boot/` (section 4.2), runs Linux sequences, which are those that write a raw disk image.
+Neither runs the other's: the server hands a run only to the environment its sequence starts in,
+and an agent refuses a run of the other kind before anything is erased.
+
+**Which one a machine starts.** ProxyDHCP names the boot file in its answer, so the server chooses
+for each request of a 64-bit UEFI machine that starts with PXE, in this order:
+
+1. A machine with a run starts the environment the run's sequence needs.
+2. A machine that was asked to restart into the other environment starts that one, for 15 minutes
+   from the asking.
+3. Every other machine starts what `DefaultBootEnvironment` on the Network boot page says: `Auto`,
+   `WindowsPE` or `Linux`. `Auto` is the default: Windows PE once the boot directory holds the
+   boot file of the 64-bit UEFI boot target, so once a boot image is built, and the Linux boot
+   environment until then. A new server so starts machines in Linux until someone builds a boot
+   image, and an upgraded server that has one goes on starting Windows PE.
+
+The Linux boot environment is named only while the server can start it: its files are as their
+description says, TFTP is on, and the server has a root certificate of DDT's own to hand out,
+which a server with an administrator's certificate has not. A machine with Secure Boot on whose
+firmware trusts none of the certificate authorities the shim is signed under is named the Windows
+PE boot file where Windows PE can start, and its page says why. The server knows a machine's
+firmware from its last registration and believes it only of a machine that was approved once. A
+Hyper-V virtual machine of generation 2 is such a machine with the Secure Boot template Microsoft
+Windows: its firmware refuses the shim and goes on to its next boot entry. With the template
+Microsoft UEFI Certificate Authority it starts it.
+
+Where the environment a run needs cannot start, the machine is named the other one, whose agent
+says why the run does not start, and where neither can start it gets no answer. Other
+architectures and UEFI HTTP Boot keep the boot targets of the settings. The server answers from a
+list in memory, which it reads again every five seconds and when a machine changes.
+
+**What a machine loads for Linux.** ProxyDHCP names `linux/shimx64.efi`, which the machine loads
+over TFTP from DDT, whatever the boot target for 64-bit UEFI says. shim loads `grubx64.efi` from
+the same folder. GRUB reads `grub/grub.cfg`, which the server writes for each request, and that
+loads `vmlinuz` and three initramfs files: `base.img` with Debian's kernel modules, firmware and
+BusyBox and DDT's start scripts, `ddt.img` with the agent, and `site.cpio`, which the server
+generates around `agent.json`: its address, its root certificate and the console's keyboard
+layout. Together about 36 MB. The kernel command line names the adapter GRUB booted from, the
+server's time, name and address, the keyboard layout, and the words of `LinuxKernelArguments`.
+The start scripts load the drivers, set the keyboard layout and a clock that is more than ten
+minutes off, ask DHCP on that adapter and start the agent on the first screen. When the agent ends
+without restarting the machine, a menu offers to start it again, a shell, a restart or power off.
+Left alone, the menu starts the agent again after 60 seconds, three times, and then stays.
+
+**HTTP first, TFTP second.** shim, GRUB and `grub.cfg` come over TFTP. The kernel and the
+initramfs files come over HTTP from the boot port, 8080 unless `DDT:Pxe:HttpBootPort` names
+another, and over TFTP where HTTP does not open: `grub.cfg` tries the one and then the other, and
+starts the kernel only when the kernel and all three files opened. A blocked boot port costs about
+16 seconds before GRUB falls back. Where neither works, GRUB says so, waits ten seconds and hands
+the machine back to its firmware.
+
+A machine that is reset while it loads over HTTP leaves its connections open on the server, and
+GRUB takes the same source ports at its next start, which then waits on them. So when a machine's
+netboot starts again, with its request on UDP 4011 or its TFTP read of the shim or of `grub.cfg`,
+the server resets the connections from that address that carried the Linux files. And for three
+minutes after an HTTP read that did not end, or while the server's own system still lists a
+connection between the machine and the boot port, it writes `grub.cfg` for TFTP alone. That is why
+a machine that was reset during a load takes TFTP for a few minutes, and the log line of its
+`grub.cfg` says so.
+
+The server's system also keeps a connection in its list for a while after it was closed in good
+order: Windows for two minutes, Linux for one. So a machine that starts again within that time
+after a start that loaded over HTTP is given TFTP for that one start, with nothing wrong. It costs
+one to three seconds, as measured on Hyper-V.
+
+**From one environment into the other.** A machine that started one environment can run a sequence
+of the other. At the machine, the list shows such a sequence with a note that the machine restarts
+first, where the server can start the other environment for it. Picking it records the wish on the
+server, through `POST api/agents/{id}/environment`, which takes only an operator or administrator
+signed in at that machine. For a run assigned on the web or by a rule, the server orders the
+restart when the agent next asks. Either way the agent writes its resume token into a UEFI
+variable, `DdtResume`, has the firmware start once more from the entry this start came from, and
+restarts. The agent of the other environment reads the variable, deletes it and registers with the
+token, so the approval, the sign-in and an assigned run carry over. Disk, name and inputs are
+asked after the restart.
+
+Its limits:
+
+- Both environments have to be there, the machine's agent has to be one that knows the restart,
+  and for Linux its firmware must not be known to refuse the shim. Otherwise the run stays
+  assigned, and the machine's page and its console say why.
+- Where the firmware does not keep the variable, the machine registers anew after the restart and
+  someone signs in again.
+- The wish holds for 15 minutes.
+- The server orders at most two restarts for one run. A machine that still did not start the
+  other environment, because it does not start from the network or a DHCP server names another
+  boot file, is not restarted again. The run stays assigned and starts once the machine starts
+  that environment.
+- Where every machine is named the same boot file (below), no restart changes the environment.
 
 **Who else holds the ports.** On Windows the Microsoft DHCP server holds UDP 67, and WDS holds 69,
 4011 and, where it answers PXE itself, 67. A bind can succeed on Windows while another process takes
@@ -652,6 +846,120 @@ machine that netboots next to it:
   `System32\RemInst\boot\x64` by hand. A shop whose WDS already netboots has that file.
 
 Left: the checklist's netboot step with the default route's interface chosen (section 5).
+
+**DHCP servers, WDS and the Linux boot environment.** The server chooses per machine only in its
+own ProxyDHCP answer, and shim looks for GRUB where the DHCP answer's boot file points. So what
+the ways above give is:
+
+- **A DHCP server that names no boot file, with DDT's ProxyDHCP beside it.** Both environments,
+  chosen per machine. This is a default install.
+- **A DHCP server on DDT's own computer.** It keeps UDP 67, and DDT answers on UDP 4011 alone,
+  where machines come once that DHCP server sends option 60, `PXEClient`. Both environments,
+  chosen per machine. Next to Microsoft's DHCP Server DDT leaves the port by itself, as above. Next
+  to another one, such as dnsmasq on a Linux host, `LeaveDhcpPort` on the Network boot page does
+  it. Without it DDT's bind of UDP 67 fails there. The page then says which setting helps, and
+  UDP 4011 and TFTP serve meanwhile; a server whose interfaces are named in configuration does
+  not start at all.
+- **Options 66 and 67 pointing at DDT, ProxyDHCP off.** Every machine loads the file option 67
+  names, so the site has one boot environment: `x64/bootmgfw.efi` for Windows PE, or
+  `linux/shimx64.efi` for Linux. A DHCP server that sends the name in option 67 alone and leaves
+  the boot file field of its answer empty makes shim ask for `grubx64.efi` at the TFTP root, and
+  DDT answers it there too.
+- **A DHCP server that names another server's boot file.** The Linux boot environment does not
+  start, with DDT's ProxyDHCP beside it or without: shim follows the DHCP server's answer and looks
+  for GRUB there. Windows PE is not affected. The Network boot page says so next to the setting.
+- **Beside WDS.** WDS loads DDT's `boot.wim`, so machines start Windows PE and never Linux.
+
+**What netboot trusts.** DDT signs nothing a machine loads from the network, in either
+environment. With Secure Boot on, the firmware checks shim by Microsoft's signature, and shim and
+GRUB check GRUB and the kernel by Debian's. Nothing checks `base.img`, `ddt.img`, `grub.cfg` or
+`site.cpio` with its `agent.json`, as nothing checks `boot.wim`. So whoever can answer a machine's
+DHCP or TFTP requests in DDT's place decides what it runs, and the provisioning network is inside
+the trust boundary, as it was. What follows from that for the Linux boot environment:
+
+- The agent trusts the server through the root certificate in `agent.json`, which arrives on that
+  same unchecked way.
+- The start scripts take the server's time and its name and address from the kernel command line
+  in `grub.cfg` as they come: the time sets a clock that is far off, and the name goes into the
+  hosts file.
+- Whoever sits at a netbooted machine is root on it. Ctrl+C ends the agent, and the menu it leaves
+  opens a root shell, as Shift+F10 opens a command prompt in Windows PE. The shell on the second
+  screen and on the serial port opens only once the agent has failed, or with `ddt.shell` among
+  `LinuxKernelArguments`.
+- An uploaded agent for Linux runs as root on every machine that netboots from then on, before
+  anyone authorized the machine, as the agent for Windows PE runs as SYSTEM. The server checks only
+  that the file is a 64-bit Linux program for x86-64, not where it comes from or what it does. The
+  administrator's password, asked again for the upload, and the audit row stand in front of it.
+
+Someone on the same network who does not answer in DDT's place can read every boot file, the
+generated ones too: `site.cpio` holds the server's address, its root certificate, which is
+public, and the keyboard layout, and no token or password. They can register in a machine's name,
+which costs that machine its approval, as before, and replaces what the server knows of its
+firmware: described as not trusting the shim, an approved machine is named Windows PE until it
+registers again itself. With forged source addresses they can make the server reset a machine's
+HTTP downloads through a TFTP read in its name, which sends that machine to TFTP for three minutes
+and can fail a start that was loading, and they can fill the TFTP transfers, as before. They
+cannot read a file outside the boot directory and the files the environment's description lists,
+put a word into `grub.cfg`, reset another machine's downloads with a request on UDP 4011 that
+only names its address, or change what an approved machine is named by registering a row of their
+own with its adapter.
+
+Tried in QEMU with OVMF and Secure Boot on, with the server in its container on a Linux host.
+From an image that holds the Linux files as a release does, a machine the server knew nothing of
+was offered `linux/shimx64.efi` and loaded shim and GRUB over TFTP and the rest over HTTP, and its
+agent registered 11 to 15 seconds after power-on. A Debian 13 cloud image, assigned through the API, was written with its seed, and
+Debian showed its login prompt with Secure Boot on within a minute of power-on. With the boot port
+blocked, everything came over TFTP after GRUB's 16 seconds. With DDT's ProxyDHCP off and dnsmasq
+naming the shim in option 67 alone, the machine started. With dnsmasq holding UDP 67 on DDT's own
+host and `LeaveDhcpPort` on, DDT answered on UDP 4011 alone and the machine started. Reset five
+times half a second into the HTTP read of `base.img` and started again at once, a machine reached
+the agent each time after about 14 seconds, over TFTP. An agent in the Linux boot environment
+wrote `DdtResume`, and the firmware started the network entry again. The lab had no real Windows
+PE, so the Linux agent started once more: it read and deleted the variable and was still signed
+in.
+
+Tried on Hyper-V with the server and the agent as they ship, installed from the MSI on Windows
+Server 2025 with Microsoft's DHCP Server on the same computer, so DDT answered on UDP 4011 alone.
+A generation 2 machine with Secure Boot on and the template Microsoft UEFI Certificate Authority
+reached the agent 13 seconds after power-on. A Debian 13 cloud image was written in 5 seconds, and
+Debian started with Secure Boot on and applied its seed. An earlier trial there, with a `grub.cfg`
+made by hand and a test program in the agent's place, had found that a reset during the HTTP read
+made the next starts fail for one to two and a half minutes. The resets and the three minutes of
+TFTP come from that, and they cure it: reset seven times, six of them in the HTTP read of the
+initrds and one in Linux's first second, the machine reached the agent each time 14 to 16 seconds
+later, over TFTP.
+
+The change of boot environment was tried there too. A Linux sequence picked in Windows PE
+restarted the machine into the Linux boot environment in 14 seconds, which went on without a
+second sign-in, and a Windows sequence picked there went back the same way. `DdtResume` was read
+and deleted each time. A run assigned on the web did the same with nobody at the machine. A
+machine with the template Microsoft Windows was named Windows PE, and a Linux run assigned to it
+stayed assigned, with the reason on its page and on its console. With options 66 and 67 naming the
+Windows boot manager, DDT stopped restarting the machine and said why. With them naming the shim,
+the Linux boot environment started without ProxyDHCP.
+
+No Secure Boot setting of Hyper-V starts both the Windows boot manager and the shim: the template
+Microsoft UEFI Certificate Authority refuses the first, the template Microsoft Windows the second.
+So the change of boot environment ran there with Secure Boot off, and with Secure Boot on only in
+halves: the Linux boot environment wrote the variable under one template, and Windows PE read and
+deleted it under the other, the template changed while the machine was off.
+
+Tried on one physical PC, a Lenovo ThinkPad L15 Gen 1 with firmware of 2021 and Secure Boot on. Its
+firmware trusts Microsoft's third-party CA of 2011 and not the one of 2023. The network's router
+was the DHCP server, and DDT answered beside it as ProxyDHCP from a Windows 11 PC. The Linux boot
+environment reached the agent 25 seconds after DDT's offer. GRUB loaded the kernel and the initrds
+at about 4 MB a second, over HTTP and over TFTP alike. A Debian 13 cloud image was written to the
+NVMe disk in 12 seconds. The boot entry that had pointed at the erased EFI system partition was
+used again and put first, and Debian started, after a cold start too. Reset in the HTTP read of
+`base.img`, the machine was given TFTP at its next start and loaded without a wait. Windows PE
+started 29 seconds after the offer, and the server knew one machine with the same facts from both
+environments. The change of boot environment ran there with Secure Boot on, both ways: 57 seconds
+after a Linux sequence was picked in Windows PE the Linux agent arrived, approved, and 56 seconds
+after a Windows sequence was picked in the Linux boot environment Windows PE arrived and ran it.
+The firmware started the network entry that `BootNext` named each time, and neither `BootNext` nor
+`DdtResume` was left afterwards.
+
+Not tried yet: a PC of another make, and a firmware that trusts only Microsoft's 2023 CA.
 
 Hyper-V's Default Switch does not stand in for a network here. Its DHCP is Windows' connection
 sharing, and on the test host it answered no machine on the switch any more from the moment DDT,
@@ -737,7 +1045,10 @@ It can be dismissed, and the Server page keeps it.
 
 Done: `GET /api/server/checklist` says for six of the steps whether the server sees them done: the
 first password's file is gone, a network card answers netboot, the boot directory holds a build, the
-library holds an image, a task sequence exists, a machine has registered. The card
+library holds an image, a task sequence exists, a machine has registered. It also says whether the
+Linux boot environment can be started (`linuxBoot`), and the boot image step counts as done with
+either: on a server without a boot image the step then reads that machines netboot into the Linux
+boot environment, and that installing Windows takes the boot image as well. The card
 (src/DDT.Web/src/setup) is on the Machines page and on the Server page for administrators, links
 each step to its page, and goes once all six are done. A step ticks itself from the hub's pushes
 for machines, images, sequences, the boot image and the network boot settings, without the list
@@ -753,6 +1064,11 @@ picks it on the Network boot page, or in setup, which offers it (section 3.1).
 
 - **A boot image or Windows PE in a release.** The ADK's licence does not allow passing Windows PE
   on, so every path builds it on the shop's own machine (section 8, question 5).
+- **Linux images written from Windows PE.** The same licence allows Windows PE for installing and
+  recovering Windows. The Linux boot environment writes Linux images, and the agent in Windows PE
+  refuses a sequence that writes one (section 8, question 5).
+- **Windows installed from the Linux boot environment.** Windows sequences run in Windows PE, so
+  installing Windows takes the ADK and a boot image.
 - **Building the boot image on Linux with wimlib.** wimlib can add files to `boot.wim` but not the
   PowerShell components or drivers, which need DISM.
 - **Docker Desktop or WSL on Windows**, which do not deliver broadcasts to the container.
@@ -808,10 +1124,11 @@ the DHCP server was another computer, and DDT answered next to it as ProxyDHCP.
    signed release, which is the first time the signing jobs run.
 5. **The ADK licence.** Confirmed 2026-10-04 from the licence of ADK 10.1.26100 (`Docs\Eula` in the
    kit's folder): only code marked as sample may be passed on, and its section 6 forbids
-   publishing or distributing the software. So Windows PE stays out of every release. Open: the
-   same licence allows Windows PE for installing and recovering Windows, and for no purpose it does
-   not name. Writing a Linux image from Windows PE (M6, and M8 after it) is not named. The
-   maintainer weighs a boot environment without Windows PE for that (roadmap, Ideas for later).
+   publishing or distributing the software. So Windows PE stays out of every release. The same
+   licence allows Windows PE for installing and recovering Windows, and for no purpose it does not
+   name, and writing a Linux image is not named. Answered 2026-10-07: Linux images are written
+   from the Linux boot environment, which every release brings (sections 4.2 and 4.9), and Windows
+   PE is used for Windows only.
 6. **An MSI.** Answered 2026-09-29: an MSI, built with WiX, and since 2026-09-30 without a
    `setup.exe` around it.
 7. **The port.** Answered 2026-10-04: 8443 on every server. It collides with nothing a server

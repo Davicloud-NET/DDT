@@ -8,9 +8,14 @@ namespace DDT.E2E;
 
 // Publishes the agent with build\Publish-Agent.ps1, so the tests never run an agent older than its sources.
 // Without the Visual C++ build tools, which NativeAOT links with, the tests are skipped. Any other failure fails them.
+// The agent for Linux is published in a container, which the tests do not start: they are handed the file.
 internal static class AgentPublisher
 {
-    public const string FileName = "ddt-agent.exe";
+    // Names a published agent for the tests to run instead of publishing one: ddt-agent of Publish-LinuxAgent.ps1 on
+    // Linux, ddt-agent.exe on Windows.
+    public const string HandedVariable = "DDT_E2E_AGENT";
+
+    public static string FileName => OperatingSystem.IsWindows() ? "ddt-agent.exe" : "ddt-agent";
 
     // The component NativeAOT asks vswhere for to find its linker.
     private const string VisualCppTools = "Microsoft.VisualStudio.Component.VC.Tools.x86.x64";
@@ -20,11 +25,30 @@ internal static class AgentPublisher
     // Returns why the tests are skipped, or null once the agent is in output.
     public static async Task<string?> PublishAsync(string output, string logPath, CancellationToken cancellationToken)
     {
+        if (Environment.GetEnvironmentVariable(HandedVariable) is { Length: > 0 } handed)
+        {
+            Take(handed, output);
+
+            return null;
+        }
+
+        if (!OperatingSystem.IsWindows())
+        {
+            return $"The agent for this system is published in a container. Name the file build/Publish-LinuxAgent.ps1 wrote in {HandedVariable}.";
+        }
+
         if (!await VisualCppToolsInstalledAsync(cancellationToken).ConfigureAwait(false))
         {
             return $"build\\Publish-Agent.ps1 publishes the agent with the Visual C++ build tools ({VisualCppTools}), which vswhere does not find.";
         }
 
+        await RunScriptAsync(output, logPath, cancellationToken).ConfigureAwait(false);
+
+        return null;
+    }
+
+    private static async Task RunScriptAsync(string output, string logPath, CancellationToken cancellationToken)
+    {
         ProcessStartInfo start = new(
             "powershell.exe",
             ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", RepositoryPaths.PublishAgentScript, "-Output", output])
@@ -75,8 +99,25 @@ internal static class AgentPublisher
             throw new InvalidOperationException(
                 $"build\\Publish-Agent.ps1 could not publish the agent (exit code {process.ExitCode}):{Environment.NewLine}{lines.Tail(15)}");
         }
+    }
 
-        return null;
+    // A copy, so nothing the agent writes beside itself lands where the file came from. A file handed on by a
+    // build may have lost the mode that makes it a program.
+    private static void Take(string handed, string output)
+    {
+        if (!File.Exists(handed))
+        {
+            throw new FileNotFoundException($"{HandedVariable} names {handed}, which is not there.");
+        }
+
+        Directory.CreateDirectory(output);
+        string agent = Path.Combine(output, FileName);
+        File.Copy(handed, agent, overwrite: true);
+
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(agent, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
     }
 
     private static async Task<bool> VisualCppToolsInstalledAsync(CancellationToken cancellationToken)

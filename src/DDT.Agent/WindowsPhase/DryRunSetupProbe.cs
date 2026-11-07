@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.InstalledPhase;
+
 namespace DDT.Agent.WindowsPhase;
 
 // A dry run's Windows was never set up, so its setup counts as finished right away.
-public sealed class DryRunSetupProbe(AgentLog log) : IWindowsSetupProbe
+public sealed class DryRunSetupProbe(AgentLog log) : ISetupProbe
 {
     public string? Pending()
     {

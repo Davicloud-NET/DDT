@@ -101,6 +101,32 @@ public sealed class MainViewModelTests
         Assert.IsType<WaitingViewModel>(console.Model.Screen);
     }
 
+    // A sequence is assigned and does not start here. The screen says the server's reason instead of "assign one".
+    [Fact]
+    public void AMachineWhoseRunWaitsForAReasonShowsTheReasonInsteadOfAskingForASequence()
+    {
+        const string Reason = "Install Ubuntu runs in the Linux boot environment and does not start in Windows PE. The machine did not start it after restarting.";
+        TestConsole console = new TestConsole().Show(Scenarios.State(ConsoleStage.WaitingForSequence));
+        WaitingViewModel waiting = Assert.IsType<WaitingViewModel>(console.Model.Screen);
+
+        Assert.False(waiting.HasReason);
+        Assert.Equal("Waiting for a task sequence", waiting.Title);
+        Assert.StartsWith("This machine is authorized. Assign a task sequence", waiting.Intro, StringComparison.Ordinal);
+
+        console.Show(Scenarios.State(ConsoleStage.WaitingForSequence) with { Waiting = Reason });
+
+        Assert.Same(waiting, console.Model.Screen);
+        Assert.True(waiting.HasReason);
+        Assert.Equal("Waiting", waiting.Title);
+        Assert.Equal(Reason, waiting.Intro);
+
+        // While the person at the machine chooses, the screen is the choice's.
+        console.Show(Scenarios.State(ConsoleStage.Choosing) with { Waiting = Reason });
+
+        Assert.False(waiting.HasReason);
+        Assert.Equal("One moment", waiting.Title);
+    }
+
     [Fact]
     public void KeepsAScreenOfTheSameKindAndMovesIt()
     {

@@ -102,7 +102,7 @@ public sealed class AgentLegalNoticesTests
     [Fact]
     public async Task LicensesPrintsTheTextsAndExitsWithoutAServer()
     {
-        (int exitCode, string output, string error) = await RunAgentAsync(AgentLegalNotices.LicensesArgument);
+        (int exitCode, string output, string error) = await RunAgentAsync(AgentStartup.LicensesArgument);
         StringWriter expected = new();
         AgentLegalNotices.WriteLicenses(expected);
 

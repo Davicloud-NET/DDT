@@ -8,7 +8,7 @@ namespace DDT.Core.Sequences;
 internal enum PathPhases
 {
     None = 0,
-    WindowsPE = 1,
-    Windows = 2,
-    WindowsPEAfterWindows = 4,
+    Boot = 1,
+    Installed = 2,
+    BootAfterInstalled = 4,
 }

@@ -1,0 +1,18 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# Run by the placeholder agent in the card check: what the kernel says of each SD or eMMC card, which is what the
+# agent tells a card in a reader from a disk that is built in by.
+
+PATH=/usr/bin
+export PATH
+
+for path in /sys/block/mmcblk*; do
+    if [ -e "$path/size" ]; then
+        echo "card: ${path##*/} removable=$(cat "$path/removable") ro=$(cat "$path/ro") size=$(cat "$path/size")" \
+            "type=$(cat "$path/device/type") name=$(cat "$path/device/name") at=$(readlink -f "$path")"
+    fi
+done
+echo "card: listed"

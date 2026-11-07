@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Agent.Consoles;
+using DDT.Agent.InstalledPhase;
 using DDT.Agent.WindowsPhase;
 
 namespace DDT.Agent.Tests;

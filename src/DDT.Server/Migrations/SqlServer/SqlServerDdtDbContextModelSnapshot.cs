@@ -384,6 +384,10 @@ namespace DDT.Server.Migrations.SqlServer
                         .HasColumnType("nvarchar(max)")
                         .UseCollation("Latin1_General_100_BIN2");
 
+                    b.Property<string>("BootEnvironment")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
                     b.Property<int?>("ContinuePass")
                         .HasColumnType("int");
 
@@ -452,6 +456,9 @@ namespace DDT.Server.Migrations.SqlServer
 
                     b.Property<Guid?>("RequestedByUserId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("RestartsOrdered")
+                        .HasColumnType("int");
 
                     b.Property<Guid?>("RuleId")
                         .HasColumnType("uniqueidentifier");
@@ -950,6 +957,16 @@ namespace DDT.Server.Migrations.SqlServer
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)")
                         .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("NextEnvironment")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<DateTimeOffset?>("NextEnvironmentUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("PendingSequenceId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("PrimaryMac")
                         .IsRequired()

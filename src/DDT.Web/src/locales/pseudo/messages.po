@@ -78,6 +78,11 @@ msgid "''{value}'' is every address there is. Name the provisioning networks the
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.pxe.bootEnvironmentInvalid"
+msgid "''{value}'' is not a boot environment. Use Auto, WindowsPE or Linux."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.pxe.architectureUnknown"
 msgid "''{value}'' is not a client architecture. Use one of: {architectures}."
 msgstr ""
@@ -153,8 +158,23 @@ msgid "''{value}'' is not one of the choices of {label}."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.deployment.keyboardLayoutInvalid"
+msgid "''{value}'' is not the name of a keyboard layout. Use one the Linux boot environment has, such as us or de, or leave it empty for us."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.deployment.domainUserNameForm"
 msgid "''{value}'' must be written as DOMAIN\\user or user@domain.example."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.kernelArgumentsInvalid"
+msgid "''{word}'' cannot be added to the kernel command line. Use words of letters, digits and _ . : , = + / @ - with spaces between them, and start none with a hyphen. Nothing else is taken, because the words go into the boot loader's script."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.kernelArgumentsReserved"
+msgid "''{word}'' would replace what DDT sets itself. Leave out init, rdinit, initrd, BOOT_IMAGE and every word that starts with ddt., except ddt.shell, which opens a root shell at the machine."
 msgstr ""
 
 #: src/sequences/list/UsedBy.tsx
@@ -525,6 +545,11 @@ msgctxt "sequence.emptyContainerWarning"
 msgid "{kind, select, if {This IF has no steps in Then or Else} repeat {This repeat has no steps} other {This group has no steps}}, so it does nothing."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.phaseValueOtherKindWarning"
+msgid "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}"
+msgstr ""
+
 #: src/runs/steps/RunStepItem.tsx
 msgid "{kind}, {phase}"
 msgstr ""
@@ -763,6 +788,7 @@ msgid "{name} is in the library now."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
+#: src/settings/LinuxAgentPanel.tsx
 msgid "{name} is larger than {limit}, the most the server takes for the agent."
 msgstr ""
 
@@ -831,6 +857,30 @@ msgctxt "sequence.secretValueWarning"
 msgid "{name} looks like a password or another secret, and everyone who can sign in to DDT can read the values of sequences and runs. Keep it in an account, stored or asked for the run, which only the step that uses it gets."
 msgstr ""
 
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first."
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it."
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in Windows PE, and this machine started the Linux boot environment with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in Windows PE, and this machine started the Linux boot environment. The machine restarts into Windows PE first."
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "{name} runs in Windows PE, and this server has no boot image to start it from. The run stays assigned and does not start until an administrator builds one on the Boot image page."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "user.singleSignOnPassword"
 msgid "{name} signs in through single sign-on and has no password in DDT."
@@ -864,6 +914,10 @@ msgstr ""
 
 #: src/settings/AgentPanel.tsx
 msgid "{name}, {size}, replaces the agent every machine that netboots from now on runs as SYSTEM."
+msgstr ""
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "{name}, {size}, replaces the agent every machine that starts the Linux boot environment from now on runs as root."
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
@@ -1331,6 +1385,10 @@ msgstr ""
 msgid "A #cloud-config document, or a script that starts with #!."
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "A 64-bit Linux program for x64 of at most 128 MB."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "bootImage.busy"
 msgid "A build or an install of the ADK is running already. Wait for it to end."
@@ -1385,6 +1443,10 @@ msgstr ""
 
 #: src/settings/deploymentDefaults/WindowsSetupGroup.tsx
 msgid "A culture name. Left empty, the image's language."
+msgstr ""
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "A DHCP server that names a boot file itself starts the same environment on every machine, and if it names another server's file, the Linux boot environment does not start at all."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1450,6 +1512,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "rule.roleGone"
 msgid "A machine role this rule gives no longer exists. Take it out of the rule."
+msgstr ""
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "A machine with a run starts the boot environment its task sequence needs: Windows PE for Windows, the Linux boot environment for a Linux image. This setting decides for every other 64-bit UEFI machine."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1569,7 +1635,7 @@ msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.runAsWindowsOnly"
-msgid "A script runs as an account only in Windows. In Windows PE it runs as SYSTEM."
+msgid "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} other {In Windows PE it runs as SYSTEM.}}"
 msgstr ""
 
 #: src/tokens/TokenSecret.tsx
@@ -1653,13 +1719,13 @@ msgid "A sequence that is gone"
 msgstr ""
 
 #: src/lib/serverMessages.ts
-msgctxt "sequence.packageWithRawImage"
-msgid "A sequence that writes a raw disk image has no partition to unpack a package on, so its scripts cannot have one."
+msgctxt "sequence.restartWithRawImage"
+msgid "A sequence that writes a raw disk image keeps its state in memory, so the Linux boot environment cannot restart during it."
 msgstr ""
 
 #: src/lib/serverMessages.ts
-msgctxt "sequence.restartWithRawImage"
-msgid "A sequence that writes a raw disk image keeps its state in memory, so Windows PE cannot restart during it."
+msgctxt "sequence.shellExitCodes"
+msgid "A shell script ends with an exit code from 0 to 255."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -2141,6 +2207,10 @@ msgstr ""
 
 #: src/settings/AgentPanel.tsx
 msgid "Agent for netbooting machines"
+msgstr ""
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Agent for the Linux boot environment"
 msgstr ""
 
 #: src/machines/machineView.ts
@@ -2651,6 +2721,10 @@ msgstr ""
 msgid "Authorizing machines"
 msgstr ""
 
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Automatic: Windows PE once a boot image is built, Linux until then"
+msgstr ""
+
 #: src/about/AboutPage.tsx
 msgid "Back to DDT"
 msgstr ""
@@ -2688,6 +2762,7 @@ msgstr ""
 msgid "Boot directory"
 msgstr ""
 
+#: src/boot/LinuxEnvironment.tsx
 #: src/settings/networkBoot/BootFileField.tsx
 msgid "Boot file"
 msgstr ""
@@ -3001,7 +3076,7 @@ msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.scriptInterpreter"
-msgid "Choose cmd or PowerShell."
+msgid "Choose cmd, PowerShell or the shell."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3011,6 +3086,10 @@ msgstr ""
 
 #: src/settings/AgentPanel.tsx
 msgid "Choose the agent first."
+msgstr ""
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Choose the agent for Linux first."
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
@@ -3061,7 +3140,7 @@ msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.scriptPhase"
-msgid "Choose Windows PE or Windows."
+msgid "Choose where the script runs."
 msgstr ""
 
 #: src/rules/ruleText.ts
@@ -3324,7 +3403,7 @@ msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.apply.pxeBindFailed"
-msgid "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} other {Check that no other service holds the port.}}"
+msgid "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} dhcpServerHere {A DHCP server on this computer holds the port. Turn on LeaveDhcpPort, and DDT answers on UDP 4011 alone, which machines reach once that DHCP server sends option 60, PXEClient. UDP 4011 and TFTP are serving meanwhile.} other {Check that no other service holds the port.}}"
 msgstr ""
 
 #: src/app/RouteError.tsx
@@ -3397,6 +3476,10 @@ msgstr ""
 msgid "DDT tells a netbooting machine its boot file, while the site's own DHCP server keeps handing out the addresses. Turn it off where every site's DHCP server names DDT and the boot file itself; DDT then listens on neither UDP 67 nor 4011."
 msgstr ""
 
+#: src/settings/networkBoot/TransfersGroup.tsx
+msgid "DDT then answers on UDP 4011 alone, and machines find it there once that DHCP server sends option 60, PXEClient. Where Microsoft's DHCP Server is installed, DDT does this by itself."
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key and restart DDT to upload the agent on this page."
 msgstr ""
@@ -3415,6 +3498,15 @@ msgctxt "settings.console.configured"
 msgid "DDT:Agent:ConsolePath names the console in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration, so it cannot be uploaded here. Remove the key and restart DDT to upload it on this page."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.linuxAgent.configured"
+msgid "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
+msgstr ""
+
 #: src/settings/certificate/ServedCertificate.tsx
 msgid "DDT:Https:GenerateSelfSignedCertificate is false in configuration, so DDT issues no certificate here. Upload one instead."
 msgstr ""
@@ -3426,6 +3518,10 @@ msgstr ""
 
 #: src/settings/certificate/CertificateFacts.tsx
 msgid "DDT's root, {root}"
+msgstr ""
+
+#: src/boot/LinuxEnvironment.tsx
+msgid "Debian packages as of"
 msgstr ""
 
 #: src/runs/flow/detailsText.ts
@@ -3567,6 +3663,14 @@ msgstr ""
 
 #: src/machines/facts.ts
 msgid "DHCP server"
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "Did not start the Linux boot environment after restarting"
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "Did not start Windows PE after restarting"
 msgstr ""
 
 #: src/settings/directory/DirectorySettings.tsx
@@ -3764,8 +3868,16 @@ msgstr ""
 msgid "Drop another logo here to replace it, or choose one."
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Drop ddt-agent-linux-x64 here, or choose it."
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "Drop ddt-agent.exe here, or choose it."
+msgstr ""
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Drop the agent for Linux to upload it"
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
@@ -3874,10 +3986,12 @@ msgid "ends with"
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "English (United Kingdom)"
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "English (United States)"
 msgstr ""
 
@@ -4103,6 +4217,10 @@ msgstr ""
 msgid "Entry"
 msgstr ""
 
+#: src/machines/bootEnvironment.ts
+msgid "Environment"
+msgstr ""
+
 #: src/sequences/steps.ts
 msgid "equals"
 msgstr ""
@@ -4192,6 +4310,10 @@ msgstr ""
 
 #: src/tokens/TokenTable.tsx
 msgid "Expires"
+msgstr ""
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Extra kernel arguments for Linux"
 msgstr ""
 
 #: src/sequences/steps/InjectDriversFields.tsx
@@ -4425,6 +4547,7 @@ msgid "Found"
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "French"
 msgstr ""
 
@@ -4518,10 +4641,12 @@ msgid "Generate certificate"
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "German"
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "German (Switzerland)"
 msgstr ""
 
@@ -4647,6 +4772,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.tooDeep"
 msgid "Groups, IFs and repeats can be nested at most {max} levels deep."
+msgstr ""
+
+#: src/boot/LinuxEnvironment.tsx
+msgid "GRUB"
 msgstr ""
 
 #: src/runs/runs.ts
@@ -4777,6 +4906,10 @@ msgstr ""
 msgid "In the installed Windows, after the hand-over"
 msgstr ""
 
+#: src/runs/panel/RunRail.tsx
+msgid "In the Linux boot environment"
+msgstr ""
+
 #: src/runs/flow/HandoverLine.tsx
 #: src/runs/panel/RunRail.tsx
 #: src/sequences/builder/canvas/CanvasBackdrop.tsx
@@ -4861,6 +4994,10 @@ msgstr ""
 
 #: src/images/ImageFacts.tsx
 msgid "Installed"
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "Installed Windows"
 msgstr ""
 
 #: src/settings/networkBoot/InterfacesGroup.tsx
@@ -4958,6 +5095,10 @@ msgstr ""
 msgid "It cannot join machines here."
 msgstr ""
 
+#: src/boot/LinuxEnvironment.tsx
+msgid "It comes with DDT, so there is nothing to build. Task sequences that write a Linux image run in it, and Windows sequences run in Windows PE."
+msgstr ""
+
 #: src/inputs/inputs.ts
 msgid "It connects to shares on {hosts}."
 msgstr ""
@@ -5017,6 +5158,7 @@ msgid "It uploads one boot image, within a day. Download it again for the next b
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "Italian"
 msgstr ""
 
@@ -5039,6 +5181,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.keyAlgorithm"
 msgid "Its key is neither RSA nor ECDSA."
+msgstr ""
+
+#: src/boot/LinuxEnvironment.tsx
+msgid "Its source code is published with every release of DDT: <0>the source packages it was built from</0>."
 msgstr ""
 
 #: src/settings/deploymentDefaults/DomainGroup.tsx
@@ -5091,6 +5237,10 @@ msgstr ""
 msgid "Keeps the disk"
 msgstr ""
 
+#: src/boot/LinuxEnvironment.tsx
+msgid "Kernel"
+msgstr ""
+
 #: src/settings/certificate/NotManageable.tsx
 msgid "Kestrel:Certificates:Default:Password is set in configuration, so the certificate is managed by hand and this page only reads it. To manage it here, keep the certificate and its key as PEM files without a password, name them in Kestrel:Certificates:Default:Path and KeyPath, remove the password, and restart DDT."
 msgstr ""
@@ -5111,6 +5261,14 @@ msgstr ""
 #: src/boot/BuildPanel.tsx
 #: src/boot/LastBuild.tsx
 msgid "Keyboard layout"
+msgstr ""
+
+#: src/settings/deploymentDefaults/ConsoleLanguageGroup.tsx
+msgid "Keyboard layout in the Linux boot environment"
+msgstr ""
+
+#: src/boot/LinuxEnvironment.tsx
+msgid "Keyboard layouts"
 msgstr ""
 
 #: src/settings/signIn/ClaimRolesGroup.tsx
@@ -5203,6 +5361,10 @@ msgstr ""
 msgid "Leave page"
 msgstr ""
 
+#: src/settings/networkBoot/TransfersGroup.tsx
+msgid "Leave UDP 67 to a DHCP server on this computer"
+msgstr ""
+
 #: src/uploads/LeaveUploadDialog.tsx
 msgid "Leave while {file} is checked?"
 msgstr ""
@@ -5269,6 +5431,19 @@ msgstr ""
 
 #: src/users/UsersTable.tsx
 msgid "Linked to {provider}"
+msgstr ""
+
+#: src/boot/LinuxEnvironment.tsx
+#: src/conditions/conditionSubjects.ts
+#: src/machines/bootEnvironment.ts
+#: src/sequences/steps.ts
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "Linux boot environment"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.linuxDefaultUnavailable"
+msgid "Linux is the default, but this server cannot start the Linux boot environment, so machines without a run are named the Windows PE boot file. {problem}"
 msgstr ""
 
 #: src/settings/certificate/PemField.tsx
@@ -5475,6 +5650,10 @@ msgctxt "package.inUse"
 msgid "Machines are waiting to install this package or are installing it. Cancel those runs or let them finish, then delete it."
 msgstr ""
 
+#: src/setup/SetupChecklist.tsx
+msgid "Machines netboot into the Linux boot environment, which comes with DDT. To install Windows, <0>build the boot image</0> as well."
+msgstr ""
+
 #: src/packages/packages.ts
 msgid "Machines of {targets} no longer get these drivers from the Inject drivers step of {names}."
 msgstr ""
@@ -5484,6 +5663,7 @@ msgid "Machines of {targets} no longer get these drivers."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
+#: src/settings/LinuxAgentPanel.tsx
 msgid "Machines run"
 msgstr ""
 
@@ -5503,6 +5683,10 @@ msgstr ""
 msgid "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Machines take it at their next netboot: the agent the Linux boot environment brings downloads it and runs it instead, so a newer agent needs no new environment. A machine that cannot download or start it goes on with the agent the environment brought."
+msgstr ""
+
 #: src/boot/StoredBuilds.tsx
 msgid "Machines that netboot from now on get this build. A machine that is netbooting right now finishes with the build it started."
 msgstr ""
@@ -5515,8 +5699,20 @@ msgstr ""
 msgid "Machines that netboot from now on show the console this server came with. If it came with none, they show the console in their boot image."
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Machines that start the Linux boot environment from now on run the agent for Linux this server came with. If it came with none, they run the agent the environment brings."
+msgstr ""
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Machines that start the Linux boot environment load {file} over TFTP, whatever the boot target for 64-bit UEFI names."
+msgstr ""
+
 #: src/conditions/conditions.ts
 msgid "Machines where {condition} go along Then."
+msgstr ""
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Machines without a run start"
 msgstr ""
 
 #: src/users/ConfirmUserAction.tsx
@@ -6390,6 +6586,7 @@ msgid "Not reached"
 msgstr ""
 
 #: src/boot/LastBuild.tsx
+#: src/boot/LinuxEnvironment.tsx
 msgid "Not recorded"
 msgstr ""
 
@@ -6601,6 +6798,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "machine.cannotBeRemoved"
 msgid "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
+msgstr ""
+
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "Only a script in Windows runs as an account; in the Linux boot environment it runs as root."
 msgstr ""
 
 #: src/sequences/steps/RunScriptFields.tsx
@@ -7341,6 +7542,14 @@ msgstr ""
 msgid "Remove the uploaded agent"
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Remove the uploaded agent for Linux"
+msgstr ""
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Remove the uploaded agent for Linux?"
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "Remove the uploaded agent?"
 msgstr ""
@@ -7377,6 +7586,10 @@ msgstr ""
 msgid "Removed. Machines that netboot from now on no longer get that console."
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Removed. Machines that start the Linux boot environment from now on no longer get that agent."
+msgstr ""
+
 #: src/deployments/deployments.ts
 msgid "Removing the agent from Windows"
 msgstr ""
@@ -7387,6 +7600,10 @@ msgstr ""
 
 #: src/settings/AgentPanel.tsx
 msgid "Removing the uploaded agent"
+msgstr ""
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Removing the uploaded agent for Linux"
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
@@ -7482,6 +7699,10 @@ msgstr ""
 msgid "Restart after this step"
 msgstr ""
 
+#: src/audit/auditView.ts
+msgid "Restart into the other boot environment"
+msgstr ""
+
 #: src/runs/runs.ts
 msgid "Restarted after step {number}, {name}"
 msgstr ""
@@ -7494,12 +7715,28 @@ msgstr ""
 msgid "Restarting"
 msgstr ""
 
+#: src/machines/bootEnvironment.ts
+msgid "Restarts into"
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "Restarts into the Linux boot environment"
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "Restarts into Windows PE"
+msgstr ""
+
 #: src/sequences/builder/nodeDetail.ts
 msgid "Restarts the machine"
 msgstr ""
 
 #: src/sequences/steps/RebootFields.tsx
 msgid "Restarts the machine, and the sequence goes on with the step after {name}. In Windows PE this needs a partitioned disk, where the run's state is kept."
+msgstr ""
+
+#: src/sequences/steps/RebootFields.tsx
+msgid "Restarts the machine, and the sequence goes on with the step after {name}. The Linux boot environment keeps the run's state in memory, so a sequence that writes a raw disk image cannot restart."
 msgstr ""
 
 #: src/app/palette/Palette.tsx
@@ -7578,6 +7815,10 @@ msgstr ""
 
 #: src/settings/roleMap/RoleMapEntry.tsx
 msgid "Role that {key} gives"
+msgstr ""
+
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "root"
 msgstr ""
 
 #: src/settings/certificate/CertificateFacts.tsx
@@ -7714,11 +7955,15 @@ msgstr ""
 msgid "Runs"
 msgstr ""
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptIntro.tsx
+msgid "Runs as root in the Linux boot environment, before the machine starts from the disk image. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
+msgstr ""
+
+#: src/sequences/steps/ScriptIntro.tsx
 msgid "Runs as SYSTEM on the machine. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
 msgstr ""
 
-#: src/sequences/steps/RunScriptFields.tsx
+#: src/sequences/steps/ScriptIntro.tsx
 msgid "Runs as the account chosen below, which DDT signs in with; the script never sees its password. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
 msgstr ""
 
@@ -8203,6 +8448,7 @@ msgstr ""
 #: src/images/ImageFacts.tsx
 #: src/settings/AgentPanel.tsx
 #: src/settings/certificate/CertificateFacts.tsx
+#: src/settings/LinuxAgentPanel.tsx
 msgid "SHA-256"
 msgstr ""
 
@@ -8216,6 +8462,10 @@ msgstr ""
 
 #: src/sequences/builder/variables/AccountInputFields.tsx
 msgid "Share hosts it may connect to"
+msgstr ""
+
+#: src/boot/LinuxEnvironment.tsx
+msgid "shim"
 msgstr ""
 
 #: src/machines/list/MachineList.tsx
@@ -8368,6 +8618,7 @@ msgstr ""
 #: src/images/ImagesTable.tsx
 #: src/packages/PackagesTable.tsx
 #: src/settings/AgentPanel.tsx
+#: src/settings/LinuxAgentPanel.tsx
 #: src/settings/logo/LogoDetails.tsx
 msgid "Size"
 msgstr ""
@@ -8475,6 +8726,7 @@ msgid "Source code"
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
+#: src/boot/linuxBoot.ts
 msgid "Spanish"
 msgstr ""
 
@@ -8509,6 +8761,18 @@ msgstr ""
 
 #: src/boot/JobPanel.tsx
 msgid "Started {when} by {startedBy}"
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "Started the Linux boot environment"
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "Started Windows PE"
+msgstr ""
+
+#: src/sequences/steps/RunScriptFields.tsx
+msgid "Started with /bin/sh, or with the interpreter its first line names, such as #!/bin/bash."
 msgstr ""
 
 #: src/machines/list/runDetail.ts
@@ -8869,6 +9133,11 @@ msgid "That did not work."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.linuxAgent.notExecutable"
+msgid "That is not a 64-bit Linux program for x86-64. Upload ddt-agent as Publish-LinuxAgent.ps1 builds it, or ddt-agent-linux-x64 from a DDT release."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.consoleLogo.notPng"
 msgid "That is not a PNG image. Upload the logo as a PNG file."
 msgstr ""
@@ -8965,6 +9234,18 @@ msgstr ""
 msgid "The accounts steps use: a script runs as one, a share is connected with one, a domain is joined with one. Each password is stored encrypted and goes only to the step that uses it, while the step runs; this page never shows it."
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The agent for Linux this server came with, since none was uploaded"
+msgstr ""
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The agent for Linux uploaded here"
+msgstr ""
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The agent for the Linux boot environment could not be read."
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "The agent in their boot image, since none was uploaded"
 msgstr ""
@@ -8982,6 +9263,10 @@ msgstr ""
 msgid "The agent on this machine reported no facts. A newer agent reports them at the machine's next netboot."
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The agent runs as root on every machine that starts the Linux boot environment, so uploading it needs your password again."
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "The agent runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
 msgstr ""
@@ -8990,12 +9275,20 @@ msgstr ""
 msgid "The agent started the run"
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The agent the Linux boot environment brings, since none was uploaded"
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "The agent this server came with, since none was uploaded"
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
 msgid "The agent uploaded here"
+msgstr ""
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The agent you upload runs as root on every machine that starts the Linux boot environment from now on, before anybody authorized the machine. The server checks only that the file is a Linux program for x64, not where it comes from. Upload only ddt-agent-linux-x64 from a DDT release, or ddt-agent as Publish-LinuxAgent.ps1 builds it."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
@@ -9426,6 +9719,10 @@ msgstr ""
 msgid "The file DDT:Agent:BinaryPath names in configuration"
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The file DDT:Agent:LinuxBinaryPath names in configuration"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "gpt.noTable"
 msgid "The file has no GUID partition table, so it is not a UEFI disk image. Upload a disk image such as a distribution's cloud image."
@@ -9608,6 +9905,10 @@ msgstr ""
 msgid "The language the console starts in, in Windows PE and in the installed Windows. Someone at the machine can switch with F5."
 msgstr ""
 
+#: src/settings/deploymentDefaults/ConsoleLanguageGroup.tsx
+msgid "The layout of the console when a machine starts the Linux boot environment. Windows PE has the layout its boot image was built with."
+msgstr ""
+
 #: src/sequences/steps/WriteRawImageFields.tsx
 msgid "The library has no raw disk images yet. Upload a distribution's cloud image under <0>OS images</0>."
 msgstr ""
@@ -9618,6 +9919,45 @@ msgstr ""
 
 #: src/about/AboutPage.tsx
 msgid "The licences of the packages in this web interface"
+msgstr ""
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "The Linux boot environment"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "linuxBoot.noRoot"
+msgid "The Linux boot environment cannot be started, because this server has no root certificate of its own to hand to the machines: its certificate comes from an administrator. A machine in that environment trusts the server only through the root it is handed. Let DDT issue the server's certificate, or start machines in Windows PE."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.sharesNotInLinuxBoot"
+msgid "The Linux boot environment cannot connect shares. Remove them from this step."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.packageWithRawImage"
+msgid "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "linuxBoot.damaged"
+msgid "The Linux boot environment in {folder} is damaged: {reason, select, unreadable {its description, {name}, cannot be read} incomplete {its description does not list {name}} missing {{name} is not there} size {{name} has another size than its description says} hash {{name} is not the file its description names} changed {{name} was replaced or removed after the server had checked it} signatures {{name} carries other signatures than its description says} other {{name} cannot be read}}. Install this release of DDT again, which brings the folder anew."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.keyboardLayoutUnknown"
+msgid "The Linux boot environment of this server has no keyboard layout ''{value}''. It has {layouts}."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.linuxPhaseWithoutRawImage"
+msgid "The Linux boot environment only runs sequences that write a raw disk image. Choose Windows PE or Windows."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.linuxNeedsShell"
+msgid "The Linux boot environment runs only shell scripts. Choose the shell and rewrite the script for it."
 msgstr ""
 
 #: src/log/LogStatusBar.tsx
@@ -10343,6 +10683,10 @@ msgstr ""
 msgid "The upload of {name} stopped. Choose the file again to resume."
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "The uploaded agent for Linux was not removed. {reason}"
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "The uploaded agent was not removed. {reason}"
 msgstr ""
@@ -10612,6 +10956,14 @@ msgctxt "deployment.alreadyHasRun"
 msgid "This machine already has a run. Cancel it before assigning another sequence."
 msgstr ""
 
+#: src/machines/bootEnvironment.ts
+msgid "This machine did not start the Linux boot environment after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts the Linux boot environment."
+msgstr ""
+
+#: src/machines/bootEnvironment.ts
+msgid "This machine did not start Windows PE after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts Windows PE."
+msgstr ""
+
 #: src/machines/assign/AssignConsequences.tsx
 msgid "This machine has more than one disk. Sign in at it and choose the disk there."
 msgstr ""
@@ -10623,6 +10975,14 @@ msgstr ""
 
 #: src/log/LogPanel.tsx
 msgid "This machine has sent no log lines yet."
+msgstr ""
+
+#: src/machines/secureBoot.ts
+msgid "This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware does not trust {cas}, which signs the environment's first loader. Allow it in the firmware setup, or turn Secure Boot off there."
+msgstr ""
+
+#: src/machines/secureBoot.ts
+msgid "This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware trusts neither of {cas}, which sign the environment's first loader. Allow one of them in the firmware setup, or turn Secure Boot off there."
 msgstr ""
 
 #: src/machines/MachinePage.tsx
@@ -10663,6 +11023,11 @@ msgstr ""
 msgid "This run"
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.windowsScriptInLinux"
+msgid "This script was written for Windows PE, which no longer runs Linux sequences. Rewrite it for the shell and let it run in the Linux boot environment."
+msgstr ""
+
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "This sequence declares no variables or inputs yet."
 msgstr ""
@@ -10685,6 +11050,7 @@ msgid "This sequence was deleted, so nothing more is saved."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
+#: src/settings/LinuxAgentPanel.tsx
 msgid "This server came with agent {version}, which is newer than the uploaded one. Remove the upload, and machines run the server's own."
 msgstr ""
 
@@ -10709,6 +11075,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "settings.keyRingUnreadable"
 msgid "This server cannot read the key ring the stored settings secrets were encrypted with, so it saves no settings. Every DDT process on one database has to share the key ring in DDT:StorePath/keys."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "linuxBoot.missing"
+msgid "This server has no Linux boot environment: {folder} holds no ddt-linux-boot.json. A release of DDT brings the folder with it."
 msgstr ""
 
 #: src/settings/server/ServerSettings.tsx
@@ -11012,6 +11383,10 @@ msgstr ""
 msgid "Upload"
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Upload {name} as the agent for Linux?"
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "Upload {name} as the agent?"
 msgstr ""
@@ -11037,6 +11412,7 @@ msgid "Upload a zip of files, then choose it in a Run script step of a task sequ
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
+#: src/settings/LinuxAgentPanel.tsx
 msgid "Upload agent"
 msgstr ""
 
@@ -11051,6 +11427,10 @@ msgstr ""
 
 #: src/settings/AgentPanel.tsx
 msgid "Upload the agent"
+msgstr ""
+
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Upload the agent for Linux"
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
@@ -11076,6 +11456,10 @@ msgstr ""
 msgid "Uploaded. Machines that netboot from now on show the console whose ddt-console.exe has SHA-256 {uploaded}."
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "Uploaded. Machines that start the Linux boot environment from now on run the agent with SHA-256 {uploaded}."
+msgstr ""
+
 #: src/uploads/UploadProgress.tsx
 msgid "Uploading {file}"
 msgstr ""
@@ -11095,6 +11479,11 @@ msgstr ""
 
 #: src/auth/TwoFactorFields.tsx
 msgid "Use an authenticator code"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.pxe.kernelArgumentsLength"
+msgid "Use at most {max} characters."
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/WdsState.tsx
@@ -11314,6 +11703,10 @@ msgid "Waits until someone lets the run go on"
 msgstr ""
 
 #: src/sequences/steps/PauseFields.tsx
+msgid "Waits until someone lets the run go on, at the machine or on its page. A restart in the Linux boot environment ends the run instead."
+msgstr ""
+
+#: src/sequences/steps/PauseFields.tsx
 msgid "Waits until someone lets the run go on, at the machine or on its page. A restart in Windows PE before the disk is partitioned ends the run instead."
 msgstr ""
 
@@ -11440,6 +11833,10 @@ msgid "Whole machine"
 msgstr ""
 
 #: src/sequences/steps/ScriptResultFields.tsx
+msgid "Whole numbers from 0 to 255, separated by commas."
+msgstr ""
+
+#: src/sequences/steps/ScriptResultFields.tsx
 msgid "Whole numbers, separated by commas."
 msgstr ""
 
@@ -11473,14 +11870,25 @@ msgid "Windows image"
 msgstr ""
 
 #: src/conditions/conditionSubjects.ts
+#: src/machines/bootEnvironment.ts
 #: src/packages/PackageName.tsx
 #: src/sequences/steps.ts
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
 msgid "Windows PE"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.shellNeedsLinux"
+msgid "Windows PE and Windows run no shell scripts. Choose cmd or PowerShell."
 msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.restartBeforePartition"
 msgid "Windows PE can restart only after the disk is partitioned, because the run's state is kept on the disk."
+msgstr ""
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Windows PE or Linux"
 msgstr ""
 
 #: src/sequences/steps/RunScriptFields.tsx
@@ -11523,6 +11931,14 @@ msgstr ""
 msgid "With PowerShell, for steps that run a script in Windows PE"
 msgstr ""
 
+#: src/boot/LinuxSecureBootLine.tsx
+msgid "With Secure Boot on, a machine starts it when its firmware trusts {cas}. A machine whose firmware does not is not started in it."
+msgstr ""
+
+#: src/boot/LinuxSecureBootLine.tsx
+msgid "With Secure Boot on, a machine starts it when its firmware trusts one of {cas}. A machine whose firmware trusts neither is not started in it."
+msgstr ""
+
 #: src/sequences/builder/nodeDetail.ts
 msgid "With the join account of the deployment defaults"
 msgstr ""
@@ -11553,6 +11969,10 @@ msgstr ""
 
 #: src/rules/list/NoRules.tsx
 msgid "Without rules an operator chooses the sequence of each machine. An administrator adds rules here."
+msgstr ""
+
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Words added to the kernel command line of the Linux boot environment, such as console=ttyS0,115200 for a serial console. Only letters, digits and _ . : , = + / @ - are taken."
 msgstr ""
 
 #: src/sequences/builder/inspector/NodeKeys.tsx

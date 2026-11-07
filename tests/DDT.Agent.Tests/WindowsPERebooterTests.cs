@@ -33,7 +33,7 @@ public sealed class WindowsPERebooterTests
         _variables.Values["BootCurrent"] = [0x03, 0x00];
         _variables.Values["Boot0003"] = [0x01];
 
-        await Rebooter().RebootAsync(RestartInto.WindowsPE, TestContext.Current.CancellationToken);
+        await Rebooter().RebootAsync(RestartInto.BootEnvironment, TestContext.Current.CancellationToken);
 
         Assert.Equal(["BootNext"], _variables.Writes);
         Assert.Equal([0x03, 0x00], _variables.Values["BootNext"]);
@@ -42,12 +42,39 @@ public sealed class WindowsPERebooterTests
         Assert.Contains(await SentAsync(), line => line.Message == "The next start comes from boot entry Boot0003 again, the one this start came from.");
     }
 
+    // wpeutil takes Windows PE down at once, so what it said of the next start has to be sent before it runs.
+    [Fact]
+    public async Task SendsTheLastLinesOnceTheNextStartIsSetAndBeforeWindowsPEGoesDown()
+    {
+        _variables.Values["BootCurrent"] = [0x03, 0x00];
+        _variables.Values["Boot0003"] = [0x01];
+        List<string> order = [];
+        _tools.Answer = (_, _) =>
+        {
+            order.Add("wpeutil");
+
+            return [];
+        };
+
+        await Rebooter().RebootAsync(
+            RestartInto.BootEnvironment,
+            () =>
+            {
+                order.Add($"last lines, BootNext {(_variables.Values.ContainsKey("BootNext") ? "set" : "not set")}, {_log.QueuedLines} to send");
+
+                return Task.CompletedTask;
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(["last lines, BootNext set, 1 to send", "wpeutil"], order);
+    }
+
     [Fact]
     public async Task RestartsPlainlyWhenThatEntryIsGone()
     {
         _variables.Values["BootCurrent"] = [0x0A, 0x00];
 
-        await Rebooter().RebootAsync(RestartInto.WindowsPE, TestContext.Current.CancellationToken);
+        await Rebooter().RebootAsync(RestartInto.BootEnvironment, TestContext.Current.CancellationToken);
 
         Assert.Empty(_variables.Writes);
         Assert.Equal([s_wpeutil], _tools.Calls);
@@ -59,7 +86,7 @@ public sealed class WindowsPERebooterTests
     [Fact]
     public async Task RestartsPlainlyWhenTheFirmwareDoesNotSayWhereThisStartCameFrom()
     {
-        await Rebooter().RebootAsync(RestartInto.WindowsPE, TestContext.Current.CancellationToken);
+        await Rebooter().RebootAsync(RestartInto.BootEnvironment, TestContext.Current.CancellationToken);
 
         Assert.Empty(_variables.Writes);
         Assert.Equal([s_wpeutil], _tools.Calls);
@@ -71,7 +98,7 @@ public sealed class WindowsPERebooterTests
     {
         _variables.Failure = new DeploymentStepException("This machine did not start in UEFI mode, so its firmware variables cannot be read.");
 
-        await Rebooter().RebootAsync(RestartInto.WindowsPE, TestContext.Current.CancellationToken);
+        await Rebooter().RebootAsync(RestartInto.BootEnvironment, TestContext.Current.CancellationToken);
 
         Assert.Equal([s_wpeutil], _tools.Calls);
         Assert.Contains(
@@ -85,15 +112,15 @@ public sealed class WindowsPERebooterTests
         _variables.Values["BootCurrent"] = [0x03, 0x00];
         _variables.Values["Boot0003"] = [0x01];
 
-        await Rebooter().RebootAsync(RestartInto.Windows, TestContext.Current.CancellationToken);
+        await Rebooter().RebootAsync(RestartInto.InstalledSystem, TestContext.Current.CancellationToken);
 
         Assert.Empty(_variables.Writes);
         Assert.Equal([s_wpeutil], _tools.Calls);
     }
 
     [Theory]
-    [InlineData(RestartInto.WindowsPE, "BootNext would be set to BootCurrent")]
-    [InlineData(RestartInto.Windows, "In Windows PE, wpeutil reboot would run now.")]
+    [InlineData(RestartInto.BootEnvironment, "BootNext would be set to BootCurrent")]
+    [InlineData(RestartInto.InstalledSystem, "In Windows PE, wpeutil reboot would run now.")]
     public async Task ADryRunOnlySaysWhatWouldHappen(RestartInto into, string said)
     {
         await new DryRunRebooter(_log).RebootAsync(into, TestContext.Current.CancellationToken);

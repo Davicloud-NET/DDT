@@ -15,7 +15,7 @@ public sealed class WindowsRebooterTests
     {
         RecordingToolRunner tools = new();
 
-        await new WindowsRebooter(tools).RebootAsync(RestartInto.Windows, TestContext.Current.CancellationToken);
+        await new WindowsRebooter(tools).RebootAsync(RestartInto.InstalledSystem, TestContext.Current.CancellationToken);
 
         Assert.Equal(
             [RecordingToolRunner.CommandLine(Path.Combine(Environment.SystemDirectory, "shutdown.exe"), "/r", "/t", "0", "/d", "p:4:1", "/c", "DDT restarts Windows for its task sequence.")],

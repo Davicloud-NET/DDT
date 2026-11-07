@@ -1,0 +1,23 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# The root shell on the second screen and the serial port. It opens with ddt.shell on the kernel command line,
+# or after the agent has failed. getty passes arguments, which do not matter.
+
+. /usr/lib/ddt/common.sh
+
+# Nothing is written before a key, so that a serial port nobody listens on stays quiet.
+if ! shell_is_open; then
+    read -r _ || exit 0
+fi
+if ! shell_is_open; then
+    echo "The shell opens with ddt.shell on the kernel command line, or after the DDT agent has failed."
+    exit 0
+fi
+
+HOME=/root
+export HOME
+cd /root || cd /
+exec sh -l

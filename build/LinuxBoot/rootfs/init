@@ -1,0 +1,41 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# The first program of the DDT Linux boot environment: mounts the kernel's file systems, then busybox init takes over.
+
+. /usr/lib/ddt/common.sh
+
+mkdir -p /proc /sys /dev /run /tmp /root /mnt /ddt
+mount -t proc -o nosuid,nodev,noexec proc /proc
+mount -t sysfs -o nosuid,nodev,noexec sysfs /sys
+mount -t devtmpfs -o nosuid,mode=0755 devtmpfs /dev
+mkdir -p /dev/pts
+mount -t devpts -o nosuid,noexec,gid=5,mode=0620 devpts /dev/pts
+mount -t tmpfs -o nosuid,nodev,mode=0755 tmpfs /run
+# The agent's pipe to its console is a socket in /tmp.
+mount -t tmpfs -o nosuid,nodev,mode=1777 tmpfs /tmp
+mkdir -p /run/ddt
+
+# Otherwise the kernel drops lines written to /dev/kmsg once ten came within five seconds.
+echo on > /proc/sys/kernel/printk_devkmsg
+
+# efivarfs is a module in Debian's kernel. A machine that did not start through UEFI has no such folder.
+modprobe -q efivarfs
+if [ -d /sys/firmware/efi/efivars ]; then
+    mount -t efivarfs -o nosuid,nodev,noexec efivarfs /sys/firmware/efi/efivars
+fi
+stage "init: file systems mounted"
+
+if has_argument ddt.shell; then
+    open_shell
+    stage "init: ddt.shell is set, a root shell is open on the second screen and the serial port"
+fi
+
+# Type 0 is a port without hardware, which init would try to open over and over.
+if [ "$(cat /sys/class/tty/ttyS0/type 2> /dev/null || echo 0)" != 0 ]; then
+    echo "ttyS0::respawn:/usr/bin/getty -n -l /usr/lib/ddt/shell -L 115200 ttyS0 vt100" >> /etc/inittab
+fi
+
+exec init

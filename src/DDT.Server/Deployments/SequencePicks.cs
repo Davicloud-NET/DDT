@@ -20,6 +20,7 @@ public sealed class SequencePicks(
     NewRuns newRuns,
     SequenceChoices choices,
     SequenceResolver resolver,
+    PickRefusals refusals,
     TimeProvider timeProvider)
 {
     public async Task<DeploymentDecision> PickAsync(
@@ -35,7 +36,7 @@ public sealed class SequencePicks(
         {
             return DeploymentDecision.Conflict(machine.ActiveDeploymentId is null
                 ? "Only an operator or administrator signed in at this machine can choose a sequence. Start the machine from the network again and sign in."
-                : "This machine already has a run. It starts once the agent asks the server again.");
+                : await refusals.HasRunAsync(machine, cancellationToken).ConfigureAwait(false));
         }
 
         TaskSequence? sequence = await newRuns.LoadAsync(request.SequenceId, cancellationToken).ConfigureAwait(false);
@@ -50,6 +51,11 @@ public sealed class SequencePicks(
         if (checkedSequence.Problem is { } problem)
         {
             return DeploymentDecision.Conflict(problem);
+        }
+
+        if (refusals.OtherEnvironment(machine, checkedSequence) is { } restartFirst)
+        {
+            return restartFirst;
         }
 
         if (Refusal(machine, request, checkedSequence) is { } refusal)

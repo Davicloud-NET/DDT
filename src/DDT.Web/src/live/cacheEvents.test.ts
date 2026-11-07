@@ -101,6 +101,16 @@ describe("cacheEventHandlers", () => {
     emit("agentChanged", agent);
 
     expect(queryClient.getQueryData(["settings-agent"])).toEqual(agent);
+    expect(queryClient.getQueryData(["settings-agent-linux"])).toBeUndefined();
+
+    // The agent for Linux has an event and a place of its own.
+    emit("linuxAgentChanged", { ...agent, sha256: "cd34" });
+
+    expect(queryClient.getQueryData(["settings-agent-linux"])).toEqual({
+      ...agent,
+      sha256: "cd34",
+    });
+    expect(queryClient.getQueryData(["settings-agent"])).toEqual(agent);
     expect(invalidate).not.toHaveBeenCalled();
 
     queryClient.setQueryData(["settings-certificate"], { subject: "CN=old", servedHere: true });

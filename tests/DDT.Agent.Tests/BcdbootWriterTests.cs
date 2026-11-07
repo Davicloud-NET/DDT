@@ -89,7 +89,7 @@ public sealed class BcdbootWriterTests : IDisposable
 
         // The system volume is a directory here, so no firmware variable is written.
         await writer.PutWindowsFirstAsync(Volumes, TestContext.Current.CancellationToken);
-        await writer.RestoreBootOrderAsync(TestContext.Current.CancellationToken);
+        await writer.RestoreAsync(TestContext.Current.CancellationToken);
 
         Assert.Empty(_variables.Writes);
         Assert.Empty(_variables.Deletes);

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# Run by the placeholder agent in the server check: looks the server's name up, which no name server knows.
+
+PATH=/usr/bin
+export PATH
+
+echo "server: lookup $(ping -c 1 -W 1 ddt-server.example.test 2>&1 | head -n 1)"

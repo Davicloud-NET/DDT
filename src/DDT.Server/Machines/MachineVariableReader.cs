@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
 using DDT.Core.Machines;
 using DDT.Core.Sequences;
@@ -25,7 +24,7 @@ public static class MachineVariableReader
             machine.SmbiosUuid,
             [.. machine.MacAddresses.Split(',', StringSplitOptions.RemoveEmptyEntries)],
             string.IsNullOrWhiteSpace(machine.AssignedName) ? null : machine.AssignedName.Trim(),
-            machine.AgentEnvironment == AgentEnvironment.Windows ? SequencePhase.Windows : SequencePhase.WindowsPE)
+            SequenceKinds.Phase(machine.AgentEnvironment))
         {
             Facts = MachineFactsDocuments.Read(machine.Facts),
             DeviceKind = DeviceKinds.Classify(machine.Manufacturer, machine.Model, machine.ChassisType),

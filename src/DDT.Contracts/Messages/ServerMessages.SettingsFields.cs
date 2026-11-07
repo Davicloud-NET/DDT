@@ -27,6 +27,15 @@ public static partial class ServerMessages
         "''{value}'' is not a language the console at the machine speaks. Use en or de, or leave it empty for the language of " +
         "Windows PE.");
 
+    public static readonly MessageTemplate SettingsDeploymentKeyboardLayoutInvalid = Define(
+        "settings.deployment.keyboardLayoutInvalid",
+        "''{value}'' is not the name of a keyboard layout. Use one the Linux boot environment has, such as us or de, or leave " +
+        "it empty for us.");
+
+    public static readonly MessageTemplate SettingsDeploymentKeyboardLayoutUnknown = Define(
+        "settings.deployment.keyboardLayoutUnknown",
+        "The Linux boot environment of this server has no keyboard layout ''{value}''. It has {layouts}.");
+
     public static readonly MessageTemplate SettingsDeploymentAdministratorNameInvalid = Define(
         "settings.deployment.administratorNameInvalid",
         "''{value}'' is not a valid account name. Use 1 to {max} characters and none of \" / \\ [ ] : ; | = , + * ? < >.");
@@ -203,6 +212,30 @@ public static partial class ServerMessages
         "Must be ASCII and at most {max} characters.");
 
     public static readonly MessageTemplate SettingsPxeBootFileUrl = Define("settings.pxe.bootFileUrl", "Must be an absolute http or https URL.");
+
+    public static readonly MessageTemplate SettingsPxeBootEnvironmentInvalid = Define(
+        "settings.pxe.bootEnvironmentInvalid",
+        "''{value}'' is not a boot environment. Use Auto, WindowsPE or Linux.");
+
+    public static readonly MessageTemplate SettingsPxeKernelArgumentsInvalid = Define(
+        "settings.pxe.kernelArgumentsInvalid",
+        "''{word}'' cannot be added to the kernel command line. Use words of letters, digits and _ . : , = + / @ - with spaces " +
+        "between them, and start none with a hyphen. Nothing else is taken, because the words go into the boot loader's script.");
+
+    public static readonly MessageTemplate SettingsPxeKernelArgumentsReserved = Define(
+        "settings.pxe.kernelArgumentsReserved",
+        "''{word}'' would replace what DDT sets itself. Leave out init, rdinit, initrd, BOOT_IMAGE and every word that starts " +
+        "with ddt., except ddt.shell, which opens a root shell at the machine.");
+
+    // Problem is the sentence that says why the Linux boot environment cannot be started.
+    public static readonly MessageTemplate SettingsPxeLinuxDefaultUnavailable = Define(
+        "settings.pxe.linuxDefaultUnavailable",
+        "Linux is the default, but this server cannot start the Linux boot environment, so machines without a run are named " +
+        "the Windows PE boot file. {problem}");
+
+    public static readonly MessageTemplate SettingsPxeKernelArgumentsLength = Define(
+        "settings.pxe.kernelArgumentsLength",
+        "Use at most {max} characters.");
 
     public static readonly MessageTemplate SettingsLoggingLevelUnknown = Define(
         "settings.logging.levelUnknown",

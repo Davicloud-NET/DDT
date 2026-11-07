@@ -5,6 +5,7 @@
 import type { AccountView } from "@/accounts/accounts";
 import type { CurrentUser } from "@/auth/auth";
 import type { BootImageView } from "@/boot/bootImage";
+import type { LinuxBootView } from "@/boot/linuxBoot";
 import type {
   DeploymentOptionsView,
   DeploymentStepView,
@@ -105,6 +106,7 @@ export function sequenceSummary(overrides: Partial<SequenceSummary> = {}): Seque
     rawImageName: null,
     rawImageBootCapability: null,
     rawImageSignedUnder: null,
+    kind: "Windows",
     ...overrides,
   };
 }
@@ -301,6 +303,23 @@ export function logLine(id: number, overrides: Partial<MachineLogEntry> = {}): M
 }
 
 // A Windows server that builds the boot image itself, serving one build that fits it.
+// The Linux boot environment as a release brings it, with a shim signed under both of Microsoft's CAs.
+export function linuxBootView(overrides: Partial<LinuxBootView> = {}): LinuxBootView {
+  return {
+    available: true,
+    problem: null,
+    problemText: null,
+    snapshot: "20261006T203214Z",
+    kernel: "7.2.6+deb13-amd64",
+    shim: "1.51~1+deb13u1+16.1-2~deb13u1",
+    grub: "1+2.12+9+deb13u2",
+    shimSignedUnder: "Microsoft2011, Microsoft2023",
+    keymaps: ["us", "uk", "de", "ch", "fr", "it", "es"],
+    bootFile: "linux/shimx64.efi",
+    ...overrides,
+  };
+}
+
 export function bootImageView(overrides: Partial<BootImageView> = {}): BootImageView {
   return {
     drivers: [],

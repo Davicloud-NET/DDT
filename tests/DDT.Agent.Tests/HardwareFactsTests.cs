@@ -31,11 +31,7 @@ public sealed class HardwareFactsTests
     [Fact]
     public void CountsThisMachinesCoresAndLogicalProcessors()
     {
-        byte[]? records = new SystemHardware().ProcessorCores();
-
-        Assert.NotNull(records);
-
-        ProcessorCount? count = ProcessorCount.From(records);
+        ProcessorCount? count = new SystemHardware().ProcessorCores();
 
         Assert.NotNull(count);
         Assert.InRange(count.Cores, 1, count.LogicalProcessors);
@@ -47,12 +43,12 @@ public sealed class HardwareFactsTests
     public void ListsThisMachinesAcpiTablesByTheirSignatures()
     {
         FirmwareTables tables = new();
-        byte[]? ids = tables.List(FirmwareTables.AcpiProvider);
+        byte[]? ids = tables.List(IFirmwareTables.AcpiProvider);
 
         Assert.NotNull(ids);
         Assert.Equal(0, ids.Length % 4);
 
-        byte[]? fadt = tables.Read(FirmwareTables.AcpiProvider, BinaryPrimitives.ReadUInt32LittleEndian("FACP"u8));
+        byte[]? fadt = tables.Read(IFirmwareTables.AcpiProvider, BinaryPrimitives.ReadUInt32LittleEndian("FACP"u8));
 
         Assert.NotNull(fadt);
         Assert.Equal("FACP"u8.ToArray(), fadt[..4]);
@@ -61,7 +57,7 @@ public sealed class HardwareFactsTests
     [Fact]
     public void ReadsThisMachinesSmbiosTable()
     {
-        byte[]? raw = new FirmwareTables().Read(FirmwareTables.RawSmbiosProvider, 0);
+        byte[]? raw = new FirmwareTables().Read(IFirmwareTables.RawSmbiosProvider, 0);
 
         Assert.NotNull(raw);
         Assert.NotNull(SmbiosParser.TryReadSystemInformation(raw));

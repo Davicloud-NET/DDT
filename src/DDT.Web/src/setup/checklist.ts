@@ -14,9 +14,16 @@ export interface SetupChecklist {
   image: boolean;
   sequence: boolean;
   machine: boolean;
+  // The Linux boot environment can be started, which needs no build. Missing from a server that does not say.
+  linuxBoot?: boolean;
 }
 
 export type ChecklistItem = keyof SetupChecklist;
+
+// Machines can netboot once either boot environment is there: a built boot image, or the Linux one DDT comes with.
+export function canNetboot(checklist: SetupChecklist): boolean {
+  return checklist.bootImage || checklist.linuxBoot === true;
+}
 
 export const checklistQuery = queryOptions({
   queryKey: ["setup-checklist"],
@@ -24,7 +31,14 @@ export const checklistQuery = queryOptions({
 });
 
 export function isComplete(checklist: SetupChecklist): boolean {
-  return Object.values(checklist).every(Boolean);
+  return (
+    canNetboot(checklist) &&
+    checklist.password &&
+    checklist.netboot &&
+    checklist.image &&
+    checklist.sequence &&
+    checklist.machine
+  );
 }
 
 // The hub's pushes say what was done, so an item ticks itself without the list being read again.

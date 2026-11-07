@@ -4,10 +4,11 @@
 
 namespace DDT.Core.Sequences;
 
+// Phases by role, so one path analysis serves every kind of sequence.
 [Flags]
 internal enum PhaseSet
 {
     None = 0,
-    WindowsPE = 1,
-    Windows = 2,
+    Boot = 1,
+    Installed = 2,
 }

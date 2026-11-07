@@ -83,7 +83,7 @@ public sealed class RunSecrets(
 
         if (machine.AgentEnvironment != AgentEnvironment.Windows)
         {
-            return (null, "A machine joins its domain in Windows, and this agent registered from Windows PE.");
+            return (null, $"A machine joins its domain in Windows, and this agent registered from {PhaseRules.Name(machine.AgentEnvironment)}.");
         }
 
         (RunningStep? running, string? refusal) = await queries.RunningStepAsync(machine, runId, stepId, cancellationToken).ConfigureAwait(false);

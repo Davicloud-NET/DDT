@@ -26,17 +26,19 @@ public sealed class SequenceRawImageTests(DdtApplication application) : IClassFi
     }
 
     [Fact]
-    public async Task StoresALinuxSequenceAsVersionTwoAndDescribesIt()
+    public async Task StoresALinuxSequenceAsVersionFourAndDescribesIt()
     {
         SignedInClient administrator = await application.AdministratorAsync();
         Image image = await application.SeedRawImageAsync(RandomNumberGenerator.GetBytes(4096), name: $"noble {Guid.NewGuid():N}");
 
         SequenceView created = await administrator.CreatedSequenceAsync(SequenceRequests.Linux(image.Id) with { Version = 1 });
 
-        Assert.Equal(2, created.Definition.Version);
+        Assert.Equal(4, created.Definition.Version);
         Assert.Empty(created.Problems);
         Assert.Empty(created.Warnings);
-        Assert.Equal([SequencePhase.WindowsPE, SequencePhase.WindowsPE], created.StepPhases);
+        Assert.Equal([SequencePhase.LinuxBoot, SequencePhase.LinuxBoot], created.StepPhases);
+        Assert.NotNull(created.NodePhases);
+        Assert.All(created.NodePhases, node => Assert.Equal([SequencePhase.LinuxBoot], node.Phases));
 
         SequenceSummary summary = Assert.Single(
             await ReadAsync<IReadOnlyList<SequenceSummary>>(await administrator.GetAsync(SequenceRequests.Sequences)),
@@ -44,6 +46,7 @@ public sealed class SequenceRawImageTests(DdtApplication application) : IClassFi
         Assert.True(summary.ErasesDisk);
         Assert.True(summary.NeedsComputerName);
         Assert.False(summary.ContinuesInWindows);
+        Assert.Equal(SequenceKind.Linux, summary.Kind);
         Assert.Equal(image.Name, summary.RawImageName);
         Assert.Equal(ImageBootCapability.SecureBootOk, summary.RawImageBootCapability);
     }
@@ -144,7 +147,7 @@ public sealed class SequenceRawImageTests(DdtApplication application) : IClassFi
             await ReadAsync<IReadOnlyList<SequenceTemplate>>(await administrator.GetAsync($"{SequenceRequests.Sequences}/templates")),
             template => template.Key == SequenceTemplates.InstallLinuxKey);
 
-        Assert.Equal(2, linux.Definition.Version);
+        Assert.Equal(4, linux.Definition.Version);
         Assert.Equal(Guid.Empty, Assert.IsType<WriteRawImageStep>(linux.Definition.Steps[0]).ImageId);
         WriteCloudInitSeedStep seed = Assert.IsType<WriteCloudInitSeedStep>(linux.Definition.Steps[1]);
         Assert.Equal(SequenceTemplates.LinuxMetaData, seed.MetaData);

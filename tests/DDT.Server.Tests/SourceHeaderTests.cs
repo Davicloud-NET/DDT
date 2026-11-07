@@ -8,7 +8,7 @@ namespace DDT.Server.Tests;
 
 // NOTICE's attribution term points at the copyright notices in the source files.
 // So every source file has to start with the licence header. IDE0073 enforces it for C# at build time.
-// This test also covers the web client, the console's XAML and the scripts.
+// This test also covers the web client, the console's XAML, the scripts and the Dockerfiles.
 public sealed class SourceHeaderTests
 {
     private static readonly string[] s_headerLines =
@@ -36,6 +36,12 @@ public sealed class SourceHeaderTests
         [".wxs"] = ("<!-- ", " -->"),
     };
 
+    // A script without an extension is known by its interpreter line, a Dockerfile by its name. Both comment with #.
+    private static readonly (string Prefix, string Suffix) s_hashComment = ("# ", "");
+
+    // What Docker reads only at the very top of a Dockerfile, so the header comes after it.
+    private static readonly string[] s_dockerDirectives = ["# syntax=", "# check=", "# escape="];
+
     private static readonly string[] s_sourceFolders = ["src", "tests", "build"];
 
     // Build output, installed packages and the bundle Vite writes into the host are not source.
@@ -51,6 +57,9 @@ public sealed class SourceHeaderTests
 
         Assert.Contains(Path.Combine(root, "build", "Publish-Agent.ps1"), files);
         Assert.Contains(Path.Combine(root, "build", "install.sh"), files);
+        Assert.Contains(Path.Combine(root, "build", "Dockerfile"), files);
+        Assert.Contains(Path.Combine(root, "build", "LinuxBoot", "mkcpio.py"), files);
+        Assert.Contains(Path.Combine(root, "build", "LinuxBoot", "rootfs", "init"), files);
         Assert.Contains(Path.Combine(root, "src", "DDT.Web", "src", "main.tsx"), files);
         Assert.Contains(Path.Combine(root, "src", "DDT.Web", "src", "styles", "app.css"), files);
         Assert.Contains(Path.Combine(root, "src", "DDT.MachineConsole", "Views", "MainWindow.axaml"), files);
@@ -58,7 +67,7 @@ public sealed class SourceHeaderTests
         List<string> withoutHeader = [];
         foreach (string file in files)
         {
-            if (!await StartsWithHeaderAsync(file, s_comments[Path.GetExtension(file)], cancellationToken))
+            if (!await StartsWithHeaderAsync(file, s_comments.GetValueOrDefault(Path.GetExtension(file), s_hashComment), cancellationToken))
             {
                 withoutHeader.Add(Path.GetRelativePath(root, file));
             }
@@ -71,7 +80,7 @@ public sealed class SourceHeaderTests
     {
         foreach (FileInfo file in directory.EnumerateFiles())
         {
-            if (s_comments.ContainsKey(file.Extension))
+            if (s_comments.ContainsKey(file.Extension) || IsDockerfile(file) || IsScriptWithoutExtension(file))
             {
                 yield return file.FullName;
             }
@@ -86,13 +95,29 @@ public sealed class SourceHeaderTests
         }
     }
 
+    private static bool IsDockerfile(FileInfo file) =>
+        file.Name == "Dockerfile"
+        || (file.Name.StartsWith("Dockerfile.", StringComparison.Ordinal) && file.Extension != ".dockerignore");
+
+    private static bool IsScriptWithoutExtension(FileInfo file)
+    {
+        if (file.Extension.Length > 0)
+        {
+            return false;
+        }
+
+        using FileStream stream = file.OpenRead();
+
+        return stream.ReadByte() == '#' && stream.ReadByte() == '!';
+    }
+
     private static async Task<bool> StartsWithHeaderAsync(string path, (string Prefix, string Suffix) comment, CancellationToken cancellationToken)
     {
         using StreamReader reader = new(path);
         string? first = await reader.ReadLineAsync(cancellationToken);
 
-        // A script's interpreter line has to come first
-        if (first?.StartsWith("#!", StringComparison.Ordinal) == true)
+        // A script's interpreter line and a Dockerfile's directives have to come first
+        while (first is not null && (first.StartsWith("#!", StringComparison.Ordinal) || IsDockerDirective(first)))
         {
             first = await reader.ReadLineAsync(cancellationToken);
         }
@@ -112,4 +137,7 @@ public sealed class SourceHeaderTests
 
         return true;
     }
+
+    private static bool IsDockerDirective(string line) =>
+        s_dockerDirectives.Any(directive => line.StartsWith(directive, StringComparison.Ordinal));
 }

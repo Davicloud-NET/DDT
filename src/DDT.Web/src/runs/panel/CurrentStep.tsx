@@ -6,6 +6,7 @@ import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 
 import type { DeploymentView } from "@/deployments/deployments";
+import type { SequencePhase } from "@/sequences/sequences";
 import { formatBytes, formatDuration } from "@/lib/format";
 import { phaseLabel, stepKindLabel } from "@/sequences/steps";
 
@@ -16,15 +17,17 @@ interface CurrentStepProps {
   // How many steps are on the run's path.
   count: number;
   isTree: boolean;
+  // The phase the run starts in, for a step the server names no phase of.
+  boot: SequencePhase;
   artifact: DeploymentView["artifacts"][number] | null;
   now: number;
 }
 
 // The step that runs now, with its percentage in large type and the file it works on.
-export function CurrentStep({ step, count, isTree, artifact, now }: CurrentStepProps) {
+export function CurrentStep({ step, count, isTree, boot, artifact, now }: CurrentStepProps) {
   const reported = step.step;
   const number = step.entry.number ?? (reported?.index ?? 0) + 1;
-  const phase = phaseLabel(reported?.phase ?? "WindowsPE");
+  const phase = phaseLabel(reported?.phase ?? boot);
   const kind = stepKindLabel(step.node.kind);
   const file = artifact?.name ?? null;
   const size = artifact === null ? "" : formatBytes(artifact.sizeBytes);

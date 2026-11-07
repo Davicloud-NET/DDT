@@ -14,7 +14,8 @@ import type { KindFieldsProps } from "./kindFields";
 // The Select needs a key for "no package". A package id is a GUID, so it can never be this.
 const NO_PACKAGE = "none";
 
-// The Files package a script runs in, from the library's Files packages.
+// The Files package a script runs in, from the library's Files packages. The Linux boot environment has no place
+// for one, so RunScriptFields only shows this there while the step still has a package, to remove it.
 export function ScriptPackageSetting({
   step,
   findings,

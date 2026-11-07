@@ -12,10 +12,12 @@ for each artefact, with its copyright holders and licence, and [licenses/](licen
 licence texts. The container image carries LICENSE, NOTICE, this file and `licenses/` in
 `/app/legal`, and the web UI's About page links to them. The agent carries LICENSE, NOTICE, this
 file, `licenses/dotnet`, `licenses/wimlib` and `licenses/zstd`, and prints them with
-`ddt-agent --licenses`. The console in Windows PE carries LICENSE, NOTICE and the licence texts of
-what it contains, and shows them on its licences view. The web bundle alone holds no licence files;
-its licences are in `licenses/web`, which the About page links to. Pass LICENSE, NOTICE, this file
-and `licenses/` on with any artefact you distribute.
+`ddt-agent --licenses`. The agent for Linux does the same, with `licenses/gcc`, `licenses/musl` and
+`licenses/openssl` in place of `licenses/wimlib`. The console in Windows PE carries LICENSE, NOTICE
+and the licence texts of what it contains, and shows them on its licences view. The web bundle
+alone holds no licence files; its licences are in `licenses/web`, which the About page links to.
+The Linux boot environment holds none either; its texts are in `licenses/linux-boot`. Pass LICENSE,
+NOTICE, this file and `licenses/` on with any artefact you distribute.
 
 `src/DDT.ServiceDefaults/Extensions.cs` is code from the .NET Aspire ServiceDefaults project
 template, Copyright (c) .NET Foundation and Contributors, under the MIT licence in
@@ -30,9 +32,10 @@ closure, grouped here by the project they come from.
 `/app/legal` holds LICENSE, NOTICE, this file and `licenses/`. The server serves them without
 sign-in at `/api/about/legal/<path>`, for example `/api/about/legal/LICENSE`.
 
-A release's `/app` also holds `ddt-agent.exe` and `ddt-console.zip`, which the server hands to the
-machines it deploys. They're described in their own sections below, and their licence texts are in
-the same `legal` folder.
+A release's `/app` also holds `ddt-agent.exe`, `ddt-console.zip` and `ddt-agent-linux-x64`, which
+the server hands to the machines it deploys, and `linux-boot/`, the Linux boot environment it starts
+machines in. They're described in their own sections below, and their licence texts are in the same
+`legal` folder.
 
 ### Microsoft libraries
 
@@ -225,7 +228,8 @@ icons.
 ## The agent, `ddt-agent.exe`
 
 `build/Publish-Agent.ps1` publishes the agent as one NativeAOT executable. Besides DDT's own code,
-from `DDT.Agent`, `DDT.Core` and `DDT.Contracts`, it contains:
+from `DDT.Agent`, `DDT.Agent.Core`, `DDT.ConsoleProtocol`, `DDT.Core` and `DDT.Contracts`, it
+contains:
 
 - The .NET runtime and libraries, compiled ahead of time by
   `runtime.win-x64.Microsoft.DotNet.ILCompiler` from
@@ -290,6 +294,43 @@ changes, then use it in one of two ways:
    at your DLL and publish the agent again with `build/Publish-Agent.ps1`. The agent then carries
    your DLL and, as under 1, writes it out wherever no `libwim-15.dll` is next to it yet.
 
+## The agent for Linux, `ddt-agent`
+
+`build/Publish-LinuxAgent.ps1` publishes the agent for Linux as one static NativeAOT executable, in
+a container of the .NET SDK on Alpine Linux 3.24. It runs in the Linux boot environment, whose
+`ddt.img` holds it, and a release puts the same file next to the server as `ddt-agent-linux-x64`,
+for machines to take when theirs is another. Besides DDT's own code, from `DDT.Agent.Linux`,
+`DDT.Agent.Core`, `DDT.ConsoleProtocol`, `DDT.Core` and `DDT.Contracts`, it contains:
+
+- The .NET runtime and libraries, compiled ahead of time by
+  `runtime.linux-musl-x64.Microsoft.DotNet.ILCompiler` from
+  `Microsoft.NETCore.App.Runtime.NativeAOT.linux-musl-x64`. Copyright (c) .NET Foundation and
+  Contributors, MIT, text in [licenses/dotnet/LICENSE.TXT](licenses/dotnet/LICENSE.TXT). The code
+  by others in the runtime is listed in
+  [licenses/dotnet/THIRD-PARTY-NOTICES.TXT](licenses/dotnet/THIRD-PARTY-NOTICES.TXT), which is
+  also the notices file of runtime.linux-musl-x64.Microsoft.DotNet.ILCompiler 10.0.12, the version
+  the agent is compiled with.
+- `ZstdSharp.Port` 0.8.8 and the Zstandard 1.5.7 code it is ported from, as described for the server
+  above, which the agent unpacks raw disk images with.
+- OpenSSL 3.5.9, whose libcrypto and libssl the linker takes from Alpine's `openssl-libs-static`
+  package 3.5.9-r0, so the agent's connection to the server needs no library of the machine.
+  Copyright (c) 1998-2026 The OpenSSL Project Authors and Copyright (c) 1995-1998 Eric A. Young,
+  Tim J. Hudson, under the Apache License 2.0, text in
+  [licenses/openssl/LICENSE.txt](licenses/openssl/LICENSE.txt), from OpenSSL 3.5.9. DDT does not
+  change it. The build names the package by this version and takes no other.
+- musl 1.2.6, Alpine's C library, from its `musl-dev` package 1.2.6-r3, which the build names by
+  that version too. Copyright (c) 2005-2020 Rich Felker, et al., under the MIT licence, with parts
+  by others under licences alike that [licenses/musl/COPYRIGHT](licenses/musl/COPYRIGHT) names, the
+  file of musl 1.2.6.
+- Support code of GCC 15.2, `libgcc`, which the linker adds. Copyright (C) Free Software
+  Foundation, Inc., under the GNU General Public License, version 3 or later, with the GCC Runtime
+  Library Exception 3.1, text in [licenses/gcc/COPYING.RUNTIME](licenses/gcc/COPYING.RUNTIME),
+  which lets a compiled program contain it under the program's own licence.
+
+The agent for Linux also carries LICENSE, NOTICE, this file and the texts in `licenses/dotnet`,
+`licenses/gcc`, `licenses/musl`, `licenses/openssl` and `licenses/zstd`. It prints its legal
+notices at start-up, and `ddt-agent --licenses` prints these texts.
+
 ## The console in Windows PE, `ddt-console.exe`
 
 `build/Publish-Console.ps1` publishes the graphical console the agent starts in Windows PE as one
@@ -344,6 +385,85 @@ not cover them. DDT adds `ddt-agent.exe`, `agent.json` and `startnet.cmd`, with 
 `libwim-15.dll`, and with `-ConsolePath` the console's `ddt-console.exe`, `libSkiaSharp.dll` and
 `libHarfBuzzSharp.dll`.
 
+## The Linux boot environment, `linux-boot/`
+
+`build/Build-LinuxBoot.ps1` builds what a machine netboots to run a Linux task sequence: the
+loaders `shimx64.efi` and `grubx64.efi`, the kernel `vmlinuz`, and the initramfs `base.img`. DDT
+compiles none of it. The loaders and the kernel are files of Debian packages as Debian signed them,
+and `base.img` packs files of Debian packages with DDT's own start scripts from
+`build/LinuxBoot/rootfs`: the kernel modules unpacked, the keymaps converted to the kernel's binary
+form, everything else as it is. `ddt.img`, the second initramfs, holds DDT's agent for Linux,
+described above.
+
+`build/LinuxBoot/packages.lock.json` pins every package by version and SHA-256 at one snapshot of
+Debian's archive, and `ddt-linux-boot.json` in the folder lists them with the folder's files.
+[licenses/linux-boot/](licenses/linux-boot) holds Debian's copyright file of each source package,
+which names its copyright holders and licences in full. Where such a file points to
+`/usr/share/common-licenses`, the text is in
+[licenses/linux-boot/common-licenses/](licenses/linux-boot/common-licenses), as Debian's
+`base-files` package carries it.
+
+- GNU GRUB 2.12, `grubx64.efi`: the network image from `grub-efi-amd64-signed`, which Debian builds
+  from `grub2` and signs. Copyright Free Software Foundation, Inc., under the GNU General Public
+  License, version 3 or later, the text of [LICENSE](LICENSE). See
+  [licenses/linux-boot/grub2.copyright](licenses/linux-boot/grub2.copyright) and
+  [licenses/linux-boot/grub-efi-amd64-signed.copyright](licenses/linux-boot/grub-efi-amd64-signed.copyright).
+- shim 16.1, `shimx64.efi`: from `shim-signed`, which is Debian's build of `shim` with Microsoft's
+  signatures. Copyright Red Hat, Inc and Intel Corporation, under the BSD 2-Clause License. It
+  contains code from OpenSSL, under the OpenSSL and SSLeay licences, and gnu-efi, under BSD
+  licences. All of these texts are in
+  [licenses/linux-boot/shim.copyright](licenses/linux-boot/shim.copyright); see also
+  [licenses/linux-boot/shim-signed.copyright](licenses/linux-boot/shim-signed.copyright).
+- The Linux kernel 7.2.6: `vmlinuz` from `linux-binary-7.2.6+deb13-amd64`, which the source package
+  `linux-signed-amd64` makes from `linux` with Debian's signature; the modules in `base.img` from
+  `linux-modules-7.2.6+deb13-amd64`; and two lists of the kernel's modules, from
+  `linux-base-7.2.6+deb13-amd64`. Copyright Linus Torvalds and many others, under the GNU General
+  Public License, version 2, in
+  [licenses/linux-boot/common-licenses/GPL-2](licenses/linux-boot/common-licenses/GPL-2). The parts
+  under other licences are listed in
+  [licenses/linux-boot/linux.copyright](licenses/linux-boot/linux.copyright), which
+  [licenses/linux-boot/linux-signed-amd64.copyright](licenses/linux-boot/linux-signed-amd64.copyright)
+  repeats.
+- BusyBox 1.37.0, the shell and tools in `base.img`: from `busybox-static`, built from `busybox`.
+  Copyright Erik Andersen and the authors of its parts, under the GNU General Public License,
+  version 2. See
+  [licenses/linux-boot/busybox.copyright](licenses/linux-boot/busybox.copyright). It is linked
+  statically with the GNU C Library, next.
+- The GNU C Library 2.41: the loader and the shared libraries in `base.img`, from `libc6`, built
+  from `glibc`. Copyright Free Software Foundation, Inc., under the GNU Lesser General Public
+  License, version 2.1 or later, in
+  [licenses/linux-boot/common-licenses/LGPL-2.1](licenses/linux-boot/common-licenses/LGPL-2.1). The
+  parts under other licences are listed in
+  [licenses/linux-boot/glibc.copyright](licenses/linux-boot/glibc.copyright).
+- Terminal descriptions from `ncurses-base`, built from `ncurses`. Copyright Free Software
+  Foundation, Inc. and Thomas E. Dickey, under an MIT licence in
+  [licenses/linux-boot/ncurses.copyright](licenses/linux-boot/ncurses.copyright).
+- Keymaps from `console-data`, which the build converts with `loadkeys`. They come from the kbd
+  package and are under the GNU General Public License, version 2. See
+  [licenses/linux-boot/console-data.copyright](licenses/linux-boot/console-data.copyright). Debian
+  built the package with `unicode-data`, Copyright Unicode, Inc., under the Unicode licence in
+  [licenses/linux-boot/unicode-data.copyright](licenses/linux-boot/unicode-data.copyright).
+- Firmware for network cards, from `firmware-realtek`, `firmware-bnx2`, `firmware-bnx2x` and
+  `firmware-misc-nonfree`, all built from `firmware-nonfree`. `base.img` holds only the files its
+  network drivers ask for: `rtl_nic/*`, Copyright Realtek Semiconductor Corporation, and `bnx2/*`,
+  `bnx2x/*` and `tigon/tg3*`, Copyright Broadcom Corporation. They are code and data that the
+  cards themselves run, which their makers publish in binary form only. They are not free software
+  and not under the GPL: each maker allows passing its files on with its notice, and Realtek's
+  licence for the USB adapters' files (`rtl8153*`, `rtl8156*`) forbids changing or reverse
+  engineering them. These licences are in
+  [licenses/linux-boot/firmware-nonfree.copyright](licenses/linux-boot/firmware-nonfree.copyright),
+  under `binary-redist-firmware`, `binary-redist-Realtek-permissive` and
+  `binary-redist-Realtek-restrictive`. The firmware is a work of its own that `base.img` merely
+  carries beside the others, and DDT's licence does not cover it.
+
+The source code of all of this goes out with every release, at both places the release puts
+`linux-boot/`: as `ddt-linux-boot-sources.tar` beside `DDT.msi` among the release's files, and as
+the image `ghcr.io/davicloud-net/ddt-sources`, which holds that file, beside the server's image and
+under its tag. It is the Debian source package of each package above and of what Debian built it
+with. [licenses/linux-boot/SOURCES.md](licenses/linux-boot/SOURCES.md) lists each file with its
+SHA-256 and its address in Debian's archive, and `build/LinuxBoot/sources.sh` collects them. The
+firmware has no source code, so of `firmware-nonfree` only Debian's packaging is in it.
+
 ## The container base image
 
 `build/Dockerfile` builds on `mcr.microsoft.com/dotnet/aspnet:10.0-noble`, which is Ubuntu 24.04
@@ -362,8 +482,8 @@ under their own licences.
 `build/Build-Installer.ps1` publishes the server self-contained for win-x64 and packs it into
 `DDT.msi` with the WiX Toolset. The MSI installs the same server as `/app`, with its `legal`
 folder, so everything listed for the server and the web UI bundle applies to it too. It installs the
-agent and the console next to it as well, and `Build-BootImage.ps1` with its module, which are
-DDT's own.
+agent, the console, the agent for Linux and the Linux boot environment next to it as well, as
+`/app` holds them, and `Build-BootImage.ps1` with its module, which are DDT's own.
 
 Because it's self-contained, it also carries the .NET runtime and the ASP.NET Core shared framework,
 which the container gets from its base image instead. Both are under the MIT licence in

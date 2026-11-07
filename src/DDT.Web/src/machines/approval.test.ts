@@ -60,6 +60,7 @@ const installWindows: SequenceSummary = {
   rawImageName: null,
   rawImageBootCapability: null,
   rawImageSignedUnder: null,
+  kind: "Windows",
 };
 
 describe("approvalPlan", () => {
@@ -133,6 +134,7 @@ describe("approvalPlan", () => {
       rawImageName: "noble",
       rawImageBootCapability: "NotSigned",
       rawImageSignedUnder: null,
+      kind: "Linux",
     } as const;
 
     expect(approvalPlan(machine, chosen, [linux])?.sequence).toBe(linux);

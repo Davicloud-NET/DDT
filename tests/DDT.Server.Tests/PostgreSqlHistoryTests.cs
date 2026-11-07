@@ -4,6 +4,8 @@
 
 using DDT.Server.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Xunit;
 
 namespace DDT.Server.Tests;
@@ -27,6 +29,8 @@ public sealed class PostgreSqlHistoryTests
             await application.QueryAsync(database => Task.FromResult(database.Database.GetMigrations())),
             await application.QueryAsync(database => database.Database.GetAppliedMigrationsAsync(TestContext.Current.CancellationToken)));
         Assert.True(await application.QueryAsync(database => database.Users.AnyAsync(user => user.UserName == userName, TestContext.Current.CancellationToken)));
+        // Reads every column of a machine, also those of the migrations after the first.
+        Assert.Empty(await application.QueryAsync(database => database.Machines.ToListAsync(TestContext.Current.CancellationToken)));
     }
 
     [Fact]
@@ -41,7 +45,7 @@ public sealed class PostgreSqlHistoryTests
         Assert.Contains(LastOfTheTwelve, refusal.Message, StringComparison.Ordinal);
     }
 
-    // Today's tables with the history an earlier build wrote. Returns a user the database holds.
+    // The tables of the first migration with the history an earlier build wrote. Returns a user the database holds.
     private static async Task<string> LeaveHistoryAsync(TestDatabaseServer server, params string[] migrations)
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
@@ -50,6 +54,8 @@ public sealed class PostgreSqlHistoryTests
 
         await application.QueryAsync(async database =>
         {
+            // A database of the twelve never got what later migrations add, so those go back out.
+            await database.GetService<IMigrator>().MigrateAsync(database.Database.GetMigrations().First(), cancellationToken);
             await database.Database.ExecuteSqlRawAsync("DELETE FROM ddt.\"__EFMigrationsHistory\"", cancellationToken);
 
             foreach (string migration in migrations)

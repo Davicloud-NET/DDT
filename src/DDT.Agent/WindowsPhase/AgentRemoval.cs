@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Agent.Deployment;
+using DDT.Agent.InstalledPhase;
 using DDT.Agent.Sequences;
 
 namespace DDT.Agent.WindowsPhase;
@@ -18,7 +19,7 @@ public sealed class AgentRemoval(string windowsRoot, IToolRunner tools, IRestart
     {
         log.Information("The run is over here, so the agent removes itself.");
 
-        string directory = Path.Combine(windowsRoot, "DDT");
+        string directory = RunFiles.DirectoryIn(windowsRoot);
         string agent = Path.Combine(directory, WindowsHandOver.AgentDirectory);
         string console = Path.Combine(directory, WindowsHandOver.ConsoleDirectory);
         string ownLog = WindowsPhaseService.LogPathIn(windowsRoot);

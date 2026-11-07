@@ -58,13 +58,31 @@ public class DdtApplication : WebApplicationFactory<Program>
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        StartGate gate = new();
         builder.UseDefaultServiceProvider(provider =>
         {
             provider.ValidateScopes = true;
             provider.ValidateOnBuild = true;
         });
+        builder.ConfigureServices(services => services.AddSingleton<IHostLifetime>(gate));
 
-        return base.CreateHost(builder);
+        // The program starts the host on its own thread, and a start that fails disposes the host there. That thread
+        // waits at the gate until this one listens, so a failure arrives here as what the start failed with.
+        IHost host = builder.Build();
+        Task started;
+
+        try
+        {
+            started = host.StartAsync();
+        }
+        finally
+        {
+            gate.Open();
+        }
+
+        started.GetAwaiter().GetResult();
+
+        return host;
     }
 
     // Sign-in is rate limited per address, and every test client shares one address.
@@ -217,14 +235,32 @@ public class DdtApplication : WebApplicationFactory<Program>
 
         if (disposing && Directory.Exists(StorePath))
         {
-            // Pooled SQLite connections keep the database file open after the host stops. Only this host's pool is
-            // cleared: clearing every pool disposes connections other test classes are opening at that moment.
+            RemoveStore();
+        }
+    }
+
+    // Pooled SQLite connections keep the database file open after the host stops. Only this host's pool is cleared:
+    // clearing every pool disposes connections other test classes are opening at that moment. A write the server
+    // began without waiting for it, as of a host's settings state, holds the file a moment longer.
+    private void RemoveStore()
+    {
+        for (int attempt = 0; ; attempt++)
+        {
             using (SqliteConnection database = new($"Data Source={Path.Combine(StorePath, "ddt.db")}"))
             {
                 SqliteConnection.ClearPool(database);
             }
 
-            Directory.Delete(StorePath, recursive: true);
+            try
+            {
+                Directory.Delete(StorePath, recursive: true);
+
+                return;
+            }
+            catch (IOException) when (attempt < 500)
+            {
+                Thread.Sleep(10);
+            }
         }
     }
 }

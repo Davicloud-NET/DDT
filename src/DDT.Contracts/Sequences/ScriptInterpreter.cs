@@ -8,4 +8,6 @@ public enum ScriptInterpreter
 {
     Cmd,
     PowerShell,
+    // The interpreter the script's #! line names, else /bin/sh. Linux phases only. Version 4.
+    Shell,
 }

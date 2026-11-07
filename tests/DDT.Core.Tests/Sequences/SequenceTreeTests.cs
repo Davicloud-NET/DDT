@@ -106,13 +106,16 @@ public sealed class SequenceTreeTests
     private static readonly Dictionary<string, (int Version, SequenceDefinition Definition)> s_features = new(StringComparer.Ordinal)
     {
         ["flat"] = (1, Flat(Restart() with { Conditions = [new StepCondition(MachineVariableNames.Model, ConditionOperator.Contains, "Latitude")] })),
-        ["raw image"] = (2, Flat(new WriteRawImageStep { Id = NodeId(30), Name = "Raw", ImageId = NodeId(31) })),
+        ["raw image"] = (4, Flat(new WriteRawImageStep { Id = NodeId(30), Name = "Raw", ImageId = NodeId(31) })),
+        ["seed"] = (4, Flat(new WriteCloudInitSeedStep { Id = NodeId(30), Name = "Seed" })),
+        ["shell script"] = (4, Flat(new RunScriptStep { Id = NodeId(30), Name = "Script", Script = "exit 0", Interpreter = ScriptInterpreter.Shell })),
+        ["script in the Linux boot environment"] = (4, Flat(new RunScriptStep { Id = NodeId(30), Name = "Script", Script = "exit 0", Phase = SequencePhase.LinuxBoot })),
         ["group"] = (3, Flat(new GroupStep { Id = NodeId(30), Name = "Group" })),
         ["if"] = (3, Flat(new IfStep { Id = NodeId(30), Name = "If", Test = s_latitude })),
         ["repeat"] = (3, Flat(new RepeatStep { Id = NodeId(30), Name = "Repeat", Until = s_latitude })),
         ["set variable"] = (3, Flat(new SetVariableStep { Id = NodeId(30), Name = "Set", Variable = "Office" })),
         ["pause"] = (3, Flat(new PauseStep { Id = NodeId(30), Name = "Pause" })),
-        ["raw image in a group"] = (3, Flat(new GroupStep { Id = NodeId(30), Name = "Group", Steps = [new WriteRawImageStep { Id = NodeId(31), Name = "Raw", ImageId = NodeId(32) }] })),
+        ["raw image in a group"] = (4, Flat(new GroupStep { Id = NodeId(30), Name = "Group", Steps = [new WriteRawImageStep { Id = NodeId(31), Name = "Raw", ImageId = NodeId(32) }] })),
         ["when"] = (3, Flat(Restart() with { When = s_latitude })),
         ["shares"] = (3, Flat(Restart() with { Shares = [new ShareConnection(@"\\files\drivers", new AccountReference(NodeId(40), null))] })),
         ["no shares"] = (1, Flat(Restart() with { Shares = [] })),
@@ -128,7 +131,7 @@ public sealed class SequenceTreeTests
 
     [Theory]
     [MemberData(nameof(Features))]
-    public void NeedsVersion3ForEveryFeatureOfTheTree(string feature)
+    public void NeedsTheVersionThatBroughtEachFeature(string feature)
     {
         (int version, SequenceDefinition definition) = s_features[feature];
 
@@ -143,7 +146,7 @@ public sealed class SequenceTreeTests
         Assert.Equal(1, Flat(null!, Restart() with { Conditions = null!, Shares = null }).RequiredVersion());
         Assert.Equal(1, Flat(Restart() with { Conditions = [null!] }).RequiredVersion());
         Assert.Equal(1, Flat(Restart() with { Conditions = [new StepCondition(null!, ConditionOperator.Equals, "x")] }).RequiredVersion());
-        Assert.Equal(2, Flat(null!, new WriteRawImageStep { Id = NodeId(30), Name = "Raw", ImageId = NodeId(31) }).RequiredVersion());
+        Assert.Equal(4, Flat(null!, new WriteRawImageStep { Id = NodeId(30), Name = "Raw", ImageId = NodeId(31) }).RequiredVersion());
         Assert.Equal(3, Flat(new GroupStep { Id = NodeId(30), Name = "Group", Steps = null! }).RequiredVersion());
         Assert.Equal(3, Flat(Restart() with { When = new AllCondition { Parts = null! } }).RequiredVersion());
         Assert.Equal(1, new SequenceDefinition(1, null!).Normalised().Version);

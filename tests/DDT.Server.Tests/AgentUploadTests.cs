@@ -55,7 +55,7 @@ public sealed class AgentUploadTests(DdtApplication application) : IClassFixture
         Assert.Equal("Uploaded", pushed.GetProperty("source").GetString());
 
         // What agents are told to switch to.
-        AgentRelease release = (await application.Services.GetRequiredService<AgentReleaseStore>().CurrentAsync(TestContext.Current.CancellationToken))!;
+        AgentRelease release = (await application.Services.GetRequiredService<AgentReleaseStores>().Windows.CurrentAsync(TestContext.Current.CancellationToken))!;
         Assert.Equal(sha256, release.Sha256);
 
         Assert.True(await application.QueryAsync(database => database.AuditEvents.AnyAsync(

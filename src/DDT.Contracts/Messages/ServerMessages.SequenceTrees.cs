@@ -148,7 +148,8 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate SequenceRunAsWindowsOnly = Define(
         "sequence.runAsWindowsOnly",
-        "A script runs as an account only in Windows. In Windows PE it runs as SYSTEM.");
+        "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} " +
+        "other {In Windows PE it runs as SYSTEM.}}");
 
     public static readonly MessageTemplate SequenceTooManyShares = Define(
         "sequence.tooManyShares",

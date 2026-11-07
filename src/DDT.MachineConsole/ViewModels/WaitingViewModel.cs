@@ -14,13 +14,16 @@ public sealed class WaitingViewModel(Localizer localizer) : StageViewModel(local
 
     public bool IsChoosing => _state?.Stage == ConsoleStage.Choosing;
 
-    public string Title => IsChoosing ? T("One moment") : T("Waiting for a task sequence");
+    // A sequence is assigned, and the server said why it does not start here.
+    public bool HasReason => !IsChoosing && _state?.Waiting is not null;
+
+    public string Title => IsChoosing ? T("One moment") : HasReason ? T("Waiting") : T("Waiting for a task sequence");
 
     public Tag Tag => IsChoosing ? Tag.Of(T("Choosing"), TagTone.Run) : Tag.Of(T("Authorized"), TagTone.Ok);
 
     public string Intro => IsChoosing
         ? T("The agent gets what this machine can run. The choices appear here in a moment.")
-        : T("This machine is authorized. Assign a task sequence to it on the Machines page, and it starts by itself.");
+        : _state?.Waiting ?? T("This machine is authorized. Assign a task sequence to it on the Machines page, and it starts by itself.");
 
     public string FindLabel => T("Find it on the Machines page by");
 

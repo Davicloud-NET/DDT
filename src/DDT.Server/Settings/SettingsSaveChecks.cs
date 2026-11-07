@@ -4,9 +4,12 @@
 
 using DDT.Contracts.Messages;
 using DDT.Core.Configuration;
+using DDT.Pxe;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Deployments;
 using DDT.Server.Ldap;
+using DDT.Server.LinuxBoot;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 
@@ -14,7 +17,11 @@ namespace DDT.Server.Settings;
 
 // Save checks that need more than the values. They look at the accounts, run the framework's own checks of the sign-in
 // scheme, and need a directory administrator's proof that they stay an administrator with the new directory values.
-public sealed class SettingsSaveChecks(UserManager<DdtUser> users, IDataProtectionProvider dataProtection, DirectoryProofs proofs)
+public sealed class SettingsSaveChecks(
+    UserManager<DdtUser> users,
+    IDataProtectionProvider dataProtection,
+    DirectoryProofs proofs,
+    LinuxBootEnvironment linuxBoot)
 {
     // The fields that decide whether a directory account still signs in, and with which roles.
     private static readonly string[] s_directoryFields =
@@ -47,6 +54,11 @@ public sealed class SettingsSaveChecks(UserManager<DdtUser> users, IDataProtecti
             problems.AddRange(OidcCandidate.FindProblems(oidc, dataProtection));
         }
 
+        if (definition.Name == SettingsSectionNames.Deployment && KeyboardLayoutProblem(after) is { } layout)
+        {
+            problems.Add(layout);
+        }
+
         if (definition.Name == SettingsSectionNames.Ldap
             && actor.UserId is { } userId
             && after.Options is LdapOptions { Enabled: true } ldap
@@ -58,6 +70,21 @@ public sealed class SettingsSaveChecks(UserManager<DdtUser> users, IDataProtecti
         }
 
         return new(problems, warnings);
+    }
+
+    // The page offers the layouts the Linux boot environment has. A name it lacks would leave the machines with us.
+    private SettingProblem? KeyboardLayoutProblem(SettingsSectionState after)
+    {
+        IReadOnlyList<string> keymaps = linuxBoot.Current.Keymaps;
+
+        return after.Options is DeploymentOptions { ConsoleKeyboardLayout: { Length: > 0 } layout }
+            && keymaps.Count > 0
+            && GrubConfig.IsKeymap(layout.Trim())
+            && !keymaps.Contains(layout.Trim(), StringComparer.Ordinal)
+                ? new SettingProblem(
+                    "ConsoleKeyboardLayout",
+                    ServerMessages.SettingsDeploymentKeyboardLayoutUnknown.With("value", layout, "layouts", string.Join(", ", keymaps)))
+                : null;
     }
 
     private async Task<bool> HasLocalAdministratorAsync()

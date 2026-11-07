@@ -1,0 +1,153 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# Stands in for the DDT agent, in a ddt.img that Build-LinuxBoot.ps1 was given no agent for and in the tests of
+# the boot environment: prints a marker and what it finds on the machine. ddt.hook=<name> on the kernel command
+# line then runs /ddt/hooks/<name>, which a test puts there, and ends with that hook's exit code.
+
+PATH=/usr/bin
+export PATH
+
+variables=/sys/firmware/efi/efivars
+global=8be4df61-93ca-11d2-aa0d-00e098032b8c
+
+# The tests read the serial port, which a machine has as a kernel console only when they ask for it.
+read -r consoles < /sys/class/tty/console/active
+case " $consoles " in
+    *" ttyS0 "*) serial=/dev/ttyS0 ;;
+    *) serial=/dev/null ;;
+esac
+
+say() {
+    echo "$1"
+    echo "$1" > "$serial"
+}
+
+# A UEFI variable's value in hex, without the four bytes of attributes efivarfs puts first.
+# cut drops them, because efivarfs cannot seek.
+variable() {
+    if [ -f "$variables/$1-$2" ]; then
+        xxd -p "$variables/$1-$2" | tr -d '\n' | cut -c 9-
+    else
+        echo absent
+    fi
+}
+
+# What was typed before the agent started and is still waiting to be read, in hex.
+waiting_keys() {
+    stty -icanon min 0 time 0
+    dd bs=64 count=1 2> /dev/null | xxd -p
+    stty icanon min 1
+}
+
+say "DDT-PLACEHOLDER-AGENT ready"
+say "fact uptime=$(cut -d ' ' -f 1 /proc/uptime)"
+say "fact kernel=$(uname -r)"
+say "fact marker=$(tr '\n' ' ' < /etc/ddt/boot-environment 2> /dev/null || echo absent)"
+read -r commandline < /proc/cmdline
+say "fact cmdline=$commandline"
+if [ -f /ddt/agent.json ]; then
+    say "fact agent.json=$(tr -d '\n' < /ddt/agent.json)"
+else
+    say "fact agent.json=absent"
+fi
+
+say "fact terminal=$(tty) TERM=$TERM"
+if (: < /dev/tty) 2> /dev/null; then
+    say "fact controlling-terminal=yes"
+else
+    say "fact controlling-terminal=no"
+fi
+say "fact echo=$(stty -a | tr ' ;' '\n' | grep -x -e echo -e -echo)"
+say "fact waiting-keys=$(waiting_keys)"
+if touch /tmp/ddt-placeholder 2> /dev/null; then
+    say "fact tmp=writable"
+else
+    say "fact tmp=read-only"
+fi
+say "fact printk=$(tr '\t' ' ' < /proc/sys/kernel/printk)"
+say "fact kernel-log=$(dmesg | sed -n 's/.*ddt: //p' | tr '\n' '|')"
+if [ -e /run/ddt/shell-open ]; then
+    say "fact shell=open"
+else
+    say "fact shell=closed"
+fi
+say "fact date=$(date -u +%s)"
+say "fact hosts=$(tr '\n' ';' < /etc/hosts)"
+
+say "fact SecureBoot=$(variable SecureBoot "$global")"
+say "fact SetupMode=$(variable SetupMode "$global")"
+say "fact BootCurrent=$(variable BootCurrent "$global")"
+say "fact BootOrder=$(variable BootOrder "$global")"
+mkdir -p /sys/kernel/security
+mount -t securityfs securityfs /sys/kernel/security 2> /dev/null
+say "fact lockdown=$(cat /sys/kernel/security/lockdown 2> /dev/null || echo unknown)"
+say "fact lockdown-log=$(dmesg | grep -i -m 1 'locked down' || echo none)"
+say "fact secureboot-log=$(dmesg | grep -i -m 1 'secure boot' || echo none)"
+
+for path in /sys/class/net/*; do
+    name=${path##*/}
+    driver=$(readlink "$path/device/driver" 2> /dev/null)
+    say "fact net $name address=$(cat "$path/address") driver=${driver##*/} carrier=$(cat "$path/carrier" 2> /dev/null)"
+done
+say "fact lease=$(cat /run/ddt/lease 2> /dev/null || echo none)"
+say "fact address=$(ip -4 -o addr show scope global | tr -s ' ' | cut -d ' ' -f 2,4 | tr '\n' ' ')"
+say "fact route=$(ip route show default | tr '\n' ' ')"
+say "fact resolv.conf=$(tr '\n' ' ' < /etc/resolv.conf 2> /dev/null)"
+
+for path in /sys/block/*; do
+    name=${path##*/}
+    case $name in
+        loop* | ram*) continue ;;
+    esac
+    sector=$(cat "$path/queue/logical_block_size")
+    say "fact disk $name sectors=$(cat "$path/size") logical=$sector model=$(cat "$path/device/model" 2> /dev/null)"
+done
+
+if [ -e /dev/fb0 ]; then
+    fb=/sys/class/graphics/fb0
+    driver=$(readlink "$fb/device/driver" 2> /dev/null)
+    mode="size=$(cat "$fb/virtual_size") bpp=$(cat "$fb/bits_per_pixel") stride=$(cat "$fb/stride")"
+    say "fact fb0 id=$(cat "$fb/name") $mode driver=${driver##*/}"
+else
+    say "fact fb0 absent"
+fi
+say "fact proc-fb=$(tr '\n' ';' < /proc/fb)"
+# A DRM driver that took the screen shows as card0 here.
+say "fact drm-cards=$(find /sys/class/drm -maxdepth 1 -name 'card*' 2> /dev/null | tr '\n' ' ')"
+
+say "fact input-nodes=$(find /dev/input -maxdepth 1 -type c 2> /dev/null | sed 's|.*/||' | sort | tr '\n' ' ')"
+grep -E '^(N|H):' /proc/bus/input/devices | while read -r line; do
+    say "fact input $line"
+done
+
+say "fact modules=$(cut -d ' ' -f 1 /proc/modules | sort | tr '\n' ' ')"
+say "fact tainted=$(cat /proc/sys/kernel/tainted)"
+refused=$(dmesg | grep -i -E 'signature|required key|verification failed|tainting' | grep -v -i -E 'secure boot|locked down' | tr '\n' ';')
+say "fact module-refusals=${refused:-none}"
+say "fact firmware-failures=$(dmesg | grep -i -E 'firmware.*(fail|error)' | tr '\n' ';')"
+say "DDT-PLACEHOLDER-AGENT facts done"
+
+hook=
+for word in $commandline; do
+    case $word in
+        ddt.hook=*) hook=${word#*=} ;;
+    esac
+done
+case $hook in
+    "" | *[!a-z0-9-]*) ;;
+    *)
+        if [ -x "/ddt/hooks/$hook" ]; then
+            "/ddt/hooks/$hook" > "$serial" 2>&1
+            code=$?
+            say "DDT-PLACEHOLDER-AGENT hook $hook ended with $code"
+            exit "$code"
+        fi
+        say "DDT-PLACEHOLDER-AGENT hook $hook is missing"
+        ;;
+esac
+
+# Ends with an error so that the menu of the start scripts shows.
+exit 3

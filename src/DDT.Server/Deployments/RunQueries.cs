@@ -56,14 +56,20 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
     }
 
     // Null for an agent too old for the run's sequence, which would throw on a step kind it doesn't know. Also null for
-    // the service in Windows, which only ever continues a running run.
+    // an assigned run in any environment but the boot environment its kind starts in. So the service in Windows only
+    // ever continues a running run, and Windows PE never starts a Linux sequence.
     public async Task<AgentRun?> HandOverAsync(Machine machine, Deployment run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
         ArgumentNullException.ThrowIfNull(run);
 
-        if (run.State is not (DeploymentState.Assigned or DeploymentState.Running)
-            || (machine.AgentEnvironment == AgentEnvironment.Windows && run.State == DeploymentState.Assigned))
+        if (run.State is not (DeploymentState.Assigned or DeploymentState.Running))
+        {
+            return null;
+        }
+
+        // Asked first, since a machine that waits in the other environment polls for as long as it waits there.
+        if (run.State == DeploymentState.Assigned && await StartsInAsync(run, cancellationToken).ConfigureAwait(false) != machine.AgentEnvironment)
         {
             return null;
         }
@@ -72,6 +78,18 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
 
         return machine.SequenceVersion >= handed.Sequence.Version ? handed : null;
     }
+
+    // The boot environment the run starts in. A run from before the server kept it says it through its sequence.
+    public async Task<AgentEnvironment> StartsInAsync(Deployment run, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(run);
+
+        return run.BootEnvironment ?? await StartsInAsync(run.Id, cancellationToken).ConfigureAwait(false);
+    }
+
+    // The same from the run's sequence alone, for a caller that has not read the run's row.
+    public async Task<AgentEnvironment> StartsInAsync(Guid runId, CancellationToken cancellationToken) =>
+        PhaseRules.StartsIn(await DefinitionAsync(runId, cancellationToken).ConfigureAwait(false));
 
     // The run as its agent receives it, from what was frozen when it was assigned.
     public async Task<AgentRun> AgentRunAsync(Machine machine, Deployment run, CancellationToken cancellationToken)
@@ -151,13 +169,18 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
     }
 
     // The definition the run was given when it was assigned.
-    public async Task<SequenceDefinition> DefinitionAsync(Deployment run, CancellationToken cancellationToken)
+    public Task<SequenceDefinition> DefinitionAsync(Deployment run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
 
+        return DefinitionAsync(run.Id, cancellationToken);
+    }
+
+    private async Task<SequenceDefinition> DefinitionAsync(Guid runId, CancellationToken cancellationToken)
+    {
         DeploymentSnapshot snapshot = await database.DeploymentSnapshots
             .AsNoTracking()
-            .SingleAsync(s => s.DeploymentId == run.Id, cancellationToken)
+            .SingleAsync(s => s.DeploymentId == runId, cancellationToken)
             .ConfigureAwait(false);
 
         return SequenceDocuments.Read(snapshot.Definition);

@@ -1,0 +1,188 @@
+#!/bin/sh
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# Run by the placeholder agent in the variables check, in three starts of one machine: the first sets BootNext to
+# the network entry, the second checks that and adds a boot entry of its own, the third checks that entry.
+# A variable of its own carries the step, because the machine has nothing else that lasts.
+
+PATH=/usr/bin
+export PATH
+
+variables=/sys/firmware/efi/efivars
+global=8be4df61-93ca-11d2-aa0d-00e098032b8c
+own=5f1c3d2e-7a94-4c0b-9e6d-2b8f41a7d3c6
+# Non-volatile, boot service access, runtime access.
+attributes=07000000
+
+ok() {
+    echo "variables: ok $1"
+}
+
+failed() {
+    echo "variables: FAILED $1"
+}
+
+check() {
+    if [ "$2" = "$3" ]; then
+        ok "$1 ($2)"
+    else
+        failed "$1: is $2, expected $3"
+    fi
+}
+
+hex() {
+    xxd -p | tr -d '\n'
+}
+
+# A variable's value in hex, without the attributes efivarfs puts first. cut drops them: efivarfs cannot seek.
+value() {
+    if [ -f "$variables/$1" ]; then
+        hex < "$variables/$1" | cut -c 9-
+    else
+        echo absent
+    fi
+}
+
+# efivarfs takes a variable in one write: four bytes of attributes, then the value.
+write() {
+    if printf '%s' "$attributes$2" | xxd -r -p > "$variables/$1"; then
+        ok "wrote $1"
+    else
+        failed "writing $1"
+    fi
+}
+
+utf16() {
+    printf '%s' "$1" | xxd -p -c 1 | while read -r byte; do
+        printf '%s00' "$byte"
+    done
+}
+
+# 0300 as BootCurrent holds it becomes 0003 as in Boot0003.
+number() {
+    echo "${1#??}${1%??}" | tr 'a-f' 'A-F'
+}
+
+little() {
+    echo "${1#??}${1%??}" | tr 'A-F' 'a-f'
+}
+
+free_entry() {
+    count=256
+    while [ -e "$variables/Boot$(printf '%04X' "$count")-$global" ]; do
+        count=$((count + 1))
+    done
+    printf '%04X' "$count"
+}
+
+# -f, because rm asks on the agent's screen before it deletes a file that is not writable.
+remove() {
+    chattr -i "$variables/$1" && rm -f "$variables/$1"
+}
+
+# A boot entry's name: UCS-2 after six bytes of attributes and length, up to its zero.
+description() {
+    rest=$(value "$1" | cut -c 13-)
+    text=
+    while [ -n "$rest" ] && [ "${rest#0000}" = "$rest" ]; do
+        text=$text${rest%"${rest#??}"}
+        rest=${rest#????}
+    done
+    printf '%s' "$text" | xxd -r -p
+}
+
+list_entries() {
+    for path in "$variables"/Boot[0-9A-F][0-9A-F][0-9A-F][0-9A-F]-"$global"; do
+        name=${path##*/}
+        echo "variables: ${name%%-*} is $(description "$name")"
+    done
+}
+
+first_start() {
+    current=$(number "$(value "BootCurrent-$global")")
+    echo "variables: start 1, BootCurrent=$current BootOrder=$(value "BootOrder-$global")"
+    list_entries
+
+    write "DdtTest-$own" "$(printf 'written in start 1' | hex)"
+    echo "variables: flags of DdtTest: $(lsattr "$variables/DdtTest-$own" 2>&1)"
+
+    # An entry that cannot start anything: a file path that is on no disk.
+    dead=$(free_entry)
+    path="04042800$(utf16 '\EFI\ddt\none.efi')00007fff0400"
+    write "Boot$dead-$global" "010000002c00$(utf16 'DDT test dead')0000$path"
+    write "BootOrder-$global" "$(little "$dead")"
+    write "BootNext-$global" "$(little "$current")"
+    check "BootNext reads back" "$(value "BootNext-$global")" "$(little "$current")"
+    write "DdtTestStep-$own" "$(printf '2 %s %s' "$current" "$dead" | hex)"
+    echo "variables: restarting into BootNext"
+    reboot
+}
+
+second_start() {
+    current=$(number "$(value "BootCurrent-$global")")
+    echo "variables: start 2, BootCurrent=$current BootOrder=$(value "BootOrder-$global")"
+    check "came back through BootNext" "$current" "$1"
+    check "the firmware used BootNext up" "$(value "BootNext-$global")" absent
+    case $(value "BootOrder-$global") in
+        "$(little "$2")"*) ok "BootOrder still starts with the entry that cannot start" ;;
+        *) failed "BootOrder does not start with Boot$2" ;;
+    esac
+
+    check "DdtTest survived the restart" "$(value "DdtTest-$own" | xxd -r -p)" "written in start 1"
+    check "DdtTest has its attributes" "$(xxd -p -l 4 "$variables/DdtTest-$own")" "$attributes"
+    case $(lsattr "$variables/DdtTest-$own" 2>&1) in
+        ----i*) ok "DdtTest is immutable" ;;
+        *) failed "DdtTest is not immutable: $(lsattr "$variables/DdtTest-$own" 2>&1)" ;;
+    esac
+    if rm -f "$variables/DdtTest-$own" 2> /dev/null; then
+        failed "DdtTest could be deleted while immutable"
+    else
+        ok "deleting DdtTest while immutable is refused"
+    fi
+    remove "DdtTest-$own"
+    check "DdtTest is deleted" "$(value "DdtTest-$own")" absent
+
+    # The network entry again under a name of ours, without the mark of an entry the firmware made itself.
+    entry=$(value "Boot$1-$global")
+    length=$(printf '%s' "$entry" | cut -c 9-12)
+    rest=${entry#????????????}
+    while [ "${rest#0000}" = "$rest" ]; do
+        rest=${rest#????}
+    done
+    rest=${rest#0000}
+    path=$(printf '%s' "$rest" | cut -c "1-$((0x$(number "$length") * 2))")
+    mine=$(free_entry)
+    write "Boot$mine-$global" "01000000$length$(utf16 'DDT test network')0000$path"
+    write "BootOrder-$global" "$(little "$mine")$(value "BootOrder-$global")"
+    remove "DdtTestStep-$own"
+    write "DdtTestStep-$own" "$(printf '3 %s' "$mine" | hex)"
+    echo "variables: restarting into Boot$mine, first in BootOrder"
+    reboot
+}
+
+third_start() {
+    current=$(number "$(value "BootCurrent-$global")")
+    echo "variables: start 3, BootCurrent=$current BootOrder=$(value "BootOrder-$global")"
+    list_entries
+    check "came back through the entry of our own" "$current" "$1"
+    check "the entry has our name" "$(description "Boot$1-$global")" "DDT test network"
+    check "DdtTest stayed deleted" "$(value "DdtTest-$own")" absent
+    remove "DdtTestStep-$own"
+    echo "variables: finished"
+}
+
+if [ -f "$variables/DdtTestStep-$own" ]; then
+    read -r step first second << EOF
+$(value "DdtTestStep-$own" | xxd -r -p)
+EOF
+else
+    step=1
+fi
+case $step in
+    1) first_start ;;
+    2) second_start "$first" "$second" ;;
+    3) third_start "$first" ;;
+    *) failed "unknown step $step" ;;
+esac

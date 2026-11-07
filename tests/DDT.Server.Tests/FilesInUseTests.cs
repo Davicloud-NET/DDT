@@ -67,7 +67,10 @@ public sealed class FilesInUseTests : IDisposable
     public void Dispose() => Directory.Delete(_store, recursive: true);
 
     private AgentReleaseStore Store() =>
-        new(Options.Create(new AgentReleaseOptions()), Options.Create(new DdtOptions { StorePath = _store }), new BundledReleases(Path.Combine(_store, "none")));
+        new AgentReleaseStores(
+            Options.Create(new AgentReleaseOptions()),
+            Options.Create(new DdtOptions { StorePath = _store }),
+            new BundledReleases(Path.Combine(_store, "none"))).Windows;
 
     private static async Task<ReleaseUploadStatus> SaveAsync(AgentReleaseStore store, byte[] agent)
     {

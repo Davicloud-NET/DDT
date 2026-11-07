@@ -70,6 +70,57 @@ describe("MachinePage", () => {
     expect(server.count(resolutionCall)).toBe(2);
   });
 
+  it("says once the server no longer restarts the machine for its run, and what to look at", async () => {
+    const assigned = run({
+      state: "Assigned",
+      title: "Install Linux",
+      activity: null,
+      startedUtc: null,
+      stepIndex: null,
+      stepName: null,
+    });
+    const restarting = machine({
+      state: "Approved",
+      agentEnvironment: "WindowsPE",
+      nextEnvironment: "LinuxBoot",
+      deployment: assigned,
+    });
+    const { hub } = await open(
+      answers([restarting], [assigned], [view({ summary: assigned, steps: [] })]),
+    );
+
+    await screen.findByRole("heading", { name: "PC-042" });
+    expect(screen.queryByText(/after restarting/)).not.toBeInTheDocument();
+
+    act(() => {
+      hub?.push("machineChanged", {
+        ...restarting,
+        nextEnvironment: null,
+        restartsFailed: "LinuxBoot",
+      });
+    });
+
+    expect(
+      await screen.findByText(
+        "This machine did not start the Linux boot environment after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. Install Linux stays assigned and starts once the machine starts the Linux boot environment.",
+      ),
+    ).toBeInTheDocument();
+
+    // Where it starts the environment after all, the server says so and the notice goes.
+    act(() => {
+      hub?.push("machineChanged", {
+        ...restarting,
+        agentEnvironment: "LinuxBoot",
+        nextEnvironment: null,
+        restartsFailed: null,
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/after restarting/)).not.toBeInTheDocument();
+    });
+  });
+
   it.each([
     {
       phase: "WindowsPE" as const,
@@ -156,6 +207,30 @@ describe("MachinePage", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: "Install Windows" })).toBeNull();
+  });
+
+  it("shows the environment the machine's agent runs in, and the one it restarts into", async () => {
+    await open(
+      answers(
+        [
+          machine({
+            state: "Approved",
+            deployment: null,
+            agentEnvironment: "WindowsPE",
+            nextEnvironment: "LinuxBoot",
+          }),
+        ],
+        [],
+        [],
+      ),
+    );
+
+    expect(
+      (await screen.findByText("Environment", { selector: "dt" })).nextElementSibling,
+    ).toHaveTextContent("Windows PE");
+    expect(
+      screen.getByText("Restarts into", { selector: "dt" }).nextElementSibling,
+    ).toHaveTextContent("Linux boot environment");
   });
 
   it("shows the machine's Secure Boot state, and that its run may write an image not signed for it", async () => {

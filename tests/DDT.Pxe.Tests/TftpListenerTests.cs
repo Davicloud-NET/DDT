@@ -17,6 +17,8 @@ public sealed class TftpListenerTests : IDisposable
     private static readonly TimeSpan s_timeout = TimeSpan.FromSeconds(5);
 
     private readonly string _root = Path.Combine(Path.GetTempPath(), "ddt-tftp-" + Guid.NewGuid().ToString("N"));
+    private readonly FakeLinuxBootSite _site = new();
+    private readonly TestClock _clock = new(DateTimeOffset.FromUnixTimeSeconds(1_791_460_800));
     private readonly byte[] _content;
 
     public TftpListenerTests()
@@ -37,7 +39,7 @@ public sealed class TftpListenerTests : IDisposable
         TftpListener listener = new(
             Loopback.AnyPort,
             map ?? Loopback.Map(),
-            new BootFileResolver(_root),
+            new BootFiles(new BootFileResolver(_root), _site, 8080, new BootConnections(_clock), _clock),
             new TftpServing(TftpLimits.Default, MaxTransfers: 8, singlePort),
             TimeProvider.System,
             NullLogger<TftpListener>.Instance);
@@ -205,6 +207,173 @@ public sealed class TftpListenerTests : IDisposable
         Assert.Equal((ushort)TftpOpcode.Error, Opcode(reply.Value.Datagram));
         Assert.Equal((ushort)TftpErrorCode.FileNotFound, BinaryPrimitives.ReadUInt16BigEndian(reply.Value.Datagram.AsSpan(2)));
         Assert.Null(await Loopback.ReceiveAsync(client, TimeSpan.FromMilliseconds(300)));
+    }
+
+    // GRUB asks with a leading slash, block size 1024 and tsize, and without a window size.
+    [Fact]
+    public async Task ServesTheGeneratedGrubConfigurationWithItsSize()
+    {
+        _site.Current = TestBundle.Of(_root) with { Keymap = "de" };
+        await using TftpListener listener = Listener();
+        using Socket client = Loopback.Client();
+        byte[] request = [0, 1, .. "/grub/grub.cfg"u8, 0, .. "octet"u8, 0, .. "blksize"u8, 0, .. "1024"u8, 0, .. "tsize"u8, 0, .. "0"u8, 0];
+        string expected = GrubConfig.Write(new GrubConfigValues(IPAddress.Loopback, 8080, _clock.GetUtcNow())
+        {
+            Keymap = "de",
+            HostName = "ddt-server.example.test",
+        });
+
+        await client.SendToAsync(request, listener.LocalEndPoint);
+
+        (byte[] Datagram, IPEndPoint From)? optionAck = await Loopback.ReceiveAsync(client, s_timeout);
+        Assert.NotNull(optionAck);
+        Assert.Equal((ushort)TftpOpcode.OptionAcknowledgement, Opcode(optionAck.Value.Datagram));
+        string options = Encoding.ASCII.GetString(optionAck.Value.Datagram, 2, optionAck.Value.Datagram.Length - 2);
+        Assert.Contains("blksize\u00001024\u0000", options, StringComparison.Ordinal);
+        Assert.Contains($"tsize\u0000{expected.Length}\u0000", options, StringComparison.Ordinal);
+
+        IPEndPoint server = optionAck.Value.From;
+        await client.SendToAsync(Ack(0), server);
+        List<byte> received = [];
+
+        for (ushort block = 1; ; block++)
+        {
+            byte[] data = await ReceiveDataAsync(client, server, block);
+            received.AddRange(data.AsSpan(4));
+            await client.SendToAsync(Ack(block), server);
+
+            if (data.Length - 4 < 1024)
+            {
+                break;
+            }
+        }
+
+        Assert.Equal(expected, Encoding.ASCII.GetString([.. received]));
+        Assert.Contains("(tftp,127.0.0.1)/linux/vmlinuz", expected, StringComparison.Ordinal);
+    }
+
+    // Opening a file looks at the disk. Port 69 has one loop for every machine's requests, and it must not wait for that.
+    [Fact]
+    public async Task ASlowLookAtOneMachinesFileDoesNotHoldUpTheNextMachinesRequest()
+    {
+        using ManualResetEventSlim looking = new();
+        using ManualResetEventSlim release = new();
+        File.WriteAllText(Path.Combine(_root, "vmlinuz"), "kernel");
+
+        // The file is not what the server noted, so opening it tells the server, which here takes its time.
+        _site.Current = TestBundle.Of(_root) with
+        {
+            Files = new Dictionary<string, BootFileStamp> { ["vmlinuz"] = new BootFileStamp(1, DateTime.UnixEpoch) },
+            Changed = _ =>
+            {
+                looking.Set();
+                release.Wait(TimeSpan.FromSeconds(30));
+            },
+        };
+        await using TftpListener listener = Listener();
+        using Socket slow = Loopback.Client();
+        using Socket next = Loopback.Client();
+
+        try
+        {
+            await slow.SendToAsync(ReadRequest("linux/vmlinuz"), listener.LocalEndPoint);
+            Assert.True(looking.Wait(s_timeout, TestContext.Current.CancellationToken), "The file was never opened.");
+
+            await next.SendToAsync(Loopback.Fixture("Tftp", "rrq-wdsmgfw-blksize1456-window4"), listener.LocalEndPoint);
+            (byte[] Datagram, IPEndPoint From)? answered = await Loopback.ReceiveAsync(next, s_timeout);
+
+            Assert.NotNull(answered);
+            Assert.Equal((ushort)TftpOpcode.OptionAcknowledgement, Opcode(answered.Value.Datagram));
+            Assert.False(release.IsSet);
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        // The machine whose file is no longer the one that was checked is told, and gets none of it.
+        (byte[] Datagram, IPEndPoint From)? refused = await Loopback.ReceiveAsync(slow, s_timeout);
+
+        Assert.NotNull(refused);
+        Assert.Equal((ushort)TftpOpcode.Error, Opcode(refused.Value.Datagram));
+    }
+
+    // The same for finding the file, which reads folders: it happens in the transfer and not in the loop.
+    [Fact]
+    public async Task ASlowSearchForOneMachinesFileDoesNotHoldUpTheNextMachinesRequest()
+    {
+        using ManualResetEventSlim searching = new();
+        using ManualResetEventSlim release = new();
+        int asked = 0;
+        _site.Current = TestBundle.Of(_root);
+        _site.Asked = () =>
+        {
+            // Only the first machine's search is slow.
+            if (Interlocked.Increment(ref asked) == 1)
+            {
+                searching.Set();
+                release.Wait(TimeSpan.FromSeconds(30));
+            }
+        };
+        await using TftpListener listener = Listener();
+        using Socket slow = Loopback.Client();
+        using Socket next = Loopback.Client();
+
+        try
+        {
+            await slow.SendToAsync(ReadRequest("does-not-exist.efi"), listener.LocalEndPoint);
+            Assert.True(searching.Wait(s_timeout, TestContext.Current.CancellationToken), "The file was never searched for.");
+
+            await next.SendToAsync(Loopback.Fixture("Tftp", "rrq-wdsmgfw-blksize1456-window4"), listener.LocalEndPoint);
+            (byte[] Datagram, IPEndPoint From)? answered = await Loopback.ReceiveAsync(next, s_timeout);
+
+            Assert.NotNull(answered);
+            Assert.Equal((ushort)TftpOpcode.OptionAcknowledgement, Opcode(answered.Value.Datagram));
+            Assert.False(release.IsSet);
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        (byte[] Datagram, IPEndPoint From)? refused = await Loopback.ReceiveAsync(slow, s_timeout);
+
+        Assert.NotNull(refused);
+        Assert.Equal((ushort)TftpErrorCode.FileNotFound, BinaryPrimitives.ReadUInt16BigEndian(refused.Value.Datagram.AsSpan(2)));
+    }
+
+    [Fact]
+    public async Task SendsAFileOfTheLinuxBootEnvironmentThatIsStillWhatTheServerChecked()
+    {
+        File.WriteAllText(Path.Combine(_root, "vmlinuz"), "kernel");
+        _site.Current = TestBundle.Of(_root, "vmlinuz");
+        await using TftpListener listener = Listener();
+        using Socket client = Loopback.Client();
+
+        await client.SendToAsync(ReadRequest("linux/vmlinuz"), listener.LocalEndPoint);
+        (byte[] Datagram, IPEndPoint From)? data = await Loopback.ReceiveAsync(client, s_timeout);
+
+        Assert.NotNull(data);
+        Assert.Equal((ushort)TftpOpcode.Data, Opcode(data.Value.Datagram));
+        Assert.Equal("kernel", Encoding.ASCII.GetString(data.Value.Datagram.AsSpan(4)));
+    }
+
+    // shim and GRUB go on without these, so the client is told at once that there is no such file.
+    [Theory]
+    [InlineData("linux/revocations_sbat.efi")]
+    [InlineData("/grub/x86_64-efi/command.lst")]
+    public async Task AnswersFileNotFoundToAProbeOfShimOrGrub(string fileName)
+    {
+        await using TftpListener listener = Listener();
+        using Socket client = Loopback.Client();
+
+        await client.SendToAsync(ReadRequest(fileName), listener.LocalEndPoint);
+
+        (byte[] Datagram, IPEndPoint From)? reply = await Loopback.ReceiveAsync(client, s_timeout);
+
+        Assert.NotNull(reply);
+        Assert.Equal((ushort)TftpOpcode.Error, Opcode(reply.Value.Datagram));
+        Assert.Equal((ushort)TftpErrorCode.FileNotFound, BinaryPrimitives.ReadUInt16BigEndian(reply.Value.Datagram.AsSpan(2)));
     }
 
     [Fact]

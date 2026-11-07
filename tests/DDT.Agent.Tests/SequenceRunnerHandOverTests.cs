@@ -37,7 +37,7 @@ public sealed class SequenceRunnerHandOverTests : SequenceRunnerTestBase
 
         string agent = Path.Combine(Windows, "DDT", WindowsHandOver.AgentDirectory);
         Assert.Equal(
-            await File.ReadAllBytesAsync(TestAgents.AgentSource(_tools), cancellationToken),
+            await File.ReadAllBytesAsync(WindowsTestAgents.AgentSource(_tools), cancellationToken),
             await File.ReadAllBytesAsync(Path.Combine(agent, "ddt-agent.exe"), cancellationToken));
         Assert.Equal(
             """{"serverUrl":"https://ddt.example:8443/","rootCertificate":"-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n"}""",
@@ -50,7 +50,7 @@ public sealed class SequenceRunnerHandOverTests : SequenceRunnerTestBase
 
         // Windows setup still needs the answer file.
         Assert.True(File.Exists(UnattendFile.PathIn(Windows)));
-        Assert.Equal(RestartInto.Windows, RestartDue());
+        Assert.Equal(RestartInto.InstalledSystem, RestartDue());
 
         AgentRunReport last = server.RunReports[^1];
         Assert.Equal((DeploymentState.Running, SequencePhase.Windows, RunActivity.Restarting), (last.State, last.Phase, last.Activity));

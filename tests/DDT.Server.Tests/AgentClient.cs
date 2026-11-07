@@ -48,6 +48,10 @@ public sealed class AgentClient(HttpClient client, string? remoteAddress = null)
     public Task<HttpResponseMessage> PickRunAsync(Guid machineId, string token, string json) =>
         SendAsync(HttpMethod.Post, AgentRoutes.Runs(machineId), token, new StringContent(json, Encoding.UTF8, "application/json"));
 
+    // Says that the machine restarts into the other boot environment, like the agent does before it restarts.
+    public Task<HttpResponseMessage> EnvironmentAsync(Guid machineId, string token, AgentEnvironmentRequest request) =>
+        SendAsync(HttpMethod.Post, AgentRoutes.Environment(machineId), token, JsonContent.Create(request, options: TestJson.Options));
+
     public Task<HttpResponseMessage> RunReportAsync(Guid machineId, string token, Guid runId, AgentRunReport report) =>
         SendAsync(HttpMethod.Post, AgentRoutes.RunReport(machineId, runId), token, JsonContent.Create(report, options: TestJson.Options));
 

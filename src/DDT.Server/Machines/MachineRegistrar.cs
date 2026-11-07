@@ -82,6 +82,11 @@ public sealed class MachineRegistrar(
                 machine.SignedInUserName,
                 continued?.Id,
                 continued is null ? null : tokens.IssueRunToken(machine, continued.Id),
-                consoleLanguage);
+                consoleLanguage)
+            {
+                ConsoleKeyboardLayout = machine.AgentEnvironment == AgentEnvironment.LinuxBoot
+                    ? settings.Current.Deployment.ConsoleKeyboardLayout
+                    : null,
+            };
     }
 }

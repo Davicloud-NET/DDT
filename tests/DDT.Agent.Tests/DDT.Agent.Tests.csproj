@@ -15,4 +15,10 @@
     <ProjectReference Include="..\..\src\DDT.Agent\DDT.Agent.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The fakes and other helpers of DDT.Agent.Core.Tests, which the tests here use too, so each exists once. Every
+         file there that is not a test class is one. -->
+    <Compile Include="..\DDT.Agent.Core.Tests\*.cs" Exclude="..\DDT.Agent.Core.Tests\*Tests.cs" LinkBase="Shared" />
+  </ItemGroup>
+
 </Project>

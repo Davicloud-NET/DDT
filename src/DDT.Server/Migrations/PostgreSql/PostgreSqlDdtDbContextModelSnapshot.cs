@@ -347,6 +347,10 @@ namespace DDT.Server.Migrations.PostgreSql
                     b.Property<string>("Answers")
                         .HasColumnType("text");
 
+                    b.Property<string>("BootEnvironment")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
                     b.Property<int?>("ContinuePass")
                         .HasColumnType("integer");
 
@@ -409,6 +413,9 @@ namespace DDT.Server.Migrations.PostgreSql
 
                     b.Property<Guid?>("RequestedByUserId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("RestartsOrdered")
+                        .HasColumnType("integer");
 
                     b.Property<Guid?>("RuleId")
                         .HasColumnType("uuid");
@@ -869,6 +876,16 @@ namespace DDT.Server.Migrations.PostgreSql
                     b.Property<string>("Model")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
+
+                    b.Property<string>("NextEnvironment")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<DateTimeOffset?>("NextEnvironmentUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("PendingSequenceId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("PrimaryMac")
                         .IsRequired()

@@ -4,6 +4,7 @@
 
 using DDT.Server.Authentication;
 using DDT.Server.Ldap;
+using DDT.Server.LinuxBoot;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -22,7 +23,8 @@ public static class SettingsServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.TryAddSingleton(TimeProvider.System);
+        // The pages warn and check against the Linux boot environment the server has. It brings the clock too.
+        services.AddDdtLinuxBoot();
         services.AddSingleton<DdtSettings>();
         services.AddSingleton<SettingsProtector>();
         services.AddSingleton<ReauthenticationTokens>();

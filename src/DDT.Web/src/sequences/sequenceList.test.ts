@@ -44,6 +44,7 @@ function summary(overrides: Partial<SequenceSummary> = {}): SequenceSummary {
     rawImageName: null,
     rawImageBootCapability: null,
     rawImageSignedUnder: null,
+    kind: "Windows",
     ...overrides,
   };
 }
@@ -167,11 +168,12 @@ describe("the sequence list", () => {
       continuesInWindows: true,
       updatedBy: "bob",
     });
+    expect(summaryOf(view()).kind).toBe("Windows");
     expect(
       summaryOf(
         view({
-          definition: { version: 2, steps: [newStep("writeRawImage", "w"), seed] },
-          stepPhases: ["WindowsPE", "WindowsPE"],
+          definition: { version: 4, steps: [newStep("writeRawImage", "w"), seed] },
+          stepPhases: ["LinuxBoot", "LinuxBoot"],
         }),
         summary({ rawImageName: "noble", rawImageBootCapability: "NotSigned" }),
       ),
@@ -181,6 +183,7 @@ describe("the sequence list", () => {
       continuesInWindows: false,
       rawImageName: "noble",
       rawImageBootCapability: "NotSigned",
+      kind: "Linux",
     });
   });
 

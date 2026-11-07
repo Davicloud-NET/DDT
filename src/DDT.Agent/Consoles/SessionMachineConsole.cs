@@ -40,6 +40,9 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
     // A question asked while no console is connected still waits for the next console.
     public bool CanAsk => IsConnected;
 
+    // Windows may start DDT's session, and the console with it, at any moment.
+    public bool AnswersLater => true;
+
     public bool IsConnected => _outbox.IsConnected;
 
     // Only the agent's account, SYSTEM, and the session's account may open it. The agent's account owns it, and the

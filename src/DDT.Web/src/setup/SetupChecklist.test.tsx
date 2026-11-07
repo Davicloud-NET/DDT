@@ -10,6 +10,7 @@ import {
   administrator,
   bootImageView,
   imageSummary,
+  linuxBootView,
   machineSummary,
   operator,
 } from "@/test/builders";
@@ -81,6 +82,70 @@ describe("SetupChecklist", () => {
       ).not.toBeInTheDocument();
     });
     expect(server.count("GET /api/server/checklist")).toBe(1);
+  });
+
+  it("counts the Linux boot environment as ready without a build, and says what Windows still needs", async () => {
+    const { hub } = await open({ ...fresh, linuxBoot: true });
+
+    const panel = rowOf(
+      await screen.findByRole("heading", { name: "Before the first deployment" }),
+      "section",
+    );
+    expect(mark(panel, /Machines netboot into the Linux boot environment/)).toBe("Done");
+    expect(panel).toHaveTextContent(
+      "Machines netboot into the Linux boot environment, which comes with DDT. To install Windows, build the boot image as well.",
+    );
+    expect(within(panel).getByRole("link", { name: "build the boot image" })).toHaveAttribute(
+      "href",
+      "/boot/image",
+    );
+
+    // Once a boot image is built the step says what it always said, and stays done.
+    act(() => {
+      hub?.push("bootImageChanged", bootImageView({ linux: linuxBootView() }));
+    });
+    await waitFor(() => {
+      expect(mark(panel, /that machines netboot into\.$/)).toBe("Done");
+    });
+  });
+
+  it("opens the step again when the hub says the Linux boot environment is gone and nothing is built", async () => {
+    const { hub } = await open({ ...fresh, linuxBoot: true });
+
+    const panel = rowOf(
+      await screen.findByRole("heading", { name: "Before the first deployment" }),
+      "section",
+    );
+    act(() => {
+      hub?.push(
+        "bootImageChanged",
+        bootImageView({ builds: [], linux: linuxBootView({ available: false }) }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(mark(panel, /that machines netboot into\.$/)).toBe("Open");
+    });
+  });
+
+  it("is complete with the Linux boot environment alone", async () => {
+    const { server } = await open({
+      password: true,
+      netboot: true,
+      bootImage: false,
+      image: true,
+      sequence: true,
+      machine: true,
+      linuxBoot: true,
+    });
+
+    await screen.findByText("No machines yet");
+    await waitFor(() => {
+      expect(server.count("GET /api/server/checklist")).toBe(1);
+    });
+    expect(
+      screen.queryByRole("heading", { name: "Before the first deployment" }),
+    ).not.toBeInTheDocument();
   });
 
   it("stays away on the first page once dismissed", async () => {

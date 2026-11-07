@@ -13,6 +13,7 @@ import {
   type DeploymentView,
 } from "@/deployments/deployments";
 import { formatDuration } from "@/lib/format";
+import { bootPhase, kindOfNodes } from "@/sequences/sequenceKinds";
 
 import type { RunPath } from "../runPath";
 import { CurrentStep } from "./CurrentStep";
@@ -48,6 +49,7 @@ export function RunActivity({ run, view, path, lastSeenUtc, now }: RunActivityPr
         step={running}
         count={path?.leaves.length ?? 0}
         isTree={path?.isTree === true}
+        boot={bootPhase(kindOfNodes((path?.nodes ?? []).map((node) => node.node)))}
         artifact={artifact}
         now={now}
       />

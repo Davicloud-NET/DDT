@@ -23,7 +23,8 @@ public sealed class SequenceChoices(
     UserManager<DdtUser> users,
     SequenceCatalog catalog,
     SequenceResolver resolver,
-    DdtSettings settings)
+    DdtSettings settings,
+    BootEnvironments environments)
 {
     // True if someone who may deploy signed in at this machine in its current token generation, and nothing is
     // assigned.
@@ -47,15 +48,16 @@ public sealed class SequenceChoices(
                 || await users.IsInRoleAsync(user, DdtRoleNames.Administrator).ConfigureAwait(false));
     }
 
-    // Only the sequences that can run, on this agent too, each with what it needs.
+    // Only the sequences that can run on this agent, each with what it needs and the boot environment that starts it.
+    // Those of the other boot environment are among them when the machine can restart into it.
     public async Task<IReadOnlyList<AgentSequenceChoice>> ChoicesAsync(Machine machine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
         List<TaskSequence> sequences = await database.TaskSequences.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
-        SequenceReferences references = await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false);
+        Listing listing = new(machine, await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false), environments.ReachableFrom(machine));
         SequenceResolution resolution = await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false);
-        Guid? suggested = Suggested(resolution, references);
+        Guid? suggested = Suggested(listing, sequences.FirstOrDefault(sequence => sequence.Id == machine.PendingSequenceId), resolution);
         DeploymentOptions deployment = settings.Current.Deployment;
         List<AgentSequenceChoice> choices = [];
 
@@ -63,7 +65,7 @@ public sealed class SequenceChoices(
         {
             SequenceDefinition definition = SequenceDocuments.Read(sequence.Definition);
 
-            if (definition.RequiredVersion() > machine.SequenceVersion || SequenceChecks.Check(definition, references).Problems.Count > 0)
+            if (!listing.Lists(definition))
             {
                 continue;
             }
@@ -71,20 +73,40 @@ public sealed class SequenceChoices(
             // The console asks the inputs and the name after the pick, prefilled with what the machine, the rules and
             // the defaults give. A name typed there beats the one from the values.
             ValueResolution preview = ValueResolver.Resolve(MachineValues.Sources(machine, resolution, definition, null, deployment));
-            choices.Add(Choice(sequence, definition, references, machine, preview) with { Suggested = sequence.Id == suggested });
+            choices.Add(Choice(sequence, definition, listing.References, machine, preview) with
+            {
+                Suggested = sequence.Id == suggested,
+                Environment = PhaseRules.StartsIn(definition),
+            });
         }
 
         return choices;
     }
 
-    // The sequence the rules choose for the machine, offered first at the console. Only one that can run.
+    // The sequence offered first at the console: the one picked at the machine before it changed its boot environment,
+    // else the one the rules choose. Only one the machine lists.
     public async Task<Guid?> SuggestedAsync(Machine machine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
 
-        SequenceReferences references = await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false);
+        Listing listing = new(machine, await catalog.ReferencesAsync(cancellationToken).ConfigureAwait(false), environments.ReachableFrom(machine));
+        TaskSequence? pending = machine.PendingSequenceId is { } id
+            ? await database.TaskSequences.AsNoTracking().FirstOrDefaultAsync(sequence => sequence.Id == id, cancellationToken).ConfigureAwait(false)
+            : null;
 
-        return Suggested(await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false), references);
+        return Suggested(listing, pending, await resolver.ResolveAsync(machine, cancellationToken).ConfigureAwait(false));
+    }
+
+    // Whether the machine lists the sequence: its agent runs the version, and the sequence starts in the boot
+    // environment the machine started, or in the one it can restart into.
+    public static bool Offered(Machine machine, SequenceDefinition definition, AgentEnvironment? reachable)
+    {
+        ArgumentNullException.ThrowIfNull(machine);
+        ArgumentNullException.ThrowIfNull(definition);
+
+        AgentEnvironment starts = PhaseRules.StartsIn(definition);
+
+        return definition.RequiredVersion() <= machine.SequenceVersion && (starts == machine.AgentEnvironment || starts == reachable);
     }
 
     private static AgentSequenceChoice Choice(
@@ -119,9 +141,19 @@ public sealed class SequenceChoices(
             needsName && RunValues.NamesMachine(preview) ? preview.Effective[MachineVariableNames.ComputerName] : null);
     }
 
-    private static Guid? Suggested(SequenceResolution resolution, SequenceReferences references) =>
-        resolution is { Rule: not null, Sequence: { } sequence }
-            && SequenceChecks.Check(SequenceDocuments.Read(sequence.Definition), references).Problems.Count == 0
-                ? sequence.Id
-                : null;
+    private static Guid? Suggested(Listing listing, TaskSequence? pending, SequenceResolution resolution)
+    {
+        TaskSequence? ruled = resolution is { Rule: not null, Sequence: { } sequence } ? sequence : null;
+
+        return new[] { pending, ruled }
+            .OfType<TaskSequence>()
+            .FirstOrDefault(candidate => listing.Lists(SequenceDocuments.Read(candidate.Definition)))?.Id;
+    }
+
+    // What decides whether a machine lists a sequence. Reachable is the boot environment it can restart into, if any.
+    private sealed record Listing(Machine Machine, SequenceReferences References, AgentEnvironment? Reachable)
+    {
+        public bool Lists(SequenceDefinition definition) =>
+            Offered(Machine, definition, Reachable) && SequenceChecks.Check(definition, References).Problems.Count == 0;
+    }
 }

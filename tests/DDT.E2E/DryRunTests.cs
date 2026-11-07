@@ -268,9 +268,9 @@ public sealed class DryRunTests(DryRunLab lab)
         lab.AssertClean([agent], []);
     }
 
-    // A raw disk image that isn't signed for Secure Boot, on a machine that reports Secure Boot as on. The server
-    // refuses the run until it's allowed. Then the dry run's disk file holds the image, both of its tables, and the
-    // seed last.
+    // A raw disk image that isn't signed for Secure Boot, on a machine that started the Linux boot environment and
+    // reports Secure Boot as on. The server refuses the run until it's allowed. Then the dry run's disk file holds the
+    // image, both of its tables, and the seed last.
     [Fact(Timeout = 600_000)]
     public async Task ARawDiskImageNotSignedForSecureBootIsWrittenWithItsSeedOnceAllowed()
     {
@@ -280,8 +280,8 @@ public sealed class DryRunTests(DryRunLab lab)
         Assert.Equal((ImageKind.RawDisk, ImageBootCapability.NotSigned, "x64"), (image.Kind, image.BootCapability, image.Architecture));
         Assert.Equal("e2e-cloudimg-amd64", image.Name);
 
-        // WinPE can't restart in such a sequence, so the script treats no exit code as a restart.
-        RunScriptStep before = Script("Before the disk", SequencePhase.WindowsPE, "echo %DDT_PHASE%") with { RebootExitCodes = [] };
+        // The boot environment can't restart in such a sequence, so the script treats no exit code as a restart.
+        RunScriptStep before = Script("Before the disk", SequencePhase.LinuxBoot, "echo \"$DDT_PHASE\"", ScriptInterpreter.Shell) with { RebootExitCodes = [] };
         WriteRawImageStep write = new() { Id = Guid.CreateVersion7(), Name = "Write the disk image", ImageId = image.Id };
         WriteCloudInitSeedStep seed = SeedStep();
         SequenceView sequence = await lab.CreateSequenceAsync("Install Linux", [before, write, seed], cancellationToken);
@@ -289,7 +289,7 @@ public sealed class DryRunTests(DryRunLab lab)
             sequence.Warnings,
             warning => warning.StepId == write.Id && warning.Message.StartsWith($"{image.Name} will not start with Secure Boot on.", StringComparison.Ordinal));
 
-        await using AgentProcess agent = lab.StartAgent(secureBoot: true);
+        await using AgentProcess agent = lab.StartLinuxBootAgent(secureBoot: true);
         MachineSummary machine = await lab.WaitForMachineAsync(agent, cancellationToken);
         Assert.True(machine.SecureBootEnabled);
         await lab.Live.WatchAsync(machine.Id, cancellationToken);
@@ -311,6 +311,9 @@ public sealed class DryRunTests(DryRunLab lab)
         Assert.Equal(
             [(before.Id, StepState.Done), (write.Id, StepState.Done), (seed.Id, StepState.Done)],
             run.Steps.Select(step => (step.StepId, step.State)));
+        Assert.All(run.Steps, step => Assert.Equal(SequencePhase.LinuxBoot, step.Phase));
+        Assert.Equal(1, agent.Output.Count("Dry run: the fake machine started the Linux boot environment"));
+        Assert.Equal(1, agent.Output.Count("and taken as exit code 0: /bin/sh "));
         Assert.Equal(
             [(write.Id, ArtifactKind.Image, image.Id, image.Sha256)],
             run.Artifacts.Select(artifact => (artifact.StepId, artifact.Kind, artifact.SourceId, artifact.Sha256)));

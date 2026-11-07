@@ -23,8 +23,9 @@ public sealed class PxeSetup
     // The boot manager signed by the Microsoft 2011 CA, which a boot image build puts there
     public const string DefaultBootFile = "x64/bootmgfw.efi";
 
-    private const int MaxServerHostNameLength = 63;
-    private const int MaxBootFileLength = 255;
+    // The shim of the Linux boot environment, which BootFiles serves from the server's bundle
+    public const string LinuxBootFile = BootFiles.LinuxFolder + "/" + BootFiles.Shim;
+
     private const int MaxWindowSize = 64;
 
     private PxeSetup(
@@ -48,6 +49,12 @@ public sealed class PxeSetup
     public BootFileResolver Files { get; }
 
     public ProxyDhcpConfiguration ProxyDhcp { get; }
+
+    // The same answers with the Linux boot environment's shim for 64-bit UEFI machines. Null without TFTP, which
+    // serves the shim.
+    public ProxyDhcpConfiguration? LinuxProxyDhcp { get; private init; }
+
+    public DefaultBootEnvironment DefaultEnvironment { get; private init; }
 
     public TftpLimits TftpLimits { get; }
 
@@ -138,19 +145,40 @@ public sealed class PxeSetup
             interfaces,
             new BootFileResolver(options.BootDirectory),
             proxyDhcp,
-            TftpLimits.Default with { MaxWindowSize = options.TftpMaxWindowSize });
+            TftpLimits.Default with { MaxWindowSize = options.TftpMaxWindowSize })
+        {
+            LinuxProxyDhcp = options.EnableTftp ? proxyDhcp with { BootTargets = WithLinux(targets) } : null,
+            DefaultEnvironment = ReadDefaultEnvironment(options.DefaultBootEnvironment) ?? DefaultBootEnvironment.Auto,
+        };
     }
+
+    // Matched against the member names rather than Enum.TryParse, which also accepts "1". Null for no such name.
+    public static DefaultBootEnvironment? ReadDefaultEnvironment(string? value) =>
+        Enum.GetValues<DefaultBootEnvironment>()
+            .Cast<DefaultBootEnvironment?>()
+            .FirstOrDefault(member => string.Equals(member.ToString(), value?.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private static FrozenDictionary<ClientArchitecture, BootTarget> WithLinux(Dictionary<ClientArchitecture, BootTarget> targets) =>
+        new Dictionary<ClientArchitecture, BootTarget>(targets)
+        {
+            [ClientArchitecture.X64Uefi] = new BootTarget
+            {
+                Architecture = ClientArchitecture.X64Uefi,
+                Method = BootMethod.Tftp,
+                BootFile = LinuxBootFile,
+            },
+        }.ToFrozenDictionary();
 
     private static (Dictionary<ClientArchitecture, BootTarget> Targets, ImmutableArray<IPAddress> Relays) Read(
         PxeOptions options,
         List<SettingProblem> problems)
     {
-        Dictionary<ClientArchitecture, BootTarget> targets = ReadTargets(options, problems);
+        Dictionary<ClientArchitecture, BootTarget> targets = BootTargetReader.Read(options, problems);
         ImmutableArray<IPAddress>.Builder relays = ImmutableArray.CreateBuilder<IPAddress>();
 
         foreach (string relay in options.AuthorisedRelayAgents.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            if (TryParseVersion4(relay) is { } address)
+            if (BootTargetReader.TryParseVersion4(relay) is { } address)
             {
                 relays.Add(address);
             }
@@ -188,143 +216,41 @@ public sealed class PxeSetup
             problems.Add(new("MaxConcurrentTftpTransfers", ServerMessages.SettingsAtLeastOne.With()));
         }
 
+        if (ReadDefaultEnvironment(options.DefaultBootEnvironment) is null)
+        {
+            problems.Add(new("DefaultBootEnvironment", ServerMessages.SettingsPxeBootEnvironmentInvalid.With("value", options.DefaultBootEnvironment ?? string.Empty)));
+        }
+
+        if (KernelArgumentsProblem(options.LinuxKernelArguments) is { } problem)
+        {
+            problems.Add(new("LinuxKernelArguments", problem));
+        }
+
         return (targets, relays.ToImmutable());
     }
 
-    private static Dictionary<ClientArchitecture, BootTarget> ReadTargets(PxeOptions options, List<SettingProblem> problems)
+    // The text ends up in the script GRUB runs on every machine, so each word is checked, and the first bad one named.
+    private static ServerMessage? KernelArgumentsProblem(string? text)
     {
-        Dictionary<ClientArchitecture, BootTarget> targets = [];
-
-        foreach ((string key, BootTargetOptions target) in options.BootTargets)
+        if ((text?.Length ?? 0) > KernelArguments.MaxLength)
         {
-            if (TryReadTarget(key, target, problems) is { } parsed)
+            return ServerMessages.SettingsPxeKernelArgumentsLength.With("max", KernelArguments.MaxLength);
+        }
+
+        foreach (string word in KernelArguments.Split(text))
+        {
+            if (!KernelArguments.IsWord(word))
             {
-                targets[parsed.Architecture] = parsed;
+                return ServerMessages.SettingsPxeKernelArgumentsInvalid.With("word", word);
+            }
+
+            if (KernelArguments.IsReserved(word))
+            {
+                return ServerMessages.SettingsPxeKernelArgumentsReserved.With("word", word);
             }
         }
 
-        // A new server boots machines without a visit to the settings. Without TFTP, nothing here would serve the file.
-        if (options.BootTargets.Count == 0 && options.EnableProxyDhcp && options.EnableTftp)
-        {
-            targets[ClientArchitecture.X64Uefi] = new BootTarget
-            {
-                Architecture = ClientArchitecture.X64Uefi,
-                Method = BootMethod.Tftp,
-                BootFile = DefaultBootFile,
-            };
-        }
-
-        return targets;
-    }
-
-    private static BootTarget? TryReadTarget(string key, BootTargetOptions target, List<SettingProblem> problems)
-    {
-        string field = "BootTargets:" + key;
-
-        // Matched against the member names rather than Enum.TryParse, which also accepts "7".
-        string? name = Enum.GetNames<ClientArchitecture>()
-            .FirstOrDefault(candidate => candidate.Equals(key, StringComparison.OrdinalIgnoreCase));
-
-        if (name is null)
-        {
-            problems.Add(new(
-                field,
-                ServerMessages.SettingsPxeArchitectureUnknown.With("value", key, "architectures", string.Join(", ", Enum.GetNames<ClientArchitecture>()))));
-
-            return null;
-        }
-
-        ClientArchitecture architecture = Enum.Parse<ClientArchitecture>(name);
-        int problemsBefore = problems.Count;
-        BootMethod? method = ReadMethod(name, target.Method, field, problems);
-        string bootFile = ReadBootFile(target.BootFile, method, field, problems);
-        IPAddress? serverAddress = ReadServerAddress(target.ServerAddress, field, problems);
-
-        if (target.ServerHostName is { } hostName
-            && (hostName.Length > MaxServerHostNameLength || !Ascii.IsValid(hostName)))
-        {
-            problems.Add(new($"{field}:ServerHostName", ServerMessages.SettingsPxeAsciiMaxLength.With("max", MaxServerHostNameLength)));
-        }
-
-        if (problems.Count > problemsBefore || method is null)
-        {
-            return null;
-        }
-
-        return new BootTarget
-        {
-            Architecture = architecture,
-            Method = method.Value,
-            BootFile = bootFile,
-            ServerAddress = serverAddress,
-            ServerHostName = target.ServerHostName,
-            AdvertiseBootServerDiscovery = target.AdvertiseBootServerDiscovery,
-        };
-    }
-
-    private static BootMethod? ReadMethod(string architecture, string? value, string field, List<SettingProblem> problems)
-    {
-        BootMethod? method = value?.Trim().ToUpperInvariant() switch
-        {
-            "TFTP" => BootMethod.Tftp,
-            "HTTP" => BootMethod.Http,
-            _ => null,
-        };
-
-        if (method is null)
-        {
-            problems.Add(new($"{field}:Method", ServerMessages.SettingsPxeMethodInvalid.With()));
-        }
-
-        // The architecture already says which one the firmware speaks. A PXE client never accepts a URL, and an HTTP
-        // Boot client never accepts a TFTP path.
-        bool httpArchitecture = architecture.EndsWith("Http", StringComparison.Ordinal);
-
-        if (method is { } chosen && httpArchitecture != (chosen == BootMethod.Http))
-        {
-            problems.Add(new(
-                $"{field}:Method",
-                ServerMessages.SettingsPxeMethodForArchitecture.With("method", httpArchitecture ? "Http" : "Tftp", "architecture", architecture)));
-        }
-
-        return method;
-    }
-
-    private static string ReadBootFile(string? value, BootMethod? method, string field, List<SettingProblem> problems)
-    {
-        string bootFile = value?.Trim() ?? string.Empty;
-
-        if (bootFile.Length == 0)
-        {
-            problems.Add(new($"{field}:BootFile", ServerMessages.SettingsPxeBootFileRequired.With()));
-        }
-        else if (bootFile.Length > MaxBootFileLength || !Ascii.IsValid(bootFile))
-        {
-            problems.Add(new($"{field}:BootFile", ServerMessages.SettingsPxeAsciiMaxLength.With("max", MaxBootFileLength)));
-        }
-        else if (method == BootMethod.Http && !IsHttpUrl(bootFile))
-        {
-            problems.Add(new($"{field}:BootFile", ServerMessages.SettingsPxeBootFileUrl.With()));
-        }
-
-        return bootFile;
-    }
-
-    private static IPAddress? ReadServerAddress(string? value, string field, List<SettingProblem> problems)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        IPAddress? serverAddress = TryParseVersion4(value.Trim());
-
-        if (serverAddress is null)
-        {
-            problems.Add(new($"{field}:ServerAddress", ServerMessages.SettingsPxeNotIpv4Address.With("value", value)));
-        }
-
-        return serverAddress;
+        return null;
     }
 
     // Kestrel loads a PFX from Path alone, and a PEM key sits next to its certificate, so every certificate file
@@ -342,17 +268,4 @@ public sealed class PxeSetup
         || path.StartsWith(
             Path.EndsInDirectorySeparator(directory) ? directory : directory + Path.DirectorySeparatorChar,
             StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsHttpUrl(string value) =>
-        Uri.TryCreate(value, UriKind.Absolute, out Uri? uri)
-        && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
-
-    // IPAddress.TryParse accepts "10" as 0.0.0.10, reads "010" as octal and accepts IPv6. Only an address
-    // that round trips to exactly what was written is plain dotted decimal.
-    private static IPAddress? TryParseVersion4(string value) =>
-        IPAddress.TryParse(value, out IPAddress? address)
-        && address.AddressFamily == AddressFamily.InterNetwork
-        && string.Equals(address.ToString(), value, StringComparison.Ordinal)
-            ? address
-            : null;
 }

@@ -10,6 +10,8 @@ public sealed class AgentReleaseApplication : DdtApplication
 {
     public string BinaryPath { get; } = Path.Combine(Path.GetTempPath(), $"ddt-agent-release-{Guid.NewGuid():N}.exe");
 
+    public string LinuxBinaryPath { get; } = Path.Combine(Path.GetTempPath(), $"ddt-agent-release-{Guid.NewGuid():N}");
+
     public string ConsolePath { get; } = Path.Combine(Path.GetTempPath(), $"ddt-console-release-{Guid.NewGuid():N}.zip");
 
     protected override void ConfigureTestHost(IWebHostBuilder builder)
@@ -17,6 +19,7 @@ public sealed class AgentReleaseApplication : DdtApplication
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.UseSetting("DDT:Agent:BinaryPath", BinaryPath);
+        builder.UseSetting("DDT:Agent:LinuxBinaryPath", LinuxBinaryPath);
         builder.UseSetting("DDT:Agent:ConsolePath", ConsolePath);
     }
 
@@ -27,6 +30,7 @@ public sealed class AgentReleaseApplication : DdtApplication
         if (disposing)
         {
             File.Delete(BinaryPath);
+            File.Delete(LinuxBinaryPath);
             File.Delete(ConsolePath);
         }
     }

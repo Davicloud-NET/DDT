@@ -40,7 +40,7 @@ public sealed class SequenceFixtureTests
         await MatchFixtureAsync("install-windows.sequence.json", fixedIds, "the template");
     }
 
-    // Every kind of step from versions 1 and 2, plus a script in every phase with every interpreter.
+    // Every kind of step a flat document can hold, plus a script in every phase with every interpreter.
     private static List<SequenceStep> EveryKindOfStep()
     {
         List<SequenceStep> steps = WindowsSteps();
@@ -107,8 +107,9 @@ public sealed class SequenceFixtureTests
             },
         ];
 
-    // Every kind of step from versions 1 and 2, and every phase, interpreter and condition operator they have.
-    // It's a flat document, as agents of those versions run it. Version 3 is in every-node.sequence.json.
+    // Every kind of step a flat document can hold, and every phase, interpreter and condition operator they have:
+    // the kinds of versions 1 and 2, and the raw disk image with its seed, which version 4 moved to the Linux boot
+    // environment. The tree's kinds are in every-node.sequence.json.
     [Fact]
     public async Task TheWebFixtureHoldsEveryKindOfStep()
     {
@@ -116,10 +117,12 @@ public sealed class SequenceFixtureTests
 
         // A kind of these versions added later must be added here too.
         string[] built = [.. steps.Select(step => step.GetType().Name).Distinct().Order(StringComparer.Ordinal)];
-        Assert.Equal(Kinds(maximumVersion: 2), built);
+        Assert.Equal(
+            Kinds(maximumVersion: 2).Union([nameof(WriteRawImageStep), nameof(WriteCloudInitSeedStep)]).Order(StringComparer.Ordinal),
+            built);
 
         SequenceDefinition definition = new SequenceDefinition(1, steps).Normalised();
-        Assert.Equal(2, definition.Version);
+        Assert.Equal(4, definition.Version);
 
         await MatchFixtureAsync("every-step.sequence.json", definition, "the steps built here");
     }
@@ -158,7 +161,9 @@ public sealed class SequenceFixtureTests
         Assert.Equal(conditionKinds, conditionsBuilt);
         Assert.Equal(Enum.GetValues<InputKind>(), inputKinds);
         Assert.Equal(Enum.GetValues<InputAsk>(), asks);
-        Assert.Equal(SequenceDefinition.CurrentVersion, definition.Version);
+
+        // A sequence that installs Windows needs nothing of version 4.
+        Assert.Equal(3, definition.Version);
         Assert.Empty(SequenceValidator.Analyse(definition).Problems);
 
         await MatchFixtureAsync("every-node.sequence.json", definition, "the nodes built here");

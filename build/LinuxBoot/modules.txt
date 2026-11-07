@@ -1,0 +1,121 @@
+# Kernel modules in base.img of the DDT Linux boot environment: one name per line, in groups the manifest reports.
+# The build adds what they depend on and fails on a name the kernel has neither as a module nor built in.
+#
+# No display drivers: every machine keeps the firmware's screen (efifb, built in), and a DRM driver that loads
+# takes that screen over. The build refuses one here.
+
+# Wired network cards: the machine reaches the server through one of them.
+[network]
+# Intel
+e1000
+e1000e
+igb
+igc
+ixgbe
+i40e
+ice
+# Realtek, with the PHY driver that r8169 does not work without
+r8169
+realtek
+8139too
+8139cp
+# Broadcom
+tg3
+broadcom
+bnx2
+bnx2x
+bnxt_en
+# Aquantia, Mellanox
+atlantic
+mlx5_core
+# Other onboard cards
+alx
+atl1c
+sky2
+# Servers
+be2net
+# Virtual machines
+virtio_net
+hv_netvsc
+vmxnet3
+# USB adapters and docks
+r8152
+ax88179_178a
+asix
+cdc_ether
+cdc_ncm
+aqc111
+lan78xx
+# The DHCP client's raw sockets
+af_packet
+
+# Disks the agent writes an image to.
+[storage]
+nvme
+vmd
+ahci
+ata_piix
+sd_mod
+virtio_blk
+virtio_scsi
+hv_storvsc
+vmw_pvscsi
+# RAID controllers and HBAs
+megaraid_sas
+mpt3sas
+mpi3mr
+smartpqi
+hpsa
+aacraid
+mptsas
+mptspi
+# USB disks
+usb_storage
+uas
+# eMMC
+mmc_block
+sdhci_pci
+sdhci_acpi
+
+# USB host controllers, for keyboards, network adapters and disks on USB.
+[usb]
+xhci_pci
+ehci_pci
+ohci_pci
+uhci_hcd
+
+# Keyboards for the sign-in at the machine, and the event devices the graphical console reads.
+[input]
+evdev
+hid
+hid_generic
+usbhid
+i8042
+atkbd
+psmouse
+hyperv_keyboard
+hid_hyperv
+virtio_input
+# Keyboards and touchpads on I2C
+i2c_hid_acpi
+hid_multitouch
+intel_lpss_pci
+intel_lpss_acpi
+i2c_designware_platform
+
+# The UEFI variables the agent sets the next start with, and FAT for a volume someone mounts in the shell.
+[filesystem]
+vfat
+nls_cp437
+nls_ascii
+nls_iso8859_1
+nls_utf8
+efivarfs
+
+# Buses of virtual machines, the power button and the hardware clock.
+[system]
+virtio_pci
+hv_vmbus
+hv_utils
+button
+rtc_cmos

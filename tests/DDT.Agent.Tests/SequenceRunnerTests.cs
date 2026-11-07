@@ -25,7 +25,7 @@ public sealed class SequenceRunnerTests : SequenceRunnerTestBase
 
         Assert.Equal(new RunResult(RunOutcome.Finished), result);
         Assert.Equal(["list", "prepare", "partition 0", "apply 1", "bcd", "firmware after the answer file", "reboot"], _tools.Calls);
-        Assert.Equal(RestartInto.Windows, RestartDue());
+        Assert.Equal(RestartInto.InstalledSystem, RestartDue());
         Assert.True(_tools.ImageWasThereToApply);
         Assert.False(Directory.Exists(Path.Combine(Windows, "DDT")));
         Assert.Equal([$"head-file {_image.Sha256} session-0", "run-report Running session-0"], server.Calls.Take(2));
@@ -138,7 +138,7 @@ public sealed class SequenceRunnerTests : SequenceRunnerTestBase
     [Fact]
     public async Task RunsAPowerShellStepInWindowsWithABootImageWithoutPowerShell()
     {
-        File.Delete(RunScriptStepRunner.PowerShellIn(_system));
+        File.Delete(WindowsScriptLauncher.PowerShellIn(_system));
         AgentRun run = TestRuns.Run([.. TestRuns.InstallWindows, TestRuns.Script(4, SequencePhase.Windows, ScriptInterpreter.PowerShell)], _image);
         ScriptedAgentServer server = _image.Serve(new ScriptedAgentServer());
 
@@ -146,7 +146,7 @@ public sealed class SequenceRunnerTests : SequenceRunnerTestBase
 
         // The installed Windows brings its own PowerShell, so the lean boot image is enough.
         Assert.Contains("partition 0", _tools.Calls);
-        Assert.DoesNotContain(server.RunReports, report => report.Error == RunScriptStepRunner.NoPowerShellMessage);
+        Assert.DoesNotContain(server.RunReports, report => report.Error == WindowsScriptLauncher.NoPowerShellMessage);
     }
 
     [Fact]
@@ -171,7 +171,7 @@ public sealed class SequenceRunnerTests : SequenceRunnerTestBase
         // The work directory is X:\DDT in Windows PE, where the agent itself is.
         _toolRunner.AnswerExitCode = (_, _, _) => exitCode;
         ScriptedAgentServer server = new();
-        SequenceRunner runner = TestAgents.Runner(server, _tools, Log(), new ImmediateTimeProvider(), new() { ToolRunner = _toolRunner, SystemDirectory = _system, DryRun = false });
+        SequenceRunner runner = WindowsTestAgents.Runner(server, _tools, Log(), new ImmediateTimeProvider(), new() { ToolRunner = _toolRunner, SystemDirectory = _system, DryRun = false });
 
         RunResult result = await runner.RunAsync(new RunRequest(s_machineId, TestRuns.Run([TestRuns.Script(1) with { RebootExitCodes = [] }]), null, null, _tokens, s_identity), server.Stop.Token);
 

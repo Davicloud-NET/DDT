@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.InstalledPhase;
 using DDT.Agent.Sequences;
 using DDT.Agent.WindowsPhase;
 using DDT.Contracts.Agents;
@@ -186,7 +187,7 @@ public sealed class WindowsPhaseLoopRestartTests : WindowsPhaseLoopTestBase
 
         // Then the loop's wait for the restart is the only timer.
         await WaitForAsync(() => Restarts() == 1 && time.PendingTimers == 1);
-        time.Advance(WindowsPhaseLoop.RestartTimeout - TimeSpan.FromSeconds(1));
+        time.Advance(InstalledPhaseLoop.RestartTimeout - TimeSpan.FromSeconds(1));
 
         Assert.Equal(1, Restarts());
 

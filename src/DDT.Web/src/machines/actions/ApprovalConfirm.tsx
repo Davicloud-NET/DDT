@@ -3,14 +3,19 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { Trans } from "@lingui/react/macro";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { deploymentOptionsQuery, type DeploymentOptionsView } from "@/deployments/deployments";
 import { InputsDialog } from "@/inputs/InputsDialog";
+import { startNotice, startsIn, type StartNotice } from "@/machines/bootEnvironment";
 import { machineLabel, type MachineSummary } from "@/machines/machines";
-import { secureBootRisk, type SecureBootRisk } from "@/machines/secureBoot";
+import { linuxBootRefusal, secureBootRisk, type SecureBootRisk } from "@/machines/secureBoot";
 import type { MachineActionState } from "@/machines/useMachineActions";
+import type { SequenceSummary } from "@/sequences/sequences";
 import { Checkbox } from "@/ui/Checkbox";
 import { ConfirmDialog } from "@/ui/ConfirmDialog";
+import { Notice } from "@/ui/Notice";
 
 import { approvalRequested } from "./machineRequests";
 
@@ -28,6 +33,9 @@ export function ApprovalConfirm({
   const plan = approvalRequested(actions.approveOn, machine);
   // Uses the machine as the list has it now. It may have registered again since the plan was made.
   const risk = plan === null ? null : secureBootRisk(machine, plan.sequence);
+  // Every row holds this dialog, so the server is only asked once one opens.
+  const options = useQuery({ ...deploymentOptionsQuery, enabled: plan !== null });
+  const start = plan === null ? null : startNote(machine, plan.sequence, options.data);
   const label = machineLabel(machine);
 
   // If the sequence asks for inputs on the web, the approval dialog asks for them.
@@ -56,6 +64,7 @@ export function ApprovalConfirm({
         }}
       >
         <p>{plan.consequence}</p>
+        <StartNote start={start} />
         <SecureBootAllowance risk={risk} allowed={allowMismatch} onChange={setAllowMismatch} />
       </InputsDialog>
     );
@@ -86,8 +95,34 @@ export function ApprovalConfirm({
       }}
     >
       <p>{plan?.consequence}</p>
+      <StartNote start={start} />
       <SecureBootAllowance risk={risk} allowed={allowMismatch} onChange={setAllowMismatch} />
     </ConfirmDialog>
+  );
+}
+
+// A machine whose firmware would refuse the Linux boot environment is not restarted into it, and is told why instead.
+function startNote(
+  machine: MachineSummary,
+  sequence: SequenceSummary | null,
+  options: DeploymentOptionsView | undefined,
+): StartNotice | null {
+  const refused =
+    sequence !== null && startsIn(sequence) === "LinuxBoot"
+      ? linuxBootRefusal(machine, options?.linuxShimSignedUnder, options?.bootEnvironments)
+      : null;
+
+  return refused === null
+    ? startNotice(machine, sequence, options?.bootEnvironments)
+    : { warning: true, text: refused };
+}
+
+// Where the run starts when that is not where the machine waits, as the assign dialog says it.
+function StartNote({ start }: { start: StartNotice | null }) {
+  return start === null ? null : start.warning ? (
+    <Notice tone="attention">{start.text}</Notice>
+  ) : (
+    <p>{start.text}</p>
   );
 }
 

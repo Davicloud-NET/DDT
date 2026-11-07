@@ -23,11 +23,11 @@ public sealed class ApplyImageStepRunnerTests : IDisposable
     };
 
     private readonly TestImage _image = new();
-    private readonly StepRunnerFixture _run;
+    private readonly WindowsStepRunnerFixture _run;
 
     public ApplyImageStepRunnerTests()
     {
-        _run = new StepRunnerFixture([s_step], [new AgentRunImage(s_imageId, "Windows 11 Pro", _image.Sha256, _image.Content.Length, 3, 10_000)]);
+        _run = new WindowsStepRunnerFixture([s_step], [new AgentRunImage(s_imageId, "Windows 11 Pro", _image.Sha256, _image.Content.Length, 3, 10_000)]);
         _run.Partitioned();
         _run.Server.ServeFile(_image.Sha256, _image.Content);
     }
@@ -93,7 +93,7 @@ public sealed class ApplyImageStepRunnerTests : IDisposable
     [Fact]
     public async Task RefusesAHashThatIsNoSha256()
     {
-        using StepRunnerFixture run = new([s_step], [new AgentRunImage(s_imageId, "Windows 11 Pro", @"..\..\evil", 10, 1, 10)]);
+        using WindowsStepRunnerFixture run = new([s_step], [new AgentRunImage(s_imageId, "Windows 11 Pro", @"..\..\evil", 10, 1, 10)]);
         run.Partitioned();
 
         DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(

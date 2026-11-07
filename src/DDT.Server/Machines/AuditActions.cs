@@ -12,6 +12,9 @@ public static class AuditActions
     public const string MachineApproved = "machine.approved";
     public const string MachineRejected = "machine.rejected";
     public const string MachineRemoved = "machine.removed";
+
+    // A machine said that it restarts into the other boot environment.
+    public const string MachineEnvironmentRequested = "machine.environment-requested";
     public const string ImageUploaded = "image.uploaded";
     public const string ImageDeleted = "image.deleted";
     public const string DeploymentAssigned = "deployment.assigned";
@@ -65,6 +68,8 @@ public static class AuditActions
     public const string ConsoleUploaded = "console.uploaded";
     public const string AgentUploadRemoved = "agent.upload-removed";
     public const string ConsoleUploadRemoved = "console.upload-removed";
+    public const string LinuxAgentUploaded = "agent.linux.uploaded";
+    public const string LinuxAgentUploadRemoved = "agent.linux.upload-removed";
     public const string BootImageBuildStarted = "boot-image.build-started";
     public const string BootImageBuildChosen = "boot-image.build-chosen";
     public const string AdkInstallStarted = "boot-image.adk-install-started";

@@ -117,14 +117,12 @@ public sealed class RunReports(DdtDbContext database, RunQueries queries, RunSta
             return (null, DeploymentDecision.Conflict($"The run is {RunProgress.Word(run.State)} and takes no further reports. {RunProgress.AskAgain}"));
         }
 
-        // The service in Windows can't take the run back to the WinPE phase. WinPE registers again before it reports,
-        // for example when the machine booted it instead of the installed Windows. A failure ends the run in any phase.
-        return report.State != DeploymentState.Failed
-            && report.Phase == SequencePhase.WindowsPE
-            && machine.AgentEnvironment == AgentEnvironment.Windows
-                ? (null, DeploymentDecision.Conflict(
-                    $"This machine registered from Windows, so its run cannot be in the Windows PE phase. An agent in Windows PE registers before it reports. {RunProgress.AskAgain}"))
-                : (run, null);
+        // The service in Windows can't take the run back to the WinPE phase, and no environment runs the other kind's
+        // phases. A boot environment registers again before it reports, for example when the machine booted it instead
+        // of the installed Windows. A failure ends the run in any phase.
+        return report.State != DeploymentState.Failed && PhaseRules.ReportRefusal(machine.AgentEnvironment, report.Phase) is { } refusal
+            ? (null, DeploymentDecision.Conflict($"{refusal} {RunProgress.AskAgain}"))
+            : (run, null);
     }
 
     // Everything here comes from the agent, so an old agent or a forged report is refused before it touches a row.

@@ -27,4 +27,7 @@ public sealed record AgentSequenceChoice(
     // For a sequence that needs a name, the name the run gets if the technician doesn't type one. It comes from the
     // machine's own name, the rules (such as PC-{{SerialNumber}}) or the defaults. The computer name question is
     // prefilled with it.
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ComputerName = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ComputerName = null,
+    // The boot environment that starts the sequence. A machine in the other one restarts into it before anything is
+    // asked. Null from a server that predates the Linux boot environment.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AgentEnvironment? Environment = null);

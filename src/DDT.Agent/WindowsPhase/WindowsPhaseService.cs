@@ -67,7 +67,7 @@ public static class WindowsPhaseService
 
         await using (console.ConfigureAwait(false))
         {
-            ConsoleStatus status = new(console, version, options.ServerUrl, null, dryRun: false);
+            ConsoleStatus status = new(console, AgentEnvironment.Windows, version, options.ServerUrl, null, dryRun: false);
             log.MachineConsole = console;
             session = new DeploySession(
                 windowsRoot,

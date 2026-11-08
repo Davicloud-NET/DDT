@@ -47,7 +47,7 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
     public string Heading => Stage switch
     {
         ConsoleStage.Running when CurrentStep is { } step => Say.StepAction(L, step.Kind) ?? step.Name,
-        ConsoleStage.Running => Run is { } run ? Say.Activity(L, run.Activity) : T("Running"),
+        ConsoleStage.Running => Run is { } run ? Say.Activity(L, run.Activity, RunPath.IsLinux(run)) : T("Running"),
         ConsoleStage.Restarting => _state?.Restart is { } restart ? Say.RestartTarget(L, restart.Into) : T("Restarting"),
         ConsoleStage.Finished => T("Finished"),
         ConsoleStage.Failed => T("The run failed"),
@@ -58,7 +58,7 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
     public string? Detail => Stage switch
     {
         ConsoleStage.Running when CurrentStep is { } step => Say.StepAction(L, step.Kind) is null ? null : step.Name,
-        ConsoleStage.Restarting => _state?.Restart is { } restart ? Say.RestartReason(L, restart.Reason) : null,
+        ConsoleStage.Restarting => _state?.Restart is { } restart ? Say.RestartReason(L, restart.Reason, Run is { } run && RunPath.IsLinux(run)) : null,
         _ => null,
     };
 
@@ -82,8 +82,12 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
                 return (steps[index].Phase, RunPath.IsTree(run)) switch
                 {
                     (ConsolePhase.WindowsPE, false) => F("Step {number} of {count}, in Windows PE", values),
+                    (ConsolePhase.LinuxBoot, false) => F("Step {number} of {count}, in the Linux boot environment", values),
+                    (ConsolePhase.Linux, false) => F("Step {number} of {count}, in the installed Linux", values),
                     (_, false) => F("Step {number} of {count}, in the installed Windows", values),
                     (ConsolePhase.WindowsPE, true) => F("Step {number} of {count} on this path, in Windows PE", values),
+                    (ConsolePhase.LinuxBoot, true) => F("Step {number} of {count} on this path, in the Linux boot environment", values),
+                    (ConsolePhase.Linux, true) => F("Step {number} of {count} on this path, in the installed Linux", values),
                     _ => F("Step {number} of {count} on this path, in the installed Windows", values),
                 };
             }
@@ -143,19 +147,20 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
     public string Remedy => _state?.Problem is { } problem ? Say.Remedy(L, problem.Remedy) : string.Empty;
 
     // Where to answer while the run waits, or otherwise a note to leave the machine on. The restart is only mentioned
-    // while WinPE steps are still to come.
+    // while steps of the boot environment are still to come.
     public string? Note => Stage switch
     {
         ConsoleStage.Running when Run?.Activity == ConsoleActivity.WaitingForInput => T("Answer the inputs here or on the web."),
         ConsoleStage.Running when Run?.Activity == ConsoleActivity.Paused => T("Continue the run here or on the web."),
-        ConsoleStage.Running when PathSteps.Any(step => step.Phase == ConsolePhase.Windows)
-            && PathSteps.Any(step => step.Phase == ConsolePhase.WindowsPE && step.State is ConsoleStepState.Pending or ConsoleStepState.Running) =>
-            T("Leave this machine on. It restarts by itself."),
+        ConsoleStage.Running when RestartsIntoInstalled => T("Leave this machine on. It restarts by itself."),
         ConsoleStage.Running or ConsoleStage.Restarting => T("Leave this machine on."),
         _ => null,
     };
 
     public bool HasNote => !string.IsNullOrEmpty(Note);
+
+    private bool RestartsIntoInstalled => PathSteps.Any(step => RunPath.IsInstalled(step.Phase))
+        && PathSteps.Any(step => !RunPath.IsInstalled(step.Phase) && step.State is ConsoleStepState.Pending or ConsoleStepState.Running);
 
     public IReadOnlyList<RailStep> Steps => Run is { } run ? RunPath.Rail(L, run, PathSteps) : [];
 

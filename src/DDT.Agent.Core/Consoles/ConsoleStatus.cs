@@ -18,14 +18,22 @@ namespace DDT.Agent.Consoles;
 public sealed class ConsoleStatus
 {
     private readonly Lock _lock = new();
+    private readonly AgentEnvironment _environment;
     private ConsoleState _state;
 
-    public ConsoleStatus(IMachineConsole console, string agentVersion, Uri server, string? keyboardLayout, bool dryRun)
+    public ConsoleStatus(
+        IMachineConsole console,
+        AgentEnvironment environment,
+        string agentVersion,
+        Uri server,
+        string? keyboardLayout,
+        bool dryRun)
     {
         ArgumentNullException.ThrowIfNull(console);
         ArgumentNullException.ThrowIfNull(server);
 
         Console = console;
+        _environment = environment;
         _state = new ConsoleState(
             ConsoleStage.Starting,
             agentVersion,
@@ -211,7 +219,9 @@ public sealed class ConsoleStatus
         Change(state => state with
         {
             Stage = ConsoleStage.Restarting,
-            Restart = new ConsoleRestart(reason, into == RestartInto.BootEnvironment ? RestartTarget.WindowsPE : RestartTarget.InstalledSystem),
+            Restart = new ConsoleRestart(
+                reason,
+                into == RestartInto.BootEnvironment ? ConsoleValues.BootTarget(_environment) : RestartTarget.InstalledSystem),
         });
 
     // The machine should have restarted but couldn't. The agent stops, and someone has to restart the machine.

@@ -52,9 +52,13 @@ public sealed class PauseViewModel : QuestionViewModel
 
             (string, string)[] values = [("number", L.Number(index + 1)), ("count", L.Number(steps.Count))];
 
-            return steps[index].Phase == ConsolePhase.WindowsPE
-                ? F("Pause, step {number} of {count} on this path, in Windows PE", values)
-                : F("Pause, step {number} of {count} on this path, in the installed Windows", values);
+            return steps[index].Phase switch
+            {
+                ConsolePhase.WindowsPE => F("Pause, step {number} of {count} on this path, in Windows PE", values),
+                ConsolePhase.LinuxBoot => F("Pause, step {number} of {count} on this path, in the Linux boot environment", values),
+                ConsolePhase.Linux => F("Pause, step {number} of {count} on this path, in the installed Linux", values),
+                _ => F("Pause, step {number} of {count} on this path, in the installed Windows", values),
+            };
         }
     }
 

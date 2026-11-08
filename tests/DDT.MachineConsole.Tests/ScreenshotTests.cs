@@ -111,6 +111,10 @@ public sealed class ScreenshotTests
         ["30-pause"] = console => console.Show(Scenarios.Paused).Ask(11, Scenarios.Pause),
         ["31-waiting-for-inputs"] = console => console.Show(Scenarios.WaitingForInputs),
         ["32-running-tree"] = console => console.Show(Scenarios.RunningTree),
+        ["33-running-linux"] = console => console.Show(Scenarios.RunningLinux),
+        ["34-restarting-into-linux"] = console => console.Show(Scenarios.RestartingIntoLinux),
+        ["35-waiting-for-cloud-init"] = console => console.Show(Scenarios.WaitingForCloudInit),
+        ["36-pause-in-linux"] = console => console.Show(Scenarios.PausedInLinux).Ask(12, Scenarios.Pause),
     };
 
     public static TheoryData<string> Shots => [.. s_shots.Keys];

@@ -304,6 +304,10 @@ msgid "For {domain}. DDT keeps the password for this run only."
 msgstr "Für {domain}. DDT behält das Kennwort nur für diese Ausführung."
 
 #: Texts/Say.cs
+msgid "Handing the run over to the installed Linux"
+msgstr "Die Ausführung wird an das installierte Linux übergeben"
+
+#: Texts/Say.cs
 msgid "Handing the run over to the installed Windows"
 msgstr "Die Ausführung wird an das installierte Windows übergeben"
 
@@ -312,8 +316,16 @@ msgid "Identity"
 msgstr "Identität"
 
 #: Texts/Say.cs
+msgid "In the installed Linux"
+msgstr "Im installierten Linux"
+
+#: Texts/Say.cs
 msgid "In the installed Windows"
 msgstr "Im installierten Windows"
+
+#: Texts/Say.cs
+msgid "In the Linux boot environment"
+msgstr "In der Linux-Startumgebung"
 
 #: Texts/Say.cs
 msgid "In Windows PE"
@@ -516,8 +528,16 @@ msgid "Password"
 msgstr "Kennwort"
 
 #: ViewModels/PauseViewModel.cs
+msgid "Pause, step {number} of {count} on this path, in the installed Linux"
+msgstr "Pause, Schritt {number} von {count} auf diesem Pfad, im installierten Linux"
+
+#: ViewModels/PauseViewModel.cs
 msgid "Pause, step {number} of {count} on this path, in the installed Windows"
 msgstr "Pause, Schritt {number} von {count} auf diesem Pfad, im installierten Windows"
+
+#: ViewModels/PauseViewModel.cs
+msgid "Pause, step {number} of {count} on this path, in the Linux boot environment"
+msgstr "Pause, Schritt {number} von {count} auf diesem Pfad, in der Linux-Startumgebung"
 
 #: ViewModels/PauseViewModel.cs
 msgid "Pause, step {number} of {count} on this path, in Windows PE"
@@ -554,6 +574,10 @@ msgstr "Wird neu gestartet"
 #: Texts/Say.cs
 msgid "Restarting into the installed system"
 msgstr "Neustart in das installierte System"
+
+#: Texts/Say.cs
+msgid "Restarting into the Linux boot environment"
+msgstr "Neustart in die Linux-Startumgebung"
 
 #: Texts/Say.cs
 msgid "Restarting into Windows PE"
@@ -672,16 +696,32 @@ msgid "Starting the agent"
 msgstr "Der Agent startet"
 
 #: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count} on this path, in the installed Linux"
+msgstr "Schritt {number} von {count} auf diesem Pfad, im installierten Linux"
+
+#: ViewModels/RunViewModel.cs
 msgid "Step {number} of {count} on this path, in the installed Windows"
 msgstr "Schritt {number} von {count} auf diesem Pfad, im installierten Windows"
+
+#: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count} on this path, in the Linux boot environment"
+msgstr "Schritt {number} von {count} auf diesem Pfad, in der Linux-Startumgebung"
 
 #: ViewModels/RunViewModel.cs
 msgid "Step {number} of {count} on this path, in Windows PE"
 msgstr "Schritt {number} von {count} auf diesem Pfad, in Windows PE"
 
 #: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count}, in the installed Linux"
+msgstr "Schritt {number} von {count}, im installierten Linux"
+
+#: ViewModels/RunViewModel.cs
 msgid "Step {number} of {count}, in the installed Windows"
 msgstr "Schritt {number} von {count}, im installierten Windows"
+
+#: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count}, in the Linux boot environment"
+msgstr "Schritt {number} von {count}, in der Linux-Startumgebung"
 
 #: ViewModels/RunViewModel.cs
 msgid "Step {number} of {count}, in Windows PE"
@@ -746,6 +786,10 @@ msgstr "Die letzten {count} Anfragen sind fehlgeschlagen. Der Agent versucht es 
 #: ViewModels/RunViewModel.cs
 msgid "The run failed"
 msgstr "Die Ausführung ist fehlgeschlagen"
+
+#: Texts/Say.cs
+msgid "The run goes on in the installed Linux."
+msgstr "Die Ausführung geht im installierten Linux weiter."
 
 #: Texts/Say.cs
 msgid "The run goes on in the installed Windows."
@@ -858,6 +902,10 @@ msgstr "Warten auf Antworten"
 #: Texts/Say.cs
 msgid "Waiting for authorization"
 msgstr "Wartet auf Freigabe"
+
+#: Texts/Say.cs
+msgid "Waiting for cloud-init"
+msgstr "Wartet auf cloud-init"
 
 #: ViewModels/HeaderViewModel.cs
 msgid "Waiting for the agent"

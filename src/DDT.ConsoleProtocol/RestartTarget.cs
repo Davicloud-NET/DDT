@@ -11,4 +11,7 @@ public enum RestartTarget
 
     // The system on the disk: the installed Windows, or the disk image the run wrote.
     InstalledSystem,
+
+    // The Linux boot environment again, from the network.
+    LinuxBoot,
 }

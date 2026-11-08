@@ -8,5 +8,5 @@ namespace DDT.ConsoleProtocol;
 // can always tell each other apart. Program names the sender for the log, such as "DDT agent 1.4.0".
 public sealed record HelloMessage(int Version, string Program) : ConsoleMessage
 {
-    public const int CurrentVersion = 3;
+    public const int CurrentVersion = 4;
 }

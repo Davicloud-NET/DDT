@@ -7,6 +7,7 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using DDT.Agent.Consoles;
 using DDT.ConsoleProtocol;
+using DDT.Contracts.Agents;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -45,7 +46,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
     [Fact]
     public async Task EachConsoleThatConnectsGetsTheStateAndTheNewestLines()
     {
-        ConsoleStatus status = new(_console, "1.0.0", new Uri("https://ddt.test:8443/"), null, dryRun: false);
+        ConsoleStatus status = new(_console, AgentEnvironment.Windows, "1.0.0", new Uri("https://ddt.test:8443/"), null, dryRun: false);
         _log.Information("Written before any console connected.");
         _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
 
@@ -124,7 +125,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
     [Fact]
     public async Task TheLastStateGoesOutBeforeThePipeCloses()
     {
-        ConsoleStatus status = new(_console, "1.0.0", new Uri("https://ddt.test:8443/"), null, dryRun: false);
+        ConsoleStatus status = new(_console, AgentEnvironment.Windows, "1.0.0", new Uri("https://ddt.test:8443/"), null, dryRun: false);
         _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
         await using ConsoleClient client = await ConnectAsync();
         await ReadAsync(client, "The console of DDT's session, Test console, is connected.");
@@ -158,7 +159,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
     [Fact]
     public async Task AsksEachConsoleThatConnectsAfterTheStateAndTheLinesUntilOneAnswers()
     {
-        _ = new ConsoleStatus(_console, "1.0.0", new Uri("https://ddt.test:8443/"), null, dryRun: false);
+        _ = new ConsoleStatus(_console, AgentEnvironment.Windows, "1.0.0", new Uri("https://ddt.test:8443/"), null, dryRun: false);
         _log.Information("Written before the pause.");
         Task<ConsoleAnswer?> asked = _console.AskAsync(s_pause, Cancellation);
 

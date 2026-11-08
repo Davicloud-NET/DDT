@@ -9,7 +9,7 @@ public enum RestartReason
     // A step asked for it, and the run continues after the restart.
     StepAsked,
 
-    // The run continues in the installed Windows.
+    // The run continues in the installed system.
     HandOver,
 
     // The run is done.

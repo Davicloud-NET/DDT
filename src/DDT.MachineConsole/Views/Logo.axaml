@@ -7,7 +7,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="DDT.MachineConsole.Views.Logo">
-  <Image Source="avares://ddt-console/Assets/ddt-logo.png"
+  <Image Source="avares://DDT.MachineConsole/Assets/ddt-logo.png"
          Stretch="Uniform"
          RenderOptions.BitmapInterpolationMode="HighQuality" />
 </UserControl>

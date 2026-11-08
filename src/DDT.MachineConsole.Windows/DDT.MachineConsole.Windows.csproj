@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ddt-console.exe, which the agent starts in Windows PE and as the shell of DDT's session. It renders in software
+       only, because WinPE has no Direct3D, DXGI, Direct2D or DirectComposition. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <AssemblyName>ddt-console</AssemblyName>
+    <RootNamespace>DDT.MachineConsole</RootNamespace>
+    <PublishAot>true</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationIcon>..\DDT.Design\brand\ddt-logo.ico</ApplicationIcon>
+    <!-- Required by the LibraryImport source generator. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DDT.MachineConsole\DDT.MachineConsole.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Win32" />
+    <!-- Avalonia.BuildServices sends statistics about each build, so its targets are left out. ANGLE is only for GPU
+         rendering, which the console never uses. -->
+    <PackageReference Include="Avalonia.BuildServices" ExcludeAssets="all" PrivateAssets="all" />
+    <PackageReference Include="Avalonia.Angle.Windows.Natives" ExcludeAssets="all" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

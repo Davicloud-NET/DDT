@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\DDT.MachineConsole\DDT.MachineConsole.csproj" />
+    <ProjectReference Include="..\..\src\DDT.MachineConsole.Windows\DDT.MachineConsole.Windows.csproj" />
   </ItemGroup>
 
 </Project>

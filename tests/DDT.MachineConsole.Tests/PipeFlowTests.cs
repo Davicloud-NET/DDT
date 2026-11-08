@@ -88,13 +88,13 @@ public sealed class PipeFlowTests
         Assert.IsType<HelloMessage>(await agent.ReceiveAsync(Cancellation));
         await agent.SendAsync(new RefusedMessage(HelloMessage.CurrentVersion + 1, "This agent speaks version 2 of the console protocol, not 1."), Cancellation);
 
-        Assert.Equal(Program.Refused, await console.WaitAsync(TimeSpan.FromSeconds(10), Cancellation));
+        Assert.Equal(ConsoleExit.Refused, await console.WaitAsync(TimeSpan.FromSeconds(10), Cancellation));
     }
 
     [Fact]
     public void EndsAtOnceWithoutAPipe()
     {
-        Assert.Equal(Program.NoPipe, Program.Main([]));
-        Assert.Equal(Program.NoPipe, Program.Main(["--pipe", @"\\.\pipe\not-the-agents"]));
+        Assert.Equal(ConsoleExit.NoPipe, Program.Main([]));
+        Assert.Equal(ConsoleExit.NoPipe, Program.Main(["--pipe", @"\\.\pipe\not-the-agents"]));
     }
 }

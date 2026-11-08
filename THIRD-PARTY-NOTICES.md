@@ -336,7 +336,7 @@ notices at start-up, and `ddt-agent --licenses` prints these texts.
 `build/Publish-Console.ps1` publishes the graphical console the agent starts in Windows PE as one
 NativeAOT executable, `ddt-console.exe`, with the two native libraries it draws with,
 `libSkiaSharp.dll` and `libHarfBuzzSharp.dll`, next to it. Besides DDT's own code, from
-`DDT.MachineConsole` and `DDT.ConsoleProtocol`, they contain:
+`DDT.MachineConsole`, `DDT.MachineConsole.Windows` and `DDT.ConsoleProtocol`, they contain:
 
 - The .NET runtime and libraries and the Visual C++ startup code, as described for the agent above.
 - Avalonia, the UI framework: `Avalonia`, `Avalonia.HarfBuzz`, `Avalonia.Remote.Protocol`,

@@ -39,7 +39,7 @@ public sealed class ThirdPartyNoticesTests
         List<string> linuxAgent = await NuGetPackagesAsync(Path.Combine(root, "src", "DDT.Agent.Linux", "obj", "project.assets.json"), cancellationToken);
         shipped.AddRange(linuxAgent);
         shipped.AddRange(await NuGetPackagesAsync(
-            Path.Combine(root, "src", "DDT.MachineConsole", "obj", "project.assets.json"),
+            Path.Combine(root, "src", "DDT.MachineConsole.Windows", "obj", "project.assets.json"),
             cancellationToken,
             ConsoleTarget));
         shipped.AddRange((await WebBundlePackagesAsync(root, cancellationToken)).Select(package => package.Name));

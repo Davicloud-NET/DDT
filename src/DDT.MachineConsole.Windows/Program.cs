@@ -4,52 +4,28 @@
 
 using System.Runtime.InteropServices;
 using Avalonia;
-using DDT.ConsoleProtocol;
 using DDT.MachineConsole.Agent;
+using DDT.MachineConsole.Machine;
+using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole;
 
-// The agent starts it as ddt-console.exe --pipe <name>. It connects before it opens a window. If no agent accepts it,
-// it exits right away, so the agent's text console stays in view. With --session it's the shell of DDT's session.
+// ddt-console.exe --pipe <name>, in Windows PE and as the shell of DDT's session.
 public static partial class Program
 {
-    public const int Closed = 0;
-    public const int NoPipe = 2;
-    public const int Refused = 3;
-    public const int NotConnected = 4;
-
     [STAThread]
     public static int Main(string[] args)
     {
-        if (ConsolePipe.NameFrom(args) is not { } pipeName)
-        {
-            return NoPipe;
-        }
+        ConsoleHost host = new(
+            WindowsLanguage.Current(),
+            new WindowsPEPower(),
+            new CommandPrompt(),
+            SessionSignOut.SignOut,
+            WindowsSessionAgent.OwnedBySystem);
 
-        if (ConsolePipe.IsSession(args))
+        if (ConsoleProgram.Prepare(args, host) is { } exit)
         {
-            App.Startup = ConsoleStartup.ForSession(pipeName);
-        }
-        else
-        {
-            ClientConnection connection;
-
-            try
-            {
-                connection = ClientConnection.ConnectAsync(pipeName, $"DDT console {ConsoleBuild.Version}", CancellationToken.None)
-                    .GetAwaiter()
-                    .GetResult();
-            }
-            catch (ConsoleProtocolException)
-            {
-                return Refused;
-            }
-            catch (Exception exception) when (exception is TimeoutException or IOException or UnauthorizedAccessException)
-            {
-                return NotConnected;
-            }
-
-            App.Startup = new ConsoleStartup(connection);
+            return exit;
         }
 
         FineTimer();

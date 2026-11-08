@@ -40,10 +40,10 @@ describe("the design tokens", () => {
 
   it("name the console's face for a type by its weight and width", () => {
     expect(consoleFontFamily({ weight: 750, stretch: "62%" })).toBe(
-      "avares://ddt-console/Assets/Fonts#Archivo 750 62",
+      "avares://DDT.MachineConsole/Assets/Fonts#Archivo 750 62",
     );
     expect(consoleFontFamily({ family: "mono", weight: 400, stretch: "87.5%" })).toBe(
-      "avares://ddt-console/Assets/Fonts#Martian Mono 400 87.5",
+      "avares://DDT.MachineConsole/Assets/Fonts#Martian Mono 400 87.5",
     );
   });
 

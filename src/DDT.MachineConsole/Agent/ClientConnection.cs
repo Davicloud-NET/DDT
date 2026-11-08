@@ -3,7 +3,6 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.IO.Pipes;
-using System.Security.Principal;
 using DDT.ConsoleProtocol;
 
 namespace DDT.MachineConsole.Agent;
@@ -19,29 +18,18 @@ public sealed class ClientConnection(ConsoleClient client) : IAgentConnection
     public static async Task<ClientConnection> ConnectAsync(string pipeName, string program, CancellationToken cancellationToken) =>
         new(await ConsoleClient.ConnectAsync(pipeName, program, ConnectTimeout, cancellationToken).ConfigureAwait(false));
 
-    // In DDT's session the agent runs as SYSTEM. No program in the session can create a pipe that SYSTEM owns, so only
-    // such a pipe is trusted. Throws UnauthorizedAccessException for any other pipe.
+    // In DDT's session only the agent's own pipe is trusted. trust throws UnauthorizedAccessException for any other.
     public static async Task<ClientConnection> ConnectToSessionAgentAsync(
         string pipeName,
         string program,
+        Action<NamedPipeClientStream> trust,
         TimeSpan timeout,
         CancellationToken cancellationToken)
     {
         NamedPipeClientStream pipe = new(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
         HelloMessage hello = new(HelloMessage.CurrentVersion, program);
 
-        return new(await ConsoleClient.ConnectAsync(pipe, hello, OwnedBySystem, timeout, cancellationToken).ConfigureAwait(false));
-    }
-
-    public static void OwnedBySystem(NamedPipeClientStream pipe)
-    {
-        ArgumentNullException.ThrowIfNull(pipe);
-
-        if (pipe.GetAccessControl().GetOwner(typeof(SecurityIdentifier)) is not SecurityIdentifier owner
-            || !owner.IsWellKnown(WellKnownSidType.LocalSystemSid))
-        {
-            throw new UnauthorizedAccessException("The pipe is not the agent's: SYSTEM does not own it.");
-        }
+        return new(await ConsoleClient.ConnectAsync(pipe, hello, trust, timeout, cancellationToken).ConfigureAwait(false));
     }
 
     public Task<ConsoleMessage?> ReceiveAsync(CancellationToken cancellationToken) => client.ReceiveAsync(cancellationToken);

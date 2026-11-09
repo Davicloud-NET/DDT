@@ -269,6 +269,12 @@ jobs:
             build/LinuxBoot/sources.sh
           shellcheck --shell=sh src/DDT.Core/CloudInit/vendor-data.sh
 
+      # The console's keyboard tables come from the lock's snapshot too: a table edited by hand, or a lock that moved
+      # without them, fails here.
+      - name: Check the keyboard tables
+        shell: pwsh
+        run: ./build/Update-KeyboardLayouts.ps1 -Check
+
       # GitHub's Linux runners have KVM, and its device belongs to a group the runner's user is not in. Without KVM
       # QEMU would emulate the processor, and the checks would take many times as long.
       - name: Let the runner's user start virtual machines

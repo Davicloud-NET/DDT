@@ -6,6 +6,8 @@
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- WindowsLayout calls a keyboard layout DLL's table function through a pointer. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

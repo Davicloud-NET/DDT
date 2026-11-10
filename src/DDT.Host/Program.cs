@@ -234,6 +234,8 @@ app.MapHub<LiveHub>("/hubs/live")
     .RequireAuthorization(DdtPolicies.Viewer)
     .AddEndpointFilter(new SameOriginHubFilter());
 
+// An API route that doesn't exist is no page of the web: callers like an older agent take 404 as "none".
+app.MapFallback("api/{**rest}", () => Results.NotFound()).AllowAnonymous();
 app.MapFallbackToFile("index.html").AllowAnonymous();
 
 app.Run();

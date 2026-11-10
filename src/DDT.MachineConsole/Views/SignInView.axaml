@@ -10,10 +10,7 @@
              x:Class="DDT.MachineConsole.Views.SignInView"
              x:DataType="vm:SignInViewModel">
   <StackPanel Spacing="16">
-    <StackPanel Spacing="6">
-      <TextBlock Classes="heading" Text="{Binding Title}" />
-      <TextBlock Classes="body ink2" Text="{Binding Intro}" />
-    </StackPanel>
+    <TextBlock Classes="heading" Text="{Binding Title}" />
 
     <Border Name="ErrorBox" Classes="well" Padding="14,10" IsVisible="{Binding HasError}">
       <TextBlock Name="Error" Classes="body failText" Text="{Binding Error}" />

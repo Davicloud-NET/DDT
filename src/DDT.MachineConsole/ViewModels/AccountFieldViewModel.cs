@@ -55,9 +55,7 @@ public sealed class AccountFieldViewModel : InputFieldViewModel
 
     public bool HasKeyboardLayout => !string.IsNullOrEmpty(KeyboardLayout);
 
-    public string KeyboardHint => L.F(
-        "The keyboard layout is {layout}. A password typed with another layout would be wrong.",
-        ("layout", KeyboardLayout ?? string.Empty));
+    public string KeyboardHint => L.F("Keyboard layout: {layout}", ("layout", KeyboardLayout ?? string.Empty));
 
     // Both are filled in. If the account is optional, neither may be.
     public override bool IsAnswered => (HasUserName && Password.Length > 0) || (IsOptional && !HasUserName && Password.Length == 0);
@@ -65,8 +63,8 @@ public sealed class AccountFieldViewModel : InputFieldViewModel
     private bool HasUserName => !string.IsNullOrWhiteSpace(UserName);
 
     private string Keeping => string.IsNullOrWhiteSpace(Input.Domain)
-        ? L.T("DDT keeps it for this run only and never shows it.")
-        : L.F("For {domain}. DDT keeps it for this run only and never shows it.", ("domain", Input.Domain));
+        ? L.T("DDT keeps the password for this run only.")
+        : L.F("For {domain}. DDT keeps the password for this run only.", ("domain", Input.Domain));
 
     public override ConsoleInputValue Value() =>
         HasUserName ? new ConsoleInputValue(Input.Name, null, UserName.Trim(), Password) : new ConsoleInputValue(Input.Name, null);

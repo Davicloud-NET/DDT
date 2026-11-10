@@ -22,8 +22,8 @@ public sealed class WaitingViewModel(Localizer localizer) : StageViewModel(local
     public Tag Tag => IsChoosing ? Tag.Of(T("Choosing"), TagTone.Run) : Tag.Of(T("Authorized"), TagTone.Ok);
 
     public string Intro => IsChoosing
-        ? T("The agent gets what this machine can run. The choices appear here in a moment.")
-        : _state?.Waiting ?? T("This machine is authorized. Assign a task sequence to it on the Machines page, and it starts by itself.");
+        ? T("The choices appear here in a moment.")
+        : _state?.Waiting ?? T("Assign a task sequence to it on the Machines page.");
 
     public string FindLabel => T("Find it on the Machines page by");
 

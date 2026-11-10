@@ -26,7 +26,7 @@ public sealed class LogViewModel(Localizer localizer) : OverlayViewModel(localiz
 
     public string Title => T("Log");
 
-    public string Hint => T("The agent's log, newest line last. Times are in UTC, by this machine's clock.");
+    public string Hint => T("Times in UTC, by this machine's clock.");
 
     public string Empty => T("The agent has written nothing yet.");
 

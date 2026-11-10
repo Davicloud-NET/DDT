@@ -69,13 +69,12 @@ public sealed class SessionTests
     }
 
     [Fact]
-    public void SaysWhatSigningOutLeadsTo()
+    public void SaysDDTIsDoneOnceTheRunIsOver()
     {
         TestConsole console = new TestConsole(session: true).Show(Scenarios.Stopped);
 
         Assert.Equal("DDT is done with this machine", console.Model.End.EndedTitle);
-        Assert.Equal("Sign out to leave DDT's session. Windows then shows its sign-in screen.", console.Model.End.EndedText);
-        Assert.False(console.Model.End.ShowsRestartUnavailable);
+        Assert.False(console.Model.End.HasEndedText);
     }
 
     [Fact]
@@ -100,11 +99,11 @@ public sealed class SessionTests
         TestConsole console = new TestConsole(session: true)
             .Show(Scenarios.State(ConsoleStage.Running) with { Run = Scenarios.Run(inWindowsPE, 1, 62) });
 
-        Assert.Equal("Leave this machine on. It restarts by itself and finishes in Windows.", Assert.IsType<RunViewModel>(console.Model.Screen).Note);
+        Assert.Equal("Leave this machine on. It restarts by itself.", Assert.IsType<RunViewModel>(console.Model.Screen).Note);
 
         console.Show(Scenarios.State(ConsoleStage.Running) with { Run = Scenarios.Run(inWindows, 6, null) });
 
-        Assert.Equal("Leave this machine on. This screen says when the run is done.", Assert.IsType<RunViewModel>(console.Model.Screen).Note);
+        Assert.Equal("Leave this machine on.", Assert.IsType<RunViewModel>(console.Model.Screen).Note);
     }
 
     [Fact]

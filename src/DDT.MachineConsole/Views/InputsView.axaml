@@ -93,7 +93,6 @@
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <TextBlock Classes="body muted" Text="{Binding Help}" IsVisible="{Binding HasHelp}" />
-                <TextBlock Classes="small muted" Text="{Binding Hint}" />
                 <TextBlock Name="FieldError" Classes="body failText" Text="{Binding Error}" IsVisible="{Binding HasError}" />
               </StackPanel>
             </DataTemplate>

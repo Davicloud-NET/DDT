@@ -24,8 +24,12 @@ msgid "A few answers first"
 msgstr "Zuerst ein paar Antworten"
 
 #: Texts/Say.cs
-msgid "A step asked for a restart. The run goes on after it."
-msgstr "Ein Schritt hat einen Neustart verlangt. Die Ausführung geht danach weiter."
+msgid "A restart was still pending."
+msgstr "Ein Neustart stand noch aus."
+
+#: Texts/Say.cs
+msgid "A step asked for a restart."
+msgstr "Ein Schritt hat einen Neustart verlangt."
 
 #: Texts/Say.cs
 msgid "Adding drivers"
@@ -43,13 +47,17 @@ msgstr "Agent-Version"
 msgid "Answer"
 msgstr "Antwort"
 
+#: ViewModels/RunViewModel.cs
+msgid "Answer the inputs here or on the web."
+msgstr "Beantworten Sie die Eingaben hier oder im Web."
+
 #: Texts/Say.cs
 msgid "Applying the image"
 msgstr "Image wird angewendet"
 
 #: ViewModels/AuthorizationViewModel.cs
-msgid "Approve this machine on the Machines page. The agent goes on by itself as soon as it is approved."
-msgstr "Geben Sie dieses Gerät auf der Seite „Geräte“ frei. Der Agent macht von selbst weiter, sobald es freigegeben ist."
+msgid "Approve this machine on the Machines page."
+msgstr "Geben Sie dieses Gerät auf der Seite „Geräte“ frei."
 
 #: Legal/LegalTexts.cs
 msgid "Archivo: SIL Open Font License"
@@ -58,6 +66,10 @@ msgstr "Archivo: SIL Open Font License"
 #: ViewModels/SequenceItem.cs
 msgid "Asks for a name"
 msgstr "Fragt nach einem Namen"
+
+#: ViewModels/WaitingViewModel.cs
+msgid "Assign a task sequence to it on the Machines page."
+msgstr "Weisen Sie ihm auf der Seite „Geräte“ eine Tasksequenz zu."
 
 #: ViewModels/ComputerNameViewModel.cs
 msgid "At most {max} characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first or last."
@@ -112,8 +124,8 @@ msgid "Cannot reach {server}"
 msgstr "{server} ist nicht erreichbar"
 
 #: Texts/Say.cs
-msgid "Checking the run before anything on the disk changes"
-msgstr "Die Ausführung wird geprüft, bevor sich etwas auf dem Datenträger ändert"
+msgid "Checking the run"
+msgstr "Die Ausführung wird geprüft"
 
 #: ViewModels/DiskChoiceViewModel.cs
 msgid "Choose"
@@ -122,10 +134,6 @@ msgstr "Wählen"
 #: ViewModels/SequenceChoiceViewModel.cs
 msgid "Choose a task sequence"
 msgstr "Tasksequenz wählen"
-
-#: ViewModels/MultiChoiceFieldViewModel.cs
-msgid "Choose any of these. Space turns one on or off."
-msgstr "Wählen Sie beliebig viele. Die Leertaste schaltet eine ein oder aus."
 
 #: ViewModels/DiskChoiceViewModel.cs
 msgid "Choose the disk"
@@ -195,21 +203,25 @@ msgstr "Weiter"
 msgid "Continue the run"
 msgstr "Ausführung fortsetzen"
 
+#: ViewModels/RunViewModel.cs
+msgid "Continue the run here or on the web."
+msgstr "Setzen Sie die Ausführung hier oder im Web fort."
+
 #: ViewModels/MainViewModel.cs
 msgid "Dark"
 msgstr "Dunkel"
 
 #: Texts/Say.cs
-msgid "DDT cannot tell whether {image} is signed for Secure Boot, and this machine has Secure Boot on. It may not start until Secure Boot is turned off in the firmware setup, or your own key is enrolled."
-msgstr "DDT kann nicht feststellen, ob {image} für Secure Boot signiert ist, und auf diesem Gerät ist Secure Boot eingeschaltet. Es startet möglicherweise erst, wenn Secure Boot im Firmware-Setup ausgeschaltet oder Ihr eigener Schlüssel registriert ist."
+msgid "DDT cannot tell whether {image} is signed for Secure Boot. It may not start until Secure Boot is turned off or your own key is enrolled."
+msgstr "DDT kann nicht feststellen, ob {image} für Secure Boot signiert ist. Es startet möglicherweise erst, wenn Secure Boot ausgeschaltet oder Ihr eigener Schlüssel registriert ist."
 
 #: ViewModels/EndViewModel.cs
 msgid "DDT is done with this machine"
 msgstr "DDT ist mit diesem Gerät fertig"
 
 #: ViewModels/AccountFieldViewModel.cs
-msgid "DDT keeps it for this run only and never shows it."
-msgstr "DDT behält es nur für diese Ausführung und zeigt es nie an."
+msgid "DDT keeps the password for this run only."
+msgstr "DDT behält das Kennwort nur für diese Ausführung."
 
 #: Legal/LegalTexts.cs
 msgid "DDT: GNU General Public License, version 3"
@@ -263,10 +275,6 @@ msgstr "Löscht einen Datenträger"
 msgid "Error"
 msgstr "Fehler"
 
-#: ViewModels/RunViewModel.cs
-msgid "Every step is done. The agent sends its last lines and reports."
-msgstr "Jeder Schritt ist erledigt. Der Agent sendet seine letzten Zeilen und Berichte."
-
 #: Texts/Say.cs
 msgid "Failed"
 msgstr "Fehlgeschlagen"
@@ -292,8 +300,8 @@ msgid "Follow the end"
 msgstr "Dem Ende folgen"
 
 #: ViewModels/AccountFieldViewModel.cs
-msgid "For {domain}. DDT keeps it for this run only and never shows it."
-msgstr "Für {domain}. DDT behält es nur für diese Ausführung und zeigt es nie an."
+msgid "For {domain}. DDT keeps the password for this run only."
+msgstr "Für {domain}. DDT behält das Kennwort nur für diese Ausführung."
 
 #: Texts/Say.cs
 msgid "Handing the run over to the installed Windows"
@@ -323,10 +331,6 @@ msgstr "IP-Adresse"
 msgid "It is free software: you can redistribute it and modify it under the GNU General Public License, version 3 or later, with additional terms. This view holds the texts."
 msgstr "Es ist freie Software: Sie können es unter der GNU General Public License, Version 3 oder später, mit zusätzlichen Bedingungen weitergeben und verändern. Diese Ansicht enthält die Texte."
 
-#: ViewModels/EndViewModel.cs
-msgid "It starts again as its firmware says, from the network or from its disk."
-msgstr "Es startet so neu, wie seine Firmware es vorgibt: aus dem Netzwerk oder von seinem Datenträger."
-
 #: Texts/Say.cs
 msgid "Joining the domain"
 msgstr "Domänenbeitritt"
@@ -335,17 +339,17 @@ msgstr "Domänenbeitritt"
 msgid "Keyboard layout"
 msgstr "Tastaturlayout"
 
-#: ViewModels/RunViewModel.cs
-msgid "Leave this machine on. It restarts by itself and finishes in Windows."
-msgstr "Lassen Sie dieses Gerät eingeschaltet. Es startet von selbst neu und wird in Windows fertig."
+#: ViewModels/SignInViewModel.cs
+msgid "Keyboard layout: {layout}"
+msgstr "Tastaturlayout: {layout}"
 
 #: ViewModels/RunViewModel.cs
-msgid "Leave this machine on. It starts again by itself."
-msgstr "Lassen Sie dieses Gerät eingeschaltet. Es startet von selbst wieder."
+msgid "Leave this machine on."
+msgstr "Lassen Sie dieses Gerät eingeschaltet."
 
 #: ViewModels/RunViewModel.cs
-msgid "Leave this machine on. This screen says when the run is done."
-msgstr "Lassen Sie dieses Gerät eingeschaltet. Diese Anzeige sagt, wenn die Ausführung fertig ist."
+msgid "Leave this machine on. It restarts by itself."
+msgstr "Lassen Sie dieses Gerät eingeschaltet. Es startet von selbst neu."
 
 #: ViewModels/LicencesViewModel.cs
 msgid "Licence texts"
@@ -479,14 +483,6 @@ msgstr "Nicht gemeldet"
 msgid "Not trusted by this machine"
 msgstr "Von diesem Gerät nicht vertraut"
 
-#: ViewModels/RunViewModel.cs
-msgid "Nothing runs until someone continues the run, here or on the machine's page on the web."
-msgstr "Es läuft nichts, bis jemand die Ausführung fortsetzt, hier oder auf der Seite des Geräts im Web."
-
-#: ViewModels/RunViewModel.cs
-msgid "Nothing runs until the sequence's inputs are answered, here or on the machine's page on the web."
-msgstr "Es läuft nichts, bis die Eingaben der Tasksequenz beantwortet sind, hier oder auf der Seite des Geräts im Web."
-
 #: Texts/Say.cs
 msgid "Off"
 msgstr "Aus"
@@ -543,6 +539,10 @@ msgstr "Neu starten"
 msgid "Restart the machine"
 msgstr "Gerät neu starten"
 
+#: Texts/Say.cs
+msgid "Restart the machine from the network to start over."
+msgstr "Starten Sie das Gerät aus dem Netzwerk neu, um von vorn zu beginnen."
+
 #: ViewModels/EndViewModel.cs
 msgid "Restart this machine now?"
 msgstr "Dieses Gerät jetzt neu starten?"
@@ -560,8 +560,8 @@ msgid "Restarting into Windows PE"
 msgstr "Neustart in Windows PE"
 
 #: Texts/Say.cs
-msgid "Run it again: choose the task sequence here when the console asks for one, or assign it on the Machines page. The agent waits for either."
-msgstr "Führen Sie sie erneut aus: Wählen Sie die Tasksequenz hier, wenn die Konsole danach fragt, oder weisen Sie sie auf der Seite „Geräte“ zu. Der Agent wartet auf beides."
+msgid "Run it again: choose the task sequence here, or assign it on the Machines page."
+msgstr "Führen Sie sie erneut aus: Wählen Sie die Tasksequenz hier, oder weisen Sie sie auf der Seite „Geräte“ zu."
 
 #: ViewModels/SequenceChoiceViewModel.cs
 msgid "Run the task sequence"
@@ -620,20 +620,12 @@ msgid "Sign in at this machine"
 msgstr "Am Gerät anmelden"
 
 #: ViewModels/AuthorizationViewModel.cs
-msgid "Sign in here with your DDT account, or approve this machine on the Machines page. Either way the agent goes on by itself."
-msgstr "Melden Sie sich hier mit Ihrem DDT-Konto an, oder geben Sie dieses Gerät auf der Seite „Geräte“ frei. So oder so macht der Agent von selbst weiter."
-
-#: ViewModels/SignInViewModel.cs
-msgid "Sign in with your DDT account. An operator or administrator authorizes this machine by signing in."
-msgstr "Melden Sie sich mit Ihrem DDT-Konto an. Ein Operator oder Administrator gibt dieses Gerät frei, indem er sich anmeldet."
+msgid "Sign in with your DDT account, or approve this machine on the Machines page."
+msgstr "Melden Sie sich mit Ihrem DDT-Konto an, oder geben Sie dieses Gerät auf der Seite „Geräte“ frei."
 
 #: ViewModels/EndViewModel.cs
 msgid "Sign out"
 msgstr "Abmelden"
-
-#: ViewModels/EndViewModel.cs
-msgid "Sign out to leave DDT's session. Windows then shows its sign-in screen."
-msgstr "Melden Sie sich ab, um die Sitzung von DDT zu verlassen. Windows zeigt dann seine Anmeldeseite."
 
 #: ViewModels/SecureBootViewModel.cs
 msgid "Signed under"
@@ -711,14 +703,6 @@ msgstr "Vorgeschlagen"
 msgid "Task sequence"
 msgstr "Tasksequenz"
 
-#: ViewModels/ConnectionViewModel.cs
-msgid "The agent checks whether the server has a newer agent, then registers this machine with the server."
-msgstr "Der Agent prüft, ob der Server einen neueren Agent hat, und registriert dieses Gerät dann beim Server."
-
-#: ViewModels/WaitingViewModel.cs
-msgid "The agent gets what this machine can run. The choices appear here in a moment."
-msgstr "Der Agent holt, was dieses Gerät ausführen kann. Die Auswahl erscheint hier gleich."
-
 #: ViewModels/EndViewModel.cs
 msgid "The agent has ended"
 msgstr "Der Agent ist beendet"
@@ -727,53 +711,21 @@ msgstr "Der Agent ist beendet"
 msgid "The agent has stopped"
 msgstr "Der Agent hat angehalten"
 
-#: Texts/Say.cs
-msgid "The agent has stopped. Restart the machine from the network to start over."
-msgstr "Der Agent hat angehalten. Starten Sie das Gerät aus dem Netzwerk neu, um von vorn zu beginnen."
-
 #: ViewModels/LogViewModel.cs
 msgid "The agent has written nothing yet."
 msgstr "Der Agent hat noch nichts geschrieben."
 
-#: ViewModels/ConnectionViewModel.cs
-msgid "The agent registers this machine with the server. It needs nothing from you."
-msgstr "Der Agent registriert dieses Gerät beim Server. Dafür braucht er nichts von Ihnen."
-
-#: ViewModels/LogViewModel.cs
-msgid "The agent's log, newest line last. Times are in UTC, by this machine's clock."
-msgstr "Das Protokoll des Agents, die neueste Zeile zuletzt. Zeiten in UTC, nach der Uhr dieses Geräts."
-
-#: ViewModels/EndViewModel.cs
-msgid "The command prompt is behind the console."
-msgstr "Die Eingabeaufforderung liegt hinter der Konsole."
+#: ViewModels/WaitingViewModel.cs
+msgid "The choices appear here in a moment."
+msgstr "Die Auswahl erscheint hier gleich."
 
 #: ViewModels/EndViewModel.cs
 msgid "The connection to the agent broke"
 msgstr "Die Verbindung zum Agent ist abgebrochen"
 
-#: ViewModels/EndViewModel.cs
-msgid "The console restarts a machine only in Windows PE."
-msgstr "Die Konsole startet ein Gerät nur in Windows PE neu."
-
 #: ViewModels/NoticeViewModel.cs
-msgid "The console stays open while DDT works on this machine."
-msgstr "Die Konsole bleibt offen, solange DDT an diesem Gerät arbeitet."
-
-#: ViewModels/NoticeViewModel.cs
-msgid "The console stays open while DDT works on this machine. Shift+F10 opens a command prompt."
-msgstr "Die Konsole bleibt offen, solange DDT an diesem Gerät arbeitet. Umschalt+F10 öffnet eine Eingabeaufforderung."
-
-#: ViewModels/NoticeViewModel.cs
-msgid "The console stays open. F9 signs out of DDT's session."
-msgstr "Die Konsole bleibt offen. Mit F9 melden Sie sich von der Sitzung von DDT ab."
-
-#: ViewModels/EraseViewModel.cs
-msgid "The disk has no partitions."
-msgstr "Der Datenträger hat keine Partitionen."
-
-#: ViewModels/EraseViewModel.cs
-msgid "The disk has partitions, so it holds something now."
-msgstr "Der Datenträger hat Partitionen, er enthält also jetzt etwas."
+msgid "The console stays open while DDT works."
+msgstr "Die Konsole bleibt offen, solange DDT arbeitet."
 
 #: Texts/Say.cs
 msgid "The disk image"
@@ -783,14 +735,6 @@ msgstr "Das Datenträgerimage"
 msgid "the HarfBuzz authors"
 msgstr "die HarfBuzz-Autoren"
 
-#: ViewModels/SignInViewModel.cs
-msgid "The keyboard layout is {layout}. A password typed with another layout is refused as a wrong one."
-msgstr "Das Tastaturlayout ist {layout}. Ein Kennwort, das mit einem anderen Layout eingegeben wird, wird als falsch abgelehnt."
-
-#: ViewModels/AccountFieldViewModel.cs
-msgid "The keyboard layout is {layout}. A password typed with another layout would be wrong."
-msgstr "Das Tastaturlayout ist {layout}. Ein Kennwort, das mit einem anderen Layout eingegeben wird, wäre falsch."
-
 #: ViewModels/ConnectionViewModel.cs
 msgid "The last request failed. The agent tries again by itself."
 msgstr "Die letzte Anfrage ist fehlgeschlagen. Der Agent versucht es von selbst erneut."
@@ -798,10 +742,6 @@ msgstr "Die letzte Anfrage ist fehlgeschlagen. Der Agent versucht es von selbst 
 #: ViewModels/ConnectionViewModel.cs
 msgid "The last {count} requests failed. The agent tries again by itself."
 msgstr "Die letzten {count} Anfragen sind fehlgeschlagen. Der Agent versucht es von selbst erneut."
-
-#: Texts/Say.cs
-msgid "The machine was to restart before and did not, so it restarts before anything else."
-msgstr "Das Gerät sollte schon vorher neu starten und hat es nicht getan, daher startet es vor allem anderen neu."
 
 #: ViewModels/RunViewModel.cs
 msgid "The run failed"
@@ -816,28 +756,24 @@ msgid "The run is done."
 msgstr "Die Ausführung ist fertig."
 
 #: Texts/Say.cs
-msgid "The secure connection failed. The server may be stalling, or its certificate may not chain to the root the boot image trusts."
-msgstr "Die sichere Verbindung ist fehlgeschlagen. Der Server hängt möglicherweise, oder sein Zertifikat führt nicht zu der Stammzertifizierungsstelle, der das Startimage vertraut."
+msgid "The secure connection failed. The server may be stalling, or the boot image does not trust its certificate."
+msgstr "Die sichere Verbindung ist fehlgeschlagen. Der Server hängt möglicherweise, oder das Startimage vertraut seinem Zertifikat nicht."
 
 #: Texts/Say.cs
-msgid "The server did not accept a connection. Check the address and port, the firewall, and the route from this network to the server."
-msgstr "Der Server hat keine Verbindung angenommen. Prüfen Sie Adresse und Port, die Firewall und den Weg aus diesem Netzwerk zum Server."
+msgid "The server answered unexpectedly. Its log says why."
+msgstr "Der Server hat unerwartet geantwortet. Sein Protokoll sagt, warum."
 
 #: Texts/Say.cs
-msgid "The server was reached but did not answer as the agent expects. Its log says why."
-msgstr "Der Server wurde erreicht, hat aber nicht so geantwortet, wie der Agent es erwartet. Sein Protokoll sagt, warum."
+msgid "The server did not accept a connection. Check the address and port, the firewall and the route to the server."
+msgstr "Der Server hat keine Verbindung angenommen. Prüfen Sie Adresse und Port, die Firewall und den Weg zum Server."
 
 #: Texts/Say.cs
-msgid "The server's name did not resolve. Check the DNS server the network gives this machine, and the server name the boot image was built with."
-msgstr "Der Name des Servers wurde nicht aufgelöst. Prüfen Sie den DNS-Server, den das Netzwerk diesem Gerät gibt, und den Servernamen, mit dem das Startimage erstellt wurde."
-
-#: ViewModels/SequenceChoiceViewModel.cs
-msgid "These are the task sequences this machine can run. A sequence an assignment rule suggests comes first."
-msgstr "Das sind die Tasksequenzen, die dieses Gerät ausführen kann. Eine Tasksequenz, die eine Zuweisungsregel vorschlägt, steht zuerst."
+msgid "The server's name did not resolve. Check this network's DNS server and the server name in the boot image."
+msgstr "Der Name des Servers wurde nicht aufgelöst. Prüfen Sie den DNS-Server dieses Netzwerks und den Servernamen im Startimage."
 
 #: ViewModels/NoticeViewModel.cs
-msgid "This keyboard's top row sends media keys. Hold Fn with F1 to F12, or press Fn and Esc to lock them as function keys."
-msgstr "Die obere Tastenreihe dieser Tastatur sendet Medientasten. Halten Sie Fn zusammen mit F1 bis F12 gedrückt, oder drücken Sie Fn und Esc, um sie als Funktionstasten festzustellen."
+msgid "The top row sends media keys. Hold Fn, or press Fn and Esc to lock the F keys."
+msgstr "Die obere Tastenreihe sendet Medientasten. Halten Sie Fn gedrückt, oder drücken Sie Fn und Esc, um die F-Tasten festzustellen."
 
 #: ViewModels/MachineFacts.cs
 msgid "This machine"
@@ -846,10 +782,6 @@ msgstr "Dieses Gerät"
 #: ViewModels/SequenceChoiceViewModel.cs
 msgid "This machine can run no task sequence yet. Assign one on the Machines page."
 msgstr "Dieses Gerät kann noch keine Tasksequenz ausführen. Weisen Sie ihm auf der Seite „Geräte“ eine zu."
-
-#: ViewModels/WaitingViewModel.cs
-msgid "This machine is authorized. Assign a task sequence to it on the Machines page, and it starts by itself."
-msgstr "Dieses Gerät ist freigegeben. Weisen Sie ihm auf der Seite „Geräte“ eine Tasksequenz zu, und sie startet von selbst."
 
 #: ViewModels/SecureBootViewModel.cs
 msgid "This machine trusts"
@@ -860,16 +792,20 @@ msgid "This program comes with ABSOLUTELY NO WARRANTY."
 msgstr "Dieses Programm kommt OHNE JEGLICHE GEWÄHRLEISTUNG."
 
 #: ViewModels/EndViewModel.cs
-msgid "This screen keeps what the agent showed last. Nothing more comes from it."
-msgstr "Diese Anzeige behält, was der Agent zuletzt gezeigt hat. Von ihm kommt nichts mehr."
+msgid "This screen keeps what the agent showed last."
+msgstr "Diese Anzeige behält, was der Agent zuletzt gezeigt hat."
+
+#: ViewModels/LogViewModel.cs
+msgid "Times in UTC, by this machine's clock."
+msgstr "Zeiten in UTC, nach der Uhr dieses Geräts."
 
 #: ViewModels/MachineViewModel.cs
 msgid "Trusted CAs"
 msgstr "Vertraute CAs"
 
 #: ViewModels/TypedWordViewModel.cs
-msgid "Type {word} in capitals, exactly as shown."
-msgstr "Geben Sie {word} in Großbuchstaben ein, genau wie gezeigt."
+msgid "Type {word} in capitals."
+msgstr "Geben Sie {word} in Großbuchstaben ein."
 
 #: ViewModels/EraseViewModel.cs
 msgid "Type {word} to erase the disk"
@@ -886,10 +822,6 @@ msgstr "Unbekannter Bus"
 #: Texts/Say.cs
 msgid "Unknown model"
 msgstr "Unbekanntes Modell"
-
-#: ViewModels/LicencesViewModel.cs
-msgid "Up and Down choose a text."
-msgstr "Pfeil nach oben und unten wählen einen Text."
 
 #: ViewModels/SignInViewModel.cs
 msgid "Use another account"
@@ -951,10 +883,6 @@ msgstr "Was zu tun ist"
 msgid "What went wrong"
 msgstr "Was schiefging"
 
-#: ViewModels/PauseViewModel.cs
-msgid "When it is done, press Enter. An operator can also let the run go on from the web."
-msgstr "Wenn es erledigt ist, drücken Sie die Eingabetaste. Ein Operator kann die Ausführung auch im Web fortsetzen."
-
 #: ViewModels/SecureBootViewModel.cs
 msgid "Write it anyway"
 msgstr "Trotzdem schreiben"
@@ -979,10 +907,6 @@ msgstr "Datenträgerimage wird geschrieben"
 msgid "Yes"
 msgstr "Ja"
 
-#: ViewModels/MachineViewModel.cs
-msgid "Yes, nothing on the disks changes"
-msgstr "Ja, auf den Datenträgern ändert sich nichts"
-
 #: Texts/Say.cs
 msgid "{count} bytes"
 msgstr "{count} Bytes"
@@ -1000,16 +924,16 @@ msgid "{holder}, {licence}"
 msgstr "{holder}, {licence}"
 
 #: Texts/Say.cs
-msgid "{image} is not signed for Secure Boot, and this machine has Secure Boot on. It starts only once Secure Boot is turned off in the firmware setup, or your own key is enrolled."
-msgstr "{image} ist nicht für Secure Boot signiert, und auf diesem Gerät ist Secure Boot eingeschaltet. Es startet erst, wenn Secure Boot im Firmware-Setup ausgeschaltet oder Ihr eigener Schlüssel registriert ist."
+msgid "{image} is not signed for Secure Boot. It starts only once Secure Boot is turned off or your own key is enrolled."
+msgstr "{image} ist nicht für Secure Boot signiert. Es startet erst, wenn Secure Boot ausgeschaltet oder Ihr eigener Schlüssel registriert ist."
 
 #: Texts/Say.cs
-msgid "{image} is signed only under {cas}, which this machine's firmware does not trust. It starts only once that CA is allowed, or Secure Boot is turned off in the firmware setup."
-msgstr "{image} ist nur unter {cas} signiert, der die Firmware dieses Geräts nicht vertraut. Es startet erst, wenn diese CA zugelassen oder Secure Boot im Firmware-Setup ausgeschaltet ist."
+msgid "{image} is signed only under {cas}, which this machine does not trust. It starts only once that CA is allowed or Secure Boot is turned off."
+msgstr "{image} ist nur unter {cas} signiert, der dieses Gerät nicht vertraut. Es startet erst, wenn diese CA zugelassen oder Secure Boot ausgeschaltet ist."
 
 #: ViewModels/AuthorizationViewModel.cs
-msgid "{name} signed in here. An operator or administrator still has to approve this machine on the Machines page."
-msgstr "{name} hat sich hier angemeldet. Ein Operator oder Administrator muss dieses Gerät noch auf der Seite „Geräte“ freigeben."
+msgid "{name} signed in here. An operator or administrator still has to approve this machine."
+msgstr "{name} hat sich hier angemeldet. Ein Operator oder Administrator muss dieses Gerät noch freigeben."
 
 #: ViewModels/InputsViewModel.cs
 msgid "{sequence} asks these before it starts."
@@ -1020,8 +944,8 @@ msgid "{sequence} erases everything on this disk, and it cannot be undone."
 msgstr "{sequence} löscht alles auf diesem Datenträger, und das lässt sich nicht rückgängig machen."
 
 #: ViewModels/DiskChoiceViewModel.cs
-msgid "{sequence} erases the disk you choose. This machine has more than one disk it can install on."
-msgstr "{sequence} löscht den Datenträger, den Sie wählen. Dieses Gerät hat mehr als einen Datenträger, auf dem es installieren kann."
+msgid "{sequence} erases the disk you choose."
+msgstr "{sequence} löscht den Datenträger, den Sie wählen."
 
 #: ViewModels/ComputerNameViewModel.cs
 msgid "{sequence} needs a computer name for this machine."

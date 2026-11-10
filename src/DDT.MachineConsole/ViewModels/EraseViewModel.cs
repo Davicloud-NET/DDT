@@ -29,10 +29,6 @@ public sealed class EraseViewModel : TypedWordViewModel
         "{sequence} erases everything on this disk, and it cannot be undone.",
         ("sequence", Question.SequenceName));
 
-    public string DataWarning => Disk.HoldsData
-        ? T("The disk has partitions, so it holds something now.")
-        : T("The disk has no partitions.");
-
     public string Label => F("Type {word} to erase the disk", ("word", Word));
 
     public string SubmitLabel => T("Erase and continue");

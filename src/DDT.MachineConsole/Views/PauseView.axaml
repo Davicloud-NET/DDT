@@ -41,14 +41,11 @@
       </StackPanel>
     </Border>
 
-    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24" Margin="4,0,0,0">
-      <TextBlock Classes="lead ink2" Text="{Binding Hint}" FontSize="18" VerticalAlignment="Center" />
-      <Button Name="Submit" Grid.Column="1" Classes="primary" IsDefault="True" Command="{Binding SubmitCommand}">
-        <StackPanel Orientation="Horizontal" Spacing="10">
-          <c:KeyCap Key="Enter" />
-          <TextBlock Text="{Binding SubmitLabel}" VerticalAlignment="Center" />
-        </StackPanel>
-      </Button>
-    </Grid>
+    <Button Name="Submit" Classes="primary" IsDefault="True" HorizontalAlignment="Right" Command="{Binding SubmitCommand}">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <c:KeyCap Key="Enter" />
+        <TextBlock Text="{Binding SubmitLabel}" VerticalAlignment="Center" />
+      </StackPanel>
+    </Button>
   </StackPanel>
 </UserControl>

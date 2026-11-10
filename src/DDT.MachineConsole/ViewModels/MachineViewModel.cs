@@ -105,7 +105,7 @@ public sealed class MachineViewModel(Localizer localizer) : OverlayViewModel(loc
     [
         new(T("Agent version"), Known(_state?.AgentVersion)),
         new(T("Stage"), _state is null ? T("Not known") : Say.Stage(L, _state.Stage)),
-        new(T("Dry run"), _state?.DryRun == true ? T("Yes, nothing on the disks changes") : T("No")),
+        new(T("Dry run"), _state?.DryRun == true ? T("Yes") : T("No")),
         new(T("Keyboard layout"), Known(_state?.Machine.KeyboardLayout)),
         new(T("Console version"), ConsoleBuild.Version),
     ];

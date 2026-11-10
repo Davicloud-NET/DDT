@@ -26,8 +26,6 @@ public sealed class MultiChoiceFieldViewModel : InputFieldViewModel
 
     public IReadOnlyList<ChoiceItem> Items { get; }
 
-    public string Hint => L.T("Choose any of these. Space turns one on or off.");
-
     public override bool IsAnswered => IsOptional || Items.Any(item => item.IsChosen);
 
     public override ConsoleInputValue Value() =>

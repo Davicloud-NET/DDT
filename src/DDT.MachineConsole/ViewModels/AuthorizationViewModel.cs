@@ -34,10 +34,10 @@ public sealed class AuthorizationViewModel(Localizer localizer) : StageViewModel
     public Tag Tag => Tag.Of(T("Waiting"), TagTone.Attention);
 
     public string Intro => _state?.SignedInBy is { } name
-        ? F("{name} signed in here. An operator or administrator still has to approve this machine on the Machines page.", ("name", name))
+        ? F("{name} signed in here. An operator or administrator still has to approve this machine.", ("name", name))
         : HasSignIn
-            ? T("Sign in here with your DDT account, or approve this machine on the Machines page. Either way the agent goes on by itself.")
-            : T("Approve this machine on the Machines page. The agent goes on by itself as soon as it is approved.");
+            ? T("Sign in with your DDT account, or approve this machine on the Machines page.")
+            : T("Approve this machine on the Machines page.");
 
     public string FindLabel => T("Find it on the Machines page by");
 

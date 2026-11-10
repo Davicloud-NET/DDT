@@ -34,10 +34,6 @@ public sealed class ConnectionViewModel(Localizer localizer) : StageViewModel(lo
 
     public string Address => _state?.Server.Address ?? string.Empty;
 
-    public string Explanation => Stage == ConsoleStage.Starting
-        ? T("The agent checks whether the server has a newer agent, then registers this machine with the server.")
-        : T("The agent registers this machine with the server. It needs nothing from you.");
-
     public bool HasProblem => _state?.Server.Problem is not null;
 
     public string ProblemLabel => T("What the agent saw");

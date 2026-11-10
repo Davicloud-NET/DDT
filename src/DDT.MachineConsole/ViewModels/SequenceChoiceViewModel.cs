@@ -40,8 +40,6 @@ public sealed class SequenceChoiceViewModel : QuestionViewModel
 
     public string Title => T("Choose a task sequence");
 
-    public string Intro => T("These are the task sequences this machine can run. A sequence an assignment rule suggests comes first.");
-
     public string Empty => T("This machine can run no task sequence yet. Assign one on the Machines page.");
 
     public bool IsEmpty => Items.Count == 0;

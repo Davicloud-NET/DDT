@@ -10,10 +10,7 @@
              x:Class="DDT.MachineConsole.Views.SequenceChoiceView"
              x:DataType="vm:SequenceChoiceViewModel">
   <Grid RowDefinitions="Auto,*,Auto" RowSpacing="18">
-    <StackPanel Spacing="8">
-      <TextBlock Name="Title" Classes="title" Text="{Binding Title}" />
-      <TextBlock Classes="lead ink2" Text="{Binding Intro}" />
-    </StackPanel>
+    <TextBlock Name="Title" Classes="title" Text="{Binding Title}" />
 
     <Border Grid.Row="1" Classes="panel" Padding="10">
       <Panel>

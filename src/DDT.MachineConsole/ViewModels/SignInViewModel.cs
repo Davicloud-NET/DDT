@@ -41,8 +41,6 @@ public sealed class SignInViewModel : QuestionViewModel
 
     public string Title => T("Sign in at this machine");
 
-    public string Intro => T("Sign in with your DDT account. An operator or administrator authorizes this machine by signing in.");
-
     public string UserNameLabel => T("User name");
 
     public string PasswordLabel => T("Password");
@@ -94,9 +92,7 @@ public sealed class SignInViewModel : QuestionViewModel
 
     public bool HasKeyboardLayout => !string.IsNullOrEmpty(KeyboardLayout);
 
-    public string KeyboardHint => F(
-        "The keyboard layout is {layout}. A password typed with another layout is refused as a wrong one.",
-        ("layout", KeyboardLayout ?? string.Empty));
+    public string KeyboardHint => F("Keyboard layout: {layout}", ("layout", KeyboardLayout ?? string.Empty));
 
     public string SubmitLabel => AsksUserName ? T("Next") : T("Sign in");
 

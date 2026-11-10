@@ -37,10 +37,8 @@ public static class Say
 
     public static string Remedy(Localizer l, ConsoleRemedy remedy) => remedy switch
     {
-        ConsoleRemedy.RunAgain => l.T(
-            "Run it again: choose the task sequence here when the console asks for one, or assign it on the Machines " +
-            "page. The agent waits for either."),
-        _ => l.T("The agent has stopped. Restart the machine from the network to start over."),
+        ConsoleRemedy.RunAgain => l.T("Run it again: choose the task sequence here, or assign it on the Machines page."),
+        _ => l.T("Restart the machine from the network to start over."),
     };
 
     public static string ConnectionStage(Localizer l, ConnectionStage stage) => stage switch
@@ -55,20 +53,17 @@ public static class Say
     public static string ConnectionAdvice(Localizer l, ConnectionStage stage) => stage switch
     {
         ConsoleProtocol.ConnectionStage.NameLookup => l.T(
-            "The server's name did not resolve. Check the DNS server the network gives this machine, and the server " +
-            "name the boot image was built with."),
+            "The server's name did not resolve. Check this network's DNS server and the server name in the boot image."),
         ConsoleProtocol.ConnectionStage.Connection => l.T(
-            "The server did not accept a connection. Check the address and port, the firewall, and the route from " +
-            "this network to the server."),
+            "The server did not accept a connection. Check the address and port, the firewall and the route to the server."),
         ConsoleProtocol.ConnectionStage.SecureConnection => l.T(
-            "The secure connection failed. The server may be stalling, or its certificate may not chain to the root " +
-            "the boot image trusts."),
-        _ => l.T("The server was reached but did not answer as the agent expects. Its log says why."),
+            "The secure connection failed. The server may be stalling, or the boot image does not trust its certificate."),
+        _ => l.T("The server answered unexpectedly. Its log says why."),
     };
 
     public static string Activity(Localizer l, ConsoleActivity activity) => activity switch
     {
-        ConsoleActivity.Preparing => l.T("Checking the run before anything on the disk changes"),
+        ConsoleActivity.Preparing => l.T("Checking the run"),
         ConsoleActivity.Step => l.T("Running a step"),
         ConsoleActivity.HandingOver => l.T("Handing the run over to the installed Windows"),
         ConsoleActivity.Restarting => l.T("Restarting"),
@@ -85,10 +80,10 @@ public static class Say
 
     public static string RestartReason(Localizer l, RestartReason reason) => reason switch
     {
-        ConsoleProtocol.RestartReason.StepAsked => l.T("A step asked for a restart. The run goes on after it."),
+        ConsoleProtocol.RestartReason.StepAsked => l.T("A step asked for a restart."),
         ConsoleProtocol.RestartReason.HandOver => l.T("The run goes on in the installed Windows."),
         ConsoleProtocol.RestartReason.RunDone => l.T("The run is done."),
-        _ => l.T("The machine was to restart before and did not, so it restarts before anything else."),
+        _ => l.T("A restart was still pending."),
     };
 
     // The run screen's heading for a kind of step. Returns null for an unknown kind, and the screen shows the step's
@@ -129,16 +124,15 @@ public static class Say
         return question.Problem switch
         {
             ConsoleProtocol.SecureBootProblem.NotSigned => l.F(
-                "{image} is not signed for Secure Boot, and this machine has Secure Boot on. It starts only once Secure " +
-                "Boot is turned off in the firmware setup, or your own key is enrolled.",
+                "{image} is not signed for Secure Boot. It starts only once Secure Boot is turned off or your own key is enrolled.",
                 ("image", image)),
             ConsoleProtocol.SecureBootProblem.MayNotStart => l.F(
-                "DDT cannot tell whether {image} is signed for Secure Boot, and this machine has Secure Boot on. It may " +
-                "not start until Secure Boot is turned off in the firmware setup, or your own key is enrolled.",
+                "DDT cannot tell whether {image} is signed for Secure Boot. It may not start until Secure Boot is turned off " +
+                "or your own key is enrolled.",
                 ("image", image)),
             _ => l.F(
-                "{image} is signed only under {cas}, which this machine's firmware does not trust. It starts only once " +
-                "that CA is allowed, or Secure Boot is turned off in the firmware setup.",
+                "{image} is signed only under {cas}, which this machine does not trust. It starts only once that CA is " +
+                "allowed or Secure Boot is turned off.",
                 ("image", image),
                 ("cas", Cas(l, question.SignedUnder))),
         };

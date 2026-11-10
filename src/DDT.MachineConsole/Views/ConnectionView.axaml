@@ -15,7 +15,6 @@
       <TextBlock Name="Title" Classes="title" Text="{Binding Title}" VerticalAlignment="Center" />
       <c:StateTag Value="{Binding Tag}" />
     </StackPanel>
-    <TextBlock Classes="lead ink2" Text="{Binding Explanation}" />
 
     <Border Classes="panel" Padding="24,22">
       <StackPanel Spacing="20">

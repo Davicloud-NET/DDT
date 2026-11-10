@@ -15,10 +15,10 @@ FROM ${BASE} AS build
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN dnf install -y --setopt=install_weak_deps=False clang lld zlib-devel libicu findutils binutils tar gzip ca-certificates \
     && dnf clean all
-# The feature band global.json asks for; dotnet-install.sh takes its newest build.
-ARG DOTNET_CHANNEL=10.0.2xx
+# The SDK CI installs; older ones bring an ILCompiler with a known advisory, which fails the restore.
+ARG DOTNET_SDK_VERSION=10.0.403
 RUN curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
-    && bash /tmp/dotnet-install.sh --channel "$DOTNET_CHANNEL" --install-dir /usr/share/dotnet \
+    && bash /tmp/dotnet-install.sh --version "$DOTNET_SDK_VERSION" --install-dir /usr/share/dotnet \
     && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet \
     && rm /tmp/dotnet-install.sh
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 NUGET_XMLDOC_MODE=skip

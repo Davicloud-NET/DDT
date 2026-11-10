@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.ConsoleProtocol;
+using DDT.MachineConsole.Machine;
 using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.ViewModels;
@@ -21,7 +22,9 @@ public sealed class MachineViewModel(Localizer localizer) : OverlayViewModel(loc
 
     public bool HasPrompt => PromptCommand is not null;
 
-    public string PromptLabel => T("Command prompt");
+    public HostSystem System { get; set; }
+
+    public string PromptLabel => System == HostSystem.Linux ? T("Shell") : T("Command prompt");
 
     public string IdentityTitle => T("Identity");
 

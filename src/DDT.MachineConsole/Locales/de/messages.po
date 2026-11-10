@@ -151,6 +151,10 @@ msgstr "Tasksequenz wird gewählt"
 msgid "Close the console"
 msgstr "Konsole schließen"
 
+#: ViewModels/EndViewModel.cs
+msgid "Close the console to leave it. Linux then shows its sign-in prompt."
+msgstr "Schließen Sie die Konsole, um sie zu verlassen. Linux zeigt dann seine Anmeldung."
+
 #: ViewModels/MachineViewModel.cs
 msgid "Close the details"
 msgstr "Details schließen"
@@ -635,6 +639,10 @@ msgstr "Server"
 msgid "Setting a variable"
 msgstr "Variable wird gesetzt"
 
+#: ViewModels/MainViewModel.cs
+msgid "Shell"
+msgstr "Shell"
+
 #: ViewModels/SignInViewModel.cs
 msgid "Sign in"
 msgstr "Anmelden"
@@ -950,6 +958,10 @@ msgstr "Cloud-init-Seed wird geschrieben"
 #: Texts/Say.cs
 msgid "Writing the disk image"
 msgstr "Datenträgerimage wird geschrieben"
+
+#: Legal/LegalTexts.cs
+msgid "xkeyboard-config: the keyboard layouts' licence"
+msgstr "xkeyboard-config: Lizenz der Tastaturlayouts"
 
 #: ViewModels/ChoiceFieldViewModel.cs
 msgid "Yes"

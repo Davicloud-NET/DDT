@@ -1,0 +1,57 @@
+# syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+# Copyright (C) 2026 Davicloud
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
+
+# Publishes the console for Linux. NativeAOT links against the build system's glibc, and the program then needs that
+# glibc or a newer one, so it is built on AlmaLinux 8 (glibc 2.28) to start on the distributions DDT installs and in
+# the Linux boot environment. build/Publish-LinuxConsole.ps1 runs this with the repository's root as the context:
+#   docker build -f build/Dockerfile.console-linux --target export --output artifacts/console-linux .
+
+# AlmaLinux 8 as it was on 2026-10-06.
+ARG BASE=almalinux:8@sha256:8b469a3a78515e8a18ea8fc727e6a3679e1d0c5ba6f58d5b30be3d0d9b86cffe
+
+FROM ${BASE} AS build
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN dnf install -y --setopt=install_weak_deps=False clang lld zlib-devel libicu findutils binutils tar gzip ca-certificates \
+    && dnf clean all
+# The feature band global.json asks for; dotnet-install.sh takes its newest build.
+ARG DOTNET_CHANNEL=10.0.2xx
+RUN curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
+    && bash /tmp/dotnet-install.sh --channel "$DOTNET_CHANNEL" --install-dir /usr/share/dotnet \
+    && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet \
+    && rm /tmp/dotnet-install.sh
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 NUGET_XMLDOC_MODE=skip
+WORKDIR /src
+COPY global.json nuget.config Directory.Build.props Directory.Build.targets Directory.Packages.props .editorconfig ./
+COPY src/DDT.ConsoleProtocol/DDT.ConsoleProtocol.csproj src/DDT.ConsoleProtocol/
+COPY src/DDT.MachineConsole/DDT.MachineConsole.csproj src/DDT.MachineConsole/
+COPY src/DDT.MachineConsole.Linux/DDT.MachineConsole.Linux.csproj src/DDT.MachineConsole.Linux/
+RUN --mount=type=cache,id=ddt-console-linux-nuget,target=/root/.nuget/packages \
+    dotnet restore src/DDT.MachineConsole.Linux/DDT.MachineConsole.Linux.csproj
+COPY src/DDT.ConsoleProtocol/ src/DDT.ConsoleProtocol/
+COPY src/DDT.MachineConsole/ src/DDT.MachineConsole/
+COPY src/DDT.MachineConsole.Linux/ src/DDT.MachineConsole.Linux/
+# The console shows these, so they are compiled into it.
+COPY LICENSE NOTICE ./
+COPY licenses/avalonia/ licenses/avalonia/
+COPY licenses/microcom/ licenses/microcom/
+COPY licenses/skiasharp/ licenses/skiasharp/
+COPY licenses/dotnet/ licenses/dotnet/
+COPY licenses/fonts/ licenses/fonts/
+COPY licenses/xkeyboard-config/ licenses/xkeyboard-config/
+# The release's version, as 26.1.412. Nothing in here can count the commits, so without it Build is 0.
+ARG DDT_VERSION
+RUN --mount=type=cache,id=ddt-console-linux-nuget,target=/root/.nuget/packages \
+    dotnet publish src/DDT.MachineConsole.Linux/DDT.MachineConsole.Linux.csproj -c Release --no-restore -o /out \
+        -p:LinkerFlavor=lld ${DDT_VERSION:+-p:Version=$DDT_VERSION}
+# The console may need glibc and nothing else: no fontconfig, libinput, libxkbcommon or udev.
+RUN needs=$(for file in ddt-console libSkiaSharp.so libHarfBuzzSharp.so; do \
+        readelf -d "/out/$file" | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p' \
+            | grep -vxE 'lib(c|m)\.so\.6|libdl\.so\.2|libpthread\.so\.0|librt\.so\.1|ld-linux-x86-64\.so\.2' \
+            | sed "s|^|$file needs |"; \
+    done); \
+    if [ -n "$needs" ]; then echo "$needs, which is not part of glibc." >&2; exit 1; fi
+
+FROM scratch AS export
+COPY --from=build /out/ddt-console /out/libSkiaSharp.so /out/libHarfBuzzSharp.so /

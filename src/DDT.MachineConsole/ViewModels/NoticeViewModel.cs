@@ -13,6 +13,7 @@ public sealed class NoticeViewModel(Localizer localizer) : ObservableObject
 
     // The band keeps the last note's text while it fades out.
     private ConsoleNotice _shown;
+    private string _layout = string.Empty;
 
     public ConsoleNotice Current
     {
@@ -40,6 +41,7 @@ public sealed class NoticeViewModel(Localizer localizer) : ObservableObject
         ConsoleNotice.MediaKeys => localizer.T("The top row sends media keys. Hold Fn, or press Fn and Esc to lock the F keys."),
         ConsoleNotice.CloseRefused or ConsoleNotice.SessionCloseRefused => localizer.T("The console stays open while DDT works."),
         ConsoleNotice.SignOutWithF9 => localizer.T("Sign out"),
+        ConsoleNotice.UnknownKeyboardLayout => localizer.F("Unknown keyboard layout {layout}. Keys type as on a US keyboard.", ("layout", _layout)),
         _ => string.Empty,
     };
 
@@ -51,6 +53,13 @@ public sealed class NoticeViewModel(Localizer localizer) : ObservableObject
     };
 
     public void Show(ConsoleNotice notice) => Current = notice;
+
+    public void ShowUnknownLayout(string layout)
+    {
+        _layout = layout;
+        Current = ConsoleNotice.None;
+        Current = ConsoleNotice.UnknownKeyboardLayout;
+    }
 
     // Dismisses only that note. A different note stays.
     public void Dismiss(ConsoleNotice notice)

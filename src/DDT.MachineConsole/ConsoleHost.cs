@@ -15,4 +15,10 @@ public sealed record ConsoleHost(
     IMachinePower Power,
     ICommandPrompt Prompt,
     Action SignOut,
-    Action<NamedPipeClientStream> TrustSessionAgent);
+    Action<NamedPipeClientStream> TrustSessionAgent)
+{
+    public HostSystem System { get; init; }
+
+    // A head that types by its own tables takes the layout the agent names. False for a layout it doesn't know.
+    public Func<string?, bool> UseKeyboardLayout { get; init; } = _ => true;
+}

@@ -36,6 +36,8 @@ public sealed class EndViewModel : ObservableObject
         CloseCommand = new Command(close, () => CanClose);
     }
 
+    public HostSystem System { get; set; }
+
     // True once the pipe has ended.
     public bool IsEnded => _ended is not null;
 
@@ -59,7 +61,7 @@ public sealed class EndViewModel : ObservableObject
 
     public string RestartLabel => _l.T("Restart the machine");
 
-    public string CloseLabel => _session ? _l.T("Sign out") : _l.T("Close the console");
+    public string CloseLabel => _session && System == HostSystem.Windows ? _l.T("Sign out") : _l.T("Close the console");
 
     public bool ConfirmingRestart
     {

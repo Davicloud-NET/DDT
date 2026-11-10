@@ -17,6 +17,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly Localizer _l;
     private readonly Action<int, ConsoleAnswer> _send;
     private readonly bool _session;
+    private HostSystem _system;
     private readonly ConsoleKeys _keys;
     private readonly StageScreens _stages;
     private ConsoleState? _state;
@@ -28,6 +29,7 @@ public sealed class MainViewModel : ObservableObject
     private LicencesViewModel? _licences;
     private bool _isDark = true;
     private bool _languageChosen;
+    private string? _keyboardLayout;
 
     // send passes an answer to the agent. session means the console is the shell of DDT's session in the installed
     // Windows. Then there's no command prompt, and only F9 closes it, once the run is over.
@@ -167,7 +169,22 @@ public sealed class MainViewModel : ObservableObject
     // 1024 x 768 without cutting off the machine's address.
     public Command OpenPromptCommand { get; }
 
-    public string PromptLabel => _l.T("Command prompt");
+    // The system the console runs on, for the sentences that name it. Windows unless a head says otherwise.
+    public HostSystem System
+    {
+        get => _system;
+        init
+        {
+            _system = value;
+            End.System = value;
+            Machine.System = value;
+        }
+    }
+
+    public string PromptLabel => _system == HostSystem.Linux ? _l.T("Shell") : _l.T("Command prompt");
+
+    // The layout the agent names, for a head that types by its own tables.
+    public event EventHandler<string?>? KeyboardLayoutChanged;
 
     public bool CanOpenPrompt => !_session;
 
@@ -279,6 +296,12 @@ public sealed class MainViewModel : ObservableObject
         End.Update(state);
         SpeakAsTheServerSays(state.Language);
         Header.ShowLogo(state.Logo);
+
+        if (state.Machine.KeyboardLayout != _keyboardLayout)
+        {
+            _keyboardLayout = state.Machine.KeyboardLayout;
+            KeyboardLayoutChanged?.Invoke(this, _keyboardLayout);
+        }
     }
 
     // A language picked with F5 at the machine overrides the server's.

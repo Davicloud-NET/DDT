@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ddt-console for Linux: draws on /dev/fb0 and reads the keyboards itself, in the Linux boot environment and on a
+       virtual terminal of the installed Linux. Published in a container, because NativeAOT does not compile across
+       systems, and on an old glibc so it starts on the distributions DDT installs. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+    <AssemblyName>ddt-console</AssemblyName>
+    <RootNamespace>DDT.MachineConsole</RootNamespace>
+    <PublishAot>true</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Required by the LibraryImport source generator. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- EvdevInputBackend hands keys to Avalonia through its private input API: the only way in without libinput. -->
+    <AvaloniaAccessUnstablePrivateApis>true</AvaloniaAccessUnstablePrivateApis>
+    <NoWarn>$(NoWarn);AVA3001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DDT.MachineConsole\DDT.MachineConsole.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.LinuxFramebuffer" />
+    <!-- Avalonia.Skia's libSkiaSharp.so needs fontconfig. The other one needs only the C library. -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" ExcludeAssets="all" PrivateAssets="all" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
+    <!-- Avalonia.BuildServices sends statistics about each build, so its targets are left out. -->
+    <PackageReference Include="Avalonia.BuildServices" ExcludeAssets="all" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- What each key types, by the names KeyboardLayouts.Find reads, and the licence of the data they come from. -->
+    <EmbeddedResource Include="..\DDT.MachineConsole\Keyboard\Layouts\*.keymap" LogicalName="keyboard/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\licenses\xkeyboard-config\*" LogicalName="licenses/xkeyboard-config/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

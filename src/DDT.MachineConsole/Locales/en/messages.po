@@ -151,6 +151,10 @@ msgstr "Choosing a task sequence"
 msgid "Close the console"
 msgstr "Close the console"
 
+#: ViewModels/EndViewModel.cs
+msgid "Close the console to leave it. Linux then shows its sign-in prompt."
+msgstr "Close the console to leave it. Linux then shows its sign-in prompt."
+
 #: ViewModels/MachineViewModel.cs
 msgid "Close the details"
 msgstr "Close the details"
@@ -635,6 +639,10 @@ msgstr "Server"
 msgid "Setting a variable"
 msgstr "Setting a variable"
 
+#: ViewModels/MainViewModel.cs
+msgid "Shell"
+msgstr "Shell"
+
 #: ViewModels/SignInViewModel.cs
 msgid "Sign in"
 msgstr "Sign in"
@@ -950,6 +958,10 @@ msgstr "Writing the cloud-init seed"
 #: Texts/Say.cs
 msgid "Writing the disk image"
 msgstr "Writing the disk image"
+
+#: Legal/LegalTexts.cs
+msgid "xkeyboard-config: the keyboard layouts' licence"
+msgstr "xkeyboard-config: the keyboard layouts' licence"
 
 #: ViewModels/ChoiceFieldViewModel.cs
 msgid "Yes"

@@ -19,6 +19,7 @@
     <Project Path="src/DDT.Core/DDT.Core.csproj" />
     <Project Path="src/DDT.Host/DDT.Host.csproj" />
     <Project Path="src/DDT.MachineConsole/DDT.MachineConsole.csproj" />
+    <Project Path="src/DDT.MachineConsole.Linux/DDT.MachineConsole.Linux.csproj" />
     <Project Path="src/DDT.MachineConsole.Windows/DDT.MachineConsole.Windows.csproj" />
     <Project Path="src/DDT.Protocols/DDT.Protocols.csproj" />
     <Project Path="src/DDT.Pxe/DDT.Pxe.csproj" />

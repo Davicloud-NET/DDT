@@ -11,4 +11,7 @@ public static class ConsoleExit
     public const int NoPipe = 2;
     public const int Refused = 3;
     public const int NotConnected = 4;
+
+    // No screen the console can draw on, so the agent's text stays.
+    public const int NoScreen = 5;
 }

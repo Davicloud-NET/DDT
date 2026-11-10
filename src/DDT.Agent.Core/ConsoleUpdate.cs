@@ -133,13 +133,18 @@ internal sealed class ConsoleUpdate(IAgentServer server, AgentLog log, RunningAg
 
             foreach (ConsoleReleaseFile file in release.Files)
             {
+                string path = Path.Combine(folder, file.Name);
                 await ReleaseFiles.FetchAsync(
-                    Path.Combine(folder, file.Name),
+                    path,
                     file.Sha256,
                     file.Size,
                     (destination, token) => server.DownloadConsoleFileAsync(file.Name, destination, token),
-                    cancellationToken,
-                    file.Name == ConsolePipe.OwnFileName ? Executable : Readable).ConfigureAwait(false);
+                    cancellationToken).ConfigureAwait(false);
+
+                if (!OperatingSystem.IsWindows())
+                {
+                    File.SetUnixFileMode(path, file.Name == ConsolePipe.OwnFileName ? Executable : Readable);
+                }
             }
         }
 

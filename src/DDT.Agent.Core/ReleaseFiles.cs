@@ -22,14 +22,13 @@ internal static class ReleaseFiles
         && string.Equals(await Sha256Async(path, cancellationToken).ConfigureAwait(false), sha256, StringComparison.OrdinalIgnoreCase);
 
     // Downloads into path.part first. A truncated download, or a file replaced on the server in the meantime, must
-    // never be started. mode is the file's mode on Linux, where it is not masked.
+    // never be started.
     public static async Task FetchAsync(
         string path,
         string sha256,
         long size,
         Func<Stream, CancellationToken, Task> download,
-        CancellationToken cancellationToken,
-        UnixFileMode? mode = null)
+        CancellationToken cancellationToken)
     {
         string partial = path + ".part";
 
@@ -43,11 +42,6 @@ internal static class ReleaseFiles
             File.Delete(partial);
 
             throw new InvalidDataException("the download does not match what the server announced");
-        }
-
-        if (mode is { } unixMode && !OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(partial, unixMode);
         }
 
         File.Move(partial, path, overwrite: true);

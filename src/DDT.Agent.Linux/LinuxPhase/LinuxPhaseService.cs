@@ -141,6 +141,7 @@ public static class LinuxPhaseService
     private static HttpAgentServer Server(AgentOptions options, AgentLog log) => new(options.ServerUrl, options.RootCertificate)
     {
         Environment = AgentEnvironment.Linux,
+        ReleasePlatform = AgentPlatforms.LinuxX64,
         Lookup = new ServerLookup { Names = new NameLookup(), Known = options.ServerAddress, Log = log },
     };
 

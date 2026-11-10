@@ -124,7 +124,7 @@ public sealed class PauseStepRunnerTests
         await using SessionMachineConsole session = new(_log, TestAgents.Version);
 
         Task<StepResult> pausing = RunAsync(session);
-        session.Start(() => SessionMachineConsole.CreatePipe(pipe, WindowsIdentity.GetCurrent().User!));
+        session.Start(() => SessionPipe.Create(pipe, WindowsIdentity.GetCurrent().User!));
         await using ConsoleClient client = await ConsoleClient.ConnectAsync(
             new NamedPipeClientStream(".", pipe, PipeDirection.InOut, PipeOptions.Asynchronous),
             new HelloMessage(HelloMessage.CurrentVersion, "Test console"),

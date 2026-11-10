@@ -55,14 +55,14 @@ public static class ConsolePipe
     public static NamedPipeClientStream CreateClient(string name) =>
         new(".", name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
 
-    // The pipe name in a console's command line, or null when there is none.
+    // The pipe name in a console's command line, or null when there is none. On Linux it may be a socket's full path.
     public static string? NameFrom(IReadOnlyList<string> args)
     {
         ArgumentNullException.ThrowIfNull(args);
 
         for (int index = 0; index < args.Count - 1; index++)
         {
-            if (args[index] == PipeArgument && args[index + 1].StartsWith(NamePrefix, StringComparison.Ordinal))
+            if (args[index] == PipeArgument && IsName(args[index + 1]))
             {
                 return args[index + 1];
             }
@@ -70,4 +70,8 @@ public static class ConsolePipe
 
         return null;
     }
+
+    private static bool IsName(string value) =>
+        value.StartsWith(NamePrefix, StringComparison.Ordinal)
+        || (value.StartsWith('/') && value[(value.LastIndexOf('/') + 1)..].StartsWith(NamePrefix, StringComparison.Ordinal));
 }

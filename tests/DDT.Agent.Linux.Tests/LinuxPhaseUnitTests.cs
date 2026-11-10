@@ -86,6 +86,23 @@ public sealed class LinuxPhaseUnitTests : IDisposable
         Assert.DoesNotContain(Lines(), line => !line.StartsWith("INFO", StringComparison.Ordinal));
     }
 
+    // The console the agent fetched from the server, and its logo, sit beside the agent.
+    [Fact]
+    public async Task TheConsoleTheAgentFetchedGoesWithIt()
+    {
+        AgentRun run = LinuxPhaseFixture.Run();
+        await _linux.HandOverAsync(run);
+        SeedDevice();
+        _linux.Put(Path.Combine(Paths.Program, "console-0123456789ab", "ddt-console"));
+        _linux.Put(Path.Combine(Paths.Program, "console-logo-0123456789ab.png"));
+
+        int exitCode = await RunAsync(Server(run));
+
+        Assert.Equal(0, exitCode);
+        Assert.False(Directory.Exists(Paths.Program));
+        Assert.Equal($"INFO  {LinuxAgentRemoval.Removed}", Lines()[^1]);
+    }
+
     // A restart the run asks for ends the agent with 5. That, too, is 0 for systemd, which starts the unit again
     // with the machine.
     [Fact]

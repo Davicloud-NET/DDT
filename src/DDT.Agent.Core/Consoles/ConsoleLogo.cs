@@ -46,6 +46,12 @@ public sealed class ConsoleLogo(IAgentServer server, ConsoleStatus status, strin
                     throw new InvalidDataException("the download does not match what the server announced");
                 }
 
+                // In the installed Linux the console runs as a user of its own.
+                if (!OperatingSystem.IsWindows())
+                {
+                    File.SetUnixFileMode(partial, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+                }
+
                 File.Move(partial, path, overwrite: true);
             }
 

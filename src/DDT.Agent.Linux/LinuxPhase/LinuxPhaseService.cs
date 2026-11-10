@@ -86,6 +86,8 @@ public static class LinuxPhaseService
         LinuxShareConnector shares = new(mounts, paths.Shares, log) { Kernel = KernelRelease };
         shares.DisconnectLeftovers();
         IAgentServer server = machine.Connect?.Invoke(options) ?? Server(options, log);
+        string version = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "unknown";
+        LinuxPhaseConsole console = new(machine, server, options, log, version);
 
         try
         {
@@ -103,13 +105,17 @@ public static class LinuxPhaseService
                 FreeSpace = new LinuxFreeSpace(),
                 Log = log,
                 TimeProvider = TimeProvider.System,
-                AgentVersion = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "unknown",
+                AgentVersion = version,
+                Session = console.Session,
+                Status = console.Status,
+                Logo = console.Logo,
             }.Build();
 
             return await loop.RunAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
+            await console.DisposeAsync().ConfigureAwait(false);
             (server as IDisposable)?.Dispose();
         }
     }

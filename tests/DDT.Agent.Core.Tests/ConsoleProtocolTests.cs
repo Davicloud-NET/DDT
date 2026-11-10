@@ -206,6 +206,16 @@ public sealed class ConsoleProtocolTests
         Assert.Null(ConsolePipe.NameFrom([]));
     }
 
+    [Fact]
+    public void TakesASocketsPathWhoseNameIsTheConsoles()
+    {
+        string path = "/run/ddt-console/" + ConsolePipe.NewName();
+
+        Assert.Equal(path, ConsolePipe.NameFrom(["--pipe", path, "--session"]));
+        Assert.Null(ConsolePipe.NameFrom(["--pipe", "/run/ddt-console/other"]));
+        Assert.Null(ConsolePipe.NameFrom(["--pipe", "/run/ddt-console-x/"]));
+    }
+
     private static string Json(ConsoleMessage message) => JsonSerializer.Serialize(message, ConsoleProtocolJsonContext.Default.ConsoleMessage);
 
     private static byte[] Frame(string json)

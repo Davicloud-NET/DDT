@@ -48,7 +48,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
     {
         ConsoleStatus status = new(_console, AgentEnvironment.Windows, "1.0.0", new Uri("https://ddt.test:8443/"), null, dryRun: false);
         _log.Information("Written before any console connected.");
-        _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
+        _console.Start(() => SessionPipe.Create(_pipe, CurrentUser));
 
         await using (ConsoleClient first = await ConnectAsync())
         {
@@ -81,7 +81,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
             _log.Information($"Line {line}.");
         }
 
-        _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
+        _console.Start(() => SessionPipe.Create(_pipe, CurrentUser));
         await using ConsoleClient client = await ConnectAsync();
         (_, List<string> lines) = await ReadAsync(client, "The console of DDT's session, Test console, is connected.", withState: false);
 
@@ -94,7 +94,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
     [Fact]
     public async Task RefusesAConsoleOfAnotherVersionAndServesTheNextOne()
     {
-        _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
+        _console.Start(() => SessionPipe.Create(_pipe, CurrentUser));
 
         await Assert.ThrowsAsync<ConsoleProtocolException>(
             () => ConnectAsync(new HelloMessage(HelloMessage.CurrentVersion + 1, "Future console")));
@@ -107,7 +107,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
     public async Task ThePipeIsTheAgentsAndOpensOnlyToTheSessionsAccount()
     {
         SecurityIdentifier session = new("S-1-5-21-1111111111-2222222222-3333333333-1005");
-        await using NamedPipeServerStream pipe = SessionMachineConsole.CreatePipe(_pipe, session);
+        await using NamedPipeServerStream pipe = SessionPipe.Create(_pipe, session);
 
         PipeSecurity security = pipe.GetAccessControl();
         List<PipeAccessRule> rules = [.. security.GetAccessRules(includeExplicit: true, includeInherited: true, typeof(SecurityIdentifier)).Cast<PipeAccessRule>()];
@@ -126,7 +126,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
     public async Task TheLastStateGoesOutBeforeThePipeCloses()
     {
         ConsoleStatus status = new(_console, AgentEnvironment.Windows, "1.0.0", new Uri("https://ddt.test:8443/"), null, dryRun: false);
-        _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
+        _console.Start(() => SessionPipe.Create(_pipe, CurrentUser));
         await using ConsoleClient client = await ConnectAsync();
         await ReadAsync(client, "The console of DDT's session, Test console, is connected.");
 
@@ -165,7 +165,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
 
         Assert.False(_console.CanAsk);
 
-        _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
+        _console.Start(() => SessionPipe.Create(_pipe, CurrentUser));
         int id;
 
         await using (ConsoleClient first = await ConnectAsync())
@@ -196,7 +196,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
     [Fact]
     public async Task WithdrawsTheQuestionOnceTheAskerNoLongerNeedsIt()
     {
-        _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
+        _console.Start(() => SessionPipe.Create(_pipe, CurrentUser));
         await using ConsoleClient client = await ConnectAsync();
         using CancellationTokenSource asking = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
         Task<ConsoleAnswer?> asked = _console.AskAsync(s_pause, asking.Token);
@@ -213,7 +213,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
     [Fact]
     public async Task LeavesAnAnswerToAQuestionNoLongerOpenAlone()
     {
-        _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
+        _console.Start(() => SessionPipe.Create(_pipe, CurrentUser));
         await using ConsoleClient client = await ConnectAsync();
         using CancellationTokenSource asking = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
         Task<ConsoleAnswer?> withdrawn = _console.AskAsync(s_pause, asking.Token);
@@ -237,7 +237,7 @@ public sealed class SessionMachineConsoleTests : IAsyncDisposable
     [Fact]
     public async Task NeverLogsWhatAnAnswerCarries()
     {
-        _console.Start(() => SessionMachineConsole.CreatePipe(_pipe, CurrentUser));
+        _console.Start(() => SessionPipe.Create(_pipe, CurrentUser));
         await using ConsoleClient client = await ConnectAsync();
         ConsoleInput account = new("Join", "Join account", null, ConsoleInputKind.Account, [], null, true, null, null, "corp.example");
         Task<ConsoleAnswer?> asked = _console.AskAsync(new InputsQuestion("Install Windows", [account], null), Cancellation);

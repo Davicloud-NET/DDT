@@ -135,6 +135,15 @@ public sealed class ConsoleStatus
     // The logo the console shows, as the path of a PNG that ConsoleLogo downloaded. Null for none.
     public void SetLogo(string? path) => Change(state => state with { Logo = path });
 
+    // The layout the console types with, from the registration. Null keeps the one it has.
+    public void SetKeyboardLayout(string? layout)
+    {
+        if (layout is not null)
+        {
+            Change(state => state with { Machine = state.Machine with { KeyboardLayout = layout } });
+        }
+    }
+
     // The agent in the installed Windows registered again to continue its run. The run is shown next.
     public void Registered(Guid machineId) =>
         Change(state => state with { Server = state.Server with { Problem = null, FailedStage = null, Failures = 0 }, MachineId = machineId });

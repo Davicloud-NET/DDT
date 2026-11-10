@@ -178,9 +178,10 @@ hardware yet. Treat all of it as a preview.
 | M11 | Beyond netboot and beyond a single site | Planned |
 | M12 | Documentation, the proper kind | Planned |
 
-M8 comes in three parts. The first two are built: the Linux boot environment and the agent for
-Linux, which write Linux images in place of Windows PE, and the run that carries on inside the
-installed Linux. The graphical console on Linux is the third, and not built.
+M8 comes in three parts: the Linux boot environment and the agent for Linux, which write Linux
+images in place of Windows PE, the run that carries on inside the installed Linux, and the graphical
+console on Linux, in the boot environment and in the installed Linux. The third is built and tried
+in QEMU.
 
 The [roadmap](docs/roadmap.md) has the details, and what is not planned at all.
 

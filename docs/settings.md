@@ -179,9 +179,9 @@ us, uk, de, ch, fr, it and es. A save refuses what is no keymap name, and a name
 this server lacks (SettingsSaveChecks.cs). The server puts the name onto the kernel command line as
 `ddt.keymap` when it generates grub.cfg, or `us` where the environment lacks it, so a change reaches a
 machine at its next netboot. The `agent.json` it generates names the layout as well, which the agent
-shows at the sign-in. The registration answer to an agent in that environment carries the setting
-too, for the graphical console, which the Linux boot environment does not have yet. Windows PE keeps
-the layout its boot image was built with (section 4).
+shows at the sign-in. The registration answer to an agent in that environment, and in the installed
+Linux, carries the setting too, for the graphical console. Windows PE keeps the layout its boot image
+was built with (section 4).
 
 The same page holds the console's logo, which is a file rather than a value of the section: a PNG of
 at most 512 KB and 2048 by 2048 pixels, uploaded as `PUT /api/settings/console-logo` (image/png) and
@@ -363,6 +363,7 @@ Certificate actions have these limits:
 | Agent binary (replaces DDT:Agent:BinaryPath) | upload of ddt-agent.exe | the agent the server came with; without one, machines keep the boot image agent | | live: next netboot | Admin, re-auth to upload |
 | Agent for Linux (replaces DDT:Agent:LinuxBinaryPath) | upload of ddt-agent-linux-x64, a 64-bit Linux program for x86-64 | the agent for Linux the server came with; without one, machines keep the agent the Linux boot environment brings | | live: next netboot | Admin, re-auth to upload |
 | Console (replaces DDT:Agent:ConsolePath) | upload of a zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll | the console the server came with; without one, machines keep the boot image console | | live: next netboot | Admin, re-auth to upload |
+| Console for Linux (replaces DDT:Agent:LinuxConsolePath) | upload of a zip of ddt-console, libSkiaSharp.so and libHarfBuzzSharp.so, each a 64-bit Linux file for x86-64 | the console for Linux the server came with; without one, the Linux boot environment shows its own and the installed Linux none | | live: next start of the agent for Linux | Admin, re-auth to upload |
 
 - The upload goes to the default path `<StorePath>/agent/ddt-agent.exe` (AgentReleaseStore.cs).
   That file is hashed again whenever it changes.
@@ -1045,6 +1046,7 @@ ring, so it also works for the streamed agent upload.
 | DELETE /api/settings/agent/linux/binary | Removes the upload and returns the view, audited as `agent.linux.upload-removed`. 404 when nothing was uploaded. Needs no re-auth. |
 | GET /api/settings/agent/console | The same view for the console: the SHA-256 of ddt-console.exe and the size of the three files. |
 | PUT /api/settings/agent/console | A zip of the console's three files, at the root or in one folder, each starting with MZ, at most 128 MB zipped and unpacked. Repacked to a temporary file, then renamed. Returns the view and audits `console.uploaded` with the hash of ddt-console.exe. Answers 409 while DDT:Agent:ConsolePath is set in configuration. Needs re-auth. |
+| GET, PUT, DELETE /api/settings/agent/linux/console | The same for the console for Linux: ddt-console, libSkiaSharp.so and libHarfBuzzSharp.so, each with an ELF header for x86-64. `version` comes from the marker its build writes. Audits `console.linux.uploaded` and `console.linux.upload-removed`. Answers 409 while DDT:Agent:LinuxConsolePath is set. |
 | GET /api/auth/external/providers | Anonymous. The enabled providers with their DisplayName, for the sign-in page. |
 
 Example values for the deployment section:

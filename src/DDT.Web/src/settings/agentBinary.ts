@@ -49,6 +49,13 @@ export const consoleBinaryQuery = queryOptions({
   queryFn: () => apiGet<AgentBinaryView>("/api/settings/agent/console"),
 });
 
+// The console for Linux, which the agents in the Linux boot environment and in the installed Linux show. The hub's
+// linuxConsoleChanged brings an upload to other administrators' pages.
+export const linuxConsoleBinaryQuery = queryOptions({
+  queryKey: ["settings-agent-linux-console"],
+  queryFn: () => apiGet<AgentBinaryView>("/api/settings/agent/linux/console"),
+});
+
 // Sends the executable as the body, with the proof of identity it needs. The answer is the new view, the same one GET
 // returns from now on.
 export function uploadAgent(file: File): Promise<AgentBinaryView> {
@@ -65,6 +72,11 @@ export function uploadConsole(file: File): Promise<AgentBinaryView> {
   return upload("/api/settings/agent/console", file, "application/zip");
 }
 
+// Sends the zip Publish-LinuxConsole.ps1 writes, the same way.
+export function uploadLinuxConsole(file: File): Promise<AgentBinaryView> {
+  return upload("/api/settings/agent/linux/console", file, "application/zip");
+}
+
 // Takes machines back to the agent the server came with, or their boot image's. The answer is the new view.
 export function removeAgentUpload(): Promise<AgentBinaryView> {
   return removeUpload("/api/settings/agent/binary");
@@ -76,6 +88,10 @@ export function removeLinuxAgentUpload(): Promise<AgentBinaryView> {
 
 export function removeConsoleUpload(): Promise<AgentBinaryView> {
   return removeUpload("/api/settings/agent/console");
+}
+
+export function removeLinuxConsoleUpload(): Promise<AgentBinaryView> {
+  return removeUpload("/api/settings/agent/linux/console");
 }
 
 async function removeUpload(path: string): Promise<AgentBinaryView> {

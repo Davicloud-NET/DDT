@@ -63,6 +63,7 @@ import {
   agentBinaryQuery,
   consoleBinaryQuery,
   linuxAgentBinaryQuery,
+  linuxConsoleBinaryQuery,
   type AgentBinaryView,
 } from "@/settings/agentBinary";
 import { consoleLogoQuery, type ConsoleLogoView } from "@/settings/consoleLogo";
@@ -245,6 +246,10 @@ function administrationEvents(queryClient: QueryClient) {
     consoleChanged: (console: AgentBinaryView) => {
       queryClient.setQueryData(consoleBinaryQuery.queryKey, console);
     },
+    // And an uploaded console for Linux.
+    linuxConsoleChanged: (console: AgentBinaryView) => {
+      queryClient.setQueryData(linuxConsoleBinaryQuery.queryKey, console);
+    },
     // Administrators and operators receive the console's logo when it was uploaded or removed.
     consoleLogoChanged: (logo: ConsoleLogoView) => {
       queryClient.setQueryData(consoleLogoQuery.queryKey, logo);
@@ -301,6 +306,7 @@ export function reconnectKeys(): QueryKey[] {
     agentBinaryQuery.queryKey,
     linuxAgentBinaryQuery.queryKey,
     consoleBinaryQuery.queryKey,
+    linuxConsoleBinaryQuery.queryKey,
     consoleLogoQuery.queryKey,
     serverCertificateQuery.queryKey,
     checklistQuery.queryKey,

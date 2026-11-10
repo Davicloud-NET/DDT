@@ -17,6 +17,7 @@ import { AgentPanel } from "../AgentPanel";
 import { CertificatePanel } from "../CertificatePanel";
 import { ConsolePanel } from "../ConsolePanel";
 import { LinuxAgentPanel } from "../LinuxAgentPanel";
+import { LinuxConsolePanel } from "../LinuxConsolePanel";
 import { LogFiles } from "../logging/LogFiles";
 import { LoggingPanel } from "../LoggingPanel";
 import { ProxiesPanel } from "../ProxiesPanel";
@@ -97,6 +98,7 @@ export function ServerSettings() {
           <AgentPanel />
           <LinuxAgentPanel />
           <ConsolePanel />
+          <LinuxConsolePanel />
         </TabPanel>
         <TabPanel id="logging" className="flex flex-col gap-4">
           <LoggingPanel />

@@ -934,6 +934,10 @@ msgstr "{name}, {size}, ersetzt den Agent, den ab jetzt jedes Gerät, das die Li
 msgid "{name}, {size}, replaces the console every machine that netboots from now on runs as SYSTEM."
 msgstr "{name}, {size}, ersetzt die Konsole, die ab jetzt jedes per Netzwerk startende Gerät als SYSTEM ausführt."
 
+#: src/settings/LinuxConsolePanel.tsx
+msgid "{name}, {size}, replaces the console every machine with the agent for Linux shows from now on."
+msgstr "{name}, {size}, ersetzt ab jetzt die Konsole, die jedes Gerät mit dem Agent für Linux zeigt."
+
 #: src/sequences/builder/account/useAccountChoices.ts
 msgid "{name}, asked for the run"
 msgstr "{name}, für die Ausführung abgefragt"
@@ -3015,6 +3019,10 @@ msgstr "Wählen Sie zuerst den Agent für Linux."
 msgid "Choose the console first."
 msgstr "Wählen Sie zuerst die Konsole."
 
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Choose the console for Linux first."
+msgstr "Wählen Sie zuerst die Konsole für Linux."
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.chooseImage"
 msgid "Choose the image to apply."
@@ -3197,6 +3205,10 @@ msgstr "Bestätigen Sie mit Ihrem Kennwort."
 #: src/settings/logo/LogoPreview.tsx
 msgid "Connected to the server"
 msgstr "Mit dem Server verbunden"
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Console for Linux"
+msgstr "Konsole für Linux"
 
 #: src/settings/ConsolePanel.tsx
 msgid "Console for netbooting machines"
@@ -3768,6 +3780,10 @@ msgstr "Legen Sie ddt-agent-linux-x64 hier ab, oder wählen Sie die Datei."
 msgid "Drop ddt-agent.exe here, or choose it."
 msgstr "Legen Sie ddt-agent.exe hier ab, oder wählen Sie die Datei."
 
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Drop ddt-console-linux-x64.zip here, or choose it."
+msgstr "Legen Sie ddt-console-linux-x64.zip hier ab, oder wählen Sie die Datei."
+
 #: src/settings/LinuxAgentPanel.tsx
 msgid "Drop the agent for Linux to upload it"
 msgstr "Agent für Linux zum Hochladen ablegen"
@@ -3775,6 +3791,10 @@ msgstr "Agent für Linux zum Hochladen ablegen"
 #: src/settings/AgentPanel.tsx
 msgid "Drop the agent to upload it"
 msgstr "Agent zum Hochladen ablegen"
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Drop the console for Linux to upload it"
+msgstr "Konsole für Linux zum Hochladen ablegen"
 
 #: src/settings/ConsolePanel.tsx
 msgid "Drop the console to upload it"
@@ -5579,6 +5599,7 @@ msgid "Machines run"
 msgstr "Geräte führen aus"
 
 #: src/settings/ConsolePanel.tsx
+#: src/settings/LinuxConsolePanel.tsx
 msgid "Machines show"
 msgstr "Geräte zeigen"
 
@@ -7407,6 +7428,14 @@ msgstr "Hochgeladenen Agent entfernen?"
 msgid "Remove the uploaded console"
 msgstr "Hochgeladene Konsole entfernen"
 
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Remove the uploaded console for Linux"
+msgstr "Hochgeladene Konsole für Linux entfernen"
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Remove the uploaded console for Linux?"
+msgstr "Hochgeladene Konsole für Linux entfernen?"
+
 #: src/settings/ConsolePanel.tsx
 msgid "Remove the uploaded console?"
 msgstr "Hochgeladene Konsole entfernen?"
@@ -7454,6 +7483,10 @@ msgstr "Hochgeladener Agent für Linux wird entfernt"
 #: src/settings/ConsolePanel.tsx
 msgid "Removing the uploaded console"
 msgstr "Hochgeladene Konsole wird entfernt"
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Removing the uploaded console for Linux"
+msgstr "Hochgeladene Konsole für Linux wird entfernt"
 
 #: src/sequences/builder/variables/RenameField.tsx
 msgid "Rename everywhere"
@@ -8285,6 +8318,10 @@ msgstr "Mehrere aus einer Liste"
 msgid "SHA-256"
 msgstr "SHA-256"
 
+#: src/settings/LinuxConsolePanel.tsx
+msgid "SHA-256 of ddt-console"
+msgstr "SHA-256 von ddt-console"
+
 #: src/settings/ConsolePanel.tsx
 msgid "SHA-256 of ddt-console.exe"
 msgstr "SHA-256 von ddt-console.exe"
@@ -8450,6 +8487,7 @@ msgid "Size"
 msgstr "Größe"
 
 #: src/settings/ConsolePanel.tsx
+#: src/settings/LinuxConsolePanel.tsx
 msgid "Size of its files"
 msgstr "Größe ihrer Dateien"
 
@@ -9256,9 +9294,17 @@ msgctxt "settings.console.tooLarge"
 msgid "The console may be at most {max} MB, zipped and unpacked."
 msgstr "Die Konsole darf gezippt und entpackt höchstens {max} MB groß sein."
 
+#: src/settings/LinuxConsolePanel.tsx
+msgid "The console runs as root in the Linux boot environment, so uploading it needs your password again."
+msgstr "Die Konsole läuft in der Linux-Startumgebung als root, daher braucht das Hochladen noch einmal Ihr Passwort."
+
 #: src/settings/ConsolePanel.tsx
 msgid "The console runs as SYSTEM on every machine that netboots."
 msgstr "Die Konsole läuft auf jedem per Netzwerk startenden Gerät als SYSTEM."
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "The console the Linux boot environment brings, and none in the installed Linux"
+msgstr "Die Konsole der Linux-Startumgebung, im installierten Linux keine"
 
 #: src/settings/ConsolePanel.tsx
 msgid "The console this server came with"
@@ -10399,6 +10445,10 @@ msgstr "Der hochgeladene Agent für Linux wurde nicht entfernt. {reason}"
 msgid "The uploaded agent was not removed. {reason}"
 msgstr "Der hochgeladene Agent wurde nicht entfernt. {reason}"
 
+#: src/settings/LinuxConsolePanel.tsx
+msgid "The uploaded console for Linux was not removed. {reason}"
+msgstr "Die hochgeladene Konsole für Linux wurde nicht entfernt. {reason}"
+
 #: src/settings/ConsolePanel.tsx
 msgid "The uploaded console was not removed. {reason}"
 msgstr "Die hochgeladene Konsole wurde nicht entfernt. {reason}"
@@ -10460,6 +10510,10 @@ msgstr "Das Zero-Touch-Netzwerk {network} überschneidet sich mit dem Proxy-Netz
 #: src/settings/ConsolePanel.tsx
 msgid "The zip DDT:Agent:ConsolePath names in configuration"
 msgstr "Das Zip, das DDT:Agent:ConsolePath in der Konfiguration benennt"
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "The zip DDT:Agent:LinuxConsolePath names in configuration"
+msgstr "Das Zip, das DDT:Agent:LinuxConsolePath in der Konfiguration benennt"
 
 #: src/lib/serverMessages.ts
 msgctxt "package.fileAndFolder"
@@ -11071,6 +11125,10 @@ msgstr "{name} als Agent für Linux hochladen?"
 msgid "Upload {name} as the agent?"
 msgstr "{name} als Agent hochladen?"
 
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Upload {name} as the console for Linux?"
+msgstr "{name} als Konsole für Linux hochladen?"
+
 #: src/settings/ConsolePanel.tsx
 msgid "Upload {name} as the console?"
 msgstr "{name} als Konsole hochladen?"
@@ -11090,6 +11148,7 @@ msgid "Upload certificate"
 msgstr "Zertifikat hochladen"
 
 #: src/settings/ConsolePanel.tsx
+#: src/settings/LinuxConsolePanel.tsx
 msgid "Upload console"
 msgstr "Konsole hochladen"
 
@@ -11105,12 +11164,20 @@ msgstr "Agent für Linux hochladen"
 msgid "Upload the console"
 msgstr "Konsole hochladen"
 
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Upload the console for Linux"
+msgstr "Konsole für Linux hochladen"
+
 #: src/images/ImagesTable.tsx
 #: src/packages/PackagesTable.tsx
 #: src/settings/agent/CurrentBinary.tsx
 #: src/settings/logo/LogoDetails.tsx
 msgid "Uploaded"
 msgstr "Hochgeladen"
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Uploaded. Machines show the console with ddt-console of SHA-256 {uploaded}."
+msgstr "Hochgeladen. Geräte zeigen die Konsole mit ddt-console mit SHA-256 {uploaded}."
 
 #: src/settings/logo/LogoChange.tsx
 msgid "Uploaded. Machines show the logo when they next register."

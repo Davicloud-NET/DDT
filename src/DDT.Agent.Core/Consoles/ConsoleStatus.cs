@@ -219,8 +219,13 @@ public sealed class ConsoleStatus
         }
     }
 
+    // In an installed system the agent removes itself after a failure, so the run starts over from the network.
     public void RunFailed(string error) =>
-        Change(state => state with { Stage = ConsoleStage.Failed, Problem = new ConsoleProblem(error, ConsoleRemedy.RunAgain) });
+        Change(state => state with
+        {
+            Stage = ConsoleStage.Failed,
+            Problem = new ConsoleProblem(error, _environment is AgentEnvironment.Windows or AgentEnvironment.Linux ? ConsoleRemedy.Restart : ConsoleRemedy.RunAgain),
+        });
 
     public void RunFinished() => Change(state => state with { Stage = ConsoleStage.Finished });
 

@@ -52,6 +52,22 @@ public sealed class ConsoleStatusTests
             console.States[^1].Run!.Steps);
     }
 
+    // In a boot environment the agent waits for the run to be chosen again. In an installed system it removes itself.
+    [Theory]
+    [InlineData(AgentEnvironment.WindowsPE, ConsoleRemedy.RunAgain)]
+    [InlineData(AgentEnvironment.LinuxBoot, ConsoleRemedy.RunAgain)]
+    [InlineData(AgentEnvironment.Windows, ConsoleRemedy.Restart)]
+    [InlineData(AgentEnvironment.Linux, ConsoleRemedy.Restart)]
+    public void AFailedRunSaysHowItStartsAgainWhereTheAgentIs(AgentEnvironment environment, ConsoleRemedy remedy)
+    {
+        ScriptedMachineConsole console = new();
+        ConsoleStatus status = new(console, environment, "1.0.0", new Uri("https://ddt.test:8443/"), null, dryRun: false);
+
+        status.RunFailed("The script ended with exit code 3.");
+
+        Assert.Equal(new ConsoleProblem("The script ended with exit code 3.", remedy), console.States[^1].Problem);
+    }
+
     // A step without its own phase shows the phase of the step before it, in a tree just like in a list.
     [Fact]
     public void ShowsANodeWithoutAPhaseInThePhaseBeforeIt()

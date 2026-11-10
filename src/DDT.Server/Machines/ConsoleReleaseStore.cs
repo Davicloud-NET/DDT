@@ -6,15 +6,13 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Settings;
-using DDT.Server.Configuration;
-using Microsoft.Extensions.Options;
 
 namespace DDT.Server.Machines;
 
 // The console is kept as one zip, so an upload replaces it with a single rename and a machine never sees half of one.
 // Like AgentReleaseStore, it offers the configured zip, else the uploaded one, else the one the server came with, and
 // hashes the files once and keeps the hashes until the zip's length or write time changes.
-public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, IOptions<DdtOptions> ddt, BundledReleases bundled)
+public sealed class ConsoleReleaseStore(ConsoleSlot slot)
 {
     // The console's three files are about 29 MB, and zipped about 12 MB. The agent's limit holds for the zip and for what
     // it unpacks to, so a small zip cannot fill the store either.
@@ -24,12 +22,13 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
     private readonly Dictionary<string, (long Length, DateTime WriteTimeUtc, StoredConsole? Console)> _cached = new(StringComparer.Ordinal);
 
     // True when configuration names its own zip. An upload wouldn't replace that file.
-    public bool Configured => !string.IsNullOrWhiteSpace(options.Value.ConsolePath);
+    public bool Configured => !string.IsNullOrWhiteSpace(slot.ConfiguredPath);
 
     // The zip configuration names, or where an upload goes
-    public string PackagePath => Path.GetFullPath(Configured
-        ? options.Value.ConsolePath
-        : Path.Combine(ddt.Value.StorePath, "agent", "ddt-console.zip"));
+    public string PackagePath => Path.GetFullPath(Configured ? slot.ConfiguredPath : slot.UploadPath);
+
+    // The console's executable, which the audit rows of an upload name.
+    public string ExecutableName => slot.FileNames[0];
 
     // Null if there's no console, or the zip isn't a valid one. Machines then keep the console from their boot image.
     public async Task<ConsoleRelease?> CurrentAsync(CancellationToken cancellationToken) =>
@@ -42,7 +41,7 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
             : await BundledAsync(cancellationToken).ConfigureAwait(false);
 
     public Task<StoredConsole?> BundledAsync(CancellationToken cancellationToken) =>
-        DescribeAsync(bundled.ConsolePath, AgentBinarySource.Bundled, cancellationToken);
+        DescribeAsync(slot.BundledPath, AgentBinarySource.Bundled, cancellationToken);
 
     // Writes one of the console's files as the zip holds it now. If an upload happens in between, the download won't
     // match the release, and the agent refuses it.
@@ -61,7 +60,7 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
     }
 
     // The release of a zip that holds exactly the console's files at its root, or null.
-    public static async Task<ConsoleRelease?> ReadAsync(Stream zip, CancellationToken cancellationToken) =>
+    public async Task<ConsoleRelease?> ReadAsync(Stream zip, CancellationToken cancellationToken) =>
         (await ReadWithVersionAsync(zip, cancellationToken).ConfigureAwait(false)).Release;
 
     // Machines then get the console the server came with, or keep their boot image's. False when nothing was uploaded.
@@ -116,8 +115,8 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
         return console;
     }
 
-    // The version is that of ddt-console.exe, the first of the console's files.
-    private static async Task<(ConsoleRelease? Release, Version? Version)> ReadWithVersionAsync(Stream zip, CancellationToken cancellationToken)
+    // The version is that of the console's executable, the first of its files.
+    private async Task<(ConsoleRelease? Release, Version? Version)> ReadWithVersionAsync(Stream zip, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(zip);
 
@@ -126,16 +125,16 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
             await using ZipArchive archive = await ZipArchive.CreateAsync(zip, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: null, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (archive.Entries.Count != ConsoleRelease.FileNames.Count)
+            if (archive.Entries.Count != slot.FileNames.Count)
             {
                 return (null, null);
             }
 
             List<ConsoleReleaseFile> files = [];
-            ExecutableVersion version = new();
+            IEmbeddedVersion version = slot.NewVersion();
             byte[] buffer = new byte[81920];
 
-            foreach (string name in ConsoleRelease.FileNames)
+            foreach (string name in slot.FileNames)
             {
                 if (archive.GetEntry(name) is not { } entry)
                 {
@@ -213,8 +212,9 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
         }
     }
 
-    // Copies the console's files from the zip received into a new one, and checks that each is a Windows executable.
-    private static async Task<ReleaseUploadStatus> RepackAsync(string received, string stored, CancellationToken cancellationToken)
+    // Copies the console's files from the zip received into a new one, and checks that each is a program or library of
+    // the console's system.
+    private async Task<ReleaseUploadStatus> RepackAsync(string received, string stored, CancellationToken cancellationToken)
     {
         await using FileStream source = new(received, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
         ZipArchive input;
@@ -245,17 +245,17 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
     }
 
     // The unpacked size of all files together counts against MaxBytes.
-    private static async Task<ReleaseUploadStatus> CopyExecutablesAsync(
+    private async Task<ReleaseUploadStatus> CopyExecutablesAsync(
         Dictionary<string, ZipArchiveEntry> files,
         ZipArchive output,
         CancellationToken cancellationToken)
     {
         long left = MaxBytes;
 
-        foreach (string name in ConsoleRelease.FileNames)
+        foreach (string name in slot.FileNames)
         {
             ZipArchiveEntry entry = output.CreateEntry(name, CompressionLevel.Optimal);
-            byte[] header = new byte[2];
+            byte[] header = new byte[slot.HeaderLength];
             long copied;
 
             try
@@ -264,8 +264,7 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
                 await using Stream to = await entry.OpenAsync(cancellationToken).ConfigureAwait(false);
                 await from.ReadAtLeastAsync(header, header.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
 
-                // Every Windows executable and library starts with the DOS header's MZ.
-                if (header[0] != (byte)'M' || header[1] != (byte)'Z')
+                if (!slot.Accepts(header))
                 {
                     return ReleaseUploadStatus.Refused;
                 }
@@ -290,7 +289,7 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
     }
 
     // The console's files by name, at the root or all in one folder. Null if the zip holds anything else or misses one.
-    private static Dictionary<string, ZipArchiveEntry>? ConsoleFiles(ZipArchive archive)
+    private Dictionary<string, ZipArchiveEntry>? ConsoleFiles(ZipArchive archive)
     {
         Dictionary<string, ZipArchiveEntry> files = new(StringComparer.OrdinalIgnoreCase);
         string? folder = null;
@@ -309,7 +308,7 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
             string directory = slash < 0 ? string.Empty : path[..slash];
             folder ??= directory;
 
-            string? name = ConsoleRelease.FileNames.FirstOrDefault(known => known.Equals(path[(slash + 1)..], StringComparison.OrdinalIgnoreCase));
+            string? name = slot.FileNames.FirstOrDefault(known => known.Equals(path[(slash + 1)..], StringComparison.OrdinalIgnoreCase));
 
             if (directory != folder || directory.Contains('/', StringComparison.Ordinal) || name is null || !files.TryAdd(name, entry))
             {
@@ -317,7 +316,7 @@ public sealed class ConsoleReleaseStore(IOptions<AgentReleaseOptions> options, I
             }
         }
 
-        return files.Count == ConsoleRelease.FileNames.Count ? files : null;
+        return files.Count == slot.FileNames.Count ? files : null;
     }
 
     // The number of bytes copied, or -1 when there were more than limit.

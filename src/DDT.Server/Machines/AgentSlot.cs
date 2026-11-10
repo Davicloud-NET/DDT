@@ -18,5 +18,5 @@ public sealed record AgentSlot(AgentFormat Format, string ConfiguredPath, string
         _ => header.Length >= 2 && header[0] == (byte)'M' && header[1] == (byte)'Z',
     };
 
-    public IEmbeddedVersion NewVersion() => Format == AgentFormat.LinuxExecutable ? new ElfAgentVersion() : new ExecutableVersion();
+    public IEmbeddedVersion NewVersion() => Format == AgentFormat.LinuxExecutable ? new ElfAgentVersion(ElfAgentVersion.AgentMarker) : new ExecutableVersion();
 }

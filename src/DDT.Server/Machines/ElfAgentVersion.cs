@@ -7,13 +7,18 @@ using System.Text;
 namespace DDT.Server.Machines;
 
 // The version of the agent for Linux, found while its bytes pass by for hashing. An ELF file has no version resource,
-// so the agent's build writes a marker into it: DDT-AGENT-VERSION:, then the version, up to the line's end.
-public sealed class ElfAgentVersion : IEmbeddedVersion
+// so the agent's build writes a marker into it: DDT-AGENT-VERSION:, then the version, up to the line's end. The
+// console's build does the same with its own marker.
+public sealed class ElfAgentVersion(string marker) : IEmbeddedVersion
 {
+    public const string AgentMarker = "DDT-AGENT-VERSION:";
+
+    public const string ConsoleMarker = "DDT-CONSOLE-VERSION:";
+
     // Year.Major.Build takes 13 characters at most. More than this after the marker is not a version.
     private const int MaxVersionBytes = 32;
 
-    private static readonly byte[] s_marker = "DDT-AGENT-VERSION:"u8.ToArray();
+    private readonly byte[] _marker = Encoding.ASCII.GetBytes(marker);
 
     // The end of the last block, where a marker may have begun
     private byte[] _carry = [];
@@ -22,7 +27,7 @@ public sealed class ElfAgentVersion : IEmbeddedVersion
 
     public static Version? Of(ReadOnlySpan<byte> executable)
     {
-        ElfAgentVersion version = new();
+        ElfAgentVersion version = new(AgentMarker);
         version.Append(executable);
 
         return version.Found;
@@ -38,10 +43,10 @@ public sealed class ElfAgentVersion : IEmbeddedVersion
         byte[] joined = [.. _carry, .. block];
         int from = 0;
 
-        while (joined.AsSpan(from).IndexOf(s_marker) is >= 0 and int found)
+        while (joined.AsSpan(from).IndexOf(_marker) is >= 0 and int found)
         {
             int at = from + found;
-            ReadOnlySpan<byte> after = joined.AsSpan(at + s_marker.Length);
+            ReadOnlySpan<byte> after = joined.AsSpan(at + _marker.Length);
             int end = after.IndexOfAny((byte)'\r', (byte)'\n');
 
             // The line's end has not passed by yet.
@@ -60,10 +65,10 @@ public sealed class ElfAgentVersion : IEmbeddedVersion
             }
 
             // The marker's own text, as the program that looks for it holds it, is followed by no version.
-            from = at + s_marker.Length;
+            from = at + _marker.Length;
         }
 
-        _carry = joined[^Math.Min(joined.Length - from, s_marker.Length - 1)..];
+        _carry = joined[^Math.Min(joined.Length - from, _marker.Length - 1)..];
     }
 
     // Digits and dots alone, as the build writes them. Version.Parse would also take spaces and signs.

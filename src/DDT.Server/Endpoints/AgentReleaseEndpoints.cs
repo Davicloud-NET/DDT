@@ -48,6 +48,15 @@ public static class AgentReleaseEndpoints
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicies.AgentDownload);
 
+        // The console for the platform the route names, which the agent for Linux asks for.
+        group.MapGet("/releases/{platform}/console", GetPlatformConsoleReleaseAsync)
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.AgentRelease);
+
+        group.MapGet("/releases/{platform}/console/{name}", GetPlatformConsoleFileAsync)
+            .AllowAnonymous()
+            .RequireRateLimiting(RateLimitPolicies.AgentDownload);
+
         // The logo that console shows. Every registration answer names its hash.
         group.MapGet("/console/logo", GetConsoleLogo)
             .AllowAnonymous()
@@ -102,23 +111,46 @@ public static class AgentReleaseEndpoints
     private static Results<FileStreamHttpResult, NotFound> GetConsoleLogo(ConsoleLogoStore logos) =>
         logos.Open() is { } logo ? TypedResults.File(logo, "image/png") : TypedResults.NotFound();
 
-    private static async Task<Results<Ok<ConsoleRelease>, NotFound>> GetConsoleReleaseAsync(
-        ConsoleReleaseStore consoles,
-        CancellationToken cancellationToken)
-    {
-        ConsoleRelease? release = await consoles.CurrentAsync(cancellationToken).ConfigureAwait(false);
+    private static Task<Results<Ok<ConsoleRelease>, NotFound>> GetConsoleReleaseAsync(
+        ConsoleReleaseStores consoles,
+        CancellationToken cancellationToken) =>
+        ConsoleReleaseAsync(consoles.Windows, cancellationToken);
 
-        return release is null ? TypedResults.NotFound() : TypedResults.Ok(release);
-    }
-
-    // Only the files the release names, with the length it names, so the agent's download ends where the file does.
-    private static async Task<Results<PushStreamHttpResult, NotFound>> GetConsoleFileAsync(
+    private static Task<Results<PushStreamHttpResult, NotFound>> GetConsoleFileAsync(
         string name,
         HttpContext context,
-        ConsoleReleaseStore consoles,
+        ConsoleReleaseStores consoles,
+        CancellationToken cancellationToken) =>
+        ConsoleFileAsync(consoles.Windows, name, context, cancellationToken);
+
+    private static Task<Results<Ok<ConsoleRelease>, NotFound>> GetPlatformConsoleReleaseAsync(
+        string platform,
+        ConsoleReleaseStores consoles,
+        CancellationToken cancellationToken) =>
+        ConsoleReleaseAsync(consoles.Of(platform), cancellationToken);
+
+    private static Task<Results<PushStreamHttpResult, NotFound>> GetPlatformConsoleFileAsync(
+        string platform,
+        string name,
+        HttpContext context,
+        ConsoleReleaseStores consoles,
+        CancellationToken cancellationToken) =>
+        ConsoleFileAsync(consoles.Of(platform), name, context, cancellationToken);
+
+    // 404 for a platform no console is built for, and for one whose console the server does not have.
+    private static async Task<Results<Ok<ConsoleRelease>, NotFound>> ConsoleReleaseAsync(ConsoleReleaseStore? consoles, CancellationToken cancellationToken) =>
+        consoles is not null && await consoles.CurrentAsync(cancellationToken).ConfigureAwait(false) is { } release
+            ? TypedResults.Ok(release)
+            : TypedResults.NotFound();
+
+    // Only the files the release names, with the length it names, so the agent's download ends where the file does.
+    private static async Task<Results<PushStreamHttpResult, NotFound>> ConsoleFileAsync(
+        ConsoleReleaseStore? consoles,
+        string name,
+        HttpContext context,
         CancellationToken cancellationToken)
     {
-        StoredConsole? console = await consoles.OfferedAsync(cancellationToken).ConfigureAwait(false);
+        StoredConsole? console = consoles is null ? null : await consoles.OfferedAsync(cancellationToken).ConfigureAwait(false);
 
         if (console?.Release.Files.FirstOrDefault(file => file.Name == name) is not { } file)
         {

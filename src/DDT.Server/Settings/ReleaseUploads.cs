@@ -15,12 +15,12 @@ namespace DDT.Server.Settings;
 // an upload again. Who uploaded one and when comes from the audit row of its latest upload.
 internal sealed class ReleaseUploads(
     AgentReleaseStores agents,
-    ConsoleReleaseStore consoles,
+    ConsoleReleaseStores consoles,
     DdtDbContext database,
     TimeProvider timeProvider,
     LiveNotifier live)
 {
-    public bool ConsoleConfigured => consoles.Configured;
+    public bool ConsoleConfigured(ConsoleUpload console) => StoreOf(console).Configured;
 
     public bool AgentConfigured(AgentUpload agent) => StoreOf(agent).Configured;
 
@@ -42,19 +42,20 @@ internal sealed class ReleaseUploads(
             Text(Newer(bundled?.Version, offered?.Version)));
     }
 
-    public async Task<AgentBinaryView> ConsoleAsync(CancellationToken cancellationToken)
+    public async Task<AgentBinaryView> ConsoleAsync(ConsoleUpload console, CancellationToken cancellationToken)
     {
-        StoredConsole? offered = await consoles.OfferedAsync(cancellationToken).ConfigureAwait(false);
+        ConsoleReleaseStore releases = StoreOf(console);
+        StoredConsole? offered = await releases.OfferedAsync(cancellationToken).ConfigureAwait(false);
         bool uploaded = offered?.Source == AgentBinarySource.Uploaded;
-        StoredConsole? bundled = uploaded ? await consoles.BundledAsync(cancellationToken).ConfigureAwait(false) : null;
-        AuditEvent? upload = uploaded ? await LatestAsync(AuditActions.ConsoleUploaded, cancellationToken).ConfigureAwait(false) : null;
+        StoredConsole? bundled = uploaded ? await releases.BundledAsync(cancellationToken).ConfigureAwait(false) : null;
+        AuditEvent? upload = uploaded ? await LatestAsync(console.UploadedAction, cancellationToken).ConfigureAwait(false) : null;
 
         return new AgentBinaryView(
             offered?.Release.Files[0].Sha256,
             offered?.Release.Files.Sum(file => file.Size),
             upload?.OccurredUtc,
             upload?.ActorName,
-            offered?.Source ?? (ConsoleConfigured ? AgentBinarySource.Configuration : AgentBinarySource.None),
+            offered?.Source ?? (releases.Configured ? AgentBinarySource.Configuration : AgentBinarySource.None),
             Text(offered?.Version),
             Text(Newer(bundled?.Version, offered?.Version)));
     }
@@ -82,9 +83,13 @@ internal sealed class ReleaseUploads(
         return (status, uploaded);
     }
 
-    public async Task<(ReleaseUploadStatus Status, AgentBinaryView? View)> UploadConsoleAsync(Stream content, Actor actor, CancellationToken cancellationToken)
+    public async Task<(ReleaseUploadStatus Status, AgentBinaryView? View)> UploadConsoleAsync(
+        ConsoleUpload console,
+        Stream content,
+        Actor actor,
+        CancellationToken cancellationToken)
     {
-        (ReleaseUploadStatus status, ConsoleRelease? release) = await consoles.SaveAsync(content, cancellationToken).ConfigureAwait(false);
+        (ReleaseUploadStatus status, ConsoleRelease? release) = await StoreOf(console).SaveAsync(content, cancellationToken).ConfigureAwait(false);
 
         if (release is null)
         {
@@ -93,15 +98,10 @@ internal sealed class ReleaseUploads(
 
         string sha256 = release.Files[0].Sha256;
         long size = release.Files.Sum(file => file.Size);
-        await AuditAsync(
-            AuditActions.ConsoleUploaded,
-            sha256,
-            actor,
-            $"Uploaded the console with ddt-console.exe of SHA-256 {sha256}, {size} bytes in all. Netbooting machines show it from their next boot.",
-            cancellationToken).ConfigureAwait(false);
+        await AuditAsync(console.UploadedAction, sha256, actor, console.UploadedDetail(sha256, size), cancellationToken).ConfigureAwait(false);
 
-        AgentBinaryView uploaded = await ConsoleAsync(cancellationToken).ConfigureAwait(false);
-        live.ConsoleChanged(uploaded);
+        AgentBinaryView uploaded = await ConsoleAsync(console, cancellationToken).ConfigureAwait(false);
+        Push(console, uploaded);
 
         return (status, uploaded);
     }
@@ -127,25 +127,21 @@ internal sealed class ReleaseUploads(
         return now;
     }
 
-    public async Task<AgentBinaryView?> RemoveConsoleAsync(Actor actor, CancellationToken cancellationToken)
+    public async Task<AgentBinaryView?> RemoveConsoleAsync(ConsoleUpload console, Actor actor, CancellationToken cancellationToken)
     {
-        StoredConsole? offered = await consoles.OfferedAsync(cancellationToken).ConfigureAwait(false);
+        ConsoleReleaseStore releases = StoreOf(console);
+        StoredConsole? offered = await releases.OfferedAsync(cancellationToken).ConfigureAwait(false);
 
-        if (offered?.Source != AgentBinarySource.Uploaded || !consoles.RemoveUpload())
+        if (offered?.Source != AgentBinarySource.Uploaded || !releases.RemoveUpload())
         {
             return null;
         }
 
         string sha256 = offered.Release.Files[0].Sha256;
-        await AuditAsync(
-            AuditActions.ConsoleUploadRemoved,
-            sha256,
-            actor,
-            $"Removed the uploaded console with ddt-console.exe of SHA-256 {sha256}. From their next boot, netbooting machines show the console the server came with, or their boot image's.",
-            cancellationToken).ConfigureAwait(false);
+        await AuditAsync(console.RemovedAction, sha256, actor, console.RemovedDetail(sha256), cancellationToken).ConfigureAwait(false);
 
-        AgentBinaryView now = await ConsoleAsync(cancellationToken).ConfigureAwait(false);
-        live.ConsoleChanged(now);
+        AgentBinaryView now = await ConsoleAsync(console, cancellationToken).ConfigureAwait(false);
+        Push(console, now);
 
         return now;
     }
@@ -158,6 +154,20 @@ internal sealed class ReleaseUploads(
         bundled is not null && offered is not null && bundled > offered ? bundled : null;
 
     private AgentReleaseStore StoreOf(AgentUpload agent) => agent.IsLinux ? agents.Linux : agents.Windows;
+
+    private ConsoleReleaseStore StoreOf(ConsoleUpload console) => console.IsLinux ? consoles.Linux : consoles.Windows;
+
+    private void Push(ConsoleUpload console, AgentBinaryView view)
+    {
+        if (console.IsLinux)
+        {
+            live.LinuxConsoleChanged(view);
+        }
+        else
+        {
+            live.ConsoleChanged(view);
+        }
+    }
 
     private void Push(AgentUpload agent, AgentBinaryView view)
     {

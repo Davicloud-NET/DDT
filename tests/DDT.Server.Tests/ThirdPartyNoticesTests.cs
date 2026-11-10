@@ -18,6 +18,9 @@ public sealed class ThirdPartyNoticesTests
     // What the console is published for: NativeAOT, Windows PE on x64.
     private const string ConsoleTarget = "net10.0-windows/win-x64";
 
+    // And the console for Linux.
+    private const string LinuxConsoleTarget = "net10.0/linux-x64";
+
     // Development packages whose own code the bundle contains: Rolldown's runtime helpers and the module preload
     // polyfill Vite asks it for.
     private static readonly string[] s_bundledBuildTools = ["rolldown", "vite", "tailwindcss"];
@@ -42,6 +45,11 @@ public sealed class ThirdPartyNoticesTests
             Path.Combine(root, "src", "DDT.MachineConsole.Windows", "obj", "project.assets.json"),
             cancellationToken,
             ConsoleTarget));
+        List<string> linuxConsole = await NuGetPackagesAsync(
+            Path.Combine(root, "src", "DDT.MachineConsole.Linux", "obj", "project.assets.json"),
+            cancellationToken,
+            LinuxConsoleTarget);
+        shipped.AddRange(linuxConsole);
         shipped.AddRange((await WebBundlePackagesAsync(root, cancellationToken)).Select(package => package.Name));
 
         Assert.Contains("ManagedWimLib", shipped);
@@ -50,6 +58,7 @@ public sealed class ThirdPartyNoticesTests
         Assert.Contains("ZstdSharp.Port", agent);
         Assert.Contains("ZstdSharp.Port", linuxAgent);
         Assert.Contains("SkiaSharp.NativeAssets.Win32", shipped);
+        Assert.Contains("Avalonia.LinuxFramebuffer", linuxConsole);
         Assert.Contains("react", shipped);
         Assert.Contains("vite", shipped);
 

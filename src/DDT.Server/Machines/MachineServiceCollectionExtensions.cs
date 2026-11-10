@@ -20,7 +20,7 @@ public static class MachineServiceCollectionExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton(new BundledReleases(AppContext.BaseDirectory));
         services.AddSingleton<AgentReleaseStores>();
-        services.AddSingleton<ConsoleReleaseStore>();
+        services.AddSingleton<ConsoleReleaseStores>();
         services.AddSingleton<ConsoleLogoStore>();
         services.AddSingleton<WaitingMachineSweeper>();
         services.AddHostedService(provider => provider.GetRequiredService<WaitingMachineSweeper>());

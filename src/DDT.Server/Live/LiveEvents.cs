@@ -88,6 +88,9 @@ public static class LiveEvents
     // administrators.
     public const string ConsoleChanged = "consoleChanged";
 
+    // The same for the console for Linux, as GET /api/settings/agent/linux/console returns it. Goes to administrators.
+    public const string LinuxConsoleChanged = "linuxConsoleChanged";
+
     // Carries the ConsoleLogoView, the same as GET /api/settings/console-logo returns, when the console logo was
     // uploaded or removed. Goes to administrators and operators, because both read the Deployment defaults page.
     public const string ConsoleLogoChanged = "consoleLogoChanged";

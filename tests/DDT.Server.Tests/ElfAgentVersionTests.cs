@@ -30,7 +30,7 @@ public sealed class ElfAgentVersionTests
 
         for (int cut = 1; cut < executable.Length; cut++)
         {
-            ElfAgentVersion version = new();
+            ElfAgentVersion version = new(ElfAgentVersion.AgentMarker);
             version.Append(executable.AsSpan(0, cut));
             version.Append(executable.AsSpan(cut));
 
@@ -41,7 +41,7 @@ public sealed class ElfAgentVersionTests
     [Fact]
     public void FindsAVersionThatPassesByOneByteAtATime()
     {
-        ElfAgentVersion version = new();
+        ElfAgentVersion version = new(ElfAgentVersion.AgentMarker);
 
         foreach (byte value in LinuxExecutables.Versioned("26.1.512", size: 300))
         {
@@ -75,7 +75,7 @@ public sealed class ElfAgentVersionTests
     [Fact]
     public void KeepsTheFirstVersionItFinds()
     {
-        ElfAgentVersion version = new();
+        ElfAgentVersion version = new(ElfAgentVersion.AgentMarker);
         version.Append(LinuxExecutables.Marker("1.0.0"));
         version.Append(LinuxExecutables.Marker("9.9.9"));
 

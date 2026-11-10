@@ -13,5 +13,8 @@ public sealed record BundledReleases(string Folder)
     // The agent for Linux, which the Linux boot environment's ddt.img holds too.
     public string LinuxAgentPath => Path.Combine(Folder, AgentReleaseStores.LinuxFileName);
 
-    public string ConsolePath => Path.Combine(Folder, "ddt-console.zip");
+    public string ConsolePath => Path.Combine(Folder, ConsoleReleaseStores.WindowsFileName);
+
+    // The console for Linux, which the Linux boot environment's ddt.img holds too.
+    public string LinuxConsolePath => Path.Combine(Folder, ConsoleReleaseStores.LinuxFileName);
 }

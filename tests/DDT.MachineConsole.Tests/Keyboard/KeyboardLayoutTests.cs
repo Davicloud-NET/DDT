@@ -44,6 +44,8 @@ public sealed class KeyboardLayoutTests
         Assert.All(offered.Concat(textConsole), name => Assert.NotNull(KeyboardLayouts.FileOf(name)));
         Assert.Equal("de", KeyboardLayouts.FileOf(" 0407:00000407 "));
         Assert.Equal("ch-fr", KeyboardLayouts.FileOf("CH(fr)"));
+        Assert.Equal("de", KeyboardLayouts.FileOf("German (de)"));
+        Assert.Equal("us", KeyboardLayouts.FileOf("English (United States) (us)"));
         Assert.Null(KeyboardLayouts.FileOf("klingon"));
         Assert.Null(KeyboardLayouts.FileOf(null));
     }

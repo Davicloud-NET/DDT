@@ -83,6 +83,12 @@ public static class KeyboardLayouts
             trimmed = layout;
         }
 
+        // The Linux boot environment's display name, as "German (de)".
+        if (trimmed.EndsWith(')') && trimmed.LastIndexOf(" (", StringComparison.Ordinal) is > 0 and int open)
+        {
+            trimmed = trimmed[(open + 2)..^1];
+        }
+
         return s_files.GetValueOrDefault(trimmed);
     }
 }

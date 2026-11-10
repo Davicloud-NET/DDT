@@ -2,21 +2,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using Avalonia.Controls.Embedding;
-using Avalonia.Threading;
 using DDT.MachineConsole.Input;
 
 namespace DDT.MachineConsole.Screen;
 
-// Draws and takes the keys only while the console's terminal is in front. Away, the terminal is in text mode, the
-// keyboards are the kernel's and nothing is drawn; back, all of it returns and the whole picture is drawn again.
-internal sealed class ScreenKeeper(EvdevDevices devices)
+// Shows the picture and takes the keys only while the console's terminal is in front. Away, the terminal is in text
+// mode and the keyboards are the kernel's; back, both return and the screen gets the whole picture.
+internal sealed class ScreenKeeper(EvdevDevices devices, KeptFramebuffer output)
 {
     // How long a terminal brought to the front on purpose has to come, before the console takes the screen back.
     private const long LeavingMilliseconds = 5000;
 
     private readonly Lock _gate = new();
-    private EmbeddableControlRoot? _root;
     private VirtualTerminal? _terminal;
     private bool _present = true;
     private long _leftUntil;
@@ -50,14 +47,6 @@ internal sealed class ScreenKeeper(EvdevDevices devices)
         lock (_gate)
         {
             _terminal = terminal;
-        }
-    }
-
-    public void Show(EmbeddableControlRoot root)
-    {
-        lock (_gate)
-        {
-            _root = root;
         }
     }
 
@@ -101,12 +90,26 @@ internal sealed class ScreenKeeper(EvdevDevices devices)
         }
     }
 
+    // When what it left for has ended: its own terminal to the front, taken back at the next look.
+    public void Return()
+    {
+        lock (_gate)
+        {
+            _leftUntil = 0;
+
+            if (!_present && _terminal is { } terminal)
+            {
+                terminal.Bring(terminal.Number);
+            }
+        }
+    }
+
     private void Away()
     {
         _present = false;
+        output.Show(false);
         _terminal?.Text();
         devices.LetGo();
-        Post(root => root.StopRendering());
     }
 
     private void Back()
@@ -114,18 +117,6 @@ internal sealed class ScreenKeeper(EvdevDevices devices)
         _present = true;
         _terminal?.Graphics();
         devices.Hold();
-        Post(root =>
-        {
-            root.StartRendering();
-            root.InvalidateVisual();
-        });
-    }
-
-    private void Post(Action<EmbeddableControlRoot> action)
-    {
-        if (_root is { } root)
-        {
-            Dispatcher.UIThread.Post(() => action(root));
-        }
+        output.Show(true);
     }
 }

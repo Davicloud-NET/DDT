@@ -3,7 +3,6 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using Avalonia;
-using Avalonia.Controls.Embedding;
 using Avalonia.Input;
 using Avalonia.Input.Raw;
 using Avalonia.LinuxFramebuffer.Input;
@@ -32,15 +31,7 @@ internal sealed class EvdevInputBackend(KeyboardTranslator translator, EvdevDevi
         new Thread(Run) { IsBackground = true, Name = "DDT keyboards" }.Start();
     }
 
-    public void SetInputRoot(IInputRoot root)
-    {
-        _root = root;
-
-        if (root is EmbeddableControlRoot shown)
-        {
-            keeper.Show(shown);
-        }
-    }
+    public void SetInputRoot(IInputRoot root) => _root = root;
 
     // From any thread; the input thread takes it before the next key.
     public void Use(KeyboardLayout layout) => Interlocked.Exchange(ref _nextLayout, layout);

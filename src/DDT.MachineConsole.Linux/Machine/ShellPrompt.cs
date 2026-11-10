@@ -10,7 +10,7 @@ using DDT.MachineConsole.Screen;
 namespace DDT.MachineConsole.Machine;
 
 // Shift+F10 in the boot environment: a root shell on a terminal of its own, as Windows Setup opens a command prompt.
-// When it ends, openvt brings the console's terminal back. A second press goes to the shell that is open.
+// When it ends, the console's terminal comes back. A second press goes to the shell that is open.
 internal sealed class ShellPrompt(ScreenKeeper keeper) : ICommandPrompt
 {
     private Process? _shell;
@@ -42,6 +42,13 @@ internal sealed class ShellPrompt(ScreenKeeper keeper) : ICommandPrompt
         _shell?.Dispose();
         _shell = Start(number);
         _number = number;
+
+        // busybox's openvt leaves the shell's terminal in front when the shell ends.
+        if (_shell is { } shell)
+        {
+            shell.EnableRaisingEvents = true;
+            shell.Exited += (_, _) => keeper.Return();
+        }
     }
 
     private static Process? Start(int number)

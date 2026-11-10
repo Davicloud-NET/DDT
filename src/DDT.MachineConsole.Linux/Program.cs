@@ -35,7 +35,8 @@ public static class Program
 
         KeyboardLayout fallback = EmbeddedLayouts.Fallback;
         using EvdevDevices devices = new();
-        ScreenKeeper keeper = new(devices);
+        using KeptFramebuffer output = new(Framebuffer.Device) { Scaling = 1 };
+        ScreenKeeper keeper = new(devices, output);
         EvdevInputBackend keyboard = new(new KeyboardTranslator(fallback), devices, keeper);
         ConsoleHost host = new(
             LinuxLanguage.Current(),
@@ -66,7 +67,7 @@ public static class Program
         using PosixSignalRegistration hangUp = PosixSignalRegistration.Create(PosixSignal.SIGHUP, Stop);
         using PosixSignalRegistration interrupt = PosixSignalRegistration.Create(PosixSignal.SIGINT, Stop);
 
-        return BuildAvaloniaApp().StartLinuxFbDev(args, Framebuffer.Device, 1, keyboard);
+        return BuildAvaloniaApp().StartLinuxDirect(args, output, keyboard);
     }
 
     public static AppBuilder BuildAvaloniaApp() =>

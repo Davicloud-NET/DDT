@@ -212,9 +212,55 @@ jobs:
           DDT_E2E_AGENT: ${{ github.workspace }}/artifacts/agent-linux/ddt-agent
         run: dotnet test --project tests/DDT.E2E -- --filter-trait "Agent=Linux" --fail-skips on
 
+  linux-console:
+    name: Linux console
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Version
+        id: version
+        shell: pwsh
+        run: |
+          $version = ./build/Get-Version.ps1 -AllowShallow
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "DDT $version"
+
+      # On AlmaLinux 8, as build/Publish-LinuxConsole.ps1 does it. The build fails when the console needs more than
+      # glibc or lacks its version marker.
+      - name: Publish the console
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: build/Dockerfile.console-linux
+          target: export
+          platforms: linux/amd64
+          build-args: DDT_VERSION=${{ steps.version.outputs.version }}
+          outputs: type=local,dest=artifacts/console-linux
+          cache-from: type=gha,scope=linux-console
+          cache-to: type=gha,mode=max,scope=linux-console
+
+      # What the server takes: the three files at the zip's root.
+      - name: Zip it
+        run: (cd artifacts/console-linux && zip -X -j ../ddt-console-linux-x64.zip ddt-console libSkiaSharp.so libHarfBuzzSharp.so)
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-console
+          path: |
+            artifacts/console-linux/
+            artifacts/ddt-console-linux-x64.zip
+          if-no-files-found: error
+          retention-days: 1
+
   linux-boot:
     name: Linux boot environment
-    needs: linux-agent
+    needs: [linux-agent, linux-console]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -227,6 +273,11 @@ jobs:
           name: linux-agent
           path: artifacts/agent-linux
 
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: linux-console
+          path: artifacts
+
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Read the lock
@@ -235,8 +286,8 @@ jobs:
           echo "tools=$(jq --raw-output .toolsImage build/LinuxBoot/packages.lock.json)" >> "$GITHUB_OUTPUT"
           echo "base=$(jq --raw-output .expected.baseImageSha256 build/LinuxBoot/packages.lock.json)" >> "$GITHUB_OUTPUT"
 
-      # As build/Build-LinuxBoot.ps1 -AgentFolder builds it: Debian's packages as the lock pins them, and the agent
-      # of the job before in ddt.img. The cache keeps the downloads, which the build checks against the lock's hashes.
+      # As build/Build-LinuxBoot.ps1 -AgentFolder -ConsoleFolder builds it: Debian's packages as the lock pins them,
+      # and the agent and the console of the jobs before in ddt.img. The cache keeps the downloads, which the build checks against the lock's hashes.
       - name: Build the boot environment
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -245,7 +296,9 @@ jobs:
           target: export
           platforms: linux/amd64
           build-args: TOOLS_IMAGE=${{ steps.lock.outputs.tools }}
-          build-contexts: agent=artifacts/agent-linux
+          build-contexts: |
+            agent=artifacts/agent-linux
+            console=artifacts/console-linux
           outputs: type=local,dest=artifacts/linux-boot
           cache-from: type=gha,scope=linux-boot
           cache-to: type=gha,mode=max,scope=linux-boot
@@ -259,6 +312,7 @@ jobs:
           echo "$EXPECTED  artifacts/linux-boot/base.img" | sha256sum --check
           jq --raw-output '.files[] | "\(.sha256)  \(.name)"' artifacts/linux-boot/ddt-linux-boot.json | (cd artifacts/linux-boot && sha256sum --check)
           echo "$(jq --raw-output .agent.sha256 artifacts/linux-boot/ddt-linux-boot.json)  artifacts/agent-linux/ddt-agent" | sha256sum --check
+          echo "$(jq --raw-output .console.sha256 artifacts/linux-boot/ddt-linux-boot.json)  artifacts/console-linux/ddt-console" | sha256sum --check
 
       # -x and -P let it follow the scripts into common.sh, which they read from where the boot environment has it.
       - name: Check the start scripts
@@ -421,7 +475,7 @@ jobs:
 
   container:
     name: Container image
-    needs: [linux-agent, linux-boot]
+    needs: [linux-agent, linux-console, linux-boot]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -441,8 +495,15 @@ jobs:
           name: linux-agent
           path: artifacts/agent-linux
 
-      - name: Put the agent for Linux beside the boot environment
-        run: cp artifacts/agent-linux/ddt-agent artifacts/bundle/ddt-agent-linux-x64
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: linux-console
+          path: artifacts
+
+      - name: Put the agent and the console for Linux beside the boot environment
+        run: |
+          cp artifacts/agent-linux/ddt-agent artifacts/bundle/ddt-agent-linux-x64
+          cp artifacts/ddt-console-linux-x64.zip artifacts/bundle/
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
@@ -486,9 +547,12 @@ jobs:
             fi
             sleep 2
           done
+          curl --fail --silent --insecure --output console.json https://localhost:9443/api/agents/releases/linux-x64/console
           docker rm --force ddt-netboot
-          cat release.json
+          cat release.json console.json
           jq --exit-status --arg sha256 "$expected" '.sha256 == $sha256' release.json
+          console=$(sha256sum artifacts/console-linux/ddt-console | cut --delimiter=' ' --fields=1)
+          jq --exit-status --arg sha256 "$console" '.files[0].name == "ddt-console" and .files[0].sha256 == $sha256' console.json
           grep --fixed-strings "$said" netboot.log
 
       - name: Check install.sh

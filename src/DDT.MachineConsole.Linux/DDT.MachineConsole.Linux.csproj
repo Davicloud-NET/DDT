@@ -37,6 +37,19 @@
     <PackageReference Include="Avalonia.BuildServices" ExcludeAssets="all" PrivateAssets="all" />
   </ItemGroup>
 
+  <!-- The server reads the console's version without running it, as it does the agent's: the text that follows
+       DDT-CONSOLE-VERSION: in the file. -->
+  <Target Name="WriteVersionMarker" BeforeTargets="AssignTargetPaths" DependsOnTargets="GetAssemblyVersion">
+    <PropertyGroup>
+      <DdtVersionMarker>$(IntermediateOutputPath)ddt-console-version</DdtVersionMarker>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(DdtVersionMarker)" Lines="DDT-CONSOLE-VERSION:$(Version)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <EmbeddedResource Include="$(DdtVersionMarker)" LogicalName="ddt-console-version" />
+      <FileWrites Include="$(DdtVersionMarker)" />
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <!-- What each key types, by the names KeyboardLayouts.Find reads, and the licence of the data they come from. -->
     <EmbeddedResource Include="..\DDT.MachineConsole\Keyboard\Layouts\*.keymap" LogicalName="keyboard/%(Filename)%(Extension)" />

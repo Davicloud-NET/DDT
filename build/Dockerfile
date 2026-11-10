@@ -53,7 +53,7 @@ COPY build/BootImage/ ./BootImage/
 # containers of their own, so the release workflow puts them all into artifacts/bundle. A build without them offers
 # none. The files of the boot environment are served to machines, so everyone may read them.
 RUN --mount=type=bind,target=/context \
-    for file in ddt-agent.exe ddt-console.zip ddt-agent-linux-x64; do \
+    for file in ddt-agent.exe ddt-console.zip ddt-agent-linux-x64 ddt-console-linux-x64.zip; do \
         if [ -f "/context/artifacts/bundle/$file" ]; then cp "/context/artifacts/bundle/$file" /app/; fi; \
     done; \
     if [ -f /context/artifacts/bundle/linux-boot/ddt-linux-boot.json ]; then \

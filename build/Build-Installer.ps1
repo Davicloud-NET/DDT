@@ -69,6 +69,10 @@ The agent for Linux as Publish-LinuxAgent.ps1 wrote it, artifacts\agent-linux\dd
 file in the boot environment's ddt.img and of this build's version: a build in two halves, as a release is, stops
 when it is not, and any other build warns.
 
+.PARAMETER LinuxConsole
+The console for Linux as Publish-LinuxConsole.ps1 zipped it, artifacts\ddt-console-linux-x64.zip by default. The
+server offers it to the agents in the Linux boot environment and in the installed Linux.
+
 .EXAMPLE
 .\build\Build-Installer.ps1
 #>
@@ -91,7 +95,9 @@ param(
 
     [string] $LinuxBoot,
 
-    [string] $LinuxAgent
+    [string] $LinuxAgent,
+
+    [string] $LinuxConsole
 )
 
 Set-StrictMode -Version Latest
@@ -102,10 +108,12 @@ $ErrorActionPreference = 'Stop'
 if (-not $Output) { $Output = Join-Path $PSScriptRoot '..\artifacts\installer' }
 if (-not $LinuxBoot) { $LinuxBoot = Join-Path $PSScriptRoot '..\artifacts\linux-boot' }
 if (-not $LinuxAgent) { $LinuxAgent = Join-Path $PSScriptRoot '..\artifacts\agent-linux\ddt-agent' }
+if (-not $LinuxConsole) { $LinuxConsole = Join-Path $PSScriptRoot '..\artifacts\ddt-console-linux-x64.zip' }
 
 $Output = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Output)
 $LinuxBoot = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($LinuxBoot)
 $LinuxAgent = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($LinuxAgent)
+$LinuxConsole = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($LinuxConsole)
 $root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $work = Join-Path $root 'artifacts\installer-work'
 $payload = Join-Path $work 'payload'
@@ -261,6 +269,14 @@ if (Test-Path -LiteralPath $LinuxAgent -PathType Leaf) {
 }
 elseif (-not (Test-Path -LiteralPath $stagedLinuxAgent)) {
     Write-Host "There is no agent for Linux at $LinuxAgent, so the server would offer none. $how"
+}
+
+$stagedLinuxConsole = Join-Path $payload 'ddt-console-linux-x64.zip'
+if (Test-Path -LiteralPath $LinuxConsole -PathType Leaf) {
+    Copy-Item -LiteralPath $LinuxConsole -Destination $stagedLinuxConsole -Force
+}
+elseif (-not (Test-Path -LiteralPath $stagedLinuxConsole)) {
+    Write-Host "There is no console for Linux at $LinuxConsole, so the installed Linux shows none. Publish-LinuxConsole.ps1 builds it."
 }
 
 $problem = Get-LinuxFileProblem -BootFolder $stagedLinuxBoot -AgentPath $stagedLinuxAgent -Version $Version

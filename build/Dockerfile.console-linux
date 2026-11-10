@@ -52,6 +52,10 @@ RUN needs=$(for file in ddt-console libSkiaSharp.so libHarfBuzzSharp.so; do \
             | sed "s|^|$file needs |"; \
     done); \
     if [ -n "$needs" ]; then echo "$needs, which is not part of glibc." >&2; exit 1; fi
+# The server reads the version from this marker; a build that lost it would show no version.
+RUN if ! grep -a -q "DDT-CONSOLE-VERSION:${DDT_VERSION:-[0-9]}" /out/ddt-console; then \
+        echo "ddt-console carries no DDT-CONSOLE-VERSION marker." >&2; exit 1; \
+    fi
 
 FROM scratch AS export
 COPY --from=build /out/ddt-console /out/libSkiaSharp.so /out/libHarfBuzzSharp.so /

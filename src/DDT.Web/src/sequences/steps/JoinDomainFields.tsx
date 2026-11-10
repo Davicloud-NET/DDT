@@ -25,18 +25,10 @@ export function JoinDomainFields({
   return (
     <>
       <p className="text-ink-2 sm:col-span-2">
-        {own ? (
-          <Trans>
-            Joins the domain of the account chosen below, in Windows after the hand-over. The
-            machine needs a computer name.
-          </Trans>
-        ) : catalog.domainConfigured === false ? (
+        {!own && catalog.domainConfigured === false ? (
           <Trans>No domain is set on the Deployment defaults page, so this step cannot run.</Trans>
         ) : (
-          <Trans>
-            Joins the domain set on the Deployment defaults page, in Windows after the hand-over.
-            The machine needs a computer name.
-          </Trans>
+          <Trans>The machine needs a computer name.</Trans>
         )}
       </p>
       <AccountSetting
@@ -57,12 +49,7 @@ export function JoinDomainFields({
         field="organizationalUnit"
         findings={findings}
         className="sm:col-span-2"
-        hint={
-          <Trans>
-            Such as OU=Workstations,DC=example,DC=com. Empty takes the default from the Deployment
-            defaults page.
-          </Trans>
-        }
+        hint={<Trans>Such as OU=Workstations,DC=example,DC=com.</Trans>}
         placeholder={t`The default`}
         howTo={false}
         value={step.organizationalUnit ?? ""}

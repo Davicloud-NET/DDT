@@ -48,9 +48,7 @@ describe("MachinesPage", () => {
       );
       const dialog = await screen.findByRole("dialog", { name: `Stop the run on ${label}?` });
 
-      expect(dialog).toHaveAccessibleDescription(
-        "This stops the run on Virtual Machine (00:15:5D:01:02:03). Its disk is left half written; assign a sequence again to deploy it.",
-      );
+      expect(dialog).toHaveAccessibleDescription("Its disk is left half written.");
 
       press(within(dialog).getByRole("button", { name: "Stop the run" }));
 

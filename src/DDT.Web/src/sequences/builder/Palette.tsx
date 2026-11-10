@@ -61,9 +61,6 @@ export function Palette({ onAdd, onDragChange, className }: PaletteProps) {
           </p>
         ) : null}
       </div>
-      <p className="mx-1 type-small text-muted">
-        <Trans>Drag onto a wire, or choose + on one. Arrow keys follow the flow.</Trans>
-      </p>
     </aside>
   );
 }

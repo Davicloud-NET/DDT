@@ -66,8 +66,7 @@ export function RevokeTokenDialog({
     >
       <p>
         <Trans>
-          Whatever uses the token is refused from its next request. The token stays in the list as
-          revoked and cannot be turned back on; make a new one if it is needed again.
+          Whatever uses the token is refused from its next request. It cannot be turned back on.
         </Trans>
       </p>
     </ConfirmDialog>

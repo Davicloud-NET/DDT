@@ -13,9 +13,8 @@ import { deploymentOptions, machineSummary, sequenceSummary } from "@/test/build
 
 import { AssignConsequences } from "./AssignConsequences";
 
-const inWindows = /^After the image is applied, the run goes on in the installed Windows/;
-const inLinux =
-  "After the disk image is written, the run goes on in the installed Linux, where the agent runs as a service until the run ends.";
+const inWindows = "The run goes on in the installed Windows.";
+const inLinux = "The run goes on in the installed Linux.";
 
 function renderConsequences(
   sequence: Partial<SequenceSummary>,
@@ -60,9 +59,7 @@ describe("what assigning a Linux sequence says", () => {
     );
 
     expect(
-      screen.getByText(
-        "Install Linux runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first.",
-      ),
+      screen.getByText("The machine restarts into the Linux boot environment first."),
     ).toBeInTheDocument();
     expect(screen.queryByText(/needs a newer agent/)).not.toBeInTheDocument();
   });
@@ -72,7 +69,7 @@ describe("what assigning a Linux sequence says", () => {
 
     expect(
       screen.getByText(
-        "Install Linux needs a newer agent than this machine runs, so it does not start. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.",
+        "Install Linux needs a newer agent than this machine runs. It starts once the machine is started from the network again.",
       ),
     ).toBeInTheDocument();
   });
@@ -84,9 +81,7 @@ describe("what assigning a Linux sequence says", () => {
     );
 
     expect(
-      screen.getByText(
-        "Install Linux runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first.",
-      ),
+      screen.getByText("The machine restarts into the Linux boot environment first."),
     ).toBeInTheDocument();
   });
 
@@ -96,6 +91,6 @@ describe("what assigning a Linux sequence says", () => {
 
     expect(screen.getByText(inLinux)).toBeInTheDocument();
     expect(screen.queryByText(/restarts into/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/this machine started/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/too old to restart/)).not.toBeInTheDocument();
   });
 });

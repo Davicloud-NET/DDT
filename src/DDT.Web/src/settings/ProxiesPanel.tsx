@@ -37,12 +37,7 @@ export function ProxiesPanel() {
       canChange
       title={<Trans>Reverse proxies</Trans>}
       description={
-        <Trans>
-          A reverse proxy in front of DDT tells it which client it forwards for, in X-Forwarded-For
-          and X-Forwarded-Proto. Only requests from the addresses listed here may say so; from
-          anywhere else DDT goes by the address the request came from. Sign-in limits, the audit log
-          and zero touch networks all use that address.
-        </Trans>
+        <Trans>DDT takes X-Forwarded-For and X-Forwarded-Proto only from these proxies.</Trans>
       }
     >
       <div className="grid gap-4 md:grid-cols-2">
@@ -58,11 +53,7 @@ export function ProxiesPanel() {
           field="knownNetworks"
           canChange
           label={<Trans>Proxy networks</Trans>}
-          hint={
-            <Trans>
-              One network per line, such as 10.0.1.0/24, for proxies that share an address pool.
-            </Trans>
-          }
+          hint={<Trans>One network per line, such as 10.0.1.0/24.</Trans>}
         />
       </div>
     </SettingsSection>

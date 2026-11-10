@@ -103,7 +103,7 @@ describe("a machine the server no longer restarts for its run", () => {
         }),
       ),
     ).toBe(
-      "This machine did not start the Linux boot environment after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. Install Linux stays assigned and starts once the machine starts the Linux boot environment.",
+      "This machine did not start the Linux boot environment after restarting. Check that it starts from the network and that no DHCP server names another boot file. Install Linux stays assigned.",
     );
     expect(
       restartsFailedNotice(
@@ -114,7 +114,7 @@ describe("a machine the server no longer restarts for its run", () => {
         }),
       ),
     ).toBe(
-      "This machine did not start Windows PE after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. Install Windows stays assigned and starts once the machine starts Windows PE.",
+      "This machine did not start Windows PE after restarting. Check that it starts from the network and that no DHCP server names another boot file. Install Windows stays assigned.",
     );
   });
 
@@ -145,11 +145,11 @@ describe("what assigning says about where a sequence starts", () => {
   it("says that a machine in the other boot environment restarts first", () => {
     expect(startNotice(inWindowsPE, linux, both)).toEqual({
       warning: false,
-      text: "Install Linux runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first.",
+      text: "The machine restarts into the Linux boot environment first.",
     });
     expect(startNotice(inLinuxBoot, windows, both)).toEqual({
       warning: false,
-      text: "Install Windows runs in Windows PE, and this machine started the Linux boot environment. The machine restarts into Windows PE first.",
+      text: "The machine restarts into Windows PE first.",
     });
   });
 
@@ -159,11 +159,11 @@ describe("what assigning says about where a sequence starts", () => {
 
     expect(startNotice({ ...inWindowsPE, ...old }, linux, both)).toEqual({
       warning: true,
-      text: "Install Linux runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again.",
+      text: "Install Linux runs in the Linux boot environment, and this machine's agent is too old to restart into it. It starts once the machine is started from the network again.",
     });
     expect(startNotice({ ...inLinuxBoot, ...old }, windows, both)).toEqual({
       warning: true,
-      text: "Install Windows runs in Windows PE, and this machine started the Linux boot environment with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again.",
+      text: "Install Windows runs in Windows PE, and this machine's agent is too old to restart into it. It starts once the machine is started from the network again.",
     });
     // Where the sequence starts here, the agent's age changes nothing.
     expect(startNotice({ ...inWindowsPE, ...old }, windows, both)).toBeNull();
@@ -190,20 +190,20 @@ describe("what assigning says about where a sequence starts", () => {
     it("promises the restart into the boot environment the sequence runs in, as with any agent", () => {
       expect(startNotice({ ...inWindowsPE, ...old }, installed, both)).toEqual({
         warning: false,
-        text: "Install Linux runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first.",
+        text: "The machine restarts into the Linux boot environment first.",
       });
       expect(
         startNotice({ ...inLinuxBoot, sequenceVersion: 2 }, { ...windows, version: 3 }, both),
       ).toEqual({
         warning: false,
-        text: "Install Windows runs in Windows PE, and this machine started the Linux boot environment. The machine restarts into Windows PE first.",
+        text: "The machine restarts into Windows PE first.",
       });
     });
 
     it("says that the run does not start where the machine already waits", () => {
       expect(startNotice({ ...inLinuxBoot, ...old }, installed, both)).toEqual({
         warning: true,
-        text: "Install Linux needs a newer agent than this machine runs, so it does not start. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.",
+        text: "Install Linux needs a newer agent than this machine runs. It starts once the machine is started from the network again.",
       });
     });
 
@@ -236,18 +236,18 @@ describe("what assigning says about where a sequence starts", () => {
       expect(
         startNotice({ ...inWindowsPE, ...old, changesBootEnvironment: false }, installed, both)
           ?.text,
-      ).toMatch(/with an agent too old to restart into it/);
+      ).toMatch(/agent is too old to restart into it/);
     });
   });
 
   it("warns when the server cannot start the boot environment the sequence runs in", () => {
     expect(startNotice(inWindowsPE, linux, ["WindowsPE"])).toEqual({
       warning: true,
-      text: "Install Linux runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it.",
+      text: "Install Linux runs in the Linux boot environment, which this server does not have. It waits until the server has it.",
     });
     expect(startNotice(inLinuxBoot, windows, ["LinuxBoot"])).toEqual({
       warning: true,
-      text: "Install Windows runs in Windows PE, and this server has no boot image to start it from. The run stays assigned and does not start until an administrator builds one on the Boot image page.",
+      text: "Install Windows runs in Windows PE, and this server has no boot image. It waits until one is built.",
     });
   });
 

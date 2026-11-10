@@ -65,14 +65,7 @@ export function ReauthDialog({
           reauth.submit();
         }}
       >
-        <p>
-          {reason ?? (
-            <Trans>
-              These settings decide who signs in and what machines trust, so they need your password
-              again.
-            </Trans>
-          )}
-        </p>
+        <p>{reason ?? <Trans>Confirm with your password.</Trans>}</p>
         <TextField
           label={<Trans>Password</Trans>}
           type="password"

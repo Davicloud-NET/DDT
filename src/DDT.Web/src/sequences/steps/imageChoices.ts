@@ -44,7 +44,7 @@ export function secureBootWarning(image: ImageSummary): string | null {
       return t`This image will not start with Secure Boot on. Turn Secure Boot off in the machine's firmware setup, or enroll your own key.`;
     case "Unknown":
     case null:
-      return t`This image may not start with Secure Boot on, as DDT could not tell whether it is signed for it. Turn Secure Boot off in the machine's firmware setup, or enroll your own key.`;
+      return t`This image may not start with Secure Boot on. Turn Secure Boot off in the machine's firmware setup, or enroll your own key.`;
     case "SecureBootOk":
       return null;
   }

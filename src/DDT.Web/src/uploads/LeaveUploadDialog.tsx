@@ -16,11 +16,9 @@ import type { UploadRun } from "./useResumableUpload";
 export function LeaveUploadDialog({
   leaving,
   run,
-  leaveWhileVerifying,
 }: {
   leaving: LeaveGuard;
   run: UploadRun | null;
-  leaveWhileVerifying: (fileName: string) => string;
 }) {
   return (
     <ConfirmDialog
@@ -40,7 +38,7 @@ export function LeaveUploadDialog({
         {run === null
           ? null
           : run.progress.phase === "verifying"
-            ? leaveWhileVerifying(run.fileName)
+            ? t`The server goes on checking it. If it refuses the file, you won't see why.`
             : leaveWhileUploading(run)}
       </p>
     </ConfirmDialog>
@@ -66,5 +64,5 @@ function leaveWhileUploading(run: UploadRun): string {
   const file = run.fileName;
   const percent = percentOf(run.progress.offset, run.progress.length);
 
-  return t`Leaving this page stops the upload of ${file} at ${percent}%. The server keeps what it has received, and choosing the file again here resumes the upload from there.`;
+  return t`Choose ${file} again to resume at ${percent}%.`;
 }

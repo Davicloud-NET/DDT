@@ -15,7 +15,7 @@ const askAts: InputAsk[] = ["Web", "Machine", "Both"];
 export function InputAskSettings({ input, at, findings, update }: InputPartProps) {
   const { t } = useLingui();
   const askLabels: Record<InputAsk, string> = {
-    Web: t`On the web, when the run is assigned or approved`,
+    Web: t`On the web`,
     Machine: t`At the machine`,
     Both: t`On the web or at the machine`,
   };
@@ -39,16 +39,10 @@ export function InputAskSettings({ input, at, findings, update }: InputPartProps
         hint={
           input.askAt === "Web" ? (
             <Trans>
-              Without one, and without a default, it has to be answered when the sequence is
-              assigned or approved on the web, and a run chosen at the machine or started by a rule
+              Without one, and without a default, a run chosen at the machine or started by a rule
               fails at its start.
             </Trans>
-          ) : (
-            <Trans>
-              Without one, and without a default, the run waits at its start until it is answered at
-              the machine or on the machine's page.
-            </Trans>
-          )
+          ) : undefined
         }
         value={input.required}
         onChange={(required) => {

@@ -44,9 +44,9 @@ export function sequenceLine(
       return t`${sequence}, from rule ${number}`;
     }
     case "Assigned":
-      return t`${sequence}, assigned on the web, which comes before every rule`;
+      return t`${sequence}, assigned on the web`;
     case "Console":
-      return t`${sequence}, chosen at the machine, which comes before every rule`;
+      return t`${sequence}, chosen at the machine`;
     default:
       return resolutionText(resolution);
   }

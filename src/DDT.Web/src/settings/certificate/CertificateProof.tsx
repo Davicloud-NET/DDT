@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { Trans } from "@lingui/react/macro";
 import type { ReactNode } from "react";
 
 import { ReauthDialog } from "../parts/ReauthDialog";
@@ -22,12 +21,6 @@ export function CertificateProof({
       onAccepted={action.retryAfterReauth}
       onCancel={action.cancelReauth}
       confirmLabel={confirmLabel}
-      reason={
-        <Trans>
-          The server certificate decides what browsers and machines trust, so replacing it needs
-          your password again.
-        </Trans>
-      }
     />
   );
 }

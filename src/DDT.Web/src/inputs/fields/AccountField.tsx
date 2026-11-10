@@ -24,9 +24,7 @@ export function AccountField({ input, draft, error, onChange }: InputFieldProps)
       </legend>
       <span className="clear-both -mt-1.5 flex flex-col gap-1 type-small text-muted">
         <span>
-          <Trans>
-            An account for this run only, which DDT uses and never shows or hands to a script.
-          </Trans>
+          <Trans>For this run only.</Trans>
         </span>
         {destination !== null ? <span>{destination}</span> : null}
         {input.help !== null && input.help !== "" ? <span>{input.help}</span> : null}

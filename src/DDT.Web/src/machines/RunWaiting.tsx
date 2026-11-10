@@ -81,11 +81,7 @@ export function RunWaiting({ machineId, run, view, canAct }: RunWaitingProps) {
           onSubmit={(answers) => {
             answer.mutate(answers);
           }}
-        >
-          <p>
-            <Trans>The run starts once every required answer is given.</Trans>
-          </p>
-        </InputsDialog>
+        />
       ) : null}
     </section>
   );

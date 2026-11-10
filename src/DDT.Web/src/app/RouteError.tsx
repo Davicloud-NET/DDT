@@ -30,15 +30,9 @@ export function RouteError({ error }: ErrorComponentProps) {
           </h1>
           <p className="text-ink-2">
             {unreachable ? (
-              <Trans>
-                DDT could not reach its server. Check that the server is running and that this
-                computer can reach it, then try again.
-              </Trans>
+              <Trans>Check that the server is running and that this computer can reach it.</Trans>
             ) : (
-              <Trans>
-                Something went wrong while loading this page. Try again; if it keeps failing, the
-                server log says why.
-              </Trans>
+              <Trans>If it keeps failing, the server log says why.</Trans>
             )}
           </p>
           <Button

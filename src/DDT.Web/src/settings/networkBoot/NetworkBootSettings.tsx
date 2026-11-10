@@ -48,12 +48,6 @@ export function NetworkBootSettings() {
           form={form}
           canChange
           title={<Trans>Answering machines that netboot</Trans>}
-          description={
-            <Trans>
-              DDT answers netboot only on the interfaces listed here. ProxyDHCP tells each machine
-              which boot file to load, and TFTP or HTTP serves it from the boot directory.
-            </Trans>
-          }
         >
           <SectionProblems form={form} />
           <InterfacesGroup form={form} values={values} hosts={hosts} />
@@ -70,8 +64,8 @@ export function NetworkBootSettings() {
           {form.dirty ? (
             <Notice tone="attention">
               <Trans>
-                Saving restarts the network boot listeners on every host that runs them, which ends
-                the TFTP transfers in progress. Those machines start their download again.
+                Saving restarts the network boot listeners, which ends the TFTP transfers in
+                progress.
               </Trans>
             </Notice>
           ) : null}

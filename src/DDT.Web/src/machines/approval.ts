@@ -63,13 +63,13 @@ export function approvalPlan(
     const problems = plural(count, { one: "# problem", other: "# problems" });
 
     return withoutRun(
-      t`${rule} chooses ${name}, but it has ${problems} and cannot run until they are fixed. Approving authorizes ${label} without running anything.`,
+      t`${rule} chooses ${name}, but it has ${problems}. Approving authorizes ${label} without running anything.`,
     );
   }
 
   if (sequence?.erasesDisk === true && (machine.eligibleDiskCount ?? 0) > 1) {
     return withoutRun(
-      t`${rule} chooses ${name}, which erases a disk, and the machine has more than one; sign in at it to choose the disk. Approving authorizes ${label} without running anything.`,
+      t`${rule} chooses ${name}, but the machine has more than one disk. Sign in at it to choose one. Approving authorizes ${label} without running anything.`,
     );
   }
 
@@ -81,9 +81,7 @@ export function approvalPlan(
 
   if (sequence?.needsComputerName === true && machine.assignedName === null && named === null) {
     return withoutRun(
-      sequence.rawImageName === null
-        ? t`${rule} chooses ${name}, which joins the domain, and the machine has no name yet; assign the sequence with a computer name. Approving authorizes ${label} without running anything.`
-        : t`${rule} chooses ${name}, which names the machine in its cloud-init seed, and the machine has no name yet; assign the sequence with a computer name. Approving authorizes ${label} without running anything.`,
+      t`${rule} chooses ${name}, but the machine has no name yet. Assign the sequence with a computer name. Approving authorizes ${label} without running anything.`,
     );
   }
 

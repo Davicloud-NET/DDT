@@ -25,9 +25,7 @@ export function TwoFactorFields({
         key={useRecoveryCode ? "recovery" : "code"}
         label={useRecoveryCode ? <Trans>Recovery code</Trans> : <Trans>Authenticator code</Trans>}
         hint={
-          useRecoveryCode ? (
-            <Trans>Enter one of the recovery codes you saved.</Trans>
-          ) : (
+          useRecoveryCode ? undefined : (
             <Trans>Enter the six digits your authenticator app shows for DDT.</Trans>
           )
         }

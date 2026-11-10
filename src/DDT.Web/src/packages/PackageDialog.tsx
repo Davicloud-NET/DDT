@@ -80,7 +80,7 @@ export function PackageDialog({
         />
         <TextField
           label={<Trans>Description</Trans>}
-          hint={<Trans>Optional. What is in it and where it came from.</Trans>}
+          hint={<Trans>Optional.</Trans>}
           value={form.description}
           onChange={form.setDescription}
           multiline
@@ -122,9 +122,8 @@ function BootImageSwitch({
       </Switch>
       <span className="type-small text-muted">
         <Trans>
-          For network and storage drivers a machine needs before the agent runs, such as those of
-          new laptops. They reach machines with the next boot image build; Boot, Boot image says
-          when the build is older than the drivers.
+          For network and storage drivers a machine needs before the agent runs. They reach machines
+          with the next boot image build.
         </Trans>
       </span>
     </div>

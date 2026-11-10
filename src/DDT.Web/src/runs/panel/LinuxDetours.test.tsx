@@ -24,7 +24,7 @@ describe("a machine that starts from the network while its run goes on in the in
 
     expect(
       screen.getByText(
-        "The machine started from the network once while its run goes on in the installed Linux and was sent back to its disk, and at 5 such starts in a row the server ends the run.",
+        "The machine started from the network once and was sent back to its disk. At 5 such starts in a row, the run ends.",
       ),
     ).toBeInTheDocument();
   });
@@ -34,7 +34,7 @@ describe("a machine that starts from the network while its run goes on in the in
 
     expect(
       screen.getByText(
-        "The machine started from the network 4 times in a row while its run goes on in the installed Linux and was sent back to its disk each time, and at 5 such starts in a row the server ends the run.",
+        "The machine started from the network 4 times in a row and was sent back to its disk. At 5 such starts in a row, the run ends.",
       ),
     ).toBeInTheDocument();
   });
@@ -50,12 +50,12 @@ describe("a machine that starts from the network while its run goes on in the in
 
       expect(
         screen.getByText(
-          "Das Gerät wurde einmal per Netzwerk gestartet, während seine Ausführung im installierten Linux weiterläuft, und wieder von seinem Datenträger gestartet, und bei 5 solchen Starts in Folge beendet der Server die Ausführung.",
+          "Das Gerät wurde einmal per Netzwerk gestartet und wieder von seinem Datenträger gestartet. Bei 5 solchen Starts in Folge endet die Ausführung.",
         ),
       ).toBeInTheDocument();
       expect(
         screen.getByText(
-          "Das Gerät wurde 3-mal in Folge per Netzwerk gestartet, während seine Ausführung im installierten Linux weiterläuft, und jedes Mal wieder von seinem Datenträger gestartet, und bei 5 solchen Starts in Folge beendet der Server die Ausführung.",
+          "Das Gerät wurde 3-mal in Folge per Netzwerk gestartet und wieder von seinem Datenträger gestartet. Bei 5 solchen Starts in Folge endet die Ausführung.",
         ),
       ).toBeInTheDocument();
     } finally {

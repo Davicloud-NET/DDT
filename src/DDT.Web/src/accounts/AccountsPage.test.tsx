@@ -134,7 +134,7 @@ describe("AccountsPage", () => {
     await open([]);
 
     expect(await screen.findByText(/^Every operator can obtain an account/)).toHaveTextContent(
-      "Every operator can obtain an account a sequence uses by running that sequence on a machine they control. Give each account the least it needs, and prefer an account asked for when the run starts, which is kept encrypted only until the run ends, to one kept here.",
+      "Every operator can obtain an account a sequence uses by running that sequence. Give each account the least it needs.",
     );
     expect(await screen.findByText("No accounts yet")).toBeInTheDocument();
   });
@@ -281,9 +281,7 @@ describe("AccountsPage", () => {
     fill(within(drawer).getByRole("textbox", { name: "Server 2" }), "files-hh.corp.example");
 
     expect(
-      within(drawer).getByText(
-        "A new user name, domain or server needs the password again: the stored one goes only where it was entered for.",
-      ),
+      within(drawer).getByText("A new user name, domain or server needs the password again."),
     ).toBeInTheDocument();
 
     press(within(drawer).getByRole("button", { name: "Save account" }));

@@ -41,23 +41,11 @@ export function AccountsPage() {
         ) : null}
       </PageHeader>
 
-      <p className="max-w-[80ch] text-ink-2">
-        <Trans>
-          The accounts steps use: a script runs as one, a share is connected with one, a domain is
-          joined with one. Each password is stored encrypted and goes only to the step that uses it,
-          while the step runs; this page never shows it.
-        </Trans>
-      </p>
-
       <Notice tone="info" className="max-w-[80ch]">
         <Trans>
-          Every operator can obtain an account a sequence uses by running that sequence on a machine
-          they control.
+          Every operator can obtain an account a sequence uses by running that sequence.
         </Trans>{" "}
-        <Trans>
-          Give each account the least it needs, and prefer an account asked for when the run starts,
-          which is kept encrypted only until the run ends, to one kept here.
-        </Trans>
+        <Trans>Give each account the least it needs.</Trans>
       </Notice>
 
       {accounts.isError ? (
@@ -72,16 +60,7 @@ export function AccountsPage() {
         </Panel>
       ) : accounts.isSuccess && list.length === 0 ? (
         <Panel>
-          <EmptyState title={<Trans>No accounts yet</Trans>}>
-            {canEdit ? (
-              <Trans>
-                Add an account for a step that runs a script as someone, connects a share or joins a
-                domain.
-              </Trans>
-            ) : (
-              <Trans>An administrator adds accounts here.</Trans>
-            )}
-          </EmptyState>
+          <EmptyState title={<Trans>No accounts yet</Trans>} />
         </Panel>
       ) : accounts.isSuccess ? (
         <Panel flush>

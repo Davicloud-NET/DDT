@@ -81,7 +81,6 @@ export function NodeInspector({
         label={<Trans>Name</Trans>}
         field="name"
         findings={findings}
-        hint={<Trans>Shown in the flow, in the run and in the log.</Trans>}
         value={node.name}
         onChange={(text) => {
           change({ name: text });

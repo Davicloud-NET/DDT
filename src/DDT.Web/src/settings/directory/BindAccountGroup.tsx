@@ -13,11 +13,7 @@ export function BindAccountGroup({ form }: { form: LdapForm }) {
   return (
     <SettingsGroup title={<Trans>Bind account</Trans>}>
       <p className="type-small text-ink-2">
-        <Trans>
-          DDT reads the directory with this account: it finds the user who signs in, and their
-          groups. A saved password goes only to the server it was entered for, so after a change of
-          the server, port or encryption, enter it again.
-        </Trans>
+        <Trans>After a change of the server, port or encryption, enter the password again.</Trans>
       </p>
       <div className="grid gap-4 md:grid-cols-2">
         <SettingText

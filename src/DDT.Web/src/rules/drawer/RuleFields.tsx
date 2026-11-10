@@ -47,12 +47,6 @@ export function RuleFields({ form, roles, sequences, subjects, canEdit }: RuleFi
 
       <ValuesEditor
         label={<Trans>Sets values</Trans>}
-        hint={
-          <Trans>
-            A value a rule above sets already stays as that rule sets it; a sequence uses it by its
-            name.
-          </Trans>
-        }
         rows={edit.values}
         findings={findings}
         onChange={(values) => {
@@ -71,7 +65,7 @@ export function RuleFields({ form, roles, sequences, subjects, canEdit }: RuleFi
 
       <TextSetting
         label={<Trans>Description</Trans>}
-        hint={<Trans>Optional. Why the rule exists, for whoever reads it later.</Trans>}
+        hint={<Trans>Optional.</Trans>}
         field="description"
         findings={findings}
         value={edit.description}
@@ -88,14 +82,7 @@ export function RuleFields({ form, roles, sequences, subjects, canEdit }: RuleFi
             change({ enabled });
           }}
         >
-          <span className="flex flex-col">
-            <span>
-              <Trans>Check machines against this rule</Trans>
-            </span>
-            <span className="type-small text-muted">
-              <Trans>Turned off, the rule is kept but matches no machine.</Trans>
-            </span>
-          </span>
+          <Trans>Check machines against this rule</Trans>
         </Checkbox>
       </div>
     </>

@@ -4,7 +4,6 @@
 
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { Link } from "@tanstack/react-router";
 
 import { ChoiceSetting } from "../fields/ChoiceSetting";
 import type { Choice } from "../fields/fieldBase";
@@ -38,15 +37,7 @@ export function ScriptPackageSetting({
       field="packageId"
       findings={findings}
       className="sm:col-span-2"
-      hint={
-        <Trans>
-          Unpacked before the script runs, and the script's working directory. Packages are under{" "}
-          <Link to="/library/files" className="font-semibold text-ink underline">
-            Files
-          </Link>
-          .
-        </Trans>
-      }
+      hint={<Trans>Unpacked before the script runs, and the script's working directory.</Trans>}
       value={step.packageId ?? NO_PACKAGE}
       choices={packages}
       onChange={(packageId) => {

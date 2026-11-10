@@ -33,34 +33,20 @@ export function ConsolePanel() {
         runsLabel: <Trans>Machines show</Trans>,
         runs: {
           Uploaded: <Trans>The console uploaded here</Trans>,
-          Bundled: <Trans>The console this server came with, since none was uploaded</Trans>,
+          Bundled: <Trans>The console this server came with</Trans>,
           Configuration: <Trans>The zip DDT:Agent:ConsolePath names in configuration</Trans>,
-          None: <Trans>The console in their boot image, since none was uploaded</Trans>,
+          None: <Trans>The console in their boot image</Trans>,
         },
         hashLabel: <Trans>SHA-256 of ddt-console.exe</Trans>,
         sizeLabel: <Trans>Size of its files</Trans>,
         configured: (
           <Trans>
-            DDT:Agent:ConsolePath names the console in configuration, so it cannot be uploaded here.
-            Remove the key and restart DDT to upload the console on this page.
+            DDT:Agent:ConsolePath names the console in configuration. Remove the key and restart DDT
+            to upload it here.
           </Trans>
         ),
         uploadTitle: <Trans>Upload the console</Trans>,
-        warning: (
-          <Trans>
-            The console you upload runs as SYSTEM in Windows PE on every machine that netboots from
-            now on, and as the shell of DDT&apos;s session in the installed Windows. Upload only a
-            zip of the folder Publish-Console.ps1 writes, from a DDT release or as the script builds
-            it.
-          </Trans>
-        ),
-        explanation: (
-          <Trans>
-            Machines take it at their next netboot: the agent downloads it and shows it instead of
-            the console in the boot image, in Windows PE and in DDT&apos;s session. A machine that
-            cannot download it keeps the console in its boot image.
-          </Trans>
-        ),
+        warning: <Trans>The console runs as SYSTEM on every machine that netboots.</Trans>,
         dropLabel: translate`Drop the console to upload it`,
         dropHere: <Trans>Drop the zip with ddt-console.exe here, or choose it.</Trans>,
         dropHint: (
@@ -69,14 +55,7 @@ export function ConsolePanel() {
           </Trans>
         ),
         chooseFirst: () => t`Choose the console first.`,
-        tooLarge: (name, limit) =>
-          t`${name} is larger than ${limit}, the most the server takes for the console.`,
-        uploaded: (uploaded) => (
-          <Trans>
-            Uploaded. Machines that netboot from now on show the console whose ddt-console.exe has
-            SHA-256 {uploaded}.
-          </Trans>
-        ),
+        uploaded: <Trans>Uploaded. Machines that netboot from now on show it.</Trans>,
         confirmTitle: (name) => <Trans>Upload {name} as the console?</Trans>,
         confirmLabel: <Trans>Upload console</Trans>,
         confirmBody: (name, size) => (
@@ -85,30 +64,20 @@ export function ConsolePanel() {
             SYSTEM.
           </Trans>
         ),
-        reauthReason: (
-          <Trans>
-            The console runs as SYSTEM on every machine that netboots, so uploading it needs your
-            password again.
-          </Trans>
-        ),
         newer: (version) => (
           <Trans>
-            This server came with console {version}, which is newer than the uploaded one. Remove
-            the upload, and machines show the server's own.
+            This server came with console {version}, which is newer than the uploaded one.
           </Trans>
         ),
         removeLabel: <Trans>Remove the uploaded console</Trans>,
         removeTitle: <Trans>Remove the uploaded console?</Trans>,
         removeBody: (
           <Trans>
-            Machines that netboot from now on show the console this server came with. If it came
-            with none, they show the console in their boot image.
+            Machines that netboot from now on show the console this server came with, or the one in
+            their boot image.
           </Trans>
         ),
         removing: <Trans>Removing the uploaded console</Trans>,
-        removed: (
-          <Trans>Removed. Machines that netboot from now on no longer get that console.</Trans>
-        ),
         notRemoved: (reason) => <Trans>The uploaded console was not removed. {reason}</Trans>,
       }}
     />

@@ -37,12 +37,9 @@ export function SharesSetting({
       </h3>
       <p className="type-small text-muted">
         {shares.length === 0 ? (
-          <Trans>None. DDT connects the shares listed here before the step runs.</Trans>
+          <Trans>None.</Trans>
         ) : (
-          <Trans>
-            DDT connects these shares with their accounts before the step runs and disconnects them
-            after it. A share's host comes only from values fixed when the run starts.
-          </Trans>
+          <Trans>A share's host comes only from values fixed when the run starts.</Trans>
         )}
       </p>
       {shares.map((share, index) => (

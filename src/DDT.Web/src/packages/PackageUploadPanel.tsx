@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -30,20 +29,10 @@ export function PackageUploadPanel({
       accept={[".zip"]}
       hint={
         drivers ? (
-          <Trans>
-            A zip of driver folders with their .inf files. Choose the hardware models it is for once
-            it is added.
-          </Trans>
+          <Trans>Driver folders with their .inf files.</Trans>
         ) : (
-          <Trans>
-            A zip of the files a Run script step needs. The step finds them unpacked in its working
-            folder.
-          </Trans>
+          <Trans>A Run script step finds them unpacked in its working folder.</Trans>
         )
-      }
-      verifyingHint={<Trans>The server checks the zip and counts what is in it.</Trans>}
-      leaveWhileVerifying={(file) =>
-        t`The server goes on checking ${file} after you leave and adds it to the library when it finishes. If it refuses the file, you do not see why.`
       }
       describeResult={describeResult}
       onAdded={(added) => {

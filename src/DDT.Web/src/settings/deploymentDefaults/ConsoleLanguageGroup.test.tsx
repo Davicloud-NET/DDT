@@ -88,9 +88,7 @@ describe("ConsoleLanguageGroup", () => {
         }),
     });
     const page = await screen.findByRole("main");
-    await screen.findByText(
-      "The layout of the console when a machine starts the Linux boot environment. Windows PE has the layout its boot image was built with.",
-    );
+    await screen.findByRole("heading", { name: "The console at the machine" });
 
     // The environment's own default stands for no choice.
     expect(selectKey(page, label)).toHaveTextContent("English (United States)");
@@ -125,7 +123,7 @@ describe("ConsoleLanguageGroup", () => {
     });
     const page = await screen.findByRole("main");
 
-    await screen.findByText(/The layout of the console when a machine starts/);
+    await screen.findByRole("heading", { name: "The console at the machine" });
     expect(selectKey(page, label)).toHaveTextContent("German");
 
     await chooseOption(page, label, "English (United States)");
@@ -142,7 +140,7 @@ describe("ConsoleLanguageGroup", () => {
     });
     const page = await screen.findByRole("main");
 
-    await screen.findByText(/The layout of the console when a machine starts/);
+    await screen.findByRole("heading", { name: "The console at the machine" });
 
     expect(selectKey(page, label)).toHaveTextContent("dvorak");
     expect((await selectOptions(page, label)).map((option) => option.text)).toEqual([

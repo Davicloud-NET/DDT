@@ -20,7 +20,6 @@ export function AccountFields({ form }: { form: AccountForm }) {
     <>
       <TextField
         label={<Trans>Name</Trans>}
-        hint={<Trans>How steps and this page name it, such as Join account.</Trans>}
         value={edit.name}
         onChange={(text) => {
           change({ name: text });
@@ -45,11 +44,7 @@ export function AccountFields({ form }: { form: AccountForm }) {
 
       <TextField
         label={<Trans>Domain</Trans>}
-        hint={
-          <Trans>
-            Optional. The domain a Join the domain step may join with it, such as corp.example.
-          </Trans>
-        }
+        hint={<Trans>Optional. The domain it may join, such as corp.example.</Trans>}
         mono
         autoComplete="off"
         spellCheck="false"
@@ -81,9 +76,7 @@ export function AccountFields({ form }: { form: AccountForm }) {
               <Trans>Scripts may run as this account</Trans>
             </span>
             <span className="type-small text-muted">
-              <Trans>
-                In Windows, after the image is applied. A script in Windows PE runs as the system.
-              </Trans>
+              <Trans>In Windows, after the image is applied.</Trans>
             </span>
           </span>
         </Checkbox>

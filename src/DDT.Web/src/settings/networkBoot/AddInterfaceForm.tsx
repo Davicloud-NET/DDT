@@ -23,26 +23,18 @@ export function AddInterfaceForm({
         event.preventDefault();
         onAdd();
       }}
-      className="flex flex-col gap-1.5"
+      className="flex flex-wrap items-end gap-2"
     >
-      <span className="flex flex-wrap items-end gap-2">
-        <TextField
-          label={<Trans>Another interface name or address</Trans>}
-          mono
-          value={typed}
-          onChange={onType}
-          className="max-w-80 flex-1"
-        />
-        <Button type="submit" isDisabled={typed.trim() === ""}>
-          <Trans>Add</Trans>
-        </Button>
-      </span>
-      <span className="type-small text-muted">
-        <Trans>
-          For an adapter no host reported, such as one still to come. An IPv4 address picks the
-          interface that has it.
-        </Trans>
-      </span>
+      <TextField
+        label={<Trans>Another interface name or address</Trans>}
+        mono
+        value={typed}
+        onChange={onType}
+        className="max-w-80 flex-1"
+      />
+      <Button type="submit" isDisabled={typed.trim() === ""}>
+        <Trans>Add</Trans>
+      </Button>
     </form>
   );
 }

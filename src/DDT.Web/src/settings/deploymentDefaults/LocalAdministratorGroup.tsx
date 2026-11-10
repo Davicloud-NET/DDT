@@ -20,11 +20,7 @@ export function LocalAdministratorGroup({
   return (
     <SettingsGroup title={<Trans>Local administrator</Trans>}>
       <p className="type-small text-ink-2">
-        <Trans>
-          A Write the answer file step with "Add the local administrator" creates this account.
-          Operators can read the password by deploying a machine they control, so it should be one
-          for deployed machines only.
-        </Trans>
+        <Trans>Operators can read this password. Use one for deployed machines only.</Trans>
       </p>
       <div className="grid gap-4 md:grid-cols-2">
         <SettingText

@@ -27,30 +27,13 @@ export function ServerNames() {
   }
 
   return (
-    <SettingsSection
-      form={form}
-      canChange
-      title={<Trans>Server names</Trans>}
-      description={
-        <Trans>
-          The names and addresses browsers and machines reach this server by. Generate issues the
-          certificate for them, and an uploaded certificate has to name each of them, so a change
-          takes effect with the next certificate. DDT's automatic renewal keeps every name of the
-          certificate it renews.
-        </Trans>
-      }
-    >
+    <SettingsSection form={form} canChange title={<Trans>Server names</Trans>}>
       <SettingLines
         form={form}
         field="subjectAlternativeNames"
         canChange
         label={<Trans>Names and addresses</Trans>}
-        hint={
-          <Trans>
-            One per line, such as ddt.corp.example or 10.0.0.5. Generate adds localhost and this
-            computer's name and addresses by itself.
-          </Trans>
-        }
+        hint={<Trans>One per line, such as ddt.corp.example or 10.0.0.5.</Trans>}
       />
     </SettingsSection>
   );

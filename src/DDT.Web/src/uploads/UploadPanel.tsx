@@ -35,9 +35,8 @@ export interface UploadPanelProps<T> {
   what: ReactNode;
   accept: readonly string[];
   hint: ReactNode;
-  // What the server does while it checks a complete file, and what leaving then means.
-  verifyingHint: ReactNode;
-  leaveWhileVerifying: (fileName: string) => string;
+  // Shown while the server checks a complete file.
+  verifyingHint?: ReactNode;
   describeResult: (fileName: string, outcome: UploadOutcome, library: T) => string;
   // Called when the file went into the library, with the server's answer.
   onAdded: (library: T) => void;
@@ -54,7 +53,6 @@ export function UploadPanel<T>({
   accept,
   hint,
   verifyingHint,
-  leaveWhileVerifying,
   describeResult,
   onAdded,
   children,
@@ -100,7 +98,7 @@ export function UploadPanel<T>({
 
       {open.length > 0 ? <UnfinishedUploads sessions={open} onDiscard={discard.ask} /> : null}
 
-      <LeaveUploadDialog leaving={leaving} run={run} leaveWhileVerifying={leaveWhileVerifying} />
+      <LeaveUploadDialog leaving={leaving} run={run} />
 
       <DiscardUploadDialog discard={discard} />
     </section>

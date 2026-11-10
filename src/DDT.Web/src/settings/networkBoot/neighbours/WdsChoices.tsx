@@ -64,9 +64,7 @@ export function WdsChoices({ neighbours }: { neighbours: NetbootNeighbours }) {
       {change.error === null ? null : <Notice tone="fail">{change.error}</Notice>}
       {done === "boot-image" ? (
         <Notice>
-          <Trans>
-            The WDS boot menu offers DDT now, and gets each new boot image when it is built.
-          </Trans>
+          <Trans>The WDS boot menu offers DDT now.</Trans>
         </Notice>
       ) : null}
 
@@ -86,9 +84,8 @@ export function WdsChoices({ neighbours }: { neighbours: NetbootNeighbours }) {
       >
         <p>
           <Trans>
-            DDT stops Windows Deployment Services and keeps it from starting with Windows, then
-            answers netboot itself. MDT's LiteTouch no longer netboots from this server. WDS stays
-            installed, and this page starts it again.
+            DDT stops Windows Deployment Services and keeps it from starting with Windows. MDT's
+            LiteTouch no longer netboots from this server.
           </Trans>
         </p>
       </ConfirmDialog>
@@ -98,12 +95,6 @@ export function WdsChoices({ neighbours }: { neighbours: NetbootNeighbours }) {
         onAccepted={change.retryAfterReauth}
         onCancel={change.cancelReauth}
         confirmLabel={<Trans>Confirm and go on</Trans>}
-        reason={
-          <Trans>
-            This changes what every machine that netboots from this server loads, so it needs your
-            password again.
-          </Trans>
-        }
       />
     </>
   );

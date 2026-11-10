@@ -10,18 +10,14 @@ import { bootPhase, sequenceKind } from "../../sequenceKinds";
 import { NodeInspector } from "../NodeInspector";
 import type { FlowBuilderModel } from "./useFlowBuilder";
 
-// The inspector's Node tab: the chosen node's fields, or where to find them.
+// The inspector's Node tab: the chosen node's fields.
 export function NodeTab({ model }: { model: FlowBuilderModel }) {
   const { selected, editor, index, edits, command } = model;
 
   if (selected === undefined) {
     return (
       <p className="type-small text-muted">
-        {editor.draft.steps.length === 0 ? (
-          <Trans>Add a step to the flow to see its settings here.</Trans>
-        ) : (
-          <Trans>Choose a node in the flow to see its settings here.</Trans>
-        )}
+        <Trans>No node chosen.</Trans>
       </p>
     );
   }

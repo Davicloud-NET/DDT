@@ -82,9 +82,9 @@ export function restartsFailedNotice(machine: MachineSummary): string | null {
 
   switch (machine.restartsFailed ?? null) {
     case "WindowsPE":
-      return t`This machine did not start Windows PE after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. ${title} stays assigned and starts once the machine starts Windows PE.`;
+      return t`This machine did not start Windows PE after restarting. Check that it starts from the network and that no DHCP server names another boot file. ${title} stays assigned.`;
     case "LinuxBoot":
-      return t`This machine did not start the Linux boot environment after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. ${title} stays assigned and starts once the machine starts the Linux boot environment.`;
+      return t`This machine did not start the Linux boot environment after restarting. Check that it starts from the network and that no DHCP server names another boot file. ${title} stays assigned.`;
     default:
       return null;
   }
@@ -159,7 +159,7 @@ export function startNotice(
     return agentTooOld(machine, sequence)
       ? {
           warning: true,
-          text: t`${name} needs a newer agent than this machine runs, so it does not start. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent.`,
+          text: t`${name} needs a newer agent than this machine runs. It starts once the machine is started from the network again.`,
         }
       : null;
   }
@@ -169,8 +169,8 @@ export function startNotice(
       warning: true,
       text:
         needed === "LinuxBoot"
-          ? t`${name} runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it.`
-          : t`${name} runs in Windows PE, and this server has no boot image to start it from. The run stays assigned and does not start until an administrator builds one on the Boot image page.`,
+          ? t`${name} runs in the Linux boot environment, which this server does not have. It waits until the server has it.`
+          : t`${name} runs in Windows PE, and this server has no boot image. It waits until one is built.`,
     };
   }
 
@@ -180,8 +180,8 @@ export function startNotice(
       warning: true,
       text:
         needed === "LinuxBoot"
-          ? t`${name} runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again.`
-          : t`${name} runs in Windows PE, and this machine started the Linux boot environment with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again.`,
+          ? t`${name} runs in the Linux boot environment, and this machine's agent is too old to restart into it. It starts once the machine is started from the network again.`
+          : t`${name} runs in Windows PE, and this machine's agent is too old to restart into it. It starts once the machine is started from the network again.`,
     };
   }
 
@@ -190,7 +190,7 @@ export function startNotice(
     warning: false,
     text:
       needed === "LinuxBoot"
-        ? t`${name} runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first.`
-        : t`${name} runs in Windows PE, and this machine started the Linux boot environment. The machine restarts into Windows PE first.`,
+        ? t`The machine restarts into the Linux boot environment first.`
+        : t`The machine restarts into Windows PE first.`,
   };
 }

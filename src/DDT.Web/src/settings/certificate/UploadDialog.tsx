@@ -50,8 +50,8 @@ export function UploadDialog({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       >
         <p>
           <Trans>
-            The certificate has to be valid now and name {host}, the name this page is reached by,
-            and every server name. It is served at once, on trial until you keep it.
+            The certificate has to be valid now and name {host} and every server name. It is served
+            on trial until you keep it.
           </Trans>
         </p>
         <Tabs

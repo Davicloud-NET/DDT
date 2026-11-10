@@ -28,21 +28,8 @@ export function ScriptRunAsSetting({
       use="runAs"
       noneLabel={root}
       hint={
-        step.phase === "Windows" ? (
-          <Trans>An account in the installed Windows, signed in for the script alone.</Trans>
-        ) : step.phase === "LinuxBoot" ? (
-          <Trans>
-            Only a script in Windows runs as an account; in the Linux boot environment it runs as
-            root.
-          </Trans>
-        ) : step.phase === "Linux" ? (
-          <Trans>
-            Only a script in Windows runs as an account; in the installed Linux it runs as root.
-          </Trans>
-        ) : (
-          <Trans>
-            Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM.
-          </Trans>
+        step.phase === "Windows" ? undefined : (
+          <Trans>Only a script in Windows runs as an account.</Trans>
         )
       }
       value={step.runAs ?? null}

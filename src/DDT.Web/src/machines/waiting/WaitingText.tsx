@@ -6,7 +6,7 @@ import { Trans } from "@lingui/react/macro";
 
 import { continuesText, unansweredText, type WaitState } from "./waitState";
 
-// Says what the run waits for, that the person at the machine can do the same, and why continuing it failed.
+// Says what the run waits for, and why continuing it failed.
 export function WaitingText({ wait, error }: { wait: WaitState; error: string | null }) {
   const { paused, message, pausedAt, continues, inputs } = wait;
 
@@ -25,17 +25,9 @@ export function WaitingText({ wait, error }: { wait: WaitState; error: string | 
           {inputs.length > 0 ? <> {unansweredText(inputs.map((input) => input.label))}</> : null}
         </p>
       )}
-      <p className="type-small">
-        {paused ? (
-          continues === null ? (
-            <Trans>The person at the machine can let the run go on there, too.</Trans>
-          ) : (
-            continuesText(continues)
-          )
-        ) : (
-          <Trans>The person at the machine can answer there, too.</Trans>
-        )}
-      </p>
+      {paused && continues !== null ? (
+        <p className="type-small">{continuesText(continues)}</p>
+      ) : null}
       {error !== null ? (
         <p role="alert" className="type-small font-semibold">
           {error}

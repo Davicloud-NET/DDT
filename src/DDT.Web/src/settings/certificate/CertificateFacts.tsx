@@ -32,7 +32,7 @@ export function CertificateFacts({ view, now }: { view: CertificateView; now: nu
             served.managedByDdt && root !== null ? (
               <Trans>DDT's root, {root}</Trans>
             ) : (
-              <Trans>Another root: an administrator's certificate, which DDT does not renew</Trans>
+              <Trans>Another root. DDT does not renew this certificate.</Trans>
             ),
         },
         ...(served.rootSha256 === null

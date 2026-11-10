@@ -93,7 +93,7 @@ export function LogPanel({
           {view.deploymentId === null ? (
             <Trans>This machine has sent no log lines yet.</Trans>
           ) : (
-            <Trans>No log lines for this run yet. The agent sends its log while it runs.</Trans>
+            <Trans>No log lines for this run yet.</Trans>
           )}
         </p>
       ) : (

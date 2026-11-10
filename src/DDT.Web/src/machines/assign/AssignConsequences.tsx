@@ -81,18 +81,12 @@ export function AssignConsequences({
       {refused !== null ? <Notice tone="attention">{refused}</Notice> : null}
       {sequence?.continuesInWindows === true ? (
         <p>
-          <Trans>
-            After the image is applied, the run goes on in the installed Windows, where the agent
-            runs as a service until the run ends.
-          </Trans>
+          <Trans>The run goes on in the installed Windows.</Trans>
         </p>
       ) : null}
       {sequence?.continuesInLinux === true ? (
         <p>
-          <Trans>
-            After the disk image is written, the run goes on in the installed Linux, where the agent
-            runs as a service until the run ends.
-          </Trans>
+          <Trans>The run goes on in the installed Linux.</Trans>
         </p>
       ) : null}
       {sequence !== null && sequence.warningCount > 0 ? <p>{warningsText(sequence)}</p> : null}

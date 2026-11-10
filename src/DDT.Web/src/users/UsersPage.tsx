@@ -14,12 +14,7 @@ export function UsersPage() {
   return (
     <AdministratorsOnly
       title={<Trans>Users and roles</Trans>}
-      refusal={
-        <Trans>
-          Only administrators manage accounts. Your own account is on the Account and security page
-          in the account menu.
-        </Trans>
-      }
+      refusal={<Trans>Only administrators manage accounts.</Trans>}
     >
       {(me) => <UserAdministration me={me} />}
     </AdministratorsOnly>

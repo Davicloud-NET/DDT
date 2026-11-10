@@ -84,16 +84,14 @@ export function deletionBlocker(
 
 // What deleting a sequence does, sentence by sentence. activeRuns counts the machines it is assigned to or running
 // on now.
-export function deletionConsequence(sequence: SequenceSummary, activeRuns: number): string[] {
-  const name = sequence.name;
-  const sentences = [t`${name} is deleted and can no longer be assigned or chosen at a machine.`];
+export function deletionConsequence(activeRuns: number): string[] {
+  const sentences: string[] = [];
 
   if (activeRuns > 0) {
     sentences.push(
       plural(activeRuns, {
-        one: "The machine it is assigned to or running on keeps the copy it got and finishes with it.",
-        other:
-          "The # machines it is assigned to or running on keep the copy they got and finish with it.",
+        one: "The machine it is assigned to or running on finishes with its copy.",
+        other: "The # machines it is assigned to or running on finish with their copy.",
       }),
     );
   }

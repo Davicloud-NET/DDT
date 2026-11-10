@@ -24,10 +24,7 @@ export function RemoveLogoDialog({
       onConfirm={onConfirm}
     >
       <p>
-        <Trans>
-          Machines show no logo on their console from their next registration. Upload it again to
-          bring it back.
-        </Trans>
+        <Trans>Machines show no logo on their console from their next registration.</Trans>
       </p>
     </ConfirmDialog>
   );

@@ -12,18 +12,7 @@ export function NoRules({ canEdit }: { canEdit: boolean }) {
   return (
     <Panel>
       <EmptyState title={<Trans>No rules yet</Trans>}>
-        {canEdit ? (
-          <Trans>
-            Without rules an operator chooses the sequence of each machine. Add a rule to choose
-            one, set values or give machine roles by what a machine is, such as its model or its
-            network.
-          </Trans>
-        ) : (
-          <Trans>
-            Without rules an operator chooses the sequence of each machine. An administrator adds
-            rules here.
-          </Trans>
-        )}
+        {canEdit ? null : <Trans>An administrator adds rules here.</Trans>}
       </EmptyState>
     </Panel>
   );

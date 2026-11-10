@@ -58,8 +58,8 @@ describe("SetupChecklist", () => {
       await screen.findByRole("heading", { name: "Before the first deployment" }),
       "section",
     );
-    expect(mark(panel, /which the installer left/)).toBe("Done");
-    expect(mark(panel, /that machines netboot into/)).toBe("Open");
+    expect(mark(panel, /^Change the first password$/)).toBe("Done");
+    expect(mark(panel, /^Build the boot image$/)).toBe("Open");
     expect(within(panel).getByRole("link", { name: "Build the boot image" })).toHaveAttribute(
       "href",
       "/boot/image",
@@ -69,7 +69,7 @@ describe("SetupChecklist", () => {
       hub?.push("bootImageChanged", bootImageView());
     });
     await waitFor(() => {
-      expect(mark(panel, /that machines netboot into/)).toBe("Done");
+      expect(mark(panel, /^Build the boot image$/)).toBe("Done");
     });
 
     act(() => {
@@ -91,10 +91,8 @@ describe("SetupChecklist", () => {
       await screen.findByRole("heading", { name: "Before the first deployment" }),
       "section",
     );
-    expect(mark(panel, /Machines netboot into the Linux boot environment/)).toBe("Done");
-    expect(panel).toHaveTextContent(
-      "Machines netboot into the Linux boot environment, which comes with DDT. To install Windows, build the boot image as well.",
-    );
+    expect(mark(panel, /To install Windows/)).toBe("Done");
+    expect(panel).toHaveTextContent("To install Windows, build the boot image.");
     expect(within(panel).getByRole("link", { name: "build the boot image" })).toHaveAttribute(
       "href",
       "/boot/image",
@@ -105,7 +103,7 @@ describe("SetupChecklist", () => {
       hub?.push("bootImageChanged", bootImageView({ linux: linuxBootView() }));
     });
     await waitFor(() => {
-      expect(mark(panel, /that machines netboot into\.$/)).toBe("Done");
+      expect(mark(panel, /^Build the boot image$/)).toBe("Done");
     });
   });
 
@@ -124,7 +122,7 @@ describe("SetupChecklist", () => {
     });
 
     await waitFor(() => {
-      expect(mark(panel, /that machines netboot into\.$/)).toBe("Open");
+      expect(mark(panel, /^Build the boot image$/)).toBe("Open");
     });
   });
 

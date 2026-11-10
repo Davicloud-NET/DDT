@@ -34,10 +34,7 @@ export function useRunWaitingActions(machineId: string) {
     mutationFn: (request: ContinueRunRequest) => continueRun(machineId, request),
     onSuccess: (answer) => {
       settle(answer, () => {
-        showToast({
-          title: t`The run went on already`,
-          description: t`Someone at the machine or on another page let it go on first.`,
-        });
+        showToast({ title: t`The run went on already` });
       });
     },
   });
@@ -47,10 +44,7 @@ export function useRunWaitingActions(machineId: string) {
     onSuccess: (result) => {
       setAsking(false);
       settle(result, () => {
-        showToast({
-          title: t`The run has its answers already`,
-          description: t`They were given at the machine or on another page first.`,
-        });
+        showToast({ title: t`The run has its answers already` });
       });
     },
   });

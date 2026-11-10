@@ -59,13 +59,6 @@ export function CurrentBinary({ binary, view }: { binary: Binary; view: AgentBin
               ]),
         ]}
       />
-      {sha256 === null ? null : (
-        <p className="max-w-[80ch] type-small text-ink-2">
-          <Trans>
-            Compare the SHA-256 with the one published for the release you meant to install.
-          </Trans>
-        </p>
-      )}
       <UploadRemoval binary={binary} view={view} />
     </Panel>
   );

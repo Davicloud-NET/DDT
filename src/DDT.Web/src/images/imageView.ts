@@ -56,9 +56,7 @@ export function deleteConsequence(image: ImageSummary): string {
   const name = image.name;
   const size = formatBytes(image.sizeBytes);
 
-  return image.kind === "RawDisk"
-    ? t`${name} (${size}) is removed from the library and can no longer be used by a task sequence. Its compressed disk is deleted from the server.`
-    : t`${name} (${size}) is removed from the library and can no longer be used by a task sequence. The WIM file is deleted from the server once no other image in the library comes from it.`;
+  return t`${name} (${size}) is deleted from the library.`;
 }
 
 export function matchesImage(image: ImageSummary, needle: string): boolean {

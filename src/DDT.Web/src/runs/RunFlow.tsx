@@ -52,7 +52,7 @@ export default function RunFlow({ view, summary, now, onShowLog, children }: Run
             aria-label={translate`The chosen step`}
             className="rounded-panel bg-panel p-4 type-small text-muted shadow-panel"
           >
-            <Trans>Choose a step in the flow to see what it did.</Trans>
+            <Trans>Choose a step in the flow.</Trans>
           </section>
         ) : (
           <NodeDetails

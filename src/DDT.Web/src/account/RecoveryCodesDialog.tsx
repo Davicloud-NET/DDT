@@ -38,8 +38,7 @@ export function RecoveryCodesDialog({
     >
       <p>
         <Trans>
-          Each code signs you in once if you lose the authenticator. Keep them somewhere safe: they
-          are shown only now, and new ones replace these.
+          Each code signs you in once if you lose the authenticator. They are shown only now.
         </Trans>
       </p>
       <ul className="grid grid-cols-2 gap-x-6 gap-y-1.5 rounded-key bg-well p-4 type-data text-ink">

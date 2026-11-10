@@ -46,7 +46,7 @@ export function SequenceEditorPage() {
 
       {missing ? (
         <EmptyState title={<Trans>Sequence not found</Trans>}>
-          <Trans>This sequence does not exist. It may have been deleted.</Trans>
+          <Trans>It may have been deleted.</Trans>
         </EmptyState>
       ) : null}
 

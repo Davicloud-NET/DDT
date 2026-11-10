@@ -28,44 +28,29 @@ export function AgentPanel() {
         runsLabel: <Trans>Machines run</Trans>,
         runs: {
           Uploaded: <Trans>The agent uploaded here</Trans>,
-          Bundled: <Trans>The agent this server came with, since none was uploaded</Trans>,
+          Bundled: <Trans>The agent this server came with</Trans>,
           Configuration: <Trans>The file DDT:Agent:BinaryPath names in configuration</Trans>,
-          None: <Trans>The agent in their boot image, since none was uploaded</Trans>,
+          None: <Trans>The agent in their boot image</Trans>,
         },
         hashLabel: <Trans>SHA-256</Trans>,
         sizeLabel: <Trans>Size</Trans>,
         configured: (
           <Trans>
-            DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here.
-            Remove the key and restart DDT to upload the agent on this page.
+            DDT:Agent:BinaryPath names the agent in configuration. Remove the key and restart DDT to
+            upload it here.
           </Trans>
         ),
         uploadTitle: <Trans>Upload the agent</Trans>,
         warning: (
           <Trans>
-            The agent you upload runs as SYSTEM on every machine that netboots from now on, before
-            anybody authorized the machine. Upload only ddt-agent.exe from a DDT release or as
-            Publish-Agent.ps1 builds it.
-          </Trans>
-        ),
-        explanation: (
-          <Trans>
-            Machines take it at their next netboot: the agent in the boot image downloads it and
-            runs it instead, so the boot image does not have to be built again. A machine that
-            cannot download or start it goes on with the agent in its boot image.
+            The agent runs as SYSTEM on every machine that netboots, before anyone authorizes it.
           </Trans>
         ),
         dropLabel: translate`Drop the agent to upload it`,
         dropHere: <Trans>Drop ddt-agent.exe here, or choose it.</Trans>,
         dropHint: <Trans>A Windows executable of at most 128 MB.</Trans>,
         chooseFirst: () => t`Choose the agent first.`,
-        tooLarge: (name, limit) =>
-          t`${name} is larger than ${limit}, the most the server takes for the agent.`,
-        uploaded: (uploaded) => (
-          <Trans>
-            Uploaded. Machines that netboot from now on run the agent with SHA-256 {uploaded}.
-          </Trans>
-        ),
+        uploaded: <Trans>Uploaded. Machines that netboot from now on run it.</Trans>,
         confirmTitle: (name) => <Trans>Upload {name} as the agent?</Trans>,
         confirmLabel: <Trans>Upload agent</Trans>,
         confirmBody: (name, size) => (
@@ -74,30 +59,20 @@ export function AgentPanel() {
             SYSTEM.
           </Trans>
         ),
-        reauthReason: (
-          <Trans>
-            The agent runs as SYSTEM on every machine that netboots, so uploading it needs your
-            password again.
-          </Trans>
-        ),
         newer: (version) => (
           <Trans>
-            This server came with agent {version}, which is newer than the uploaded one. Remove the
-            upload, and machines run the server's own.
+            This server came with agent {version}, which is newer than the uploaded one.
           </Trans>
         ),
         removeLabel: <Trans>Remove the uploaded agent</Trans>,
         removeTitle: <Trans>Remove the uploaded agent?</Trans>,
         removeBody: (
           <Trans>
-            Machines that netboot from now on run the agent this server came with. If it came with
-            none, they run the agent in their boot image.
+            Machines that netboot from now on run the agent this server came with, or the one in
+            their boot image.
           </Trans>
         ),
         removing: <Trans>Removing the uploaded agent</Trans>,
-        removed: (
-          <Trans>Removed. Machines that netboot from now on no longer get that agent.</Trans>
-        ),
         notRemoved: (reason) => <Trans>The uploaded agent was not removed. {reason}</Trans>,
       }}
     />

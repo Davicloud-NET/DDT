@@ -11,20 +11,20 @@ export function BootFileHint({ http, port }: { http: boolean; port: number | nul
     return (
       <Trans>
         A path in the boot directory. Machines that no longer trust the Microsoft 2011 CA need
-        x64/bootmgfw_ex.efi, signed by the 2023 one.
+        x64/bootmgfw_ex.efi.
       </Trans>
     );
   }
 
   return port === null ? (
     <Trans>
-      An http URL on DDT's boot port, below /boot/, where it serves the boot directory. Machines
-      that no longer trust the Microsoft 2011 CA need bootmgfw_ex.efi, signed by the 2023 one.
+      An http URL on DDT's boot port, below /boot/. Machines that no longer trust the Microsoft 2011
+      CA need bootmgfw_ex.efi.
     </Trans>
   ) : (
     <Trans>
-      An http URL on port {portText}, below /boot/, where DDT serves the boot directory. Machines
-      that no longer trust the Microsoft 2011 CA need bootmgfw_ex.efi, signed by the 2023 one.
+      An http URL on port {portText}, below /boot/. Machines that no longer trust the Microsoft 2011
+      CA need bootmgfw_ex.efi.
     </Trans>
   );
 }

@@ -126,19 +126,16 @@ function deferred<T>() {
 }
 
 describe("RulesPage", () => {
-  it("says that rules are checked from the top and never approve, and what to do without any", async () => {
+  it("says that rules are checked from the top, and when there are none yet", async () => {
     await open([]);
 
     expect(await screen.findByRole("heading", { level: 1, name: "Rules" })).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Checked from the top. The first rule that chooses a sequence chooses it, and the first rule that sets a value sets it. A rule never approves a machine.",
+        "Checked from the top. The first rule that chooses a sequence chooses it, and the first rule that sets a value sets it.",
       ),
     ).toBeInTheDocument();
     expect(await screen.findByText("No rules yet")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Add a rule to choose one, set values or give machine roles/),
-    ).toBeInTheDocument();
   });
 
   it("lists the rules in order with their condition, what they do and the machines they match", async () => {
@@ -249,7 +246,7 @@ describe("RulesPage", () => {
 
     expect(
       await screen.findByText(
-        "Someone changed the rules while you moved one, so the list shows them as they are now. Move the rule again if it should still go there.",
+        "Someone changed the rules while you moved one. Move the rule again if it should still go there.",
       ),
     ).toBeInTheDocument();
     expect(order()).toEqual(["r1", "r2", "r3", "r4"]);
@@ -303,9 +300,7 @@ describe("RulesPage", () => {
     await chooseMenuItem(within(drawer).getByRole("button", { name: "Add a role" }), "Office PC");
     press(within(drawer).getByRole("button", { name: "Save rule" }));
 
-    await within(drawer).findByText(
-      "This rule has 1 problem, shown at its field. It matches no machine until it is fixed.",
-    );
+    await within(drawer).findByText("This rule has 1 problem and matches no machine.");
     expect(saved).toEqual([
       {
         revision: 0,
@@ -458,9 +453,7 @@ describe("RulesPage", () => {
     await screen.findByRole("grid", { name: "Rules in order" });
     await chooseMenuItem(actionsFor("Rule 1, Kiosk in the lobby"), "Delete");
     const dialog = await screen.findByRole("dialog", { name: "Delete Kiosk in the lobby?" });
-    expect(dialog).toHaveAccessibleDescription(
-      "The machines it matches no longer get what it chooses, sets or gives; a rule below it may give them that instead. The rules below it move up a place. Runs that already started keep their values.",
-    );
+    expect(dialog).toHaveAccessibleDescription("Runs that already started keep their values.");
 
     press(within(dialog).getByRole("button", { name: "Delete rule" }));
 
@@ -524,10 +517,6 @@ describe("RulesPage", () => {
       throw new Error("The test panel is not a section.");
     }
 
-    expect(
-      within(panel).getByText(/Choose a machine to see which rules match it/),
-    ).toBeInTheDocument();
-
     await waitFor(() => {
       expect(queryClient.getQueryData(["machines"])).toHaveLength(1);
     });
@@ -546,11 +535,6 @@ describe("RulesPage", () => {
     expect(
       within(panel).getByText(
         "OrganizationalUnit cannot be worked out, because it is made from itself.",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      within(panel).getByText(
-        "An operator still approves this machine, or someone signs in at it; the rules only choose what then runs.",
       ),
     ).toBeInTheDocument();
     await expectNoAxeViolations();
@@ -585,11 +569,7 @@ describe("RulesPage", () => {
   it("tells an operator without rules that an administrator adds them", async () => {
     await open([], {}, operator);
 
-    expect(
-      await screen.findByText(
-        "Without rules an operator chooses the sequence of each machine. An administrator adds rules here.",
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("An administrator adds rules here.")).toBeInTheDocument();
   });
 
   it("shows another administrator's change from the hub, flashing the rule, and keeps an open drawer's edit", async () => {

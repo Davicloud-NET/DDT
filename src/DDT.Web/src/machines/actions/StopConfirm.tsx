@@ -46,14 +46,12 @@ export function StopConfirm({
 // A run in a boot environment may have written part of the disk. In the installed system the agent learns of the
 // stop at its next contact with the server and removes itself, and the system stays as far as the run got.
 function stopConsequence(machine: MachineSummary): string {
-  const label = machineLabel(machine);
-
   switch (machine.deployment?.phase) {
     case "Windows":
-      return t`This stops the run on ${label}, which runs in its installed Windows. The agent there stops at its next contact with the server and removes itself; Windows stays installed as it is, with the steps done so far.`;
+      return t`Windows stays as it is, with the steps done so far.`;
     case "Linux":
-      return t`This stops the run on ${label}, which runs in its installed Linux. The agent there stops at its next contact with the server and removes itself; Linux stays installed as it is, with the steps done so far.`;
+      return t`Linux stays as it is, with the steps done so far.`;
     default:
-      return t`This stops the run on ${label}. Its disk is left half written; assign a sequence again to deploy it.`;
+      return t`Its disk is left half written.`;
   }
 }

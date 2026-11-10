@@ -240,9 +240,7 @@ describe("UsersPage", () => {
       role: "Operator",
     });
     expect(within(shown).getByText("Tq8v-Rk3m-Wz6p-Hd2n")).toBeInTheDocument();
-    expect(shown).toHaveTextContent(
-      "DDT shows this password only now. At the next sign-in, Paul Lang has to set a password of their own, and can do nothing else until then.",
-    );
+    expect(shown).toHaveTextContent("Shown only once.");
 
     fireEvent.click(within(shown).getByRole("button", { name: "Copy" }));
     await waitFor(() => {
@@ -353,7 +351,7 @@ describe("UsersPage", () => {
     expect(within(dialog).getByRole("textbox", { name: "Name" })).toBeDisabled();
     expect(within(dialog).getByRole("textbox", { name: "Email address" })).toBeDisabled();
     expect(dialog).toHaveTextContent(
-      "The role of j.berger comes from its directory groups, through the map on the Sign-in page, at each sign-in. Change its groups in the directory, or the map.",
+      "The role of j.berger comes from its directory groups, through the map on the Sign-in page.",
     );
     expect(within(dialog).getByRole("link", { name: "Sign-in" })).toHaveAttribute(
       "href",
@@ -431,7 +429,7 @@ describe("UsersPage", () => {
     await pick("j.berger", "Delete");
     const dialog = await screen.findByRole("dialog", { name: "Delete Jonas Berger?" });
     expect(dialog).toHaveTextContent(
-      "j.berger and its API tokens are deleted from DDT. The audit log keeps its entries. If its directory groups still give it a role, it comes back at its next sign-in as a new account; to keep it out, disable it instead.",
+      "j.berger and its API tokens are deleted. If its directory groups still give it a role, it comes back at its next sign-in; to keep it out, disable it instead.",
     );
     fireEvent.click(within(dialog).getByRole("button", { name: "Delete account" }));
 
@@ -465,7 +463,7 @@ describe("UsersPage", () => {
     serve({});
 
     expect(await screen.findByText(/^Sign-in through a directory is off\./)).toHaveTextContent(
-      "Sign-in through a directory is off. It is turned on and set up on the Sign-in page.",
+      "Sign-in through a directory is off. Set it up on the Sign-in page.",
     );
     expect(screen.getByRole("link", { name: "Sign-in" })).toHaveAttribute("href", "/admin/sign-in");
     expect(
@@ -500,8 +498,8 @@ describe("UsersPage", () => {
     expect(map).toHaveTextContent(
       "Not found in the directoryCN=Gone,OU=Groups,DC=corp,DC=exampleViewer",
     );
-    expect(screen.getByText(/^At each sign-in, a directory account/)).toHaveTextContent(
-      "an account in none of them cannot sign in. The map is set on the Sign-in page.",
+    expect(screen.getByText(/^An account in none of these groups/)).toHaveTextContent(
+      "An account in none of these groups cannot sign in. The map is set on the Sign-in page.",
     );
 
     vi.useFakeTimers({ shouldAdvanceTime: true });

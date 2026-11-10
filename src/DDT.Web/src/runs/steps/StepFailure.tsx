@@ -24,7 +24,7 @@ export function StepFailure({ node, steps, runState }: StepFailureProps) {
       {step.error ?? <Trans>The step failed without saying why.</Trans>}
       {node.node.continueOnError && wentOnAfter(step, steps, runState) ? (
         <span className="block text-muted">
-          <Trans>The run went on, because "Go on when this step fails" is on for this step.</Trans>
+          <Trans>The run went on.</Trans>
         </span>
       ) : null}
     </span>

@@ -133,7 +133,7 @@ describe("BootImagePage", () => {
       },
     );
 
-    expect(await screen.findByText(/this server has none/)).toBeInTheDocument();
+    expect(await screen.findByText(/has no Windows ADK/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Build the boot image" })).toBeDisabled();
     expect(selectKey(document.body, "Keyboard layout")).toHaveTextContent("The server's own");
 

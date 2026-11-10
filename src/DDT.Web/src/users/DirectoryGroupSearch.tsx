@@ -22,7 +22,6 @@ export function DirectoryGroupSearch({
   heading: Heading,
   className,
   note,
-  idle,
   unavailable,
   renderGroup,
 }: {
@@ -32,8 +31,6 @@ export function DirectoryGroupSearch({
   className: string;
   // Shown under the field, such as a note that unsaved changes don't count yet.
   note?: ReactNode;
-  // What shows before anything is typed.
-  idle?: ReactNode;
   // Shown in place of the search while the directory cannot be searched.
   unavailable?: ReactNode;
   // A found group's row, an li with the group's distinguished name as its key.
@@ -68,9 +65,7 @@ export function DirectoryGroupSearch({
         className={className}
       />
       {note}
-      {asked === "" ? (
-        idle
-      ) : groups.isPending ? (
+      {asked === "" ? null : groups.isPending ? (
         <Skeleton className="h-5 w-2/3" />
       ) : groups.isError ? (
         <Notice tone="fail">{groups.error.message}</Notice>

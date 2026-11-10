@@ -23,11 +23,11 @@ export function WindowsPEDrivers({ view }: { view: BootImageView }) {
       {view.drivers.length === 0 ? (
         <EmptyState title={<Trans>No drivers flagged</Trans>}>
           <Trans>
-            The boot image has Windows PE's own drivers only. Flag a driver package under{" "}
+            Flag a driver package under{" "}
             <Link to="/library/drivers" className="underline">
               Library, Drivers
             </Link>{" "}
-            when a machine cannot reach the network or see its disk in Windows PE.
+            when Windows PE cannot reach the network or see a disk.
           </Trans>
         </EmptyState>
       ) : (

@@ -39,8 +39,8 @@ export function WdsState({
         actions={neighbours.helper ? choice("restore", <Trans>Start WDS again</Trans>) : null}
       >
         <Trans>
-          Windows Deployment Services is installed on this computer and stopped, so DDT answers
-          netboot here. Before WDS starts again, switch off ProxyDHCP and TFTP above.
+          Windows Deployment Services is installed on this computer and stopped. Before WDS starts
+          again, switch off ProxyDHCP and TFTP.
         </Trans>
       </Notice>
     );
@@ -60,8 +60,7 @@ export function WdsState({
     >
       <Trans>
         Windows Deployment Services runs on this computer and holds UDP 69 and 4011, so machines
-        that netboot reach WDS and not DDT. In its boot menu DDT sits next to MDT's LiteTouch and
-        needs neither ProxyDHCP nor TFTP of its own.
+        that netboot reach WDS and not DDT.
       </Trans>
     </Notice>
   );

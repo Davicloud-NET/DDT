@@ -22,10 +22,7 @@ export function LastBuild({ view, now }: { view: BootImageView; now: number }) {
     <Panel title={<Trans>Served build</Trans>}>
       {build === null ? (
         <p className="text-ink-2">
-          <Trans>
-            The boot directory holds no record of a build. A build with the current script writes
-            ddt-boot-image.json next to boot.wim, which DDT reads here.
-          </Trans>
+          <Trans>The boot directory holds no record of a build.</Trans>
         </p>
       ) : (
         <Facts

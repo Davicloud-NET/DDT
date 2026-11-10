@@ -26,18 +26,13 @@ export function DomainGroup({
 }) {
   return (
     <SettingsGroup title={<Trans>Domain</Trans>}>
-      <p className="type-small text-ink-2">
-        <Trans>
-          A Join the domain step joins the machine online in Windows with this account, which it
-          fetches while the step runs. Left without a domain name, machines stay in a workgroup.
-        </Trans>
-      </p>
       <div className="grid gap-4 md:grid-cols-2">
         <SettingText
           form={form}
           field="domain.name"
           canChange={canChange}
           label={<Trans>Domain</Trans>}
+          hint={<Trans>Left empty, machines stay in a workgroup.</Trans>}
           placeholder="corp.example"
           mono
         />

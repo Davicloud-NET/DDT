@@ -47,15 +47,14 @@ export function NewRootDialog({
       <p>
         {generating ? (
           <Trans>
-            DDT has no root yet, so Generate makes one. Boot images pin the root, so every boot
-            image has to be built again with the new one, and every browser that manages DDT has to
-            trust it. Until then, netbooting machines cannot reach the server.
+            Every boot image has to be built again with the new root, and every browser that manages
+            DDT has to trust it. Until then, netbooting machines cannot reach the server.
           </Trans>
         ) : (
           <Trans>
-            This certificate does not come from DDT's root, which boot images pin. Every boot image
-            has to be built again with its root, and every browser that manages DDT has to trust
-            that root. Until then, netbooting machines cannot reach the server.
+            Every boot image has to be built again with this certificate's root, and every browser
+            that manages DDT has to trust that root. Until then, netbooting machines cannot reach
+            the server.
           </Trans>
         )}
       </p>

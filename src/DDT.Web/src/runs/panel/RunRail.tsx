@@ -56,7 +56,7 @@ export function RunRail({ run, view, path, now }: RunRailProps) {
     />
   ) : view !== null && view.steps.length === 0 ? (
     <p className="type-small text-muted">
-      <Trans>This deployment ran before task sequences, so it has no steps to show.</Trans>
+      <Trans>This deployment has no steps to show.</Trans>
     </p>
   ) : null;
 }

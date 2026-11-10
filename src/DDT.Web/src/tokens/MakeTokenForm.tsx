@@ -29,12 +29,6 @@ export function MakeTokenForm({ form }: { form: MakeTokenState }) {
         }
       }}
     >
-      <p>
-        <Trans>
-          A token lets a script call DDT's API as you. It stops working when it expires, when it is
-          revoked, or when your account is disabled.
-        </Trans>
-      </p>
       <TextField
         label={<Trans>Name</Trans>}
         hint={<Trans>What uses it, such as the inventory script.</Trans>}
@@ -49,7 +43,7 @@ export function MakeTokenForm({ form }: { form: MakeTokenState }) {
       />
       <Select
         label={<Trans>Role</Trans>}
-        hint={<Trans>At most your own. Give it no more than the script needs.</Trans>}
+        hint={<Trans>At most your own.</Trans>}
         value={form.role}
         onChange={(key) => {
           if (key !== null) {

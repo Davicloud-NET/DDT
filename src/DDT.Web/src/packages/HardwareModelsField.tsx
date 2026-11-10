@@ -42,9 +42,8 @@ export function HardwareModelsField({
       </legend>
       <p className="type-small text-muted">
         <Trans>
-          An Inject drivers step adds these drivers to machines whose model matches one of them. End
-          a model with * to match every model that starts with it; leave the manufacturer empty for
-          any.
+          End a model with * to match every model that starts with it. Leave the manufacturer empty
+          for any.
         </Trans>
       </p>
       {targets.rows.map((target, index) => (

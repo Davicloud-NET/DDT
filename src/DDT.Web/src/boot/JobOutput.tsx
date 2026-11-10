@@ -56,7 +56,7 @@ export function JobOutput({
       </pre>
       {!isRunning && missing > 0 ? (
         <p className="type-small text-muted">
-          <Trans>The output went on for {missing} more lines, which the server did not keep.</Trans>
+          <Trans>{missing} more lines were not kept.</Trans>
         </p>
       ) : null}
     </>

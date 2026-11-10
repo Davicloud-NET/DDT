@@ -18,12 +18,6 @@ export function SectionsPanel({ sections }: { sections: SectionSummary[] }) {
 
   return (
     <Panel title={<Trans>Settings sections</Trans>} flush>
-      <p className="max-w-[80ch] px-4 pt-3 text-ink-2">
-        <Trans>
-          Each section is saved on the page of what it configures, and applies without a restart:
-          some at their next use, others by rebuilding their part of the running server.
-        </Trans>
-      </p>
       <ul aria-label={t`Settings sections`} className="flex flex-col">
         {sections.map((summary) => (
           <SectionRow key={summary.section} summary={summary} now={now} />

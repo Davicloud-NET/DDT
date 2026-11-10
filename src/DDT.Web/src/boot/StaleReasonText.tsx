@@ -16,8 +16,7 @@ export function StaleReasonText({ reason, view }: { reason: StaleReason; view: B
     case "drivers":
       return view.build === null ? (
         <Trans>
-          Drivers are flagged for Windows PE, but no boot image built with this version of the build
-          script is in the boot directory.
+          Drivers are flagged for Windows PE, but the boot image was built with an older script.
         </Trans>
       ) : (
         <Trans>The drivers flagged for Windows PE have changed since it was built.</Trans>
@@ -25,8 +24,8 @@ export function StaleReasonText({ reason, view }: { reason: StaleReason; view: B
     case "serverAddress":
       return (
         <Trans>
-          It names the server {address}, a name or port the server no longer has. Machines that
-          netboot it cannot reach the server.
+          It names the server {address}, which is out of date. Machines that netboot it cannot reach
+          the server.
         </Trans>
       );
     case "root":

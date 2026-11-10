@@ -28,8 +28,7 @@ export function DirectoryOn({ directory }: { directory: DirectoryView }) {
         {map.length === 0 ? (
           <Trans>
             No group is mapped to a role, so administrators choose the role of each directory
-            account on this page, and a new one reaches nothing until it has one. The map is set on
-            the{" "}
+            account on this page. The map is set on the{" "}
             <Link to="/admin/sign-in" className="font-semibold text-ink underline">
               Sign-in
             </Link>{" "}
@@ -37,8 +36,7 @@ export function DirectoryOn({ directory }: { directory: DirectoryView }) {
           </Trans>
         ) : (
           <Trans>
-            At each sign-in, a directory account gets the highest role that its groups below give
-            it, and an account in none of them cannot sign in. The map is set on the{" "}
+            An account in none of these groups cannot sign in. The map is set on the{" "}
             <Link to="/admin/sign-in" className="font-semibold text-ink underline">
               Sign-in
             </Link>{" "}

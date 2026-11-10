@@ -179,7 +179,7 @@ describe("SequenceEditorPage", () => {
 
     const dialog = await screen.findByRole("dialog", { name: "Leave without saving?" });
     expect(dialog).toHaveTextContent(
-      "Someone else saved this sequence, so your changes since your last save are not saved. Leaving throws them away.",
+      "Someone else saved this sequence. Leaving throws your unsaved changes away.",
     );
 
     fireEvent.click(within(dialog).getByRole("button", { name: "Leave without saving" }));

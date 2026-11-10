@@ -35,9 +35,8 @@ export function RuleNotices({ form }: { form: RuleForm }) {
       {problemCount > 0 && form.theirs === null ? (
         <Notice tone="attention">
           {plural(problemCount, {
-            one: "This rule has # problem, shown at its field. It matches no machine until it is fixed.",
-            other:
-              "This rule has # problems, shown at their fields. It matches no machine until they are fixed.",
+            one: "This rule has # problem and matches no machine.",
+            other: "This rule has # problems and matches no machine.",
           })}
         </Notice>
       ) : null}

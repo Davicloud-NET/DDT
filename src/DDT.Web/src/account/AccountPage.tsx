@@ -29,10 +29,7 @@ export function AccountPage() {
       <PageHeader title={<Trans>Account and security</Trans>} />
       {user.mustChangePassword ? (
         <Notice tone="attention" title={<Trans>Set a password of your own first</Trans>}>
-          <Trans>
-            You signed in with a password an administrator was shown. Replace it under Password;
-            until then, DDT shows you nothing but this page.
-          </Trans>
+          <Trans>Until then, DDT shows you nothing but this page.</Trans>
         </Notice>
       ) : null}
       <div className="grid items-start gap-4 lg:grid-cols-2">

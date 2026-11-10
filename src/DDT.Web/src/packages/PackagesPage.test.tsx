@@ -115,25 +115,17 @@ function uploadOf(file: string, added: PackageSummary, kind: "Drivers" | "Files"
 
 describe("PackagesPage", () => {
   describe("the lists", () => {
-    it("explains what driver packages are for when there is none", async () => {
+    it("says when there is no driver package", async () => {
       await open("drivers", []);
 
       expect(await screen.findByRole("heading", { level: 1, name: "Drivers" })).toBeInTheDocument();
       expect(await screen.findByText("No driver packages yet")).toBeInTheDocument();
-      expect(
-        screen.getByText(/^Upload a zip of drivers and choose the models it is for\./),
-      ).toBeInTheDocument();
     });
 
-    it("explains what file packages are for when there is none", async () => {
+    it("says when there is no file package", async () => {
       await open("files", [drivers]);
 
       expect(await screen.findByText("No file packages yet")).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          "Upload a zip of files, then choose it in a Run script step of a task sequence.",
-        ),
-      ).toBeInTheDocument();
     });
 
     it("shows what a driver package holds and the machines it matches", async () => {
@@ -422,7 +414,7 @@ describe("PackagesPage", () => {
 
       const dialog = await screen.findByRole("dialog", { name: "Delete Lab scripts?" });
       expect(dialog).toHaveAccessibleDescription(
-        "Lab scripts (300 MB) is deleted from the library. The sequence Lab setup names it in a Run script step and shows a problem until another package is chosen. The server refuses while a machine is assigned or runs a sequence that uses it.",
+        "Lab scripts (300 MB) is deleted from the library. The sequence Lab setup shows a problem until another package is chosen.",
       );
 
       press(within(dialog).getByRole("button", { name: "Delete package" }));
@@ -432,7 +424,7 @@ describe("PackagesPage", () => {
       );
     });
 
-    it("names the sequences that inject a driver package", async () => {
+    it("names the models that lose a driver package", async () => {
       const { server } = await open("drivers", [drivers], {
         [`DELETE /api/packages/${drivers.id}`]: { status: 204 },
       });
@@ -443,7 +435,7 @@ describe("PackagesPage", () => {
       const dialog = await screen.findByRole("dialog", { name: "Delete Latitude drivers?" });
       await waitFor(() => {
         expect(dialog).toHaveAccessibleDescription(
-          "Latitude drivers (300 MB) is deleted from the library. Machines of Dell Inc. Latitude* no longer get these drivers from the Inject drivers step of Install Windows. The server refuses while a machine is assigned or runs a sequence that uses it.",
+          "Latitude drivers (300 MB) is deleted from the library. Machines of Dell Inc. Latitude* no longer get these drivers.",
         );
       });
 
@@ -463,7 +455,7 @@ describe("PackagesPage", () => {
 
       const dialog = await screen.findByRole("dialog", { name: "Delete Lab scripts?" });
       expect(dialog).toHaveAccessibleDescription(
-        "Lab scripts (300 MB) is deleted from the library. Which sequences name it is not known, because not every sequence could be read; those that do show a problem until another package is chosen. The server refuses while a machine is assigned or runs a sequence that uses it.",
+        "Lab scripts (300 MB) is deleted from the library. Sequences that name it show a problem until another package is chosen.",
       );
       expect(dialog).not.toHaveTextContent("No sequence names it.");
     });

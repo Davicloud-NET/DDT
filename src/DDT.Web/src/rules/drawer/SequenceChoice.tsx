@@ -24,7 +24,7 @@ export function SequenceChoice({
   const { base, edit, findings, change } = form;
 
   const choices = [
-    { id: NO_SEQUENCE, label: t`None, a later rule may choose one` },
+    { id: NO_SEQUENCE, label: t`None` },
     ...sequences.map((sequence) => {
       const count = sequence.problemCount;
       const problems = plural(count, { one: "# problem", other: "# problems" });

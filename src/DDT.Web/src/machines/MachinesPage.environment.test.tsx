@@ -34,11 +34,10 @@ const installLinux = sequenceSummary({
   kind: "Linux",
 });
 
-const restartsFirst =
-  "Install Linux runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first.";
+const restartsFirst = "The machine restarts into the Linux boot environment first.";
 
 const staysAssigned =
-  "Install Linux runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it.";
+  "Install Linux runs in the Linux boot environment, which this server does not have. It waits until the server has it.";
 
 // A waiting machine in Windows PE whose rule chooses Install Linux, with the approval dialog open.
 async function openApproval(bootEnvironments: ("WindowsPE" | "LinuxBoot")[]): Promise<HTMLElement> {
@@ -182,7 +181,7 @@ describe("MachinesPage", () => {
 
       expect(
         await within(dialog).findByText(
-          "Install Linux runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again.",
+          "Install Linux runs in the Linux boot environment, and this machine's agent is too old to restart into it. It starts once the machine is started from the network again.",
         ),
       ).toBeInTheDocument();
       expect(within(dialog).queryByText(restartsFirst)).not.toBeInTheDocument();

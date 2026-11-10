@@ -23,31 +23,12 @@ export function ProviderGroup({ form, authority }: { form: OidcForm; authority: 
           field="authority"
           canChange
           label={<Trans>Provider address</Trans>}
-          hint={
-            <Trans>
-              The provider's https address, where DDT reads its discovery document. A saved client
-              secret goes only to the provider it was entered for, so after a change of the address,
-              enter it again.
-            </Trans>
-          }
+          hint={<Trans>An https address. After a change, enter the client secret again.</Trans>}
           placeholder="https://login.example.com/realms/ddt"
           mono
         />
-        <SettingText
-          form={form}
-          field="displayName"
-          canChange
-          label={<Trans>Button text</Trans>}
-          hint={<Trans>What the button on the sign-in page says.</Trans>}
-        />
-        <SettingText
-          form={form}
-          field="clientId"
-          canChange
-          label={<Trans>Client ID</Trans>}
-          hint={<Trans>The ID the provider shows for DDT's client.</Trans>}
-          mono
-        />
+        <SettingText form={form} field="displayName" canChange label={<Trans>Button text</Trans>} />
+        <SettingText form={form} field="clientId" canChange label={<Trans>Client ID</Trans>} mono />
         <SettingSecret
           form={form}
           field="clientSecret"
@@ -69,9 +50,7 @@ export function ProviderGroup({ form, authority }: { form: OidcForm; authority: 
         <div className="flex flex-col gap-1.5">
           <SecretValue label={<Trans>Redirect URI</Trans>} value={redirectUri()} />
           <span className="type-small text-muted">
-            <Trans>
-              Register this address as the redirect URI of DDT's client at the provider.
-            </Trans>
+            <Trans>Register this address at the provider.</Trans>
           </span>
         </div>
       </div>

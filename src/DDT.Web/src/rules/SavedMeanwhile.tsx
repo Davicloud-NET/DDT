@@ -32,8 +32,6 @@ export function SavedMeanwhile({ title, onTakeTheirs, onKeepMine, isBusy }: Save
           </Button>
         </>
       }
-    >
-      <Trans>Use theirs throws your changes away. Keep mine saves your version over theirs.</Trans>
-    </Notice>
+    />
   );
 }

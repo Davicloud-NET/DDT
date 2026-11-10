@@ -12,9 +12,7 @@ export function PartitionFields({ step, findings, onChange }: KindFieldsProps<Pa
   return (
     <>
       <p className="text-ink-2 sm:col-span-2">
-        <Trans>
-          Erases the whole disk and creates the EFI system, MSR, Windows and recovery partitions.
-        </Trans>
+        <Trans>Erases the whole disk.</Trans>
       </p>
       <NumberSetting
         label={<Trans>System partition in MB</Trans>}

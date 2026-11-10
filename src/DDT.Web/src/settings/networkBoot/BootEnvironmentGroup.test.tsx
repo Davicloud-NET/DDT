@@ -93,20 +93,17 @@ async function group(): Promise<HTMLElement> {
 }
 
 describe("BootEnvironmentGroup", () => {
-  it("says who starts what, which file Linux machines load, and what a DHCP server that names a boot file does", async () => {
+  it("says which file Linux machines load, and what a DHCP server that names a boot file does", async () => {
     serve();
 
     const page = await screen.findByRole("main");
     await group();
 
     expect(page).toHaveTextContent(
-      "A machine with a run starts the boot environment its task sequence needs: Windows PE for Windows, the Linux boot environment for a Linux image. This setting decides for every other 64-bit UEFI machine.",
+      "Machines that start the Linux boot environment load linux/shimx64.efi over TFTP.",
     );
     expect(page).toHaveTextContent(
-      "Machines that start the Linux boot environment load linux/shimx64.efi over TFTP, whatever the boot target for 64-bit UEFI names.",
-    );
-    expect(page).toHaveTextContent(
-      "A DHCP server that names a boot file itself starts the same environment on every machine, and if it names another server's file, the Linux boot environment does not start at all.",
+      "A DHCP server that names a boot file itself starts the same environment on every machine.",
     );
     expect(selectKey(page, "Machines without a run start")).toHaveTextContent(
       "Automatic: Windows PE once a boot image is built, Linux until then",

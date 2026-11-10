@@ -35,9 +35,8 @@ export function GroupsAndRolesGroup({
     <SettingsGroup title={<Trans>Groups and roles</Trans>}>
       <p className="max-w-[80ch] type-small text-ink-2">
         <Trans>
-          At each sign-in, a directory account gets the highest role its groups below give it, and
-          an account in none of them cannot sign in. While no group is listed, administrators choose
-          the role of each directory account on the Users and roles page.
+          A directory account gets the highest role its groups below give it. An account in none of
+          them cannot sign in.
         </Trans>
       </p>
       <SettingSwitch
@@ -45,7 +44,7 @@ export function GroupsAndRolesGroup({
         field="resolveNestedGroups"
         canChange
         label={<Trans>Read the account's groups, nested groups included</Trans>}
-        hint={<Trans>The group map needs it: while it is off, DDT reads no groups at all.</Trans>}
+        hint={<Trans>The group map needs it.</Trans>}
       />
       <RoleMapEditor
         label={t`Groups and the roles they give`}
@@ -58,7 +57,6 @@ export function GroupsAndRolesGroup({
         describe={(key) => <GroupName description={names.describe(key)} />}
         empty={<Trans>No group is listed, so groups decide no role.</Trans>}
         addLabel={<Trans>Add a group by its distinguished name</Trans>}
-        addHint={<Trans>A group added here gives Viewer until you choose its role.</Trans>}
         addPlaceholder="CN=DDT Admins,OU=Groups,DC=corp,DC=example"
         addAction={<Trans>Add group</Trans>}
         duplicate={t`This group is listed already.`}

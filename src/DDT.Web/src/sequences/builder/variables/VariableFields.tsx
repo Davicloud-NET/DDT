@@ -35,9 +35,6 @@ export function VariableFields({
         label={<Trans>Default</Trans>}
         field={at("default")}
         findings={findings}
-        hint={
-          <Trans>What the variable holds unless an input, a rule or a machine role sets it.</Trans>
-        }
         value={variable.default ?? ""}
         onChange={(text) => {
           update({ default: orNull(text) });
@@ -56,11 +53,6 @@ export function VariableFields({
         label={<Trans>Steps may change it</Trans>}
         field={at("setBySteps")}
         findings={findings}
-        hint={
-          <Trans>
-            Set variable steps and scripts may give it a new value while the run goes on.
-          </Trans>
-        }
         value={variable.setBySteps}
         onChange={(setBySteps) => {
           update({ setBySteps }, true);

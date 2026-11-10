@@ -21,7 +21,7 @@ export function UploadProgress({
 }: {
   run: UploadRun;
   now: number;
-  verifyingHint: ReactNode;
+  verifyingHint?: ReactNode;
   onStop: () => void;
 }) {
   const { progress } = run;
@@ -53,7 +53,9 @@ export function UploadProgress({
           </Button>
         )}
       </span>
-      {verifying ? <span className="type-small text-ink-2">{verifyingHint}</span> : null}
+      {verifying && verifyingHint !== undefined ? (
+        <span className="type-small text-ink-2">{verifyingHint}</span>
+      ) : null}
       {progress.retrying ? (
         <span role="status" className="type-small text-attention-text">
           <Trans>The server does not answer. The upload goes on when it does.</Trans>

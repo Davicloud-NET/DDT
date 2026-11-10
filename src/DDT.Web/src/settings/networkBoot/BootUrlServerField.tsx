@@ -21,11 +21,7 @@ export function BootUrlServerField({
   return (
     <ComboBox
       label={<Trans>Server name for the URL</Trans>}
-      hint={
-        <Trans>
-          The name or IPv4 address machines reach DDT by. The boot file offers URLs with it.
-        </Trans>
-      }
+      hint={<Trans>The name or IPv4 address machines reach DDT by.</Trans>}
       mono
       allowsCustomValue
       inputValue={server}

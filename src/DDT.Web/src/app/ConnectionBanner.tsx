@@ -36,10 +36,7 @@ export function ConnectionBanner({ live }: { live: LiveConnection }) {
       role="status"
       className="shrink-0 border-b border-line bg-attention px-6 py-2 type-small text-on-attention"
     >
-      <Trans>
-        The live connection to the server is lost. DDT keeps trying to reconnect; until then, pages
-        refresh every few seconds.
-      </Trans>
+      <Trans>The live connection to the server is lost. DDT keeps trying to reconnect.</Trans>
     </div>
   );
 }

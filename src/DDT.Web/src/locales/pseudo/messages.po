@@ -182,7 +182,7 @@ msgid "{activeRuns, plural, one {Assigned to or running on # machine} other {Ass
 msgstr ""
 
 #: src/sequences/sequenceList.ts
-msgid "{activeRuns, plural, one {The machine it is assigned to or running on keeps the copy it got and finishes with it.} other {The # machines it is assigned to or running on keep the copy they got and finish with it.}}"
+msgid "{activeRuns, plural, one {The machine it is assigned to or running on finishes with its copy.} other {The # machines it is assigned to or running on finish with their copy.}}"
 msgstr ""
 
 #: src/machines/list/runDetail.ts
@@ -313,10 +313,6 @@ msgstr ""
 msgid "{count, plural, one {# condition} other {# conditions}}"
 msgstr ""
 
-#: src/sequences/steps/InjectDriversFields.tsx
-msgid "{count, plural, one {# driver package is in the library, for the models its targets name.} other {# driver packages are in the library, each for the models its targets name.}}"
-msgstr ""
-
 #: src/settings/directory/TestedGroups.tsx
 #: src/users/directory/DirectoryCheckResult.tsx
 msgid "{count, plural, one {# group} other {# groups}}"
@@ -355,7 +351,7 @@ msgid "{count, plural, one {Added # image from {file}.} other {Added # images fr
 msgstr ""
 
 #: src/rules/RuleTestOutcome.tsx
-msgid "{count, plural, one {It has # problem, so it cannot run until it is fixed.} other {It has # problems, so it cannot run until they are fixed.}}"
+msgid "{count, plural, one {It has # problem and cannot run.} other {It has # problems and cannot run.}}"
 msgstr ""
 
 #: src/packages/DriverTargets.tsx
@@ -371,7 +367,7 @@ msgid "{count, plural, one {The library now holds # image from {file}.} other {T
 msgstr ""
 
 #: src/runs/panel/LinuxDetours.tsx
-msgid "{count, plural, one {The machine started from the network once while its run goes on in the installed Linux and was sent back to its disk, and at {max} such starts in a row the server ends the run.} other {The machine started from the network # times in a row while its run goes on in the installed Linux and was sent back to its disk each time, and at {max} such starts in a row the server ends the run.}}"
+msgid "{count, plural, one {The machine started from the network once and was sent back to its disk. At {max} such starts in a row, the run ends.} other {The machine started from the network # times in a row and was sent back to its disk. At {max} such starts in a row, the run ends.}}"
 msgstr ""
 
 #: src/accounts/DeleteAccountDialog.tsx
@@ -379,7 +375,7 @@ msgid "{count, plural, one {The sequence {list} uses this account. Choose anothe
 msgstr ""
 
 #: src/packages/packages.ts
-msgid "{count, plural, one {The sequence {names} names it in a Run script step and shows a problem until another package is chosen.} other {The sequences {names} name it in a Run script step and show a problem until another package is chosen.}}"
+msgid "{count, plural, one {The sequence {names} shows a problem until another package is chosen.} other {The sequences {names} show a problem until another package is chosen.}}"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -518,11 +514,11 @@ msgid "{image} is an {architecture} image, and DDT deploys only x64 Windows. Cho
 msgstr ""
 
 #: src/machines/secureBoot.ts
-msgid "{image} is not signed for Secure Boot, and this machine has Secure Boot on. The run writes it only if you allow it, and the machine then starts it once Secure Boot is turned off in its firmware setup or your own key is enrolled."
+msgid "{image} is not signed for Secure Boot, and this machine has Secure Boot on. To start it, turn Secure Boot off in the firmware setup or enroll your own key."
 msgstr ""
 
 #: src/machines/secureBoot.ts
-msgid "{image} is not signed for Secure Boot. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here."
+msgid "{image} is not signed for Secure Boot. If this machine has Secure Boot on, the run stops before it erases anything, unless you allow the image here."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -531,15 +527,15 @@ msgid "{image} is signed under {ca}, which this machine's firmware does not trus
 msgstr ""
 
 #: src/machines/secureBoot.ts
-msgid "{image} is signed under {cas}, which this machine's firmware does not trust. The run writes it only if you allow it, and the machine then starts it once that CA is allowed or Secure Boot is turned off in its firmware setup."
+msgid "{image} is signed under {cas}, which this machine's firmware does not trust. To start it, allow that CA or turn Secure Boot off in the firmware setup."
 msgstr ""
 
 #: src/machines/secureBoot.ts
-msgid "{image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it, and this machine has Secure Boot on. The run writes it only if you allow it, and the machine then starts it once Secure Boot is turned off in its firmware setup or your own key is enrolled."
+msgid "{image} may not start with Secure Boot on, and this machine has it on. To start it, turn Secure Boot off in the firmware setup or enroll your own key."
 msgstr ""
 
 #: src/machines/secureBoot.ts
-msgid "{image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here."
+msgid "{image} may not start with Secure Boot on. If this machine has it on, the run stops before it erases anything, unless you allow the image here."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -692,6 +688,10 @@ msgstr ""
 msgid "{minutes} min {seconds} s"
 msgstr ""
 
+#: src/boot/JobOutput.tsx
+msgid "{missing} more lines were not kept."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.userDataPowerStateNote"
 msgid "{mode, select, reboot {The user-data restarts the machine with power_state. The run waits for that restart and then goes on with its steps in the installed Linux.} off {The user-data shuts the machine down with power_state. The run waits until someone switches the machine on again, and then goes on with its steps in the installed Linux.} other {The user-data sets power_state, so cloud-init may restart the machine or shut it down. The run waits for that before its steps in the installed Linux, and after a shutdown until someone switches the machine on again.}}"
@@ -706,16 +706,9 @@ msgstr ""
 msgid "{more, plural, one {(+# line)} other {(+# lines)}}"
 msgstr ""
 
+#: src/images/imageView.ts
 #: src/packages/packages.ts
 msgid "{name} ({size}) is deleted from the library."
-msgstr ""
-
-#: src/images/imageView.ts
-msgid "{name} ({size}) is removed from the library and can no longer be used by a task sequence. Its compressed disk is deleted from the server."
-msgstr ""
-
-#: src/images/imageView.ts
-msgid "{name} ({size}) is removed from the library and can no longer be used by a task sequence. The WIM file is deleted from the server once no other image in the library comes from it."
 msgstr ""
 
 #: src/sequences/builder/account/useAccountChoices.ts
@@ -723,15 +716,15 @@ msgid "{name} ({user})"
 msgstr ""
 
 #: src/users/userView.ts
-msgid "{name} and its API tokens are deleted from DDT. The audit log keeps its entries. If its directory groups still give it a role, it comes back at its next sign-in as a new account; to keep it out, disable it instead."
+msgid "{name} and its API tokens are deleted. If its directory groups still give it a role, it comes back at its next sign-in; to keep it out, disable it instead."
 msgstr ""
 
 #: src/users/userView.ts
-msgid "{name} and its API tokens are deleted from DDT. The audit log keeps its entries. If single sign-on creates accounts, it comes back at its next sign-in as a new account; to keep it out, disable it instead."
+msgid "{name} and its API tokens are deleted. If single sign-on creates accounts, it comes back at its next sign-in; to keep it out, disable it instead."
 msgstr ""
 
 #: src/users/userView.ts
-msgid "{name} and its API tokens are deleted. The audit log keeps its entries. This cannot be undone; to keep the account out for now, disable it instead."
+msgid "{name} and its API tokens are deleted. This cannot be undone."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -787,10 +780,6 @@ msgctxt "sequence.valueNameRepeated"
 msgid "{name} is declared already. Names ignore case."
 msgstr ""
 
-#: src/sequences/sequenceList.ts
-msgid "{name} is deleted and can no longer be assigned or chosen at a machine."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.accountDisabled"
 msgid "{name} is disabled, so a sign-in is refused before the directory is asked."
@@ -816,17 +805,9 @@ msgstr ""
 msgid "{name} is in the library now."
 msgstr ""
 
-#: src/settings/AgentPanel.tsx
-#: src/settings/LinuxAgentPanel.tsx
-msgid "{name} is larger than {limit}, the most the server takes for the agent."
-msgstr ""
-
-#: src/settings/ConsolePanel.tsx
-msgid "{name} is larger than {limit}, the most the server takes for the console."
-msgstr ""
-
+#: src/settings/agent/useBinaryUpload.ts
 #: src/settings/logo/logoProblem.ts
-msgid "{name} is larger than {limit}, the most the server takes for the logo."
+msgid "{name} is larger than {limit}."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -849,7 +830,7 @@ msgid "{name} is not a fact of the machine or a value that a rule or a machine r
 msgstr ""
 
 #: src/settings/logo/logoProblem.ts
-msgid "{name} is not a PNG image. Upload the logo as a PNG file."
+msgid "{name} is not a PNG image."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -868,7 +849,11 @@ msgid "{name} is set more than once here. Keep one."
 msgstr ""
 
 #: src/users/UserActionConsequence.tsx
-msgid "{name} is signed out within a minute and cannot sign in, and its API tokens stop working, until an administrator enables it again. Nothing is deleted."
+msgid "{name} is signed out within a minute and cannot sign in, and its API tokens stop working. Nothing is deleted."
+msgstr ""
+
+#: src/users/UserActionConsequence.tsx
+msgid "{name} is signed out within a minute and signs in with the password alone until it sets up an authenticator again."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -887,31 +872,23 @@ msgid "{name} looks like a password or another secret, and everyone who can sign
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
-msgid "{name} needs a newer agent than this machine runs, so it does not start. The run stays assigned and starts once the machine is started from the network again, where it takes the server's agent."
+msgid "{name} needs a newer agent than this machine runs. It starts once the machine is started from the network again."
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
-msgid "{name} runs in the Linux boot environment, and this machine started Windows PE with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."
+msgid "{name} runs in the Linux boot environment, and this machine's agent is too old to restart into it. It starts once the machine is started from the network again."
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
-msgid "{name} runs in the Linux boot environment, and this machine started Windows PE. The machine restarts into the Linux boot environment first."
+msgid "{name} runs in the Linux boot environment, which this server does not have. It waits until the server has it."
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
-msgid "{name} runs in the Linux boot environment, which this server does not have. The run stays assigned and does not start until the server has it."
+msgid "{name} runs in Windows PE, and this machine's agent is too old to restart into it. It starts once the machine is started from the network again."
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
-msgid "{name} runs in Windows PE, and this machine started the Linux boot environment with an agent too old to restart into it. The run stays assigned and starts once the machine is started from the network again."
-msgstr ""
-
-#: src/machines/bootEnvironment.ts
-msgid "{name} runs in Windows PE, and this machine started the Linux boot environment. The machine restarts into Windows PE first."
-msgstr ""
-
-#: src/machines/bootEnvironment.ts
-msgid "{name} runs in Windows PE, and this server has no boot image to start it from. The run stays assigned and does not start until an administrator builds one on the Boot image page."
+msgid "{name} runs in Windows PE, and this server has no boot image. It waits until one is built."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1049,7 +1026,7 @@ msgid "{problemCount, plural, one {# problem} other {# problems}}"
 msgstr ""
 
 #: src/rules/drawer/RuleNotices.tsx
-msgid "{problemCount, plural, one {This rule has # problem, shown at its field. It matches no machine until it is fixed.} other {This rule has # problems, shown at their fields. It matches no machine until they are fixed.}}"
+msgid "{problemCount, plural, one {This rule has # problem and matches no machine.} other {This rule has # problems and matches no machine.}}"
 msgstr ""
 
 #: src/rules/list/RuleSummary.tsx
@@ -1087,19 +1064,15 @@ msgid "{returns, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}"
 msgstr ""
 
 #: src/machines/approval.ts
-msgid "{rule} chooses {name}, but it has {problems} and cannot run until they are fixed. Approving authorizes {label} without running anything."
+msgid "{rule} chooses {name}, but it has {problems}. Approving authorizes {label} without running anything."
 msgstr ""
 
 #: src/machines/approval.ts
-msgid "{rule} chooses {name}, which erases a disk, and the machine has more than one; sign in at it to choose the disk. Approving authorizes {label} without running anything."
+msgid "{rule} chooses {name}, but the machine has more than one disk. Sign in at it to choose one. Approving authorizes {label} without running anything."
 msgstr ""
 
 #: src/machines/approval.ts
-msgid "{rule} chooses {name}, which joins the domain, and the machine has no name yet; assign the sequence with a computer name. Approving authorizes {label} without running anything."
-msgstr ""
-
-#: src/machines/approval.ts
-msgid "{rule} chooses {name}, which names the machine in its cloud-init seed, and the machine has no name yet; assign the sequence with a computer name. Approving authorizes {label} without running anything."
+msgid "{rule} chooses {name}, but the machine has no name yet. Assign the sequence with a computer name. Approving authorizes {label} without running anything."
 msgstr ""
 
 #: src/lib/format.ts
@@ -1141,11 +1114,11 @@ msgid "{sequence} names the machine with its ComputerName value, and nothing giv
 msgstr ""
 
 #: src/rules/ruleTestText.ts
-msgid "{sequence}, assigned on the web, which comes before every rule"
+msgid "{sequence}, assigned on the web"
 msgstr ""
 
 #: src/rules/ruleTestText.ts
-msgid "{sequence}, chosen at the machine, which comes before every rule"
+msgid "{sequence}, chosen at the machine"
 msgstr ""
 
 #: src/rules/ruleTestText.ts
@@ -1364,27 +1337,27 @@ msgid "<0>{subject}</0> <1>{operator}</1> {value}"
 msgstr ""
 
 #: src/setup/SetupChecklist.tsx
-msgid "<0>Add a Windows image</0>: from an ISO, a folder on the server, an MDT deployment share or an upload."
+msgid "<0>Add a Windows image</0>."
 msgstr ""
 
 #: src/setup/SetupChecklist.tsx
-msgid "<0>Build the boot image</0> that machines netboot into."
+msgid "<0>Build the boot image</0>."
 msgstr ""
 
 #: src/setup/SetupChecklist.tsx
-msgid "<0>Change the first password</0>, which the installer left in a file on the server."
+msgid "<0>Change the first password</0>."
 msgstr ""
 
 #: src/setup/SetupChecklist.tsx
-msgid "<0>Choose the network card</0> DDT answers netboot on, and see who else answers on this server."
+msgid "<0>Choose the network card</0> DDT answers netboot on."
 msgstr ""
 
 #: src/boot/BuildCommand.tsx
-msgid "<0>Download the root certificate</0> as ddt-root.pem. The agent trusts only the server certificates it signed."
+msgid "<0>Download the root certificate</0> as ddt-root.pem."
 msgstr ""
 
 #: src/setup/SetupChecklist.tsx
-msgid "<0>Make a task sequence</0> from the Install Windows template, which erases the disk, applies the image and sets up Windows."
+msgid "<0>Make a task sequence</0> from the Install Windows template."
 msgstr ""
 
 #: src/tokens/MakeTokenForm.tsx
@@ -1393,6 +1366,10 @@ msgstr ""
 
 #: src/tokens/MakeTokenForm.tsx
 msgid "1 to 365 days. It stops working on {expires}."
+msgstr ""
+
+#: src/settings/networkBoot/TransfersGroup.tsx
+msgid "1 to 64. Lower it to 8 or 4 where a link loses packets."
 msgstr ""
 
 #: src/settings/networkBoot.ts
@@ -1432,16 +1409,8 @@ msgctxt "bootImage.busy"
 msgid "A build or an install of the ADK is running already. Wait for it to end."
 msgstr ""
 
-#: src/boot/AdkState.tsx
-msgid "A build takes Microsoft's Windows ADK with its Windows PE add-on, and this server has none."
-msgstr ""
-
-#: src/boot/BuildPanel.tsx
-msgid "A build takes the address {address}, the server's root certificate, its agent and the drivers flagged for Windows PE. Machines netboot the new image once it is done, and the build before it stays to go back to."
-msgstr ""
-
-#: src/settings/DeploymentDefaultsPage.tsx
-msgid "A change applies to runs that start after it. A Write the answer file step can set its own time zone, language and keyboard, and a Join the domain step its own organizational unit."
+#: src/settings/server/ConfigurationPanel.tsx
+msgid "A change takes a restart of DDT."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1489,7 +1458,11 @@ msgid "A culture name. Left empty, the image's language."
 msgstr ""
 
 #: src/settings/networkBoot/BootEnvironmentGroup.tsx
-msgid "A DHCP server that names a boot file itself starts the same environment on every machine, and if it names another server's file, the Linux boot environment does not start at all."
+msgid "A DHCP server that names a boot file itself starts the same environment on every machine."
+msgstr ""
+
+#: src/settings/directory/GroupsAndRolesGroup.tsx
+msgid "A directory account gets the highest role its groups below give it. An account in none of them cannot sign in."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1515,24 +1488,8 @@ msgctxt "package.filesHaveNoTargets"
 msgid "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets."
 msgstr ""
 
-#: src/runs/panel/LinuxHandOverWait.tsx
-msgid "A first start can fail or be cut short, so DDT tries the disk again, and ends the run if the machine keeps coming back. If it does, the image has no cloud-init or no systemd, the user-data keeps cloud-init from running DDT's script, the machine does not start from its disk, or that script failed. Look at the machine's own screen, and in the installed Linux at <0>{output}</0> and <1>{journal}</1>."
-msgstr ""
-
-#: src/settings/directory/GroupsAndRolesGroup.tsx
-msgid "A group added here gives Viewer until you choose its role."
-msgstr ""
-
 #: src/settings/signIn/ClaimRolesGroup.tsx
-msgid "A group as the provider sends it in the claim above. It gives Viewer until you choose its role."
-msgstr ""
-
-#: src/settings/networkBoot/InterfacesGroup.tsx
-msgid "A host may have a network adapter on a segment whose DHCP belongs to someone else, so DDT answers on no interface until it is listed. List the interfaces machines reach DDT on, and never a VPN tunnel."
-msgstr ""
-
-#: src/settings/deploymentDefaults/DomainGroup.tsx
-msgid "A Join the domain step joins the machine online in Windows with this account, which it fetches while the step runs. Left without a domain name, machines stay in a workgroup."
+msgid "A group as the provider sends it in the claim above."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1540,16 +1497,12 @@ msgctxt "machine.changedWhileRemoving"
 msgid "A machine changed while it was being removed. Look at it again before removing it."
 msgstr ""
 
-#: src/roles/drawer/RoleFields.tsx
-msgid "A machine gets them from each rule that gives it the role, after the values the rules set themselves."
+#: src/settings/ApprovalPage.tsx
+msgid "A machine over either limit is refused."
 msgstr ""
 
 #: src/settings/networkBoot/TransfersGroup.tsx
 msgid "A machine over the limit waits until a transfer ends."
-msgstr ""
-
-#: src/roles/MachineRolesPage.tsx
-msgid "A machine role is a set of values that rules give machines together, such as the time zone and the computer name of a kiosk. It says nothing about what a person may do; that is a user's role, under Administration."
 msgstr ""
 
 #: src/rules/drawer/RolesPicker.tsx
@@ -1559,10 +1512,6 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "rule.roleGone"
 msgid "A machine role this rule gives no longer exists. Take it out of the rule."
-msgstr ""
-
-#: src/settings/networkBoot/BootEnvironmentGroup.tsx
-msgid "A machine with a run starts the boot environment its task sequence needs: Windows PE for Windows, the Linux boot environment for a Linux image. This setting decides for every other 64-bit UEFI machine."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1584,16 +1533,12 @@ msgstr ""
 msgid "A name starts with a letter and holds only letters, digits and _, at most 64 in all."
 msgstr ""
 
-#: src/settings/certificate/ServedCertificate.tsx
-msgid "A new certificate is served at once, on trial: this page's next request gets it, and you keep it here. If nobody keeps it within 5 minutes, DDT goes back to the certificate before."
-msgstr ""
-
 #: src/machines/MachinePage.tsx
 msgid "A new run started on this machine."
 msgstr ""
 
 #: src/accounts/drawer/PasswordSetting.tsx
-msgid "A new user name, domain or server needs the password again: the stored one goes only where it was entered for."
+msgid "A new user name, domain or server needs the password again."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1602,7 +1547,7 @@ msgid "A package can have at most {max} targets."
 msgstr ""
 
 #: src/settings/networkBoot/BootFileHint.tsx
-msgid "A path in the boot directory. Machines that no longer trust the Microsoft 2011 CA need x64/bootmgfw_ex.efi, signed by the 2023 one."
+msgid "A path in the boot directory. Machines that no longer trust the Microsoft 2011 CA need x64/bootmgfw_ex.efi."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1623,13 +1568,13 @@ msgctxt "sequence.repeatTimes"
 msgid "A repeat runs 1 to {max} times."
 msgstr ""
 
+#: src/sequences/steps/RebootFields.tsx
+msgid "A restart is only possible in the installed Linux."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.restartAfterRestart"
 msgid "A restart step restarts anyway, so it cannot restart again after it."
-msgstr ""
-
-#: src/settings/ProxiesPanel.tsx
-msgid "A reverse proxy in front of DDT tells it which client it forwards for, in X-Forwarded-For and X-Forwarded-Proto. Only requests from the addresses listed here may say so; from anywhere else DDT goes by the address the request came from. Sign-in limits, the audit log and zero touch networks all use that address."
 msgstr ""
 
 #: src/rules/rules.ts
@@ -1666,8 +1611,8 @@ msgctxt "rule.conditionTooLarge"
 msgid "A rule's condition can have at most {tests} tests, with groups nested at most {depth} deep."
 msgstr ""
 
-#: src/runs/RunHistoryPage.tsx
-msgid "A run starts when a machine is assigned a task sequence, is approved with the one a rule chose, or someone chooses one at the machine."
+#: src/packages/PackageUploadPanel.tsx
+msgid "A Run script step finds them unpacked in its working folder."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1681,11 +1626,7 @@ msgid "A script runs as an account only in Windows. {phase, select, LinuxBoot {I
 msgstr ""
 
 #: src/tokens/TokenSecret.tsx
-msgid "A script sends it in the Authorization header: Bearer, a space, then the token. It has the role {tokenRole}, and never more rights than your account has."
-msgstr ""
-
-#: src/account/AuthenticatorPanel.tsx
-msgid "A second factor protects this account even if its password is seen, for example while someone signs in at a machine being deployed."
+msgid "A script sends it in the Authorization header: Bearer, a space, then the token."
 msgstr ""
 
 #: src/rules/RuleTestOutcome.tsx
@@ -1760,6 +1701,14 @@ msgstr ""
 msgid "A sequence that is gone"
 msgstr ""
 
+#: src/sequences/builder/inspector/SharesSetting.tsx
+msgid "A share's host comes only from values fixed when the run starts."
+msgstr ""
+
+#: src/sequences/steps/ScriptResultFields.tsx
+msgid "A shell makes 194 of exit 3010."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.shellExitCodes"
 msgid "A shell script ends with an exit code from 0 to 255."
@@ -1768,6 +1717,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.shellRebootExitCodes"
 msgid "A shell script ends with an exit code from 0 to 255. For a restart use 194, which is what a shell makes of exit 3010."
+msgstr ""
+
+#: src/settings/ApprovalPage.tsx
+msgid "A sign-in at the machine then only records who is there. Zero touch is off while this is on."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1815,10 +1768,6 @@ msgctxt "package.targetEmpty"
 msgid "A target is empty."
 msgstr ""
 
-#: src/sequences/SequencesPage.tsx
-msgid "A task sequence is the list of steps a machine runs, such as partitioning the disk, applying an image and running scripts. One with problems is kept as a draft and cannot run until they are fixed."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "token.roleTooHigh"
 msgid "A token can do at most what you can, and you are {role}."
@@ -1827,14 +1776,6 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "token.lifetime"
 msgid "A token lasts 1 to {max} days."
-msgstr ""
-
-#: src/tokens/OwnTokensPanel.tsx
-msgid "A token lets a script call DDT's API as you, with a role no higher than yours and for as long as you choose."
-msgstr ""
-
-#: src/tokens/MakeTokenForm.tsx
-msgid "A token lets a script call DDT's API as you. It stops working when it expires, when it is revoked, or when your account is disabled."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1847,17 +1788,9 @@ msgctxt "identity.loginAlreadyAssociated"
 msgid "A user with this login already exists."
 msgstr ""
 
-#: src/rules/drawer/RuleFields.tsx
-msgid "A value a rule above sets already stays as that rule sets it; a sequence uses it by its name."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "namedValue.tooLong"
 msgid "A value's name can have at most {name} characters, and its text at most {text}."
-msgstr ""
-
-#: src/sequences/builder/VariablesPanel.tsx
-msgid "A variable is a value with a default, which rules, machine roles and steps may change. An input is asked on the web or at the machine before the run starts, and its answer sets the variable of its name."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1866,7 +1799,7 @@ msgid "a Viewer"
 msgstr ""
 
 #: src/images/import/ImportPanel.tsx
-msgid "A WIM, ESD or ISO copied into <0>{own}</0> on the server shows here and is imported without an upload. Configuration names more folders, such as an MDT deployment share, in DDT:ImportFolders."
+msgid "A WIM, ESD or ISO copied into <0>{own}</0> on the server shows here. Add more folders, such as an MDT deployment share, in DDT:ImportFolders."
 msgstr ""
 
 #: src/images/ImageUploadPanel.tsx
@@ -1885,8 +1818,8 @@ msgstr ""
 msgid "A Windows time zone id. Left empty, Windows picks one from the language."
 msgstr ""
 
-#: src/settings/deploymentDefaults/LocalAdministratorGroup.tsx
-msgid "A Write the answer file step with \"Add the local administrator\" creates this account. Operators can read the password by deploying a machine they control, so it should be one for deployed machines only."
+#: src/settings/directory/DirectoryTest.tsx
+msgid "A wrong password counts towards the account's lockout."
 msgstr ""
 
 #: src/packages/PackageUploadPanel.tsx
@@ -1895,14 +1828,6 @@ msgstr ""
 
 #: src/settings/ConsolePanel.tsx
 msgid "A zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll, of at most 128 MB."
-msgstr ""
-
-#: src/packages/PackageUploadPanel.tsx
-msgid "A zip of driver folders with their .inf files. Choose the hardware models it is for once it is added."
-msgstr ""
-
-#: src/packages/PackageUploadPanel.tsx
-msgid "A zip of the files a Run script step needs. The step finds them unpacked in its working folder."
 msgstr ""
 
 #: src/about/AboutPage.tsx
@@ -2068,10 +1993,6 @@ msgstr ""
 msgid "Add a local account"
 msgstr ""
 
-#: src/roles/MachineRolesPage.tsx
-msgid "Add a machine role for values that belong together, then let a rule give it to the machines it matches."
-msgstr ""
-
 #: src/packages/HardwareModelsField.tsx
 msgid "Add a model"
 msgstr ""
@@ -2128,10 +2049,6 @@ msgstr ""
 msgid "Add a step to Else of ''{title}''"
 msgstr ""
 
-#: src/sequences/builder/page/NodeTab.tsx
-msgid "Add a step to the flow to see its settings here."
-msgstr ""
-
 #: src/sequences/flow/flowLabels.ts
 msgid "Add a step to Then of ''{title}''"
 msgstr ""
@@ -2148,10 +2065,6 @@ msgstr ""
 #: src/users/AddUserDialog.tsx
 #: src/users/UserAdministration.tsx
 msgid "Add account"
-msgstr ""
-
-#: src/accounts/AccountsPage.tsx
-msgid "Add an account for a step that runs a script as someone, connects a share or joins a domain."
 msgstr ""
 
 #: src/sequences/builder/variables/AddDeclarationKeys.tsx
@@ -2214,14 +2127,6 @@ msgstr ""
 msgid "Address"
 msgstr ""
 
-#: src/sequences/steps/WriteCloudInitSeedFields.tsx
-msgid "Adds a partition labelled CIDATA at the end of the disk, where cloud-init finds these files at the machine's first start. Everyone who can sign in to DDT can read them, so passwords go in hashed."
-msgstr ""
-
-#: src/sequences/steps/InjectDriversFields.tsx
-msgid "Adds the driver packages whose targets match the machine's model to the applied image. The packages are chosen when the sequence is assigned."
-msgstr ""
-
 #: src/boot/LastBuild.tsx
 msgid "ADK"
 msgstr ""
@@ -2248,12 +2153,8 @@ msgstr ""
 msgid "After {after}"
 msgstr ""
 
-#: src/machines/assign/AssignConsequences.tsx
-msgid "After the disk image is written, the run goes on in the installed Linux, where the agent runs as a service until the run ends."
-msgstr ""
-
-#: src/machines/assign/AssignConsequences.tsx
-msgid "After the image is applied, the run goes on in the installed Windows, where the agent runs as a service until the run ends."
+#: src/settings/directory/BindAccountGroup.tsx
+msgid "After a change of the server, port or encryption, enter the password again."
 msgstr ""
 
 #: src/boot/LastBuild.tsx
@@ -2340,16 +2241,12 @@ msgctxt "stepAccount.tooManyHosts"
 msgid "An account can name at most {max} servers."
 msgstr ""
 
-#: src/inputs/fields/AccountField.tsx
-msgid "An account for this run only, which DDT uses and never shows or hands to a script."
+#: src/users/directory/DirectoryOn.tsx
+msgid "An account in none of these groups cannot sign in. The map is set on the <0>Sign-in</0> page."
 msgstr ""
 
-#: src/sequences/steps/ScriptRunAsSetting.tsx
-msgid "An account in the installed Windows, signed in for the script alone."
-msgstr ""
-
-#: src/accounts/ReauthForAccounts.tsx
-msgid "An account reaches machines with whatever it may do in the domain, so changing one needs your password again."
+#: src/settings/signIn/ClaimRolesGroup.tsx
+msgid "An account single sign-on created gets the highest role its groups give it. An identity in none of them cannot sign in."
 msgstr ""
 
 #: src/sequences/builder/account/useAccountChoices.ts
@@ -2365,24 +2262,16 @@ msgctxt "role.anAdministrator"
 msgid "an Administrator"
 msgstr ""
 
-#: src/accounts/AccountsPage.tsx
-msgid "An administrator adds accounts here."
-msgstr ""
-
-#: src/images/NoImages.tsx
-msgid "An administrator adds images by uploading WIM files or disk images here."
-msgstr ""
-
 #: src/roles/MachineRolesPage.tsx
 msgid "An administrator adds machine roles here."
 msgstr ""
 
-#: src/users/UserAdministration.tsx
-msgid "An administrator changes everything, including the accounts here; an operator approves machines and starts deployments; a viewer only looks. Directory and single sign-on accounts appear after their first sign-in."
+#: src/rules/list/NoRules.tsx
+msgid "An administrator adds rules here."
 msgstr ""
 
 #: src/sequences/list/NoSequences.tsx
-msgid "An administrator creates task sequences here. Until then, no machine can be given one."
+msgid "An administrator creates task sequences here."
 msgstr ""
 
 #: src/sequences/builder/variables/InputAskSettings.tsx
@@ -2408,21 +2297,21 @@ msgctxt "stepAccount.apiToken"
 msgid "An API token cannot change the accounts that steps use. Sign in on the web to do this."
 msgstr ""
 
-#: src/sequences/list/TemplateSelect.tsx
-msgid "An empty sequence, to which you add the steps in the editor."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "sequence.exitCodeMeansBoth"
 msgid "An exit code cannot mean both success and a restart: {codes}."
 msgstr ""
 
 #: src/settings/networkBoot/BootFileHint.tsx
-msgid "An http URL on DDT's boot port, below /boot/, where it serves the boot directory. Machines that no longer trust the Microsoft 2011 CA need bootmgfw_ex.efi, signed by the 2023 one."
+msgid "An http URL on DDT's boot port, below /boot/. Machines that no longer trust the Microsoft 2011 CA need bootmgfw_ex.efi."
 msgstr ""
 
 #: src/settings/networkBoot/BootFileHint.tsx
-msgid "An http URL on port {portText}, below /boot/, where DDT serves the boot directory. Machines that no longer trust the Microsoft 2011 CA need bootmgfw_ex.efi, signed by the 2023 one."
+msgid "An http URL on port {portText}, below /boot/. Machines that no longer trust the Microsoft 2011 CA need bootmgfw_ex.efi."
+msgstr ""
+
+#: src/settings/signIn/ProviderGroup.tsx
+msgid "An https address. After a change, enter the client secret again."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -2433,10 +2322,6 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "import.busy"
 msgid "An import is running already. Wait for it to end."
-msgstr ""
-
-#: src/packages/HardwareModelsField.tsx
-msgid "An Inject drivers step adds these drivers to machines whose model matches one of them. End a model with * to match every model that starts with it; leave the manufacturer empty for any."
 msgstr ""
 
 #: src/sequences/steps/WriteUnattendFields.tsx
@@ -2459,10 +2344,6 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "person.someOperator"
 msgid "An operator"
-msgstr ""
-
-#: src/rules/RuleTest.tsx
-msgid "An operator still approves this machine, or someone signs in at it; the rules only choose what then runs."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -2507,12 +2388,16 @@ msgid "Another request is using this upload. Wait a few seconds, then send the c
 msgstr ""
 
 #: src/settings/certificate/CertificateFacts.tsx
-msgid "Another root: an administrator's certificate, which DDT does not renew"
+msgid "Another root. DDT does not renew this certificate."
 msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.nameTaken"
 msgid "Another sequence is already called {name}. Choose another name."
+msgstr ""
+
+#: src/boot/BuildCommand.tsx
+msgid "Another server name works only if the server's certificate has it."
 msgstr ""
 
 #: src/sequences/builder/variables/InputKindSetting.tsx
@@ -2548,10 +2433,6 @@ msgstr ""
 msgid "Any part of a name"
 msgstr ""
 
-#: src/settings/ApprovalPage.tsx
-msgid "Anyone who reaches the server can register a machine, so the number waiting for approval is capped, for each address and in all. A machine over the cap is refused until others are approved or removed."
-msgstr ""
-
 #: src/audit/auditView.ts
 msgid "API token"
 msgstr ""
@@ -2582,10 +2463,6 @@ msgstr ""
 
 #: src/settings/parts/ApplyStates.tsx
 msgid "Applied"
-msgstr ""
-
-#: src/settings/server/SectionRow.tsx
-msgid "Applies at its next use"
 msgstr ""
 
 #: src/rules/drawer/RuleCondition.tsx
@@ -2644,8 +2521,8 @@ msgstr ""
 msgid "Architecture"
 msgstr ""
 
-#: src/settings/logging/LogFiles.tsx
-msgid "As a Windows service the server writes its log into the logs folder of its store, a file a day, and keeps the newest 20. The levels above decide what goes into them."
+#: src/settings/networkBoot/BootServerFields.tsx
+msgid "ASCII, at most 63 characters. Left empty, its address."
 msgstr ""
 
 #: src/sequences/builder/variables/InputAskSettings.tsx
@@ -2680,10 +2557,6 @@ msgstr ""
 msgid "Assign a sequence"
 msgstr ""
 
-#: src/runs/MachineRuns.tsx
-msgid "Assign a sequence above, or add a rule that chooses one for machines like it under Deployment, Rules."
-msgstr ""
-
 #: src/machines/AssignDialog.tsx
 msgid "Assign a task sequence to {label}"
 msgstr ""
@@ -2716,14 +2589,6 @@ msgstr ""
 msgid "At {step}"
 msgstr ""
 
-#: src/settings/directory/GroupsAndRolesGroup.tsx
-msgid "At each sign-in, a directory account gets the highest role its groups below give it, and an account in none of them cannot sign in. While no group is listed, administrators choose the role of each directory account on the Users and roles page."
-msgstr ""
-
-#: src/users/directory/DirectoryOn.tsx
-msgid "At each sign-in, a directory account gets the highest role that its groups below give it, and an account in none of them cannot sign in. The map is set on the <0>Sign-in</0> page."
-msgstr ""
-
 #: src/account/PasswordPanel.tsx
 msgid "At least 12 characters."
 msgstr ""
@@ -2745,7 +2610,7 @@ msgid "At most this many times"
 msgstr ""
 
 #: src/tokens/MakeTokenForm.tsx
-msgid "At most your own. Give it no more than the script needs."
+msgid "At most your own."
 msgstr ""
 
 #: src/sequences/builder/variables/InputAskSettings.tsx
@@ -2887,7 +2752,7 @@ msgid "Building it again"
 msgstr ""
 
 #: src/boot/JobPanel.tsx
-msgid "Building the boot image, which takes several minutes"
+msgid "Building the boot image"
 msgstr ""
 
 #: src/boot/StoredBuilds.tsx
@@ -2912,10 +2777,6 @@ msgstr ""
 
 #: src/sequences/list/SequenceTable.tsx
 msgid "by {name}"
-msgstr ""
-
-#: src/settings/ApprovalPage.tsx
-msgid "By default, a person who signs in at a netbooting machine authorizes it for the sequence they choose, and an operator can approve a waiting machine on the web. Zero touch skips both on the networks listed here."
 msgstr ""
 
 #: src/account/AuthenticatorEnrollment.tsx
@@ -3027,12 +2888,16 @@ msgstr ""
 msgid "Check machines against this rule"
 msgstr ""
 
+#: src/app/RouteError.tsx
+msgid "Check that the server is running and that this computer can reach it."
+msgstr ""
+
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "Check the join account"
 msgstr ""
 
 #: src/rules/RulesHeader.tsx
-msgid "Checked from the top. The first rule that chooses a sequence chooses it, and the first rule that sets a value sets it. A rule never approves a machine."
+msgid "Checked from the top. The first rule that chooses a sequence chooses it, and the first rule that sets a value sets it."
 msgstr ""
 
 #: src/uploads/UploadProgress.tsx
@@ -3051,6 +2916,7 @@ msgstr ""
 msgid "Choose"
 msgstr ""
 
+#: src/uploads/LeaveUploadDialog.tsx
 #: src/uploads/UnfinishedUploads.tsx
 msgid "Choose {file} again to resume at {percent}%."
 msgstr ""
@@ -3073,14 +2939,6 @@ msgctxt "sequence.conditionName"
 msgid "Choose a machine fact or a value to test."
 msgstr ""
 
-#: src/rules/RuleTest.tsx
-msgid "Choose a machine to see which rules match it, the sequence it would get and the values a run of it would start with."
-msgstr ""
-
-#: src/sequences/builder/page/NodeTab.tsx
-msgid "Choose a node in the flow to see its settings here."
-msgstr ""
-
 #: src/settings/certificate/PfxFields.tsx
 msgid "Choose a PFX file"
 msgstr ""
@@ -3091,7 +2949,7 @@ msgid "Choose a rule by MAC address or by model."
 msgstr ""
 
 #: src/runs/RunFlow.tsx
-msgid "Choose a step in the flow to see what it did."
+msgid "Choose a step in the flow."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3283,10 +3141,6 @@ msgstr ""
 msgid "Collapse"
 msgstr ""
 
-#: src/settings/agent/CurrentBinary.tsx
-msgid "Compare the SHA-256 with the one published for the release you meant to install."
-msgstr ""
-
 #: src/conditions/builder/TestRow.tsx
 msgid "Comparison of condition {number}"
 msgstr ""
@@ -3334,6 +3188,10 @@ msgstr ""
 #: src/auth/SignInPage.tsx
 #: src/settings/parts/ReauthDialog.tsx
 msgid "Confirm it is you"
+msgstr ""
+
+#: src/settings/parts/ReauthDialog.tsx
+msgid "Confirm with your password."
 msgstr ""
 
 #: src/settings/logo/LogoPreview.tsx
@@ -3409,7 +3267,7 @@ msgid "Current run"
 msgstr ""
 
 #: src/images/import/MdtNotImported.tsx
-msgid "CustomSettings.ini, with the sections {sections}. Its settings become rules and deployment defaults in DDT."
+msgid "CustomSettings.ini, with the sections {sections}."
 msgstr ""
 
 #: src/sequences/builder/canvas/NodeMenu.tsx
@@ -3440,10 +3298,6 @@ msgstr ""
 msgid "DDT added to the WDS boot menu"
 msgstr ""
 
-#: src/settings/networkBoot/NetworkBootSettings.tsx
-msgid "DDT answers netboot only on the interfaces listed here. ProxyDHCP tells each machine which boot file to load, and TFTP or HTTP serves it from the boot directory."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "netboot.noHelper"
 msgid "DDT cannot change this computer's DHCP server or WDS itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up."
@@ -3458,10 +3312,6 @@ msgstr ""
 msgid "DDT comes with ABSOLUTELY NO WARRANTY, to the extent permitted by applicable law. See the GNU General Public License for details. DDT contains software by others, under their own licences."
 msgstr ""
 
-#: src/sequences/builder/inspector/SharesSetting.tsx
-msgid "DDT connects these shares with their accounts before the step runs and disconnects them after it. A share's host comes only from values fixed when the run starts."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "settings.apply.pxeBindFailed"
 msgid "DDT could not bind UDP {port} for {protocol, select, proxyDhcp {ProxyDHCP} bootServer {PXE boot server} tftp {TFTP} tftpSinglePort {TFTP (single port)} other {{protocol}}} ({error}). {advice, select, privilegedPort {The process may not bind a privileged port. Grant NET_BIND_SERVICE, as build/compose.yaml does.} heldOnWindows {Another service holds this port for itself, usually WDS or the DHCP server. Stop it, or run DDT without the pxe role here.} inUse {Another DHCP, PXE or TFTP service already holds this port on this host. Stop it, or run DDT without the pxe role here.} dhcpServerHere {A DHCP server on this computer holds the port. Turn on LeaveDhcpPort, and DDT answers on UDP 4011 alone, which machines reach once that DHCP server sends option 60, PXEClient. UDP 4011 and TFTP are serving meanwhile.} other {Check that no other service holds the port.}}"
@@ -3472,12 +3322,12 @@ msgctxt "sequence.userDataNotCheckedWarning"
 msgid "DDT could not check this user-data: it reads only a #cloud-config document whose top level has one key per line. The run goes on in the installed Linux only if cloud-init runs vendor scripts there, so vendor_data has to stay enabled, and cloud_final_modules, if set, has to name scripts_vendor."
 msgstr ""
 
-#: src/app/RouteError.tsx
-msgid "DDT could not reach its server. Check that the server is running and that this computer can reach it, then try again."
+#: src/runs/panel/LinuxHandOverWait.tsx
+msgid "DDT ends the run if the machine keeps coming back. Look at the machine's own screen, and in the installed Linux at <0>{output}</0> and <1>{journal}</1>."
 msgstr ""
 
 #: src/sequences/steps/WriteCloudInitSeedFields.tsx
-msgid "DDT fills in <0>{placeholders}</0> with the machine's values, and the name of any of the run's values, such as a variable of the sequence or a value a rule sets, with that value. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is, for cloud-init's own templates."
+msgid "DDT fills in <0>{placeholders}</0> and any value of the run by its name. Put them in double quotes, such as <1>{example}</1>. Anything else in double braces stays as it is."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3490,12 +3340,8 @@ msgctxt "settings.certificate.newRootGenerate"
 msgid "DDT has no root yet, so Generate makes one: build every boot image again with it, and trust it in the browsers that manage DDT."
 msgstr ""
 
-#: src/settings/certificate/NewRootDialog.tsx
-msgid "DDT has no root yet, so Generate makes one. Boot images pin the root, so every boot image has to be built again with the new one, and every browser that manages DDT has to trust it. Until then, netbooting machines cannot reach the server."
-msgstr ""
-
 #: src/settings/certificate/GenerateDialog.tsx
-msgid "DDT has no root yet, so it makes one. Every boot image then has to be built again with it, and every browser that manages DDT has to trust it."
+msgid "DDT has no root yet, so it makes one."
 msgstr ""
 
 #: src/about/AboutPage.tsx
@@ -3503,19 +3349,7 @@ msgid "DDT is free software: you can redistribute it and modify it under the ter
 msgstr ""
 
 #: src/settings/certificate/GenerateDialog.tsx
-msgid "DDT issues a certificate from its root for localhost, this computer's name and addresses, and the server names below, and serves it at once, on trial until you keep it."
-msgstr ""
-
-#: src/settings/directory/UsersGroup.tsx
-msgid "DDT keys each directory account on it. With another attribute, every account is taken for a new one at its next sign-in."
-msgstr ""
-
-#: src/users/AddUserForm.tsx
-msgid "DDT makes up a password for the account and shows it once. Its owner replaces it at the first sign-in. Directory and single sign-on accounts are not added here: they appear after their first sign-in."
-msgstr ""
-
-#: src/settings/directory/BindAccountGroup.tsx
-msgid "DDT reads the directory with this account: it finds the user who signs in, and their groups. A saved password goes only to the server it was entered for, so after a change of the server, port or encryption, enter it again."
+msgid "DDT issues a certificate for localhost, this computer's name and addresses, and the server names, and serves it on trial until you keep it."
 msgstr ""
 
 #: src/settings/certificate/CertificateFacts.tsx
@@ -3523,31 +3357,15 @@ msgid "DDT renews it {renews}."
 msgstr ""
 
 #: src/boot/ReplacedAnchor.tsx
-msgid "DDT replaced the self-signed server certificate that boot images built before it pin. Machines netbooting such an image cannot reach the server until it is built again with DDT's root certificate."
-msgstr ""
-
-#: src/users/PasswordDialog.tsx
-msgid "DDT shows this password only now. At the next sign-in, {name} has to set a password of their own, and can do nothing else until then."
-msgstr ""
-
-#: src/tokens/TokenSecret.tsx
-msgid "DDT shows this token only now and keeps nothing but a hash of it. If it is lost, revoke it and make a new one."
+msgid "DDT replaced the self-signed server certificate. Machines netbooting an older boot image cannot reach the server until it is built again."
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/WdsChoices.tsx
-msgid "DDT stops Windows Deployment Services and keeps it from starting with Windows, then answers netboot itself. MDT's LiteTouch no longer netboots from this server. WDS stays installed, and this page starts it again."
+msgid "DDT stops Windows Deployment Services and keeps it from starting with Windows. MDT's LiteTouch no longer netboots from this server."
 msgstr ""
 
-#: src/settings/networkBoot/TransfersGroup.tsx
-msgid "DDT tells a netbooting machine its boot file, while the site's own DHCP server keeps handing out the addresses. Turn it off where every site's DHCP server names DDT and the boot file itself; DDT then listens on neither UDP 67 nor 4011."
-msgstr ""
-
-#: src/settings/networkBoot/TransfersGroup.tsx
-msgid "DDT then answers on UDP 4011 alone, and machines find it there once that DHCP server sends option 60, PXEClient. Where Microsoft's DHCP Server is installed, DDT does this by itself."
-msgstr ""
-
-#: src/settings/AgentPanel.tsx
-msgid "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key and restart DDT to upload the agent on this page."
+#: src/settings/ProxiesPanel.tsx
+msgid "DDT takes X-Forwarded-For and X-Forwarded-Proto only from these proxies."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3555,8 +3373,8 @@ msgctxt "settings.agent.configured"
 msgid "DDT:Agent:BinaryPath names the agent in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
 msgstr ""
 
-#: src/settings/ConsolePanel.tsx
-msgid "DDT:Agent:ConsolePath names the console in configuration, so it cannot be uploaded here. Remove the key and restart DDT to upload the console on this page."
+#: src/settings/AgentPanel.tsx
+msgid "DDT:Agent:BinaryPath names the agent in configuration. Remove the key and restart DDT to upload it here."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3564,8 +3382,8 @@ msgctxt "settings.console.configured"
 msgid "DDT:Agent:ConsolePath names the console in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
 msgstr ""
 
-#: src/settings/LinuxAgentPanel.tsx
-msgid "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration, so it cannot be uploaded here. Remove the key and restart DDT to upload it on this page."
+#: src/settings/ConsolePanel.tsx
+msgid "DDT:Agent:ConsolePath names the console in configuration. Remove the key and restart DDT to upload it here."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3573,8 +3391,12 @@ msgctxt "settings.linuxAgent.configured"
 msgid "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration, so it cannot be uploaded here. Remove the key to upload it on this page."
 msgstr ""
 
+#: src/settings/LinuxAgentPanel.tsx
+msgid "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration. Remove the key and restart DDT to upload it here."
+msgstr ""
+
 #: src/settings/certificate/ServedCertificate.tsx
-msgid "DDT:Https:GenerateSelfSignedCertificate is false in configuration, so DDT issues no certificate here. Upload one instead."
+msgid "DDT:Https:GenerateSelfSignedCertificate is false in configuration, so DDT issues no certificate here."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3747,6 +3569,10 @@ msgstr ""
 msgid "Directory account"
 msgstr ""
 
+#: src/users/AddUserForm.tsx
+msgid "Directory and single sign-on accounts are not added here: they appear after their first sign-in."
+msgstr ""
+
 #: src/users/directory/DirectoryPanel.tsx
 msgid "Directory groups"
 msgstr ""
@@ -3794,6 +3620,10 @@ msgstr ""
 
 #: src/uploads/DiscardUploadDialog.tsx
 msgid "Discard upload"
+msgstr ""
+
+#: src/images/ImageUploadPanel.tsx
+msgid "Disk images: raw, gzip, zstd, xz or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
 msgstr ""
 
 #: src/images/ImageFacts.tsx
@@ -3880,11 +3710,11 @@ msgid "Download the builder"
 msgstr ""
 
 #: src/boot/JobPanel.tsx
-msgid "Downloading and installing, which takes a few minutes"
+msgid "Downloading and installing"
 msgstr ""
 
-#: src/sequences/builder/Palette.tsx
-msgid "Drag onto a wire, or choose + on one. Arrow keys follow the flow."
+#: src/packages/PackageUploadPanel.tsx
+msgid "Driver folders with their .inf files."
 msgstr ""
 
 #: src/images/import/MdtShareChoices.tsx
@@ -3893,10 +3723,6 @@ msgstr ""
 
 #: src/packages/PackagesTable.tsx
 msgid "Driver packages"
-msgstr ""
-
-#: src/sequences/steps/InjectDriversFields.tsx
-msgid "Driver packages and their targets are under Drivers."
 msgstr ""
 
 #: src/sequences/builder/nodeDetail.ts
@@ -3910,7 +3736,7 @@ msgid "Drivers"
 msgstr ""
 
 #: src/boot/StaleReasonText.tsx
-msgid "Drivers are flagged for Windows PE, but no boot image built with this version of the build script is in the boot directory."
+msgid "Drivers are flagged for Windows PE, but the boot image was built with an older script."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3983,19 +3809,7 @@ msgid "Dutch (United States International)"
 msgstr ""
 
 #: src/account/RecoveryCodesDialog.tsx
-msgid "Each code signs you in once if you lose the authenticator. Keep them somewhere safe: they are shown only now, and new ones replace these."
-msgstr ""
-
-#: src/tokens/AllTokens.tsx
-msgid "Each person makes their own tokens on the Account and security page, with a role no higher than theirs. A token acts for its user: it stops working when it expires, is revoked, or its user is disabled or loses the role."
-msgstr ""
-
-#: src/settings/server/SectionsPanel.tsx
-msgid "Each section is saved on the page of what it configures, and applies without a restart: some at their next use, others by rebuilding their part of the running server."
-msgstr ""
-
-#: src/images/ImageUploadPanel.tsx
-msgid "Each x64 Windows image in a WIM or ESD file becomes an entry, and a Windows ISO is read for the install.wim or install.esd in it. A disk image, such as a Linux cloud image, becomes one: raw, compressed with gzip, zstd or xz, or qcow2. Convert VHDX, VMDK or VDI to raw with qemu-img first."
+msgid "Each code signs you in once if you lose the authenticator. They are shown only now."
 msgstr ""
 
 #: src/images/ImageFacts.tsx
@@ -4039,11 +3853,11 @@ msgid "Enable"
 msgstr ""
 
 #: src/settings/directory/ServerGroup.tsx
-msgid "Encrypted from the first byte."
+msgid "Encryption"
 msgstr ""
 
-#: src/settings/directory/ServerGroup.tsx
-msgid "Encryption"
+#: src/packages/HardwareModelsField.tsx
+msgid "End a model with * to match every model that starts with it. Leave the manufacturer empty for any."
 msgstr ""
 
 #: src/runs/runs.ts
@@ -4076,17 +3890,13 @@ msgctxt "mac.enterPart"
 msgid "Enter 1 to 12 hex digits of a MAC address, such as 00:15:5D."
 msgstr ""
 
-#: src/lib/serverMessages.ts
-msgctxt "computerName.empty"
+#: src/machines/assign/assignText.ts
 msgid "Enter a computer name."
 msgstr ""
 
-#: src/machines/assign/assignText.ts
-msgid "Enter a computer name. {name} gives this name to the machine in its cloud-init seed."
-msgstr ""
-
-#: src/machines/assign/assignText.ts
-msgid "Enter a computer name. {name} joins the domain under this name."
+#: src/lib/serverMessages.ts
+msgctxt "computerName.empty"
+msgid "Enter a computer name."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -4166,10 +3976,6 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "settings.secretForNewServer"
 msgid "Enter it again for the new server: a stored secret goes only to the server it was entered for."
-msgstr ""
-
-#: src/auth/TwoFactorFields.tsx
-msgid "Enter one of the recovery codes you saved."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -4261,7 +4067,7 @@ msgid "Enter true or false."
 msgstr ""
 
 #: src/sequences/fields/CodesSetting.tsx
-msgid "Enter whole numbers from -2147483648 to 2147483647, separated by commas. Until then the last list stays."
+msgid "Enter whole numbers from -2147483648 to 2147483647, separated by commas."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -4300,11 +4106,8 @@ msgid "Erases the disk and makes the partitions"
 msgstr ""
 
 #: src/sequences/steps/PartitionFields.tsx
-msgid "Erases the whole disk and creates the EFI system, MSR, Windows and recovery partitions."
-msgstr ""
-
 #: src/sequences/steps/WriteRawImageFields.tsx
-msgid "Erases the whole disk and writes the image onto it. The machine then starts the image's <0>\\EFI\\BOOT\\BOOTX64.EFI</0>, which DDT puts first in the firmware's boot order."
+msgid "Erases the whole disk."
 msgstr ""
 
 #: src/log/logLabels.ts
@@ -4313,6 +4116,14 @@ msgstr ""
 
 #: src/audit/auditView.ts
 msgid "Every action"
+msgstr ""
+
+#: src/settings/certificate/NewRootDialog.tsx
+msgid "Every boot image has to be built again with the new root, and every browser that manages DDT has to trust it. Until then, netbooting machines cannot reach the server."
+msgstr ""
+
+#: src/settings/certificate/NewRootDialog.tsx
+msgid "Every boot image has to be built again with this certificate's root, and every browser that manages DDT has to trust that root. Until then, netbooting machines cannot reach the server."
 msgstr ""
 
 #: src/boot/ReplacedAnchor.tsx
@@ -4325,7 +4136,7 @@ msgid "Every directory account is keyed on {current}. With {next} each one is ta
 msgstr ""
 
 #: src/settings/networkBoot/RescanButton.tsx
-msgid "Every host that runs network boot looks for its network adapters again and restarts its listeners with these settings. TFTP transfers in progress end, and those machines start their download again."
+msgid "Every host that runs network boot restarts its listeners. TFTP transfers in progress end."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -4342,15 +4153,19 @@ msgid "Every machine goes along Then."
 msgstr ""
 
 #: src/accounts/AccountsPage.tsx
-msgid "Every operator can obtain an account a sequence uses by running that sequence on a machine they control."
-msgstr ""
-
-#: src/sequences/builder/inspector/NodeConditions.tsx
-msgid "Every other machine goes along Else."
+msgid "Every operator can obtain an account a sequence uses by running that sequence."
 msgstr ""
 
 #: src/machines/assign/AssignBlockers.tsx
-msgid "Every task sequence has problems, so none can run. An administrator fixes them under Deployment, Task sequences."
+msgid "Every task sequence has problems, so none can run."
+msgstr ""
+
+#: src/sequences/steps/ScriptIntro.tsx
+msgid "Everyone who can sign in can read it, so no passwords."
+msgstr ""
+
+#: src/sequences/steps/WriteCloudInitSeedFields.tsx
+msgid "Everyone who can sign in can read them, so passwords go in hashed."
 msgstr ""
 
 #: src/settings/logging/LevelSelect.tsx
@@ -4518,10 +4333,6 @@ msgstr ""
 msgid "Find an image"
 msgstr ""
 
-#: src/settings/directory/UsersGroup.tsx
-msgid "Finds the user who signs in. It must contain {USER_TOKEN}, which DDT replaces with the user name typed at sign-in."
-msgstr ""
-
 #: src/deployments/deployments.ts
 msgid "Finishing"
 msgstr ""
@@ -4532,6 +4343,10 @@ msgstr ""
 
 #: src/ui/ZoomControls.tsx
 msgid "Fit"
+msgstr ""
+
+#: src/boot/WindowsPEDrivers.tsx
+msgid "Flag a driver package under <0>Library, Drivers</0> when Windows PE cannot reach the network or see a disk."
 msgstr ""
 
 #: src/sequences/builder/NodeKindsMenu.tsx
@@ -4564,40 +4379,28 @@ msgstr ""
 msgid "For {maker} {model}."
 msgstr ""
 
-#: src/sequences/builder/variables/AccountInputFields.tsx
-msgid "For a Join the domain step. Empty where it joins none."
-msgstr ""
-
-#: src/settings/networkBoot/RescanButton.tsx
-msgid "For a network adapter that was added, or an address that changed."
-msgstr ""
-
-#: src/users/UserActionConsequence.tsx
-msgid "For an account that lost its authenticator. {name} is signed out within a minute and signs in with the password alone until it sets up an authenticator again on its Account page."
-msgstr ""
-
-#: src/settings/networkBoot/AddInterfaceForm.tsx
-msgid "For an adapter no host reported, such as one still to come. An IPv4 address picks the interface that has it."
+#: src/settings/networkBoot/TransfersGroup.tsx
+msgid "For a stateful firewall that drops replies from a fresh port."
 msgstr ""
 
 #: src/packages/PackageDialog.tsx
-msgid "For network and storage drivers a machine needs before the agent runs, such as those of new laptops. They reach machines with the next boot image build; Boot, Boot image says when the build is older than the drivers."
+msgid "For network and storage drivers a machine needs before the agent runs. They reach machines with the next boot image build."
 msgstr ""
 
 #: src/images/import/MdtShareChoices.tsx
-msgid "For no model yet: set its models under Library, Drivers."
+msgid "For no model yet."
 msgstr ""
 
-#: src/settings/ApprovalPage.tsx
-msgid "For places that need two people: a sign-in at the machine then only records who is there, and an operator approves it on the web. Zero touch is off while this is on."
+#: src/boot/BuildCommand.tsx
+msgid "For the flagged drivers, put an administrator's API token into DDT_API_TOKEN."
 msgstr ""
 
 #: src/packages/HardwareModelsField.tsx
 msgid "For these hardware models"
 msgstr ""
 
-#: src/boot/BuildPanel.tsx
-msgid "For typing at a machine in Windows PE"
+#: src/inputs/fields/AccountField.tsx
+msgid "For this run only."
 msgstr ""
 
 #: src/sequences/builder/nodeDetail.ts
@@ -4642,7 +4445,7 @@ msgid "From 1 to 100."
 msgstr ""
 
 #: src/sequences/steps/PauseFields.tsx
-msgid "From 1 to 1440 minutes, a day."
+msgid "From 1 to 1440 minutes."
 msgstr ""
 
 #: src/sequences/steps/PartitionFields.tsx
@@ -4721,7 +4524,7 @@ msgid "Give {name} a new password?"
 msgstr ""
 
 #: src/accounts/AccountsPage.tsx
-msgid "Give each account the least it needs, and prefer an account asked for when the run starts, which is kept encrypted only until the run ends, to one kept here."
+msgid "Give each account the least it needs."
 msgstr ""
 
 #: src/machines/RunWaiting.tsx
@@ -4903,18 +4706,6 @@ msgstr ""
 msgid "Host names separated by commas, such as fs01.corp.example."
 msgstr ""
 
-#: src/settings/directory/TimeoutField.tsx
-msgid "How long DDT waits for each answer of the directory."
-msgstr ""
-
-#: src/settings/LoggingPanel.tsx
-msgid "How much the server writes to its log, per category. A category covers the categories below it, so DDT.Pxe covers DDT.Pxe.Tftp as well, and Default applies to every category not listed. A change applies at once."
-msgstr ""
-
-#: src/accounts/drawer/AccountFields.tsx
-msgid "How steps and this page name it, such as Join account."
-msgstr ""
-
 #: src/conditions/builder/GroupRows.tsx
 msgid "How the conditions combine"
 msgstr ""
@@ -4933,6 +4724,10 @@ msgstr ""
 
 #: src/sequences/steps.ts
 msgid "If"
+msgstr ""
+
+#: src/app/RouteError.tsx
+msgid "If it keeps failing, the server log says why."
 msgstr ""
 
 #: src/sequences/flow/flowLabels.ts
@@ -5029,13 +4824,17 @@ msgstr ""
 msgid "In Windows PE"
 msgstr ""
 
+#: src/sequences/steps/RebootFields.tsx
+msgid "In Windows PE this needs a partitioned disk."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.packageBeforePartition"
 msgid "In Windows PE, a script with a package runs only after the disk is partitioned, where the package is put."
 msgstr ""
 
 #: src/accounts/drawer/AccountFields.tsx
-msgid "In Windows, after the image is applied. A script in Windows PE runs as the system."
+msgid "In Windows, after the image is applied."
 msgstr ""
 
 #: src/boot/LastBuild.tsx
@@ -5120,6 +4919,10 @@ msgstr ""
 
 #: src/machines/bootEnvironment.ts
 msgid "Installed Windows"
+msgstr ""
+
+#: src/boot/AdkState.tsx
+msgid "Installing accepts Microsoft's licence terms for both."
 msgstr ""
 
 #: src/settings/networkBoot/InterfacesGroup.tsx
@@ -5218,7 +5021,7 @@ msgid "It cannot join machines here."
 msgstr ""
 
 #: src/boot/LinuxEnvironment.tsx
-msgid "It comes with DDT, so there is nothing to build. Task sequences that write a Linux image run in it, and Windows sequences run in Windows PE."
+msgid "It comes with DDT, so there is nothing to build."
 msgstr ""
 
 #: src/inputs/inputs.ts
@@ -5231,11 +5034,7 @@ msgid "It does not name {names}, which the server is reached by, so browsers and
 msgstr ""
 
 #: src/machines/waiting/waitState.ts
-msgid "It goes on by itself at {time}, or earlier when someone lets it go on here or at the machine."
-msgstr ""
-
-#: src/boot/BuilderPanel.tsx
-msgid "It holds the server's agent, console and root certificate, and the drivers flagged for Windows PE."
+msgid "It goes on by itself at {time}."
 msgstr ""
 
 #: src/machines/approval.ts
@@ -5251,8 +5050,12 @@ msgstr ""
 msgid "It joins the domain {domain}."
 msgstr ""
 
+#: src/sequences/SequenceEditorPage.tsx
+msgid "It may have been deleted."
+msgstr ""
+
 #: src/boot/StaleReasonText.tsx
-msgid "It names the server {address}, a name or port the server no longer has. Machines that netboot it cannot reach the server."
+msgid "It names the server {address}, which is out of date. Machines that netboot it cannot reach the server."
 msgstr ""
 
 #: src/lib/autosaveDecisions.ts
@@ -5261,10 +5064,6 @@ msgstr ""
 
 #: src/machines/MachinePage.tsx
 msgid "It registers as a new machine at its next netboot."
-msgstr ""
-
-#: src/runs/panel/LinuxHandOverWait.tsx
-msgid "It starts first, and cloud-init sets it up before DDT's agent starts there. Packages it installs take their time."
 msgstr ""
 
 #: src/machines/assign/assignText.ts
@@ -5279,10 +5078,6 @@ msgstr ""
 msgid "It trusts another root certificate than this server's. Machines that netboot it cannot reach the server."
 msgstr ""
 
-#: src/boot/BuilderPanel.tsx
-msgid "It uploads one boot image, within a day. Download it again for the next build."
-msgstr ""
-
 #: src/boot/keyboardLayouts.ts
 #: src/boot/linuxBoot.ts
 msgid "Italian"
@@ -5290,6 +5085,10 @@ msgstr ""
 
 #: src/runs/decisions.ts
 msgid "Iteration {times} of at most {most}"
+msgstr ""
+
+#: src/machines/actions/StopConfirm.tsx
+msgid "Its disk is left half written."
 msgstr ""
 
 #: src/machines/approval.ts
@@ -5329,14 +5128,6 @@ msgstr ""
 msgid "Join with"
 msgstr ""
 
-#: src/sequences/steps/JoinDomainFields.tsx
-msgid "Joins the domain of the account chosen below, in Windows after the hand-over. The machine needs a computer name."
-msgstr ""
-
-#: src/sequences/steps/JoinDomainFields.tsx
-msgid "Joins the domain set on the Deployment defaults page, in Windows after the hand-over. The machine needs a computer name."
-msgstr ""
-
 #: src/log/LogLines.tsx
 msgid "Jump to the newest"
 msgstr ""
@@ -5368,11 +5159,11 @@ msgid "Kernel"
 msgstr ""
 
 #: src/settings/certificate/NotManageable.tsx
-msgid "Kestrel:Certificates:Default:Password is set in configuration, so the certificate is managed by hand and this page only reads it. To manage it here, keep the certificate and its key as PEM files without a password, name them in Kestrel:Certificates:Default:Path and KeyPath, remove the password, and restart DDT."
+msgid "Kestrel:Certificates:Default:Password is set in configuration. To manage the certificate here, keep it and its key as PEM files without a password, name them in Kestrel:Certificates:Default:Path and KeyPath, remove the password, and restart DDT."
 msgstr ""
 
 #: src/settings/certificate/NotManageable.tsx
-msgid "Kestrel:Certificates:Default:Path and KeyPath are not both set in configuration, so DDT has no files to keep a certificate in. Name the PEM files there, where DDT may write, and restart DDT to manage the certificate here."
+msgid "Kestrel:Certificates:Default:Path and KeyPath are not both set in configuration. Name the PEM files there, where DDT may write, and restart DDT."
 msgstr ""
 
 #: src/account/AuthenticatorEnrollment.tsx
@@ -5503,12 +5294,12 @@ msgstr ""
 msgid "Leave without saving?"
 msgstr ""
 
-#: src/uploads/LeaveUploadDialog.tsx
-msgid "Leaving this page stops the upload of {file} at {percent}%. The server keeps what it has received, and choosing the file again here resumes the upload from there."
-msgstr ""
-
 #: src/users/ChangeUserForm.tsx
 msgid "Left empty, DDT shows the user name."
+msgstr ""
+
+#: src/settings/deploymentDefaults/DomainGroup.tsx
+msgid "Left empty, machines stay in a workgroup."
 msgstr ""
 
 #: src/boot/LastBuild.tsx
@@ -5574,6 +5365,10 @@ msgctxt "settings.pxe.linuxDefaultUnavailable"
 msgid "Linux is the default, but this server cannot start the Linux boot environment, so machines without a run are named the Windows PE boot file. {problem}"
 msgstr ""
 
+#: src/machines/actions/StopConfirm.tsx
+msgid "Linux stays as it is, with the steps done so far."
+msgstr ""
+
 #: src/settings/certificate/PemField.tsx
 msgid "Load a file"
 msgstr ""
@@ -5614,10 +5409,6 @@ msgstr ""
 msgid "Local account"
 msgstr ""
 
-#: src/settings/SignInSettingsPage.tsx
-msgid "Local accounts always sign in with their password. Here you let people sign in with their directory account or through a single sign-on provider as well, and decide which role their groups give them."
-msgstr ""
-
 #: src/settings/deploymentDefaults/LocalAdministratorGroup.tsx
 msgid "Local administrator"
 msgstr ""
@@ -5642,6 +5433,10 @@ msgstr ""
 
 #: src/settings/logging/LogFiles.tsx
 msgid "Log files"
+msgstr ""
+
+#: src/settings/LoggingPanel.tsx
+msgid "Log level per category. Default covers every category not listed."
 msgstr ""
 
 #: src/settings/logging/LevelRows.tsx
@@ -5765,25 +5560,13 @@ msgstr ""
 msgid "Machines"
 msgstr ""
 
-#: src/settings/certificate/ServedCertificate.tsx
-msgid "Machines and browsers that trust DDT's root keep trusting any certificate issued from it, so Generate needs nothing else. A certificate from another root has to be trusted anew: every boot image has to be built again with that root, and every browser that manages DDT has to trust it."
-msgstr ""
-
 #: src/machines/list/MachineList.tsx
-msgid "Machines appear here on their own when they netboot on a network DDT answers, within a few seconds of starting. Nothing is erased until someone signs in at the machine or assigns it a sequence here."
+msgid "Machines appear here when they netboot on a network DDT answers."
 msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "package.inUse"
 msgid "Machines are waiting to install this package or are installing it. Cancel those runs or let them finish, then delete it."
-msgstr ""
-
-#: src/setup/SetupChecklist.tsx
-msgid "Machines netboot into the Linux boot environment, which comes with DDT. To install Windows, <0>build the boot image</0> as well."
-msgstr ""
-
-#: src/packages/packages.ts
-msgid "Machines of {targets} no longer get these drivers from the Inject drivers step of {names}."
 msgstr ""
 
 #: src/packages/packages.ts
@@ -5800,39 +5583,27 @@ msgid "Machines show"
 msgstr ""
 
 #: src/settings/logo/RemoveLogoDialog.tsx
-msgid "Machines show no logo on their console from their next registration. Upload it again to bring it back."
-msgstr ""
-
-#: src/settings/ConsolePanel.tsx
-msgid "Machines take it at their next netboot: the agent downloads it and shows it instead of the console in the boot image, in Windows PE and in DDT's session. A machine that cannot download it keeps the console in its boot image."
-msgstr ""
-
-#: src/settings/AgentPanel.tsx
-msgid "Machines take it at their next netboot: the agent in the boot image downloads it and runs it instead, so the boot image does not have to be built again. A machine that cannot download or start it goes on with the agent in its boot image."
-msgstr ""
-
-#: src/settings/LinuxAgentPanel.tsx
-msgid "Machines take it at their next netboot: the agent the Linux boot environment brings downloads it and runs it instead, so a newer agent needs no new environment. A machine that cannot download or start it goes on with the agent the environment brought."
+msgid "Machines show no logo on their console from their next registration."
 msgstr ""
 
 #: src/boot/StoredBuilds.tsx
-msgid "Machines that netboot from now on get this build. A machine that is netbooting right now finishes with the build it started."
+msgid "Machines that netboot from now on get this build."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
-msgid "Machines that netboot from now on run the agent this server came with. If it came with none, they run the agent in their boot image."
+msgid "Machines that netboot from now on run the agent this server came with, or the one in their boot image."
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
-msgid "Machines that netboot from now on show the console this server came with. If it came with none, they show the console in their boot image."
+msgid "Machines that netboot from now on show the console this server came with, or the one in their boot image."
 msgstr ""
 
 #: src/settings/LinuxAgentPanel.tsx
-msgid "Machines that start the Linux boot environment from now on run the agent for Linux this server came with. If it came with none, they run the agent the environment brings."
+msgid "Machines that start the Linux boot environment from now on run the agent for Linux this server came with, or the one the environment brings."
 msgstr ""
 
 #: src/settings/networkBoot/BootEnvironmentGroup.tsx
-msgid "Machines that start the Linux boot environment load {file} over TFTP, whatever the boot target for 64-bit UEFI names."
+msgid "Machines that start the Linux boot environment load {file} over TFTP."
 msgstr ""
 
 #: src/conditions/conditions.ts
@@ -5935,11 +5706,11 @@ msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT 
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/DhcpHere.tsx
-msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT answers on port 4011 alone. The DHCP server sends option 60, PXEClient, which brings machines that netboot there."
+msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT answers on port 4011 alone. The DHCP server sends option 60, PXEClient."
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/DhcpHere.tsx
-msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT does not listen there. While Windows Deployment Services runs, machines that netboot reach WDS, and DDT through its boot menu."
+msgid "Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT does not listen there."
 msgstr ""
 
 #: src/machines/secureBoot.ts
@@ -6097,6 +5868,10 @@ msgctxt "settings.ldap.userFilterPlaceholder"
 msgid "Must contain {placeholder}, which DDT replaces with the user name, such as (&(objectClass=user)(sAMAccountName={placeholder}))."
 msgstr ""
 
+#: src/settings/directory/UsersGroup.tsx
+msgid "Must contain {USER_TOKEN}, which DDT replaces with the user name typed at sign-in."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.oidc.scopesWithoutOpenid"
 msgid "Must contain openid, which is what makes the sign-in OpenID Connect."
@@ -6192,7 +5967,7 @@ msgid "Needs your approval"
 msgstr ""
 
 #: src/setup/SetupChecklist.tsx
-msgid "Netboot a machine. It shows on the Machines page as it registers."
+msgid "Netboot a machine."
 msgstr ""
 
 #: src/conditions/conditionSubjects.ts
@@ -6226,6 +6001,10 @@ msgstr ""
 
 #: src/settings/parts/SettingsSection.tsx
 msgid "Never changed on this page."
+msgstr ""
+
+#: src/settings/networkBoot/InterfacesGroup.tsx
+msgid "Never list a VPN tunnel."
 msgstr ""
 
 #: src/accounts/AccountDrawer.tsx
@@ -6312,7 +6091,7 @@ msgid "No boot target yet, so ProxyDHCP answers no machine."
 msgstr ""
 
 #: src/settings/networkBoot/BootTargetsGroup.tsx
-msgid "No boot target yet, so x64 UEFI machines get x64/bootmgfw.efi over TFTP, where a boot image build puts the boot manager. Other machines get no answer."
+msgid "No boot target yet, so x64 UEFI machines get x64/bootmgfw.efi over TFTP. Other machines get no answer."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -6321,7 +6100,7 @@ msgid "No certificate waits for a confirmation."
 msgstr ""
 
 #: src/settings/signIn/ClaimRolesGroup.tsx
-msgid "No claim value is listed, so the groups decide no role: a new account gets the role above, and administrators change it on the Users and roles page."
+msgid "No claim value is listed, so a new account gets the role above."
 msgstr ""
 
 #: src/conditions/ConditionBuilder.tsx
@@ -6329,15 +6108,15 @@ msgid "No conditions."
 msgstr ""
 
 #: src/runs/panel/RunActivity.tsx
+msgid "No contact for {silentFor}, as the installed Linux starts."
+msgstr ""
+
+#: src/runs/panel/RunActivity.tsx
 msgid "No contact for {silentFor}, as the machine restarts."
 msgstr ""
 
 #: src/runs/panel/RunActivity.tsx
-msgid "No contact for {silentFor}. The installed Linux starts before the agent goes on there, which can take a while."
-msgstr ""
-
-#: src/runs/panel/RunActivity.tsx
-msgid "No contact for {silentFor}. Windows setup runs before the agent starts again, which can take a while."
+msgid "No contact for {silentFor}, as Windows setup runs."
 msgstr ""
 
 #: src/auth/useSignIn.ts
@@ -6370,7 +6149,7 @@ msgstr ""
 msgid "No driver package is in the library yet."
 msgstr ""
 
-#: src/packages/NoPackages.tsx
+#: src/packages/PackagesPage.tsx
 msgid "No driver packages yet"
 msgstr ""
 
@@ -6401,7 +6180,7 @@ msgstr ""
 msgid "No file chosen"
 msgstr ""
 
-#: src/packages/NoPackages.tsx
+#: src/packages/PackagesPage.tsx
 msgid "No file packages yet"
 msgstr ""
 
@@ -6410,7 +6189,7 @@ msgid "No group is listed, so groups decide no role."
 msgstr ""
 
 #: src/users/directory/DirectoryOn.tsx
-msgid "No group is mapped to a role, so administrators choose the role of each directory account on this page, and a new one reaches nothing until it has one. The map is set on the <0>Sign-in</0> page."
+msgid "No group is mapped to a role, so administrators choose the role of each directory account on this page. The map is set on the <0>Sign-in</0> page."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -6423,7 +6202,7 @@ msgid "No group matches."
 msgstr ""
 
 #: src/settings/networkBoot/ReportedInterfaces.tsx
-msgid "No host that runs network boot has reported its interfaces yet. A host reports them when it applies these settings without problems."
+msgid "No host that runs network boot has reported its interfaces yet."
 msgstr ""
 
 #: src/sequences/builder/nodeDetail.ts
@@ -6434,12 +6213,12 @@ msgstr ""
 msgid "No image matches"
 msgstr ""
 
-#: src/images/NoImages.tsx
+#: src/images/ImagesPage.tsx
 msgid "No images yet"
 msgstr ""
 
 #: src/settings/networkBoot/InterfacesGroup.tsx
-msgid "No interface is listed, so DDT answers no machine that netboots. Choose the interfaces below, or type one."
+msgid "No interface is listed, so DDT answers no machine that netboots."
 msgstr ""
 
 #: src/log/LogLines.tsx
@@ -6457,7 +6236,7 @@ msgid "No local administrator is set on the Deployment defaults page, so the ans
 msgstr ""
 
 #: src/log/LogPanel.tsx
-msgid "No log lines for this run yet. The agent sends its log while it runs."
+msgid "No log lines for this run yet."
 msgstr ""
 
 #: src/settings/logo/LogoPreview.tsx
@@ -6494,6 +6273,10 @@ msgstr ""
 msgid "No model yet: no machine gets these drivers."
 msgstr ""
 
+#: src/sequences/builder/page/NodeTab.tsx
+msgid "No node chosen."
+msgstr ""
+
 #: src/sequences/steps/ScriptPackageSetting.tsx
 msgid "No package"
 msgstr ""
@@ -6527,7 +6310,7 @@ msgid "No rule chooses a sequence for this machine, so an operator chooses its s
 msgstr ""
 
 #: src/roles/DeleteRoleDialog.tsx
-msgid "No rule gives {name}, so deleting it changes the values of no machine."
+msgid "No rule gives {name}."
 msgstr ""
 
 #: src/roles/drawer/RoleFields.tsx
@@ -6584,12 +6367,8 @@ msgstr ""
 msgid "No sequence names it."
 msgstr ""
 
-#: src/sequences/builder/FlowCanvas.tsx
-msgid "No steps yet. Drag one here from the palette, or choose + to add one."
-msgstr ""
-
 #: src/machines/assign/AssignBlockers.tsx
-msgid "No task sequence exists yet. An administrator creates one under Deployment, Task sequences."
+msgid "No task sequence exists yet."
 msgstr ""
 
 #: src/sequences/SequencesPage.tsx
@@ -6625,10 +6404,6 @@ msgstr ""
 msgid "Nobody"
 msgstr ""
 
-#: src/tokens/AllTokens.tsx
-msgid "Nobody has made an API token. Scripts that call DDT use one each, made on the Account and security page of the account they act for."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "machine.nobodySignedIn"
 msgid "Nobody has signed in at this machine yet."
@@ -6644,6 +6419,7 @@ msgstr ""
 
 #: src/account/ProfilePanel.tsx
 #: src/accounts/list/AccountRow.tsx
+#: src/rules/drawer/SequenceChoice.tsx
 #: src/sequences/builder/account/useAccountChoices.ts
 #: src/settings/directory/TestedGroups.tsx
 #: src/users/directory/DirectoryCheckResult.tsx
@@ -6654,20 +6430,13 @@ msgstr ""
 msgid "None of these hold"
 msgstr ""
 
-#: src/rules/drawer/SequenceChoice.tsx
-msgid "None, a later rule may choose one"
-msgstr ""
-
 #: src/settings/directory/RoleAtSignIn.tsx
 msgid "None, so the sign-in is refused"
 msgstr ""
 
 #: src/sequences/builder/inspector/SharesSetting.tsx
-msgid "None. DDT connects the shares listed here before the step runs."
-msgstr ""
-
 #: src/sequences/builder/ProblemsPanel.tsx
-msgid "None. Nothing keeps this sequence from running."
+msgid "None."
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
@@ -6784,7 +6553,7 @@ msgid "Not taken"
 msgstr ""
 
 #: src/settings/signIn/NewAccountsGroup.tsx
-msgid "Not used while the claim map below has entries: the map decides the role."
+msgid "Not used while the claim map below has entries."
 msgstr ""
 
 #: src/sequences/builder/variables/DeclarationRow.tsx
@@ -6806,6 +6575,10 @@ msgstr ""
 
 #: src/app/palette/Palette.tsx
 msgid "Nothing matches."
+msgstr ""
+
+#: src/sequences/builder/page/BuilderNotices.tsx
+msgid "Nothing more is saved. <0>Go to the task sequences</0>."
 msgstr ""
 
 #: src/audit/AuditPage.tsx
@@ -6844,10 +6617,6 @@ msgstr ""
 msgid "Off"
 msgstr ""
 
-#: src/settings/signIn/NewAccountsGroup.tsx
-msgid "Off, an identity DDT has not seen is refused at the sign-in."
-msgstr ""
-
 #: src/settings/signIn/SingleSignOnSettings.tsx
 msgid "Offer single sign-on on the sign-in page"
 msgstr ""
@@ -6871,19 +6640,19 @@ msgid "On a sample machine:"
 msgstr ""
 
 #: src/sequences/builder/variables/InputAskSettings.tsx
-msgid "On the web or at the machine"
+msgid "On the web"
 msgstr ""
 
 #: src/sequences/builder/variables/InputAskSettings.tsx
-msgid "On the web, when the run is assigned or approved"
+msgid "On the web or at the machine"
 msgstr ""
 
 #: src/machines/secureBoot.ts
 msgid "On, {note}"
 msgstr ""
 
-#: src/settings/directory/GroupFinder.tsx
-msgid "Once directory sign-in is on and its server and search base are saved, you can find groups by name here. Until then, add a group by its distinguished name."
+#: src/settings/certificate/ProvisionalNotice.tsx
+msgid "Once this page works with it, keep it. If nobody keeps it by {deadline}, {left}, DDT goes back to the certificate before."
 msgstr ""
 
 #: src/settings/ProxiesPanel.tsx
@@ -6891,15 +6660,15 @@ msgid "One IP address per line, such as 10.0.0.2 or fd00::2."
 msgstr ""
 
 #: src/settings/networkBoot/TransfersGroup.tsx
-msgid "One IPv4 address per line. DDT answers a request a DHCP relay forwards from another site only when that relay is listed here."
+msgid "One IPv4 address per line."
 msgstr ""
 
 #: src/settings/ProxiesPanel.tsx
-msgid "One network per line, such as 10.0.1.0/24, for proxies that share an address pool."
+msgid "One network per line, such as 10.0.1.0/24."
 msgstr ""
 
 #: src/settings/ApprovalPage.tsx
-msgid "One network per line, such as 10.20.0.0/24. A machine that netboots from one of them deploys with the sequence a rule chooses, without anybody signing in or approving it, and receives the deployment passwords. List only networks where every machine may be wiped, and never a network a proxy forwards from."
+msgid "One network per line, such as 10.20.0.0/24. Machines there deploy without approval and receive the deployment passwords. List only networks where every machine may be wiped, and never one a proxy forwards from."
 msgstr ""
 
 #: src/conditions/conditionSubjects.ts
@@ -6911,7 +6680,7 @@ msgid "One of a list"
 msgstr ""
 
 #: src/settings/certificate/ServerNames.tsx
-msgid "One per line, such as ddt.corp.example or 10.0.0.5. Generate adds localhost and this computer's name and addresses by itself."
+msgid "One per line, such as ddt.corp.example or 10.0.0.5."
 msgstr ""
 
 #: src/settings/signIn/ProviderGroup.tsx
@@ -6933,15 +6702,7 @@ msgid "Only a rejected machine, or a waiting machine that was never approved and
 msgstr ""
 
 #: src/sequences/steps/ScriptRunAsSetting.tsx
-msgid "Only a script in Windows runs as an account; in the installed Linux it runs as root."
-msgstr ""
-
-#: src/sequences/steps/ScriptRunAsSetting.tsx
-msgid "Only a script in Windows runs as an account; in the Linux boot environment it runs as root."
-msgstr ""
-
-#: src/sequences/steps/ScriptRunAsSetting.tsx
-msgid "Only a script in Windows runs as an account; in Windows PE it runs as SYSTEM."
+msgid "Only a script in Windows runs as an account."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -6954,11 +6715,11 @@ msgid "Only administrators build the boot image."
 msgstr ""
 
 #: src/settings/SignInSettingsPage.tsx
-msgid "Only administrators change how people sign in. Your own password and second factor are on the Account and security page in the account menu."
+msgid "Only administrators change how people sign in."
 msgstr ""
 
 #: src/sequences/builder/page/BuilderNotices.tsx
-msgid "Only administrators change task sequences. You can look at this one."
+msgid "Only administrators change task sequences."
 msgstr ""
 
 #: src/boot/BuilderPanel.tsx
@@ -6966,7 +6727,7 @@ msgid "Only administrators download the builder."
 msgstr ""
 
 #: src/users/UsersPage.tsx
-msgid "Only administrators manage accounts. Your own account is on the Account and security page in the account menu."
+msgid "Only administrators manage accounts."
 msgstr ""
 
 #: src/sequences/steps/DomainJoinCheck.tsx
@@ -6978,7 +6739,7 @@ msgid "Only administrators read the audit log."
 msgstr ""
 
 #: src/settings/NetworkBootPage.tsx
-msgid "Only administrators see and change network boot: which interfaces DDT answers on and what machines load."
+msgid "Only administrators see and change network boot."
 msgstr ""
 
 #: src/settings/ServerPage.tsx
@@ -6986,7 +6747,7 @@ msgid "Only administrators see and change the server's settings."
 msgstr ""
 
 #: src/tokens/TokensPage.tsx
-msgid "Only administrators see every token. Your own are on the Account and security page in the account menu."
+msgid "Only administrators see every token."
 msgstr ""
 
 #: src/settings/networkBoot/BootTargetCard.tsx
@@ -7021,10 +6782,6 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "token.onlyOwnerRevokes"
 msgid "Only the token's owner or an administrator can revoke it."
-msgstr ""
-
-#: src/sequences/steps/SetVariableFields.tsx
-msgid "Only the variables that steps may set are offered."
 msgstr ""
 
 #: src/settings/logging/LevelSelect.tsx
@@ -7062,7 +6819,11 @@ msgid "Operator"
 msgstr ""
 
 #: src/settings/signIn/NewAccountsGroup.tsx
-msgid "Operators can read the deployment passwords by deploying a machine they control."
+msgid "Operators can read the deployment passwords."
+msgstr ""
+
+#: src/settings/deploymentDefaults/LocalAdministratorGroup.tsx
+msgid "Operators can read this password. Use one for deployed machines only."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -7078,24 +6839,16 @@ msgstr ""
 msgid "Option 67, boot file"
 msgstr ""
 
+#: src/packages/PackageDialog.tsx
+#: src/roles/drawer/RoleFields.tsx
+#: src/rules/drawer/RuleFields.tsx
+#: src/sequences/builder/variables/AccountInputFields.tsx
 #: src/users/AddUserForm.tsx
 msgid "Optional."
 msgstr ""
 
 #: src/machines/assign/assignText.ts
-msgid "Optional. Left empty, the machine is named {valuesName}, as its values say, and joins the domain under it."
-msgstr ""
-
-#: src/machines/assign/assignText.ts
-msgid "Optional. Left empty, the machine is named {valuesName}, as its values say, which its cloud-init seed gets."
-msgstr ""
-
-#: src/machines/assign/assignText.ts
-msgid "Optional. Left empty, the machine keeps the name {current} and joins the domain under it."
-msgstr ""
-
-#: src/machines/assign/assignText.ts
-msgid "Optional. Left empty, the machine keeps the name {current}, which its cloud-init seed gets."
+msgid "Optional. Left empty, the machine is named {valuesName}."
 msgstr ""
 
 #: src/machines/assign/assignText.ts
@@ -7103,19 +6856,7 @@ msgid "Optional. Left empty, the machine keeps the name {current}."
 msgstr ""
 
 #: src/accounts/drawer/AccountFields.tsx
-msgid "Optional. The domain a Join the domain step may join with it, such as corp.example."
-msgstr ""
-
-#: src/packages/PackageDialog.tsx
-msgid "Optional. What is in it and where it came from."
-msgstr ""
-
-#: src/roles/drawer/RoleFields.tsx
-msgid "Optional. What machines with this role are, such as kiosks in the lobby."
-msgstr ""
-
-#: src/rules/drawer/RuleFields.tsx
-msgid "Optional. Why the rule exists, for whoever reads it later."
+msgid "Optional. The domain it may join, such as corp.example."
 msgstr ""
 
 #: src/machines/assign/assignText.ts
@@ -7153,22 +6894,6 @@ msgstr ""
 
 #: src/settings/networkBoot/OtherEntries.tsx
 msgid "Other entries"
-msgstr ""
-
-#: src/sequences/builder/inspector/RepeatSettings.tsx
-msgid "Otherwise the repeat fails when its condition still does not hold."
-msgstr ""
-
-#: src/sequences/builder/inspector/FailureSettings.tsx
-msgid "Otherwise the run stops here."
-msgstr ""
-
-#: src/sequences/steps/PauseFields.tsx
-msgid "Otherwise the run waits for as long as it takes."
-msgstr ""
-
-#: src/sequences/steps/InjectDriversFields.tsx
-msgid "Otherwise the step is done without adding drivers."
 msgstr ""
 
 #: src/sequences/builder/page/DesktopLayout.tsx
@@ -7274,10 +6999,6 @@ msgstr ""
 msgid "Passwords cross the network in clear text"
 msgstr ""
 
-#: src/settings/directory/ServerGroup.tsx
-msgid "Passwords cross the network in clear text."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "identity.passwordTooShort"
 msgid "Passwords must be at least {length} characters."
@@ -7352,10 +7073,6 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "machineState.pending"
 msgid "Pending"
-msgstr ""
-
-#: src/settings/directory/DirectorySettings.tsx
-msgid "People sign in with the user name and password of their directory account, such as one of Active Directory. DDT checks the password with the directory at each sign-in and takes over the name, the email address and, through the group map, the role. Changes apply at the next sign-in."
 msgstr ""
 
 #: src/audit/auditView.ts
@@ -7471,7 +7188,7 @@ msgid "ProxyDHCP and TFTP"
 msgstr ""
 
 #: src/settings/networkBoot/BootTargetsGroup.tsx
-msgid "ProxyDHCP sends a machine the boot file of the architecture its firmware reports, and answers no architecture without a boot target. A site whose own DHCP server names DDT and the boot file needs none."
+msgid "ProxyDHCP answers no architecture without a boot target."
 msgstr ""
 
 #: src/app/UserMenu.tsx
@@ -7543,16 +7260,12 @@ msgstr ""
 msgid "Ready to run"
 msgstr ""
 
-#: src/settings/server/SectionRow.tsx
-msgid "Rebuilds its part of the server on save"
-msgstr ""
-
 #: src/boot/JobPanel.tsx
 msgid "Receiving and checking the boot image"
 msgstr ""
 
 #: src/log/LogStatusBar.tsx
-msgid "Reconnecting. Lines sent meanwhile are read once the connection is back."
+msgid "Reconnecting."
 msgstr ""
 
 #: src/auth/TwoFactorFields.tsx
@@ -7586,7 +7299,7 @@ msgid "Refused"
 msgstr ""
 
 #: src/settings/signIn/ProviderGroup.tsx
-msgid "Register this address as the redirect URI of DDT's client at the provider."
+msgid "Register this address at the provider."
 msgstr ""
 
 #: src/machines/list/RunCell.tsx
@@ -7710,20 +7423,12 @@ msgstr ""
 msgid "Removed {title}."
 msgstr ""
 
+#: src/settings/agent/UploadRemoval.tsx
+msgid "Removed."
+msgstr ""
+
 #: src/settings/logo/LogoChange.tsx
 msgid "Removed. Machines show no logo when they next register."
-msgstr ""
-
-#: src/settings/AgentPanel.tsx
-msgid "Removed. Machines that netboot from now on no longer get that agent."
-msgstr ""
-
-#: src/settings/ConsolePanel.tsx
-msgid "Removed. Machines that netboot from now on no longer get that console."
-msgstr ""
-
-#: src/settings/LinuxAgentPanel.tsx
-msgid "Removed. Machines that start the Linux boot environment from now on no longer get that agent."
 msgstr ""
 
 #: src/deployments/deployments.ts
@@ -7816,11 +7521,7 @@ msgid "Required while single sign-on is on: the provider's https address, such a
 msgstr ""
 
 #: src/machines/assign/assignText.ts
-msgid "Required, because {name} gives this name to the machine in its cloud-init seed."
-msgstr ""
-
-#: src/machines/assign/assignText.ts
-msgid "Required, because {name} joins the domain under this name."
+msgid "Required."
 msgstr ""
 
 #: src/users/UserActionsMenu.tsx
@@ -7869,14 +7570,6 @@ msgstr ""
 
 #: src/sequences/builder/nodeDetail.ts
 msgid "Restarts the machine"
-msgstr ""
-
-#: src/sequences/steps/RebootFields.tsx
-msgid "Restarts the machine, and the sequence goes on with the step after {name}. In Windows PE this needs a partitioned disk, where the run's state is kept."
-msgstr ""
-
-#: src/sequences/steps/RebootFields.tsx
-msgid "Restarts the machine, and the sequence goes on with the step after {name}. The Linux boot environment keeps the run's state in memory, so a restart is only possible in the installed Linux."
 msgstr ""
 
 #: src/app/palette/Palette.tsx
@@ -8052,6 +7745,10 @@ msgstr ""
 msgid "Run stopped"
 msgstr ""
 
+#: src/boot/BuildCommand.tsx
+msgid "Run this in an elevated PowerShell on a Windows PC with the Windows ADK, from a copy of DDT's repository. The destination has to be in the boot directory."
+msgstr ""
+
 #: src/audit/auditView.ts
 msgid "Run token refused"
 msgstr ""
@@ -8096,19 +7793,11 @@ msgid "Runs"
 msgstr ""
 
 #: src/sequences/steps/ScriptIntro.tsx
-msgid "Runs as root in the installed Linux, after the machine started from the disk image. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
+msgid "Runs as root. Everyone who can sign in can read it, so no passwords."
 msgstr ""
 
 #: src/sequences/steps/ScriptIntro.tsx
-msgid "Runs as root in the Linux boot environment, before the machine starts from the disk image. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
-msgstr ""
-
-#: src/sequences/steps/ScriptIntro.tsx
-msgid "Runs as SYSTEM on the machine. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
-msgstr ""
-
-#: src/sequences/steps/ScriptIntro.tsx
-msgid "Runs as the account chosen below, which DDT signs in with; the script never sees its password. Everyone who can sign in to DDT can read the script, so it must hold no passwords."
+msgid "Runs as SYSTEM. Everyone who can sign in can read it, so no passwords."
 msgstr ""
 
 #: src/sequences/steps/RunScriptFields.tsx
@@ -8133,6 +7822,10 @@ msgstr ""
 
 #: src/sequences/sequenceList.ts
 msgid "Runs that already ended keep their history."
+msgstr ""
+
+#: src/rules/DeleteRuleDialog.tsx
+msgid "Runs that already started keep their values."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -8209,7 +7902,7 @@ msgid "Saved {savedWhen}."
 msgstr ""
 
 #: src/boot/BuilderPanel.tsx
-msgid "Saved as {builderFileName}. This page shows the boot image when the builder uploads it."
+msgid "Saved as {builderFileName}."
 msgstr ""
 
 #: src/sequences/SaveState.tsx
@@ -8217,7 +7910,7 @@ msgid "Saving"
 msgstr ""
 
 #: src/settings/networkBoot/NetworkBootSettings.tsx
-msgid "Saving restarts the network boot listeners on every host that runs them, which ends the TFTP transfers in progress. Those machines start their download again."
+msgid "Saving restarts the network boot listeners, which ends the TFTP transfers in progress."
 msgstr ""
 
 #: src/settings/networkBoot/RescanButton.tsx
@@ -8229,7 +7922,7 @@ msgid "Scan interfaces again"
 msgstr ""
 
 #: src/account/AuthenticatorEnrollment.tsx
-msgid "Scan the code with your authenticator app, or type the key into it. Then enter the code the app shows."
+msgid "Scan the code with your authenticator app, or type the key into it."
 msgstr ""
 
 #: src/settings/networkBoot/RescanButton.tsx
@@ -8385,6 +8078,10 @@ msgstr ""
 
 #: src/sequences/SequenceEditorPage.tsx
 msgid "Sequence not found"
+msgstr ""
+
+#: src/packages/packages.ts
+msgid "Sequences that name it show a problem until another package is chosen."
 msgstr ""
 
 #: src/machines/MachinePanel.tsx
@@ -8552,20 +8249,12 @@ msgstr ""
 msgid "Set variable"
 msgstr ""
 
-#: src/sequences/builder/variables/VariableFields.tsx
-msgid "Set variable steps and scripts may give it a new value while the run goes on."
-msgstr ""
-
 #: src/settings/server/ConfigurationPanel.tsx
 msgid "Set, not shown"
 msgstr ""
 
 #: src/rules/ruleText.ts
 msgid "Sets {name}"
-msgstr ""
-
-#: src/sequences/steps/SetVariableFields.tsx
-msgid "Sets a variable of this sequence while the run goes on. Steps after it, templates and conditions read the new value."
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
@@ -8660,16 +8349,13 @@ msgstr ""
 msgid "Show tokens by state"
 msgstr ""
 
-#: src/sequences/steps/PauseFields.tsx
-msgid "Shown at the machine and on its page while the run waits."
+#: src/settings/ConsoleLogoPanel.tsx
+msgid "Shown at most 32 pixels high and 200 wide on a dark header. Use a white or light logo on a transparent background."
 msgstr ""
 
-#: src/sequences/builder/NodeInspector.tsx
-msgid "Shown in the flow, in the run and in the log."
-msgstr ""
-
-#: src/sequences/builder/page/SequenceTab.tsx
-msgid "Shown in the list of task sequences."
+#: src/tokens/TokenSecret.tsx
+#: src/users/PasswordDialog.tsx
+msgid "Shown only once."
 msgstr ""
 
 #: src/auth/SignInPage.tsx
@@ -8690,7 +8376,7 @@ msgid "Sign-in"
 msgstr ""
 
 #: src/users/directory/DirectoryPanel.tsx
-msgid "Sign-in through a directory is off. It is turned on and set up on the <0>Sign-in</0> page."
+msgid "Sign-in through a directory is off. Set it up on the <0>Sign-in</0> page."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -8723,10 +8409,6 @@ msgstr ""
 msgid "Signing in"
 msgstr ""
 
-#: src/account/AuthenticatorOn.tsx
-msgid "Signing in asks for a code from your authenticator app. To turn it off, enter a current code."
-msgstr ""
-
 #: src/settings/signIn/SingleSignOnSettings.tsx
 msgid "Single sign-on"
 msgstr ""
@@ -8745,7 +8427,7 @@ msgid "Single sign-on cannot start with these values: {error}"
 msgstr ""
 
 #: src/users/RoleHint.tsx
-msgid "Single sign-on gave this role when it created the account. A role chosen here stays until an administrator changes it."
+msgid "Single sign-on gave this role when it created the account."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -8807,21 +8489,13 @@ msgstr ""
 msgid "SMBIOS UUID"
 msgstr ""
 
-#: src/machines/waiting/useRunWaitingActions.ts
-msgid "Someone at the machine or on another page let it go on first."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "stepAccount.changedMeanwhile"
 msgid "Someone changed the account meanwhile. Look at it again."
 msgstr ""
 
 #: src/rules/list/useRuleMoves.ts
-msgid "Someone changed the rules while you moved one, so the list shows them as they are now. Move the rule again if it should still go there."
-msgstr ""
-
-#: src/sequences/builder/page/BuilderNotices.tsx
-msgid "Someone deleted it while it was open here, so nothing more is saved. <0>Go to the task sequences</0>."
+msgid "Someone changed the rules while you moved one. Move the rule again if it should still go there."
 msgstr ""
 
 #: src/accounts/AccountDrawer.tsx
@@ -8853,16 +8527,12 @@ msgid "Someone else saved this rule while you were editing it."
 msgstr ""
 
 #: src/sequences/builder/page/LeaveDialog.tsx
-msgid "Someone else saved this sequence, so your changes since your last save are not saved. Leaving throws them away."
+msgid "Someone else saved this sequence. Leaving throws your unsaved changes away."
 msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.savedSince"
 msgid "Someone saved {section} since you loaded it. Load it again."
-msgstr ""
-
-#: src/app/RouteError.tsx
-msgid "Something went wrong while loading this page. Try again; if it keeps failing, the server log says why."
 msgstr ""
 
 #: src/about/AboutPage.tsx
@@ -8883,12 +8553,8 @@ msgstr ""
 msgid "Start from"
 msgstr ""
 
-#: src/sequences/list/NoSequences.tsx
-msgid "Start from a template, such as Install Windows: it partitions the disk, applies an image, adds the drivers for the machine's model and writes the answer file. Or start empty and add the steps yourself."
-msgstr ""
-
 #: src/log/LogStatusBar.tsx
-msgid "Start of the stored log. The server keeps the newest {storedLimit} lines of each machine."
+msgid "Start of the stored log."
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/WdsState.tsx
@@ -8935,10 +8601,6 @@ msgstr ""
 
 #: src/machines/machineView.ts
 msgid "Starting, {count} steps"
-msgstr ""
-
-#: src/settings/directory/ServerGroup.tsx
-msgid "Starts plain and encrypts before anything is sent."
 msgstr ""
 
 #: src/runs/runs.ts
@@ -9159,7 +8821,7 @@ msgid "Stored accounts"
 msgstr ""
 
 #: src/accounts/drawer/PasswordSetting.tsx
-msgid "Stored encrypted and never shown again. It goes only to the step that uses the account, while the step runs."
+msgid "Stored encrypted and never shown again."
 msgstr ""
 
 #: src/settings/certificate/CertificateFacts.tsx
@@ -9170,12 +8832,16 @@ msgstr ""
 msgid "Subnet"
 msgstr ""
 
+#: src/settings/networkBoot/BootEnvironmentGroup.tsx
+msgid "Such as console=ttyS0,115200. Only letters, digits and _ . : , = + / @ - are taken."
+msgstr ""
+
 #: src/sequences/steps/WriteUnattendFields.tsx
 msgid "Such as de-DE."
 msgstr ""
 
 #: src/sequences/steps/JoinDomainFields.tsx
-msgid "Such as OU=Workstations,DC=example,DC=com. Empty takes the default from the Deployment defaults page."
+msgid "Such as OU=Workstations,DC=example,DC=com."
 msgstr ""
 
 #: src/boot/keyboardLayouts.ts
@@ -9285,12 +8951,16 @@ msgctxt "account.codeNotValidCheckTime"
 msgid "That code is not valid. Check the time on the device generating it."
 msgstr ""
 
+#: src/settings/networkBoot/TransfersGroup.tsx
+msgid "That DHCP server then has to send option 60, PXEClient."
+msgstr ""
+
 #: src/settings/parts/useReauthForm.ts
 msgid "That did not work."
 msgstr ""
 
 #: src/runs/panel/LinuxHandOverWait.tsx
-msgid "That is longer than a first start usually takes. It may still be installing packages. Otherwise the machine did not start from its disk, the image has no cloud-init or no systemd, the user-data keeps cloud-init from running DDT's script, or that script failed. Look at the machine's own screen, and in the installed Linux at <0>{output}</0> and <1>{journal}</1>."
+msgid "That is longer than a first start usually takes. Look at the machine's own screen, and in the installed Linux at <0>{output}</0> and <1>{journal}</1>."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -9328,7 +8998,7 @@ msgid "The {file} file is missing. It can be empty."
 msgstr ""
 
 #: src/uploads/DiscardUploadDialog.tsx
-msgid "The {sent} of {file} uploaded so far are deleted from the server. Choosing the file again starts the upload over."
+msgid "The {sent} uploaded so far are deleted."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -9356,11 +9026,11 @@ msgid "The account also names the domain the machine joins."
 msgstr ""
 
 #: src/accounts/DeleteAccountDialog.tsx
-msgid "The account and its password are deleted. No sequence names it, so no run loses it."
+msgid "The account and its password are deleted."
 msgstr ""
 
 #: src/sequences/steps/WriteUnattendFields.tsx
-msgid "The account and its password are set on the Deployment defaults page, never in the sequence."
+msgid "The account and its password are set on the Deployment defaults page."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -9382,21 +9052,13 @@ msgctxt "sequence.accountGone"
 msgid "The account is no longer on the Accounts page. Choose another one."
 msgstr ""
 
-#: src/users/PasswordDialog.tsx
-msgid "The account is ready. Hand over this password in person or through a channel you trust."
-msgstr ""
-
 #: src/accounts/AccountsPage.tsx
 #: src/users/UserAdministration.tsx
 msgid "The accounts could not be loaded."
 msgstr ""
 
-#: src/accounts/AccountsPage.tsx
-msgid "The accounts steps use: a script runs as one, a share is connected with one, a domain is joined with one. Each password is stored encrypted and goes only to the step that uses it, while the step runs; this page never shows it."
-msgstr ""
-
 #: src/settings/LinuxAgentPanel.tsx
-msgid "The agent for Linux this server came with, since none was uploaded"
+msgid "The agent for Linux this server came with"
 msgstr ""
 
 #: src/settings/LinuxAgentPanel.tsx
@@ -9408,7 +9070,7 @@ msgid "The agent for the Linux boot environment could not be read."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
-msgid "The agent in their boot image, since none was uploaded"
+msgid "The agent in their boot image"
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
@@ -9421,15 +9083,15 @@ msgid "The agent may be at most {max} MB."
 msgstr ""
 
 #: src/machines/MachineFacts.tsx
-msgid "The agent on this machine reported no facts. A newer agent reports them at the machine's next netboot."
+msgid "The agent on this machine reported no facts."
 msgstr ""
 
 #: src/settings/LinuxAgentPanel.tsx
-msgid "The agent runs as root on every machine that starts the Linux boot environment, so uploading it needs your password again."
+msgid "The agent runs as root on every machine that starts the Linux boot environment, before anyone authorizes it."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
-msgid "The agent runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
+msgid "The agent runs as SYSTEM on every machine that netboots, before anyone authorizes it."
 msgstr ""
 
 #: src/runs/runs.ts
@@ -9437,23 +9099,15 @@ msgid "The agent started the run"
 msgstr ""
 
 #: src/settings/LinuxAgentPanel.tsx
-msgid "The agent the Linux boot environment brings, since none was uploaded"
+msgid "The agent the Linux boot environment brings"
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
-msgid "The agent this server came with, since none was uploaded"
+msgid "The agent this server came with"
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
 msgid "The agent uploaded here"
-msgstr ""
-
-#: src/settings/LinuxAgentPanel.tsx
-msgid "The agent you upload runs as root on every machine that starts the Linux boot environment from now on, before anybody authorized the machine. The server checks only that the file is a Linux program for x64, not where it comes from. Upload only ddt-agent-linux-x64 from a DDT release, or ddt-agent as Publish-LinuxAgent.ps1 builds it."
-msgstr ""
-
-#: src/settings/AgentPanel.tsx
-msgid "The agent you upload runs as SYSTEM on every machine that netboots from now on, before anybody authorized the machine. Upload only ddt-agent.exe from a DDT release or as Publish-Agent.ps1 builds it."
 msgstr ""
 
 #: src/log/log.ts
@@ -9487,17 +9141,13 @@ msgctxt "settings.ldapTest.bound"
 msgid "The bind as {account} to {server} succeeded."
 msgstr ""
 
-#: src/settings/directory/ServerGroup.tsx
-msgid "The bind password and every password typed at sign-in can be read by anyone on the way to the directory. Use this only on a test network; a save asks you to confirm it."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldap.unencrypted"
 msgid "The bind password and every password typed at sign-in cross the network in clear text."
 msgstr ""
 
 #: src/boot/LastBuild.tsx
-msgid "The boot directory holds no record of a build. A build with the current script writes ddt-boot-image.json next to boot.wim, which DDT reads here."
+msgid "The boot directory holds no record of a build."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -9513,29 +9163,17 @@ msgstr ""
 msgid "The boot image has to be built again"
 msgstr ""
 
-#: src/boot/WindowsPEDrivers.tsx
-msgid "The boot image has Windows PE's own drivers only. Flag a driver package under <0>Library, Drivers</0> when a machine cannot reach the network or see its disk in Windows PE."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "bootImage.uploadTooLarge"
 msgid "The boot image is larger than {max} MB."
 msgstr ""
 
 #: src/boot/BuilderPanel.tsx
-msgid "The boot image the builder makes runs as SYSTEM on every machine that netboots, so downloading it needs your password again."
-msgstr ""
-
-#: src/settings/networkBoot/BootServerFields.tsx
-msgid "The boot server's name in the answer, in ASCII and at most 63 characters. Left empty, its address."
+msgid "The boot image runs as SYSTEM on every machine that netboots. Confirm with your password."
 msgstr ""
 
 #: src/ui/SecretValue.tsx
 msgid "The browser did not let DDT copy it. Select it and copy it yourself."
-msgstr ""
-
-#: src/boot/BuilderPanel.tsx
-msgid "The builder is a zip for any Windows PC that has the Windows ADK with its Windows PE add-on. Unpack it there and run Build.cmd: it builds the boot image for this server and uploads it, and machines netboot the new image once it has arrived."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -9549,7 +9187,7 @@ msgid "The certificate does not load with this key: {error}"
 msgstr ""
 
 #: src/settings/certificate/UploadDialog.tsx
-msgid "The certificate has to be valid now and name {host}, the name this page is reached by, and every server name. It is served at once, on trial until you keep it."
+msgid "The certificate has to be valid now and name {host} and every server name. It is served on trial until you keep it."
 msgstr ""
 
 #: src/sequences/steps/DomainJoinCheck.tsx
@@ -9605,12 +9243,8 @@ msgstr ""
 msgid "The console at the machine"
 msgstr ""
 
-#: src/settings/ConsoleLogoPanel.tsx
-msgid "The console at the machine shows this logo at the right end of its header, in Windows PE and in DDT's session, at most 32 pixels high and 200 wide. The header is dark in both of the console's themes, so a logo in white or light colours on a transparent background suits it. Machines take a new logo when they next register."
-msgstr ""
-
 #: src/settings/ConsolePanel.tsx
-msgid "The console in their boot image, since none was uploaded"
+msgid "The console in their boot image"
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
@@ -9623,19 +9257,15 @@ msgid "The console may be at most {max} MB, zipped and unpacked."
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
-msgid "The console runs as SYSTEM on every machine that netboots, so uploading it needs your password again."
+msgid "The console runs as SYSTEM on every machine that netboots."
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
-msgid "The console this server came with, since none was uploaded"
+msgid "The console this server came with"
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
 msgid "The console uploaded here"
-msgstr ""
-
-#: src/settings/ConsolePanel.tsx
-msgid "The console you upload runs as SYSTEM in Windows PE on every machine that netboots from now on, and as the shell of DDT's session in the installed Windows. Upload only a zip of the folder Publish-Console.ps1 writes, from a DDT release or as the script builds it."
 msgstr ""
 
 #: src/settings/logo/LogoPreview.tsx
@@ -9647,7 +9277,7 @@ msgid "The console's logo could not be read."
 msgstr ""
 
 #: src/users/UserActionConsequence.tsx
-msgid "The current password stops working at once, and {name} is signed out within a minute. DDT shows the new password once; {name} replaces it at the next sign-in."
+msgid "The current password stops working at once, and {name} is signed out within a minute."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -9689,16 +9319,12 @@ msgctxt "sequence.inputDefaultNotChoice"
 msgid "The default has to be one of the choices."
 msgstr ""
 
-#: src/settings/logging/LevelActions.tsx
-msgid "The defaults: Default at Information, and Microsoft.AspNetCore and the two Entity Framework Core categories at Warning."
-msgstr ""
-
 #: src/rules/ruleText.ts
 msgid "the deployment defaults"
 msgstr ""
 
 #: src/machines/assign/AssignBlockers.tsx
-msgid "The deployment settings could not be loaded, so DDT cannot say what the assignment does. Close this and try again."
+msgid "The deployment settings could not be loaded. Close this and try again."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -9745,7 +9371,7 @@ msgid "The directory provides the display name and email address of {name}. Chan
 msgstr ""
 
 #: src/users/ChangeUserForm.tsx
-msgid "The directory provides the name and email address. DDT takes them over at each sign-in."
+msgid "The directory provides the name and email address."
 msgstr ""
 
 #: src/settings/directory/DirectorySettings.tsx
@@ -9909,7 +9535,7 @@ msgid "The GNU General Public License, version 3"
 msgstr ""
 
 #: src/settings/directory/GroupsAndRolesGroup.tsx
-msgid "The group map needs it: while it is off, DDT reads no groups at all."
+msgid "The group map needs it."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -9963,10 +9589,6 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.shareHostFixed"
 msgid "The host of a share can be made only of values fixed when the run starts, and {name} can change while it runs."
-msgstr ""
-
-#: src/settings/signIn/ProviderGroup.tsx
-msgid "The ID the provider shows for DDT's client."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10042,11 +9664,11 @@ msgid "The interfaces the hosts found could not be read."
 msgstr ""
 
 #: src/settings/networkBoot/BootServerFields.tsx
-msgid "The IPv4 address machines load the boot file from. Left empty, DDT's address on the interface the request arrived on, which suits a host serving several networks."
+msgid "The IPv4 address machines load the boot file from. Left empty, DDT's address on the interface the request arrived on."
 msgstr ""
 
 #: src/settings/networkBoot/BootServerFields.tsx
-msgid "The IPv4 address the answer names as the boot server; the URL decides where the boot file comes from. Left empty, DDT's address on the interface the request arrived on."
+msgid "The IPv4 address the answer names as the boot server. Left empty, DDT's address on the interface the request arrived on."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10064,14 +9686,6 @@ msgstr ""
 
 #: src/settings/deploymentDefaults/ConsoleLanguageGroup.tsx
 msgid "The language of Windows PE"
-msgstr ""
-
-#: src/settings/deploymentDefaults/ConsoleLanguageGroup.tsx
-msgid "The language the console starts in, in Windows PE and in the installed Windows. Someone at the machine can switch with F5."
-msgstr ""
-
-#: src/settings/deploymentDefaults/ConsoleLanguageGroup.tsx
-msgid "The layout of the console when a machine starts the Linux boot environment. Windows PE has the layout its boot image was built with."
 msgstr ""
 
 #: src/sequences/steps/WriteRawImageFields.tsx
@@ -10131,11 +9745,11 @@ msgid "The Linux boot environment of this server has no keyboard layout ''{value
 msgstr ""
 
 #: src/log/LogStatusBar.tsx
-msgid "The live connection is down. New lines appear once it is back."
+msgid "The live connection is down."
 msgstr ""
 
 #: src/app/ConnectionBanner.tsx
-msgid "The live connection to the server is lost. DDT keeps trying to reconnect; until then, pages refresh every few seconds."
+msgid "The live connection to the server is lost. DDT keeps trying to reconnect."
 msgstr ""
 
 #: src/log/LogPanel.tsx
@@ -10194,6 +9808,10 @@ msgstr ""
 msgid "The machine list could not be loaded."
 msgstr ""
 
+#: src/sequences/steps/JoinDomainFields.tsx
+msgid "The machine needs a computer name."
+msgstr ""
+
 #: src/runs/runs.ts
 msgid "The machine registered for the first time"
 msgstr ""
@@ -10214,16 +9832,12 @@ msgstr ""
 msgid "The machine reported no value."
 msgstr ""
 
-#: src/sequences/steps/ScriptResultFields.tsx
-msgid "The machine restarts and the sequence goes on with the next step."
+#: src/machines/bootEnvironment.ts
+msgid "The machine restarts into the Linux boot environment first."
 msgstr ""
 
-#: src/sequences/steps/ScriptResultFields.tsx
-msgid "The machine restarts and the sequence goes on with the next step. A shell makes 194 of exit 3010."
-msgstr ""
-
-#: src/sequences/builder/inspector/FailureSettings.tsx
-msgid "The machine restarts once the step is done."
+#: src/machines/bootEnvironment.ts
+msgid "The machine restarts into Windows PE first."
 msgstr ""
 
 #: src/rules/ruleText.ts
@@ -10235,7 +9849,7 @@ msgid "The machine roles could not be loaded."
 msgstr ""
 
 #: src/runs/panel/LinuxHandOverWait.tsx
-msgid "The machine started from the network again {when}, {ago} ago, for the {nth} time since the hand-over. DDT restarted it into its disk, and the installed Linux has not called since."
+msgid "The machine started from the network again {when}, {ago} ago, for the {nth} time. The installed Linux has not called since."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10256,20 +9870,8 @@ msgstr ""
 msgid "the machine's own value"
 msgstr ""
 
-#: src/rules/DeleteRuleDialog.tsx
-msgid "The machines it matches no longer get what it chooses, sets or gives; a rule below it may give them that instead."
-msgstr ""
-
-#: src/settings/networkBoot/TransfersGroup.tsx
-msgid "The most blocks DDT sends before the machine acknowledges them, whatever the boot image asks for; 1 to 64. 16 was reliable in tests; lower it to 8 or 4 where a link loses packets."
-msgstr ""
-
 #: src/sequences/sequenceDraft.ts
 msgid "the name"
-msgstr ""
-
-#: src/users/AddUserForm.tsx
-msgid "The name DDT shows for the account, such as the person's full name."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10278,11 +9880,7 @@ msgid "The name must have 1 to {max} characters and no control characters."
 msgstr ""
 
 #: src/settings/networkBoot/BootUrlServerField.tsx
-msgid "The name or IPv4 address machines reach DDT by. The boot file offers URLs with it."
-msgstr ""
-
-#: src/settings/certificate/ServerNames.tsx
-msgid "The names and addresses browsers and machines reach this server by. Generate issues the certificate for them, and an uploaded certificate has to name each of them, so a change takes effect with the next certificate. DDT's automatic renewal keeps every name of the certificate it renews."
+msgid "The name or IPv4 address machines reach DDT by."
 msgstr ""
 
 #: src/settings/networkBoot/NetworkBootSettings.tsx
@@ -10301,10 +9899,6 @@ msgstr ""
 msgid "The normal course of events"
 msgstr ""
 
-#: src/users/PasswordDialog.tsx
-msgid "The old password no longer works, and {name} is signed out within a minute. Hand over this one in person or through a channel you trust."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "rule.orderRepeats"
 msgid "The order names a rule more than once."
@@ -10316,10 +9910,6 @@ msgstr ""
 
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "The organizational unit changed since, so check again."
-msgstr ""
-
-#: src/boot/JobOutput.tsx
-msgid "The output went on for {missing} more lines, which the server did not keep."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10365,18 +9955,6 @@ msgstr ""
 msgid "The password you were given and signed in with."
 msgstr ""
 
-#: src/machines/waiting/WaitingText.tsx
-msgid "The person at the machine can answer there, too."
-msgstr ""
-
-#: src/machines/waiting/WaitingText.tsx
-msgid "The person at the machine can let the run go on there, too."
-msgstr ""
-
-#: src/settings/networkBoot/neighbours/PortOwners.tsx
-msgid "The programs that hold the netboot ports on this computer. Where another program holds a port with DDT, Windows may hand the machines to it."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "settings.oidcTest.reached"
 msgid "The provider answered as {issuer}. Register {redirectUri} as the redirect URI of DDT's client there."
@@ -10385,10 +9963,6 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "settings.oidcTest.otherIssuer"
 msgid "The provider names itself {issuer}, not {authority}. Enter {issuer} as the authority."
-msgstr ""
-
-#: src/settings/signIn/ProviderGroup.tsx
-msgid "The provider's https address, where DDT reads its discovery document. A saved client secret goes only to the provider it was entered for, so after a change of the address, enter it again."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10427,7 +10001,7 @@ msgid "The role of {name} comes from its directory groups through the directory'
 msgstr ""
 
 #: src/users/RoleHint.tsx
-msgid "The role of {name} comes from its directory groups, through the map on the <0>Sign-in</0> page, at each sign-in. Change its groups in the directory, or the map."
+msgid "The role of {name} comes from its directory groups, through the map on the <0>Sign-in</0> page."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10436,7 +10010,7 @@ msgid "The role of {name} comes from its single sign-on groups through the singl
 msgstr ""
 
 #: src/users/RoleHint.tsx
-msgid "The role of {name} comes from its single sign-on groups, through the map on the <0>Sign-in</0> page, at each sign-in. Change its groups at the provider, or the map."
+msgid "The role of {name} comes from its single sign-on groups, through the map on the <0>Sign-in</0> page."
 msgstr ""
 
 #: src/rules/ruleText.ts
@@ -10450,10 +10024,6 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "resolution.ruleChooses"
 msgid "The rule for {rule} chooses {sequence}. A rule only chooses: the machine still needs an approval on the web, or someone who signs in at it, where the sequence is offered."
-msgstr ""
-
-#: src/rules/DeleteRuleDialog.tsx
-msgid "The rules below it move up a place. Runs that already started keep their values."
 msgstr ""
 
 #: src/rules/RulesPage.tsx
@@ -10490,6 +10060,14 @@ msgstr ""
 msgid "The run failed: {error}"
 msgstr ""
 
+#: src/machines/assign/AssignConsequences.tsx
+msgid "The run goes on in the installed Linux."
+msgstr ""
+
+#: src/machines/assign/AssignConsequences.tsx
+msgid "The run goes on in the installed Windows."
+msgstr ""
+
 #: src/machines/waiting/useRunWaitingActions.ts
 msgid "The run has its answers already"
 msgstr ""
@@ -10504,10 +10082,6 @@ msgstr ""
 
 #: src/machines/waiting/waitState.ts
 msgid "The run is paused."
-msgstr ""
-
-#: src/machines/RunWaiting.tsx
-msgid "The run starts once every required answer is given."
 msgstr ""
 
 #: src/machines/RunWaiting.tsx
@@ -10527,7 +10101,7 @@ msgid "The run went on already"
 msgstr ""
 
 #: src/runs/steps/StepFailure.tsx
-msgid "The run went on, because \"Go on when this step fails\" is on for this step."
+msgid "The run went on."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10543,17 +10117,13 @@ msgstr ""
 msgid "The scope is not active."
 msgstr ""
 
-#: src/boot/BuildCommand.tsx
-msgid "The script downloads the flagged drivers with an API token of an administrator. Make one under Account and security, and put it into DDT_API_TOKEN."
-msgstr ""
-
-#: src/settings/directory/GroupFinder.tsx
-msgid "The search asks the directory as it is saved, not with the changes above that are not saved yet."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.searchFailed"
 msgid "The search for {name} under {baseDn} failed: {error}"
+msgstr ""
+
+#: src/settings/directory/GroupFinder.tsx
+msgid "The search uses the saved settings, not your unsaved changes."
 msgstr ""
 
 #: src/sequences/builder/problems/SequenceFindingsItem.tsx
@@ -10640,10 +10210,6 @@ msgstr ""
 msgid "The sequence's default"
 msgstr ""
 
-#: src/boot/BuildCommand.tsx
-msgid "The server address is the server's name and port, as its certificate has them. Use another name machines reach the server by, if the certificate has it too."
-msgstr ""
-
 #: src/lib/api.ts
 msgid "The server answered with status {status}."
 msgstr ""
@@ -10652,25 +10218,13 @@ msgstr ""
 msgid "The server certificate could not be read."
 msgstr ""
 
-#: src/settings/certificate/CertificateProof.tsx
-msgid "The server certificate decides what browsers and machines trust, so replacing it needs your password again."
-msgstr ""
-
-#: src/images/ImageUploadPanel.tsx
-msgid "The server checks the file, reads the images in it and compresses a disk image. This takes a few minutes for a large file."
-msgstr ""
-
-#: src/packages/PackageUploadPanel.tsx
-msgid "The server checks the zip and counts what is in it."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "import.failed"
 msgid "The server could not add it. Its log says why."
 msgstr ""
 
 #: src/settings/certificate/ProvisionalNotice.tsx
-msgid "The server could not be reached with the new certificate, so this browser probably does not trust it. At {deadline} DDT goes back to the certificate before."
+msgid "The server could not be reached with the new certificate, so this browser probably does not trust it."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10695,24 +10249,16 @@ msgid "The server does not answer. The upload goes on when it does."
 msgstr ""
 
 #: src/boot/AdkState.tsx
-msgid "The server downloads the Windows ADK and its Windows PE add-on from Microsoft, about 4 GB, and installs the deployment tools and Windows PE. That takes a few minutes, and this page shows how it goes."
+msgid "The server downloads the Windows ADK and its Windows PE add-on from Microsoft, about 4 GB, which takes a few minutes."
 msgstr ""
 
-#: src/packages/PackageUploadPanel.tsx
-msgid "The server goes on checking {file} after you leave and adds it to the library when it finishes. If it refuses the file, you do not see why."
-msgstr ""
-
-#: src/images/ImageUploadPanel.tsx
-msgid "The server goes on checking {file} after you leave and adds its images to the library when it finishes. If it refuses the file, you do not see why."
+#: src/uploads/LeaveUploadDialog.tsx
+msgid "The server goes on checking it. If it refuses the file, you won't see why."
 msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "upload.offsetMismatch"
 msgid "The server holds a different part of this file. Continue from the offset in the Upload-Offset header."
-msgstr ""
-
-#: src/boot/AdkState.tsx
-msgid "The server installs them without asking again. Installing accepts Microsoft's licence terms for both."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10725,14 +10271,6 @@ msgctxt "upload.restarted"
 msgid "The server lost part of this upload. Send the file again from the start."
 msgstr ""
 
-#: src/settings/server/ConfigurationPanel.tsx
-msgid "The server needs these before it can serve this page, so they stay in its configuration: environment variables, appsettings.json or the command line. It reads them as it starts, so a change there takes a restart of DDT. Values that could hold a password are never shown."
-msgstr ""
-
-#: src/packages/packages.ts
-msgid "The server refuses while a machine is assigned or runs a sequence that uses it."
-msgstr ""
-
 #: src/boot/BuildPanel.tsx
 msgid "The server's own"
 msgstr ""
@@ -10742,7 +10280,7 @@ msgid "The server's settings could not be read."
 msgstr ""
 
 #: src/accounts/drawer/HostsEditor.tsx
-msgid "The servers a step may connect shares on with this account, such as files.corp.example. None, and it connects no share."
+msgid "The servers it may connect shares on, such as files.corp.example."
 msgstr ""
 
 #: src/images/import/MdtShareChoices.tsx
@@ -10755,10 +10293,6 @@ msgstr ""
 
 #: src/auth/useSignIn.ts
 msgid "The sign-in at the identity provider did not finish. Try again."
-msgstr ""
-
-#: src/settings/signIn/SingleSignOnSettings.tsx
-msgid "The sign-in page offers a button that signs people in at an OpenID Connect provider, such as Entra ID, Keycloak or Authentik. DDT never links an identity to an existing account by its email address."
 msgstr ""
 
 #: src/settings/signIn/SingleSignOnSettings.tsx
@@ -10780,10 +10314,6 @@ msgstr ""
 #: src/runs/flow/NodeDetails.tsx
 #: src/runs/steps/StepFailure.tsx
 msgid "The step failed without saying why."
-msgstr ""
-
-#: src/sequences/steps/ScriptResultFields.tsx
-msgid "The step fails when the script runs longer."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10821,7 +10351,7 @@ msgid "The task sequence list could not be loaded."
 msgstr ""
 
 #: src/sequences/NewSequenceDialog.tsx
-msgid "The templates could not be loaded. You can still start with an empty sequence."
+msgid "The templates could not be loaded."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10900,7 +10430,7 @@ msgid "The version and the licence texts could not be loaded."
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/WdsChoices.tsx
-msgid "The WDS boot menu offers DDT now, and gets each new boot image when it is built."
+msgid "The WDS boot menu offers DDT now."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10908,13 +10438,13 @@ msgctxt "bootImage.noAdk"
 msgid "The Windows ADK with its Windows PE add-on is not installed on this server. Install it first."
 msgstr ""
 
+#: src/boot/AdkState.tsx
+msgid "The Windows PE add-on {version} is too old. Uninstall it and the Windows ADK, then install them from here."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "bootImage.oldAdk"
 msgid "The Windows PE add-on on this server is {version}, and the boot image needs {oldest} or later."
-msgstr ""
-
-#: src/boot/AdkState.tsx
-msgid "The Windows PE add-on on this server is {version}, which is older than the boot image needs. Remove it and the Windows ADK under Windows's installed apps, then install them from here."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10978,10 +10508,6 @@ msgstr ""
 msgid "There was no value."
 msgstr ""
 
-#: src/settings/networkBoot/neighbours/DhcpScopesDialog.tsx
-msgid "These options decide what every machine in the scope loads when it netboots, so setting them needs your password again."
-msgstr ""
-
 #: src/settings/certificate/ServerNames.tsx
 #: src/settings/LoggingPanel.tsx
 #: src/settings/parts/SettingsSection.tsx
@@ -10989,24 +10515,16 @@ msgstr ""
 msgid "These settings could not be loaded."
 msgstr ""
 
-#: src/settings/parts/ReauthDialog.tsx
-msgid "These settings decide who signs in and what machines trust, so they need your password again."
-msgstr ""
-
 #: src/settings/networkBoot/SectionProblems.tsx
 msgid "These settings have problems, so no host serves network boot until they are fixed."
 msgstr ""
 
 #: src/settings/networkBoot/ConfigurationGroup.tsx
-msgid "These stay in configuration, as DDT:Pxe:HttpBootPort and DDT:Pxe:BootDirectory: a port that is taken would stop the server, and everything in the boot directory is served to anyone who asks. A relative boot directory is inside DDT:StorePath."
+msgid "These stay in configuration, as DDT:Pxe:HttpBootPort and DDT:Pxe:BootDirectory. Everything in the boot directory is served to anyone who asks."
 msgstr ""
 
 #: src/sequences/SequenceConflict.tsx
 msgid "They changed {list}."
-msgstr ""
-
-#: src/machines/waiting/useRunWaitingActions.ts
-msgid "They were given at the machine or on another page first."
 msgstr ""
 
 #: src/account/PasswordPanel.tsx
@@ -11041,25 +10559,12 @@ msgid "This account signs in without a password DDT can check, so it cannot chan
 msgstr ""
 
 #: src/machines/assign/assignText.ts
-msgid "This also authorizes the machine, because {by} signed in at it. It then runs the sequence and receives the deployment passwords."
-msgstr ""
-
-#: src/machines/assign/assignText.ts
 msgid "This also authorizes the machine, which then runs the sequence and receives the deployment passwords."
-msgstr ""
-
-#: src/settings/certificate/NewRootDialog.tsx
-msgid "This certificate does not come from DDT's root, which boot images pin. Every boot image has to be built again with its root, and every browser that manages DDT has to trust that root. Until then, netbooting machines cannot reach the server."
 msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.newRootUpload"
 msgid "This certificate does not come from DDT's root, which every boot image pins: build every boot image again with its root, and trust that root in the browsers that manage DDT."
-msgstr ""
-
-#: src/settings/networkBoot/neighbours/DhcpHere.tsx
-#: src/settings/networkBoot/neighbours/WdsChoices.tsx
-msgid "This changes what every machine that netboots from this server loads, so it needs your password again."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -11078,7 +10583,7 @@ msgid "This connection was served the certificate before the new one, so it prov
 msgstr ""
 
 #: src/runs/panel/RunRail.tsx
-msgid "This deployment ran before task sequences, so it has no steps to show."
+msgid "This deployment has no steps to show."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -11111,7 +10616,7 @@ msgstr ""
 
 #: src/images/images.ts
 #: src/sequences/steps/imageChoices.ts
-msgid "This image may not start with Secure Boot on, as DDT could not tell whether it is signed for it. Turn Secure Boot off in the machine's firmware setup, or enroll your own key."
+msgid "This image may not start with Secure Boot on. Turn Secure Boot off in the machine's firmware setup, or enroll your own key."
 msgstr ""
 
 #: src/images/images.ts
@@ -11140,11 +10645,11 @@ msgid "This machine already has a run. Cancel it before assigning another sequen
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
-msgid "This machine did not start the Linux boot environment after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts the Linux boot environment."
+msgid "This machine did not start the Linux boot environment after restarting. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned."
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
-msgid "This machine did not start Windows PE after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned and starts once the machine starts Windows PE."
+msgid "This machine did not start Windows PE after restarting. Check that it starts from the network and that no DHCP server names another boot file. {title} stays assigned."
 msgstr ""
 
 #: src/machines/assign/AssignConsequences.tsx
@@ -11161,11 +10666,11 @@ msgid "This machine has sent no log lines yet."
 msgstr ""
 
 #: src/machines/secureBoot.ts
-msgid "This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware does not trust {cas}, which signs the environment's first loader. Allow it in the firmware setup, or turn Secure Boot off there."
+msgid "This machine is not started in the Linux boot environment: its firmware does not trust {cas}. Allow it in the firmware setup, or turn Secure Boot off there."
 msgstr ""
 
 #: src/machines/secureBoot.ts
-msgid "This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware trusts neither of {cas}, which sign the environment's first loader. Allow one of them in the firmware setup, or turn Secure Boot off there."
+msgid "This machine is not started in the Linux boot environment: its firmware trusts neither of {cas}. Allow one of them in the firmware setup, or turn Secure Boot off there."
 msgstr ""
 
 #: src/machines/MachinePage.tsx
@@ -11190,15 +10695,11 @@ msgid "This page could not load"
 msgstr ""
 
 #: src/log/LogStatusBar.tsx
-msgid "This page holds at most {bufferLimit} lines. Older ones stay on the server."
-msgstr ""
-
-#: src/settings/certificate/ProvisionalNotice.tsx
-msgid "This page's next request gets the new certificate. Once the page works with it, keep it here. If nobody keeps it by {deadline}, {left}, DDT goes back to the certificate before, so a certificate your browser refuses cannot lock you out."
+msgid "This page holds at most {bufferLimit} lines."
 msgstr ""
 
 #: src/settings/server/ServerSettings.tsx
-msgid "This process cannot read the key ring the stored secrets were encrypted with, so it refuses every save. Every DDT process on one database has to share the key ring in DDT:StorePath/keys."
+msgid "This process cannot read the key ring the stored secrets were encrypted with. Every DDT process on one database has to share the key ring in DDT:StorePath/keys."
 msgstr ""
 
 #: src/conditions/builder/SubjectList.tsx
@@ -11213,10 +10714,6 @@ msgstr ""
 
 #: src/sequences/builder/VariablesPanel.tsx
 msgid "This sequence declares no variables or inputs yet."
-msgstr ""
-
-#: src/sequences/SequenceEditorPage.tsx
-msgid "This sequence does not exist. It may have been deleted."
 msgstr ""
 
 #: src/sequences/builder/FlowCanvas.tsx
@@ -11234,11 +10731,11 @@ msgstr ""
 
 #: src/settings/AgentPanel.tsx
 #: src/settings/LinuxAgentPanel.tsx
-msgid "This server came with agent {version}, which is newer than the uploaded one. Remove the upload, and machines run the server's own."
+msgid "This server came with agent {version}, which is newer than the uploaded one."
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
-msgid "This server came with console {version}, which is newer than the uploaded one. Remove the upload, and machines show the server's own."
+msgid "This server came with console {version}, which is newer than the uploaded one."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -11251,10 +10748,6 @@ msgctxt "bootImage.noHelper"
 msgid "This server cannot build the boot image itself: the DDT Helper service does not answer. DDT's installer for Windows sets it up. On another server, build with Build-BootImage.ps1 on a Windows PC."
 msgstr ""
 
-#: src/boot/BuildCommand.tsx
-msgid "This server cannot build the image itself, which takes the DDT Helper service that DDT's installer for Windows sets up. Run this in an elevated PowerShell on a Windows PC with the Windows ADK, from a copy of DDT's repository. It writes boot.wim and the boot files into the destination, which the boot directory has to hold; machines netboot with the new image at once."
-msgstr ""
-
 #: src/lib/serverMessages.ts
 msgctxt "settings.keyRingUnreadable"
 msgid "This server cannot read the key ring the stored settings secrets were encrypted with, so it saves no settings. Every DDT process on one database has to share the key ring in DDT:StorePath/keys."
@@ -11263,6 +10756,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "linuxBoot.missing"
 msgid "This server has no Linux boot environment: {folder} holds no ddt-linux-boot.json. A release of DDT brings the folder with it."
+msgstr ""
+
+#: src/boot/AdkState.tsx
+msgid "This server has no Windows ADK with the Windows PE add-on."
 msgstr ""
 
 #: src/settings/server/ServerSettings.tsx
@@ -11274,16 +10771,8 @@ msgctxt "sequence.onceInRepeat"
 msgid "This step can run only once in a run, so it cannot be inside a repeat."
 msgstr ""
 
-#: src/machines/actions/StopConfirm.tsx
-msgid "This stops the run on {label}, which runs in its installed Linux. The agent there stops at its next contact with the server and removes itself; Linux stays installed as it is, with the steps done so far."
-msgstr ""
-
-#: src/machines/actions/StopConfirm.tsx
-msgid "This stops the run on {label}, which runs in its installed Windows. The agent there stops at its next contact with the server and removes itself; Windows stays installed as it is, with the steps done so far."
-msgstr ""
-
-#: src/machines/actions/StopConfirm.tsx
-msgid "This stops the run on {label}. Its disk is left half written; assign a sequence again to deploy it."
+#: src/images/ImageUploadPanel.tsx
+msgid "This takes a few minutes for a large file."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -11357,6 +10846,18 @@ msgstr ""
 msgid "Timeout in seconds"
 msgstr ""
 
+#: src/settings/directory/GroupFinder.tsx
+msgid "To find groups by name, turn directory sign-in on and save its server and search base."
+msgstr ""
+
+#: src/setup/SetupChecklist.tsx
+msgid "To install Windows, <0>build the boot image</0>."
+msgstr ""
+
+#: src/account/AuthenticatorOn.tsx
+msgid "To turn it off, enter a current code."
+msgstr ""
+
 #: src/tokens/TokenSecret.tsx
 #: src/tokens/TokenTable.tsx
 msgid "Token"
@@ -11403,12 +10904,8 @@ msgstr ""
 msgid "TPM version"
 msgstr ""
 
-#: src/settings/directory/DirectoryTest.tsx
-msgid "Tries the values above as they are, before you save them. With a user name and password, DDT also signs that user in, without starting a session, and shows their groups and the role they would get. A wrong password counts towards the account's lockout."
-msgstr ""
-
 #: src/setup/SetupChecklist.tsx
-msgid "Trust <0>DDT's root certificate</0> in the browsers that manage it, so they stop warning about this address."
+msgid "Trust <0>DDT's root certificate</0> in the browsers that manage it."
 msgstr ""
 
 #: src/app/RouteError.tsx
@@ -11428,7 +10925,7 @@ msgid "Turn it off only when another TFTP server serves them. Every TFTP boot ta
 msgstr ""
 
 #: src/settings/networkBoot/TransfersGroup.tsx
-msgid "Turn it on when the log shows a read request arriving but the machine never receives data: a stateful firewall is dropping replies from a fresh port. Replies then leave by the route back to the machine, which has to go through a served interface."
+msgid "Turn it off only where every DHCP server names DDT and the boot file itself."
 msgstr ""
 
 #: src/account/AuthenticatorOn.tsx
@@ -11452,10 +10949,6 @@ msgstr ""
 msgid "Turn on"
 msgstr ""
 
-#: src/rules/drawer/RuleFields.tsx
-msgid "Turned off, the rule is kept but matches no machine."
-msgstr ""
-
 #: src/users/UsersTable.tsx
 msgid "Type"
 msgstr ""
@@ -11466,10 +10959,6 @@ msgstr ""
 
 #: src/ui/ConfirmDialog.tsx
 msgid "Type {typedWord} to go on"
-msgstr ""
-
-#: src/users/directory/MappedGroupSearch.tsx
-msgid "Type part of a group's name to see its distinguished name for the map."
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/PortOwners.tsx
@@ -11528,8 +11017,12 @@ msgstr ""
 msgid "Unnamed step"
 msgstr ""
 
+#: src/boot/BuilderPanel.tsx
+msgid "Unpack the builder on a Windows PC with the Windows ADK and its Windows PE add-on, then run Build.cmd. It uploads one boot image, within a day."
+msgstr ""
+
 #: src/sequences/steps/ScriptPackageSetting.tsx
-msgid "Unpacked before the script runs, and the script's working directory. Packages are under <0>Files</0>."
+msgid "Unpacked before the script runs, and the script's working directory."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -11551,6 +11044,10 @@ msgstr ""
 
 #: src/sequences/builder/nodeDetail.ts
 msgid "Until {until}, at most {times} times"
+msgstr ""
+
+#: src/account/AccountPage.tsx
+msgid "Until then, DDT shows you nothing but this page."
 msgstr ""
 
 #: src/sequences/builder/canvas/NodeMenu.tsx
@@ -11580,18 +11077,6 @@ msgstr ""
 
 #: src/settings/certificate/UploadDialog.tsx
 msgid "Upload a certificate"
-msgstr ""
-
-#: src/images/NoImages.tsx
-msgid "Upload a WIM file to add its Windows images, or a disk image such as a Linux cloud image. A task sequence then applies or writes one."
-msgstr ""
-
-#: src/packages/NoPackages.tsx
-msgid "Upload a zip of drivers and choose the models it is for. A task sequence with an Inject drivers step then adds them to those machines."
-msgstr ""
-
-#: src/packages/NoPackages.tsx
-msgid "Upload a zip of files, then choose it in a Run script step of a task sequence."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
@@ -11632,15 +11117,15 @@ msgid "Uploaded. Machines show the logo when they next register."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
-msgid "Uploaded. Machines that netboot from now on run the agent with SHA-256 {uploaded}."
+msgid "Uploaded. Machines that netboot from now on run it."
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
-msgid "Uploaded. Machines that netboot from now on show the console whose ddt-console.exe has SHA-256 {uploaded}."
+msgid "Uploaded. Machines that netboot from now on show it."
 msgstr ""
 
 #: src/settings/LinuxAgentPanel.tsx
-msgid "Uploaded. Machines that start the Linux boot environment from now on run the agent with SHA-256 {uploaded}."
+msgid "Uploaded. Machines that start the Linux boot environment from now on run it."
 msgstr ""
 
 #: src/uploads/UploadProgress.tsx
@@ -11681,6 +11166,10 @@ msgstr ""
 msgid "Use HTTP"
 msgstr ""
 
+#: src/settings/directory/ServerGroup.tsx
+msgid "Use it only on a test network."
+msgstr ""
+
 #: src/settings/networkBoot/TargetMethod.tsx
 msgid "Use TFTP"
 msgstr ""
@@ -11692,14 +11181,6 @@ msgstr ""
 #: src/rules/SavedMeanwhile.tsx
 #: src/sequences/SequenceConflict.tsx
 msgid "Use theirs"
-msgstr ""
-
-#: src/rules/SavedMeanwhile.tsx
-msgid "Use theirs throws your changes away. Keep mine saves your version over theirs."
-msgstr ""
-
-#: src/sequences/SequenceConflict.tsx
-msgid "Use theirs throws your unsaved changes away. Keep mine saves your version over theirs."
 msgstr ""
 
 #: src/accounts/list/AccountsTable.tsx
@@ -11894,14 +11375,6 @@ msgstr ""
 msgid "Waits until someone lets the run go on"
 msgstr ""
 
-#: src/sequences/steps/PauseFields.tsx
-msgid "Waits until someone lets the run go on, at the machine or on its page. A restart in the Linux boot environment ends the run instead."
-msgstr ""
-
-#: src/sequences/steps/PauseFields.tsx
-msgid "Waits until someone lets the run go on, at the machine or on its page. A restart in Windows PE before the disk is partitioned ends the run instead."
-msgstr ""
-
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "Warning"
 msgstr ""
@@ -11947,28 +11420,12 @@ msgstr ""
 msgid "What it does"
 msgstr ""
 
-#: src/users/AddUserForm.tsx
-msgid "What the account signs in with."
-msgstr ""
-
-#: src/settings/signIn/ProviderGroup.tsx
-msgid "What the button on the sign-in page says."
-msgstr ""
-
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "What the check found"
 msgstr ""
 
-#: src/sequences/builder/variables/InputFields.tsx
-msgid "What the person who answers reads."
-msgstr ""
-
 #: src/rules/RuleTest.tsx
 msgid "What the rules give this machine could not be worked out."
-msgstr ""
-
-#: src/sequences/builder/variables/VariableFields.tsx
-msgid "What the variable holds unless an input, a rule or a machine role sets it."
 msgstr ""
 
 #: src/tokens/MakeTokenForm.tsx
@@ -11976,19 +11433,15 @@ msgid "What uses it, such as the inventory script."
 msgstr ""
 
 #: src/tokens/RevokeTokenDialog.tsx
-msgid "Whatever uses the token is refused from its next request. The token stays in the list as revoked and cannot be turned back on; make a new one if it is needed again."
+msgid "Whatever uses the token is refused from its next request. It cannot be turned back on."
 msgstr ""
 
 #: src/audit/AuditTable.tsx
 msgid "When"
 msgstr ""
 
-#: src/settings/LoggingPanel.tsx
-msgid "When a machine does not netboot, set DDT.Pxe to Debug or Trace and let the machine try again: the log then says what it asked for and what the server answered. Set it back afterwards, since Trace writes a line for every packet."
-msgstr ""
-
-#: src/settings/directory/UsersGroup.tsx
-msgid "Where DDT looks for users and groups."
+#: src/settings/networkBoot/neighbours/PortOwners.tsx
+msgid "Where another program holds a port with DDT, Windows may hand the machines to it."
 msgstr ""
 
 #: src/settings/parts/ApplyStates.tsx
@@ -12000,19 +11453,11 @@ msgid "Where new computer accounts go. Left empty, the domain's default."
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/DhcpOptions.tsx
-msgid "Where ProxyDHCP does not reach the machines, such as across a router, the DHCP server sends them to DDT with these two options."
+msgid "Where ProxyDHCP does not reach the machines, the DHCP server sends them to DDT with these two options."
 msgstr ""
 
 #: src/log/LogPanel.tsx
 msgid "Which lines"
-msgstr ""
-
-#: src/packages/packages.ts
-msgid "Which sequences name it is not known, because not every sequence could be read; those that do show a problem until another package is chosen."
-msgstr ""
-
-#: src/settings/signIn/ClaimRolesGroup.tsx
-msgid "While the map has entries, an account single sign-on created gets the highest role its groups give it at each sign-in, and an identity in none of them cannot sign in. A local account linked to an identity keeps the role an administrator gave it."
 msgstr ""
 
 #: src/audit/AuditFilters.tsx
@@ -12049,11 +11494,11 @@ msgid "Windows Deployment Services ({process}, process {id})"
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/WdsState.tsx
-msgid "Windows Deployment Services is installed on this computer and stopped, so DDT answers netboot here. Before WDS starts again, switch off ProxyDHCP and TFTP above."
+msgid "Windows Deployment Services is installed on this computer and stopped. Before WDS starts again, switch off ProxyDHCP and TFTP."
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/WdsState.tsx
-msgid "Windows Deployment Services runs on this computer and holds UDP 69 and 4011, so machines that netboot reach WDS and not DDT. In its boot menu DDT sits next to MDT's LiteTouch and needs neither ProxyDHCP nor TFTP of its own."
+msgid "Windows Deployment Services runs on this computer and holds UDP 69 and 4011, so machines that netboot reach WDS and not DDT."
 msgstr ""
 
 #: src/images/images.ts
@@ -12089,6 +11534,10 @@ msgstr ""
 msgid "Windows setup"
 msgstr ""
 
+#: src/machines/actions/StopConfirm.tsx
+msgid "Windows stays as it is, with the steps done so far."
+msgstr ""
+
 #: src/settings/networkBoot/BootFileField.tsx
 msgid "Windows UEFI CA 2023."
 msgstr ""
@@ -12113,28 +11562,28 @@ msgstr ""
 msgid "With a stored account"
 msgstr ""
 
+#: src/settings/directory/UsersGroup.tsx
+msgid "With another attribute, every account is taken for a new one at its next sign-in."
+msgstr ""
+
 #: src/accounts/drawer/AccountFields.tsx
 msgid "With its domain, as DOMAIN\\user or user@corp.example."
 msgstr ""
 
 #: src/boot/BuildPanel.tsx
-msgid "With PowerShell, for steps that run a script in Windows PE"
+msgid "With PowerShell"
 msgstr ""
 
 #: src/boot/LinuxSecureBootLine.tsx
-msgid "With Secure Boot on, a machine starts it when its firmware trusts {cas}. A machine whose firmware does not is not started in it."
+msgid "With Secure Boot on, the machine's firmware has to trust {cas}."
 msgstr ""
 
 #: src/boot/LinuxSecureBootLine.tsx
-msgid "With Secure Boot on, a machine starts it when its firmware trusts one of {cas}. A machine whose firmware trusts neither is not started in it."
+msgid "With Secure Boot on, the machine's firmware has to trust one of {cas}."
 msgstr ""
 
 #: src/sequences/builder/nodeDetail.ts
 msgid "With the join account of the deployment defaults"
-msgstr ""
-
-#: src/sequences/steps/WriteCloudInitSeedFields.tsx
-msgid "Without it, the image configures its network itself, usually by DHCP."
 msgstr ""
 
 #: src/machines/secureBoot.ts
@@ -12142,27 +11591,11 @@ msgid "without Microsoft's third-party UEFI CA"
 msgstr ""
 
 #: src/sequences/builder/variables/InputAskSettings.tsx
-msgid "Without one, and without a default, it has to be answered when the sequence is assigned or approved on the web, and a run chosen at the machine or started by a rule fails at its start."
-msgstr ""
-
-#: src/sequences/builder/variables/InputAskSettings.tsx
-msgid "Without one, and without a default, the run waits at its start until it is answered at the machine or on the machine's page."
+msgid "Without one, and without a default, a run chosen at the machine or started by a rule fails at its start."
 msgstr ""
 
 #: src/settings/deploymentDefaults/LocalAdministratorGroup.tsx
 msgid "Without one, the step cannot add the account and the run fails."
-msgstr ""
-
-#: src/rules/list/NoRules.tsx
-msgid "Without rules an operator chooses the sequence of each machine. Add a rule to choose one, set values or give machine roles by what a machine is, such as its model or its network."
-msgstr ""
-
-#: src/rules/list/NoRules.tsx
-msgid "Without rules an operator chooses the sequence of each machine. An administrator adds rules here."
-msgstr ""
-
-#: src/settings/networkBoot/BootEnvironmentGroup.tsx
-msgid "Words added to the kernel command line of the Linux boot environment, such as console=ttyS0,115200 for a serial console. Only letters, digits and _ . : , = + / @ - are taken."
 msgstr ""
 
 #: src/sequences/builder/inspector/NodeKeys.tsx
@@ -12216,10 +11649,6 @@ msgctxt "template.installLinuxDescription"
 msgid "Writes a raw disk image, such as a distribution's cloud image, and a cloud-init seed that names the machine, then runs a script in the installed Linux."
 msgstr ""
 
-#: src/sequences/steps/WriteUnattendFields.tsx
-msgid "Writes the answer file Windows setup reads at its first start. An empty setting takes the server's default."
-msgstr ""
-
 #: src/conditions/builder/ValueEditor.tsx
 #: src/conditions/conditions.ts
 msgid "yes"
@@ -12251,12 +11680,8 @@ msgstr ""
 msgid "You are signed out, so nothing more is saved. Sign in again and reload the page."
 msgstr ""
 
-#: src/sequences/NewSequenceDialog.tsx
-msgid "You can change it later in the editor."
-msgstr ""
-
 #: src/users/RoleHint.tsx
-msgid "You cannot change your own role. Another administrator can."
+msgid "You cannot change your own role."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -12280,16 +11705,12 @@ msgid "You have a token of that name already. Choose another name, or revoke tha
 msgstr ""
 
 #: src/settings/directory/ProofNotice.tsx
-msgid "You sign in through the directory, and these changes decide whether you still can. Test your own sign-in with them above before you save; the save is accepted within 5 minutes of a test that kept you an administrator."
+msgid "You sign in through the directory, and these changes decide whether you still can. Test your own sign-in with them above before you save."
 msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldap.testOwnSignIn"
 msgid "You sign in through the directory, and these values decide whether you still can. Test your own sign-in with them first; the save is accepted while a test that kept you an administrator is less than 5 minutes old."
-msgstr ""
-
-#: src/account/AccountPage.tsx
-msgid "You signed in with a password an administrator was shown. Replace it under Password; until then, DDT shows you nothing but this page."
 msgstr ""
 
 #: src/tokens/OwnTokensPanel.tsx

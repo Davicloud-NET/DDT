@@ -14,7 +14,7 @@ import type { SequenceEditorState } from "../../useSequenceEditor";
 function leaveConsequence(state: AutosaveState): string {
   switch (state.kind) {
     case "conflict":
-      return t`Someone else saved this sequence, so your changes since your last save are not saved. Leaving throws them away.`;
+      return t`Someone else saved this sequence. Leaving throws your unsaved changes away.`;
     case "retrying": {
       const message = state.message;
 

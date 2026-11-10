@@ -68,9 +68,7 @@ describe("MachinesPage", () => {
         ),
       ).toBeInTheDocument();
       expect(
-        within(dialog).getByText(
-          /^After the image is applied, the run goes on in the installed Windows/,
-        ),
+        within(dialog).getByText("The run goes on in the installed Windows."),
       ).toBeInTheDocument();
       expect(
         within(dialog).getByText(
@@ -156,11 +154,7 @@ describe("MachinesPage", () => {
 
       const dialog = await openAssign();
 
-      expect(
-        await within(dialog).findByText(
-          "No task sequence exists yet. An administrator creates one under Deployment, Task sequences.",
-        ),
-      ).toBeInTheDocument();
+      expect(await within(dialog).findByText("No task sequence exists yet.")).toBeInTheDocument();
       expect(assignKey(dialog)).toBeDisabled();
     });
 
@@ -244,7 +238,7 @@ describe("MachinesPage", () => {
       ).toBeInTheDocument();
       expect(
         await within(dialog).findByText(
-          "This also authorizes the machine, because tech signed in at it. It then runs the sequence and receives the deployment passwords.",
+          "This also authorizes the machine, which then runs the sequence and receives the deployment passwords.",
         ),
       ).toBeInTheDocument();
       expect(within(dialog).queryByText(/stays waiting/)).not.toBeInTheDocument();
@@ -317,7 +311,7 @@ describe("MachinesPage", () => {
 
       expect(
         await within(dialog).findByText(
-          "The deployment settings could not be loaded, so DDT cannot say what the assignment does. Close this and try again.",
+          "The deployment settings could not be loaded. Close this and try again.",
         ),
       ).toBeInTheDocument();
       expect(selectKey(dialog, "Task sequence")).toHaveTextContent("Install Windows");
@@ -340,9 +334,7 @@ describe("MachinesPage", () => {
       const name = within(dialog).getByLabelText("Computer name");
 
       await waitFor(() => {
-        expect(name).toHaveAccessibleDescription(
-          /^Required, because Install Windows joins the domain under this name\./,
-        );
+        expect(name).toHaveAccessibleDescription(/^Required\. At most 15 characters/);
       });
       expect(name).toHaveAccessibleDescription(
         /At most 15 characters: the letters A to Z, digits and hyphens\. Not only digits, and no hyphen first or last\.$/,
@@ -355,9 +347,7 @@ describe("MachinesPage", () => {
       await waitFor(() => {
         expect(name).toHaveAttribute("aria-invalid", "true");
       });
-      expect(name).toHaveAccessibleDescription(
-        /Enter a computer name\. Install Windows joins the domain under this name\./,
-      );
+      expect(name).toHaveAccessibleDescription(/Enter a computer name\./);
       expect(server.changes()).toEqual([]);
     });
 
@@ -394,7 +384,7 @@ describe("MachinesPage", () => {
 
       await waitFor(() => {
         expect(name).toHaveAccessibleDescription(
-          /^Optional\. Left empty, the machine is named PC-00042, as its values say, and joins the domain under it\./,
+          /^Optional\. Left empty, the machine is named PC-00042\./,
         );
       });
       expect(name).not.toBeRequired();
@@ -586,13 +576,11 @@ describe("MachinesPage", () => {
 
       expect(
         await within(dialog).findByText(
-          "noble may not start with Secure Boot on, as DDT could not tell whether it is signed for it. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here.",
+          "noble may not start with Secure Boot on. If this machine has it on, the run stops before it erases anything, unless you allow the image here.",
         ),
       ).toBeInTheDocument();
       const name = within(dialog).getByLabelText("Computer name");
-      expect(name).toHaveAccessibleDescription(
-        /^Required, because Install Linux gives this name to the machine in its cloud-init seed\./,
-      );
+      expect(name).toHaveAccessibleDescription(/^Required\. At most 15 characters/);
 
       fill(name, "LAB-01");
       await assignable(dialog);

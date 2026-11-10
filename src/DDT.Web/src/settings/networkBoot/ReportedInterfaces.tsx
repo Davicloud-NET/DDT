@@ -41,10 +41,7 @@ export function ReportedInterfaces({
   if (reported.length === 0) {
     return (
       <p className="type-small text-muted">
-        <Trans>
-          No host that runs network boot has reported its interfaces yet. A host reports them when
-          it applies these settings without problems.
-        </Trans>
+        <Trans>No host that runs network boot has reported its interfaces yet.</Trans>
       </p>
     );
   }

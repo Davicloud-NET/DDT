@@ -23,22 +23,18 @@ export interface Binary {
   configured: ReactNode;
   uploadTitle: ReactNode;
   warning: ReactNode;
-  explanation: ReactNode;
   dropLabel: string;
   dropHere: ReactNode;
   dropHint: ReactNode;
   chooseFirst: () => string;
-  tooLarge: (name: string, limit: string) => string;
-  uploaded: (uploaded: string) => ReactNode;
+  uploaded: ReactNode;
   confirmTitle: (name: string) => ReactNode;
   confirmLabel: ReactNode;
   confirmBody: (name: string, size: string) => ReactNode;
-  reauthReason: ReactNode;
   newer: (version: string) => ReactNode;
   removeLabel: ReactNode;
   removeTitle: ReactNode;
   removeBody: ReactNode;
   removing: ReactNode;
-  removed: ReactNode;
   notRemoved: (reason: string) => ReactNode;
 }

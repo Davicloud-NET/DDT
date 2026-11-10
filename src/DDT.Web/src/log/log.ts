@@ -43,9 +43,6 @@ export interface LogRead {
 // The server's default page size. It returns at most 1000 lines per read.
 export const LOG_PAGE_LINES = 500;
 
-// The server's MachineLogLimits.MaxStoredLinesPerMachine.
-export const STORED_LINES_PER_MACHINE = 50_000;
-
 // Below this the server does not correct the agent's time, because the difference is the network's delay.
 const SKEW_TOLERANCE_MS = 2_000;
 

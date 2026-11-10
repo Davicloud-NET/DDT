@@ -68,7 +68,7 @@ export function useAssignForm(machine: MachineSummary, onClose: () => void) {
 
     const missingName = nameRequired && name === "";
 
-    setNameProblem(missingName ? nameRequiredText(sequence) : null);
+    setNameProblem(missingName ? nameRequiredText() : null);
 
     const given = answers.collect();
 

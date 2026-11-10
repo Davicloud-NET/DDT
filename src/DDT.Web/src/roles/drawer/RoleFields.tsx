@@ -31,9 +31,7 @@ export function RoleFields({ form, rules }: { form: RoleForm; rules: readonly Ru
 
       <TextSetting
         label={<Trans>Description</Trans>}
-        hint={
-          <Trans>Optional. What machines with this role are, such as kiosks in the lobby.</Trans>
-        }
+        hint={<Trans>Optional.</Trans>}
         field="description"
         findings={findings}
         value={edit.description}
@@ -44,12 +42,6 @@ export function RoleFields({ form, rules }: { form: RoleForm; rules: readonly Ru
 
       <ValuesEditor
         label={<Trans>Sets values</Trans>}
-        hint={
-          <Trans>
-            A machine gets them from each rule that gives it the role, after the values the rules
-            set themselves.
-          </Trans>
-        }
         rows={edit.values}
         findings={findings}
         onChange={(values) => {

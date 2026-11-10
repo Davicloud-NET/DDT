@@ -22,14 +22,14 @@ export function BuilderNotices({
     <>
       {readOnly ? (
         <Notice>
-          <Trans>Only administrators change task sequences. You can look at this one.</Trans>
+          <Trans>Only administrators change task sequences.</Trans>
         </Notice>
       ) : null}
 
       {editor.deleted ? (
         <Notice tone="fail" title={<Trans>This sequence was deleted</Trans>}>
           <Trans>
-            Someone deleted it while it was open here, so nothing more is saved.{" "}
+            Nothing more is saved.{" "}
             <Link to="/deployment/sequences" className="font-semibold underline">
               Go to the task sequences
             </Link>

@@ -35,7 +35,6 @@ export function NodeConditions({
       {node.kind === "if" ? (
         <ConditionBuilder
           label={<Trans>Go along Then when</Trans>}
-          hint={<Trans>Every other machine goes along Else.</Trans>}
           use="test"
           field="test"
           value={node.test}

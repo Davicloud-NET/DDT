@@ -43,10 +43,10 @@ describe("linuxBootRefusal", () => {
     const newer = machineSummary({ secureBootEnabled: true, trustedUefiCas: "Microsoft2023" });
 
     expect(linuxBootRefusal(none, both)).toBe(
-      "This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware trusts neither of Microsoft's third-party UEFI CAs 2011 and 2023, which sign the environment's first loader. Allow one of them in the firmware setup, or turn Secure Boot off there.",
+      "This machine is not started in the Linux boot environment: its firmware trusts neither of Microsoft's third-party UEFI CAs 2011 and 2023. Allow one of them in the firmware setup, or turn Secure Boot off there.",
     );
     expect(linuxBootRefusal(newer, "Microsoft2011")).toBe(
-      "This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware does not trust Microsoft's third-party UEFI CA 2011, which signs the environment's first loader. Allow it in the firmware setup, or turn Secure Boot off there.",
+      "This machine is not started in the Linux boot environment: its firmware does not trust Microsoft's third-party UEFI CA 2011. Allow it in the firmware setup, or turn Secure Boot off there.",
     );
   });
 
@@ -107,7 +107,7 @@ describe("secureBootRisk", () => {
     expect(secureBootRisk(machineSummary({ secureBootEnabled: true }), linux)).toEqual({
       required: true,
       warning:
-        "noble is not signed for Secure Boot, and this machine has Secure Boot on. The run writes it only if you allow it, and the machine then starts it once Secure Boot is turned off in its firmware setup or your own key is enrolled.",
+        "noble is not signed for Secure Boot, and this machine has Secure Boot on. To start it, turn Secure Boot off in the firmware setup or enroll your own key.",
       allowLabel: "Write noble anyway",
     });
   });
@@ -121,7 +121,7 @@ describe("secureBootRisk", () => {
 
     expect(risk?.required).toBe(false);
     expect(risk?.warning).toBe(
-      "noble may not start with Secure Boot on, as DDT could not tell whether it is signed for it. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here.",
+      "noble may not start with Secure Boot on. If this machine has it on, the run stops before it erases anything, unless you allow the image here.",
     );
   });
 });

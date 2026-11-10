@@ -42,9 +42,8 @@ export function ServerSettings() {
       {overview.data?.keyRingReadable === false ? (
         <Notice tone="fail" title={<Trans>This server saves no settings</Trans>}>
           <Trans>
-            This process cannot read the key ring the stored secrets were encrypted with, so it
-            refuses every save. Every DDT process on one database has to share the key ring in
-            DDT:StorePath/keys.
+            This process cannot read the key ring the stored secrets were encrypted with. Every DDT
+            process on one database has to share the key ring in DDT:StorePath/keys.
           </Trans>
         </Notice>
       ) : null}

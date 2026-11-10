@@ -19,8 +19,8 @@ export function LinuxDetours({ count }: LinuxDetoursProps) {
   return (
     <p className="max-w-[80ch] type-small text-attention-text">
       {plural(count, {
-        one: `The machine started from the network once while its run goes on in the installed Linux and was sent back to its disk, and at ${max} such starts in a row the server ends the run.`,
-        other: `The machine started from the network # times in a row while its run goes on in the installed Linux and was sent back to its disk each time, and at ${max} such starts in a row the server ends the run.`,
+        one: `The machine started from the network once and was sent back to its disk. At ${max} such starts in a row, the run ends.`,
+        other: `The machine started from the network # times in a row and was sent back to its disk. At ${max} such starts in a row, the run ends.`,
       })}
     </p>
   );

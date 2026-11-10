@@ -56,9 +56,9 @@ function JobTitle({ kind }: { kind: BootImageJob["kind"] }) {
 function JobProgress({ kind }: { kind: BootImageJob["kind"] }) {
   switch (kind) {
     case "Build":
-      return <Trans>Building the boot image, which takes several minutes</Trans>;
+      return <Trans>Building the boot image</Trans>;
     case "InstallAdk":
-      return <Trans>Downloading and installing, which takes a few minutes</Trans>;
+      return <Trans>Downloading and installing</Trans>;
     case "Upload":
       return <Trans>Receiving and checking the boot image</Trans>;
   }

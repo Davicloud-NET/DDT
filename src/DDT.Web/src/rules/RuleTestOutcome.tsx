@@ -42,8 +42,8 @@ export function RuleTestOutcome({ resolution, rules }: RuleTestOutcomeProps) {
         {count > 0 ? (
           <span className="type-small text-fail-text">
             {plural(count, {
-              one: "It has # problem, so it cannot run until it is fixed.",
-              other: "It has # problems, so it cannot run until they are fixed.",
+              one: "It has # problem and cannot run.",
+              other: "It has # problems and cannot run.",
             })}
           </span>
         ) : null}

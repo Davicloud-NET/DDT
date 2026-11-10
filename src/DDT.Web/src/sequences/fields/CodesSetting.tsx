@@ -54,7 +54,7 @@ export function CodesSetting({
         isInvalid={invalid || findingsOf.isInvalid}
         errorMessage={
           invalid
-            ? t`Enter whole numbers from -2147483648 to 2147483647, separated by commas. Until then the last list stays.`
+            ? t`Enter whole numbers from -2147483648 to 2147483647, separated by commas.`
             : findingsOf.errorMessage
         }
       />

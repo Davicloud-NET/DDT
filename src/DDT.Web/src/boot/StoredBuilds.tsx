@@ -94,10 +94,7 @@ export function StoredBuilds({ view, now }: { view: BootImageView; now: number }
         }}
       >
         <p>
-          <Trans>
-            Machines that netboot from now on get this build. A machine that is netbooting right now
-            finishes with the build it started.
-          </Trans>
+          <Trans>Machines that netboot from now on get this build.</Trans>
         </p>
       </ConfirmDialog>
     </Panel>

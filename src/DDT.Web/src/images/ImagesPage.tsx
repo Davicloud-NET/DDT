@@ -30,7 +30,6 @@ import { deleteImage, imagesQuery, type ImageSummary } from "./images";
 import { ImagesTable } from "./ImagesTable";
 import { ImageUploadPanel } from "./ImageUploadPanel";
 import { deleteConsequence, matchesImage } from "./imageView";
-import { NoImages } from "./NoImages";
 
 // The operating system images that machines are deployed with. These are the Windows images in WIM and ESD files,
 // and whole disk images such as Linux cloud images. A new image joins the list, and a changed one flashes.
@@ -84,7 +83,7 @@ export function ImagesPage() {
         {images.isPending ? (
           <ListSkeleton />
         ) : list.length === 0 ? (
-          <NoImages canEdit={canEdit} />
+          <EmptyState title={<Trans>No images yet</Trans>} />
         ) : shown.length === 0 ? (
           <EmptyState title={<Trans>No image matches</Trans>} />
         ) : (

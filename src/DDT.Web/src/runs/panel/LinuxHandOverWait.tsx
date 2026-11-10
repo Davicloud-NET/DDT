@@ -43,9 +43,8 @@ export function LinuxHandOverWait({ sinceUtc, returns = 0, after, now }: LinuxHa
       <span className="max-w-[80ch] type-small text-ink-2">
         {returns > 0 ? (
           <Trans>
-            The machine started from the network again {when}, {ago} ago, for the {nth} time since
-            the hand-over. DDT restarted it into its disk, and the installed Linux has not called
-            since.
+            The machine started from the network again {when}, {ago} ago, for the {nth} time. The
+            installed Linux has not called since.
           </Trans>
         ) : (
           <Trans>
@@ -53,32 +52,23 @@ export function LinuxHandOverWait({ sinceUtc, returns = 0, after, now }: LinuxHa
           </Trans>
         )}
       </span>
-      <span className="max-w-[80ch] type-small text-ink-2">
-        {returns > 0 ? (
+      {returns > 0 ? (
+        <span className="max-w-[80ch] type-small text-ink-2">
           <Trans>
-            A first start can fail or be cut short, so DDT tries the disk again, and ends the run if
-            the machine keeps coming back. If it does, the image has no cloud-init or no systemd,
-            the user-data keeps cloud-init from running DDT's script, the machine does not start
-            from its disk, or that script failed. Look at the machine's own screen, and in the
-            installed Linux at <span className="type-data">{output}</span> and{" "}
+            DDT ends the run if the machine keeps coming back. Look at the machine's own screen, and
+            in the installed Linux at <span className="type-data">{output}</span> and{" "}
             <span className="type-data whitespace-nowrap">{journal}</span>.
           </Trans>
-        ) : isOverdue(sinceUtc, now) ? (
+        </span>
+      ) : isOverdue(sinceUtc, now) ? (
+        <span className="max-w-[80ch] type-small text-ink-2">
           <Trans>
-            That is longer than a first start usually takes. It may still be installing packages.
-            Otherwise the machine did not start from its disk, the image has no cloud-init or no
-            systemd, the user-data keeps cloud-init from running DDT's script, or that script
-            failed. Look at the machine's own screen, and in the installed Linux at{" "}
-            <span className="type-data">{output}</span> and{" "}
+            That is longer than a first start usually takes. Look at the machine's own screen, and
+            in the installed Linux at <span className="type-data">{output}</span> and{" "}
             <span className="type-data whitespace-nowrap">{journal}</span>.
           </Trans>
-        ) : (
-          <Trans>
-            It starts first, and cloud-init sets it up before DDT's agent starts there. Packages it
-            installs take their time.
-          </Trans>
-        )}
-      </span>
+        </span>
+      ) : null}
     </div>
   );
 }

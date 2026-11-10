@@ -30,26 +30,17 @@ export function AssignBlockers({
       ) : null}
       {optionsFailed ? (
         <Notice tone="fail">
-          <Trans>
-            The deployment settings could not be loaded, so DDT cannot say what the assignment does.
-            Close this and try again.
-          </Trans>
+          <Trans>The deployment settings could not be loaded. Close this and try again.</Trans>
         </Notice>
       ) : null}
       {noSequence ? (
         <p>
-          <Trans>
-            No task sequence exists yet. An administrator creates one under Deployment, Task
-            sequences.
-          </Trans>
+          <Trans>No task sequence exists yet.</Trans>
         </p>
       ) : null}
       {noneRunnable ? (
         <p>
-          <Trans>
-            Every task sequence has problems, so none can run. An administrator fixes them under
-            Deployment, Task sequences.
-          </Trans>
+          <Trans>Every task sequence has problems, so none can run.</Trans>
         </p>
       ) : null}
     </>

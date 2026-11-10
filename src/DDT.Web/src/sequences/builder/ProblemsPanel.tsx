@@ -36,7 +36,7 @@ export function ProblemsPanel({
   if (problemCount + warningCount === 0) {
     return (
       <p className="text-ink-2">
-        <Trans>None. Nothing keeps this sequence from running.</Trans>
+        <Trans>None.</Trans>
       </p>
     );
   }

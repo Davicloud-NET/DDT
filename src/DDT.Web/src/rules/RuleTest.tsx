@@ -51,14 +51,7 @@ export function RuleTest({ rules }: { rules: readonly RuleView[] }) {
         </ComboBox>
       }
     >
-      {machineId === null ? (
-        <p className="type-small text-muted">
-          <Trans>
-            Choose a machine to see which rules match it, the sequence it would get and the values a
-            run of it would start with.
-          </Trans>
-        </p>
-      ) : resolution.isPending ? (
+      {machineId === null ? null : resolution.isPending ? (
         <div className="flex flex-col gap-2">
           <Skeleton className="h-5 w-1/2" />
           <Skeleton className="h-5 w-2/3" />
@@ -69,15 +62,7 @@ export function RuleTest({ rules }: { rules: readonly RuleView[] }) {
           {resolution.error.message}
         </Notice>
       ) : (
-        <>
-          <RuleTestOutcome resolution={resolution.data} rules={rules} />
-          <p className="type-small text-muted">
-            <Trans>
-              An operator still approves this machine, or someone signs in at it; the rules only
-              choose what then runs.
-            </Trans>
-          </p>
-        </>
+        <RuleTestOutcome resolution={resolution.data} rules={rules} />
       )}
     </Panel>
   );

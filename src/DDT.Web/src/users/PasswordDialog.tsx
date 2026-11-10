@@ -47,26 +47,9 @@ export function PasswordDialog({
         </Button>
       }
     >
-      {shown?.reset === true ? (
-        <p>
-          <Trans>
-            The old password no longer works, and {name} is signed out within a minute. Hand over
-            this one in person or through a channel you trust.
-          </Trans>
-        </p>
-      ) : (
-        <p>
-          <Trans>
-            The account is ready. Hand over this password in person or through a channel you trust.
-          </Trans>
-        </p>
-      )}
       <SecretValue label={<Trans>One-time password</Trans>} value={shown?.password ?? ""} />
       <Notice tone="attention">
-        <Trans>
-          DDT shows this password only now. At the next sign-in, {name} has to set a password of
-          their own, and can do nothing else until then.
-        </Trans>
+        <Trans>Shown only once.</Trans>
       </Notice>
     </Dialog>
   );

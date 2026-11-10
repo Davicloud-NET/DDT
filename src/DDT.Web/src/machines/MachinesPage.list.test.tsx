@@ -24,7 +24,7 @@ describe("MachinesPage", () => {
       ).toBeInTheDocument();
       expect(await screen.findByText("No machines yet")).toBeInTheDocument();
       expect(
-        screen.getByText(/^Machines appear here on their own when they netboot/),
+        screen.getByText("Machines appear here when they netboot on a network DDT answers."),
       ).toBeInTheDocument();
     });
 

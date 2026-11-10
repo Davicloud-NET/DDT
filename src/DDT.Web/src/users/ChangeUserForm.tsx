@@ -36,10 +36,7 @@ export function ChangeUserForm({ user, form }: { user: UserView; form: ChangeUse
         isDisabled={form.directory}
         hint={
           form.directory ? (
-            <Trans>
-              The directory provides the name and email address. DDT takes them over at each
-              sign-in.
-            </Trans>
+            <Trans>The directory provides the name and email address.</Trans>
           ) : (
             <Trans>Left empty, DDT shows the user name.</Trans>
           )

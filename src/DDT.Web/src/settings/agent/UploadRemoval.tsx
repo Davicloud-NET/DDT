@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+import { Trans } from "@lingui/react/macro";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -31,7 +32,11 @@ export function UploadRemoval({ binary, view }: { binary: Binary; view: AgentBin
   const reason = removal.error;
 
   if (view.source !== "Uploaded") {
-    return removed ? <Notice>{binary.removed}</Notice> : null;
+    return removed ? (
+      <Notice>
+        <Trans>Removed.</Trans>
+      </Notice>
+    ) : null;
   }
 
   const ask = () => {

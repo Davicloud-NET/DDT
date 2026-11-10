@@ -100,9 +100,7 @@ describe("AccountPage", () => {
     const shown = await screen.findByRole("dialog", { name: "Copy the token Nightly sync" });
     expect(sent).toEqual({ name: "Nightly sync", role: "Operator", expiresInDays: 30 });
     expect(within(shown).getByText("ddt_3sQv9LkPz2Wm8Rt4Yx6Nb1Hc7Jd5Fg09fKe")).toBeInTheDocument();
-    expect(shown).toHaveTextContent(
-      "DDT shows this token only now and keeps nothing but a hash of it.",
-    );
+    expect(shown).toHaveTextContent("Shown only once.");
     fireEvent.click(within(shown).getByRole("button", { name: "Copy" }));
     await waitFor(() => {
       expect(clipboard.written).toEqual(["ddt_3sQv9LkPz2Wm8Rt4Yx6Nb1Hc7Jd5Fg09fKe"]);

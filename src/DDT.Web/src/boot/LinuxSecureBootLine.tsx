@@ -16,19 +16,13 @@ export function LinuxSecureBootLine({ signedUnder }: { signedUnder: string | nul
     case 1:
       return (
         <p className="max-w-[80ch] text-ink-2">
-          <Trans>
-            With Secure Boot on, a machine starts it when its firmware trusts {cas}. A machine whose
-            firmware does not is not started in it.
-          </Trans>
+          <Trans>With Secure Boot on, the machine's firmware has to trust {cas}.</Trans>
         </p>
       );
     default:
       return (
         <p className="max-w-[80ch] text-ink-2">
-          <Trans>
-            With Secure Boot on, a machine starts it when its firmware trusts one of {cas}. A
-            machine whose firmware trusts neither is not started in it.
-          </Trans>
+          <Trans>With Secure Boot on, the machine's firmware has to trust one of {cas}.</Trans>
         </p>
       );
   }

@@ -40,19 +40,11 @@ export function AuthenticatorPanel({ user }: { user: CurrentUser }) {
           onMakeRecoveryCodes={authenticator.makeRecoveryCodes}
         />
       ) : enrollment === null ? (
-        <>
-          <p className="text-ink-2">
-            <Trans>
-              A second factor protects this account even if its password is seen, for example while
-              someone signs in at a machine being deployed.
-            </Trans>
-          </p>
-          <div>
-            <Button variant="primary" isDisabled={busy} onPress={authenticator.startEnrollment}>
-              <Trans>Set up an authenticator</Trans>
-            </Button>
-          </div>
-        </>
+        <div>
+          <Button variant="primary" isDisabled={busy} onPress={authenticator.startEnrollment}>
+            <Trans>Set up an authenticator</Trans>
+          </Button>
+        </div>
       ) : (
         <AuthenticatorEnrollment
           enrollment={enrollment}

@@ -189,19 +189,19 @@ describe("approvalPlan", () => {
       where: "the sequence erases a disk and the machine has several",
       target: { ...machine, eligibleDiskCount: 2 },
       sequence: { ...installWindows, erasesDisk: true },
-      why: "which erases a disk, and the machine has more than one; sign in at it to choose the disk",
+      why: "but the machine has more than one disk. Sign in at it to choose one",
     },
     {
       where: "the sequence joins the domain and the machine has no name",
       target: { ...machine, assignedName: null },
       sequence: { ...installWindows, needsComputerName: true },
-      why: "which joins the domain, and the machine has no name yet; assign the sequence with a computer name",
+      why: "but the machine has no name yet. Assign the sequence with a computer name",
     },
     {
       where: "the sequence names the machine in its seed and the machine has no name",
       target: { ...machine, assignedName: null },
       sequence: { ...installWindows, needsComputerName: true, rawImageName: "noble" },
-      why: "which names the machine in its cloud-init seed, and the machine has no name yet; assign the sequence with a computer name",
+      why: "but the machine has no name yet. Assign the sequence with a computer name",
     },
   ])("only authorizes the machine where $where", ({ target, sequence, why }) => {
     const plan = approvalPlan(target, chosen, [sequence]);

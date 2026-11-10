@@ -27,10 +27,7 @@ export function AuthenticatorOn({
   return (
     <>
       <p className="text-ink-2">
-        <Trans>
-          Signing in asks for a code from your authenticator app. To turn it off, enter a current
-          code.
-        </Trans>
+        <Trans>To turn it off, enter a current code.</Trans>
       </p>
       <AuthenticatorCodeField code={code} onChange={onCodeChange} />
       <div className="flex flex-wrap gap-2">

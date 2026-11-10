@@ -44,13 +44,6 @@ export function VariablesPanel({ draft, findings, open, onEdit, onGoToNode }: Va
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="type-small text-ink-2">
-        <Trans>
-          A variable is a value with a default, which rules, machine roles and steps may change. An
-          input is asked on the web or at the machine before the run starts, and its answer sets the
-          variable of its name.
-        </Trans>
-      </p>
       {empty ? (
         <p className="type-small text-muted">
           <Trans>This sequence declares no variables or inputs yet.</Trans>

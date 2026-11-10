@@ -108,10 +108,16 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             cancellationToken);
 
     public Task<ConsoleRelease?> GetConsoleReleaseAsync(CancellationToken cancellationToken) =>
-        GetUnlessMissingAsync(AgentRoutes.ConsoleRelease, AgentJsonContext.Default.ConsoleRelease, cancellationToken);
+        GetUnlessMissingAsync(
+            ReleasePlatform is null ? AgentRoutes.ConsoleRelease : AgentRoutes.PlatformConsoleRelease(ReleasePlatform),
+            AgentJsonContext.Default.ConsoleRelease,
+            cancellationToken);
 
     public Task DownloadConsoleFileAsync(string name, Stream destination, CancellationToken cancellationToken) =>
-        DownloadAsync(AgentRoutes.ConsoleReleaseFile(name), destination, cancellationToken);
+        DownloadAsync(
+            ReleasePlatform is null ? AgentRoutes.ConsoleReleaseFile(name) : AgentRoutes.PlatformConsoleReleaseFile(ReleasePlatform, name),
+            destination,
+            cancellationToken);
 
     public Task DownloadConsoleLogoAsync(Stream destination, CancellationToken cancellationToken) =>
         DownloadAsync(AgentRoutes.ConsoleLogo, destination, cancellationToken);

@@ -54,7 +54,7 @@ public sealed class AgentStartup(AgentPlatform platform)
         string? consolePath = ConsolePathFor(options, log);
         await using PipeMachineConsole? graphical = consolePath is null
             ? null
-            : new PipeMachineConsole(text, new ProcessConsoleLauncher(consolePath), log, version);
+            : new PipeMachineConsole(text, platform.ConsoleLauncher(consolePath), log, version);
         log.MachineConsole = graphical;
         IMachineConsole shown = graphical ?? (IMachineConsole)text;
         ConsoleStatus status = new(shown, platform.BootEnvironment, version, options.ServerUrl, options.KeyboardLayout, options.DryRun);

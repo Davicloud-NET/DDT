@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Agent;
+using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.LinuxPhase;
 using DDT.Agent.Sequences;
@@ -33,7 +34,7 @@ AgentStartup startup = new(new AgentPlatform
     BootEnvironment = AgentEnvironment.LinuxBoot,
     IsPublished = AgentBuild.IsPublished,
     ReleasePlatform = AgentPlatforms.LinuxX64,
-    StartsGraphicalConsole = false,
+    ConsoleLauncher = path => new LinuxConsoleLauncher(path),
     WriteStartupNotices = LinuxLegalNotices.WriteStartupNotices,
     WriteLicenses = LinuxLegalNotices.WriteLicenses,
     ReadyAsync = LinuxBoot.ReadyAsync,

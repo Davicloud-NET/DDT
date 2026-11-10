@@ -55,8 +55,8 @@ internal sealed class ConsoleUpdate(IAgentServer server, AgentLog log, RunningAg
     }
 
     private static bool IsConsole(ConsoleRelease release) =>
-        release.Files.Count == ConsolePipe.Files.Count
-        && ConsolePipe.Files.All(name => release.Files.Count(file => file.Name == name) == 1)
+        release.Files.Count == ConsolePipe.OwnFiles.Count
+        && ConsolePipe.OwnFiles.All(name => release.Files.Count(file => file.Name == name) == 1)
         && release.Files.All(file => file.Size >= 0 && file.Sha256.Length == 64 && file.Sha256.All(char.IsAsciiHexDigit));
 
     private static async Task<bool> HoldsAsync(string folder, ConsoleRelease release, CancellationToken cancellationToken)
@@ -74,7 +74,7 @@ internal sealed class ConsoleUpdate(IAgentServer server, AgentLog log, RunningAg
 
     private async Task<string> FetchAsync(ConsoleRelease release, CancellationToken cancellationToken)
     {
-        string id = release.Files.Single(file => file.Name == ConsolePipe.FileName).Sha256[..12].ToLowerInvariant();
+        string id = release.Files.Single(file => file.Name == ConsolePipe.OwnFileName).Sha256[..12].ToLowerInvariant();
         string folder = Path.Combine(agent.Directory, $"console-{id}");
         log.Information($"The server offers another console, {id}. Switching to it.");
 
@@ -93,6 +93,6 @@ internal sealed class ConsoleUpdate(IAgentServer server, AgentLog log, RunningAg
             }
         }
 
-        return Path.Combine(folder, ConsolePipe.FileName);
+        return Path.Combine(folder, ConsolePipe.OwnFileName);
     }
 }

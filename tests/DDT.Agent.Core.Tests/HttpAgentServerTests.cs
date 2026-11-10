@@ -82,6 +82,30 @@ public sealed class HttpAgentServerTests
         Assert.Equal(content, destination.ToArray());
     }
 
+    [Theory]
+    [InlineData(null, "/api/agents/release/console")]
+    [InlineData(AgentPlatforms.LinuxX64, "/api/agents/releases/linux-x64/console")]
+    public async Task AsksForTheConsoleOfItsPlatformAndWithoutOneAsItAlwaysDid(string? platform, string path)
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        byte[] body = """{"files":[]}"""u8.ToArray();
+        byte[] content = RandomNumberGenerator.GetBytes(64);
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime) { ReleasePlatform = platform };
+        _ = await server.GetConsoleReleaseAsync(cancellationToken);
+
+        Assert.StartsWith($"GET {path} HTTP/1.1", await serving, StringComparison.Ordinal);
+
+        serving = AnswerAsync(listener, $"HTTP/1.1 200 OK\r\nContent-Length: {content.Length}\r\n", content, cancellationToken);
+        using MemoryStream destination = new();
+        await server.DownloadConsoleFileAsync("ddt-console", destination, cancellationToken);
+
+        Assert.StartsWith($"GET {path}/ddt-console HTTP/1.1", await serving, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task AnyOtherRequestGivesUpAfterTheRequestTimeout()
     {

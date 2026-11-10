@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.Consoles;
 using DDT.Contracts.Agents;
 
 namespace DDT.Agent;
@@ -24,6 +25,9 @@ public sealed record AgentPlatform
 
     // Whether the executable starts the graphical console beside it. One that does not keeps the text console.
     public bool StartsGraphicalConsole { get; init; } = true;
+
+    // Starts the console at a path.
+    public Func<string, IConsoleLauncher> ConsoleLauncher { get; init; } = path => new ProcessConsoleLauncher(path);
 
     // What the system waits for before the agent first calls the server, such as a network adapter. False once stopped.
     // Null for a system that waits for nothing.

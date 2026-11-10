@@ -21,8 +21,17 @@ public static class ConsolePipe
 
     private const string NamePrefix = "ddt-console-";
 
+    public const string LinuxFileName = "ddt-console";
+
     // The files the console needs. That's the executable and the two libraries it draws with, which always go with it.
     public static IReadOnlyList<string> Files { get; } = [FileName, "libSkiaSharp.dll", "libHarfBuzzSharp.dll"];
+
+    public static IReadOnlyList<string> LinuxFiles { get; } = [LinuxFileName, "libSkiaSharp.so", "libHarfBuzzSharp.so"];
+
+    // The console of the system this runs on, which an agent starts and fetches.
+    public static string OwnFileName => OperatingSystem.IsWindows() ? FileName : LinuxFileName;
+
+    public static IReadOnlyList<string> OwnFiles => OperatingSystem.IsWindows() ? Files : LinuxFiles;
 
     public static bool IsSession(IReadOnlyList<string> args)
     {

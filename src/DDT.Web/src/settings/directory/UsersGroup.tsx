@@ -20,7 +20,6 @@ export function UsersGroup({ form }: { form: LdapForm }) {
           field="baseDn"
           canChange
           label={<Trans>Search base</Trans>}
-          hint={<Trans>Where DDT looks for users and groups.</Trans>}
           placeholder="DC=corp,DC=example"
           mono
         />
@@ -31,8 +30,7 @@ export function UsersGroup({ form }: { form: LdapForm }) {
           label={<Trans>User filter</Trans>}
           hint={
             <Trans>
-              Finds the user who signs in. It must contain {USER_TOKEN}, which DDT replaces with the
-              user name typed at sign-in.
+              Must contain {USER_TOKEN}, which DDT replaces with the user name typed at sign-in.
             </Trans>
           }
           placeholder="(&(objectClass=user)(sAMAccountName={0}))"
@@ -45,8 +43,7 @@ export function UsersGroup({ form }: { form: LdapForm }) {
           label={<Trans>Attribute that identifies an account</Trans>}
           hint={
             <Trans>
-              DDT keys each directory account on it. With another attribute, every account is taken
-              for a new one at its next sign-in.
+              With another attribute, every account is taken for a new one at its next sign-in.
             </Trans>
           }
           placeholder="objectGUID"

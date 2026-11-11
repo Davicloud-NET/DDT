@@ -22,8 +22,7 @@ export function PortOwners({ ports }: { ports: NetbootPort[] }) {
     <>
       <p className="type-small text-ink-2">
         <Trans>
-          The programs that hold the netboot ports on this computer. Where another program holds a
-          port with DDT, Windows may hand the machines to it.
+          Where another program holds a port with DDT, Windows may hand the machines to it.
         </Trans>
       </p>
       <Facts

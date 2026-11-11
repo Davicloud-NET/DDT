@@ -16,12 +16,7 @@ export function ConfigurationPanel({ settings }: { settings: ServerSetting[] }) 
   return (
     <Panel title={<Trans>Set in configuration</Trans>}>
       <p className="max-w-[80ch] text-ink-2">
-        <Trans>
-          The server needs these before it can serve this page, so they stay in its configuration:
-          environment variables, appsettings.json or the command line. It reads them as it starts,
-          so a change there takes a restart of DDT. Values that could hold a password are never
-          shown.
-        </Trans>
+        <Trans>A change takes a restart of DDT.</Trans>
       </p>
       <ul aria-label={t`Configuration values`} className="flex flex-col">
         {settings.map((setting) => (

@@ -66,12 +66,7 @@ export function RunHistoryPage() {
           <ListSkeleton widths={["w-1/2", "w-2/3", "w-1/3"]} />
         ) : items.length === 0 ? (
           filter === "all" && query === "" ? (
-            <EmptyState title={<Trans>No runs yet</Trans>}>
-              <Trans>
-                A run starts when a machine is assigned a task sequence, is approved with the one a
-                rule chose, or someone chooses one at the machine.
-              </Trans>
-            </EmptyState>
+            <EmptyState title={<Trans>No runs yet</Trans>} />
           ) : (
             <EmptyState title={<Trans>No run matches</Trans>} />
           )

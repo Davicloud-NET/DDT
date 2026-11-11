@@ -21,7 +21,6 @@ import { Panel } from "@/ui/Panel";
 import { SearchField } from "@/ui/SearchField";
 import { useListSearch } from "@/ui/useListSearch";
 
-import { NoPackages } from "./NoPackages";
 import { PackageDialog } from "./PackageDialog";
 import {
   deletePackage,
@@ -87,7 +86,11 @@ export function PackagesPage({ kind }: { kind: PackageKind }) {
         {library.packages.isPending ? (
           <ListSkeleton />
         ) : all.length === 0 ? (
-          <NoPackages drivers={drivers} />
+          <EmptyState
+            title={
+              drivers ? <Trans>No driver packages yet</Trans> : <Trans>No file packages yet</Trans>
+            }
+          />
         ) : shown.length === 0 ? (
           <EmptyState title={<Trans>No package matches</Trans>} />
         ) : (

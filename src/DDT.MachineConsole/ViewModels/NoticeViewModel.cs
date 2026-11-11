@@ -37,19 +37,15 @@ public sealed class NoticeViewModel(Localizer localizer) : ObservableObject
 
     public string Text => _shown switch
     {
-        ConsoleNotice.MediaKeys =>
-            localizer.T("This keyboard's top row sends media keys. Hold Fn with F1 to F12, or press Fn and Esc to lock them as function keys."),
-        ConsoleNotice.CloseRefused =>
-            localizer.T("The console stays open while DDT works on this machine. Shift+F10 opens a command prompt."),
-        ConsoleNotice.SessionCloseRefused => localizer.T("The console stays open while DDT works on this machine."),
-        ConsoleNotice.SignOutWithF9 => localizer.T("The console stays open. F9 signs out of DDT's session."),
+        ConsoleNotice.MediaKeys => localizer.T("The top row sends media keys. Hold Fn, or press Fn and Esc to lock the F keys."),
+        ConsoleNotice.CloseRefused or ConsoleNotice.SessionCloseRefused => localizer.T("The console stays open while DDT works."),
+        ConsoleNotice.SignOutWithF9 => localizer.T("Sign out"),
         _ => string.Empty,
     };
 
     public IReadOnlyList<string> Keys => _shown switch
     {
         ConsoleNotice.MediaKeys => ["Fn"],
-        ConsoleNotice.CloseRefused => ["Shift", "F10"],
         ConsoleNotice.SignOutWithF9 => ["F9"],
         _ => [],
     };

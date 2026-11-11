@@ -29,13 +29,13 @@ export function BootServerFields({
         hint={
           http ? (
             <Trans>
-              The IPv4 address the answer names as the boot server; the URL decides where the boot
-              file comes from. Left empty, DDT's address on the interface the request arrived on.
+              The IPv4 address the answer names as the boot server. Left empty, DDT's address on the
+              interface the request arrived on.
             </Trans>
           ) : (
             <Trans>
               The IPv4 address machines load the boot file from. Left empty, DDT's address on the
-              interface the request arrived on, which suits a host serving several networks.
+              interface the request arrived on.
             </Trans>
           )
         }
@@ -46,12 +46,7 @@ export function BootServerFields({
         field={path("serverHostName")}
         canChange={editable}
         label={<Trans>Server host name</Trans>}
-        hint={
-          <Trans>
-            The boot server's name in the answer, in ASCII and at most 63 characters. Left empty,
-            its address.
-          </Trans>
-        }
+        hint={<Trans>ASCII, at most 63 characters. Left empty, its address.</Trans>}
         mono
       />
     </>

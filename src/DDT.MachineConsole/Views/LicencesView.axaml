@@ -46,10 +46,7 @@
       </ScrollViewer>
 
       <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" RowSpacing="8">
-        <StackPanel Orientation="Horizontal" Spacing="10">
-          <TextBlock Classes="label muted" Text="{Binding DocumentsTitle}" VerticalAlignment="Center" />
-          <TextBlock Classes="small muted" Text="{Binding DocumentsHint}" VerticalAlignment="Center" />
-        </StackPanel>
+        <TextBlock Classes="label muted" Text="{Binding DocumentsTitle}" />
         <ListBox Grid.Row="1"
                  Name="Documents"
                  ItemsSource="{Binding Documents}"

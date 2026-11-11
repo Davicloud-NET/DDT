@@ -17,7 +17,7 @@ export function UserActionConsequence({ kind, user }: ConfirmationRequest) {
         <p>
           <Trans>
             {name} is signed out within a minute and cannot sign in, and its API tokens stop
-            working, until an administrator enables it again. Nothing is deleted.
+            working. Nothing is deleted.
           </Trans>
         </p>
       );
@@ -26,7 +26,6 @@ export function UserActionConsequence({ kind, user }: ConfirmationRequest) {
         <p>
           <Trans>
             The current password stops working at once, and {name} is signed out within a minute.
-            DDT shows the new password once; {name} replaces it at the next sign-in.
           </Trans>
         </p>
       );
@@ -34,9 +33,8 @@ export function UserActionConsequence({ kind, user }: ConfirmationRequest) {
       return (
         <p>
           <Trans>
-            For an account that lost its authenticator. {name} is signed out within a minute and
-            signs in with the password alone until it sets up an authenticator again on its Account
-            page.
+            {name} is signed out within a minute and signs in with the password alone until it sets
+            up an authenticator again.
           </Trans>
         </p>
       );

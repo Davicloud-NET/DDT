@@ -76,17 +76,11 @@ export function PasswordSetting({
         />
       )}
       <span className="type-small text-muted">
-        <Trans>
-          Stored encrypted and never shown again. It goes only to the step that uses the account,
-          while the step runs.
-        </Trans>
+        <Trans>Stored encrypted and never shown again.</Trans>
       </span>
       {moved && action.action === "Keep" ? (
         <span className="type-small text-attention-text">
-          <Trans>
-            A new user name, domain or server needs the password again: the stored one goes only
-            where it was entered for.
-          </Trans>
+          <Trans>A new user name, domain or server needs the password again.</Trans>
         </span>
       ) : null}
       {isNew ? null : <PasswordActions action={action} stored={stored} onChange={onChange} />}

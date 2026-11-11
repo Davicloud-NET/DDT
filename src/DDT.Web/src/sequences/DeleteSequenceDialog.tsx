@@ -80,9 +80,7 @@ export function DeleteSequenceDialog({
           </p>
         </>
       ) : (
-        deletionConsequence(sequence, activeRuns).map((sentence, index) => (
-          <p key={index}>{sentence}</p>
-        ))
+        deletionConsequence(activeRuns).map((sentence, index) => <p key={index}>{sentence}</p>)
       )}
     </ConfirmDialog>
   );

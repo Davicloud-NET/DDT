@@ -25,12 +25,6 @@ export function LogFiles() {
 
   return (
     <Panel title={<Trans>Log files</Trans>}>
-      <p className="max-w-[80ch] type-small text-ink-2">
-        <Trans>
-          As a Windows service the server writes its log into the logs folder of its store, a file a
-          day, and keeps the newest 20. The levels above decide what goes into them.
-        </Trans>
-      </p>
       <Facts
         items={files.data.map((file) => ({
           label: (

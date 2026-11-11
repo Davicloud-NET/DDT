@@ -60,34 +60,15 @@ export function ServedCertificate({
     >
       {served === null ? null : <CertificateFacts view={view} now={now} />}
 
-      {view.manageable ? (
-        <div className="flex max-w-[80ch] flex-col gap-2 type-small text-ink-2">
-          <p>
-            <Trans>
-              A new certificate is served at once, on trial: this page's next request gets it, and
-              you keep it here. If nobody keeps it within 5 minutes, DDT goes back to the
-              certificate before.
-            </Trans>
-          </p>
-          <p>
-            <Trans>
-              Machines and browsers that trust DDT's root keep trusting any certificate issued from
-              it, so Generate needs nothing else. A certificate from another root has to be trusted
-              anew: every boot image has to be built again with that root, and every browser that
-              manages DDT has to trust it.
-            </Trans>
-          </p>
-          {view.canGenerate ? null : (
-            <p>
-              <Trans>
-                DDT:Https:GenerateSelfSignedCertificate is false in configuration, so DDT issues no
-                certificate here. Upload one instead.
-              </Trans>
-            </p>
-          )}
-        </div>
-      ) : (
+      {!view.manageable ? (
         <NotManageable view={view} configuration={configuration} />
+      ) : view.canGenerate ? null : (
+        <p className="max-w-[80ch] type-small text-ink-2">
+          <Trans>
+            DDT:Https:GenerateSelfSignedCertificate is false in configuration, so DDT issues no
+            certificate here.
+          </Trans>
+        </p>
       )}
 
       <GenerateDialog view={view} isOpen={open === "generate"} onClose={close} />

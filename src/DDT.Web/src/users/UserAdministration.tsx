@@ -61,14 +61,6 @@ export function UserAdministration({ me }: { me: CurrentUser }) {
         </Button>
       </PageHeader>
 
-      <p className="max-w-[80ch] text-ink-2">
-        <Trans>
-          An administrator changes everything, including the accounts here; an operator approves
-          machines and starts deployments; a viewer only looks. Directory and single sign-on
-          accounts appear after their first sign-in.
-        </Trans>
-      </p>
-
       {users.isError ? (
         <Notice tone="fail">
           <Trans>The accounts could not be loaded.</Trans>

@@ -103,7 +103,7 @@ function DriverGroup({ group }: { group: MdtDriverGroup }) {
       <span className="type-small text-muted">
         {plural(drivers, { one: "# driver", other: "# drivers" })}, {formatBytes(group.sizeBytes)}.{" "}
         {model === null ? (
-          <Trans>For no model yet: set its models under Library, Drivers.</Trans>
+          <Trans>For no model yet.</Trans>
         ) : (
           <Trans>
             For {maker} {model}.

@@ -23,10 +23,8 @@ export function ConsoleLogoPanel({ canChange }: { canChange: boolean }) {
     <Panel title={<Trans>Logo on the console</Trans>}>
       <p className="max-w-[80ch] text-ink-2">
         <Trans>
-          The console at the machine shows this logo at the right end of its header, in Windows PE
-          and in DDT&apos;s session, at most 32 pixels high and 200 wide. The header is dark in both
-          of the console&apos;s themes, so a logo in white or light colours on a transparent
-          background suits it. Machines take a new logo when they next register.
+          Shown at most 32 pixels high and 200 wide on a dark header. Use a white or light logo on a
+          transparent background.
         </Trans>
       </p>
       {logo.isError ? (

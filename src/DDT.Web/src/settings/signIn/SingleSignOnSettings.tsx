@@ -34,18 +34,7 @@ export function SingleSignOnSettings() {
   }
 
   return (
-    <SettingsSection
-      form={form}
-      canChange
-      title={<Trans>Single sign-on</Trans>}
-      description={
-        <Trans>
-          The sign-in page offers a button that signs people in at an OpenID Connect provider, such
-          as Entra ID, Keycloak or Authentik. DDT never links an identity to an existing account by
-          its email address.
-        </Trans>
-      }
-    >
+    <SettingsSection form={form} canChange title={<Trans>Single sign-on</Trans>}>
       <SettingSwitch
         form={form}
         field="enabled"

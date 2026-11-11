@@ -59,15 +59,7 @@ export function DeleteRuleDialog({ rule, onClose, onDeleted }: DeleteRuleDialogP
       }}
     >
       <p>
-        <Trans>
-          The machines it matches no longer get what it chooses, sets or gives; a rule below it may
-          give them that instead.
-        </Trans>
-      </p>
-      <p>
-        <Trans>
-          The rules below it move up a place. Runs that already started keep their values.
-        </Trans>
+        <Trans>Runs that already started keep their values.</Trans>
       </p>
     </ConfirmDialog>
   );

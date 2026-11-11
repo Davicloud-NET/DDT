@@ -280,7 +280,9 @@ describe("a machine's page with a tree run", () => {
     await open({}, viewer);
 
     const waits = await screen.findByRole("region", { name: "The run waits" });
-    expect(waits).toHaveTextContent("The person at the machine can let the run go on there, too.");
+    await waitFor(() => {
+      expect(waits).toHaveTextContent("Paused at 11, Check the asset tag.");
+    });
     expect(within(waits).queryByRole("button")).not.toBeInTheDocument();
   });
 

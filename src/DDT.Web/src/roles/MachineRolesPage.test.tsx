@@ -57,14 +57,11 @@ function row(name: string): HTMLElement {
 }
 
 describe("MachineRolesPage", () => {
-  it("says what a machine role is, and what to do without any", async () => {
+  it("says when there are no machine roles yet", async () => {
     await open([]);
 
     expect(
       await screen.findByRole("heading", { level: 1, name: "Machine roles" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/It says nothing about what a person may do; that is a user's role/),
     ).toBeInTheDocument();
     expect(await screen.findByText("No machine roles yet")).toBeInTheDocument();
   });
@@ -199,9 +196,7 @@ describe("MachineRolesPage", () => {
       "Delete",
     );
     const dialog = await screen.findByRole("dialog", { name: "Delete Office PC?" });
-    expect(dialog).toHaveTextContent(
-      "No rule gives Office PC, so deleting it changes the values of no machine.",
-    );
+    expect(dialog).toHaveTextContent("No rule gives Office PC.");
 
     press(within(dialog).getByRole("button", { name: "Delete machine role" }));
 

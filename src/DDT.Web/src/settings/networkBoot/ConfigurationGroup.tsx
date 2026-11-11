@@ -18,9 +18,8 @@ export function ConfigurationGroup({ configuration }: { configuration: PxeConfig
     <SettingsGroup title={<Trans>Set in configuration</Trans>}>
       <p className="type-small text-ink-2">
         <Trans>
-          These stay in configuration, as DDT:Pxe:HttpBootPort and DDT:Pxe:BootDirectory: a port
-          that is taken would stop the server, and everything in the boot directory is served to
-          anyone who asks. A relative boot directory is inside DDT:StorePath.
+          These stay in configuration, as DDT:Pxe:HttpBootPort and DDT:Pxe:BootDirectory. Everything
+          in the boot directory is served to anyone who asks.
         </Trans>
       </p>
       <Facts

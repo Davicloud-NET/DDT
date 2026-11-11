@@ -20,7 +20,7 @@ import {
 } from "./MachinesPage.fixtures";
 
 const refusal =
-  /^This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware does not trust Microsoft's third-party UEFI CA 2011, which signs the environment's first loader\./;
+  /^This machine is not started in the Linux boot environment: its firmware does not trust Microsoft's third-party UEFI CA 2011\./;
 
 // A machine with Secure Boot on whose firmware trusts only the newer of Microsoft's two CAs, and a shim signed under
 // the older one.

@@ -28,8 +28,7 @@ export function GroupFinder({
         ready ? undefined : (
           <p className="type-small text-muted">
             <Trans>
-              Once directory sign-in is on and its server and search base are saved, you can find
-              groups by name here. Until then, add a group by its distinguished name.
+              To find groups by name, turn directory sign-in on and save its server and search base.
             </Trans>
           </p>
         )
@@ -37,10 +36,7 @@ export function GroupFinder({
       note={
         unsaved ? (
           <p className="type-small text-attention-text">
-            <Trans>
-              The search asks the directory as it is saved, not with the changes above that are not
-              saved yet.
-            </Trans>
+            <Trans>The search uses the saved settings, not your unsaved changes.</Trans>
           </p>
         ) : undefined
       }

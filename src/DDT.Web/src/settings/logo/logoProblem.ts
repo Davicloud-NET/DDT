@@ -14,7 +14,7 @@ export function logoProblem(file: File): string | null {
   const limit = formatBytes(maxLogoBytes);
 
   if (file.type !== "image/png" && !name.toLowerCase().endsWith(".png")) {
-    return t`${name} is not a PNG image. Upload the logo as a PNG file.`;
+    return t`${name} is not a PNG image.`;
   }
 
   if (file.size === 0) {
@@ -22,7 +22,7 @@ export function logoProblem(file: File): string | null {
   }
 
   if (file.size > maxLogoBytes) {
-    return t`${name} is larger than ${limit}, the most the server takes for the logo.`;
+    return t`${name} is larger than ${limit}.`;
   }
 
   return null;

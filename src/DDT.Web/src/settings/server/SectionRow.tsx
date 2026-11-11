@@ -39,13 +39,6 @@ export function SectionRow({ summary, now }: { summary: SectionSummary; now: num
       </span>
       <span className="flex flex-wrap gap-x-3 gap-y-0.5 type-small text-muted">
         <span>
-          {summary.kind === "Live" ? (
-            <Trans>Applies at its next use</Trans>
-          ) : (
-            <Trans>Rebuilds its part of the server on save</Trans>
-          )}
-        </span>
-        <span>
           <Trans>Version {version}</Trans>
         </span>
         <span {...(summary.updatedUtc === null ? {} : { title: fullTime(summary.updatedUtc) })}>

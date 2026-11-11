@@ -244,11 +244,10 @@ describe("ImagesPage", () => {
       ).toEqual(["Details", "Copy SHA-256"]);
     });
 
-    it("says what an empty library is for", async () => {
+    it("says when the library is empty", async () => {
       await open([]);
 
       expect(await screen.findByText("No images yet")).toBeInTheDocument();
-      expect(screen.getByText(/^Upload a WIM file to add its Windows images/)).toBeInTheDocument();
     });
 
     it("takes images from the hub as they change and go, without reading the list again", async () => {
@@ -356,7 +355,7 @@ describe("ImagesPage", () => {
         name: "Leave while boot.wim is checked?",
       });
       expect(dialog).toHaveAccessibleDescription(
-        "The server goes on checking boot.wim after you leave and adds its images to the library when it finishes. If it refuses the file, you do not see why.",
+        "The server goes on checking it. If it refuses the file, you won't see why.",
       );
 
       press(within(dialog).getByRole("button", { name: "Cancel" }));
@@ -402,9 +401,7 @@ describe("ImagesPage", () => {
       leaveForOtherPage();
 
       const dialog = await screen.findByRole("dialog", { name: "Stop the upload of boot.wim?" });
-      expect(dialog).toHaveAccessibleDescription(
-        "Leaving this page stops the upload of boot.wim at 0%. The server keeps what it has received, and choosing the file again here resumes the upload from there.",
-      );
+      expect(dialog).toHaveAccessibleDescription("Choose boot.wim again to resume at 0%.");
 
       press(within(dialog).getByRole("button", { name: "Cancel" }));
 
@@ -555,9 +552,7 @@ describe("ImagesPage", () => {
       const dialog = await screen.findByRole("dialog", {
         name: "Discard the upload of install.wim?",
       });
-      expect(dialog).toHaveAccessibleDescription(
-        "The 250 bytes of install.wim uploaded so far are deleted from the server. Choosing the file again starts the upload over.",
-      );
+      expect(dialog).toHaveAccessibleDescription("The 250 bytes uploaded so far are deleted.");
 
       press(within(dialog).getByRole("button", { name: "Discard upload" }));
 
@@ -573,7 +568,7 @@ describe("ImagesPage", () => {
   });
 
   describe("deleting", () => {
-    it("deletes an image after naming it, its size and that no sequence can use it any more", async () => {
+    it("deletes an image after naming it and its size", async () => {
       const { server } = await open([windows, arm], {
         [`DELETE /api/images/${arm.id}`]: { status: 204 },
       });
@@ -586,7 +581,7 @@ describe("ImagesPage", () => {
 
       const dialog = await screen.findByRole("dialog", { name: "Delete Windows 11 Pro ARM?" });
       expect(dialog).toHaveAccessibleDescription(
-        "Windows 11 Pro ARM (2 GB) is removed from the library and can no longer be used by a task sequence. The WIM file is deleted from the server once no other image in the library comes from it.",
+        "Windows 11 Pro ARM (2 GB) is deleted from the library.",
       );
 
       press(within(dialog).getByRole("button", { name: "Delete image" }));
@@ -600,21 +595,6 @@ describe("ImagesPage", () => {
         `DELETE /api/images/${arm.id}`,
       ]);
       expect(server.count("GET /api/images")).toBe(1);
-    });
-
-    it("says that deleting a raw disk image deletes its stored disk", async () => {
-      await open([raw]);
-
-      await chooseMenuItem(
-        await screen.findByRole("button", { name: "Actions for noble-server-cloudimg-amd64" }),
-        "Delete",
-      );
-
-      expect(
-        await screen.findByRole("dialog", { name: "Delete noble-server-cloudimg-amd64?" }),
-      ).toHaveAccessibleDescription(
-        "noble-server-cloudimg-amd64 (600 MB) is removed from the library and can no longer be used by a task sequence. Its compressed disk is deleted from the server.",
-      );
     });
 
     it("keeps the dialog open with the server's reason when an image cannot be deleted", async () => {

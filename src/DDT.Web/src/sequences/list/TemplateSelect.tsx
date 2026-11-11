@@ -36,11 +36,7 @@ export function TemplateSelect({
       onChange={(key) => {
         onChange(key === null ? null : String(key));
       }}
-      hint={
-        template?.description ?? (
-          <Trans>An empty sequence, to which you add the steps in the editor.</Trans>
-        )
-      }
+      hint={template?.description}
     >
       {templates.map((candidate) => (
         <ListBoxItem

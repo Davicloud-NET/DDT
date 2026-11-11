@@ -30,9 +30,7 @@ describe("SequenceEditorPage", () => {
     const { saves } = serve(viewer, treeView(), { step: "s1" });
 
     expect(
-      await screen.findByText(
-        "Only administrators change task sequences. You can look at this one.",
-      ),
+      await screen.findByText("Only administrators change task sequences."),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("complementary", { name: "Add to the flow" }),

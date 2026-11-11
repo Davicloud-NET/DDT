@@ -60,14 +60,6 @@ export function AllTokens({ me }: { me: CurrentUser }) {
         />
       </PageHeader>
 
-      <p className="max-w-[80ch] text-ink-2">
-        <Trans>
-          Each person makes their own tokens on the Account and security page, with a role no higher
-          than theirs. A token acts for its user: it stops working when it expires, is revoked, or
-          its user is disabled or loses the role.
-        </Trans>
-      </p>
-
       {tokens.isError ? (
         <Notice tone="fail">
           <Trans>The tokens could not be loaded.</Trans>
@@ -78,12 +70,7 @@ export function AllTokens({ me }: { me: CurrentUser }) {
         {tokens.isPending ? (
           <ListSkeleton />
         ) : all.length === 0 ? (
-          <EmptyState title={<Trans>No tokens yet</Trans>}>
-            <Trans>
-              Nobody has made an API token. Scripts that call DDT use one each, made on the Account
-              and security page of the account they act for.
-            </Trans>
-          </EmptyState>
+          <EmptyState title={<Trans>No tokens yet</Trans>} />
         ) : list.shown.length === 0 ? (
           <EmptyState
             title={<Trans>No token matches</Trans>}

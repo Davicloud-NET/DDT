@@ -128,7 +128,7 @@ describe("NeighboursGroup", () => {
     await passwordIfAsked();
 
     expect(await screen.findByRole("button", { name: "Stop sending option 60" })).toBeVisible();
-    expect(screen.getByText(/which brings machines that netboot there/)).toBeVisible();
+    expect(screen.getByText(/The DHCP server sends option 60, PXEClient\./)).toBeVisible();
 
     const sent = requests.filter((request) => request.path === "/api/netboot/dhcp-pxe");
     expect(sent.map((request) => request.body)).toEqual([{ send: true }]);

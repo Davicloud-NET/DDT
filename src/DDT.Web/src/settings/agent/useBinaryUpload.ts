@@ -42,6 +42,7 @@ export function useBinaryUpload(binary: Binary) {
     }
 
     const name = chosen.name;
+    const limit = formatBytes(binary.maxBytes);
 
     action.reset();
     setUploaded(null);
@@ -50,7 +51,7 @@ export function useBinaryUpload(binary: Binary) {
     if (chosen.size === 0) {
       setProblem(t`${name} is empty.`);
     } else if (chosen.size > binary.maxBytes) {
-      setProblem(binary.tooLarge(name, formatBytes(binary.maxBytes)));
+      setProblem(t`${name} is larger than ${limit}.`);
     } else {
       setFile(chosen);
       setConfirming(true);

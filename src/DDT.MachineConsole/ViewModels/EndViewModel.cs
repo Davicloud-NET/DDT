@@ -50,21 +50,16 @@ public sealed class EndViewModel : ObservableObject
         ? _l.T("DDT is done with this machine")
         : _ended == LinkEnd.Broken ? _l.T("The connection to the agent broke") : _l.T("The agent has ended");
 
-    public string EndedText => _session
-        ? _l.T("Sign out to leave DDT's session. Windows then shows its sign-in screen.")
-        : _l.T("This screen keeps what the agent showed last. Nothing more comes from it.");
+    // Null in DDT's session.
+    public string? EndedText => _session ? null : _l.T("This screen keeps what the agent showed last.");
+
+    public bool HasEndedText => EndedText is not null;
 
     public bool CanRestart => _power.CanRestart;
 
-    public bool ShowsRestartUnavailable => !_power.CanRestart && !_session;
-
     public string RestartLabel => _l.T("Restart the machine");
 
-    public string RestartUnavailable => _l.T("The console restarts a machine only in Windows PE.");
-
     public string CloseLabel => _session ? _l.T("Sign out") : _l.T("Close the console");
-
-    public string CloseHint => _l.T("The command prompt is behind the console.");
 
     public bool ConfirmingRestart
     {
@@ -79,8 +74,6 @@ public sealed class EndViewModel : ObservableObject
     }
 
     public string ConfirmTitle => _l.T("Restart this machine now?");
-
-    public string ConfirmText => _l.T("It starts again as its firmware says, from the network or from its disk.");
 
     public string ConfirmLabel => _l.T("Restart");
 

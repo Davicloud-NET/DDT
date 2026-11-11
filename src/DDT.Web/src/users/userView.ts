@@ -123,11 +123,11 @@ export function userDeletionConsequence(user: UserView): string {
 
   switch (user.source) {
     case "Directory":
-      return t`${name} and its API tokens are deleted from DDT. The audit log keeps its entries. If its directory groups still give it a role, it comes back at its next sign-in as a new account; to keep it out, disable it instead.`;
+      return t`${name} and its API tokens are deleted. If its directory groups still give it a role, it comes back at its next sign-in; to keep it out, disable it instead.`;
     case "External":
-      return t`${name} and its API tokens are deleted from DDT. The audit log keeps its entries. If single sign-on creates accounts, it comes back at its next sign-in as a new account; to keep it out, disable it instead.`;
+      return t`${name} and its API tokens are deleted. If single sign-on creates accounts, it comes back at its next sign-in; to keep it out, disable it instead.`;
     case "Local":
-      return t`${name} and its API tokens are deleted. The audit log keeps its entries. This cannot be undone; to keep the account out for now, disable it instead.`;
+      return t`${name} and its API tokens are deleted. This cannot be undone.`;
   }
 }
 

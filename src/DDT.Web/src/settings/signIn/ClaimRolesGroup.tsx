@@ -21,9 +21,8 @@ export function ClaimRolesGroup({ form, map }: { form: OidcForm; map: Record<str
     <SettingsGroup title={<Trans>Groups and roles</Trans>}>
       <p className="max-w-[80ch] type-small text-ink-2">
         <Trans>
-          While the map has entries, an account single sign-on created gets the highest role its
-          groups give it at each sign-in, and an identity in none of them cannot sign in. A local
-          account linked to an identity keeps the role an administrator gave it.
+          An account single sign-on created gets the highest role its groups give it. An identity in
+          none of them cannot sign in.
         </Trans>
       </p>
       <SettingText
@@ -47,19 +46,9 @@ export function ClaimRolesGroup({ form, map }: { form: OidcForm; map: Record<str
         }}
         canChange={mapLock === null}
         errorsOf={(key) => form.fieldErrors(`groupRoleMap[${key}]`)}
-        empty={
-          <Trans>
-            No claim value is listed, so the groups decide no role: a new account gets the role
-            above, and administrators change it on the Users and roles page.
-          </Trans>
-        }
+        empty={<Trans>No claim value is listed, so a new account gets the role above.</Trans>}
         addLabel={<Trans>Add a claim value</Trans>}
-        addHint={
-          <Trans>
-            A group as the provider sends it in the claim above. It gives Viewer until you choose
-            its role.
-          </Trans>
-        }
+        addHint={<Trans>A group as the provider sends it in the claim above.</Trans>}
         addPlaceholder="ddt-admins"
         addAction={<Trans>Add value</Trans>}
         duplicate={t`This value is listed already.`}

@@ -44,11 +44,7 @@ export function WriteRawImageFields({
   return (
     <>
       <p className="text-ink-2 sm:col-span-2">
-        <Trans>
-          Erases the whole disk and writes the image onto it. The machine then starts the image's{" "}
-          <span className="type-data">\EFI\BOOT\BOOTX64.EFI</span>, which DDT puts first in the
-          firmware's boot order.
-        </Trans>
+        <Trans>Erases the whole disk.</Trans>
       </p>
       <ChoiceSetting
         label={<Trans>Raw disk image</Trans>}

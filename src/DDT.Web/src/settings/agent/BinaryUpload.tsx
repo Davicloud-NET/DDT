@@ -24,7 +24,6 @@ export function BinaryUpload({ binary }: { binary: Binary }) {
   return (
     <Panel title={binary.uploadTitle}>
       <Notice tone="attention">{binary.warning}</Notice>
-      <p className="max-w-[80ch] text-ink-2">{binary.explanation}</p>
 
       {action.busy ? (
         <ProgressBar label={<Trans>Uploading {name}</Trans>} />
@@ -46,7 +45,7 @@ export function BinaryUpload({ binary }: { binary: Binary }) {
           </Trans>
         </Notice>
       ) : null}
-      {upload.uploaded !== null ? <Notice>{binary.uploaded(upload.uploaded)}</Notice> : null}
+      {upload.uploaded !== null ? <Notice>{binary.uploaded}</Notice> : null}
 
       <ConfirmDialog
         isOpen={upload.confirming}
@@ -67,7 +66,6 @@ export function BinaryUpload({ binary }: { binary: Binary }) {
         onAccepted={action.retryAfterReauth}
         onCancel={upload.cancelReauth}
         confirmLabel={<Trans>Confirm and upload</Trans>}
-        reason={binary.reauthReason}
       />
     </Panel>
   );

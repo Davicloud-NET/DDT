@@ -33,10 +33,7 @@ export function MdtNotImported({ notImported }: { notImported: MdtShareView["not
       )}
       {sections === "" ? null : (
         <p>
-          <Trans>
-            CustomSettings.ini, with the sections {sections}. Its settings become rules and
-            deployment defaults in DDT.
-          </Trans>
+          <Trans>CustomSettings.ini, with the sections {sections}.</Trans>
         </p>
       )}
     </section>

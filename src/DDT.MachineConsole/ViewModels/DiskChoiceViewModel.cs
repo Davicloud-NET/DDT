@@ -39,9 +39,7 @@ public sealed class DiskChoiceViewModel : QuestionViewModel
 
     public string Title => T("Choose the disk");
 
-    public string Intro => F(
-        "{sequence} erases the disk you choose. This machine has more than one disk it can install on.",
-        ("sequence", Question.SequenceName));
+    public string Intro => F("{sequence} erases the disk you choose.", ("sequence", Question.SequenceName));
 
     public string SubmitLabel => T("Use this disk");
 

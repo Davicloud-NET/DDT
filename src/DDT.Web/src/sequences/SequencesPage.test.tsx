@@ -244,14 +244,13 @@ describe("SequencesPage", () => {
     vi.unstubAllGlobals();
   });
 
-  it("tells an administrator to start from a template when there is no sequence", async () => {
+  it("offers an administrator a new sequence when there is none", async () => {
     serve(administrator, {
       "GET /api/sequences": () => json([]),
       "GET /api/sequences/templates": () => json([template]),
     });
 
     expect(await screen.findByText("No task sequences yet")).toBeInTheDocument();
-    expect(screen.getByText(/^Start from a template, such as Install Windows/)).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "New task sequence" })).toHaveLength(2);
   });
 
@@ -269,9 +268,7 @@ describe("SequencesPage", () => {
     serve(operator, { "GET /api/sequences": () => json([]) });
 
     expect(
-      await screen.findByText(
-        "An administrator creates task sequences here. Until then, no machine can be given one.",
-      ),
+      await screen.findByText("An administrator creates task sequences here."),
     ).toBeInTheDocument();
   });
 
@@ -478,8 +475,7 @@ describe("SequencesPage", () => {
 
     const dialog = await screen.findByRole("dialog", { name: "Delete Install Windows?" });
     for (const sentence of [
-      "Install Windows is deleted and can no longer be assigned or chosen at a machine.",
-      "The machine it is assigned to or running on keeps the copy it got and finishes with it.",
+      "The machine it is assigned to or running on finishes with its copy.",
       "Runs that already ended keep their history.",
     ]) {
       expect(within(dialog).getByText(sentence)).toBeInTheDocument();

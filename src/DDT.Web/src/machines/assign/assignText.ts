@@ -54,12 +54,8 @@ export function lastSeenText(machine: MachineSummary, now: number): string {
     : t`Last seen from ${from} ${when}; signed in by ${by}.`;
 }
 
-export function nameRequiredText(sequence: SequenceSummary): string {
-  const name = sequence.name;
-
-  return sequence.rawImageName === null
-    ? t`Enter a computer name. ${name} joins the domain under this name.`
-    : t`Enter a computer name. ${name} gives this name to the machine in its cloud-init seed.`;
+export function nameRequiredText(): string {
+  return t`Enter a computer name.`;
 }
 
 // The server asks for a name only when the sequence uses it and neither the machine nor its values give one.
@@ -71,33 +67,19 @@ export function nameHint(
   const uses = sequence?.needsComputerName === true;
   const current = machine.assignedName;
 
-  if (current === null) {
-    if (uses && valuesName !== null) {
-      return sequence.rawImageName === null
-        ? t`Optional. Left empty, the machine is named ${valuesName}, as its values say, and joins the domain under it.`
-        : t`Optional. Left empty, the machine is named ${valuesName}, as its values say, which its cloud-init seed gets.`;
-    }
-
-    if (uses) {
-      const name = sequence.name;
-
-      return sequence.rawImageName === null
-        ? t`Required, because ${name} joins the domain under this name.`
-        : t`Required, because ${name} gives this name to the machine in its cloud-init seed.`;
-    }
-
-    return sequence?.rawImageName == null
-      ? t`Optional. Without a name, Windows picks one.`
-      : t`Optional. Without a name, the image picks one.`;
-  }
-
-  if (!uses) {
+  if (current !== null) {
     return t`Optional. Left empty, the machine keeps the name ${current}.`;
   }
 
-  return sequence.rawImageName === null
-    ? t`Optional. Left empty, the machine keeps the name ${current} and joins the domain under it.`
-    : t`Optional. Left empty, the machine keeps the name ${current}, which its cloud-init seed gets.`;
+  if (uses) {
+    return valuesName === null
+      ? t`Required.`
+      : t`Optional. Left empty, the machine is named ${valuesName}.`;
+  }
+
+  return sequence?.rawImageName == null
+    ? t`Optional. Without a name, Windows picks one.`
+    : t`Optional. Without a name, the image picks one.`;
 }
 
 // What the assignment does to a machine that isn't authorized yet. now is on the server's clock. Without web
@@ -114,7 +96,7 @@ export function pendingConsequence(
   if (options.requireWebApproval) {
     return by === null
       ? t`It stays waiting until someone signs in at it.`
-      : t`This also authorizes the machine, because ${by} signed in at it. It then runs the sequence and receives the deployment passwords.`;
+      : t`This also authorizes the machine, which then runs the sequence and receives the deployment passwords.`;
   }
 
   if (now - Date.parse(machine.lastSeenUtc) <= WAITING_WINDOW_MS) {

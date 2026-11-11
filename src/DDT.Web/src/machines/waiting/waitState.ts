@@ -71,5 +71,5 @@ export function continuesText(utc: string): string {
     minute: "2-digit",
   });
 
-  return t`It goes on by itself at ${time}, or earlier when someone lets it go on here or at the machine.`;
+  return t`It goes on by itself at ${time}.`;
 }

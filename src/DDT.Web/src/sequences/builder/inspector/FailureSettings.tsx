@@ -34,7 +34,6 @@ export function FailureSettings({
         }
         field="continueOnError"
         findings={findings}
-        hint={<Trans>Otherwise the run stops here.</Trans>}
         value={node.continueOnError}
         onChange={(continueOnError) => {
           change({ continueOnError });
@@ -45,7 +44,6 @@ export function FailureSettings({
           label={<Trans>Restart after this step</Trans>}
           field="rebootAfter"
           findings={findings}
-          hint={<Trans>The machine restarts once the step is done.</Trans>}
           value={node.rebootAfter}
           onChange={(rebootAfter) => {
             change({ rebootAfter });

@@ -80,7 +80,7 @@ describe("SequenceEditorPage, a Linux sequence", () => {
 
     await opened("Install Linux");
 
-    expect(screen.getByText(/^Runs as root in the Linux boot environment/)).toBeInTheDocument();
+    expect(screen.getByText(/^Runs as root\./)).toBeInTheDocument();
     expect(screen.getByText(/^Started with \/bin\/sh/)).toBeInTheDocument();
     expect(await optionsOf("phase")).toEqual([
       "Linux boot environment, before the hand-over",
@@ -153,9 +153,7 @@ describe("SequenceEditorPage, a Linux sequence", () => {
     await opened("Install Linux");
 
     expect(
-      screen.getByText(
-        "Restarts the machine, and the sequence goes on with the step after Restart. The Linux boot environment keeps the run's state in memory, so a restart is only possible in the installed Linux.",
-      ),
+      screen.getByText("A restart is only possible in the installed Linux."),
     ).toBeInTheDocument();
     expect(screen.queryByText(/In Windows PE this needs a partitioned disk/)).toBeNull();
   });

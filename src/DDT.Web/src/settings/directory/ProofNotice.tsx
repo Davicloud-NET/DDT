@@ -19,8 +19,7 @@ export function ProofNotice({ stale }: { stale: boolean }) {
       ) : (
         <Trans>
           You sign in through the directory, and these changes decide whether you still can. Test
-          your own sign-in with them above before you save; the save is accepted within 5 minutes of
-          a test that kept you an administrator.
+          your own sign-in with them above before you save.
         </Trans>
       )}
     </Notice>

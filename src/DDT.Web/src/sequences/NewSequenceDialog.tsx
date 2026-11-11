@@ -80,14 +80,11 @@ export function NewSequenceDialog({
           autoComplete="off"
           isInvalid={form.nameProblem !== null}
           errorMessage={form.nameProblem}
-          hint={<Trans>You can change it later in the editor.</Trans>}
         />
 
         {templates.isError ? (
           <Notice tone="attention">
-            <Trans>
-              The templates could not be loaded. You can still start with an empty sequence.
-            </Trans>
+            <Trans>The templates could not be loaded.</Trans>
           </Notice>
         ) : null}
         {error !== null ? (

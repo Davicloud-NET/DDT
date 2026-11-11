@@ -39,14 +39,6 @@ export function SequencesPage() {
         onCreate={create}
       />
 
-      <p className="max-w-[75ch] text-ink-2">
-        <Trans>
-          A task sequence is the list of steps a machine runs, such as partitioning the disk,
-          applying an image and running scripts. One with problems is kept as a draft and cannot run
-          until they are fixed.
-        </Trans>
-      </p>
-
       {page.sequences.isError ? (
         <Notice tone="fail">
           <Trans>The task sequence list could not be loaded.</Trans>

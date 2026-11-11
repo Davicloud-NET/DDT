@@ -19,12 +19,6 @@ export function WriteUnattendFields({
 
   return (
     <>
-      <p className="text-ink-2 sm:col-span-2">
-        <Trans>
-          Writes the answer file Windows setup reads at its first start. An empty setting takes the
-          server's default.
-        </Trans>
-      </p>
       <TemplateField
         label={<Trans>Time zone</Trans>}
         field="timeZone"
@@ -72,12 +66,7 @@ export function WriteUnattendFields({
         field="localAdministrator"
         findings={findings}
         className="sm:col-span-2"
-        hint={
-          <Trans>
-            The account and its password are set on the Deployment defaults page, never in the
-            sequence.
-          </Trans>
-        }
+        hint={<Trans>The account and its password are set on the Deployment defaults page.</Trans>}
         value={step.localAdministrator}
         onChange={(localAdministrator) => {
           onChange({ localAdministrator });

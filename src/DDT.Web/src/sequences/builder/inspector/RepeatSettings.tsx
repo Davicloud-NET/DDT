@@ -63,7 +63,6 @@ export function RepeatSettings({
         label={<Trans>Go on when the limit is reached</Trans>}
         field="goOnAtLimit"
         findings={findings}
-        hint={<Trans>Otherwise the repeat fails when its condition still does not hold.</Trans>}
         value={node.goOnAtLimit}
         onChange={(goOnAtLimit) => {
           change({ goOnAtLimit });

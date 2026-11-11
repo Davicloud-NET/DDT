@@ -26,19 +26,13 @@ export function WriteCloudInitSeedFields({
   return (
     <>
       <p className="text-ink-2 sm:col-span-2">
-        <Trans>
-          Adds a partition labelled CIDATA at the end of the disk, where cloud-init finds these
-          files at the machine's first start. Everyone who can sign in to DDT can read them, so
-          passwords go in hashed.
-        </Trans>
+        <Trans>Everyone who can sign in can read them, so passwords go in hashed.</Trans>
       </p>
       <p className="type-small text-ink-2 sm:col-span-2">
         <Trans>
-          DDT fills in <span className="type-data">{placeholders}</span> with the machine's values,
-          and the name of any of the run's values, such as a variable of the sequence or a value a
-          rule sets, with that value. Put them in double quotes, such as{" "}
-          <span className="type-data">{example}</span>. Anything else in double braces stays as it
-          is, for cloud-init's own templates.
+          DDT fills in <span className="type-data">{placeholders}</span> and any value of the run by
+          its name. Put them in double quotes, such as <span className="type-data">{example}</span>.
+          Anything else in double braces stays as it is.
         </Trans>
       </p>
       <TextSetting
@@ -73,7 +67,6 @@ export function WriteCloudInitSeedFields({
         field={step.networkConfig === null ? "networkConfig" : "networkConfig.switch"}
         findings={findings}
         className="sm:col-span-2"
-        hint={<Trans>Without it, the image configures its network itself, usually by DHCP.</Trans>}
         value={step.networkConfig !== null}
         onChange={(write) => {
           if (!write && step.networkConfig !== null) {

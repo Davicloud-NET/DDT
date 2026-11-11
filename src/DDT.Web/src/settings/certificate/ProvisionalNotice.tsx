@@ -46,15 +46,14 @@ export function ProvisionalNotice({ until }: { until: string }) {
       }
     >
       <Trans>
-        This page's next request gets the new certificate. Once the page works with it, keep it
-        here. If nobody keeps it by {deadline}, {left}, DDT goes back to the certificate before, so
-        a certificate your browser refuses cannot lock you out.
+        Once this page works with it, keep it. If nobody keeps it by {deadline}, {left}, DDT goes
+        back to the certificate before.
       </Trans>
       {confirm.isError ? (
         <span className="mt-1.5 block font-semibold">
           {confirm.error instanceof ApiError
             ? confirm.error.message
-            : t`The server could not be reached with the new certificate, so this browser probably does not trust it. At ${deadline} DDT goes back to the certificate before.`}
+            : t`The server could not be reached with the new certificate, so this browser probably does not trust it.`}
         </span>
       ) : null}
     </Notice>

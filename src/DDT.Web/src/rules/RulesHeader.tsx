@@ -18,7 +18,7 @@ export function RulesHeader({ canEdit, onAdd }: { canEdit: boolean; onAdd: () =>
         <p className="text-ink-2">
           <Trans>
             Checked from the top. The first rule that chooses a sequence chooses it, and the first
-            rule that sets a value sets it. A rule never approves a machine.
+            rule that sets a value sets it.
           </Trans>
         </p>
       </div>

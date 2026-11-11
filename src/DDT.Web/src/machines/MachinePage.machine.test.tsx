@@ -102,7 +102,7 @@ describe("MachinePage", () => {
 
     expect(
       await screen.findByText(
-        "This machine did not start the Linux boot environment after restarting, so DDT no longer restarts it. Check that it starts from the network and that no DHCP server names another boot file. Install Linux stays assigned and starts once the machine starts the Linux boot environment.",
+        "This machine did not start the Linux boot environment after restarting. Check that it starts from the network and that no DHCP server names another boot file. Install Linux stays assigned.",
       ),
     ).toBeInTheDocument();
 
@@ -124,23 +124,19 @@ describe("MachinePage", () => {
   it.each([
     {
       phase: "WindowsPE" as const,
-      consequence:
-        "This stops the run on PC-042. Its disk is left half written; assign a sequence again to deploy it.",
+      consequence: "Its disk is left half written.",
     },
     {
       phase: "Windows" as const,
-      consequence:
-        "This stops the run on PC-042, which runs in its installed Windows. The agent there stops at its next contact with the server and removes itself; Windows stays installed as it is, with the steps done so far.",
+      consequence: "Windows stays as it is, with the steps done so far.",
     },
     {
       phase: "LinuxBoot" as const,
-      consequence:
-        "This stops the run on PC-042. Its disk is left half written; assign a sequence again to deploy it.",
+      consequence: "Its disk is left half written.",
     },
     {
       phase: "Linux" as const,
-      consequence:
-        "This stops the run on PC-042, which runs in its installed Linux. The agent there stops at its next contact with the server and removes itself; Linux stays installed as it is, with the steps done so far.",
+      consequence: "Linux stays as it is, with the steps done so far.",
     },
   ])("says what stopping a run in $phase leaves behind", async ({ phase, consequence }) => {
     const current = run({ phase });
@@ -200,22 +196,13 @@ describe("MachinePage", () => {
       ),
     );
 
-    expect(
-      await screen.findByText(
-        "This deployment ran before task sequences, so it has no steps to show.",
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("This deployment has no steps to show.")).toBeInTheDocument();
   });
 
   it("explains that a machine without runs has none yet", async () => {
     await open(answers([machine({ state: "Approved", deployment: null })], [], []));
 
     expect(await screen.findByText("No runs yet")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Assign a sequence above, or add a rule that chooses one for machines like it under Deployment, Rules.",
-      ),
-    ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: "Install Windows" })).toBeNull();
   });
 

@@ -176,7 +176,7 @@ describe("NetworkBootPage", () => {
     expect(screen.queryByText(/No interface is listed/)).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        "Saving restarts the network boot listeners on every host that runs them, which ends the TFTP transfers in progress. Those machines start their download again.",
+        "Saving restarts the network boot listeners, which ends the TFTP transfers in progress.",
       ),
     ).toBeInTheDocument();
 

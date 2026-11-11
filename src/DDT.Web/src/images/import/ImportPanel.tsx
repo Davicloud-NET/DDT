@@ -47,8 +47,7 @@ export function ImportPanel() {
         <p className="max-w-[80ch] text-ink-2">
           <Trans>
             A WIM, ESD or ISO copied into <span className="type-data">{own}</span> on the server
-            shows here and is imported without an upload. Configuration names more folders, such as
-            an MDT deployment share, in DDT:ImportFolders.
+            shows here. Add more folders, such as an MDT deployment share, in DDT:ImportFolders.
           </Trans>
         </p>
       ) : (

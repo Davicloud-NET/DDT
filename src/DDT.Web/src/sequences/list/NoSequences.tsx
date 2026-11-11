@@ -26,17 +26,7 @@ export function NoSequences({
         ) : null
       }
     >
-      {isAdministrator ? (
-        <Trans>
-          Start from a template, such as Install Windows: it partitions the disk, applies an image,
-          adds the drivers for the machine's model and writes the answer file. Or start empty and
-          add the steps yourself.
-        </Trans>
-      ) : (
-        <Trans>
-          An administrator creates task sequences here. Until then, no machine can be given one.
-        </Trans>
-      )}
+      {isAdministrator ? null : <Trans>An administrator creates task sequences here.</Trans>}
     </EmptyState>
   );
 }

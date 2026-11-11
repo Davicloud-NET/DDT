@@ -66,13 +66,12 @@ describe("LinuxAgentPanel", () => {
     );
 
     expect(
-      await screen.findByText("The agent for Linux this server came with, since none was uploaded"),
+      await screen.findByText("The agent for Linux this server came with"),
     ).toBeInTheDocument();
     expect(screen.getByText("26.1.512")).toBeInTheDocument();
     expect(
       screen.getByText(/runs as root on every machine that starts the Linux boot environment/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/checks only that the file is a Linux program/)).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Remove the uploaded agent for Linux" }),
     ).not.toBeInTheDocument();
@@ -89,7 +88,7 @@ describe("LinuxAgentPanel", () => {
 
     expect(
       await screen.findByText(
-        `Uploaded. Machines that start the Linux boot environment from now on run the agent with SHA-256 ${sha256}.`,
+        "Uploaded. Machines that start the Linux boot environment from now on run it.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("The agent for Linux uploaded here")).toBeInTheDocument();
@@ -134,7 +133,7 @@ describe("LinuxAgentPanel", () => {
 
     expect(
       await screen.findByText(
-        "This server came with agent 26.1.512, which is newer than the uploaded one. Remove the upload, and machines run the server's own.",
+        "This server came with agent 26.1.512, which is newer than the uploaded one.",
       ),
     ).toBeInTheDocument();
 
@@ -147,13 +146,9 @@ describe("LinuxAgentPanel", () => {
     );
 
     expect(
-      await screen.findByText("The agent for Linux this server came with, since none was uploaded"),
+      await screen.findByText("The agent for Linux this server came with"),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Removed. Machines that start the Linux boot environment from now on no longer get that agent.",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Removed.")).toBeInTheDocument();
     expect(sent(requests, "DELETE", upload)).toHaveLength(1);
     expect(reads(requests, "/api/settings/agent/linux")).toBe(1);
   });
@@ -202,9 +197,7 @@ describe("LinuxAgentPanel", () => {
     serveServer({ "GET /api/settings/agent": () => json(agentView()) }, { tab: "agent" });
 
     expect(
-      await screen.findByText(
-        "The agent the Linux boot environment brings, since none was uploaded",
-      ),
+      await screen.findByText("The agent the Linux boot environment brings"),
     ).toBeInTheDocument();
     expect(screen.getByText("Drop ddt-agent-linux-x64 here, or choose it.")).toBeInTheDocument();
     expect(

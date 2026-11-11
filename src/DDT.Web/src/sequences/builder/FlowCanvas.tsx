@@ -116,7 +116,7 @@ export function FlowCanvas(props: FlowCanvasProps) {
         />
       )}
 
-      {empty ? <EmptyHint locked={locked} /> : null}
+      {empty ? <EmptyHint /> : null}
 
       {menuSlot === null ? null : (
         <NodeKindsMenu
@@ -147,14 +147,10 @@ export function FlowCanvas(props: FlowCanvasProps) {
   );
 }
 
-function EmptyHint({ locked }: { locked: boolean }) {
+function EmptyHint() {
   return (
     <p className="absolute top-full left-1/2 w-72 -translate-x-1/2 pt-2 text-center type-small text-muted">
-      {locked ? (
-        <Trans>This sequence has no steps yet.</Trans>
-      ) : (
-        <Trans>No steps yet. Drag one here from the palette, or choose + to add one.</Trans>
-      )}
+      <Trans>This sequence has no steps yet.</Trans>
     </p>
   );
 }

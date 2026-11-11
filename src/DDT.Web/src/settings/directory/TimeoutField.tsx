@@ -18,7 +18,6 @@ export function TimeoutField({ form }: { form: LdapForm }) {
     <FieldFrame form={form} field="timeout">
       <NumberField
         label={<Trans>Timeout in seconds</Trans>}
-        hint={<Trans>How long DDT waits for each answer of the directory.</Trans>}
         minValue={1}
         formatOptions={{ useGrouping: false }}
         value={seconds ?? Number.NaN}

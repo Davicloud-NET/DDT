@@ -10,30 +10,16 @@ import { NumberSetting } from "../fields/NumberSetting";
 import type { PauseStep } from "../sequences";
 import type { KindFieldsProps } from "./kindFields";
 
-export function PauseFields({ step, sequence, findings, onChange }: KindFieldsProps<PauseStep>) {
+export function PauseFields({ step, findings, onChange }: KindFieldsProps<PauseStep>) {
   const minutes = step.continueAfterMinutes;
 
   return (
     <>
-      <p className="text-ink-2 sm:col-span-2">
-        {sequence === "Linux" ? (
-          <Trans>
-            Waits until someone lets the run go on, at the machine or on its page. A restart in the
-            Linux boot environment ends the run instead.
-          </Trans>
-        ) : (
-          <Trans>
-            Waits until someone lets the run go on, at the machine or on its page. A restart in
-            Windows PE before the disk is partitioned ends the run instead.
-          </Trans>
-        )}
-      </p>
       <TemplateField
         label={<Trans>Message</Trans>}
         field="message"
         findings={findings}
         className="sm:col-span-2"
-        hint={<Trans>Shown at the machine and on its page while the run waits.</Trans>}
         multiline
         mono={false}
         value={step.message}
@@ -46,7 +32,6 @@ export function PauseFields({ step, sequence, findings, onChange }: KindFieldsPr
         field="continueAfterMinutesSet"
         findings={findings}
         className="sm:col-span-2"
-        hint={<Trans>Otherwise the run waits for as long as it takes.</Trans>}
         value={minutes !== null}
         onChange={(set) => {
           onChange({ continueAfterMinutes: set ? 30 : null }, true);
@@ -57,7 +42,7 @@ export function PauseFields({ step, sequence, findings, onChange }: KindFieldsPr
           label={<Trans>Go on after this many minutes</Trans>}
           field="continueAfterMinutes"
           findings={findings}
-          hint={<Trans>From 1 to 1440 minutes, a day.</Trans>}
+          hint={<Trans>From 1 to 1440 minutes.</Trans>}
           minValue={1}
           maxValue={1440}
           value={minutes}

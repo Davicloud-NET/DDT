@@ -19,8 +19,8 @@ import {
 } from "./linuxBoot";
 import { LinuxSecureBootLine } from "./LinuxSecureBootLine";
 
-// The Linux boot environment, which comes with DDT and is not built here: what it is made of, which machines start it
-// with Secure Boot on, and which task sequences run in it.
+// The Linux boot environment, which comes with DDT and is not built here: what it is made of, and which machines start
+// it with Secure Boot on.
 export function LinuxEnvironment({ linux }: { linux: LinuxBootView }) {
   const problem = linuxBootProblem(linux);
   const unknown = t`Not recorded`;
@@ -29,10 +29,7 @@ export function LinuxEnvironment({ linux }: { linux: LinuxBootView }) {
     <Panel title={<Trans>Linux boot environment</Trans>}>
       {problem === null ? null : <Notice tone="attention">{problem}</Notice>}
       <p className="max-w-[80ch] text-ink-2">
-        <Trans>
-          It comes with DDT, so there is nothing to build. Task sequences that write a Linux image
-          run in it, and Windows sequences run in Windows PE.
-        </Trans>
+        <Trans>It comes with DDT, so there is nothing to build.</Trans>
       </p>
       {linux.kernel === null && linux.shim === null ? null : (
         <Facts

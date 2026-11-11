@@ -30,10 +30,7 @@ export function HostsEditor({ rows, findings, onChange }: HostsEditorProps) {
         <Trans>Servers</Trans>
       </span>
       <span className="-mt-1 type-small text-muted">
-        <Trans>
-          The servers a step may connect shares on with this account, such as files.corp.example.
-          None, and it connects no share.
-        </Trans>
+        <Trans>The servers it may connect shares on, such as files.corp.example.</Trans>
       </span>
       {rows.map((row, index) => {
         const number = index + 1;

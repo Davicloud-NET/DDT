@@ -19,12 +19,6 @@ export function SetVariableFields({ step, findings, onChange }: KindFieldsProps<
 
   return (
     <>
-      <p className="text-ink-2 sm:col-span-2">
-        <Trans>
-          Sets a variable of this sequence while the run goes on. Steps after it, templates and
-          conditions read the new value.
-        </Trans>
-      </p>
       <ChoiceSetting
         label={<Trans>Variable</Trans>}
         field="variable"
@@ -36,9 +30,7 @@ export function SetVariableFields({ step, findings, onChange }: KindFieldsProps<
               No variable of this sequence may be set by steps yet. Declare one on the Variables
               tab.
             </Trans>
-          ) : (
-            <Trans>Only the variables that steps may set are offered.</Trans>
-          )
+          ) : undefined
         }
         placeholder={t`Choose a variable`}
         value={current === "" ? null : current}

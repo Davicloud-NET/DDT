@@ -39,7 +39,7 @@ export function secureBootRisk(
     return machine.secureBootEnabled === true && untrusted(machine.trustedUefiCas, signedUnder)
       ? {
           required: true,
-          warning: t`${image} is signed under ${cas}, which this machine's firmware does not trust. The run writes it only if you allow it, and the machine then starts it once that CA is allowed or Secure Boot is turned off in its firmware setup.`,
+          warning: t`${image} is signed under ${cas}, which this machine's firmware does not trust. To start it, allow that CA or turn Secure Boot off in the firmware setup.`,
           allowLabel: t`Write ${image} anyway`,
         }
       : null;
@@ -52,8 +52,8 @@ export function secureBootRisk(
     return {
       required: true,
       warning: unsigned
-        ? t`${image} is not signed for Secure Boot, and this machine has Secure Boot on. The run writes it only if you allow it, and the machine then starts it once Secure Boot is turned off in its firmware setup or your own key is enrolled.`
-        : t`${image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it, and this machine has Secure Boot on. The run writes it only if you allow it, and the machine then starts it once Secure Boot is turned off in its firmware setup or your own key is enrolled.`,
+        ? t`${image} is not signed for Secure Boot, and this machine has Secure Boot on. To start it, turn Secure Boot off in the firmware setup or enroll your own key.`
+        : t`${image} may not start with Secure Boot on, and this machine has it on. To start it, turn Secure Boot off in the firmware setup or enroll your own key.`,
       allowLabel,
     };
   }
@@ -61,8 +61,8 @@ export function secureBootRisk(
   return {
     required: false,
     warning: unsigned
-      ? t`${image} is not signed for Secure Boot. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here.`
-      : t`${image} may not start with Secure Boot on, as DDT could not tell whether it is signed for it. The machine has not said whether Secure Boot is on. If it is, the run stops before it erases anything, unless you allow the image here.`,
+      ? t`${image} is not signed for Secure Boot. If this machine has Secure Boot on, the run stops before it erases anything, unless you allow the image here.`
+      : t`${image} may not start with Secure Boot on. If this machine has it on, the run stops before it erases anything, unless you allow the image here.`,
     allowLabel,
   };
 }
@@ -121,8 +121,8 @@ export function linuxBootRefusal(
   const cas = describeUefiCas(signedUnder);
 
   return uefiCaCount(signedUnder) > 1
-    ? t`This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware trusts neither of ${cas}, which sign the environment's first loader. Allow one of them in the firmware setup, or turn Secure Boot off there.`
-    : t`This machine is not started in the Linux boot environment: Secure Boot is on, and its firmware does not trust ${cas}, which signs the environment's first loader. Allow it in the firmware setup, or turn Secure Boot off there.`;
+    ? t`This machine is not started in the Linux boot environment: its firmware trusts neither of ${cas}. Allow one of them in the firmware setup, or turn Secure Boot off there.`
+    : t`This machine is not started in the Linux boot environment: its firmware does not trust ${cas}. Allow it in the firmware setup, or turn Secure Boot off there.`;
 }
 
 // "Microsoft's third-party UEFI CA 2011", "... CA 2023" or "... CAs 2011 and 2023".

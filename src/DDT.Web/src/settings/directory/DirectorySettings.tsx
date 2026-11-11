@@ -45,19 +45,7 @@ export function DirectorySettings({ me }: { me: CurrentUser }) {
   const status = proof.check(me.source === "Directory", view.values, values, form.secrets);
 
   return (
-    <SettingsSection
-      form={form}
-      canChange
-      title={<Trans>Directory</Trans>}
-      description={
-        <Trans>
-          People sign in with the user name and password of their directory account, such as one of
-          Active Directory. DDT checks the password with the directory at each sign-in and takes
-          over the name, the email address and, through the group map, the role. Changes apply at
-          the next sign-in.
-        </Trans>
-      }
-    >
+    <SettingsSection form={form} canChange title={<Trans>Directory</Trans>}>
       <SettingSwitch
         form={form}
         field="enabled"

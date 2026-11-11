@@ -44,7 +44,6 @@ function DiscardTitle({ file }: { file: string }) {
 
 function discardConsequence(session: ImageUploadSession): string {
   const sent = formatBytes(session.offset);
-  const file = session.fileName;
 
-  return t`The ${sent} of ${file} uploaded so far are deleted from the server. Choosing the file again starts the upload over.`;
+  return t`The ${sent} uploaded so far are deleted.`;
 }

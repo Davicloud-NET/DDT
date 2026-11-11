@@ -27,14 +27,12 @@ export function AddUserForm({ form }: { form: AddUserState }) {
     >
       <p>
         <Trans>
-          DDT makes up a password for the account and shows it once. Its owner replaces it at the
-          first sign-in. Directory and single sign-on accounts are not added here: they appear after
-          their first sign-in.
+          Directory and single sign-on accounts are not added here: they appear after their first
+          sign-in.
         </Trans>
       </p>
       <TextField
         label={<Trans>User name</Trans>}
-        hint={<Trans>What the account signs in with.</Trans>}
         autoFocus
         autoComplete="off"
         spellCheck="false"
@@ -46,7 +44,6 @@ export function AddUserForm({ form }: { form: AddUserState }) {
       />
       <TextField
         label={<Trans>Name</Trans>}
-        hint={<Trans>The name DDT shows for the account, such as the person's full name.</Trans>}
         value={form.displayName}
         onChange={form.setDisplayName}
         isRequired

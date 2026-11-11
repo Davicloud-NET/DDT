@@ -30,8 +30,8 @@ export function DhcpOptions({ neighbours }: { neighbours: NetbootNeighbours }) {
           </Trans>
         ) : (
           <Trans>
-            Where ProxyDHCP does not reach the machines, such as across a router, the DHCP server
-            sends them to DDT with these two options.
+            Where ProxyDHCP does not reach the machines, the DHCP server sends them to DDT with
+            these two options.
           </Trans>
         )}
       </p>

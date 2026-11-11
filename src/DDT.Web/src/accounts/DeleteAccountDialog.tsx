@@ -78,13 +78,7 @@ export function DeleteAccountDialog({ account, onClose, onDeleted }: DeleteAccou
           remove.mutate();
         }}
       >
-        <p>
-          {blocker ?? (
-            <Trans>
-              The account and its password are deleted. No sequence names it, so no run loses it.
-            </Trans>
-          )}
-        </p>
+        <p>{blocker ?? <Trans>The account and its password are deleted.</Trans>}</p>
       </ConfirmDialog>
       <ReauthForAccounts
         isOpen={reauth}

@@ -14,12 +14,7 @@ export function TokensPage() {
   return (
     <AdministratorsOnly
       title={<Trans>API tokens</Trans>}
-      refusal={
-        <Trans>
-          Only administrators see every token. Your own are on the Account and security page in the
-          account menu.
-        </Trans>
-      }
+      refusal={<Trans>Only administrators see every token.</Trans>}
     >
       {(me) => <AllTokens me={me} />}
     </AdministratorsOnly>

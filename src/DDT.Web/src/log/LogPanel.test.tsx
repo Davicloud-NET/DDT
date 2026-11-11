@@ -230,11 +230,7 @@ describe("LogPanel", () => {
 
     press(screen.getByRole("button", { name: "Load older lines" }));
 
-    expect(
-      await screen.findByText(
-        `Start of the stored log. The server keeps the newest ${(50_000).toLocaleString("en")} lines of each machine.`,
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Start of the stored log.")).toBeInTheDocument();
     // 200 older lines of 20 px each now sit above the lines that were in view.
     expect(log.scrollTop).toBe(400 + 200 * 20);
     expect(
@@ -291,11 +287,7 @@ describe("LogPanel", () => {
       hub.loseConnection();
     });
 
-    expect(
-      await screen.findByText(
-        "Reconnecting. Lines sent meanwhile are read once the connection is back.",
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Reconnecting.")).toBeInTheDocument();
     act(() => {
       vi.advanceTimersByTime(15_000);
     });
@@ -306,11 +298,7 @@ describe("LogPanel", () => {
     const { reads } = logServer([logLine(1, { deploymentId: "d0", message: "An earlier run" })]);
     renderPanel(await connected());
 
-    expect(
-      await screen.findByText(
-        "No log lines for this run yet. The agent sends its log while it runs.",
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("No log lines for this run yet.")).toBeInTheDocument();
 
     press(
       within(screen.getByRole("radiogroup", { name: "Which lines" })).getByRole("radio", {

@@ -39,13 +39,6 @@ export function ApprovalPage() {
           form={form}
           canChange={canChange}
           title={<Trans>Authorizing machines</Trans>}
-          description={
-            <Trans>
-              By default, a person who signs in at a netbooting machine authorizes it for the
-              sequence they choose, and an operator can approve a waiting machine on the web. Zero
-              touch skips both on the networks listed here.
-            </Trans>
-          }
         >
           <SettingSwitch
             form={form}
@@ -54,8 +47,8 @@ export function ApprovalPage() {
             label={<Trans>Also approve every machine on the web</Trans>}
             hint={
               <Trans>
-                For places that need two people: a sign-in at the machine then only records who is
-                there, and an operator approves it on the web. Zero touch is off while this is on.
+                A sign-in at the machine then only records who is there. Zero touch is off while
+                this is on.
               </Trans>
             }
           />
@@ -66,20 +59,15 @@ export function ApprovalPage() {
             label={<Trans>Zero touch networks</Trans>}
             hint={
               <Trans>
-                One network per line, such as 10.20.0.0/24. A machine that netboots from one of them
-                deploys with the sequence a rule chooses, without anybody signing in or approving
-                it, and receives the deployment passwords. List only networks where every machine
-                may be wiped, and never a network a proxy forwards from.
+                One network per line, such as 10.20.0.0/24. Machines there deploy without approval
+                and receive the deployment passwords. List only networks where every machine may be
+                wiped, and never one a proxy forwards from.
               </Trans>
             }
           />
           <SettingsGroup title={<Trans>Waiting machines</Trans>}>
             <p className="type-small text-ink-2">
-              <Trans>
-                Anyone who reaches the server can register a machine, so the number waiting for
-                approval is capped, for each address and in all. A machine over the cap is refused
-                until others are approved or removed.
-              </Trans>
+              <Trans>A machine over either limit is refused.</Trans>
             </p>
             <div className="flex flex-wrap gap-4">
               <SettingNumber

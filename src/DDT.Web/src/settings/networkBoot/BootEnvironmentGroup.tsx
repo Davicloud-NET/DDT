@@ -24,25 +24,13 @@ export function BootEnvironmentGroup({ form }: { form: PxeForm }) {
 
   return (
     <SettingsGroup title={<Trans>Windows PE or Linux</Trans>}>
-      <p className="type-small text-ink-2">
-        <Trans>
-          A machine with a run starts the boot environment its task sequence needs: Windows PE for
-          Windows, the Linux boot environment for a Linux image. This setting decides for every
-          other 64-bit UEFI machine.
-        </Trans>
-      </p>
       <SettingSelect
         form={form}
         field="defaultBootEnvironment"
         canChange
         className="max-w-[36rem]"
         label={<Trans>Machines without a run start</Trans>}
-        hint={
-          <Trans>
-            Machines that start the Linux boot environment load {file} over TFTP, whatever the boot
-            target for 64-bit UEFI names.
-          </Trans>
-        }
+        hint={<Trans>Machines that start the Linux boot environment load {file} over TFTP.</Trans>}
         options={[
           {
             id: "Auto",
@@ -63,8 +51,7 @@ export function BootEnvironmentGroup({ form }: { form: PxeForm }) {
       ) : null}
       <p className="type-small text-ink-2">
         <Trans>
-          A DHCP server that names a boot file itself starts the same environment on every machine,
-          and if it names another server's file, the Linux boot environment does not start at all.
+          A DHCP server that names a boot file itself starts the same environment on every machine.
         </Trans>
       </p>
       <SettingText
@@ -75,9 +62,7 @@ export function BootEnvironmentGroup({ form }: { form: PxeForm }) {
         label={<Trans>Extra kernel arguments for Linux</Trans>}
         hint={
           <Trans>
-            Words added to the kernel command line of the Linux boot environment, such as
-            console=ttyS0,115200 for a serial console. Only letters, digits and _ . : , = + / @ -
-            are taken.
+            Such as console=ttyS0,115200. Only letters, digits and _ . : , = + / @ - are taken.
           </Trans>
         }
       />

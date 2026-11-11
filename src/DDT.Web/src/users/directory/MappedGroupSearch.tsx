@@ -18,11 +18,6 @@ export function MappedGroupSearch({ directory }: { directory: DirectoryView }) {
     <DirectoryGroupSearch
       heading="h3"
       className="w-full"
-      idle={
-        <p className="type-small text-muted">
-          <Trans>Type part of a group's name to see its distinguished name for the map.</Trans>
-        </p>
-      }
       renderGroup={(group) => {
         const role = mapped.get(group.distinguishedName.toLowerCase());
         const label = role === undefined ? null : roleLabel(role);

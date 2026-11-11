@@ -33,11 +33,7 @@ export function DirectoryTest({
   return (
     <div className="flex flex-col gap-3">
       <p className="max-w-[80ch] type-small text-ink-2">
-        <Trans>
-          Tries the values above as they are, before you save them. With a user name and password,
-          DDT also signs that user in, without starting a session, and shows their groups and the
-          role they would get. A wrong password counts towards the account's lockout.
-        </Trans>
+        <Trans>A wrong password counts towards the account's lockout.</Trans>
       </p>
       <form
         className="flex flex-wrap items-start gap-3"

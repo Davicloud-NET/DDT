@@ -49,7 +49,7 @@ export function SetupChecklist({ dismissible = false }: { dismissible?: boolean 
             <Link to="/account" className="underline">
               Change the first password
             </Link>
-            , which the installer left in a file on the server.
+            .
           </Trans>
         </ChecklistStep>
         <ChecklistStep done={null}>
@@ -58,7 +58,7 @@ export function SetupChecklist({ dismissible = false }: { dismissible?: boolean 
             <a href="/api/about/root-certificate" className="underline">
               DDT's root certificate
             </a>{" "}
-            in the browsers that manage it, so they stop warning about this address.
+            in the browsers that manage it.
           </Trans>
         </ChecklistStep>
         <ChecklistStep done={checklist.netboot}>
@@ -66,7 +66,7 @@ export function SetupChecklist({ dismissible = false }: { dismissible?: boolean 
             <Link to="/boot/network" className="underline">
               Choose the network card
             </Link>{" "}
-            DDT answers netboot on, and see who else answers on this server.
+            DDT answers netboot on.
           </Trans>
         </ChecklistStep>
         <ChecklistStep done={canNetboot(checklist)}>
@@ -74,17 +74,16 @@ export function SetupChecklist({ dismissible = false }: { dismissible?: boolean 
             <Trans>
               <Link to="/boot/image" className="underline">
                 Build the boot image
-              </Link>{" "}
-              that machines netboot into.
+              </Link>
+              .
             </Trans>
           ) : (
             <Trans>
-              Machines netboot into the Linux boot environment, which comes with DDT. To install
-              Windows,{" "}
+              To install Windows,{" "}
               <Link to="/boot/image" className="underline">
                 build the boot image
-              </Link>{" "}
-              as well.
+              </Link>
+              .
             </Trans>
           )}
         </ChecklistStep>
@@ -93,7 +92,7 @@ export function SetupChecklist({ dismissible = false }: { dismissible?: boolean 
             <Link to="/library/images" className="underline">
               Add a Windows image
             </Link>
-            : from an ISO, a folder on the server, an MDT deployment share or an upload.
+            .
           </Trans>
         </ChecklistStep>
         <ChecklistStep done={checklist.sequence}>
@@ -101,12 +100,11 @@ export function SetupChecklist({ dismissible = false }: { dismissible?: boolean 
             <Link to="/deployment/sequences" className="underline">
               Make a task sequence
             </Link>{" "}
-            from the Install Windows template, which erases the disk, applies the image and sets up
-            Windows.
+            from the Install Windows template.
           </Trans>
         </ChecklistStep>
         <ChecklistStep done={checklist.machine}>
-          <Trans>Netboot a machine. It shows on the Machines page as it registers.</Trans>
+          <Trans>Netboot a machine.</Trans>
         </ChecklistStep>
       </ol>
     </Panel>

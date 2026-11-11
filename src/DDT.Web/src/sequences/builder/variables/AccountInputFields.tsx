@@ -18,7 +18,7 @@ export function AccountInputFields({ input, at, findings, update }: InputPartPro
         label={<Trans>Domain it joins</Trans>}
         field={at("account.domain")}
         findings={findings}
-        hint={<Trans>For a Join the domain step. Empty where it joins none.</Trans>}
+        hint={<Trans>Optional.</Trans>}
         mono
         value={destination.domain ?? ""}
         onChange={(text) => {

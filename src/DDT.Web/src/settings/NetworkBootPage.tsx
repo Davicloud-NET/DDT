@@ -14,12 +14,7 @@ export function NetworkBootPage() {
   return (
     <AdministratorsOnly
       title={<Trans>Network boot</Trans>}
-      refusal={
-        <Trans>
-          Only administrators see and change network boot: which interfaces DDT answers on and what
-          machines load.
-        </Trans>
-      }
+      refusal={<Trans>Only administrators see and change network boot.</Trans>}
     >
       {() => <NetworkBootSettings />}
     </AdministratorsOnly>

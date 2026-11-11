@@ -145,31 +145,21 @@ export function deletionConsequence(
   const sentences = [t`${name} (${size}) is deleted from the library.`];
 
   if (item.kind === "Files" && users === null) {
-    sentences.push(
-      t`Which sequences name it is not known, because not every sequence could be read; those that do show a problem until another package is chosen.`,
-    );
+    sentences.push(t`Sequences that name it show a problem until another package is chosen.`);
   } else if (item.kind === "Files" && count === 0) {
     sentences.push(t`No sequence names it.`);
   } else if (item.kind === "Files") {
     sentences.push(
       plural(count, {
-        one: `The sequence ${names} names it in a Run script step and shows a problem until another package is chosen.`,
-        other: `The sequences ${names} name it in a Run script step and show a problem until another package is chosen.`,
+        one: `The sequence ${names} shows a problem until another package is chosen.`,
+        other: `The sequences ${names} show a problem until another package is chosen.`,
       }),
     );
   } else if (item.targets.length > 0) {
     const targets = item.targets.map(describeTarget).join(", ");
 
-    sentences.push(
-      count === 0
-        ? t`Machines of ${targets} no longer get these drivers.`
-        : t`Machines of ${targets} no longer get these drivers from the Inject drivers step of ${names}.`,
-    );
+    sentences.push(t`Machines of ${targets} no longer get these drivers.`);
   }
-
-  sentences.push(
-    t`The server refuses while a machine is assigned or runs a sequence that uses it.`,
-  );
 
   return sentences.join(" ");
 }

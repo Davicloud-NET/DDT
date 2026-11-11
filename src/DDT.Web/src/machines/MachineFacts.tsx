@@ -19,10 +19,7 @@ export function MachineFacts({ machine }: { machine: MachineSummary }) {
     <Panel title={<Trans>Machine facts</Trans>}>
       {rows.length === 0 ? (
         <p className="type-small text-muted">
-          <Trans>
-            The agent on this machine reported no facts. A newer agent reports them at the machine's
-            next netboot.
-          </Trans>
+          <Trans>The agent on this machine reported no facts.</Trans>
         </p>
       ) : (
         <Facts

@@ -58,11 +58,7 @@ describe("MachinePage", () => {
 
     const failed = within(stepRow("Optional tool"));
     expect(failed.getByText("The script ended with exit code 3.")).toBeInTheDocument();
-    expect(
-      failed.getByText(
-        'The run went on, because "Go on when this step fails" is on for this step.',
-      ),
-    ).toBeInTheDocument();
+    expect(failed.getByText("The run went on.")).toBeInTheDocument();
 
     const running = within(stepRow("Apply Windows 11"));
     expect(running.getByText("Running 45%")).toBeInTheDocument();
@@ -254,7 +250,7 @@ describe("MachinePage", () => {
 
     expect(
       await screen.findByText(
-        /^The machine started from the network again .+, 30 s ago, for the 1st time since the hand-over\. DDT restarted it into its disk, and the installed Linux has not called since\.$/,
+        /^The machine started from the network again .+, 30 s ago, for the 1st time\. The installed Linux has not called since\.$/,
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("Waiting for the installed Linux")).toBeInTheDocument();
@@ -284,7 +280,7 @@ describe("MachinePage", () => {
 
     expect(
       await screen.findByText(
-        "The machine started from the network 2 times in a row while its run goes on in the installed Linux and was sent back to its disk each time, and at 5 such starts in a row the server ends the run.",
+        "The machine started from the network 2 times in a row and was sent back to its disk. At 5 such starts in a row, the run ends.",
       ),
     ).toBeInTheDocument();
 

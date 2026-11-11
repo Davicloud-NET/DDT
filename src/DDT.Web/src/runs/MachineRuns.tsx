@@ -46,12 +46,7 @@ export function MachineRuns({
   return (
     <Panel title={<Trans>Runs of this machine</Trans>} flush>
       {runs.length === 0 ? (
-        <EmptyState title={<Trans>No runs yet</Trans>}>
-          <Trans>
-            Assign a sequence above, or add a rule that chooses one for machines like it under
-            Deployment, Rules.
-          </Trans>
-        </EmptyState>
+        <EmptyState title={<Trans>No runs yet</Trans>} />
       ) : (
         <ol aria-label={t`Runs of this machine`} className="flex flex-col">
           {runs.map((run) => {

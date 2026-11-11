@@ -21,8 +21,5 @@ public sealed class DiskItem(Localizer localizer, ConsoleDisk disk) : Observable
 
     public string Partitions => Say.Partitions(localizer, disk.PartitionCount);
 
-    // A disk with partitions holds data that erasing it would destroy.
-    public bool HoldsData => disk.PartitionCount > 0;
-
     public void Refresh() => Raise(string.Empty);
 }

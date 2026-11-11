@@ -57,7 +57,7 @@ describe("SequenceEditorPage, a step in the installed Linux", () => {
 
     await opened("Install Linux");
 
-    expect(screen.getByText(/^Runs as root in the installed Linux/)).toBeInTheDocument();
+    expect(screen.getByText(/^Runs as root\./)).toBeInTheDocument();
     expect(within(field("phase")).getByRole("button")).toHaveTextContent(installed);
     expect(field("packageId")).toBeInTheDocument();
     expect(within(field("rebootExitCodes")).getByRole("textbox")).toHaveValue("194");

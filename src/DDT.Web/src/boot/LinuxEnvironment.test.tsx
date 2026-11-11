@@ -30,9 +30,7 @@ describe("LinuxEnvironment", () => {
 
     const linux = await panel();
 
-    expect(linux).toHaveTextContent(
-      "It comes with DDT, so there is nothing to build. Task sequences that write a Linux image run in it, and Windows sequences run in Windows PE.",
-    );
+    expect(linux).toHaveTextContent("It comes with DDT, so there is nothing to build.");
     expect(within(linux).getByText("7.2.6+deb13-amd64")).toBeInTheDocument();
     expect(within(linux).getByText("1.51~1+deb13u1+16.1-2~deb13u1")).toBeInTheDocument();
     expect(within(linux).getByText("1+2.12+9+deb13u2")).toBeInTheDocument();
@@ -42,7 +40,7 @@ describe("LinuxEnvironment", () => {
       "English (United States), English (United Kingdom), German, German (Switzerland), French, Italian, Spanish",
     );
     expect(linux).toHaveTextContent(
-      "With Secure Boot on, a machine starts it when its firmware trusts one of Microsoft's third-party UEFI CAs 2011 and 2023. A machine whose firmware trusts neither is not started in it.",
+      "With Secure Boot on, the machine's firmware has to trust one of Microsoft's third-party UEFI CAs 2011 and 2023.",
     );
     expect(
       within(linux).getByRole("link", { name: "the source packages it was built from" }),
@@ -55,7 +53,7 @@ describe("LinuxEnvironment", () => {
     await open(bootImageView({ linux: linuxBootView({ shimSignedUnder: "Microsoft2023" }) }));
 
     expect(await panel()).toHaveTextContent(
-      "With Secure Boot on, a machine starts it when its firmware trusts Microsoft's third-party UEFI CA 2023. A machine whose firmware does not is not started in it.",
+      "With Secure Boot on, the machine's firmware has to trust Microsoft's third-party UEFI CA 2023.",
     );
   });
 

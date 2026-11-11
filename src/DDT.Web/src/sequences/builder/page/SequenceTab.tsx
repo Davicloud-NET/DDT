@@ -41,7 +41,6 @@ export function SequenceTab({ state, draft, onEdit }: SequenceTabProps) {
         label={<Trans>Description</Trans>}
         field="description"
         findings={refused(state, "description")}
-        hint={<Trans>Shown in the list of task sequences.</Trans>}
         multiline
         rows={3}
         value={draft.description}

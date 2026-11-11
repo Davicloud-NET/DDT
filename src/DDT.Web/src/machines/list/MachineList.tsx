@@ -40,11 +40,7 @@ export function MachineList({
         <LoadingRows />
       ) : isEmpty ? (
         <EmptyState title={<Trans>No machines yet</Trans>}>
-          <Trans>
-            Machines appear here on their own when they netboot on a network DDT answers, within a
-            few seconds of starting. Nothing is erased until someone signs in at the machine or
-            assigns it a sequence here.
-          </Trans>
+          <Trans>Machines appear here when they netboot on a network DDT answers.</Trans>
         </EmptyState>
       ) : rows.machines.length === 0 ? (
         <EmptyState

@@ -36,31 +36,16 @@ export function ServerGroup({ form, values }: { form: LdapForm; values: LdapSett
           canChange
           label={<Trans>Encryption</Trans>}
           options={[
-            {
-              id: "Ldaps",
-              label: t`LDAPS`,
-              description: <Trans>Encrypted from the first byte.</Trans>,
-            },
-            {
-              id: "StartTls",
-              label: t`StartTLS`,
-              description: <Trans>Starts plain and encrypts before anything is sent.</Trans>,
-            },
-            {
-              id: "UnencryptedDangerous",
-              label: t`Unencrypted (dangerous)`,
-              description: <Trans>Passwords cross the network in clear text.</Trans>,
-            },
+            { id: "Ldaps", label: t`LDAPS` },
+            { id: "StartTls", label: t`StartTLS` },
+            { id: "UnencryptedDangerous", label: t`Unencrypted (dangerous)` },
           ]}
         />
         <TimeoutField form={form} />
       </div>
       {values.transport === "UnencryptedDangerous" ? (
         <Notice tone="fail" title={<Trans>Passwords cross the network in clear text</Trans>}>
-          <Trans>
-            The bind password and every password typed at sign-in can be read by anyone on the way
-            to the directory. Use this only on a test network; a save asks you to confirm it.
-          </Trans>
+          <Trans>Use it only on a test network.</Trans>
         </Notice>
       ) : null}
     </SettingsGroup>

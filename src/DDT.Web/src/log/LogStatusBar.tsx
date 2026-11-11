@@ -7,7 +7,6 @@ import { Trans } from "@lingui/react/macro";
 import { number } from "@/lib/format";
 import { Button } from "@/ui/Button";
 
-import { STORED_LINES_PER_MACHINE } from "./log";
 import { MAX_BUFFERED_LINES } from "./logBuffer";
 import { LOG_POLL_MS } from "./useMachineLog";
 import type { LogView } from "./useLogView";
@@ -18,7 +17,6 @@ export function LogStatusBar({ view }: { view: LogView }) {
   const log = view.log;
   const full = view.all.length >= MAX_BUFFERED_LINES;
   const bufferLimit = number(MAX_BUFFERED_LINES);
-  const storedLimit = number(STORED_LINES_PER_MACHINE);
   const pollSeconds = LOG_POLL_MS / 1000;
 
   return (
@@ -30,15 +28,12 @@ export function LogStatusBar({ view }: { view: LogView }) {
       ) : null}
       {log.buffer.hasOlder && full ? (
         <span>
-          <Trans>This page holds at most {bufferLimit} lines. Older ones stay on the server.</Trans>
+          <Trans>This page holds at most {bufferLimit} lines.</Trans>
         </span>
       ) : null}
       {log.loaded && !log.buffer.hasOlder && view.all.length > 0 ? (
         <span>
-          <Trans>
-            Start of the stored log. The server keeps the newest {storedLimit} lines of each
-            machine.
-          </Trans>
+          <Trans>Start of the stored log.</Trans>
         </span>
       ) : null}
       <span className="flex-1" />
@@ -46,9 +41,9 @@ export function LogStatusBar({ view }: { view: LogView }) {
         {log.polling ? (
           <Trans>Reading every {pollSeconds} s, because the live connection is down.</Trans>
         ) : log.status === "reconnecting" ? (
-          <Trans>Reconnecting. Lines sent meanwhile are read once the connection is back.</Trans>
+          <Trans>Reconnecting.</Trans>
         ) : log.status === "live" ? null : (
-          <Trans>The live connection is down. New lines appear once it is back.</Trans>
+          <Trans>The live connection is down.</Trans>
         )}
       </span>
     </div>

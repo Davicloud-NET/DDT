@@ -111,7 +111,7 @@ public sealed class MainViewModelTests
 
         Assert.False(waiting.HasReason);
         Assert.Equal("Waiting for a task sequence", waiting.Title);
-        Assert.StartsWith("This machine is authorized. Assign a task sequence", waiting.Intro, StringComparison.Ordinal);
+        Assert.Equal("Assign a task sequence to it on the Machines page.", waiting.Intro);
 
         console.Show(Scenarios.State(ConsoleStage.WaitingForSequence) with { Waiting = Reason });
 
@@ -256,14 +256,14 @@ public sealed class MainViewModelTests
     }
 
     [Fact]
-    public void SaysWhyNothingRunsWhileTheRunWaitsForItsInputs()
+    public void SaysWhereToAnswerWhileTheRunWaitsForItsInputs()
     {
         TestConsole console = new TestConsole().Show(Scenarios.WaitingForInputs);
         RunViewModel run = Assert.IsType<RunViewModel>(console.Model.Screen);
 
         Assert.Equal(("WAITING", TagTone.Attention), (run.Tag.Text, run.Tag.Tone));
         Assert.Equal("Waiting for answers", run.Heading);
-        Assert.Equal("Nothing runs until the sequence's inputs are answered, here or on the machine's page on the web.", run.Note);
+        Assert.Equal("Answer the inputs here or on the web.", run.Note);
 
         console.Model.Press(Key.F5);
 
@@ -464,23 +464,21 @@ public sealed class MainViewModelTests
     }
 
     // Alt+F4 while the agent works would leave the machine with only the text console, and passers-by do press it. The
-    // console stays and says how to reach a prompt. Once the agent has ended, closing is F9's job and goes through.
+    // console stays and says so. Once the agent has ended, closing is F9's job and goes through.
     [Fact]
-    public void RefusesToCloseWhileTheAgentWorksAndSaysHowToReachAPrompt()
+    public void RefusesToCloseWhileTheAgentWorks()
     {
         TestConsole console = new TestConsole().Show(Scenarios.Running);
 
         Assert.True(console.Model.RefuseClose());
         Assert.Equal(ConsoleNotice.CloseRefused, console.Model.Notice.Current);
-        Assert.Equal(["Shift", "F10"], console.Model.Notice.Keys);
-        Assert.Equal(
-            "The console stays open while DDT works on this machine. Shift+F10 opens a command prompt.",
-            console.Model.Notice.Text);
+        Assert.Empty(console.Model.Notice.Keys);
+        Assert.Equal("The console stays open while DDT works.", console.Model.Notice.Text);
 
         // The next key means the person read it. The note leaves and keeps its text while it fades.
         console.Model.Press(Key.F1);
         Assert.False(console.Model.Notice.IsShown);
-        Assert.Equal(["Shift", "F10"], console.Model.Notice.Keys);
+        Assert.Equal("The console stays open while DDT works.", console.Model.Notice.Text);
         Assert.Equal(0, console.Closed);
 
         // Before the agent has said anything, too.

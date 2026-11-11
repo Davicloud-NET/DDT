@@ -37,13 +37,11 @@ export function RescanButton({ form }: { form: PxeForm }) {
       >
         <Trans>Scan interfaces again</Trans>
       </Button>
-      <span className="type-small text-muted">
-        {form.dirty ? (
+      {form.dirty ? (
+        <span className="type-small text-muted">
           <Trans>Save or discard your changes first.</Trans>
-        ) : (
-          <Trans>For a network adapter that was added, or an address that changed.</Trans>
-        )}
-      </span>
+        </span>
+      ) : null}
       <ConfirmDialog
         isOpen={asking}
         onOpenChange={setAsking}
@@ -57,9 +55,8 @@ export function RescanButton({ form }: { form: PxeForm }) {
       >
         <p>
           <Trans>
-            Every host that runs network boot looks for its network adapters again and restarts its
-            listeners with these settings. TFTP transfers in progress end, and those machines start
-            their download again.
+            Every host that runs network boot restarts its listeners. TFTP transfers in progress
+            end.
           </Trans>
         </p>
       </ConfirmDialog>

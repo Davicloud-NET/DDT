@@ -90,12 +90,6 @@ export function DhcpScopesDialog({ isOpen, onClose }: { isOpen: boolean; onClose
         onAccepted={set.retryAfterReauth}
         onCancel={set.cancelReauth}
         confirmLabel={<Trans>Confirm and set</Trans>}
-        reason={
-          <Trans>
-            These options decide what every machine in the scope loads when it netboots, so setting
-            them needs your password again.
-          </Trans>
-        }
       />
     </>
   );

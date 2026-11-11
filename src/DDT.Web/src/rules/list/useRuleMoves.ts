@@ -53,7 +53,7 @@ export function useRuleMoves(list: readonly RuleView[]) {
 
       if (current !== null) {
         setProblem({
-          text: t`Someone changed the rules while you moved one, so the list shows them as they are now. Move the rule again if it should still go there.`,
+          text: t`Someone changed the rules while you moved one. Move the rule again if it should still go there.`,
           tone: "attention",
         });
       } else {

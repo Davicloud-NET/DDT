@@ -87,7 +87,7 @@ export function DeleteRoleDialog({ role, rules, onClose, onDeleted }: DeleteRole
         </>
       ) : (
         <p>
-          <Trans>No rule gives {name}, so deleting it changes the values of no machine.</Trans>
+          <Trans>No rule gives {name}.</Trans>
         </p>
       )}
     </ConfirmDialog>

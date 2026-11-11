@@ -46,7 +46,6 @@ export function InputFields({
         label={<Trans>Question</Trans>}
         field={part.at("label")}
         findings={findings}
-        hint={<Trans>What the person who answers reads.</Trans>}
         value={input.label}
         onChange={(label) => {
           update({ label });

@@ -71,8 +71,6 @@ public sealed class PauseViewModel : QuestionViewModel
 
     public bool HasSteps => Steps.Count > 0;
 
-    public string Hint => T("When it is done, press Enter. An operator can also let the run go on from the web.");
-
     public string SubmitLabel => T("Continue the run");
 
     public override bool CanSubmit => true;

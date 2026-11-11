@@ -31,22 +31,9 @@ export function LoggingPanel() {
       form={form}
       canChange
       title={<Trans>Log levels</Trans>}
-      description={
-        <Trans>
-          How much the server writes to its log, per category. A category covers the categories
-          below it, so DDT.Pxe covers DDT.Pxe.Tftp as well, and Default applies to every category
-          not listed. A change applies at once.
-        </Trans>
-      }
+      description={<Trans>Log level per category. Default covers every category not listed.</Trans>}
     >
       <LevelRows form={form} logLevel={form.values.logLevel} />
-      <p className="max-w-[80ch] type-small text-ink-2">
-        <Trans>
-          When a machine does not netboot, set DDT.Pxe to Debug or Trace and let the machine try
-          again: the log then says what it asked for and what the server answered. Set it back
-          afterwards, since Trace writes a line for every packet.
-        </Trans>
-      </p>
     </SettingsSection>
   );
 }

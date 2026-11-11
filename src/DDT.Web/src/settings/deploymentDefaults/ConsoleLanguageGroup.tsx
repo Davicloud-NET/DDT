@@ -36,12 +36,6 @@ export function ConsoleLanguageGroup({
         field="consoleLanguage"
         canChange={canChange}
         label={<Trans>Language</Trans>}
-        hint={
-          <Trans>
-            The language the console starts in, in Windows PE and in the installed Windows. Someone
-            at the machine can switch with F5.
-          </Trans>
-        }
         empty={t`The language of Windows PE`}
         options={[
           { id: "en", label: "English" },
@@ -53,12 +47,6 @@ export function ConsoleLanguageGroup({
         field="consoleKeyboardLayout"
         canChange={canChange}
         label={<Trans>Keyboard layout in the Linux boot environment</Trans>}
-        hint={
-          <Trans>
-            The layout of the console when a machine starts the Linux boot environment. Windows PE
-            has the layout its boot image was built with.
-          </Trans>
-        }
         empty={keymapName(defaultKeymap)}
         options={layouts.map((keymap) => ({ id: keymap, label: keymapName(keymap) }))}
       />

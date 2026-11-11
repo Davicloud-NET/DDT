@@ -28,25 +28,16 @@ export function BuildPanel({ view }: { view: BootImageView }) {
   const build = useMutation({ mutationFn: startBuild });
   const running = view.job?.state === "Running";
   const adk = view.builder.adk;
-  const address = view.builder.serverUrl;
   const ready = adk !== null && adk.installed && adk.supported;
 
   return (
     <Panel title={<Trans>Build on this server</Trans>}>
-      <p className="text-ink-2">
-        <Trans>
-          A build takes the address {address}, the server's root certificate, its agent and the
-          drivers flagged for Windows PE. Machines netboot the new image once it is done, and the
-          build before it stays to go back to.
-        </Trans>
-      </p>
       {adk === null ? null : <AdkState adk={adk} isBusy={running} />}
 
       {administrator ? (
         <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
           <Select
             label={<Trans>Keyboard layout</Trans>}
-            hint={<Trans>For typing at a machine in Windows PE</Trans>}
             className="w-72"
             value={layout}
             onChange={(key) => {
@@ -62,12 +53,11 @@ export function BuildPanel({ view }: { view: BootImageView }) {
               </ListBoxItem>
             ))}
           </Select>
-          <Checkbox isSelected={powerShell} onChange={setPowerShell} className="pb-7">
-            <Trans>With PowerShell, for steps that run a script in Windows PE</Trans>
+          <Checkbox isSelected={powerShell} onChange={setPowerShell} className="pb-0.5">
+            <Trans>With PowerShell</Trans>
           </Checkbox>
           <Button
             variant="primary"
-            className="mb-6.5"
             isDisabled={!ready || running || build.isPending}
             onPress={() => {
               build.mutate({

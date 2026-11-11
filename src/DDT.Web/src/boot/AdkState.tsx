@@ -32,9 +32,8 @@ export function AdkState({ adk, isBusy }: { adk: BootImageAdk; isBusy: boolean }
     return (
       <Notice tone="attention">
         <Trans>
-          The Windows PE add-on on this server is {version}, which is older than the boot image
-          needs. Remove it and the Windows ADK under Windows's installed apps, then install them
-          from here.
+          The Windows PE add-on {version} is too old. Uninstall it and the Windows ADK, then install
+          them from here.
         </Trans>
       </Notice>
     );
@@ -59,10 +58,7 @@ export function AdkState({ adk, isBusy }: { adk: BootImageAdk; isBusy: boolean }
           ) : null
         }
       >
-        <Trans>
-          A build takes Microsoft's Windows ADK with its Windows PE add-on, and this server has
-          none.
-        </Trans>
+        <Trans>This server has no Windows ADK with the Windows PE add-on.</Trans>
       </Notice>
       {install.isError ? <Notice tone="fail">{install.error.message}</Notice> : null}
 
@@ -79,15 +75,11 @@ export function AdkState({ adk, isBusy }: { adk: BootImageAdk; isBusy: boolean }
         <p>
           <Trans>
             The server downloads the Windows ADK and its Windows PE add-on from Microsoft, about 4
-            GB, and installs the deployment tools and Windows PE. That takes a few minutes, and this
-            page shows how it goes.
+            GB, which takes a few minutes.
           </Trans>
         </p>
         <p>
-          <Trans>
-            The server installs them without asking again. Installing accepts Microsoft's licence
-            terms for both.
-          </Trans>
+          <Trans>Installing accepts Microsoft's licence terms for both.</Trans>
         </p>
       </ConfirmDialog>
     </>

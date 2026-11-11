@@ -40,10 +40,7 @@ export function AuthenticatorEnrollment({
       }}
     >
       <p className="text-ink-2">
-        <Trans>
-          Scan the code with your authenticator app, or type the key into it. Then enter the code
-          the app shows.
-        </Trans>
+        <Trans>Scan the code with your authenticator app, or type the key into it.</Trans>
       </p>
       <div className="flex flex-wrap items-center gap-5">
         <QrCode

@@ -53,11 +53,7 @@ export function BootTargetsGroup({
   return (
     <SettingsGroup title={<Trans>Boot targets</Trans>}>
       <p className="type-small text-ink-2">
-        <Trans>
-          ProxyDHCP sends a machine the boot file of the architecture its firmware reports, and
-          answers no architecture without a boot target. A site whose own DHCP server names DDT and
-          the boot file needs none.
-        </Trans>
+        <Trans>ProxyDHCP answers no architecture without a boot target.</Trans>
       </p>
       {lock === null ? null : <LockNote lock={lock} />}
       <FieldErrorText errors={errors} />
@@ -66,8 +62,8 @@ export function BootTargetsGroup({
         <p className="type-small text-muted">
           {values.enableProxyDhcp && values.enableTftp ? (
             <Trans>
-              No boot target yet, so x64 UEFI machines get x64/bootmgfw.efi over TFTP, where a boot
-              image build puts the boot manager. Other machines get no answer.
+              No boot target yet, so x64 UEFI machines get x64/bootmgfw.efi over TFTP. Other
+              machines get no answer.
             </Trans>
           ) : (
             <Trans>No boot target yet, so ProxyDHCP answers no machine.</Trans>

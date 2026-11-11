@@ -49,18 +49,11 @@ export function InterfacesGroup({
   return (
     <SettingsGroup title={<Trans>Interfaces</Trans>}>
       <p className="type-small text-ink-2">
-        <Trans>
-          A host may have a network adapter on a segment whose DHCP belongs to someone else, so DDT
-          answers on no interface until it is listed. List the interfaces machines reach DDT on, and
-          never a VPN tunnel.
-        </Trans>
+        <Trans>Never list a VPN tunnel.</Trans>
       </p>
       {entries.length === 0 ? (
         <Notice tone="attention">
-          <Trans>
-            No interface is listed, so DDT answers no machine that netboots. Choose the interfaces
-            below, or type one.
-          </Trans>
+          <Trans>No interface is listed, so DDT answers no machine that netboots.</Trans>
         </Notice>
       ) : null}
       {lock === null ? null : <LockNote lock={lock} />}

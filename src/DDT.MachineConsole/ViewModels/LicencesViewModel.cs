@@ -49,8 +49,6 @@ public sealed class LicencesViewModel : OverlayViewModel
 
     public string DocumentsTitle => T("Licence texts");
 
-    public string DocumentsHint => T("Up and Down choose a text.");
-
     public IReadOnlyList<LegalDocument> Documents { get; }
 
     public LegalDocument Selected

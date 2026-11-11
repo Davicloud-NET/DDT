@@ -20,7 +20,6 @@ export function NewAccountsGroup({ form, mapped }: { form: OidcForm; mapped: boo
         field="autoProvision"
         canChange
         label={<Trans>Create an account for an identity DDT has not seen</Trans>}
-        hint={<Trans>Off, an identity DDT has not seen is refused at the sign-in.</Trans>}
       />
       <SettingSelect
         form={form}
@@ -29,11 +28,9 @@ export function NewAccountsGroup({ form, mapped }: { form: OidcForm; mapped: boo
         label={<Trans>Role of a new account</Trans>}
         hint={
           mapped ? (
-            <Trans>Not used while the claim map below has entries: the map decides the role.</Trans>
+            <Trans>Not used while the claim map below has entries.</Trans>
           ) : (
-            <Trans>
-              Operators can read the deployment passwords by deploying a machine they control.
-            </Trans>
+            <Trans>Operators can read the deployment passwords.</Trans>
           )
         }
         options={[

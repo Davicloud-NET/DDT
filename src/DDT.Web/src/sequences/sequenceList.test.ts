@@ -122,12 +122,9 @@ describe("the sequence list", () => {
   });
 
   it("says what a deletion does to the machines using the sequence", () => {
-    expect(deletionConsequence(summary(), 0)).toEqual([
-      "Install Windows is deleted and can no longer be assigned or chosen at a machine.",
-      "Runs that already ended keep their history.",
-    ]);
-    expect(deletionConsequence(summary(), 3)[1]).toBe(
-      "The 3 machines it is assigned to or running on keep the copy they got and finish with it.",
+    expect(deletionConsequence(0)).toEqual(["Runs that already ended keep their history."]);
+    expect(deletionConsequence(3)[0]).toBe(
+      "The 3 machines it is assigned to or running on finish with their copy.",
     );
   });
 

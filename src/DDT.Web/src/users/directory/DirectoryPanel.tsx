@@ -34,7 +34,7 @@ export function DirectoryPanel() {
       ) : (
         <p className="max-w-[80ch] text-ink-2">
           <Trans>
-            Sign-in through a directory is off. It is turned on and set up on the{" "}
+            Sign-in through a directory is off. Set it up on the{" "}
             <Link to="/admin/sign-in" className="font-semibold text-ink underline">
               Sign-in
             </Link>{" "}

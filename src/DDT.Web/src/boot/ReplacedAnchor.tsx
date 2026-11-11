@@ -33,9 +33,8 @@ export function ReplacedAnchor() {
     <Notice tone="attention">
       <span className="flex flex-col gap-2">
         <Trans>
-          DDT replaced the self-signed server certificate that boot images built before it pin.
-          Machines netbooting such an image cannot reach the server until it is built again with
-          DDT's root certificate.
+          DDT replaced the self-signed server certificate. Machines netbooting an older boot image
+          cannot reach the server until it is built again.
         </Trans>
         <span>
           <Button

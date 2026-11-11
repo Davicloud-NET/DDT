@@ -148,16 +148,14 @@ describe("SequenceEditorPage", () => {
     press(screen.getByRole("button", { name: /^DeployShare/ }));
 
     const required = screen.getByRole("checkbox", { name: "An answer is required" });
-    expect(required).toHaveAccessibleDescription(
-      "Without one, and without a default, the run waits at its start until it is answered at the machine or on the machine's page.",
-    );
+    expect(required).not.toHaveAccessibleDescription();
 
-    await chooseOption(document.body, "Asked", "On the web, when the run is assigned or approved");
+    await chooseOption(document.body, "Asked", "On the web");
 
     expect(
       screen.getByRole("checkbox", { name: "An answer is required" }),
     ).toHaveAccessibleDescription(
-      "Without one, and without a default, it has to be answered when the sequence is assigned or approved on the web, and a run chosen at the machine or started by a rule fails at its start.",
+      "Without one, and without a default, a run chosen at the machine or started by a rule fails at its start.",
     );
   });
 
@@ -171,11 +169,7 @@ describe("SequenceEditorPage", () => {
 
     await opened();
 
-    expect(
-      screen.getByText(
-        "Restarts the machine, and the sequence goes on with the step after Restart. In Windows PE this needs a partitioned disk, where the run's state is kept.",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText("In Windows PE this needs a partitioned disk.")).toBeInTheDocument();
   });
 
   it("renames a variable everywhere it is used", async () => {

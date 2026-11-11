@@ -62,14 +62,7 @@ export function OwnTokensPanel({ user }: { user: CurrentUser }) {
         </div>
       ) : list.length === 0 ? (
         <EmptyState title={<Trans>No tokens yet</Trans>}>
-          {canMake ? (
-            <Trans>
-              A token lets a script call DDT's API as you, with a role no higher than yours and for
-              as long as you choose.
-            </Trans>
-          ) : (
-            <Trans>Your account has no role, so it cannot have a token.</Trans>
-          )}
+          {canMake ? null : <Trans>Your account has no role, so it cannot have a token.</Trans>}
         </EmptyState>
       ) : (
         <TokenTable

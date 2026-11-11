@@ -98,15 +98,9 @@ export function RunActivity({
           {run.activity === "Restarting" ? (
             <Trans>No contact for {silentFor}, as the machine restarts.</Trans>
           ) : run.phase === "LinuxBoot" || run.phase === "Linux" ? (
-            <Trans>
-              No contact for {silentFor}. The installed Linux starts before the agent goes on there,
-              which can take a while.
-            </Trans>
+            <Trans>No contact for {silentFor}, as the installed Linux starts.</Trans>
           ) : (
-            <Trans>
-              No contact for {silentFor}. Windows setup runs before the agent starts again, which
-              can take a while.
-            </Trans>
+            <Trans>No contact for {silentFor}, as Windows setup runs.</Trans>
           )}
         </span>
       ) : null}

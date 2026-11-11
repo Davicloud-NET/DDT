@@ -25,13 +25,11 @@ const iconKey =
 
 export function ValuesEditor({
   label,
-  hint,
   rows,
   findings,
   onChange,
 }: {
   label: ReactNode;
-  hint?: ReactNode;
   rows: readonly EditedValue[];
   findings: Findings;
   onChange: (rows: EditedValue[]) => void;
@@ -50,7 +48,6 @@ export function ValuesEditor({
       <span id={labelId} className="type-label text-ink">
         {label}
       </span>
-      {hint ? <span className="-mt-1 type-small text-muted">{hint}</span> : null}
       {rows.length === 0 ? (
         <p className="type-small text-muted">
           <Trans>No values.</Trans>

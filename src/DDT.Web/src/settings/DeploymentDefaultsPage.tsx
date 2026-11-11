@@ -36,13 +36,6 @@ export function DeploymentDefaultsPage() {
           form={form}
           canChange={canChange}
           title={<Trans>Defaults for every run</Trans>}
-          description={
-            <Trans>
-              A change applies to runs that start after it. A Write the answer file step can set its
-              own time zone, language and keyboard, and a Join the domain step its own
-              organizational unit.
-            </Trans>
-          }
         >
           <WindowsSetupGroup form={form} canChange={canChange} />
           <ConsoleLanguageGroup form={form} canChange={canChange} />

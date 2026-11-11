@@ -25,12 +25,6 @@ export function LevelActions({
       <Button size="sm" variant="quiet" isDisabled={isDefault} onPress={onRestoreDefaults}>
         <Trans>Use the defaults</Trans>
       </Button>
-      <span className="type-small text-muted">
-        <Trans>
-          The defaults: Default at Information, and Microsoft.AspNetCore and the two Entity
-          Framework Core categories at Warning.
-        </Trans>
-      </span>
     </span>
   );
 }

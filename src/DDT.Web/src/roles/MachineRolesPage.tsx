@@ -41,14 +41,6 @@ export function MachineRolesPage() {
         ) : null}
       </PageHeader>
 
-      <p className="max-w-[80ch] text-ink-2">
-        <Trans>
-          A machine role is a set of values that rules give machines together, such as the time zone
-          and the computer name of a kiosk. It says nothing about what a person may do; that is a
-          user's role, under Administration.
-        </Trans>
-      </p>
-
       {roles.isError ? (
         <Notice tone="fail">
           <Trans>The machine roles could not be loaded.</Trans>
@@ -62,14 +54,7 @@ export function MachineRolesPage() {
       ) : roles.isSuccess && list.length === 0 ? (
         <Panel>
           <EmptyState title={<Trans>No machine roles yet</Trans>}>
-            {canEdit ? (
-              <Trans>
-                Add a machine role for values that belong together, then let a rule give it to the
-                machines it matches.
-              </Trans>
-            ) : (
-              <Trans>An administrator adds machine roles here.</Trans>
-            )}
+            {canEdit ? null : <Trans>An administrator adds machine roles here.</Trans>}
           </EmptyState>
         </Panel>
       ) : roles.isSuccess ? (

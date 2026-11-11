@@ -58,14 +58,12 @@ export function DhcpHere({ neighbours }: { neighbours: NetbootNeighbours }) {
         {wds ? (
           <Trans>
             Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT does not listen
-            there. While Windows Deployment Services runs, machines that netboot reach WDS, and DDT
-            through its boot menu.
+            there.
           </Trans>
         ) : sends ? (
           <Trans>
             Microsoft's DHCP server on this computer needs UDP 67 for itself, so DDT answers on port
-            4011 alone. The DHCP server sends option 60, PXEClient, which brings machines that
-            netboot there.
+            4011 alone. The DHCP server sends option 60, PXEClient.
           </Trans>
         ) : (
           <Trans>
@@ -82,12 +80,6 @@ export function DhcpHere({ neighbours }: { neighbours: NetbootNeighbours }) {
         onAccepted={change.retryAfterReauth}
         onCancel={change.cancelReauth}
         confirmLabel={<Trans>Confirm and go on</Trans>}
-        reason={
-          <Trans>
-            This changes what every machine that netboots from this server loads, so it needs your
-            password again.
-          </Trans>
-        }
       />
     </>
   );

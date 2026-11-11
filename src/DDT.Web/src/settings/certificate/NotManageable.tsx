@@ -27,10 +27,9 @@ export function NotManageable({
   } else if (isSet("Kestrel:Certificates:Default:Password")) {
     reason = (
       <Trans>
-        Kestrel:Certificates:Default:Password is set in configuration, so the certificate is managed
-        by hand and this page only reads it. To manage it here, keep the certificate and its key as
-        PEM files without a password, name them in Kestrel:Certificates:Default:Path and KeyPath,
-        remove the password, and restart DDT.
+        Kestrel:Certificates:Default:Password is set in configuration. To manage the certificate
+        here, keep it and its key as PEM files without a password, name them in
+        Kestrel:Certificates:Default:Path and KeyPath, remove the password, and restart DDT.
       </Trans>
     );
   } else if (
@@ -39,9 +38,8 @@ export function NotManageable({
   ) {
     reason = (
       <Trans>
-        Kestrel:Certificates:Default:Path and KeyPath are not both set in configuration, so DDT has
-        no files to keep a certificate in. Name the PEM files there, where DDT may write, and
-        restart DDT to manage the certificate here.
+        Kestrel:Certificates:Default:Path and KeyPath are not both set in configuration. Name the
+        PEM files there, where DDT may write, and restart DDT.
       </Trans>
     );
   } else {

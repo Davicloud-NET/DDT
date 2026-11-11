@@ -63,17 +63,13 @@ export function GenerateDialog({
       >
         <p>
           <Trans>
-            DDT issues a certificate from its root for localhost, this computer's name and
-            addresses, and the server names below, and serves it at once, on trial until you keep
-            it.
+            DDT issues a certificate for localhost, this computer's name and addresses, and the
+            server names, and serves it on trial until you keep it.
           </Trans>
         </p>
         {view.hasRoot ? null : (
           <p>
-            <Trans>
-              DDT has no root yet, so it makes one. Every boot image then has to be built again with
-              it, and every browser that manages DDT has to trust it.
-            </Trans>
+            <Trans>DDT has no root yet, so it makes one.</Trans>
           </p>
         )}
         {action.error === null ? null : <Notice tone="fail">{action.error}</Notice>}

@@ -191,7 +191,7 @@ describe("MachinesPage", () => {
 
       expect(
         within(dialog).getByText(
-          "A rule for its model chooses Install Windows, but it has 2 problems and cannot run until they are fixed. Approving authorizes Virtual Machine (00:15:5D:01:02:03) without running anything.",
+          "A rule for its model chooses Install Windows, but it has 2 problems. Approving authorizes Virtual Machine (00:15:5D:01:02:03) without running anything.",
         ),
       ).toBeInTheDocument();
 

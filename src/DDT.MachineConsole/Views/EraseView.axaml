@@ -31,7 +31,6 @@
               <TextBlock Grid.Column="3" Classes="lead ink2" Text="{Binding Disk.Partitions}" VerticalAlignment="Bottom" />
             </Grid>
           </Border>
-          <TextBlock Classes="body ink2" Text="{Binding DataWarning}" />
 
           <StackPanel Spacing="8">
             <TextBlock Classes="label" Text="{Binding Label}" />

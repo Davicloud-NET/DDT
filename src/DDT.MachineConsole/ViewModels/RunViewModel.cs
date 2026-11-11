@@ -59,7 +59,6 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
     {
         ConsoleStage.Running when CurrentStep is { } step => Say.StepAction(L, step.Kind) is null ? null : step.Name,
         ConsoleStage.Restarting => _state?.Restart is { } restart ? Say.RestartReason(L, restart.Reason) : null,
-        ConsoleStage.Finished => T("Every step is done. The agent sends its last lines and reports."),
         _ => null,
     };
 
@@ -143,19 +142,16 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
 
     public string Remedy => _state?.Problem is { } problem ? Say.Remedy(L, problem.Remedy) : string.Empty;
 
-    // Why nothing runs while the run waits, or otherwise a note to leave the machine on. The restart into Windows is
-    // only mentioned while WinPE steps are still to come.
+    // Where to answer while the run waits, or otherwise a note to leave the machine on. The restart is only mentioned
+    // while WinPE steps are still to come.
     public string? Note => Stage switch
     {
-        ConsoleStage.Running when Run?.Activity == ConsoleActivity.WaitingForInput =>
-            T("Nothing runs until the sequence's inputs are answered, here or on the machine's page on the web."),
-        ConsoleStage.Running when Run?.Activity == ConsoleActivity.Paused =>
-            T("Nothing runs until someone continues the run, here or on the machine's page on the web."),
+        ConsoleStage.Running when Run?.Activity == ConsoleActivity.WaitingForInput => T("Answer the inputs here or on the web."),
+        ConsoleStage.Running when Run?.Activity == ConsoleActivity.Paused => T("Continue the run here or on the web."),
         ConsoleStage.Running when PathSteps.Any(step => step.Phase == ConsolePhase.Windows)
             && PathSteps.Any(step => step.Phase == ConsolePhase.WindowsPE && step.State is ConsoleStepState.Pending or ConsoleStepState.Running) =>
-            T("Leave this machine on. It restarts by itself and finishes in Windows."),
-        ConsoleStage.Running => T("Leave this machine on. This screen says when the run is done."),
-        ConsoleStage.Restarting => T("Leave this machine on. It starts again by itself."),
+            T("Leave this machine on. It restarts by itself."),
+        ConsoleStage.Running or ConsoleStage.Restarting => T("Leave this machine on."),
         _ => null,
     };
 

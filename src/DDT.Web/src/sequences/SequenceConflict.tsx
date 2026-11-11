@@ -67,10 +67,7 @@ export function SequenceConflict({
       >
         <Trans>Your changes since your last save are not saved.</Trans>{" "}
         {changes.length > 0 ? <Trans>They changed {list}.</Trans> : null}{" "}
-        {theirs === null ? <Trans>Reading their version.</Trans> : null}{" "}
-        <Trans>
-          Use theirs throws your unsaved changes away. Keep mine saves your version over theirs.
-        </Trans>
+        {theirs === null ? <Trans>Reading their version.</Trans> : null}
       </Notice>
 
       <ConfirmDialog

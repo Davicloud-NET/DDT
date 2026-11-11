@@ -125,9 +125,7 @@ describe("ConsoleLogoPanel", () => {
 
     await choose(new File(["GIF89a"], "logo.gif", { type: "image/gif" }));
 
-    expect(
-      await screen.findByText("logo.gif is not a PNG image. Upload the logo as a PNG file."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("logo.gif is not a PNG image.")).toBeInTheDocument();
     expect(requests.filter((request) => request.method === "PUT")).toEqual([]);
   });
 

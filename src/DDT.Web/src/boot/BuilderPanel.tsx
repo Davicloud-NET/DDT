@@ -35,24 +35,10 @@ export function BuilderPanel() {
     <Panel title={<Trans>Build on another PC</Trans>}>
       <p className="max-w-[80ch] text-ink-2">
         <Trans>
-          The builder is a zip for any Windows PC that has the Windows ADK with its Windows PE
-          add-on. Unpack it there and run Build.cmd: it builds the boot image for this server and
-          uploads it, and machines netboot the new image once it has arrived.
+          Unpack the builder on a Windows PC with the Windows ADK and its Windows PE add-on, then
+          run Build.cmd. It uploads one boot image, within a day.
         </Trans>
       </p>
-      <ul className="flex max-w-[80ch] list-disc flex-col gap-1 pl-5 type-small text-ink-2">
-        <li>
-          <Trans>
-            It holds the server's agent, console and root certificate, and the drivers flagged for
-            Windows PE.
-          </Trans>
-        </li>
-        <li>
-          <Trans>
-            It uploads one boot image, within a day. Download it again for the next build.
-          </Trans>
-        </li>
-      </ul>
 
       {download.busy ? (
         <ProgressBar label={<Trans>Putting the builder together</Trans>} />
@@ -75,9 +61,7 @@ export function BuilderPanel() {
       {reason === null ? null : <Notice tone="fail">{reason}</Notice>}
       {saved ? (
         <Notice>
-          <Trans>
-            Saved as {builderFileName}. This page shows the boot image when the builder uploads it.
-          </Trans>
+          <Trans>Saved as {builderFileName}.</Trans>
         </Notice>
       ) : null}
 
@@ -88,8 +72,8 @@ export function BuilderPanel() {
         confirmLabel={<Trans>Confirm and download</Trans>}
         reason={
           <Trans>
-            The boot image the builder makes runs as SYSTEM on every machine that netboots, so
-            downloading it needs your password again.
+            The boot image runs as SYSTEM on every machine that netboots. Confirm with your
+            password.
           </Trans>
         }
       />

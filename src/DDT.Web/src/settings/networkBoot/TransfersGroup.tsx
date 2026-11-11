@@ -20,9 +20,7 @@ export function TransfersGroup({ form }: { form: PxeForm }) {
         label={<Trans>Answer as ProxyDHCP</Trans>}
         hint={
           <Trans>
-            DDT tells a netbooting machine its boot file, while the site's own DHCP server keeps
-            handing out the addresses. Turn it off where every site's DHCP server names DDT and the
-            boot file itself; DDT then listens on neither UDP 67 nor 4011.
+            Turn it off only where every DHCP server names DDT and the boot file itself.
           </Trans>
         }
       />
@@ -31,13 +29,7 @@ export function TransfersGroup({ form }: { form: PxeForm }) {
         field="leaveDhcpPort"
         canChange
         label={<Trans>Leave UDP 67 to a DHCP server on this computer</Trans>}
-        hint={
-          <Trans>
-            DDT then answers on UDP 4011 alone, and machines find it there once that DHCP server
-            sends option 60, PXEClient. Where Microsoft's DHCP Server is installed, DDT does this by
-            itself.
-          </Trans>
-        }
+        hint={<Trans>That DHCP server then has to send option 60, PXEClient.</Trans>}
       />
       <SettingSwitch
         form={form}
@@ -56,13 +48,7 @@ export function TransfersGroup({ form }: { form: PxeForm }) {
         field="tftpSinglePort"
         canChange
         label={<Trans>Answer TFTP from port 69</Trans>}
-        hint={
-          <Trans>
-            Turn it on when the log shows a read request arriving but the machine never receives
-            data: a stateful firewall is dropping replies from a fresh port. Replies then leave by
-            the route back to the machine, which has to go through a served interface.
-          </Trans>
-        }
+        hint={<Trans>For a stateful firewall that drops replies from a fresh port.</Trans>}
       />
       <div className="flex flex-wrap gap-4">
         <SettingNumber
@@ -70,13 +56,7 @@ export function TransfersGroup({ form }: { form: PxeForm }) {
           field="tftpMaxWindowSize"
           canChange
           label={<Trans>Largest TFTP window</Trans>}
-          hint={
-            <Trans>
-              The most blocks DDT sends before the machine acknowledges them, whatever the boot
-              image asks for; 1 to 64. 16 was reliable in tests; lower it to 8 or 4 where a link
-              loses packets.
-            </Trans>
-          }
+          hint={<Trans>1 to 64. Lower it to 8 or 4 where a link loses packets.</Trans>}
           minValue={1}
           maxValue={64}
         />
@@ -94,12 +74,7 @@ export function TransfersGroup({ form }: { form: PxeForm }) {
         field="authorisedRelayAgents"
         canChange
         label={<Trans>Authorized relay agents</Trans>}
-        hint={
-          <Trans>
-            One IPv4 address per line. DDT answers a request a DHCP relay forwards from another site
-            only when that relay is listed here.
-          </Trans>
-        }
+        hint={<Trans>One IPv4 address per line.</Trans>}
       />
     </SettingsGroup>
   );

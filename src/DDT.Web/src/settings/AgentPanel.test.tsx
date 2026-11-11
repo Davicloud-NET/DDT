@@ -60,11 +60,10 @@ describe("AgentPanel", () => {
       { tab: "agent" },
     );
 
+    expect(await screen.findByText("The agent in their boot image")).toBeInTheDocument();
     expect(
-      await screen.findByText("The agent in their boot image, since none was uploaded"),
+      screen.getByText(/The agent runs as SYSTEM on every machine that netboots/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/runs as SYSTEM on every machine that netboots/)).toBeInTheDocument();
-    expect(screen.getByText(/does not have to be built again/)).toBeInTheDocument();
 
     await choose(agentFile());
     const confirm = await screen.findByRole("dialog", {
@@ -77,9 +76,7 @@ describe("AgentPanel", () => {
     await typePassword();
 
     expect(
-      await screen.findByText(
-        `Uploaded. Machines that netboot from now on run the agent with SHA-256 ${sha256}.`,
-      ),
+      await screen.findByText("Uploaded. Machines that netboot from now on run it."),
     ).toBeInTheDocument();
     expect(screen.getByText("The agent uploaded here")).toBeInTheDocument();
     expect(screen.getByText("now by admin")).toBeInTheDocument();
@@ -173,9 +170,7 @@ describe("AgentPanel", () => {
       { tab: "agent" },
     );
 
-    expect(
-      await screen.findByText("The agent this server came with, since none was uploaded"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("The agent this server came with")).toBeInTheDocument();
     expect(screen.getByText("0.4.0")).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Remove the uploaded agent" }),
@@ -205,7 +200,7 @@ describe("AgentPanel", () => {
 
     expect(
       await screen.findByText(
-        "This server came with agent 0.4.0, which is newer than the uploaded one. Remove the upload, and machines run the server's own.",
+        "This server came with agent 0.4.0, which is newer than the uploaded one.",
       ),
     ).toBeInTheDocument();
 
@@ -213,12 +208,8 @@ describe("AgentPanel", () => {
     const confirm = await screen.findByRole("dialog", { name: "Remove the uploaded agent?" });
     fireEvent.click(within(confirm).getByRole("button", { name: "Remove the uploaded agent" }));
 
-    expect(
-      await screen.findByText("The agent this server came with, since none was uploaded"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Removed. Machines that netboot from now on no longer get that agent."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("The agent this server came with")).toBeInTheDocument();
+    expect(screen.getByText("Removed.")).toBeInTheDocument();
     expect(sent(requests, "DELETE", "/api/settings/agent/binary")).toHaveLength(1);
     expect(reads(requests, "/api/settings/agent")).toBe(1);
 
@@ -270,9 +261,7 @@ describe("ConsolePanel", () => {
       { tab: "agent" },
     );
 
-    expect(
-      await screen.findByText("The console in their boot image, since none was uploaded"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("The console in their boot image")).toBeInTheDocument();
 
     await choose(consoleZip(), "Upload the console");
     fireEvent.click(
@@ -287,9 +276,7 @@ describe("ConsolePanel", () => {
     }
 
     expect(
-      await screen.findByText(
-        `Uploaded. Machines that netboot from now on show the console whose ddt-console.exe has SHA-256 ${consoleSha256}.`,
-      ),
+      await screen.findByText("Uploaded. Machines that netboot from now on show it."),
     ).toBeInTheDocument();
     expect(screen.getByText("The console uploaded here")).toBeInTheDocument();
     expect(screen.getByText(consoleSha256)).toBeInTheDocument();

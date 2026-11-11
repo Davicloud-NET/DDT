@@ -11,11 +11,10 @@ namespace DDT.Contracts.Sequences;
 // sequence with the lowest version it needs, so an older agent still gets the sequences it can run.
 public sealed record SequenceDefinition(int Version, IReadOnlyList<SequenceStep> Steps)
 {
-    // Version 2 adds WriteRawImageStep and WriteCloudInitSeedStep. Version 3 makes the steps a tree (group, if,
-    // repeat). It also adds Set variable, Pause, When, Shares, RunAs, a join's Account, Variables, Inputs and the
-    // operators after Contains. Version 4 moves raw disk images and their seed to the LinuxBoot phase and adds shell
-    // scripts. Version 5 adds the Linux phase, the installed Linux.
-    public const int CurrentVersion = 5;
+    // 2: raw disk image and seed. 3: the tree (group, if, repeat), Set variable, Pause, When, Shares, RunAs, a join's
+    // Account, Variables, Inputs, the operators after Contains. 4: raw images and seeds in LinuxBoot, shell scripts.
+    // 5: the Linux phase. 6: Install applications and the Applications input.
+    public const int CurrentVersion = 6;
 
     // Null is none. Left out of the JSON while unset, so a document without them reads and writes as before.
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

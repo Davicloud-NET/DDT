@@ -62,7 +62,11 @@ export function InputFields({
       />
       <InputKindSetting {...part} />
       {listed ? <InputChoices {...part} /> : null}
-      {input.kind === "Account" ? <AccountInputFields {...part} /> : <InputDefault {...part} />}
+      {input.kind === "Account" ? (
+        <AccountInputFields {...part} />
+      ) : input.kind === "Applications" ? null : (
+        <InputDefault {...part} />
+      )}
       {input.kind === "Text" ? <MaxLengthSetting {...part} /> : null}
       <InputAskSettings {...part} />
     </>

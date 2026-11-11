@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Applications;
+using DDT.Contracts.Messages;
 using DDT.Server.Applications;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
@@ -62,12 +63,19 @@ public static class ApplicationBundleEndpoints
         };
     }
 
-    private static async Task<Results<NoContent, NotFound>> DeleteAsync(
+    private static async Task<Results<NoContent, NotFound, ProblemHttpResult>> DeleteAsync(
         Guid id,
         HttpContext context,
         ApplicationBundleEditor editor,
-        CancellationToken cancellationToken) =>
-        await editor.DeleteAsync(id, Actor.Of(context), cancellationToken).ConfigureAwait(false)
-            ? TypedResults.NoContent()
-            : TypedResults.NotFound();
+        CancellationToken cancellationToken)
+    {
+        (bool found, ServerMessage? refusal) = await editor.DeleteAsync(id, Actor.Of(context), cancellationToken).ConfigureAwait(false);
+
+        if (!found)
+        {
+            return TypedResults.NotFound();
+        }
+
+        return refusal is null ? TypedResults.NoContent() : ServerProblems.Problem(refusal, StatusCodes.Status409Conflict);
+    }
 }

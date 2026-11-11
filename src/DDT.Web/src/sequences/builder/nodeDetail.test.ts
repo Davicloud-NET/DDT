@@ -7,19 +7,26 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { leaf } from "@/test/trees";
 
-import type { ScriptInterpreter, SequencePhase } from "../sequences";
+import type {
+  InstallApplicationsStep,
+  ScriptInterpreter,
+  SequencePhase,
+  SequenceStep,
+} from "../sequences";
+import { newStep } from "../steps";
 import { nodeDetail } from "./nodeDetail";
 
+function line(node: SequenceStep): string {
+  return nodeDetail(node, {
+    catalog: { images: [], packages: [], applications: [], bundles: [], domainConfigured: null },
+    subjects: [],
+    findings: { problems: [], warnings: [] },
+    accounts: null,
+  }).text;
+}
+
 function scriptLine(interpreter: ScriptInterpreter, phase: SequencePhase): string {
-  return nodeDetail(
-    { ...leaf("a"), interpreter, phase },
-    {
-      catalog: { images: [], packages: [], domainConfigured: null },
-      subjects: [],
-      findings: { problems: [], warnings: [] },
-      accounts: null,
-    },
-  ).text;
+  return line({ ...leaf("a"), interpreter, phase });
 }
 
 describe("the line under a script's name on its card", () => {
@@ -41,5 +48,20 @@ describe("the line under a script's name on its card", () => {
     expect(scriptLine("Shell", "Linux")).toBe("Shell, im installierten Linux");
     expect(scriptLine("Shell", "LinuxBoot")).toBe("Shell, in der Linux-Startumgebung");
     expect(scriptLine("PowerShell", "Windows")).toBe("PowerShell, in Windows");
+  });
+});
+
+describe("the line under an Install applications step's name", () => {
+  const install = newStep("installApplications", "i") as InstallApplicationsStep;
+  const office = { id: "o", kind: "Bundle" as const };
+  const reader = { id: "r", kind: "Application" as const };
+
+  it("counts what it installs, and names the value that adds more", () => {
+    expect(line(install)).toBe("No applications chosen yet");
+    expect(line({ ...install, applications: [office] })).toBe("1 application or bundle");
+    expect(line({ ...install, applications: [office, reader], variable: "Extras" })).toBe(
+      "2 applications and bundles, then those Extras names",
+    );
+    expect(line({ ...install, variable: "Extras" })).toBe("The applications Extras names");
   });
 });

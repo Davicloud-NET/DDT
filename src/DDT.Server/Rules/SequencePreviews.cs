@@ -10,6 +10,7 @@ using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
 using DDT.Contracts.Values;
 using DDT.Core.Values;
+using DDT.Server.Applications;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Machines;
@@ -77,7 +78,7 @@ internal sealed class SequencePreviews(DdtDbContext database, SequenceResolver r
             definition = SequenceDocuments.Read(frozen);
         }
 
-        return definition;
+        return definition is null ? null : await ApplicationInputs.AskedAsync(database, definition, cancellationToken).ConfigureAwait(false);
     }
 
     // A run that started works with the values it started with.

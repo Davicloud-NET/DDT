@@ -60,7 +60,9 @@ function InputField(props: InputFieldProps) {
       return <TextInputField {...props} />;
     case "Choice":
       return <ChoiceField {...props} />;
+    // The server asks an Applications input as a MultiChoice of what it offers.
     case "MultiChoice":
+    case "Applications":
       return <MultiChoiceField {...props} />;
     case "YesNo":
       return <YesNoField {...props} />;

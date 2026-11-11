@@ -28,6 +28,7 @@ const kindLabels: Record<StepKind, MessageDescriptor> = {
   writeCloudInitSeed: msg`Write the cloud-init seed`,
   setVariable: msg`Set variable`,
   pause: msg`Pause`,
+  installApplications: msg`Install applications`,
   group: msg`Group`,
   if: msg`If`,
   repeat: msg`Repeat`,
@@ -279,6 +280,8 @@ export function newStep(
       return { ...common, kind, variable: "", value: "" };
     case "pause":
       return { ...common, kind, message: "", continueAfterMinutes: null };
+    case "installApplications":
+      return { ...common, kind, applications: [], variable: null };
     case "group":
       return { ...common, kind, steps: [] };
     case "if":

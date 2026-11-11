@@ -46,6 +46,7 @@ const kindFields: Record<StepKind, readonly string[]> = {
   writeCloudInitSeed: ["metaData", "userData", "networkConfig"],
   setVariable: ["variable", "value"],
   pause: ["message", "continueAfterMinutes"],
+  installApplications: ["applications", "variable"],
   group: [],
   if: [],
   repeat: ["maxTimes", "goOnAtLimit"],

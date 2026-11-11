@@ -20,11 +20,13 @@ interface OrderedPickerProps {
   addLabel: string;
   findings: Findings;
   onChange: (ids: string[]) => void;
+  // Shows the list without the keys that change it.
+  isReadOnly?: boolean;
 }
 
 // An ordered list of applications: picked from the library, moved up and down, and removed.
 export function OrderedPicker(props: OrderedPickerProps) {
-  const { label, field, ids, options, addLabel, findings, onChange } = props;
+  const { label, field, ids, options, addLabel, findings, onChange, isReadOnly = false } = props;
   const labelId = useId();
   const left = options.filter((option) => !ids.includes(option.id));
   const nameOf = (id: string) => options.find((option) => option.id === id)?.name ?? null;
@@ -52,6 +54,7 @@ export function OrderedPicker(props: OrderedPickerProps) {
               index={index}
               name={nameOf(id)}
               isLast={index === ids.length - 1}
+              isReadOnly={isReadOnly}
               errors={fieldFindings(findings, `${field}[${String(index)}]`).problems}
               onMove={(to) => {
                 move(index, to);
@@ -64,7 +67,7 @@ export function OrderedPicker(props: OrderedPickerProps) {
         </ol>
       ) : null}
       <FieldErrorText errors={fieldFindings(findings, field).problems} />
-      {left.length > 0 ? (
+      {left.length > 0 && !isReadOnly ? (
         <Select
           label={<span className="sr-only">{addLabel}</span>}
           placeholder={addLabel}

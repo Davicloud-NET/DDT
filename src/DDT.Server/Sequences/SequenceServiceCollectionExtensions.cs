@@ -18,6 +18,7 @@ public static class SequenceServiceCollectionExtensions
         services.AddScoped<MachineValues>();
         services.AddScoped<SequencePreviews>();
         services.AddScoped<SequenceEditor>();
+        services.AddScoped<SequenceUseUpdates>();
         services.AddScoped<RuleEditor>();
         services.AddScoped<MachineRoleEditor>();
 

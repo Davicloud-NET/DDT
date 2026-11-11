@@ -26,7 +26,7 @@ public sealed record ApplicationView(
     int TimeoutMinutes,
     // The run goes on if this fails.
     bool ContinueOnFailure,
-    // Bundles, then the applications that depend on it, each by name.
+    // Bundles, the applications that depend on it, then sequences, each by name.
     IReadOnlyList<ApplicationUse> UsedBy,
     long Revision,
     DateTimeOffset UpdatedUtc,

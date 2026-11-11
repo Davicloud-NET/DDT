@@ -61,6 +61,7 @@ describe("referencesTo", () => {
       { nodeId: id(3), field: "when.parts[1].parts[0]" },
     ]);
     expect(referencesTo(draft, "LastExitCode")).toEqual([{ nodeId: id(6), field: "until" }]);
+    expect(referencesTo(draft, "extras")).toEqual([{ nodeId: id(13), field: "variable" }]);
     expect(referencesTo(draft, "MemoryMegabytes")).toEqual([
       { nodeId: id(7), field: "test.parts[1]" },
       { nodeId: id(10), field: "when.parts[10]" },
@@ -84,6 +85,9 @@ describe("referencesTo", () => {
     expect(renameReferences(draft, "JoinAccount", "Joiner").steps.at(-2)).toMatchObject({
       account: { accountId: null, input: "Joiner" },
     });
+    expect(referencesTo(renameReferences(draft, "Extras", "More"), "More")).toEqual([
+      { nodeId: id(13), field: "variable" },
+    ]);
   });
 });
 

@@ -355,6 +355,10 @@ msgstr "In {seconds} seconds. To end the run and start over here, stop the resta
 msgid "Info"
 msgstr "Info"
 
+#: Texts/Say.cs
+msgid "Installing applications"
+msgstr "Installing applications"
+
 #: ViewModels/MachineFacts.cs
 msgid "IP address"
 msgstr "IP address"

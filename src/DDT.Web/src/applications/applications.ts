@@ -148,7 +148,7 @@ export function saveApplication(
   return apiPut<ApplicationView>(`/api/applications/${id}`, request);
 }
 
-// Refused with 409 while a bundle or another application names it, or a machine installs its files.
+// Refused with 409 while a bundle, another application or a sequence names it, or a machine installs its files.
 export function deleteApplication(id: string): Promise<void> {
   return apiDelete(`/api/applications/${id}`);
 }
@@ -166,6 +166,7 @@ export function saveBundle(
   return apiPut<ApplicationBundleView>(`/api/application-bundles/${id}`, request);
 }
 
+// Refused with 409 while a sequence names it.
 export function deleteBundle(id: string): Promise<void> {
   return apiDelete(`/api/application-bundles/${id}`);
 }

@@ -7,6 +7,7 @@ using DDT.Contracts.Machines;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
+using DDT.Server.Applications;
 using DDT.Server.Data;
 using DDT.Server.Machines;
 using DDT.Server.Rules;
@@ -33,7 +34,8 @@ public sealed class RunStarts(DdtDbContext database, RunQueries queries, RunValu
 
         if (problem is null)
         {
-            RunValueCheck check = await values.CheckAsync(machine, run, definition, snapshot.Deployment, cancellationToken).ConfigureAwait(false);
+            SequenceDefinition asked = await ApplicationInputs.AskedAsync(database, definition, cancellationToken).ConfigureAwait(false);
+            RunValueCheck check = await values.CheckAsync(machine, run, asked, snapshot.Deployment, cancellationToken).ConfigureAwait(false);
             InputDeclaration[] webOnly = [.. check.Missing.Where(input => input.AskAt == InputAsk.Web)];
 
             if (webOnly.Length == 0 && check.Missing.Count > 0)

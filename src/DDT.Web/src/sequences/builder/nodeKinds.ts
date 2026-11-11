@@ -17,6 +17,7 @@ export const workKinds: readonly StepKind[] = [
   "injectDrivers",
   "writeUnattend",
   "joinDomain",
+  "installApplications",
   "runScript",
   "reboot",
   "writeRawImage",

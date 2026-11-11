@@ -245,6 +245,9 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goe
             case PauseStep pause:
                 CheckPause(pause, place, problems);
                 break;
+            case InstallApplicationsStep install:
+                ApplicationStepRules.Check(install, names, problems);
+                break;
             default:
                 problems.Add("kind", ServerMessages.SequenceUnknownStep.With());
                 break;

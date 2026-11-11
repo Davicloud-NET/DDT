@@ -110,7 +110,7 @@ internal sealed class ApplicationEditor(
         return await SavedAsync(application, released, [.. affected], cancellationToken).ConfigureAwait(false);
     }
 
-    // Refused while a bundle or another application names it. Found is false if it doesn't exist.
+    // Refused while a bundle, another application or a sequence names it. Found is false if it doesn't exist.
     public async Task<(bool Found, ServerMessage? Refusal)> DeleteAsync(Guid id, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(actor);

@@ -6,6 +6,7 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
 using DDT.Core.Values;
+using DDT.Server.Applications;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Machines;
@@ -72,8 +73,9 @@ public sealed class SequenceChoices(
 
             // The console asks the inputs and the name after the pick, prefilled with what the machine, the rules and
             // the defaults give. A name typed there beats the one from the values.
-            ValueResolution preview = ValueResolver.Resolve(MachineValues.Sources(machine, resolution, definition, null, deployment));
-            choices.Add(Choice(sequence, definition, listing.References, machine, preview) with
+            SequenceDefinition asked = ApplicationInputs.Asked(definition, listing.References);
+            ValueResolution preview = ValueResolver.Resolve(MachineValues.Sources(machine, resolution, asked, null, deployment));
+            choices.Add(Choice(sequence, asked, listing.References, machine, preview) with
             {
                 Suggested = sequence.Id == suggested,
                 Environment = PhaseRules.StartsIn(definition),

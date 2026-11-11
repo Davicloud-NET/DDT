@@ -199,6 +199,11 @@ msgctxt "application.dependencyGone"
 msgid "{application} depends on an application that is no longer in the library."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.wingetNeedsSession"
+msgid "{application} installs with winget, which needs a Write answer file step."
+msgstr ""
+
 #: src/runs/RunPanel.tsx
 msgid "{assigned}. The machine has not started it yet."
 msgstr ""
@@ -312,6 +317,14 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "deployment.sequenceHasProblems"
 msgid "{count, plural, one {{sequence} has a problem, so it cannot run. Fix it on the sequence's page first.} other {{sequence} has # problems, so it cannot run. Fix them on the sequence's page first.}}"
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "{count, plural, one {# application or bundle, then those {variable} names} other {# applications and bundles, then those {variable} names}}"
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "{count, plural, one {# application or bundle} other {# applications and bundles}}"
 msgstr ""
 
 #: src/applications/bundles/BundlesTable.tsx
@@ -550,6 +563,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "image.rawForOtherArchitecture"
 msgid "{image} starts {architecture} machines, and DDT writes images for x64 machines. Choose an x64 image."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.inputApplicationGone"
+msgid "{input} offers an application or bundle that is no longer in the library."
 msgstr ""
 
 #: src/images/imageView.ts
@@ -1188,6 +1206,11 @@ msgstr ""
 msgid "{step} {percent}%"
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.stepApplicationGone"
+msgid "{step} names an application or bundle that is no longer in the library."
+msgstr ""
+
 #: src/runs/decisions.ts
 msgid "{test} does not hold for \"{actual}\""
 msgstr ""
@@ -1801,6 +1824,11 @@ msgid "A step in Windows needs the image applied before it on every path through
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.applicationsTooMany"
+msgid "A step installs at most {max} applications and bundles."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.stepEmpty"
 msgid "A step is empty."
 msgstr ""
@@ -2134,6 +2162,10 @@ msgstr ""
 msgid "Add an application"
 msgstr ""
 
+#: src/sequences/steps/InstallApplicationsFields.tsx
+msgid "Add an application or bundle"
+msgstr ""
+
 #: src/sequences/builder/variables/AddDeclarationKeys.tsx
 msgid "Add an input"
 msgstr ""
@@ -2389,6 +2421,11 @@ msgid "An application or bundle is already called {name}."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.inputNotForApplications"
+msgid "An Applications input {field, select, choices {takes no choices} default {takes no default} other {takes no longest answer}}."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.exitCodeMeansBoth"
 msgid "An exit code cannot mean both success and a restart: {codes}."
 msgstr ""
@@ -2581,6 +2618,14 @@ msgstr ""
 #: src/applications/list/ApplicationsTable.tsx
 #: src/audit/auditView.ts
 msgid "Applications"
+msgstr ""
+
+#: src/sequences/steps/InstallApplicationsFields.tsx
+msgid "Applications and bundles"
+msgstr ""
+
+#: src/sequences/builder/variables/InputKindSetting.tsx
+msgid "Applications from the library"
 msgstr ""
 
 #: src/images/import/MdtNotImported.tsx
@@ -3129,6 +3174,11 @@ msgstr ""
 msgid "Choose an answer."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.applicationEmpty"
+msgid "Choose an application or a bundle."
+msgstr ""
+
 #: src/sequences/steps/ApplyImageFields.tsx
 #: src/sequences/steps/WriteRawImageFields.tsx
 msgid "Choose an image"
@@ -3142,6 +3192,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.conditionOperator"
 msgid "Choose an operator."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.applicationsChoose"
+msgid "Choose applications or bundles, or a value that names them."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -5136,6 +5191,10 @@ msgstr ""
 msgid "Install a certificate from another root?"
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "Install applications"
+msgstr ""
+
 #: src/settings/certificate/NewRootDialog.tsx
 msgid "Install it anyway"
 msgstr ""
@@ -6250,6 +6309,10 @@ msgstr ""
 msgid "Names and addresses"
 msgstr ""
 
+#: src/sequences/steps/InstallApplicationsFields.tsx
+msgid "Names or ids, separated by semicolons. Installed after the list."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "namedValue.reserved"
 msgid "Names that start with ddt are DDT's own. Choose another name."
@@ -6408,6 +6471,10 @@ msgstr ""
 
 #: src/applications/ApplicationsTab.tsx
 msgid "No application matches"
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "No applications chosen yet"
 msgstr ""
 
 #: src/applications/ApplicationsTab.tsx
@@ -6964,6 +7031,11 @@ msgstr ""
 msgid "Off"
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.inputOffered"
+msgid "Offer 1 to {max} applications and bundles."
+msgstr ""
+
 #: src/settings/signIn/SingleSignOnSettings.tsx
 msgid "Offer single sign-on on the sign-in page"
 msgstr ""
@@ -7100,6 +7172,11 @@ msgstr ""
 
 #: src/tokens/TokensPage.tsx
 msgid "Only administrators see every token."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.inputOfferedOnlyApplications"
+msgid "Only an Applications input offers applications."
 msgstr ""
 
 #: src/settings/networkBoot/BootTargetCard.tsx
@@ -9541,6 +9618,10 @@ msgctxt "sequence.unattendBeforeImage"
 msgid "The answer file can be written only after the image is applied."
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "The applications {variable} names"
+msgstr ""
+
 #: src/applications/ApplicationsTab.tsx
 msgid "The applications could not be loaded."
 msgstr ""
@@ -11070,6 +11151,16 @@ msgid "This application is used by {users}. Take it out there first."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.applicationRepeated"
+msgid "This application or bundle is listed twice."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.bundleInUse"
+msgid "This bundle is used by {users}. Take it out there first."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.certificate.newRootUpload"
 msgid "This certificate does not come from DDT's root, which every boot image pins: build every boot image again with its root, and trust that root in the browsers that manage DDT."
 msgstr ""
@@ -11340,6 +11431,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "wim.noX64Image"
 msgid "This WIM holds no x64 Windows image."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.inputTickedNotOffered"
+msgid "Tick only applications and bundles the input offers."
 msgstr ""
 
 #: src/sequences/steps/WriteUnattendFields.tsx
@@ -11825,6 +11921,10 @@ msgstr ""
 
 #: src/conditions/builder/TestRow.tsx
 msgid "Value of condition {number}"
+msgstr ""
+
+#: src/sequences/steps/InstallApplicationsFields.tsx
+msgid "Value with more"
 msgstr ""
 
 #: src/roles/list/RolesTable.tsx

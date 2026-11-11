@@ -13,4 +13,7 @@ public enum InputKind
 
     // A user name and a password.
     Account,
+
+    // Version 6. A tick list of the applications and bundles it offers. The answer is their ids separated by semicolons.
+    Applications,
 }

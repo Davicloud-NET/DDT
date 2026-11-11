@@ -64,7 +64,6 @@ public sealed class SequenceKindsTests
     [Fact]
     public void NeedsVersion5OnlyForAStepInTheInstalledLinux()
     {
-        Assert.Equal(5, SequenceDefinition.CurrentVersion);
         Assert.Equal(5, Definition(WriteRawImage(), WriteSeed(), InLinux()).RequiredVersion());
         Assert.Equal(5, Definition(WriteRawImage(), WriteSeed(), If([Group(InLinux())])).RequiredVersion());
         Assert.Equal(4, Definition(Shell(), WriteRawImage(), WriteSeed(), Pause()).RequiredVersion());

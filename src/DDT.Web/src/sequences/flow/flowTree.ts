@@ -195,7 +195,8 @@ export function sameSlot(a: Slot, b: Slot): boolean {
 
 // The server's SequenceTree.RequiredVersion: the lowest agent version that runs the definition as written. It's 3 for
 // tree parts (containers, Set variable, Pause, when, shares, runAs, a join's account, variables, inputs, operators after
-// Contains) and for condition names an older agent reads as false, 4 for Linux and 5 for the installed Linux.
+// Contains) and for condition names an older agent reads as false, 4 for Linux, 5 for the installed Linux and 6 for
+// installing applications.
 export function requiredVersion(definition: {
   steps: readonly SequenceStep[];
   variables?: readonly VariableDeclaration[] | null;
@@ -203,6 +204,10 @@ export function requiredVersion(definition: {
 }): number {
   let version =
     (definition.variables ?? []).length > 0 || (definition.inputs ?? []).length > 0 ? 3 : 1;
+
+  if ((definition.inputs ?? []).some((input) => input.kind === "Applications")) {
+    version = 6;
+  }
 
   for (const { node } of walk(definition.steps)) {
     version = Math.max(version, minimumVersion(node));
@@ -221,6 +226,8 @@ export function requiredVersion(definition: {
 
 function minimumVersion(node: SequenceStep): number {
   switch (node.kind) {
+    case "installApplications":
+      return 6;
     case "writeRawImage":
     case "writeCloudInitSeed":
       return 4;

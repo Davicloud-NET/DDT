@@ -14,6 +14,7 @@ interface PickedRowProps {
   // Null for an application that is no longer in the library.
   name: string | null;
   isLast: boolean;
+  isReadOnly: boolean;
   errors: readonly string[];
   onMove: (to: number) => void;
   onRemove: () => void;
@@ -41,7 +42,8 @@ function RowKey(props: {
 }
 
 // One picked application with its place in the order.
-export function PickedRow({ index, name, isLast, errors, onMove, onRemove }: PickedRowProps) {
+export function PickedRow(props: PickedRowProps) {
+  const { index, name, isLast, isReadOnly, errors, onMove, onRemove } = props;
   const { t } = useLingui();
   const number = index + 1;
   const shown = name ?? t`Not in the library`;
@@ -53,27 +55,31 @@ export function PickedRow({ index, name, isLast, errors, onMove, onRemove }: Pic
         <span className={name === null ? "flex-1 truncate text-muted" : "flex-1 truncate text-ink"}>
           {shown}
         </span>
-        <RowKey
-          label={t`Move ${shown} up`}
-          isDisabled={index === 0}
-          onPress={() => {
-            onMove(index - 1);
-          }}
-        >
-          <IconArrowUp size={14} stroke={2} />
-        </RowKey>
-        <RowKey
-          label={t`Move ${shown} down`}
-          isDisabled={isLast}
-          onPress={() => {
-            onMove(index + 1);
-          }}
-        >
-          <IconArrowDown size={14} stroke={2} />
-        </RowKey>
-        <RowKey label={t`Remove ${shown}`} onPress={onRemove}>
-          <IconX size={14} stroke={2} />
-        </RowKey>
+        {isReadOnly ? null : (
+          <>
+            <RowKey
+              label={t`Move ${shown} up`}
+              isDisabled={index === 0}
+              onPress={() => {
+                onMove(index - 1);
+              }}
+            >
+              <IconArrowUp size={14} stroke={2} />
+            </RowKey>
+            <RowKey
+              label={t`Move ${shown} down`}
+              isDisabled={isLast}
+              onPress={() => {
+                onMove(index + 1);
+              }}
+            >
+              <IconArrowDown size={14} stroke={2} />
+            </RowKey>
+            <RowKey label={t`Remove ${shown}`} onPress={onRemove}>
+              <IconX size={14} stroke={2} />
+            </RowKey>
+          </>
+        )}
       </span>
       <FieldErrorText errors={errors} />
     </li>

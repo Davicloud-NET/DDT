@@ -274,6 +274,8 @@ internal sealed partial class SequenceNames
             CheckChoices(input, at, add);
         }
 
+        ApplicationInputRules.Check(input, at, add);
+
         if (input.MaxLength is < 1 or > SequenceValidator.MaxAnswerLength)
         {
             add($"{at}.maxLength", ServerMessages.SequenceInputMaxLength.With("max", SequenceValidator.MaxAnswerLength));

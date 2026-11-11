@@ -59,6 +59,7 @@ public static class SequenceChecks
         }
 
         problems.AddRange(SequenceAccountChecks.Check(definition, references));
+        SequenceApplicationChecks.Check(definition, references, problems, warnings);
 
         // Only rules and machine roles can give some names a value, and only the server knows those, so the validator
         // leaves them to it. A name that nothing gives a value is most likely a typo. But a rule added later may give

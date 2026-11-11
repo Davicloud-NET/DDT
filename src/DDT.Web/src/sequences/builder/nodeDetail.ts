@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 
 import type { AccountView } from "@/accounts/accounts";
 import { conditionSummary, legacyTree } from "@/conditions/conditions";
@@ -39,6 +39,21 @@ function accountName(accounts: readonly AccountView[] | null, reference: Account
   const name = accounts?.find((account) => account.id === reference.accountId)?.name ?? null;
 
   return name === null ? t`With a stored account` : t`With ${name}`;
+}
+
+function applicationsDetail(count: number, variable: string | null): string {
+  if (variable === null) {
+    return count === 0
+      ? t`No applications chosen yet`
+      : plural(count, { one: "# application or bundle", other: "# applications and bundles" });
+  }
+
+  return count === 0
+    ? t`The applications ${variable} names`
+    : plural(count, {
+        one: `# application or bundle, then those ${variable} names`,
+        other: `# applications and bundles, then those ${variable} names`,
+      });
 }
 
 export function nodeDetail(
@@ -106,6 +121,8 @@ export function nodeDetail(
       return plain(
         node.message.trim() === "" ? t`Waits until someone lets the run go on` : node.message,
       );
+    case "installApplications":
+      return plain(applicationsDetail(node.applications.length, node.variable));
     case "if":
       return plain(conditionSummary(node.test, subjects));
     case "group":

@@ -8,7 +8,7 @@ using DDT.Server.Packages;
 namespace DDT.Server.Applications;
 
 // The whole library as read at one moment: applications by id, bundles, the files packages of applications by id, and
-// what uses each application.
+// what uses each application and bundle.
 public sealed record ApplicationRows(
     IReadOnlyDictionary<Guid, Application> Applications,
     IReadOnlyList<ApplicationBundle> Bundles,

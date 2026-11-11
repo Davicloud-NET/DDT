@@ -33,6 +33,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "account.passwordInDirectory",
     message: "This account is managed by the directory. Change the password there.",
   }),
+  "application.bundleInUse": msg({
+    context: "application.bundleInUse",
+    message: "This bundle is used by {users}. Take it out there first.",
+  }),
   "application.bundleMembers": msg({
     context: "application.bundleMembers",
     message: "A bundle holds 1 to {max} applications.",
@@ -1169,6 +1173,22 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.accountPasswordUnreadable",
     message: "The password of the account {account} no longer decrypts with this server's key ring. Enter it again on the Accounts page.",
   }),
+  "sequence.applicationEmpty": msg({
+    context: "sequence.applicationEmpty",
+    message: "Choose an application or a bundle.",
+  }),
+  "sequence.applicationRepeated": msg({
+    context: "sequence.applicationRepeated",
+    message: "This application or bundle is listed twice.",
+  }),
+  "sequence.applicationsChoose": msg({
+    context: "sequence.applicationsChoose",
+    message: "Choose applications or bundles, or a value that names them.",
+  }),
+  "sequence.applicationsTooMany": msg({
+    context: "sequence.applicationsTooMany",
+    message: "A step installs at most {max} applications and bundles.",
+  }),
   "sequence.cannotGoOn": msg({
     context: "sequence.cannotGoOn",
     message: "The sequence cannot go on when {activity, select, partition {partitioning the disk} image {applying the image} other {writing the raw disk image}} fails.",
@@ -1277,6 +1297,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.imageIsWindows",
     message: "{image} is a Windows image, which an Apply image step applies. Choose a raw disk image.",
   }),
+  "sequence.inputApplicationGone": msg({
+    context: "sequence.inputApplicationGone",
+    message: "{input} offers an application or bundle that is no longer in the library.",
+  }),
   "sequence.inputAskAt": msg({
     context: "sequence.inputAskAt",
     message: "Choose where the input is asked: on the web, at the machine, or both.",
@@ -1312,6 +1336,22 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.inputMaxLength": msg({
     context: "sequence.inputMaxLength",
     message: "The longest answer can have 1 to {max} characters.",
+  }),
+  "sequence.inputNotForApplications": msg({
+    context: "sequence.inputNotForApplications",
+    message: "An Applications input {field, select, choices {takes no choices} default {takes no default} other {takes no longest answer}}.",
+  }),
+  "sequence.inputOffered": msg({
+    context: "sequence.inputOffered",
+    message: "Offer 1 to {max} applications and bundles.",
+  }),
+  "sequence.inputOfferedOnlyApplications": msg({
+    context: "sequence.inputOfferedOnlyApplications",
+    message: "Only an Applications input offers applications.",
+  }),
+  "sequence.inputTickedNotOffered": msg({
+    context: "sequence.inputTickedNotOffered",
+    message: "Tick only applications and bundles the input offers.",
   }),
   "sequence.keyboard": msg({
     context: "sequence.keyboard",
@@ -1553,6 +1593,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.shellRebootExitCodes",
     message: "A shell script ends with an exit code from 0 to 255. For a restart use 194, which is what a shell makes of exit 3010.",
   }),
+  "sequence.stepApplicationGone": msg({
+    context: "sequence.stepApplicationGone",
+    message: "{step} names an application or bundle that is no longer in the library.",
+  }),
   "sequence.stepCount": msg({
     context: "sequence.stepCount",
     message: "A sequence needs 1 to {max} steps.",
@@ -1704,6 +1748,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.windowsWithRawImage": msg({
     context: "sequence.windowsWithRawImage",
     message: "A sequence either installs Windows or writes a raw disk image. This step belongs to installing Windows.",
+  }),
+  "sequence.wingetNeedsSession": msg({
+    context: "sequence.wingetNeedsSession",
+    message: "{application} installs with winget, which needs a Write answer file step.",
   }),
   "settings.agent.configured": msg({
     context: "settings.agent.configured",

@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using DDT.Contracts;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Applications;
 using DDT.Contracts.Sequences;
 using Xunit;
 
@@ -48,6 +49,15 @@ public sealed class TreeWireFormatTests
         ["pause"] = (
             new PauseStep { Id = s_id, Name = "Node", Message = "Check the BIOS.", ContinueAfterMinutes = 30 },
             $$"""{"kind":"pause","message":"Check the BIOS.","continueAfterMinutes":30,{{Base}}}"""),
+        ["installApplications"] = (
+            new InstallApplicationsStep
+            {
+                Id = s_id,
+                Name = "Node",
+                Applications = [new ApplicationReference(s_other, ApplicationReferenceKind.Bundle), new ApplicationReference(Guid.Parse(Inner), ApplicationReferenceKind.Application)],
+                Variable = "Extras",
+            },
+            $$"""{"kind":"installApplications","applications":[{"id":"{{Other}}","kind":"Bundle"},{"id":"{{Inner}}","kind":"Application"}],"variable":"Extras",{{Base}}}"""),
         ["when and shares"] = (
             new RebootStep
             {

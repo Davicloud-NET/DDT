@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Applications;
+using DDT.Contracts.Messages;
 using DDT.Core.Applications;
 using DDT.Server.Data;
 using DDT.Server.Endpoints;
@@ -69,12 +70,12 @@ internal sealed class ApplicationBundleEditor(
             return EditOutcome<ApplicationBundleView>.NotFound;
         }
 
+        ApplicationRows rows = await views.RowsAsync(cancellationToken).ConfigureAwait(false);
+
         if (request.Revision != bundle.Revision)
         {
-            return EditOutcome<ApplicationBundleView>.Newer(ApplicationViews.View(bundle));
+            return EditOutcome<ApplicationBundleView>.Newer(ApplicationViews.View(bundle, rows));
         }
-
-        ApplicationRows rows = await views.RowsAsync(cancellationToken).ConfigureAwait(false);
 
         if (ApplicationLibraryChecks.Check(request, id, rows) is { Count: > 0 } problems)
         {
@@ -85,7 +86,7 @@ internal sealed class ApplicationBundleEditor(
 
         if (changes.Count == 0)
         {
-            return EditOutcome<ApplicationBundleView>.Done(ApplicationViews.View(bundle));
+            return EditOutcome<ApplicationBundleView>.Done(ApplicationViews.View(bundle, rows));
         }
 
         IReadOnlyList<Guid> before = ApplicationColumns.ReadIds(bundle.Members);
@@ -107,8 +108,8 @@ internal sealed class ApplicationBundleEditor(
         return await SavedAsync(bundle, [.. affected], cancellationToken).ConfigureAwait(false);
     }
 
-    // Found is false if the bundle doesn't exist. Sequences name bundles once a step can; then their use refuses this.
-    public async Task<bool> DeleteAsync(Guid id, Actor actor, CancellationToken cancellationToken)
+    // Refused while a sequence names it. Found is false if the bundle doesn't exist.
+    public async Task<(bool Found, ServerMessage? Refusal)> DeleteAsync(Guid id, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(actor);
 
@@ -118,7 +119,14 @@ internal sealed class ApplicationBundleEditor(
 
         if (bundle is null)
         {
-            return false;
+            return (false, null);
+        }
+
+        ApplicationRows rows = await views.RowsAsync(cancellationToken).ConfigureAwait(false);
+
+        if (rows.UsesOf(id) is { Count: > 0 } uses)
+        {
+            return (true, ServerMessages.ApplicationBundleInUse.With("users", string.Join(", ", uses.Select(use => use.Name))));
         }
 
         database.ApplicationBundles.Remove(bundle);
@@ -133,7 +141,7 @@ internal sealed class ApplicationBundleEditor(
         live.ApplicationBundlesRemoved([id]);
         await views.PushAsync(live, ApplicationColumns.ReadIds(bundle.Members), cancellationToken).ConfigureAwait(false);
 
-        return true;
+        return (true, null);
     }
 
     private static void Apply(ApplicationBundle bundle, SaveApplicationBundleRequest request, Actor actor, DateTimeOffset now)
@@ -184,10 +192,12 @@ internal sealed class ApplicationBundleEditor(
             database.ChangeTracker.Clear();
             ApplicationBundle? current = await database.ApplicationBundles.AsNoTracking().FirstOrDefaultAsync(b => b.Id == bundle.Id, cancellationToken).ConfigureAwait(false);
 
-            return current is null ? EditOutcome<ApplicationBundleView>.NotFound : EditOutcome<ApplicationBundleView>.Newer(ApplicationViews.View(current));
+            return current is null
+                ? EditOutcome<ApplicationBundleView>.NotFound
+                : EditOutcome<ApplicationBundleView>.Newer(await views.ViewAsync(current, cancellationToken).ConfigureAwait(false));
         }
 
-        ApplicationBundleView view = ApplicationViews.View(bundle);
+        ApplicationBundleView view = await views.ViewAsync(bundle, cancellationToken).ConfigureAwait(false);
         live.ApplicationBundleChanged(view);
         await views.PushAsync(live, affected, cancellationToken).ConfigureAwait(false);
 

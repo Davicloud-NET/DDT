@@ -8,6 +8,7 @@ using DDT.Contracts.Sequences;
 using DDT.Contracts.Values;
 using DDT.Core.Unattend;
 using DDT.Core.Values;
+using DDT.Server.Applications;
 using DDT.Server.Data;
 using DDT.Server.Machines;
 using DDT.Server.Rules;
@@ -52,7 +53,8 @@ public sealed class NewRuns(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        (Machine machine, SequenceDefinition definition, bool atMachine) = (request.Machine, request.Sequence.Definition, request.Giver.AtMachine);
+        (Machine machine, bool atMachine) = (request.Machine, request.Giver.AtMachine);
+        SequenceDefinition definition = ApplicationInputs.Asked(request.Sequence.Definition, request.Sequence.References);
         InputAsk only = atMachine ? InputAsk.Machine : InputAsk.Web;
         List<AnswerProblem> problems = [.. RunValues.Check(definition, request.Answers, input => input.AskAt == only || input.AskAt == InputAsk.Both)];
         IReadOnlyList<RunAnswer> kept = problems.Count == 0

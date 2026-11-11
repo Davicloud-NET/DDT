@@ -6,6 +6,7 @@ using DDT.Contracts.Packages;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 using DDT.Server.Accounts;
+using DDT.Server.Applications;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
@@ -31,6 +32,8 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
         DeploymentOptions deployment = settings.Current.Deployment;
         List<string> ruleValues = await database.Rules.AsNoTracking().Select(rule => rule.Values).ToListAsync(cancellationToken).ConfigureAwait(false);
         List<string> roleValues = await database.MachineRoles.AsNoTracking().Select(role => role.Values).ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<Application> applications = await database.Applications.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<ApplicationBundle> bundles = await database.ApplicationBundles.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
 
         // A disabled rule counts too. It names the value on purpose, and it may be enabled again.
         HashSet<string> valueNames = new(
@@ -45,6 +48,8 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
         {
             Accounts = await accounts.FactsAsync(cancellationToken).ConfigureAwait(false),
             ValueNames = valueNames,
+            Applications = applications.ToDictionary(a => a.Id),
+            ApplicationBundles = bundles.ToDictionary(b => b.Id),
         };
     }
 

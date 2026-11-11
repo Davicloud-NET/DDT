@@ -5,6 +5,7 @@
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
+using DDT.Server.Applications;
 using DDT.Server.Data;
 using DDT.Server.Machines;
 using DDT.Server.Sequences;
@@ -147,7 +148,8 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
             return null;
         }
 
-        RunValueCheck check = await values.CheckAsync(machine, run, definition, settings.Current.Deployment, cancellationToken).ConfigureAwait(false);
+        SequenceDefinition asked = await ApplicationInputs.AskedAsync(database, definition, cancellationToken).ConfigureAwait(false);
+        RunValueCheck check = await values.CheckAsync(machine, run, asked, settings.Current.Deployment, cancellationToken).ConfigureAwait(false);
 
         return check.Missing.Any(input => input.AskAt is InputAsk.Machine or InputAsk.Both) ? check.AskedAtMachine : null;
     }

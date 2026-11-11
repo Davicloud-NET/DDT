@@ -109,7 +109,8 @@ export function initialDrafts(
         input.name,
         {
           value: input.kind === "Account" ? "" : start,
-          values: input.kind === "MultiChoice" ? listOf(start) : [],
+          values:
+            input.kind === "MultiChoice" || input.kind === "Applications" ? listOf(start) : [],
           userName: input.kind === "Account" ? start : "",
           password: "",
         },
@@ -137,6 +138,7 @@ export function prefilledBy(
 function empty(input: AskedInput, draft: AnswerDraft | undefined): boolean {
   switch (input.kind) {
     case "MultiChoice":
+    case "Applications":
       return (draft?.values ?? []).length === 0;
     case "Account":
       return (draft?.userName.trim() ?? "") === "" || (draft?.password ?? "") === "";
@@ -154,6 +156,7 @@ export function answersOf(inputs: readonly AskedInput[], drafts: AnswerDrafts): 
 
       switch (input.kind) {
         case "MultiChoice":
+        case "Applications":
           return { name: input.name, value: (draft?.values ?? []).join(";") };
         case "Account":
           return {
@@ -180,7 +183,7 @@ export function missingAnswers(
         input.name,
         input.kind === "Account"
           ? t`Enter the user name and the password.`
-          : input.kind === "Choice" || input.kind === "MultiChoice" || input.kind === "YesNo"
+          : input.kind !== "Text"
             ? t`Choose an answer.`
             : t`Enter an answer.`,
       ]),

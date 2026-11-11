@@ -36,6 +36,8 @@ public static class QuestionScreens
                 state?.Machine.KeyboardLayout,
                 answer),
             PauseQuestion pause => new PauseViewModel(l, id, pause, state, answer),
+            StartOverOfferQuestion offer => new StartOverOfferViewModel(l, id, offer, answer),
+            EndRunQuestion endRun => new EndRunViewModel(l, id, endRun, answer),
             _ => null,
         };
     }

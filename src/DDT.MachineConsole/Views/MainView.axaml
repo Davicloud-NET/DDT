@@ -129,6 +129,12 @@
           <DataTemplate DataType="vm:PauseViewModel">
             <v:PauseView />
           </DataTemplate>
+          <DataTemplate DataType="vm:StartOverOfferViewModel">
+            <v:StartOverOfferView />
+          </DataTemplate>
+          <DataTemplate DataType="vm:EndRunViewModel">
+            <v:EndRunView />
+          </DataTemplate>
         </TransitioningContentControl.DataTemplates>
       </TransitioningContentControl>
 

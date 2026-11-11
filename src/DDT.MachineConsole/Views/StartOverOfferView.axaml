@@ -1,0 +1,27 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- The countdown to the restart into the installed Linux, with the one way to stop it. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             xmlns:c="using:DDT.MachineConsole.Controls"
+             x:Class="DDT.MachineConsole.Views.StartOverOfferView"
+             x:DataType="vm:StartOverOfferViewModel">
+  <StackPanel Spacing="22" VerticalAlignment="Center">
+    <Border Classes="panel" Padding="28,24,28,28">
+      <StackPanel Spacing="10">
+        <TextBlock Name="Title" Classes="headline" Text="{Binding Title}" />
+        <TextBlock Classes="lead ink2" Text="{Binding Text}" />
+      </StackPanel>
+    </Border>
+
+    <Button Name="Submit" Classes="primary" IsDefault="True" HorizontalAlignment="Right" Command="{Binding SubmitCommand}">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <c:KeyCap Key="Enter" />
+        <TextBlock Text="{Binding SubmitLabel}" VerticalAlignment="Center" />
+      </StackPanel>
+    </Button>
+  </StackPanel>
+</UserControl>

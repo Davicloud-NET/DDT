@@ -57,7 +57,12 @@ public sealed class WindowsStepRunners : IStepRunners
 
     private List<IApplicationKindInstaller> Kinds()
     {
-        List<IApplicationKindInstaller> kinds = [new CommandApplicationInstaller(Tools, Log), new MsixApplicationInstaller(Tools, Log)];
+        // A dry run takes DISM's word, whatever this computer has provisioned.
+        List<IApplicationKindInstaller> kinds =
+        [
+            new CommandApplicationInstaller(Tools, Log),
+            new MsixApplicationInstaller(Tools, Options.DryRun ? null : new RegistryProvisionedPackages(), Log, TimeProvider),
+        ];
 
         if (DeployAccount is { } account)
         {

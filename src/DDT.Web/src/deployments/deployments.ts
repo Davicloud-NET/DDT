@@ -95,7 +95,7 @@ export interface DeploymentStepView {
 }
 
 // What a run downloads: the image it applies, or a package of drivers or files.
-export type ArtifactKind = "Image" | "Drivers" | "Files";
+export type ArtifactKind = "Image" | "Drivers" | "Files" | "Application";
 
 // A file the run downloads, frozen when the run was assigned. sourceId is the image or package it came from,
 // which may have been deleted since.

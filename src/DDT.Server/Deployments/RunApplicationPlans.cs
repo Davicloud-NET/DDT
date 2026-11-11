@@ -95,7 +95,8 @@ public static class RunApplicationPlans
             application.ContinueOnFailure,
             application.WingetId,
             application.WingetVersion,
-            files is null ? null : new AgentApplicationFiles(files.Sha256, files.SizeBytes, files.ExpandedBytes, files.Name));
+            files is null ? null : new AgentApplicationFiles(files.Sha256, files.SizeBytes, files.ExpandedBytes, files.Name),
+            ApplicationColumns.ReadIds(application.DependsOn));
     }
 
     public static IReadOnlyList<AgentApplication> Read(string? applications) =>

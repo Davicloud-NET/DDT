@@ -46,6 +46,8 @@ public sealed class RunApplicationPlanTests(DdtApplication application) : IClass
         Assert.Equal([0], first.SuccessExitCodes);
         Assert.Equal([3010], first.RestartExitCodes);
         Assert.Equal(new AgentApplicationFiles(files.Sha256, files.SizeBytes, files.ExpandedBytes, files.Name), first.Files);
+        Assert.Equal([0, 0, 1, 0], plan.Select(planned => planned.DependsOn.Count));
+        Assert.Equal(runtime.Id, Assert.Single(plan[2].DependsOn));
 
         List<DeploymentArtifact> artifacts = await application.ApplicationArtifactsAsync(run.Id);
         Assert.Equal(

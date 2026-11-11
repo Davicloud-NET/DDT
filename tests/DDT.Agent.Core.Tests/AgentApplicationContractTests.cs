@@ -16,6 +16,7 @@ public sealed class AgentApplicationContractTests
     private const string RunId = "0197a3c0-0000-7000-8000-00000000000b";
     private const string StepId = "0197a3c0-0000-7000-8000-00000000000c";
     private const string ApplicationId = "0197a3c0-0000-7000-8000-00000000000d";
+    private const string DependencyId = "0197a3c0-0000-7000-8000-00000000000e";
 
     private static AgentApplication Application(ApplicationDetection? detection) => new(
         Guid.Parse(ApplicationId),
@@ -29,7 +30,8 @@ public sealed class AgentApplicationContractTests
         false,
         null,
         null,
-        new AgentApplicationFiles(new string('a', 64), 1500, 4000, "7z.zip"));
+        new AgentApplicationFiles(new string('a', 64), 1500, 4000, "7z.zip"),
+        [Guid.Parse(DependencyId)]);
 
     [Fact]
     public void NamesTheRouteOfAStepsApplications()
@@ -48,7 +50,7 @@ public sealed class AgentApplicationContractTests
 
         Assert.Equal(
             $$$"""
-            {"applications":[{"id":"{{{ApplicationId}}}","name":"7-Zip","kind":"Command","command":"msiexec /i 7z.msi /qn","successExitCodes":[0],"restartExitCodes":[3010,1641],"detection":null,"timeoutMinutes":30,"continueOnFailure":false,"wingetId":null,"wingetVersion":null,"files":{"sha256":"{{{new string('a', 64)}}}","sizeBytes":1500,"expandedBytes":4000,"name":"7z.zip"}}]}
+            {"applications":[{"id":"{{{ApplicationId}}}","name":"7-Zip","kind":"Command","command":"msiexec /i 7z.msi /qn","successExitCodes":[0],"restartExitCodes":[3010,1641],"detection":null,"timeoutMinutes":30,"continueOnFailure":false,"wingetId":null,"wingetVersion":null,"files":{"sha256":"{{{new string('a', 64)}}}","sizeBytes":1500,"expandedBytes":4000,"name":"7z.zip"},"dependsOn":["{{{DependencyId}}}"]}]}
             """,
             json);
         Assert.Equal(json, JsonSerializer.Serialize(JsonSerializer.Deserialize(json, AgentJsonContext.Default.AgentStepApplications)!, AgentJsonContext.Default.AgentStepApplications));
@@ -85,10 +87,11 @@ public sealed class AgentApplicationContractTests
     public void ReadsAnApplicationWithoutFiles()
     {
         AgentStepApplications? read = JsonSerializer.Deserialize(
-            $$"""{"applications":[{"id":"{{ApplicationId}}","name":"Terminal","kind":"Winget","command":null,"successExitCodes":[0],"restartExitCodes":[],"detection":null,"timeoutMinutes":60,"continueOnFailure":true,"wingetId":"Microsoft.WindowsTerminal","wingetVersion":null,"files":null}]}""",
+            $$"""{"applications":[{"id":"{{ApplicationId}}","name":"Terminal","kind":"Winget","command":null,"successExitCodes":[0],"restartExitCodes":[],"detection":null,"timeoutMinutes":60,"continueOnFailure":true,"wingetId":"Microsoft.WindowsTerminal","wingetVersion":null,"files":null,"dependsOn":[]}]}""",
             AgentJsonContext.Default.AgentStepApplications);
 
         AgentApplication terminal = Assert.Single(read?.Applications ?? []);
         Assert.Equal((ApplicationKind.Winget, "Microsoft.WindowsTerminal", (AgentApplicationFiles?)null, true), (terminal.Kind, terminal.WingetId, terminal.Files, terminal.ContinueOnFailure));
+        Assert.Empty(terminal.DependsOn);
     }
 }

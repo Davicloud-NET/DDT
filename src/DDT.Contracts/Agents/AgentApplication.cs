@@ -6,7 +6,8 @@ using DDT.Contracts.Applications;
 
 namespace DDT.Contracts.Agents;
 
-// An application as frozen into a run, in install order. Files is null for one without files, such as winget.
+// An application as frozen into a run, in install order. Files is null for one without files, such as winget. DependsOn
+// names applications earlier in the same list.
 public sealed record AgentApplication(
     Guid Id,
     string Name,
@@ -19,4 +20,5 @@ public sealed record AgentApplication(
     bool ContinueOnFailure,
     string? WingetId,
     string? WingetVersion,
-    AgentApplicationFiles? Files);
+    AgentApplicationFiles? Files,
+    IReadOnlyList<Guid> DependsOn);

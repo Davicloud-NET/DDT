@@ -6,8 +6,9 @@ using Microsoft.Win32;
 
 namespace DDT.Agent.Applications;
 
-// A 32-bit installer writes its key into the 32-bit view, so both views are looked at.
-public sealed class RegistryUninstallKeys : IUninstallKeys
+// A 32-bit installer writes its key into the 32-bit view, so both views are looked at. A per-user installer, such as
+// Python's Burn bundle, writes into HKCU, which for the agent is SYSTEM's own.
+public sealed class RegistryUninstallKeys(string uninstallPath = RegistryUninstallKeys.UninstallPath) : IUninstallKeys
 {
     public const string UninstallPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
 
@@ -15,14 +16,17 @@ public sealed class RegistryUninstallKeys : IUninstallKeys
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(keyName);
 
-        foreach (RegistryView view in (RegistryView[])[RegistryView.Registry64, RegistryView.Registry32])
+        foreach (RegistryHive hive in (RegistryHive[])[RegistryHive.LocalMachine, RegistryHive.CurrentUser])
         {
-            using RegistryKey machine = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view);
-            using RegistryKey? key = machine.OpenSubKey($@"{UninstallPath}\{keyName}");
-
-            if (key is not null)
+            foreach (RegistryView view in (RegistryView[])[RegistryView.Registry64, RegistryView.Registry32])
             {
-                return true;
+                using RegistryKey root = RegistryKey.OpenBaseKey(hive, view);
+                using RegistryKey? key = root.OpenSubKey($@"{uninstallPath}\{keyName}");
+
+                if (key is not null)
+                {
+                    return true;
+                }
             }
         }
 

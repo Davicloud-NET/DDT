@@ -4,6 +4,7 @@
 
 using DDT.Agent.Applications;
 using DDT.Contracts.Applications;
+using Microsoft.Win32;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -119,5 +120,25 @@ public sealed class WindowsApplicationDetectorTests
     public void AMadeUpUninstallKeyIsNotThere()
     {
         Assert.False(new RegistryUninstallKeys().Exists("DDT test key that is not there 0193a4b2"));
+    }
+
+    // The test's own HKCU stands in for SYSTEM's, where a per-user installer the agent runs registers.
+    [Fact]
+    public void AKeyOfTheInstallingAccountCounts()
+    {
+        string path = $@"Software\DDT-test-{Guid.NewGuid():N}\Uninstall";
+        Registry.CurrentUser.CreateSubKey($@"{path}\{{9B3415F5-0000-7000-8000-000000000001}}").Dispose();
+
+        try
+        {
+            RegistryUninstallKeys keys = new(path);
+
+            Assert.True(keys.Exists("{9B3415F5-0000-7000-8000-000000000001}"));
+            Assert.False(keys.Exists("{9B3415F5-0000-7000-8000-000000000002}"));
+        }
+        finally
+        {
+            Registry.CurrentUser.DeleteSubKeyTree(path[..path.LastIndexOf('\\')], throwOnMissingSubKey: false);
+        }
     }
 }

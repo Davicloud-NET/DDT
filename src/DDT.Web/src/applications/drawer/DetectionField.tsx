@@ -67,7 +67,9 @@ export function DetectionField({ detection, findings, onChange }: DetectionField
       {detection.kind === "uninstallKey" ? (
         <TextField
           label={<Trans>Key name</Trans>}
-          hint={<Trans>Under HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall</Trans>}
+          hint={
+            <Trans>Under HKLM or HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall</Trans>
+          }
           {...textProps}
           value={detection.keyName}
           onChange={(keyName) => {

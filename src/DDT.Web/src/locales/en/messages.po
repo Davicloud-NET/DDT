@@ -11706,8 +11706,8 @@ msgid "UDP 69, TFTP"
 msgstr "UDP 69, TFTP"
 
 #: src/applications/drawer/DetectionField.tsx
-msgid "Under HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
-msgstr "Under HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
+msgid "Under HKLM or HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
+msgstr "Under HKLM or HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
 
 #: src/sequences/builder/page/editHandlers.ts
 #: src/sequences/builder/page/UndoRedo.tsx

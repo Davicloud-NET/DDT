@@ -4,7 +4,7 @@
 
 namespace DDT.Agent.Applications;
 
-// The keys under HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall, which Programs and Features lists.
+// The keys under SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall, which Programs and Features lists.
 public interface IUninstallKeys
 {
     bool Exists(string keyName);

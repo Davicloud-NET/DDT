@@ -11706,7 +11706,7 @@ msgid "UDP 69, TFTP"
 msgstr ""
 
 #: src/applications/drawer/DetectionField.tsx
-msgid "Under HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
+msgid "Under HKLM or HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
 msgstr ""
 
 #: src/sequences/builder/page/editHandlers.ts

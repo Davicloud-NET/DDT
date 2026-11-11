@@ -314,6 +314,10 @@ msgctxt "deployment.sequenceHasProblems"
 msgid "{count, plural, one {{sequence} has a problem, so it cannot run. Fix it on the sequence's page first.} other {{sequence} has # problems, so it cannot run. Fix them on the sequence's page first.}}"
 msgstr ""
 
+#: src/applications/bundles/BundlesTable.tsx
+msgid "{count, plural, one {# application} other {# applications}}"
+msgstr ""
+
 #: src/conditions/conditions.ts
 msgid "{count, plural, one {# condition} other {# conditions}}"
 msgstr ""
@@ -737,6 +741,10 @@ msgstr ""
 msgid "{name} and its API tokens are deleted. This cannot be undone."
 msgstr ""
 
+#: src/applications/applicationView.ts
+msgid "{name} and its files are deleted from the library."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "values.cycle"
 msgid "{name} cannot be worked out, because it is made from itself: {path}."
@@ -788,6 +796,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.valueNameRepeated"
 msgid "{name} is declared already. Names ignore case."
+msgstr ""
+
+#: src/applications/applicationView.ts
+msgid "{name} is deleted from the library."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1332,6 +1344,14 @@ msgstr ""
 
 #: src/accounts/AccountDrawer.tsx
 msgid "{who} saved this account while you were editing it."
+msgstr ""
+
+#: src/applications/ApplicationDrawer.tsx
+msgid "{who} saved this application while you were editing it."
+msgstr ""
+
+#: src/applications/bundles/BundleDrawer.tsx
+msgid "{who} saved this bundle while you were editing it."
 msgstr ""
 
 #: src/roles/RoleDrawer.tsx
@@ -1953,6 +1973,8 @@ msgid "Accounts for steps"
 msgstr ""
 
 #: src/accounts/list/AccountsTable.tsx
+#: src/applications/bundles/BundlesTable.tsx
+#: src/applications/list/ApplicationsTable.tsx
 #: src/images/ImagesTable.tsx
 #: src/machines/list/MachineTable.tsx
 #: src/packages/PackagesTable.tsx
@@ -1972,6 +1994,7 @@ msgid "Actions for {menuName}"
 msgstr ""
 
 #: src/accounts/list/AccountMenu.tsx
+#: src/applications/list/EntryMenu.tsx
 #: src/images/ImageMenu.tsx
 #: src/packages/PackageMenu.tsx
 #: src/roles/list/RoleMenu.tsx
@@ -2015,6 +2038,10 @@ msgstr ""
 
 #: src/conditions/builder/AddKeys.tsx
 msgid "Add a condition"
+msgstr ""
+
+#: src/applications/ApplicationDrawer.tsx
+msgid "Add a dependency"
 msgstr ""
 
 #: src/conditions/builder/AddKeys.tsx
@@ -2103,12 +2130,25 @@ msgstr ""
 msgid "Add account"
 msgstr ""
 
+#: src/applications/bundles/BundleDrawer.tsx
+msgid "Add an application"
+msgstr ""
+
 #: src/sequences/builder/variables/AddDeclarationKeys.tsx
 msgid "Add an input"
 msgstr ""
 
+#: src/applications/add/AddApplicationDialog.tsx
+#: src/applications/ApplicationsTab.tsx
+msgid "Add application"
+msgstr ""
+
 #: src/settings/networkBoot/AddBootTarget.tsx
 msgid "Add boot target"
+msgstr ""
+
+#: src/applications/bundles/BundlesTab.tsx
+msgid "Add bundle"
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/WdsState.tsx
@@ -2383,6 +2423,10 @@ msgstr ""
 msgid "An input locale. Left empty, the language's."
 msgstr ""
 
+#: src/applications/add/ApplicationUploadPanel.tsx
+msgid "an installer or a zip file"
+msgstr ""
+
 #: src/runs/runs.ts
 msgid "an operator"
 msgstr ""
@@ -2506,6 +2550,37 @@ msgstr ""
 
 #: src/app/UserMenu.tsx
 msgid "Appearance"
+msgstr ""
+
+#: src/applications/ApplicationDrawer.tsx
+#: src/applications/applicationView.ts
+#: src/applications/list/ApplicationsTable.tsx
+msgid "Application"
+msgstr ""
+
+#: src/audit/auditView.ts
+msgid "Application added"
+msgstr ""
+
+#: src/audit/auditView.ts
+msgid "Application changed"
+msgstr ""
+
+#: src/audit/auditView.ts
+msgid "Application deleted"
+msgstr ""
+
+#: src/applications/ApplicationsPage.tsx
+msgid "Application library"
+msgstr ""
+
+#: src/app/navigation.ts
+#: src/applications/ApplicationsPage.tsx
+#: src/applications/bundles/BundleDrawer.tsx
+#: src/applications/bundles/BundlesTable.tsx
+#: src/applications/list/ApplicationsTable.tsx
+#: src/audit/auditView.ts
+msgid "Applications"
 msgstr ""
 
 #: src/images/import/MdtNotImported.tsx
@@ -2822,6 +2897,29 @@ msgstr ""
 msgid "Built at a time not recorded"
 msgstr ""
 
+#: src/applications/applicationView.ts
+#: src/applications/bundles/BundleDrawer.tsx
+#: src/applications/bundles/BundlesTable.tsx
+msgid "Bundle"
+msgstr ""
+
+#: src/audit/auditView.ts
+msgid "Bundle added"
+msgstr ""
+
+#: src/audit/auditView.ts
+msgid "Bundle changed"
+msgstr ""
+
+#: src/audit/auditView.ts
+msgid "Bundle deleted"
+msgstr ""
+
+#: src/applications/ApplicationsPage.tsx
+#: src/applications/bundles/BundlesTable.tsx
+msgid "Bundles"
+msgstr ""
+
 #: src/settings/signIn/ProviderGroup.tsx
 msgid "Button text"
 msgstr ""
@@ -2831,6 +2929,8 @@ msgid "by {name}"
 msgstr ""
 
 #: src/account/AuthenticatorEnrollment.tsx
+#: src/applications/add/AddApplicationDialog.tsx
+#: src/applications/drawer/FilesField.tsx
 #: src/images/import/MdtShareDialog.tsx
 #: src/inputs/InputsDialog.tsx
 #: src/machines/AssignDialog.tsx
@@ -3201,6 +3301,15 @@ msgstr ""
 msgid "Collapse"
 msgstr ""
 
+#: src/applications/applicationView.ts
+#: src/applications/drawer/InstallFields.tsx
+msgid "Command"
+msgstr ""
+
+#: src/applications/add/AddApplicationDialog.tsx
+msgid "Command only"
+msgstr ""
+
 #: src/conditions/builder/TestRow.tsx
 msgid "Comparison of condition {number}"
 msgstr ""
@@ -3506,6 +3615,7 @@ msgid "Defaults for every run"
 msgstr ""
 
 #: src/accounts/list/AccountMenu.tsx
+#: src/applications/list/EntryMenu.tsx
 #: src/images/ImageMenu.tsx
 #: src/packages/PackageMenu.tsx
 #: src/roles/list/RoleMenu.tsx
@@ -3534,6 +3644,16 @@ msgstr ""
 msgid "Delete account"
 msgstr ""
 
+#: src/applications/ApplicationDrawer.tsx
+#: src/applications/ApplicationsTab.tsx
+msgid "Delete application"
+msgstr ""
+
+#: src/applications/bundles/BundleDrawer.tsx
+#: src/applications/bundles/BundlesTab.tsx
+msgid "Delete bundle"
+msgstr ""
+
 #: src/images/ImagesPage.tsx
 msgid "Delete image"
 msgstr ""
@@ -3556,6 +3676,10 @@ msgstr ""
 msgid "Delete sequence"
 msgstr ""
 
+#: src/applications/ApplicationDrawer.tsx
+msgid "Depends on"
+msgstr ""
+
 #: src/machines/machineView.ts
 msgid "Deploying"
 msgstr ""
@@ -3575,6 +3699,8 @@ msgstr ""
 msgid "Deployment defaults"
 msgstr ""
 
+#: src/applications/bundles/BundleDrawer.tsx
+#: src/applications/drawer/AboutFields.tsx
 #: src/packages/PackageDialog.tsx
 #: src/roles/drawer/RoleFields.tsx
 #: src/rules/drawer/RuleFields.tsx
@@ -3599,6 +3725,10 @@ msgstr ""
 
 #: src/settings/logging/LevelSelect.tsx
 msgid "Details for finding a fault"
+msgstr ""
+
+#: src/applications/drawer/DetectionField.tsx
+msgid "Detection"
 msgstr ""
 
 #: src/machines/facts.ts
@@ -3886,6 +4016,10 @@ msgstr ""
 
 #: src/account/RecoveryCodesDialog.tsx
 msgid "Each code signs you in once if you lose the authenticator. They are shown only now."
+msgstr ""
+
+#: src/applications/list/EntryMenu.tsx
+msgid "Edit"
 msgstr ""
 
 #: src/images/ImageFacts.tsx
@@ -4283,10 +4417,12 @@ msgstr ""
 msgid "Everything, a line for every packet and request"
 msgstr ""
 
+#: src/applications/drawer/RunFields.tsx
 #: src/sequences/steps/ScriptResultFields.tsx
 msgid "Exit codes that ask for a restart"
 msgstr ""
 
+#: src/applications/drawer/RunFields.tsx
 #: src/sequences/steps/ScriptResultFields.tsx
 msgid "Exit codes that mean success"
 msgstr ""
@@ -4339,6 +4475,7 @@ msgctxt "settings.ldap.nestedGroupsOff"
 msgid "false reads no groups, so every directory user would be refused. Turn it on, or empty GroupRoleMap."
 msgstr ""
 
+#: src/applications/applicationView.ts
 #: src/images/ImageFacts.tsx
 msgid "File"
 msgstr ""
@@ -4348,6 +4485,8 @@ msgid "File packages"
 msgstr ""
 
 #: src/app/navigation.ts
+#: src/applications/drawer/FilesField.tsx
+#: src/applications/list/ApplicationsTable.tsx
 #: src/packages/PackagesPage.tsx
 msgid "Files"
 msgstr ""
@@ -4396,6 +4535,10 @@ msgstr ""
 msgid "Filled in with what the machine reported."
 msgstr ""
 
+#: src/applications/bundles/BundlesTab.tsx
+msgid "Find a bundle"
+msgstr ""
+
 #: src/users/DirectoryGroupSearch.tsx
 msgid "Find a directory group"
 msgstr ""
@@ -4438,6 +4581,10 @@ msgstr ""
 
 #: src/users/UserAdministration.tsx
 msgid "Find an account"
+msgstr ""
+
+#: src/applications/ApplicationsTab.tsx
+msgid "Find an application"
 msgstr ""
 
 #: src/images/ImagesPage.tsx
@@ -5036,6 +5183,10 @@ msgstr ""
 msgid "Installing accepts Microsoft's licence terms for both."
 msgstr ""
 
+#: src/applications/drawer/DetectionField.tsx
+msgid "Installs every time"
+msgstr ""
+
 #: src/settings/networkBoot/InterfacesGroup.tsx
 msgid "Interfaces"
 msgstr ""
@@ -5281,6 +5432,10 @@ msgstr ""
 msgid "Key"
 msgstr ""
 
+#: src/applications/drawer/DetectionField.tsx
+msgid "Key name"
+msgstr ""
+
 #: src/sequences/steps/WriteUnattendFields.tsx
 #: src/settings/deploymentDefaults/WindowsSetupGroup.tsx
 msgid "Keyboard"
@@ -5303,6 +5458,8 @@ msgstr ""
 msgid "Keycloak and Authentik send group names or paths, Entra ID the object IDs of the groups."
 msgstr ""
 
+#: src/applications/drawer/InstallFields.tsx
+#: src/applications/list/ApplicationsTable.tsx
 #: src/images/ImageFacts.tsx
 #: src/images/ImagesTable.tsx
 msgid "Kind"
@@ -5371,6 +5528,10 @@ msgstr ""
 
 #: src/tokens/TokenTable.tsx
 msgid "Last used"
+msgstr ""
+
+#: src/applications/drawer/InstallFields.tsx
+msgid "Latest"
 msgstr ""
 
 #: src/settings/directory/ServerGroup.tsx
@@ -5846,6 +6007,10 @@ msgstr ""
 msgid "Microsoft's third-party UEFI CAs {first} and {second}"
 msgstr ""
 
+#: src/applications/drawer/DetectionField.tsx
+msgid "Minimum version"
+msgstr ""
+
 #: src/machines/facts.ts
 #: src/packages/HardwareModelRow.tsx
 #: src/sequences/steps.ts
@@ -5908,6 +6073,14 @@ msgstr ""
 msgid "Move {name} up"
 msgstr ""
 
+#: src/applications/drawer/PickedRow.tsx
+msgid "Move {shown} down"
+msgstr ""
+
+#: src/applications/drawer/PickedRow.tsx
+msgid "Move {shown} up"
+msgstr ""
+
 #: src/sequences/builder/outline/OutlineRowContent.tsx
 msgid "Move {title}"
 msgstr ""
@@ -5922,6 +6095,14 @@ msgstr ""
 
 #: src/rules/list/RuleMenu.tsx
 msgid "Move up"
+msgstr ""
+
+#: src/applications/applicationView.ts
+msgid "MSI product code"
+msgstr ""
+
+#: src/applications/applicationView.ts
+msgid "MSIX package"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -6005,6 +6186,8 @@ msgstr ""
 
 #: src/account/ProfilePanel.tsx
 #: src/accounts/drawer/AccountFields.tsx
+#: src/applications/bundles/BundleDrawer.tsx
+#: src/applications/drawer/AboutFields.tsx
 #: src/packages/PackageDialog.tsx
 #: src/roles/drawer/RoleFields.tsx
 #: src/rules/drawer/RuleFields.tsx
@@ -6027,6 +6210,10 @@ msgstr ""
 msgid "Name of value {number}"
 msgstr ""
 
+#: src/applications/bundles/BundlesTab.tsx
+msgid "Name or application"
+msgstr ""
+
 #: src/sequences/list/SequencesHeader.tsx
 msgid "Name or description"
 msgstr ""
@@ -6045,6 +6232,10 @@ msgstr ""
 
 #: src/packages/PackagesPage.tsx
 msgid "Name, model or file"
+msgstr ""
+
+#: src/applications/ApplicationsTab.tsx
+msgid "Name, publisher or file"
 msgstr ""
 
 #: src/users/UserAdministration.tsx
@@ -6136,6 +6327,14 @@ msgstr ""
 msgid "New accounts"
 msgstr ""
 
+#: src/applications/ApplicationDrawer.tsx
+msgid "New application"
+msgstr ""
+
+#: src/applications/bundles/BundleDrawer.tsx
+msgid "New bundle"
+msgstr ""
+
 #: src/roles/RoleDrawer.tsx
 msgid "New machine role"
 msgstr ""
@@ -6207,12 +6406,28 @@ msgstr ""
 msgid "No accounts yet"
 msgstr ""
 
+#: src/applications/ApplicationsTab.tsx
+msgid "No application matches"
+msgstr ""
+
+#: src/applications/ApplicationsTab.tsx
+msgid "No applications yet"
+msgstr ""
+
 #: src/settings/networkBoot/BootTargetsGroup.tsx
 msgid "No boot target yet, so ProxyDHCP answers no machine."
 msgstr ""
 
 #: src/settings/networkBoot/BootTargetsGroup.tsx
 msgid "No boot target yet, so x64 UEFI machines get x64/bootmgfw.efi over TFTP. Other machines get no answer."
+msgstr ""
+
+#: src/applications/bundles/BundlesTab.tsx
+msgid "No bundle matches"
+msgstr ""
+
+#: src/applications/bundles/BundlesTab.tsx
+msgid "No bundles yet"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -6540,6 +6755,9 @@ msgstr ""
 
 #: src/account/ProfilePanel.tsx
 #: src/accounts/list/AccountRow.tsx
+#: src/applications/applicationView.ts
+#: src/applications/drawer/FilesField.tsx
+#: src/applications/list/ApplicationRow.tsx
 #: src/rules/drawer/SequenceChoice.tsx
 #: src/sequences/builder/account/useAccountChoices.ts
 #: src/settings/directory/TestedGroups.tsx
@@ -6593,6 +6811,10 @@ msgstr ""
 
 #: src/images/import/MdtNotImported.tsx
 msgid "Not imported yet"
+msgstr ""
+
+#: src/applications/drawer/PickedRow.tsx
+msgid "Not in the library"
 msgstr ""
 
 #: src/settings/networkBoot/ConfigurationGroup.tsx
@@ -6671,6 +6893,10 @@ msgstr ""
 #: src/runs/flow/nodeDetail.ts
 #: src/runs/runView.ts
 msgid "Not taken"
+msgstr ""
+
+#: src/applications/list/UsedBy.tsx
+msgid "Not used"
 msgstr ""
 
 #: src/settings/signIn/NewAccountsGroup.tsx
@@ -7155,6 +7381,10 @@ msgctxt "identity.passwordRequiresUniqueChars"
 msgid "Passwords must use at least {count} different characters."
 msgstr ""
 
+#: src/applications/drawer/DetectionField.tsx
+msgid "Path"
+msgstr ""
+
 #: src/sequences/steps.ts
 msgid "Pause"
 msgstr ""
@@ -7287,6 +7517,10 @@ msgstr ""
 msgid "Processor cores"
 msgstr ""
 
+#: src/applications/drawer/DetectionField.tsx
+msgid "Product code"
+msgstr ""
+
 #: src/settings/signIn/ProviderGroup.tsx
 #: src/settings/signIn/ProviderResult.tsx
 msgid "Provider"
@@ -7319,6 +7553,11 @@ msgstr ""
 
 #: src/app/UserMenu.tsx
 msgid "Pseudo (development)"
+msgstr ""
+
+#: src/applications/drawer/AboutFields.tsx
+#: src/applications/list/ApplicationsTable.tsx
+msgid "Publisher"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -7445,6 +7684,7 @@ msgctxt "machineState.rejected"
 msgid "Rejected"
 msgstr ""
 
+#: src/applications/drawer/FilesField.tsx
 #: src/machines/actions/MachineMenu.tsx
 #: src/sequences/builder/canvas/NodeMenu.tsx
 #: src/sequences/builder/inspector/NodeKeys.tsx
@@ -7471,6 +7711,10 @@ msgstr ""
 #: src/sequences/builder/variables/DeclarationRow.tsx
 #: src/values/ValuesEditor.tsx
 msgid "Remove {name}"
+msgstr ""
+
+#: src/applications/drawer/PickedRow.tsx
+msgid "Remove {shown}"
 msgstr ""
 
 #: src/machines/actions/MachineMenu.tsx
@@ -7615,6 +7859,7 @@ msgid "Repeat: {name}"
 msgstr ""
 
 #: src/accounts/drawer/PasswordActions.tsx
+#: src/applications/drawer/FilesField.tsx
 #: src/settings/parts/SettingSecret.tsx
 msgid "Replace"
 msgstr ""
@@ -7991,6 +8236,14 @@ msgstr ""
 msgid "Save anyway?"
 msgstr ""
 
+#: src/applications/ApplicationDrawer.tsx
+msgid "Save application"
+msgstr ""
+
+#: src/applications/bundles/BundleDrawer.tsx
+msgid "Save bundle"
+msgstr ""
+
 #: src/users/ChangeUserDialog.tsx
 msgid "Save changes"
 msgstr ""
@@ -8188,6 +8441,7 @@ msgstr ""
 msgid "Sends machines to {server} for {file} now."
 msgstr ""
 
+#: src/applications/applicationView.ts
 #: src/machines/list/MachineTable.tsx
 #: src/runs/history/RunHistoryTable.tsx
 #: src/sequences/builder/Inspector.tsx
@@ -8650,6 +8904,14 @@ msgstr ""
 msgid "Someone deleted this account while you were editing it."
 msgstr ""
 
+#: src/applications/ApplicationDrawer.tsx
+msgid "Someone deleted this application while you were editing it."
+msgstr ""
+
+#: src/applications/bundles/BundleDrawer.tsx
+msgid "Someone deleted this bundle while you were editing it."
+msgstr ""
+
 #: src/roles/RoleDrawer.tsx
 msgid "Someone deleted this machine role while you were editing it."
 msgstr ""
@@ -8664,6 +8926,14 @@ msgstr ""
 
 #: src/accounts/AccountDrawer.tsx
 msgid "Someone else saved this account while you were editing it."
+msgstr ""
+
+#: src/applications/ApplicationDrawer.tsx
+msgid "Someone else saved this application while you were editing it."
+msgstr ""
+
+#: src/applications/bundles/BundleDrawer.tsx
+msgid "Someone else saved this bundle while you were editing it."
 msgstr ""
 
 #: src/roles/RoleDrawer.tsx
@@ -9271,6 +9541,10 @@ msgctxt "sequence.unattendBeforeImage"
 msgid "The answer file can be written only after the image is applied."
 msgstr ""
 
+#: src/applications/ApplicationsTab.tsx
+msgid "The applications could not be loaded."
+msgstr ""
+
 #: src/about/AboutPage.tsx
 msgid "The attribution notice, the warranty disclaimer and the additional terms"
 msgstr ""
@@ -9327,6 +9601,14 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "bootImage.uploadToken"
 msgid "The builder's token is unknown, has expired or uploaded a boot image already. Download the builder again."
+msgstr ""
+
+#: src/applications/applicationView.ts
+msgid "The bundle {name} is deleted. Its applications stay in the library."
+msgstr ""
+
+#: src/applications/bundles/BundlesTab.tsx
+msgid "The bundles could not be loaded."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10243,6 +10525,10 @@ msgstr ""
 msgid "The run failed: {error}"
 msgstr ""
 
+#: src/applications/drawer/RunFields.tsx
+msgid "The run goes on if this fails"
+msgstr ""
+
 #: src/machines/assign/AssignConsequences.tsx
 msgid "The run goes on in the installed Linux."
 msgstr ""
@@ -11065,6 +11351,7 @@ msgstr ""
 msgid "Timeline"
 msgstr ""
 
+#: src/applications/drawer/RunFields.tsx
 #: src/sequences/steps/ScriptResultFields.tsx
 msgid "Timeout in minutes"
 msgstr ""
@@ -11200,6 +11487,10 @@ msgstr ""
 msgid "UDP 69, TFTP"
 msgstr ""
 
+#: src/applications/drawer/DetectionField.tsx
+msgid "Under HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
+msgstr ""
+
 #: src/sequences/builder/page/editHandlers.ts
 #: src/sequences/builder/page/UndoRedo.tsx
 msgid "Undo"
@@ -11215,6 +11506,10 @@ msgstr ""
 
 #: src/uploads/UnfinishedUploads.tsx
 msgid "Unfinished uploads"
+msgstr ""
+
+#: src/applications/applicationView.ts
+msgid "Uninstall key"
 msgstr ""
 
 #: src/conditions/conditionSubjects.ts
@@ -11325,6 +11620,10 @@ msgstr ""
 msgid "Upload console"
 msgstr ""
 
+#: src/applications/drawer/FilesField.tsx
+msgid "Upload files"
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "Upload the agent"
 msgstr ""
@@ -11351,6 +11650,10 @@ msgstr ""
 #: src/settings/agent/CurrentBinary.tsx
 #: src/settings/logo/LogoDetails.tsx
 msgid "Uploaded"
+msgstr ""
+
+#: src/applications/add/ApplicationUploadPanel.tsx
+msgid "Uploaded {fileName}."
 msgstr ""
 
 #: src/settings/logo/LogoChange.tsx
@@ -11429,6 +11732,9 @@ msgid "Use theirs"
 msgstr ""
 
 #: src/accounts/list/AccountsTable.tsx
+#: src/applications/bundles/BundlesTable.tsx
+#: src/applications/drawer/UsedBySection.tsx
+#: src/applications/list/ApplicationsTable.tsx
 #: src/packages/PackagesTable.tsx
 #: src/sequences/builder/variables/UsedByList.tsx
 #: src/sequences/list/SequenceTable.tsx
@@ -11550,6 +11856,9 @@ msgstr ""
 msgid "Variables and inputs of this sequence"
 msgstr ""
 
+#: src/applications/drawer/AboutFields.tsx
+#: src/applications/drawer/InstallFields.tsx
+#: src/applications/list/ApplicationsTable.tsx
 #: src/images/ImageFacts.tsx
 #: src/settings/agent/CurrentBinary.tsx
 msgid "Version"
@@ -11789,6 +12098,15 @@ msgstr ""
 
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "Windows, after the hand-over"
+msgstr ""
+
+#: src/applications/drawer/InstallFields.tsx
+msgid "winget ID"
+msgstr ""
+
+#: src/applications/add/AddApplicationDialog.tsx
+#: src/applications/applicationView.ts
+msgid "winget package"
 msgstr ""
 
 #: src/machines/secureBoot.ts

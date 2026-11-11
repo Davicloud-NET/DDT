@@ -11,8 +11,9 @@ import { removeByIds, upsertById } from "@/lib/listCache";
 import type { HardwareModel, HardwareModelCount } from "@/machines/machines";
 import type { SequenceView } from "@/sequences/sequences";
 
-// Drivers go to machines whose model a target names. Files are unpacked for a Run script step naming them.
-export type PackageKind = "Drivers" | "Files";
+// Drivers go to machines whose model a target names. Files are unpacked for a Run script step naming them. An
+// application's files only show with their application; the server does not list them here.
+export type PackageKind = "Drivers" | "Files" | "Application";
 
 // expandedBytes is the size of the files once unpacked.
 export interface PackageSummary {

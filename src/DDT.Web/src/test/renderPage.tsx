@@ -20,6 +20,7 @@ import { onTestFinished, vi } from "vitest";
 
 import { AccountPage } from "@/account/AccountPage";
 import { AccountsPage } from "@/accounts/AccountsPage";
+import { ApplicationsPage } from "@/applications/ApplicationsPage";
 import { CommandPalette } from "@/app/CommandPalette";
 import { RootLayout } from "@/app/RootLayout";
 import type { CurrentUser } from "@/auth/auth";
@@ -113,6 +114,7 @@ function testRouter(path: string, hub: TestHub | null, palette: boolean) {
         page("/library/images", ImagesPage),
         page("/library/drivers", DriversPage),
         page("/library/files", FilesPage),
+        page("/library/applications", ApplicationsPage),
         page("/boot/image", BootImagePage),
         page("/account", AccountPage),
         stub("/about", "About DDT"),

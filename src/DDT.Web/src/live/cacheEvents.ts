@@ -11,6 +11,18 @@ import {
   type AccountsRemoved,
   type AccountView,
 } from "@/accounts/accounts";
+import {
+  applicationBundlesQuery,
+  applicationsQuery,
+  removeApplications,
+  removeBundles,
+  upsertApplication,
+  upsertBundle,
+  type ApplicationBundlesRemoved,
+  type ApplicationBundleView,
+  type ApplicationsRemoved,
+  type ApplicationView,
+} from "@/applications/applications";
 import { appendAudit, auditKey, type AuditEntry } from "@/audit/audit";
 import { currentUserQuery } from "@/auth/auth";
 import { bootImageQuery, type BootImageView } from "@/boot/bootImage";
@@ -195,6 +207,24 @@ function libraryEvents(queryClient: QueryClient) {
   };
 }
 
+// An application is pushed again when what names it changes, so its used-by stays current.
+function applicationEvents(queryClient: QueryClient) {
+  return {
+    applicationChanged: (application: ApplicationView) => {
+      upsertApplication(queryClient, application);
+    },
+    applicationsRemoved: (event: ApplicationsRemoved) => {
+      removeApplications(queryClient, event.applicationIds);
+    },
+    applicationBundleChanged: (bundle: ApplicationBundleView) => {
+      upsertBundle(queryClient, bundle);
+    },
+    applicationBundlesRemoved: (event: ApplicationBundlesRemoved) => {
+      removeBundles(queryClient, event.bundleIds);
+    },
+  };
+}
+
 function administrationEvents(queryClient: QueryClient) {
   const ownUserId = () => queryClient.getQueryData(currentUserQuery.queryKey)?.id ?? null;
 
@@ -276,6 +306,7 @@ export function cacheEventHandlers(queryClient: QueryClient) {
   return {
     ...machineEvents(queryClient),
     ...libraryEvents(queryClient),
+    ...applicationEvents(queryClient),
     ...administrationEvents(queryClient),
   } satisfies Record<string, EventHandler>;
 }
@@ -291,6 +322,8 @@ export function reconnectKeys(): QueryKey[] {
     rulesQuery.queryKey,
     machineRolesQuery.queryKey,
     accountsQuery.queryKey,
+    applicationsQuery.queryKey,
+    applicationBundlesQuery.queryKey,
     sequencesQuery.queryKey,
     sequenceDocumentsKey,
     sequenceResolutionsKey,

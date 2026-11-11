@@ -5,7 +5,9 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
+import type { ApplicationBundleView, ApplicationView } from "@/applications/applications";
 import type { MachineSummary } from "@/machines/machines";
+import { applicationView, bundleView } from "@/test/applicationBuilders";
 import { machineSummary } from "@/test/builders";
 
 import { cacheEventHandlers } from "./cacheEvents";
@@ -235,5 +237,37 @@ describe("cacheEventHandlers", () => {
 
     expect(queryClient.getQueryData(["packages"])).toEqual([]);
     expect(reads()).toEqual([["sequences"], ["sequence"], ["machine-sequence"]]);
+  });
+
+  it("patches applications and bundles from their events without reading anything again", () => {
+    const { queryClient, emit } = events();
+    queryClient.setQueryData(["applications"], [applicationView({ id: "a1", name: "Zoom" })]);
+    queryClient.setQueryData(["applicationBundles"], [bundleView({ id: "b1", name: "Office" })]);
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+
+    emit("applicationChanged", applicationView({ id: "a2", name: "7-Zip" }));
+    emit("applicationChanged", applicationView({ id: "a1", name: "Zoom", revision: 2 }));
+    emit("applicationBundleChanged", bundleView({ id: "b2", name: "Lab", members: ["a2"] }));
+
+    expect(
+      queryClient
+        .getQueryData<ApplicationView[]>(["applications"])
+        ?.map((application) => [application.name, application.revision]),
+    ).toEqual([
+      ["7-Zip", 1],
+      ["Zoom", 2],
+    ]);
+    expect(
+      queryClient.getQueryData<ApplicationBundleView[]>(["applicationBundles"])?.map((b) => b.id),
+    ).toEqual(["b2", "b1"]);
+
+    emit("applicationsRemoved", { applicationIds: ["a1"] });
+    emit("applicationBundlesRemoved", { bundleIds: ["b1", "b2"] });
+
+    expect(queryClient.getQueryData<ApplicationView[]>(["applications"])?.map((a) => a.id)).toEqual(
+      ["a2"],
+    );
+    expect(queryClient.getQueryData(["applicationBundles"])).toEqual([]);
+    expect(invalidate).not.toHaveBeenCalled();
   });
 });

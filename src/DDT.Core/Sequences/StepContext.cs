@@ -14,4 +14,7 @@ public sealed record StepContext(
     MachineVariables Machine,
     // The run variables earlier steps output.
     IReadOnlyDictionary<string, string> Variables,
-    IProgress<int> Progress);
+    IProgress<int> Progress)
+{
+    public StepCheckpoint Checkpoint { get; init; } = StepCheckpoint.Unsaved();
+}

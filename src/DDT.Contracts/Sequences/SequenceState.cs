@@ -20,7 +20,9 @@ public sealed record SequenceState(
     // Run variables that steps output, such as partition ids.
     IReadOnlyDictionary<string, string> Variables,
     // Where a Format 2 run continues. It replaces NextIndex.
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] NodeCursor? Cursor = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] NodeCursor? Cursor = null,
+    // What steps that go on after a restart kept. Null while there are none.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<StepTurn>? Turns = null)
 {
     // The engine writes Format 1 while the definition's version is 1 or 2, so an older agent still resumes a flat run.
     public const int CurrentFormat = 1;

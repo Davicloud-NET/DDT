@@ -10846,6 +10846,11 @@ msgid "This server saves no settings"
 msgstr "This server saves no settings"
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.restartLimitWindowsOnly"
+msgid "This step can go on after a restart only in Windows."
+msgstr "This step can go on after a restart only in Windows."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.onceInRepeat"
 msgid "This step can run only once in a run, so it cannot be inside a repeat."
 msgstr "This step can run only once in a run, so it cannot be inside a repeat."

@@ -335,6 +335,7 @@
   "sequence.requestTooLarge": "A sequence request can have at most {max} KiB.",
   "sequence.restartAfterRestart": "A restart step restarts anyway, so it cannot restart again after it.",
   "sequence.restartBeforePartition": "Windows PE can restart only after the disk is partitioned, because the run's state is kept on the disk.",
+  "sequence.restartLimitWindowsOnly": "This step can go on after a restart only in Windows.",
   "sequence.restartWithRawImage": "The Linux boot environment keeps the run's state in memory, so it cannot restart during a run. The installed Linux can.",
   "sequence.runAsWindowsOnly": "A script runs as an account only in Windows. {phase, select, LinuxBoot {In the Linux boot environment it runs as root.} Linux {In the installed Linux it runs as root.} other {In Windows PE it runs as SYSTEM.}}",
   "sequence.scriptEmpty": "Enter the script.",

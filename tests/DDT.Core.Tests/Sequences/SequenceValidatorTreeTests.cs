@@ -325,4 +325,19 @@ public sealed class SequenceValidatorTreeTests
             ],
             analysis.NodePhases.Select(node => $"{node.NodeId} {string.Join(", ", node.Phases)}"));
     }
+
+    // The kind is unknown to this version either way, so only the restart's rule tells the two apart.
+    [Fact]
+    public void LetsOnlyAStepInWindowsGoOnAfterARestart()
+    {
+        ContinuingStep inWindows = new() { Id = Guid.NewGuid(), Name = "Install applications" };
+        ContinuingStep inWindowsPE = inWindows with { Id = Guid.NewGuid(), Phase = SequencePhase.WindowsPE };
+
+        Assert.Equal(
+            [(inWindows.Id, "kind", "sequence.unknownStep")],
+            Said(Validate(Partition(), ApplyImage(), inWindows)));
+        Assert.Equal(
+            [(inWindowsPE.Id, null, "sequence.restartLimitWindowsOnly"), (inWindowsPE.Id, "kind", "sequence.unknownStep")],
+            Said(Validate(Partition(), ApplyImage(), inWindowsPE)));
+    }
 }

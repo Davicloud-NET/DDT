@@ -239,6 +239,35 @@ public sealed class TreeWireFormatTests
         Assert.Equal(json, JsonSerializer.Serialize(read, AgentJsonContext.Default.SequenceState));
     }
 
+    // A step that goes on after a restart adds its count and its turn. Other states leave both out, as above.
+    [Fact]
+    public void WritesAndReadsRestartsAndTurns()
+    {
+        SequenceState state = new(
+            SequenceState.TreeFormat,
+            s_other,
+            new SequenceDefinition(3, [s_restart]),
+            SequencePhase.Windows,
+            -1,
+            [new StepRunState(s_restart.Id, StepState.Running, null, Pass: 1, Restarts: 2)],
+            new Dictionary<string, string>(StringComparer.Ordinal),
+            new NodeCursor(s_restart.Id, false),
+            [new StepTurn(s_restart.Id, 1, true, "7zip,office")]);
+        string json =
+            $$"""{"format":2,"runId":"{{Other}}","definition":{"version":3,"steps":[{{Restart}}]},"phase":"Windows","nextIndex":-1,""" +
+            $$"""
+            "steps":[{"stepId":"{{Inner}}","state":"Running","error":null,"pass":1,"restarts":2}],"variables":{},"cursor":{"nodeId":"{{Inner}}","leaving":false},"turns":[{"stepId":"{{Inner}}","pass":1,"restartDue":true,"progress":"7zip,office"}]}
+            """;
+
+        Assert.Equal(json, JsonSerializer.Serialize(state, AgentJsonContext.Default.SequenceState));
+
+        SequenceState read = JsonSerializer.Deserialize(json, AgentJsonContext.Default.SequenceState)
+            ?? throw new InvalidOperationException("The state did not read back.");
+        Assert.Equal(2, Assert.Single(read.Steps).Restarts);
+        Assert.Equal(new StepTurn(s_restart.Id, 1, true, "7zip,office"), Assert.Single(read.Turns ?? []));
+        Assert.Equal(json, JsonSerializer.Serialize(read, AgentJsonContext.Default.SequenceState));
+    }
+
     // The source generator sets every init member. So a member the JSON leaves out reads as its type's default, not
     // the value C# gives it. The validator and the tree have to cope with 0 and null. Bodies stand in for a missing
     // list.

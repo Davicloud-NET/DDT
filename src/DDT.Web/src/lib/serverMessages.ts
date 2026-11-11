@@ -1353,6 +1353,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.restartBeforePartition",
     message: "Windows PE can restart only after the disk is partitioned, because the run's state is kept on the disk.",
   }),
+  "sequence.restartLimitWindowsOnly": msg({
+    context: "sequence.restartLimitWindowsOnly",
+    message: "This step can go on after a restart only in Windows.",
+  }),
   "sequence.restartWithRawImage": msg({
     context: "sequence.restartWithRawImage",
     message: "The Linux boot environment keeps the run's state in memory, so it cannot restart during a run. The installed Linux can.",

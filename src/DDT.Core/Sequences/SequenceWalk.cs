@@ -47,6 +47,7 @@ internal sealed class SequenceWalk
         _steps = [.. tree.Steps];
         Cursor = tree.Cursor;
         Variables = tree.Variables;
+        Turns = new StepTurns(tree.Turns);
         Saved = state;
     }
 
@@ -56,6 +57,8 @@ internal sealed class SequenceWalk
     public SequencePhase Phase => _given.Phase;
 
     public IReadOnlyDictionary<string, string> Variables { get; private set; }
+
+    public StepTurns Turns { get; }
 
     // The state last saved, or the one the engine started with.
     public SequenceState Saved { get; private set; }
@@ -102,11 +105,19 @@ internal sealed class SequenceWalk
         ? _given with
         {
             NextIndex = Cursor is { } cursor ? _index[cursor.NodeId].Order : _nodes.Count,
-            Steps = [.. _steps.Select(step => new StepRunState(step.StepId, step.State, step.Error))],
+            Steps = [.. _steps.Select(step => new StepRunState(step.StepId, step.State, step.Error, Restarts: step.Restarts))],
             Variables = Variables,
             Cursor = null,
+            Turns = Turns.Snapshot(),
         }
-        : _given with { NextIndex = SequenceStates.NoNextIndex, Steps = [.. _steps], Variables = Variables, Cursor = Cursor };
+        : _given with
+        {
+            NextIndex = SequenceStates.NoNextIndex,
+            Steps = [.. _steps],
+            Variables = Variables,
+            Cursor = Cursor,
+            Turns = Turns.Snapshot(),
+        };
 
     public void WasSaved(SequenceState state)
     {
@@ -129,6 +140,12 @@ internal sealed class SequenceWalk
     public void Begin(int order, IReadOnlyList<TestEvaluation> evaluations)
     {
         _steps[order] = Visit(_steps[order], StepState.Running, evaluations);
+        Changed = true;
+    }
+
+    public void Restarted(int order)
+    {
+        _steps[order] = _steps[order] with { Restarts = _steps[order].Restarts + 1 };
         Changed = true;
     }
 
@@ -315,6 +332,7 @@ internal sealed class SequenceWalk
             Iteration = 0,
             Branch = null,
             Evaluation = Bounded(evaluations ?? []),
+            Restarts = 0,
         };
 
     private static IReadOnlyList<TestEvaluation>? Bounded(IReadOnlyList<TestEvaluation> evaluations) =>

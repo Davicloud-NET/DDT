@@ -191,9 +191,23 @@ public sealed class InstallApplicationsStepRunnerTests
             [
                 (AgentLogLevel.Warning, "Runtime ended with exit code 1, which is not one of its success codes (0). The step goes on, because Runtime may fail."),
                 (AgentLogLevel.Information, "Skipped Tool, because it depends on Runtime, which failed."),
-                (AgentLogLevel.Warning, "Applications: 1 installed, 1 skipped, 1 failed. The step is done, because each that failed may fail."),
+                (AgentLogLevel.Warning, "Applications: 1 installed, 1 skipped, 1 failed (Runtime). The run goes on."),
             ],
             lines.Where(line => !line.Message.StartsWith("Install", StringComparison.Ordinal)).Select(line => (line.Level, line.Message)));
+    }
+
+    [Fact]
+    public async Task TheSummaryNamesEveryApplicationThatFailed()
+    {
+        using ApplicationRunFixture run = new ApplicationRunFixture().Serve(
+            Runtime with { ContinueOnFailure = true },
+            Tool,
+            Viewer with { ContinueOnFailure = true });
+        run.Installer.ExitCode = launch => launch.Application.Name == "Tool" ? 0 : 1;
+
+        await run.RunAsync();
+
+        Assert.Contains(await run.SentLinesAsync(), line => line is { Level: AgentLogLevel.Warning, Message: "Applications: 1 installed, 2 failed (Runtime, Viewer). The run goes on." });
     }
 
     [Fact]

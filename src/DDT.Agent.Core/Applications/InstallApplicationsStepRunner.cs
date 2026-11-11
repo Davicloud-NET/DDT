@@ -81,7 +81,7 @@ public sealed class InstallApplicationsStepRunner(
             }
         }
 
-        return Close(progress, restartDue);
+        return Close(applications, progress, restartDue);
     }
 
     private static int Percent(int decided, int total) => decided * 100 / total;
@@ -137,8 +137,8 @@ public sealed class InstallApplicationsStepRunner(
         }
     }
 
-    // A closing line with the counts, a warning when some failed.
-    private StepResult Close(ApplicationProgress progress, bool restartDue)
+    // A closing line with the counts, a warning naming those that failed.
+    private StepResult Close(IReadOnlyList<AgentApplication> applications, ApplicationProgress progress, bool restartDue)
     {
         int failed = progress.Count(ApplicationState.Failed);
         List<string> parts = [$"{progress.Count(ApplicationState.Installed)} installed"];
@@ -155,8 +155,11 @@ public sealed class InstallApplicationsStepRunner(
 
         if (failed > 0)
         {
-            parts.Add($"{failed} failed");
-            log.Warning($"Applications: {string.Join(", ", parts)}. The step is done, because each that failed may fail.");
+            IEnumerable<string> names = applications
+                .Where(application => progress.StateOf(application.Id) == ApplicationState.Failed)
+                .Select(application => application.Name);
+            parts.Add($"{failed} failed ({string.Join(", ", names)})");
+            log.Warning($"Applications: {string.Join(", ", parts)}. The run goes on.");
         }
         else
         {

@@ -1,0 +1,58 @@
+<!-- Copyright (C) 2026 Davicloud -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE. -->
+
+<!-- A long list of choices: a search, how many are chosen, and the rows the search leaves, each with its tick. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DDT.MachineConsole.ViewModels"
+             x:Class="DDT.MachineConsole.Views.ChoiceSearchView"
+             x:DataType="vm:MultiChoiceFieldViewModel">
+  <UserControl.Styles>
+    <Style Selector="ListBox#ChoicesList > ListBoxItem">
+      <Setter Property="Padding" Value="12,7" />
+      <Setter Property="Margin" Value="0,0,0,2" />
+    </Style>
+    <Style Selector="Border.tick">
+      <Setter Property="Width" Value="18" />
+      <Setter Property="Height" Value="18" />
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SgControl}" />
+      <Setter Property="Background" Value="{DynamicResource SgField}" />
+    </Style>
+    <Style Selector="Border.tick.chosen">
+      <Setter Property="BorderBrush" Value="{DynamicResource SgKeyPrimary}" />
+      <Setter Property="Background" Value="{DynamicResource SgKeyPrimary}" />
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel Spacing="8">
+    <StackPanel Orientation="Horizontal" Spacing="16">
+      <TextBox Name="SearchBox" Width="320" PlaceholderText="{Binding SearchHint}" Text="{Binding Search}" />
+      <TextBlock Classes="body muted" Text="{Binding ChosenText}" VerticalAlignment="Center" />
+    </StackPanel>
+    <ListBox Name="ChoicesList"
+             ItemsSource="{Binding Shown}"
+             SelectedItem="{Binding Highlighted}"
+             IsTextSearchEnabled="False"
+             Width="460"
+             MaxHeight="236"
+             HorizontalAlignment="Left">
+      <ListBox.ItemTemplate>
+        <DataTemplate DataType="vm:ChoiceItem">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <Border Classes="tick" Classes.chosen="{Binding IsChosen}" VerticalAlignment="Center">
+              <Path Data="M 3.5,8.5 L 7,12 L 13.5,5"
+                    Stroke="{DynamicResource SgOnKeyPrimary}"
+                    StrokeThickness="2"
+                    IsVisible="{Binding IsChosen}" />
+            </Border>
+            <TextBlock Classes="body" Text="{Binding Label}" TextWrapping="NoWrap" VerticalAlignment="Center" />
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+    <TextBlock Classes="body muted" Text="{Binding NoMatchText}" IsVisible="{Binding HasNoMatch}" />
+  </StackPanel>
+</UserControl>

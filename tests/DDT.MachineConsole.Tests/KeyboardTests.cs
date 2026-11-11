@@ -155,6 +155,38 @@ public sealed class KeyboardTests
         window.Close();
     });
 
+    // Typing filters a long list, Down enters it, Space ticks, Up leaves it, typing in it goes on in the search.
+    [Fact]
+    public Task SearchesALongListAndTicksWithTheKeyboardAlone() => Headless.RunAsync(() =>
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.State(ConsoleStage.Choosing)).Ask(13, Scenarios.Applications);
+        MainWindow window = Open(console);
+        TextBox search = window.Find<TextBox>("SearchBox");
+        ListBox list = window.Find<ListBox>("ChoicesList");
+
+        Assert.True(search.IsFocused);
+        Type(window, "micro");
+        Assert.Equal(2, list.ItemCount);
+
+        Press(window, Key.Down);
+        Press(window, Key.Down);
+        Press(window, Key.Space);
+        Press(window, Key.Up);
+        Press(window, Key.Up);
+        Assert.True(search.IsFocused);
+
+        Press(window, Key.Down);
+        Type(window, "soft t");
+        Assert.True(search.IsFocused);
+        Assert.Equal("microsoft t", search.Text);
+        Press(window, Key.Enter);
+
+        (int id, ConsoleAnswer answer) = Assert.Single(console.Answers);
+        Assert.Equal(13, id);
+        Assert.Equal(new ConsoleInputValue("Apps", "app-7zip;app-m365;app-teams"), answer.Values?[0]);
+        window.Close();
+    });
+
     [Fact]
     public Task SendsNoInputsWithEnterUntilTheyAreAnsweredAndGoesBackWithEsc() => Headless.RunAsync(() =>
     {

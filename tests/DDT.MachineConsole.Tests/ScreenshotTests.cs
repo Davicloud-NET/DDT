@@ -119,6 +119,15 @@ public sealed class ScreenshotTests
             .Show(Scenarios.State(ConsoleStage.Starting))
             .Ask(13, new StartOverOfferQuestion(true, 10)),
         ["38-end-run"] = console => console.Show(Scenarios.State(ConsoleStage.Starting)).Ask(14, new EndRunQuestion(true, "END")),
+        ["39-inputs-long-list"] = console => console.Show(Scenarios.State(ConsoleStage.Choosing)).Ask(15, Scenarios.Applications),
+        ["40-inputs-long-list-searched"] = console =>
+        {
+            console.Show(Scenarios.State(ConsoleStage.Choosing)).Ask(15, Scenarios.Applications);
+            MultiChoiceFieldViewModel apps = (MultiChoiceFieldViewModel)((InputsViewModel)console.Model.Question!).Fields[0];
+            apps.Search = "micro";
+            apps.Move(2);
+            apps.TickHighlighted();
+        },
     };
 
     public static TheoryData<string> Shots => [.. s_shots.Keys];

@@ -25,6 +25,15 @@ public sealed class ApplicationFolders(RunDownloads downloads, RunSession sessio
         return scripts;
     }
 
+    // Where the tools an installer runs write their logs, as the run's other steps do.
+    public string Logs()
+    {
+        string logs = Path.Combine(RunDirectory, StepFiles.LogsFolder);
+        Directory.CreateDirectory(logs);
+
+        return logs;
+    }
+
     // Where the application's files go, or null without files.
     public string? PackageOf(ApplicationInstall install)
     {

@@ -15,7 +15,7 @@ public sealed class WindowsApplicationDetectorTests
 
     private readonly FakeDetectionSources _machine = new();
 
-    private WindowsApplicationDetector Detector => new(_machine, _machine, _machine);
+    private WindowsApplicationDetector Detector => new(_machine, _machine, _machine, _machine);
 
     [Fact]
     public void FindsAProductWindowsInstallerKnows()
@@ -42,6 +42,16 @@ public sealed class WindowsApplicationDetectorTests
 
         Assert.True(Detector.IsInstalled(new FileDetection(@"%ProgramFiles%\Tool\tool.exe")));
         Assert.False(Detector.IsInstalled(new FileDetection(@"%ProgramFiles%\Other\other.exe")));
+    }
+
+    [Fact]
+    public void FindsAProvisionedPackageOfTheFamily()
+    {
+        _machine.Provisioned.AddRange(["Microsoft.GetHelp_10.2409.42652.0_neutral_~_8wekyb3d8bbwe", "Contoso.App_1.2.3.0_x64__8wekyb3d8bbwe"]);
+
+        Assert.True(Detector.IsInstalled(new PackageFamilyDetection(" contoso.app_8WEKYB3D8BBWE ")));
+        Assert.False(Detector.IsInstalled(new PackageFamilyDetection("Contoso.App_cw5n1h2txyewy")));
+        Assert.False(Detector.IsInstalled(new PackageFamilyDetection("Contoso_8wekyb3d8bbwe")));
     }
 
     [Theory]
@@ -88,6 +98,21 @@ public sealed class WindowsApplicationDetectorTests
         Assert.Equal(Path.Combine(Environment.SystemDirectory, "cmd.exe"), cmd, ignoreCase: true);
         Assert.True(files.Exists(cmd));
         Assert.Matches(@"^\d+\.\d+\.\d+\.\d+$", files.VersionOf(cmd));
+    }
+
+    // Against this computer's all-user store. A Windows Server may have nothing provisioned.
+    [Fact]
+    public void FindsAFamilyThisComputerProvisionedButNoMadeUpOne()
+    {
+        RegistryProvisionedPackages store = new();
+        WindowsApplicationDetector detector = new(_machine, _machine, _machine, store);
+
+        foreach (string[] parts in store.FullNames().Select(name => name.Split('_')).Where(parts => parts.Length == 5).Take(3))
+        {
+            Assert.True(detector.IsInstalled(new PackageFamilyDetection($"{parts[0]}_{parts[4]}")));
+        }
+
+        Assert.False(detector.IsInstalled(new PackageFamilyDetection("Davicloud.MadeUp0193a4b2_8wekyb3d8bbwe")));
     }
 
     [Fact]

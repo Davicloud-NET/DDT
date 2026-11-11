@@ -3,19 +3,27 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Applications;
+using DDT.Core.Applications.Msix;
 
 namespace DDT.Agent.Applications;
 
-// Looks for an application the way its detection rule says: the MSI product, the uninstall key, or the file.
-public sealed class WindowsApplicationDetector(IInstalledProducts products, IUninstallKeys uninstallKeys, IDetectionFiles files) : IApplicationDetector
+// Looks for an application the way its detection rule says: the MSI product, the uninstall key, the file, or the
+// provisioned package family.
+public sealed class WindowsApplicationDetector(
+    IInstalledProducts products,
+    IUninstallKeys uninstallKeys,
+    IDetectionFiles files,
+    IProvisionedPackages packages) : IApplicationDetector
 {
-    public static WindowsApplicationDetector ForThisMachine() => new(new MsiInstalledProducts(), new RegistryUninstallKeys(), new SystemDetectionFiles());
+    public static WindowsApplicationDetector ForThisMachine() =>
+        new(new MsiInstalledProducts(), new RegistryUninstallKeys(), new SystemDetectionFiles(), new RegistryProvisionedPackages());
 
     public bool IsInstalled(ApplicationDetection detection) => detection switch
     {
         ProductCodeDetection product => products.IsInstalled(product.ProductCode),
         UninstallKeyDetection key => uninstallKeys.Exists(key.KeyName.Trim()),
         FileDetection file => HasFile(file),
+        PackageFamilyDetection family => packages.FullNames().Any(fullName => PackageFamilyNames.IsOfFamily(fullName, family.FamilyName.Trim())),
         _ => false,
     };
 

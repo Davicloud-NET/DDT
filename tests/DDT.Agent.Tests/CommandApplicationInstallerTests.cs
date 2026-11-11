@@ -34,7 +34,7 @@ public sealed class CommandApplicationInstallerTests : IDisposable
             return 3010;
         };
         Dictionary<string, string> environment = new() { ["DDT_APPLICATION"] = "Tool" };
-        ApplicationLaunch launch = new(Tool with { Command = "\"setup 2.exe\" /S /D=%ProgramFiles%\\Tool" }, _root, Scripts, environment);
+        ApplicationLaunch launch = new(Tool with { Command = "\"setup 2.exe\" /S /D=%ProgramFiles%\\Tool" }, _root, Scripts, _root, environment);
 
         int exitCode = await new CommandApplicationInstaller(_tools, _log).InstallAsync(launch, TestContext.Current.CancellationToken);
 
@@ -50,7 +50,7 @@ public sealed class CommandApplicationInstallerTests : IDisposable
     [Fact]
     public async Task AnApplicationWithoutACommandLineRunsNothing()
     {
-        ApplicationLaunch launch = new(Tool with { Command = " " }, _root, Scripts, new Dictionary<string, string>());
+        ApplicationLaunch launch = new(Tool with { Command = " " }, _root, Scripts, _root, new Dictionary<string, string>());
 
         DeploymentStepException refused = await Assert.ThrowsAsync<DeploymentStepException>(
             () => new CommandApplicationInstaller(_tools, _log).InstallAsync(launch, TestContext.Current.CancellationToken));

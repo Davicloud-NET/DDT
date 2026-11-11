@@ -48,7 +48,7 @@ public sealed class WindowsStepRunners : IStepRunners
     // A dry run finds no application installed, whatever this computer has.
     private ApplicationInstaller Applications(RunSession session, RunDownloads downloads) => new(
         Options.DryRun ? new DryRunApplicationDetector(Log) : WindowsApplicationDetector.ForThisMachine(),
-        [new CommandApplicationInstaller(Tools, Log)],
+        [new CommandApplicationInstaller(Tools, Log), new MsixApplicationInstaller(Tools, Log)],
         new ApplicationFolders(downloads, session, Options.WorkDirectory),
         Log);
 }

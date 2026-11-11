@@ -210,7 +210,7 @@ public sealed class InstallApplicationsStepRunnerTests
     }
 
     [Theory]
-    [InlineData(ApplicationKind.Msix, "Tool is an MSIX package, which this agent cannot install yet.")]
+    [InlineData(ApplicationKind.Msix, "Tool is of a kind this agent cannot install.")]
     [InlineData(ApplicationKind.Winget, "Tool is a winget package, which this agent cannot install yet.")]
     public async Task AKindThisAgentCannotInstallFailsItsApplication(ApplicationKind kind, string error)
     {

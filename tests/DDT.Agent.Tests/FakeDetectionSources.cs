@@ -6,10 +6,12 @@ using DDT.Agent.Applications;
 
 namespace DDT.Agent.Tests;
 
-// The machine a detection rule looks at: the products, the uninstall keys, and the files with their versions (null
-// for a file without one). Variables expands %ProgramFiles% only.
-internal sealed class FakeDetectionSources : IInstalledProducts, IUninstallKeys, IDetectionFiles
+// The machine a detection rule looks at: the products, the uninstall keys, the files with their versions (null for a
+// file without one), and the provisioned packages' full names. Variables expands %ProgramFiles% only.
+internal sealed class FakeDetectionSources : IInstalledProducts, IUninstallKeys, IDetectionFiles, IProvisionedPackages
 {
+    public List<string> Provisioned { get; } = [];
+
     public HashSet<string> Products { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public HashSet<string> UninstallKeys { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -25,4 +27,6 @@ internal sealed class FakeDetectionSources : IInstalledProducts, IUninstallKeys,
     bool IDetectionFiles.Exists(string path) => Files.ContainsKey(path);
 
     public string? VersionOf(string path) => Files[path];
+
+    public IReadOnlyList<string> FullNames() => Provisioned;
 }

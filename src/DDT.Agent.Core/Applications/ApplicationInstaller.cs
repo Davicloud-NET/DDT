@@ -26,7 +26,6 @@ public sealed class ApplicationInstaller(
 
         return application.Kind switch
         {
-            ApplicationKind.Msix => $"{application.Name} is an MSIX package, which this agent cannot install yet.",
             ApplicationKind.Winget => $"{application.Name} is a winget package, which this agent cannot install yet.",
             _ => $"{application.Name} is of a kind this agent cannot install.",
         };
@@ -102,7 +101,7 @@ public sealed class ApplicationInstaller(
         {
             await folders.UnpackAsync(install, percent, cancellationToken).ConfigureAwait(false);
             string scripts = folders.Scripts();
-            ApplicationLaunch launch = new(application, package ?? scripts, scripts, ApplicationEnvironment.Of(install, package));
+            ApplicationLaunch launch = new(application, package ?? scripts, scripts, folders.Logs(), ApplicationEnvironment.Of(install, package));
 
             await markStarted().ConfigureAwait(false);
             log.Information(install.Attempt > 1

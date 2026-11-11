@@ -7,9 +7,10 @@ using DDT.Contracts.Agents;
 namespace DDT.Agent.Applications;
 
 // What a kind's installer starts from: the unpacked files or the run's scripts folder as WorkingDirectory, Scripts for
-// a file it writes, and the variables its process gets.
+// a file it writes, Logs for a tool's log, and the variables its process gets.
 public sealed record ApplicationLaunch(
     AgentApplication Application,
     string WorkingDirectory,
     string Scripts,
+    string Logs,
     IReadOnlyDictionary<string, string> Environment);

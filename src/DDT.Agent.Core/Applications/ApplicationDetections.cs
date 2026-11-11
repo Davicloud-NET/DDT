@@ -15,6 +15,7 @@ public static class ApplicationDetections
         UninstallKeyDetection key => $"the uninstall key {key.KeyName}",
         FileDetection { MinimumVersion: { Length: > 0 } minimum } file => $"{file.Path} at version {minimum} or later",
         FileDetection file => file.Path,
+        PackageFamilyDetection family => $"the provisioned package family {family.FamilyName}",
         _ => "its detection rule",
     };
 }

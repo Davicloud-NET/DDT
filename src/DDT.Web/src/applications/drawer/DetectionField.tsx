@@ -101,6 +101,20 @@ export function DetectionField({ detection, findings, onChange }: DetectionField
           />
         </div>
       ) : null}
+
+      {detection.kind === "packageFamily" ? (
+        <TextField
+          label={<Trans>Package family name</Trans>}
+          hint={<Trans>Found when the package is provisioned for all users</Trans>}
+          {...textProps}
+          placeholder="Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"
+          value={detection.familyName}
+          onChange={(familyName) => {
+            set({ familyName });
+          }}
+          {...at("familyName")}
+        />
+      ) : null}
     </div>
   );
 }

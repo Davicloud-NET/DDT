@@ -6,7 +6,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { ApplicationView, SaveApplicationRequest } from "@/applications/applications";
-import { chooseOption, fill, press } from "@/test/aria";
+import { chooseOption, fill, press, selectKey } from "@/test/aria";
 import { expectNoAxeViolations } from "@/test/axe";
 import { applicationUploadOf, applicationView } from "@/test/applicationBuilders";
 import { administrator } from "@/test/builders";
@@ -72,6 +72,7 @@ describe("ApplicationDrawer", () => {
       ...applicationUploadOf("7z2409-x64.msi", {
         files: { packageId: "p9", name: "7z2409-x64.msi", sizeBytes: 4 },
         suggestion: {
+          kind: "Command",
           name: "7-Zip 24.09 (x64 edition)",
           publisher: "Igor Pavlov",
           version: "24.09.00.0",
@@ -122,6 +123,55 @@ describe("ApplicationDrawer", () => {
         version: "24.09.00.0",
         restartExitCodes: [3010, 1641],
         wingetId: null,
+      }),
+    ]);
+  });
+
+  it("opens an uploaded MSIX package as one, with its files, its family and no command", async () => {
+    const posts: SaveApplicationRequest[] = [];
+    await open([], {
+      ...applicationUploadOf("Contoso.App.msixbundle", {
+        files: { packageId: "p8", name: "Contoso.App.msixbundle", sizeBytes: 4 },
+        suggestion: {
+          kind: "Msix",
+          name: "Contoso App",
+          publisher: "Contoso",
+          version: "1.2.3.0",
+          command: null,
+          successExitCodes: [0],
+          restartExitCodes: [3010],
+          detection: { kind: "packageFamily", familyName: "Contoso.App_8wekyb3d8bbwe" },
+        },
+      }),
+      "POST /api/applications": (request) => {
+        posts.push(request.body as SaveApplicationRequest);
+        return json(saved("a8", request.body as SaveApplicationRequest), 201);
+      },
+    });
+
+    press(await screen.findByRole("button", { name: "Add application" }));
+    const adding = await screen.findByRole("dialog", { name: "Add application" });
+    selectFile(adding, new File(["msix"], "Contoso.App.msixbundle", { lastModified: 1_000 }));
+
+    const drawer = await screen.findByRole("dialog", { name: "Application New application" });
+    expect(selectKey(drawer, "Kind")).toHaveTextContent("MSIX package");
+    expect(selectKey(drawer, "Detection")).toHaveTextContent("Package family name");
+    expect(within(drawer).getByText("Contoso.App.msixbundle")).toBeInTheDocument();
+    expect(within(drawer).queryByRole("textbox", { name: "Command" })).not.toBeInTheDocument();
+    expect(within(drawer).getByRole("textbox", { name: "Package family name" })).toHaveValue(
+      "Contoso.App_8wekyb3d8bbwe",
+    );
+
+    press(within(drawer).getByRole("button", { name: "Save application" }));
+
+    expect(await screen.findByRole("row", { name: /^Contoso App/ })).toBeInTheDocument();
+    expect(posts).toEqual([
+      expect.objectContaining({
+        kind: "Msix",
+        packageId: "p8",
+        command: null,
+        restartExitCodes: [3010],
+        detection: { kind: "packageFamily", familyName: "Contoso.App_8wekyb3d8bbwe" },
       }),
     ]);
   });

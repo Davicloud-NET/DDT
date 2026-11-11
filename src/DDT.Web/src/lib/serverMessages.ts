@@ -109,6 +109,30 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "application.listedTwice",
     message: "This application is listed twice.",
   }),
+  "application.msixNone": msg({
+    context: "application.msixNone",
+    message: "The files hold no MSIX or Appx package.",
+  }),
+  "application.msixOnlyFrameworks": msg({
+    context: "application.msixOnlyFrameworks",
+    message: "The files hold only framework packages. Add the package that uses them.",
+  }),
+  "application.msixTooMany": msg({
+    context: "application.msixTooMany",
+    message: "The files hold more than {max} packages.",
+  }),
+  "application.msixTwoLicenses": msg({
+    context: "application.msixTwoLicenses",
+    message: "The files hold more than one licence: {files}. Keep one.",
+  }),
+  "application.msixTwoMains": msg({
+    context: "application.msixTwoMains",
+    message: "The files hold more than one main package: {packages}. Keep one.",
+  }),
+  "application.msixUnreadable": msg({
+    context: "application.msixUnreadable",
+    message: "{file} is no MSIX or Appx package that can be read.",
+  }),
   "application.nameSemicolon": msg({
     context: "application.nameSemicolon",
     message: "The name cannot contain a semicolon.",
@@ -116,6 +140,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "application.nameTaken": msg({
     context: "application.nameTaken",
     message: "An application or bundle is already called {name}.",
+  }),
+  "application.packageFamily": msg({
+    context: "application.packageFamily",
+    message: "Enter the package family name, such as {example}.",
   }),
   "application.productCode": msg({
     context: "application.productCode",

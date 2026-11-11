@@ -75,6 +75,34 @@ public static partial class ServerMessages
         "application.detectionVersion",
         "Enter a version of 1 to 4 numbers up to 65535, such as 1.2.3.4, or leave it empty.");
 
+    public static readonly MessageTemplate ApplicationPackageFamily = Define(
+        "application.packageFamily",
+        "Enter the package family name, such as {example}.");
+
+    public static readonly MessageTemplate ApplicationMsixNone = Define(
+        "application.msixNone",
+        "The files hold no MSIX or Appx package.");
+
+    public static readonly MessageTemplate ApplicationMsixOnlyFrameworks = Define(
+        "application.msixOnlyFrameworks",
+        "The files hold only framework packages. Add the package that uses them.");
+
+    public static readonly MessageTemplate ApplicationMsixTwoMains = Define(
+        "application.msixTwoMains",
+        "The files hold more than one main package: {packages}. Keep one.");
+
+    public static readonly MessageTemplate ApplicationMsixTwoLicenses = Define(
+        "application.msixTwoLicenses",
+        "The files hold more than one licence: {files}. Keep one.");
+
+    public static readonly MessageTemplate ApplicationMsixUnreadable = Define(
+        "application.msixUnreadable",
+        "{file} is no MSIX or Appx package that can be read.");
+
+    public static readonly MessageTemplate ApplicationMsixTooMany = Define(
+        "application.msixTooMany",
+        "The files hold more than {max} packages.");
+
     public static readonly MessageTemplate ApplicationDependsOnItself = Define(
         "application.dependsOnItself",
         "An application cannot depend on itself.");

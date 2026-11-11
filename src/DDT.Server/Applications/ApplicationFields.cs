@@ -77,6 +77,7 @@ internal sealed record ApplicationFields(
         ProductCodeDetection product => new ProductCodeDetection(ApplicationDetectionRules.NormalizedProductCode(product.ProductCode) ?? product.ProductCode),
         UninstallKeyDetection key => new UninstallKeyDetection(key.KeyName.Trim()),
         FileDetection file => new FileDetection(file.Path.Trim(), Optional(file.MinimumVersion)),
+        PackageFamilyDetection family => new PackageFamilyDetection(family.FamilyName.Trim()),
         _ => null,
     };
 }

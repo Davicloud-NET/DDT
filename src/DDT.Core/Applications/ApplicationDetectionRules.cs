@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using DDT.Contracts.Applications;
 using DDT.Contracts.Messages;
+using DDT.Core.Applications.Msix;
 
 namespace DDT.Core.Applications;
 
@@ -32,6 +33,9 @@ public static partial class ApplicationDetectionRules
                 break;
             case FileDetection file:
                 CheckFile(file, add);
+                break;
+            case PackageFamilyDetection family when !PackageFamilyNames.IsFamilyName(family.FamilyName?.Trim()):
+                add("detection.familyName", ServerMessages.ApplicationPackageFamily.With("example", PackageFamilyNames.Example));
                 break;
         }
     }

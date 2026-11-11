@@ -99,6 +99,22 @@ public sealed class ApplicationDetectionRulesTests
             ["detection.path", "detection.minimumVersion"],
             ApplicationRules.Check(ApplicationRulesTests.Command with { Detection = new FileDetection("7z.exe", "x") }, null).Select(problem => problem.Field));
 
+    [Theory]
+    [InlineData("Microsoft.DesktopAppInstaller_8wekyb3d8bbwe")]
+    [InlineData(" Contoso.App_8wekyb3d8bbwe ")]
+    public void AcceptsAPackageFamilyName(string family) =>
+        Assert.Empty(ApplicationRules.Check(ApplicationRulesTests.Command with { Detection = new PackageFamilyDetection(family) }, null));
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Microsoft.DesktopAppInstaller")]
+    [InlineData("Microsoft.DesktopAppInstaller_1.0.0.0_x64__8wekyb3d8bbwe")]
+    public void RefusesWhatIsNoPackageFamilyName(string family) =>
+        ApplicationRulesTests.AssertProblem(
+            ApplicationRulesTests.Command with { Detection = new PackageFamilyDetection(family) },
+            "detection.familyName",
+            ServerMessages.ApplicationPackageFamily);
+
     [Fact]
     public void NoDetectionIsFine() => Assert.Empty(ApplicationRules.Check(ApplicationRulesTests.Command with { Detection = null }, null));
 }

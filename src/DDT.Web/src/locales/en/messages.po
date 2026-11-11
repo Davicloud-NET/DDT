@@ -473,6 +473,11 @@ msgstr "{field}: {problem}"
 msgid "{file} is already in the library as {name}."
 msgstr "{file} is already in the library as {name}."
 
+#: src/lib/serverMessages.ts
+msgctxt "application.msixUnreadable"
+msgid "{file} is no MSIX or Appx package that can be read."
+msgstr "{file} is no MSIX or Appx package that can be read."
+
 #: src/images/imageView.ts
 msgid "{file}, index {index}"
 msgstr "{file}, index {index}"
@@ -4309,6 +4314,11 @@ msgid "Enter the name DDT shows for the account."
 msgstr "Enter the name DDT shows for the account."
 
 #: src/lib/serverMessages.ts
+msgctxt "application.packageFamily"
+msgid "Enter the package family name, such as {example}."
+msgstr "Enter the package family name, such as {example}."
+
+#: src/lib/serverMessages.ts
 msgctxt "stepAccount.passwordForNewDestination"
 msgid "Enter the password again: a stored password goes only to the user name, domain and servers it was entered for."
 msgstr "Enter the password again: a stored password goes only to the user name, domain and servers it was entered for."
@@ -4747,6 +4757,10 @@ msgstr "Format"
 #: src/settings/directory/TestResult.tsx
 msgid "Found"
 msgstr "Found"
+
+#: src/applications/drawer/DetectionField.tsx
+msgid "Found when the package is provisioned for all users"
+msgstr "Found when the package is provisioned for all users"
 
 #: src/boot/keyboardLayouts.ts
 #: src/boot/linuxBoot.ts
@@ -7382,6 +7396,11 @@ msgstr "Package changed"
 #: src/sequences/steps/ScriptPackageSetting.tsx
 msgid "Package deleted"
 msgstr "Package deleted"
+
+#: src/applications/applicationView.ts
+#: src/applications/drawer/DetectionField.tsx
+msgid "Package family name"
+msgstr "Package family name"
 
 #: src/audit/auditView.ts
 msgid "Package uploaded"
@@ -10103,6 +10122,31 @@ msgstr "The file must not be empty and must fit on the server's store volume."
 msgctxt "upload.fileName"
 msgid "The file name must have 1 to {max} characters and no control characters."
 msgstr "The file name must have 1 to {max} characters and no control characters."
+
+#: src/lib/serverMessages.ts
+msgctxt "application.msixTooMany"
+msgid "The files hold more than {max} packages."
+msgstr "The files hold more than {max} packages."
+
+#: src/lib/serverMessages.ts
+msgctxt "application.msixTwoLicenses"
+msgid "The files hold more than one licence: {files}. Keep one."
+msgstr "The files hold more than one licence: {files}. Keep one."
+
+#: src/lib/serverMessages.ts
+msgctxt "application.msixTwoMains"
+msgid "The files hold more than one main package: {packages}. Keep one."
+msgstr "The files hold more than one main package: {packages}. Keep one."
+
+#: src/lib/serverMessages.ts
+msgctxt "application.msixNone"
+msgid "The files hold no MSIX or Appx package."
+msgstr "The files hold no MSIX or Appx package."
+
+#: src/lib/serverMessages.ts
+msgctxt "application.msixOnlyFrameworks"
+msgid "The files hold only framework packages. Add the package that uses them."
+msgstr "The files hold only framework packages. Add the package that uses them."
 
 #: src/lib/serverMessages.ts
 msgctxt "deployment.applicationFilesGone"

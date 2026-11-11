@@ -5,6 +5,7 @@
 using System.IO.Compression;
 using DDT.Contracts.Applications;
 using DDT.Core.Applications;
+using DDT.Core.Applications.Msix;
 using DDT.Server.Applications.Installers;
 using DDT.Server.Images;
 using DDT.Server.Packages;
@@ -12,7 +13,7 @@ using DDT.Server.Packages;
 namespace DDT.Server.Applications;
 
 // An application's files arrive as a zip, or as one file of any kind that the server zips. A .msix is a zip too, so the
-// extension decides, not the content.
+// extension decides, not the content: it is zipped like any other file.
 internal static class ApplicationUploads
 {
     public static ApplicationFiles Files(Package package)
@@ -42,17 +43,32 @@ internal static class ApplicationUploads
         return wrapped;
     }
 
-    // Reads the uploaded installer, or the one .msi or .exe at a zip's root. Call after the zip passed its check.
+    // Reads the uploaded installer or MSIX package, a zip's MSIX packages, or else the one .msi or .exe at a zip's root.
+    // Call after the zip passed its check.
     public static async Task<ApplicationSuggestion?> SuggestAsync(ImageStore store, ImageUpload upload, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(upload);
 
         string part = store.PartPath(upload.Id);
+        string name = EntryName(upload.FileName);
 
         if (!IsZip(upload.FileName))
         {
-            return Suggest(part, EntryName(upload.FileName));
+            return MsixLayouts.IsPackage(name) ? Suggest(MsixLayouts.Of([name], _ => ManifestOf(part), _ => false)) : Suggest(part, name);
+        }
+
+        MsixLayoutResult msix;
+
+        using (FileStream zip = new(part, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            msix = MsixZipLayout.Read(zip, store.UploadsDirectory);
+        }
+
+        // Packages with a problem suggest nothing: the problem shows when the application is saved.
+        if (msix.HasPackages)
+        {
+            return Suggest(msix);
         }
 
         using ZipArchive archive = ZipFile.OpenRead(part);
@@ -103,7 +119,8 @@ internal static class ApplicationUploads
         };
 
         return new ApplicationSuggestion(
-            LibraryEntries.Bounded(ApplicationNames.Clean(facts.Name?.Replace(ApplicationNames.Separator, ',')), ApplicationLimits.MaxNameLength),
+            ApplicationKind.Command,
+            Name(facts.Name),
             Text(facts.Publisher, ApplicationLimits.MaxPublisherLength),
             Text(facts.Version, ApplicationLimits.MaxVersionLength),
             suggestion.CommandLine,
@@ -111,6 +128,34 @@ internal static class ApplicationUploads
             suggestion.RestartExitCodes,
             detection);
     }
+
+    private static ApplicationSuggestion? Suggest(MsixLayoutResult msix)
+    {
+        if (msix.Layout?.Main.Manifest is not { } main)
+        {
+            return null;
+        }
+
+        return new ApplicationSuggestion(
+            ApplicationKind.Msix,
+            Name(main.DisplayName),
+            Text(main.PublisherDisplayName, ApplicationLimits.MaxPublisherLength),
+            Text(main.Version, ApplicationLimits.MaxVersionLength),
+            null,
+            [0],
+            [3010],
+            new PackageFamilyDetection(main.FamilyName));
+    }
+
+    private static MsixManifest? ManifestOf(string path)
+    {
+        using FileStream package = new(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+        return MsixManifestReader.Read(package);
+    }
+
+    private static string? Name(string? value) =>
+        LibraryEntries.Bounded(ApplicationNames.Clean(value?.Replace(ApplicationNames.Separator, ',')), ApplicationLimits.MaxNameLength);
 
     private static string? Text(string? value, int maxLength) =>
         string.IsNullOrWhiteSpace(value) || value.Any(char.IsControl) ? null : LibraryEntries.Bounded(value.Trim(), maxLength);

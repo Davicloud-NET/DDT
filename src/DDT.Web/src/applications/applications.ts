@@ -14,7 +14,8 @@ export type ApplicationKind = "Command" | "Msix" | "Winget";
 export type ApplicationDetection =
   | { kind: "productCode"; productCode: string }
   | { kind: "uninstallKey"; keyName: string }
-  | { kind: "file"; path: string; minimumVersion?: string | null };
+  | { kind: "file"; path: string; minimumVersion?: string | null }
+  | { kind: "packageFamily"; familyName: string };
 
 // The uploaded files, kept as a package the Packages page does not list.
 export interface ApplicationFiles {
@@ -96,12 +97,14 @@ export interface SaveApplicationBundleRequest {
   members: string[];
 }
 
-// What an uploaded MSI or known EXE installer suggests. detection is a product code, an uninstall key or null.
+// What an uploaded MSI, known EXE installer or MSIX package suggests. command is null for MSIX. detection is a
+// product code, an uninstall key, a package family or null.
 export interface ApplicationSuggestion {
+  kind: ApplicationKind;
   name: string | null;
   publisher: string | null;
   version: string | null;
-  command: string;
+  command: string | null;
   successExitCodes: number[];
   restartExitCodes: number[];
   detection: ApplicationDetection | null;

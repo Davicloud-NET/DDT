@@ -12,4 +12,5 @@ namespace DDT.Contracts.Applications;
 [JsonDerivedType(typeof(ProductCodeDetection), "productCode")]
 [JsonDerivedType(typeof(UninstallKeyDetection), "uninstallKey")]
 [JsonDerivedType(typeof(FileDetection), "file")]
+[JsonDerivedType(typeof(PackageFamilyDetection), "packageFamily")]
 public abstract record ApplicationDetection;

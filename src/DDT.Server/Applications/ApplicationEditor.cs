@@ -33,7 +33,7 @@ internal sealed class ApplicationEditor(
         DateTimeOffset now = timeProvider.GetUtcNow();
         Guid id = Guid.CreateVersion7(now);
         ApplicationRows rows = await views.RowsAsync(cancellationToken).ConfigureAwait(false);
-        (ApplicationFields? fields, FieldProblems? problems) = ApplicationLibraryChecks.Check(request, id, isNew: true, rows);
+        (ApplicationFields? fields, FieldProblems? problems) = ApplicationLibraryChecks.Check(request, id, isNew: true, rows, store);
 
         if (fields is null)
         {
@@ -71,7 +71,7 @@ internal sealed class ApplicationEditor(
             return EditOutcome<ApplicationView>.Newer(ApplicationViews.View(application, rows));
         }
 
-        (ApplicationFields? fields, FieldProblems? problems) = ApplicationLibraryChecks.Check(request, id, isNew: false, rows);
+        (ApplicationFields? fields, FieldProblems? problems) = ApplicationLibraryChecks.Check(request, id, isNew: false, rows, store);
 
         if (fields is null)
         {

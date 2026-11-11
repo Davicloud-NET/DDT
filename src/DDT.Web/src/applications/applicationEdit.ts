@@ -21,6 +21,7 @@ export interface DetectionEdit {
   keyName: string;
   path: string;
   minimumVersion: string;
+  familyName: string;
 }
 
 // The fields an application's drawer edits. Fields of the other kinds are kept but not sent.
@@ -48,6 +49,7 @@ const noDetection: DetectionEdit = {
   keyName: "",
   path: "",
   minimumVersion: "",
+  familyName: "",
 };
 
 export function detectionEditOf(detection: ApplicationDetection | null): DetectionEdit {
@@ -63,6 +65,8 @@ export function detectionEditOf(detection: ApplicationDetection | null): Detecti
         path: detection.path,
         minimumVersion: detection.minimumVersion ?? "",
       };
+    case "packageFamily":
+      return { ...noDetection, kind: "packageFamily", familyName: detection.familyName };
     default:
       return noDetection;
   }
@@ -89,19 +93,11 @@ export function newApplicationEdit(kind: ApplicationKind): ApplicationEdit {
   };
 }
 
-const msixExtensions = [".msix", ".msixbundle", ".appx", ".appxbundle"];
-
-// The kind an uploaded file suggests: an MSIX or Appx package, or else files with a command.
-export function kindOfUpload(fileName: string): ApplicationKind {
-  const lower = fileName.toLowerCase();
-
-  return msixExtensions.some((extension) => lower.endsWith(extension)) ? "Msix" : "Command";
-}
-
-// A new application from its uploaded files, filled from what the installer suggests.
+// A new application from its uploaded files, filled from what the server read in them. Without a suggestion it is a
+// command's files.
 export function uploadedApplicationEdit(upload: ApplicationUpload): ApplicationEdit {
-  const edit = { ...newApplicationEdit(kindOfUpload(upload.files.name)), files: upload.files };
   const suggestion = upload.suggestion ?? null;
+  const edit = { ...newApplicationEdit(suggestion?.kind ?? "Command"), files: upload.files };
 
   if (suggestion === null) {
     return edit;
@@ -109,11 +105,10 @@ export function uploadedApplicationEdit(upload: ApplicationUpload): ApplicationE
 
   return {
     ...edit,
-    kind: "Command",
     name: suggestion.name ?? "",
     publisher: suggestion.publisher ?? "",
     version: suggestion.version ?? "",
-    command: suggestion.command,
+    command: suggestion.command ?? "",
     successExitCodes: suggestion.successExitCodes,
     restartExitCodes: suggestion.restartExitCodes,
     detection: detectionEditOf(suggestion.detection),
@@ -158,6 +153,8 @@ export function detectionOf(edit: DetectionEdit): ApplicationDetection | null {
         path: edit.path.trim(),
         minimumVersion: optional(edit.minimumVersion),
       };
+    case "packageFamily":
+      return { kind: "packageFamily", familyName: edit.familyName.trim() };
     case "none":
       return null;
   }

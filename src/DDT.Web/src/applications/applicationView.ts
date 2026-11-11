@@ -30,6 +30,7 @@ export const detectionKinds: readonly DetectionKind[] = [
   "productCode",
   "uninstallKey",
   "file",
+  "packageFamily",
 ];
 
 export function detectionLabel(kind: DetectionKind): string {
@@ -42,6 +43,8 @@ export function detectionLabel(kind: DetectionKind): string {
       return t`Uninstall key`;
     case "file":
       return t`File`;
+    case "packageFamily":
+      return t`Package family name`;
   }
 }
 

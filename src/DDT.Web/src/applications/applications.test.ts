@@ -11,7 +11,6 @@ import {
   applicationEditOf,
   applicationRequestOf,
   isShownFor,
-  kindOfUpload,
   uploadedApplicationEdit,
 } from "./applicationEdit";
 import {
@@ -72,6 +71,7 @@ describe("the application form", () => {
     const edit = uploadedApplicationEdit({
       files,
       suggestion: {
+        kind: "Command",
         name: "7-Zip 24.09 (x64)",
         publisher: "Igor Pavlov",
         version: "24.09.00.0",
@@ -102,19 +102,35 @@ describe("the application form", () => {
     });
   });
 
-  it("takes an uploaded MSIX package as one, and other files without a suggestion as a command's", () => {
-    expect(kindOfUpload("Contoso.App_1.0.0.0_x64.msixbundle")).toBe("Msix");
-    expect(kindOfUpload("Setup.APPX")).toBe("Msix");
-    expect(kindOfUpload("scripts.zip")).toBe("Command");
-
-    const edit = uploadedApplicationEdit({
+  it("takes the kind the server read in the upload, not the file's name", () => {
+    const msix = uploadedApplicationEdit({
+      files: { ...files, name: "contoso.zip" },
+      suggestion: {
+        kind: "Msix",
+        name: "Contoso App",
+        publisher: null,
+        version: "1.2.3.0",
+        command: null,
+        successExitCodes: [0],
+        restartExitCodes: [3010],
+        detection: { kind: "packageFamily", familyName: "Contoso.App_8wekyb3d8bbwe" },
+      },
+    });
+    const unknown = uploadedApplicationEdit({
       files: { ...files, name: "app.msix" },
       suggestion: null,
     });
 
-    expect(edit.kind).toBe("Msix");
-    expect(edit.files?.packageId).toBe("p1");
-    expect(edit.name).toBe("");
+    expect(applicationRequestOf(0, msix)).toMatchObject({
+      kind: "Msix",
+      packageId: "p1",
+      command: null,
+      restartExitCodes: [3010],
+      detection: { kind: "packageFamily", familyName: "Contoso.App_8wekyb3d8bbwe" },
+    });
+    expect(unknown.kind).toBe("Command");
+    expect(unknown.files?.packageId).toBe("p1");
+    expect(unknown.name).toBe("");
   });
 
   it("sends only what the chosen kind uses", () => {
@@ -161,6 +177,16 @@ describe("the application form", () => {
       applicationRequestOf(1, { ...typed, detection: { ...typed.detection, kind: "none" } })
         .detection,
     ).toBeNull();
+    expect(
+      applicationRequestOf(1, {
+        ...typed,
+        detection: {
+          ...typed.detection,
+          kind: "packageFamily",
+          familyName: " Contoso.App_8wekyb3d8bbwe ",
+        },
+      }).detection,
+    ).toEqual({ kind: "packageFamily", familyName: "Contoso.App_8wekyb3d8bbwe" });
   });
 
   it("shows a kind's own fields and puts the others' problems in the notice", () => {

@@ -32,6 +32,9 @@ public sealed class ApplicationWireFormatTests
         ["file"] = (
             new FileDetection(@"%ProgramFiles%\7-Zip\7z.exe", "24.9"),
             """{"kind":"file","path":"%ProgramFiles%\\7-Zip\\7z.exe","minimumVersion":"24.9"}"""),
+        ["packageFamily"] = (
+            new PackageFamilyDetection("Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"),
+            """{"kind":"packageFamily","familyName":"Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"}"""),
     };
 
     public static TheoryData<string> Detections => [.. s_detections.Keys];
@@ -85,6 +88,24 @@ public sealed class ApplicationWireFormatTests
             $$"""{"id":"{{Id}}","name":"7-Zip","description":null,"publisher":"Igor Pavlov","version":"24.09","kind":"Command","files":{"packageId":"{{Package}}","name":"7z2409-x64.msi","sizeBytes":1617920},"command":"msiexec /i 7z2409-x64.msi /qn","successExitCodes":[0],"restartExitCodes":[3010],"detection":{"kind":"uninstallKey","keyName":"7-Zip"},"dependsOn":["{{Other}}"],"wingetId":null,"wingetVersion":null,"timeoutMinutes":60,"continueOnFailure":true,"usedBy":[{"id":"{{Other}}","name":"Office","kind":"Bundle"}],"revision":3,"updatedUtc":"2026-11-11T10:00:00+00:00","updatedBy":"jane"}""",
             JsonSerializer.Serialize(view, DdtJsonContext.Default.ApplicationView));
     }
+
+    [Fact]
+    public void WritesTheSuggestionOfAnMsixUpload() =>
+        Assert.Equal(
+            """{"files":{"packageId":"0197a3c0-0000-7000-8000-000000000003","name":"Contoso.App.msix","sizeBytes":2048},"suggestion":{"kind":"Msix","name":"Contoso App","publisher":"Contoso","version":"1.2.3.0","command":null,"successExitCodes":[0],"restartExitCodes":[3010],"detection":{"kind":"packageFamily","familyName":"Contoso.App_8wekyb3d8bbwe"}}}""",
+            JsonSerializer.Serialize(
+                new ApplicationUpload(
+                    new ApplicationFiles(s_package, "Contoso.App.msix", 2048),
+                    new ApplicationSuggestion(
+                        ApplicationKind.Msix,
+                        "Contoso App",
+                        "Contoso",
+                        "1.2.3.0",
+                        null,
+                        [0],
+                        [3010],
+                        new PackageFamilyDetection("Contoso.App_8wekyb3d8bbwe"))),
+                DdtJsonContext.Default.ApplicationUpload));
 
     [Fact]
     public void ReadsTheSaveTheWebSends()

@@ -7,15 +7,23 @@ using DDT.Contracts.Applications;
 using DDT.Contracts.Messages;
 using DDT.Core.Applications;
 using DDT.Server.Endpoints;
+using DDT.Server.Images;
+using DDT.Server.Packages;
 
 namespace DDT.Server.Applications;
 
-// The checks of a save that need the stored library: names unique across applications and bundles, files that exist,
-// dependencies and members that exist, and no dependency circle. A field the form rules refused is not checked again.
+// The checks of a save that need the stored library: names unique across applications and bundles, files that exist
+// and, for MSIX, hold packages DISM can take, dependencies and members that exist, and no dependency circle. A field the
+// form rules refused is not checked again.
 internal static class ApplicationLibraryChecks
 {
     // self is the application's id, a new one's too.
-    public static (ApplicationFields? Fields, FieldProblems? Problems) Check(SaveApplicationRequest request, Guid self, bool isNew, ApplicationRows rows)
+    public static (ApplicationFields? Fields, FieldProblems? Problems) Check(
+        SaveApplicationRequest request,
+        Guid self,
+        bool isNew,
+        ApplicationRows rows,
+        ImageStore store)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(rows);
@@ -29,9 +37,11 @@ internal static class ApplicationLibraryChecks
             CheckName(request.Name, self, rows, problems);
         }
 
-        if (!Refused("packageId") && request.PackageId is { } packageId && !rows.Files.ContainsKey(packageId))
+        if (!Refused("packageId") && request.PackageId is { } packageId)
         {
-            problems.Add("packageId", ServerMessages.ApplicationFilesGone.With());
+            // MSIX files an MSIX application has already were read when it was saved with them.
+            bool read = !isNew && rows.Applications.GetValueOrDefault(self) is { Kind: ApplicationKind.Msix } stored && stored.PackageId == packageId;
+            CheckFiles(packageId, request.Kind == ApplicationKind.Msix && !read, rows, store, problems);
         }
 
         if (!Refused("dependsOn"))
@@ -81,6 +91,18 @@ internal static class ApplicationLibraryChecks
         }
 
         return problems;
+    }
+
+    private static void CheckFiles(Guid packageId, bool readMsix, ApplicationRows rows, ImageStore store, FieldProblems problems)
+    {
+        if (!rows.Files.TryGetValue(packageId, out Package? files))
+        {
+            problems.Add("packageId", ServerMessages.ApplicationFilesGone.With());
+        }
+        else if (readMsix && MsixFilesCheck.ProblemOf(store, files) is { } problem)
+        {
+            problems.Add("packageId", problem);
+        }
     }
 
     // Applications and bundles share one namespace, because rules and answers name them in one list.

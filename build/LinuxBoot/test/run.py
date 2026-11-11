@@ -492,7 +492,8 @@ def shell(boot, out):
 # gets as far as its notice and its first question to the server, which shows that it runs and read agent.json.
 def agent(boot, out):
     with open(os.path.join(boot, "ddt-linux-boot.json"), encoding="utf-8") as source:
-        bundled = json.load(source).get("agent")
+        manifest = json.load(source)
+    bundled = manifest.get("agent")
     if not bundled:
         check("agent: ddt.img holds the agent", False,
               "it holds the placeholder. Build the boot environment with Build-LinuxBoot.ps1 -AgentFolder")
@@ -517,6 +518,9 @@ def agent(boot, out):
           "started %d time, not ended %.1f s after power-on" % (machine.count("ddt: agent: starting"), machine.seconds()))
     check("agent: Scroll Lock and Ctrl+S do not hold its screen", held is not None and held[1] > held[0],
           "%d lines of the agent before the keys, %d within a minute after them" % held if held is not None else "the agent never asked")
+    if manifest.get("console"):
+        connected = [line for line in screen if "The graphical console" in line and "is connected" in line]
+        check("agent: the console from ddt.img connects", connected, connected[0] if connected else machine.tail())
 
 
 # Both keys stop what a terminal shows until another key lets it go on, and a program that writes to it waits.
@@ -539,7 +543,9 @@ def adapter(boot, out):
     late = ["-device", "qemu-xhci,id=usb", "-netdev", "user,id=late,net=10.0.5.0/24"]
     # ignore_loglevel shows on the serial port what the start scripts say after the start, which only the kernel's
     # log has then.
-    machine = Machine("adapter", boot, out, "module_blacklist=virtio_net ignore_loglevel", initrds=[watch_archive()], init="/ddt-test/init")
+    # ddttext=1 keeps the graphical console from drawing over the screen the watcher reads.
+    machine = Machine("adapter", boot, out, "module_blacklist=virtio_net ignore_loglevel ddttext=1", initrds=[watch_archive()],
+                      init="/ddt-test/init")
     machine.start(SCREEN + late)
     said = machine.wait("screen: .*Linux shows no network adapter on this machine", 150)
     screen = screen_lines(machine)

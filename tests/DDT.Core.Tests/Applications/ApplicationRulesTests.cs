@@ -126,8 +126,16 @@ public sealed class ApplicationRulesTests
         AssertProblem(Command with { WingetVersion = "1.0" }, "wingetId", ServerMessages.ApplicationWingetNotUsed);
 
     [Fact]
-    public void NeedsOneSuccessCode() =>
-        AssertProblem(Command with { SuccessExitCodes = [] }, "successExitCodes", ServerMessages.SequenceSuccessExitCodes);
+    public void NeedsOneSuccessCodeWithoutRestartCodes() =>
+        AssertProblem(Command with { SuccessExitCodes = [], RestartExitCodes = [] }, "successExitCodes", ServerMessages.SequenceSuccessExitCodes);
+
+    [Fact]
+    public void TakesNoSuccessCodeWhenEveryEndIsARestart() =>
+        Assert.Empty(ApplicationRules.Check(Command with { SuccessExitCodes = [], RestartExitCodes = [0, 3010] }, null));
+
+    [Fact]
+    public void RefusesTooManySuccessCodes() =>
+        AssertProblem(Command with { SuccessExitCodes = [.. Enumerable.Range(1, 17)], RestartExitCodes = [0] }, "successExitCodes", ServerMessages.SequenceSuccessExitCodes);
 
     [Fact]
     public void RefusesTooManyRestartCodes() =>

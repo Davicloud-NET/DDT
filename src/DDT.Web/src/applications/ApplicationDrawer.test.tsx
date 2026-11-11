@@ -314,6 +314,29 @@ describe("ApplicationDrawer", () => {
     expect(puts[0]?.dependsOn).toEqual(["a3", "a2"]);
   });
 
+  it("saves no success code when every exit code asks for a restart", async () => {
+    const puts: SaveApplicationRequest[] = [];
+    await open([sevenZip], {
+      "PUT /api/applications/a1": (request) => {
+        puts.push(request.body as SaveApplicationRequest);
+        return json(saved("a1", request.body as SaveApplicationRequest, 2));
+      },
+    });
+
+    const drawer = await drawerOf("7-Zip");
+    fill(within(drawer).getByRole("textbox", { name: "Exit codes that mean success" }), "");
+    fill(
+      within(drawer).getByRole("textbox", { name: "Exit codes that ask for a restart" }),
+      "0, 3010",
+    );
+    press(within(drawer).getByRole("button", { name: "Save application" }));
+
+    await waitFor(() => {
+      expect(puts).toHaveLength(1);
+    });
+    expect(puts[0]).toMatchObject({ successExitCodes: [], restartExitCodes: [0, 3010] });
+  });
+
   it("offers their copy or keeps this one when someone else saved the application meanwhile", async () => {
     const theirs = applicationView({ id: "a1", version: "24.10", revision: 2, updatedBy: "anna" });
     const puts: SaveApplicationRequest[] = [];

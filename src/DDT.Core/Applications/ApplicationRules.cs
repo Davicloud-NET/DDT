@@ -157,9 +157,12 @@ public static partial class ApplicationRules
         }
     }
 
+    // No success code is fine when restart codes are set, so an installer can always end in a restart, as MDT's Reboot did.
     private static void CheckExitCodes(IReadOnlyList<int>? success, IReadOnlyList<int>? restart, Action<string, ServerMessage> add)
     {
-        if (success is not { Count: >= 1 and <= ApplicationLimits.MaxExitCodes })
+        int least = restart is { Count: > 0 } ? 0 : 1;
+
+        if (success is null || success.Count < least || success.Count > ApplicationLimits.MaxExitCodes)
         {
             add("successExitCodes", ServerMessages.SequenceSuccessExitCodes.With("max", ApplicationLimits.MaxExitCodes));
         }

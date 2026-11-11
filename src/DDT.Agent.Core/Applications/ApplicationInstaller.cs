@@ -35,7 +35,9 @@ public sealed class ApplicationInstaller(
     {
         ArgumentNullException.ThrowIfNull(application);
 
-        return $"{application.Name} ended with exit code {exitCode}, which is not one of its success codes ({string.Join(", ", application.SuccessExitCodes)}).";
+        return application.SuccessExitCodes.Count == 0
+            ? $"{application.Name} ended with exit code {exitCode}, which is not one of its restart codes ({string.Join(", ", application.RestartExitCodes)})."
+            : $"{application.Name} ended with exit code {exitCode}, which is not one of its success codes ({string.Join(", ", application.SuccessExitCodes)}).";
     }
 
     public async Task<ApplicationOutcome> InstallAsync(

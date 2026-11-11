@@ -57,6 +57,30 @@ public sealed class InstallApplicationsResumeTests
         Assert.Equal(["save", "install Runtime", "save", "install Tool"], run.Events);
     }
 
+    [Fact]
+    public async Task WithNoSuccessCodeExitCodeZeroIsARestart()
+    {
+        AgentApplication restarting = Tool with { SuccessExitCodes = [], RestartExitCodes = [0, 3010] };
+        using ApplicationRunFixture run = new ApplicationRunFixture().Serve(restarting);
+
+        StepResult result = await run.RunAsync();
+
+        Assert.Equal(StepResult.RebootRequired(), result);
+        Assert.Contains("Installed Tool, which asks for a restart with exit code 0.", (await run.SentLinesAsync()).Select(line => line.Message));
+    }
+
+    [Fact]
+    public async Task WithNoSuccessCodeAnotherExitCodeFails()
+    {
+        AgentApplication restarting = Tool with { SuccessExitCodes = [], RestartExitCodes = [0, 3010] };
+        using ApplicationRunFixture run = new ApplicationRunFixture().Serve(restarting);
+        run.Installer.ExitCode = _ => 1603;
+
+        StepResult result = await run.RunAsync();
+
+        Assert.Equal(StepResult.Failed("Tool ended with exit code 1603, which is not one of its restart codes (0, 3010).") with { ExitCode = 1603 }, result);
+    }
+
     // The list the step runs is the server's, and the progress is matched to it by id.
     [Fact]
     public async Task AnApplicationInTheProgressThatIsNoLongerInTheListIsLeftOut()

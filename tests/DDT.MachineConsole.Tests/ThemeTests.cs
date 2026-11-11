@@ -78,7 +78,7 @@ public sealed class ThemeTests
                 size * double.Parse(type.Value.GetProperty("lineHeight").GetString()!, CultureInfo.InvariantCulture),
                 double.Parse(written[key + "LineHeight"], CultureInfo.InvariantCulture),
                 3);
-            Assert.Equal($"avares://ddt-console/Assets/Fonts#{family} {type.Value.GetProperty("weight").GetInt32()} {stretch}", written[key + "Family"]);
+            Assert.Equal($"avares://DDT.MachineConsole/Assets/Fonts#{family} {type.Value.GetProperty("weight").GetInt32()} {stretch}", written[key + "Family"]);
         }
     }
 

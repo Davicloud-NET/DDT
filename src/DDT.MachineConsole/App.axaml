@@ -11,16 +11,16 @@
   <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
-        <ResourceInclude Source="avares://ddt-console/Theme/Tokens.axaml" />
-        <ResourceInclude Source="avares://ddt-console/Theme/Console.axaml" />
-        <ResourceInclude Source="avares://ddt-console/Theme/Controls.axaml" />
+        <ResourceInclude Source="avares://DDT.MachineConsole/Theme/Tokens.axaml" />
+        <ResourceInclude Source="avares://DDT.MachineConsole/Theme/Console.axaml" />
+        <ResourceInclude Source="avares://DDT.MachineConsole/Theme/Controls.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>
 
   <Application.Styles>
     <SimpleTheme />
-    <StyleInclude Source="avares://ddt-console/Theme/Type.axaml" />
-    <StyleInclude Source="avares://ddt-console/Theme/Surfaces.axaml" />
+    <StyleInclude Source="avares://DDT.MachineConsole/Theme/Type.axaml" />
+    <StyleInclude Source="avares://DDT.MachineConsole/Theme/Surfaces.axaml" />
   </Application.Styles>
 </Application>

@@ -6,7 +6,8 @@
      its panel. Edges are hairlines, and only overlays cast a shadow. Signal colours mark state and nothing else. -->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:c="using:DDT.MachineConsole.Controls">
+        xmlns:c="using:DDT.MachineConsole.Controls"
+        xmlns:v="using:DDT.MachineConsole.Views">
 
   <Style Selector="Border.panel">
     <Setter Property="Background" Value="{DynamicResource SgPanel}" />
@@ -215,10 +216,10 @@
   </Style>
 
   <!-- While the theme changes, every colour changes at once, and nothing fades into the new theme. -->
-  <Style Selector="Window.switching c|SequenceRail TextBlock">
+  <Style Selector="v|MainView.switching c|SequenceRail TextBlock">
     <Setter Property="Transitions" Value="{x:Null}" />
   </Style>
-  <Style Selector="Window.switching TextBox /template/ Border#border">
+  <Style Selector="v|MainView.switching TextBox /template/ Border#border">
     <Setter Property="Transitions" Value="{x:Null}" />
   </Style>
 

@@ -18,14 +18,22 @@ namespace DDT.Agent.Consoles;
 public sealed class ConsoleStatus
 {
     private readonly Lock _lock = new();
+    private readonly AgentEnvironment _environment;
     private ConsoleState _state;
 
-    public ConsoleStatus(IMachineConsole console, string agentVersion, Uri server, string? keyboardLayout, bool dryRun)
+    public ConsoleStatus(
+        IMachineConsole console,
+        AgentEnvironment environment,
+        string agentVersion,
+        Uri server,
+        string? keyboardLayout,
+        bool dryRun)
     {
         ArgumentNullException.ThrowIfNull(console);
         ArgumentNullException.ThrowIfNull(server);
 
         Console = console;
+        _environment = environment;
         _state = new ConsoleState(
             ConsoleStage.Starting,
             agentVersion,
@@ -127,6 +135,15 @@ public sealed class ConsoleStatus
     // The logo the console shows, as the path of a PNG that ConsoleLogo downloaded. Null for none.
     public void SetLogo(string? path) => Change(state => state with { Logo = path });
 
+    // The layout the console types with, from the registration. Null keeps the one it has.
+    public void SetKeyboardLayout(string? layout)
+    {
+        if (layout is not null)
+        {
+            Change(state => state with { Machine = state.Machine with { KeyboardLayout = layout } });
+        }
+    }
+
     // The agent in the installed Windows registered again to continue its run. The run is shown next.
     public void Registered(Guid machineId) =>
         Change(state => state with { Server = state.Server with { Problem = null, FailedStage = null, Failures = 0 }, MachineId = machineId });
@@ -202,8 +219,13 @@ public sealed class ConsoleStatus
         }
     }
 
+    // In an installed system the agent removes itself after a failure, so the run starts over from the network.
     public void RunFailed(string error) =>
-        Change(state => state with { Stage = ConsoleStage.Failed, Problem = new ConsoleProblem(error, ConsoleRemedy.RunAgain) });
+        Change(state => state with
+        {
+            Stage = ConsoleStage.Failed,
+            Problem = new ConsoleProblem(error, _environment is AgentEnvironment.Windows or AgentEnvironment.Linux ? ConsoleRemedy.Restart : ConsoleRemedy.RunAgain),
+        });
 
     public void RunFinished() => Change(state => state with { Stage = ConsoleStage.Finished });
 
@@ -211,7 +233,9 @@ public sealed class ConsoleStatus
         Change(state => state with
         {
             Stage = ConsoleStage.Restarting,
-            Restart = new ConsoleRestart(reason, into == RestartInto.BootEnvironment ? RestartTarget.WindowsPE : RestartTarget.InstalledSystem),
+            Restart = new ConsoleRestart(
+                reason,
+                into == RestartInto.BootEnvironment ? ConsoleValues.BootTarget(_environment) : RestartTarget.InstalledSystem),
         });
 
     // The machine should have restarted but couldn't. The agent stops, and someone has to restart the machine.

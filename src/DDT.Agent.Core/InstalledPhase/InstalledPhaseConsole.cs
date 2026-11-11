@@ -18,6 +18,7 @@ internal sealed class InstalledPhaseConsole(IDeploySession? session, ConsoleStat
     {
         status?.Registered(registration.MachineId);
         status?.SetLanguage(registration.ConsoleLanguage);
+        status?.SetKeyboardLayout(registration.ConsoleKeyboardLayout);
 
         if (logo is not null)
         {

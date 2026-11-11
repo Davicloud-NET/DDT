@@ -11,4 +11,5 @@ public enum ConsoleNotice
     CloseRefused,
     SessionCloseRefused,
     SignOutWithF9,
+    UnknownKeyboardLayout,
 }

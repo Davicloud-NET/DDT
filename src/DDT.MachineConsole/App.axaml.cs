@@ -12,7 +12,7 @@ namespace DDT.MachineConsole;
 
 public sealed partial class App : Application
 {
-    public const string BodyFont = "avares://ddt-console/Assets/Fonts#Archivo 400 100";
+    public const string BodyFont = "avares://DDT.MachineConsole/Assets/Fonts#Archivo 400 100";
 
     // Program sets this before Avalonia starts. Tests create their windows themselves.
     public static ConsoleStartup? Startup { get; set; }
@@ -27,6 +27,11 @@ public sealed partial class App : Application
         {
             desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
             desktop.MainWindow = startup.Open(this, desktop);
+        }
+        else if (ApplicationLifetime is ISingleViewApplicationLifetime single and IControlledApplicationLifetime lifetime
+            && Startup is { } viewStartup)
+        {
+            single.MainView = viewStartup.OpenView(this, lifetime);
         }
 
         base.OnFrameworkInitializationCompleted();

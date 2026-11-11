@@ -186,7 +186,7 @@ jobs:
 
   # No secret and no signing here. Built without a cache, so nothing an earlier run left is in a release.
   linux:
-    name: Linux agent and boot environment
+    name: Linux agent, console and boot environment
     needs: programs
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -206,12 +206,21 @@ jobs:
           docker buildx build --file build/Dockerfile.agent-linux --target export --platform linux/amd64 --no-cache \
             --build-arg "DDT_VERSION=$VERSION" --output type=local,dest=artifacts/agent-linux .
 
-      # ddt.img gets the agent from the step before, so a machine that starts this release runs this release's agent.
-      - name: Build the Linux boot environment around it
+      # On AlmaLinux 8, so it starts on the distributions DDT installs. The build fails when it needs more than glibc.
+      - name: Publish the console for Linux
+        run: |
+          docker buildx build --file build/Dockerfile.console-linux --target export --platform linux/amd64 --no-cache \
+            --build-arg "DDT_VERSION=$VERSION" --output type=local,dest=artifacts/console-linux .
+          (cd artifacts/console-linux && zip -X -j ../ddt-console-linux-x64.zip ddt-console libSkiaSharp.so libHarfBuzzSharp.so)
+
+      # ddt.img gets the agent and the console from the steps before, so a machine that starts this release runs
+      # this release's.
+      - name: Build the Linux boot environment around them
         run: |
           tools=$(jq --raw-output .toolsImage build/LinuxBoot/packages.lock.json)
           docker buildx build --file build/LinuxBoot/Dockerfile --target export --platform linux/amd64 --no-cache \
             --build-arg "TOOLS_IMAGE=$tools" --build-context agent=artifacts/agent-linux \
+            --build-context console=artifacts/console-linux \
             --output type=local,dest=artifacts/linux-boot build/LinuxBoot
 
       # base.img is the one the lock names and continuous integration booted. The agent in ddt.img is the file the
@@ -223,6 +232,8 @@ jobs:
           jq --raw-output '.files[] | "\(.sha256)  \(.name)"' artifacts/linux-boot/ddt-linux-boot.json | (cd artifacts/linux-boot && sha256sum --check)
           jq --exit-status --arg version "$VERSION" '.agent.version == $version' artifacts/linux-boot/ddt-linux-boot.json
           echo "$(jq --raw-output .agent.sha256 artifacts/linux-boot/ddt-linux-boot.json)  artifacts/agent-linux/ddt-agent" | sha256sum --check
+          jq --exit-status --arg version "$VERSION" '.console.version == $version' artifacts/linux-boot/ddt-linux-boot.json
+          echo "$(jq --raw-output .console.sha256 artifacts/linux-boot/ddt-linux-boot.json)  artifacts/console-linux/ddt-console" | sha256sum --check
 
       # The source packages of everything in the boot environment, each checked against the lock, with the list that
       # is also in the server's legal folder. The archive is the same for the same lock: names in order, no owner, one
@@ -242,6 +253,7 @@ jobs:
           name: linux
           path: |
             artifacts/agent-linux/ddt-agent
+            artifacts/ddt-console-linux-x64.zip
             artifacts/linux-boot/
           if-no-files-found: error
           retention-days: 1
@@ -310,7 +322,7 @@ jobs:
         shell: powershell
         run: |
           $payload = 'artifacts\installer-work\payload'
-          $files = @('ddt-agent-linux-x64') + (@('ddt-linux-boot.json', 'shimx64.efi', 'grubx64.efi', 'vmlinuz', 'base.img', 'ddt.img') | ForEach-Object { "linux-boot\$_" })
+          $files = @('ddt-agent-linux-x64', 'ddt-console-linux-x64.zip') + (@('ddt-linux-boot.json', 'shimx64.efi', 'grubx64.efi', 'vmlinuz', 'base.img', 'ddt.img') | ForEach-Object { "linux-boot\$_" })
           foreach ($file in $files) {
             if (-not (Test-Path -LiteralPath (Join-Path $payload $file) -PathType Leaf)) { throw "The MSI's payload has no $file." }
           }
@@ -324,6 +336,7 @@ jobs:
             artifacts/installer-work/payload/ddt-agent.exe
             artifacts/installer-work/payload/ddt-console.zip
             artifacts/installer-work/payload/ddt-agent-linux-x64
+            artifacts/installer-work/payload/ddt-console-linux-x64.zip
             artifacts/installer-work/payload/linux-boot/
           if-no-files-found: error
 
@@ -492,7 +505,7 @@ jobs:
       # An image without them would start no machine in the Linux boot environment, and its build would not say so.
       - name: Check that the bundle holds the Linux files
         run: |
-          for file in ddt-agent-linux-x64 linux-boot/ddt-linux-boot.json linux-boot/shimx64.efi linux-boot/grubx64.efi linux-boot/vmlinuz linux-boot/base.img linux-boot/ddt.img; do
+          for file in ddt-agent-linux-x64 ddt-console-linux-x64.zip linux-boot/ddt-linux-boot.json linux-boot/shimx64.efi linux-boot/grubx64.efi linux-boot/vmlinuz linux-boot/base.img linux-boot/ddt.img; do
             test -f "artifacts/bundle/$file" || { echo "The bundle has no $file."; exit 1; }
           done
 

@@ -3,15 +3,13 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.IO.Pipes;
-using System.Runtime.Versioning;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using DDT.ConsoleProtocol;
 
 namespace DDT.Agent.Consoles;
 
-// The console in the installed Windows. It's ddt-console.exe as the shell of DDT's session, which Windows starts at the
-// auto-logon. It connects whenever it starts. There's no fallback, because the service has no text console.
+// The console in the installed system: in Windows the shell of DDT's session, which Windows starts at the auto-logon, in
+// Linux a unit on a terminal of its own. It connects whenever it starts. There's no fallback, because the service has no
+// text console.
 public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
 {
     private static readonly TimeSpan s_closeTimeout = TimeSpan.FromSeconds(5);
@@ -40,39 +38,19 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
     // A question asked while no console is connected still waits for the next console.
     public bool CanAsk => IsConnected;
 
-    // Windows may start DDT's session, and the console with it, at any moment.
+    // The system may start the console at any moment.
     public bool AnswersLater => true;
 
     public bool IsConnected => _outbox.IsConnected;
 
-    // Only the agent's account, SYSTEM, and the session's account may open it. The agent's account owns it, and the
-    // console checks that. The agent keeps its single instance between consoles, so the name never becomes free for
-    // another process.
-    [SupportedOSPlatform("windows")]
-    public static NamedPipeServerStream CreatePipe(string name, SecurityIdentifier console)
-    {
-        ArgumentNullException.ThrowIfNull(console);
+    // How the log names it, starting in lower case.
+    public string Name { get; init; } = "the console of DDT's session";
 
-        SecurityIdentifier agent = WindowsIdentity.GetCurrent().User!;
-        PipeSecurity security = new();
-        security.SetOwner(agent);
-        security.AddAccessRule(new PipeAccessRule(agent, PipeAccessRights.FullControl, AccessControlType.Allow));
-        security.AddAccessRule(new PipeAccessRule(console, PipeAccessRights.ReadWrite, AccessControlType.Allow));
-
-        return NamedPipeServerStreamAcl.Create(
-            name,
-            PipeDirection.InOut,
-            1,
-            PipeTransmissionMode.Byte,
-            PipeOptions.Asynchronous | PipeOptions.FirstPipeInstance,
-            0,
-            0,
-            security);
-    }
+    private string Sentence => char.ToUpperInvariant(Name[0]) + Name[1..];
 
     // Serves consoles in the background on the pipe that createPipe opens, until disposed. The state and the newest
-    // lines wait for the first console to connect.
-    public void Start(Func<NamedPipeServerStream> createPipe)
+    // lines wait for the first console to connect. refuse says why a connected client is not the console, or null.
+    public void Start(Func<NamedPipeServerStream> createPipe, Func<NamedPipeServerStream, string?>? refuse = null)
     {
         ArgumentNullException.ThrowIfNull(createPipe);
 
@@ -86,7 +64,7 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
             _started = true;
         }
 
-        _running = RunAsync(createPipe, _stop.Token);
+        _running = RunAsync(createPipe, refuse, _stop.Token);
     }
 
     public void Show(ConsoleState state)
@@ -131,7 +109,7 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
         _stop.Dispose();
     }
 
-    private async Task RunAsync(Func<NamedPipeServerStream> createPipe, CancellationToken stop)
+    private async Task RunAsync(Func<NamedPipeServerStream> createPipe, Func<NamedPipeServerStream, string?>? refuse, CancellationToken stop)
     {
         await Task.Yield();
 
@@ -143,7 +121,7 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            _log.Warning($"The pipe for the console of DDT's session could not be opened ({exception.Message}). The run goes on without it.");
+            _log.Warning($"The pipe for {Name} could not be opened ({exception.Message}). The run goes on without it.");
 
             return;
         }
@@ -156,9 +134,13 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
                 {
                     await pipe.WaitForConnectionAsync(stop).ConfigureAwait(false);
 
-                    if (await ServeAsync(pipe, stop).ConfigureAwait(false) is { } reason)
+                    if (refuse?.Invoke(pipe) is { } refusal)
                     {
-                        _log.Information($"The console of DDT's session {reason}. It can connect again.");
+                        _log.Warning($"{refusal} It was let go.");
+                    }
+                    else if (await ServeAsync(pipe, stop).ConfigureAwait(false) is { } reason)
+                    {
+                        _log.Information($"{Sentence} {reason}. It can connect again.");
                     }
                 }
                 catch (OperationCanceledException) when (stop.IsCancellationRequested)
@@ -167,7 +149,7 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
                 }
                 catch (IOException exception)
                 {
-                    _log.Information($"The console of DDT's session {ConsoleFailure.ClosedPipe(exception)}. It can connect again.");
+                    _log.Information($"{Sentence} {ConsoleFailure.ClosedPipe(exception)}. It can connect again.");
                 }
                 finally
                 {
@@ -198,7 +180,7 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
                 return refusal;
             }
 
-            _log.Information($"The console of DDT's session, {program}, is connected.");
+            _log.Information($"{Sentence}, {program}, is connected.");
         }
         catch (ConsoleProtocolException exception)
         {
@@ -229,9 +211,15 @@ public sealed class SessionMachineConsole : IMachineConsole, IAsyncDisposable
     }
 
     // A disconnect throws away what the console hasn't read yet, such as the last state when the agent ends. So the
-    // console gets a moment to read it first. A console that stopped reading doesn't hold the agent up.
+    // console gets a moment to read it first. A console that stopped reading doesn't hold the agent up. A socket on
+    // Linux keeps what it delivered.
     private static async Task DrainAsync(NamedPipeServerStream pipe)
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
         try
         {
             await Task.Run(pipe.WaitForPipeDrain).WaitAsync(s_closeTimeout).ConfigureAwait(false);

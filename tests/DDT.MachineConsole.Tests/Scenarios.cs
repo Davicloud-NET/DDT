@@ -57,6 +57,16 @@ internal static class Scenarios
         Step(7, "Run script: baseline", "runScript", ConsolePhase.Windows, ConsoleStepState.Pending),
     ];
 
+    // A Linux sequence: the image and its seed in the Linux boot environment, the rest in the installed Linux.
+    public static readonly ConsoleStep[] LinuxSteps =
+    [
+        Step(21, "Write Debian 13", "writeRawImage", ConsolePhase.LinuxBoot, ConsoleStepState.Pending),
+        Step(22, "Write the cloud-init seed", "writeCloudInitSeed", ConsolePhase.LinuxBoot, ConsoleStepState.Pending),
+        Step(23, "Install the monitoring agent", "runScript", ConsolePhase.Linux, ConsoleStepState.Pending),
+        Step(24, "Check the BIOS settings", "pause", ConsolePhase.Linux, ConsoleStepState.Pending),
+        Step(25, "Restart", "reboot", ConsolePhase.Linux, ConsoleStepState.Pending),
+    ];
+
     public static ConsoleState State(ConsoleStage stage) => new(
         stage,
         "1.4.0",
@@ -121,6 +131,52 @@ internal static class Scenarios
             Id(10),
             37,
             ConsoleActivity.Step),
+    };
+
+    public static ConsoleRun LinuxRun(ConsoleStepState[] states, int? current, int? percent, ConsoleActivity activity) =>
+        new(
+            RunId,
+            "Debian 13 with monitoring",
+            [.. LinuxSteps.Select((step, index) => step with { State = states[index] })],
+            current is { } index ? LinuxSteps[index].Id : null,
+            percent,
+            activity);
+
+    public static ConsoleState RunningLinux => State(ConsoleStage.Running) with
+    {
+        Run = LinuxRun([ConsoleStepState.Running, .. Pending(4)], 0, 41, ConsoleActivity.Step),
+    };
+
+    public static ConsoleState HandingOverToLinux => State(ConsoleStage.Running) with
+    {
+        Run = LinuxRun([.. Done(2), .. Pending(3)], null, null, ConsoleActivity.HandingOver),
+    };
+
+    public static ConsoleState RestartingIntoLinux => State(ConsoleStage.Restarting) with
+    {
+        Run = LinuxRun([.. Done(2), .. Pending(3)], null, null, ConsoleActivity.Restarting),
+        Restart = new ConsoleRestart(RestartReason.HandOver, RestartTarget.InstalledSystem),
+    };
+
+    public static ConsoleState WaitingForCloudInit => State(ConsoleStage.Running) with
+    {
+        Run = LinuxRun([.. Done(2), .. Pending(3)], null, null, ConsoleActivity.WaitingForCloudInit),
+    };
+
+    public static ConsoleState RunningInLinux => State(ConsoleStage.Running) with
+    {
+        Run = LinuxRun([.. Done(2), ConsoleStepState.Running, .. Pending(2)], 2, null, ConsoleActivity.Step),
+    };
+
+    public static ConsoleState PausedInLinux => State(ConsoleStage.Running) with
+    {
+        Run = LinuxRun([.. Done(3), ConsoleStepState.Running, .. Pending(1)], 3, null, ConsoleActivity.Paused),
+    };
+
+    public static ConsoleState RestartingIntoLinuxBoot => State(ConsoleStage.Restarting) with
+    {
+        Run = LinuxRun([.. Done(1), .. Pending(4)], null, null, ConsoleActivity.Restarting),
+        Restart = new ConsoleRestart(RestartReason.StepAsked, RestartTarget.LinuxBoot),
     };
 
     // A rule's run waits at its start for inputs nobody has answered yet.

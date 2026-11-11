@@ -6,7 +6,7 @@
 
 <#
 .SYNOPSIS
-Publishes DDT.MachineConsole as ddt-console.exe, the graphical console the agent starts in Windows PE.
+Publishes DDT.MachineConsole.Windows as ddt-console.exe, the graphical console the agent starts in Windows PE.
 
 .DESCRIPTION
 Windows PE has no .NET runtime, so the console is compiled ahead of time into one native executable, like the agent.
@@ -43,7 +43,7 @@ if (-not $Package) { $Package = Join-Path $PSScriptRoot '..\artifacts\ddt-consol
 
 $Output = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Output)
 $Package = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Package)
-$project = Join-Path $PSScriptRoot '..\src\DDT.MachineConsole\DDT.MachineConsole.csproj'
+$project = Join-Path $PSScriptRoot '..\src\DDT.MachineConsole.Windows\DDT.MachineConsole.Windows.csproj'
 
 # VsDevCmd.bat runs vswhere.exe by its bare name from the installer folder. A shell that sets
 # NoDefaultCurrentDirectoryInExePath refuses that, and the NativeAOT link step then fails with exit code 123.

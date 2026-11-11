@@ -13,18 +13,18 @@ public enum ConsoleActivity
     // A step is running.
     Step,
 
-    // Handing the run over to the installed Windows and making the disk bootable.
+    // Handing the run over to the installed system and making the disk bootable.
     HandingOver,
 
     Restarting,
 
-    // Only in the installed Windows, where no console runs. The agent waits for Windows setup to finish.
+    // Only in the installed Windows. The agent waits for Windows setup to finish.
     WaitingForWindowsSetup,
 
     // Making the disk bootable and sending the last reports.
     Finishing,
 
-    // Only in the installed Windows. The agent removes itself.
+    // Only in the installed system. The agent removes itself.
     Removing,
 
     // The run waits at its start for answers to its inputs, here or on the web.
@@ -32,4 +32,7 @@ public enum ConsoleActivity
 
     // A Pause step waits for someone to continue the run, here or on the web.
     Paused,
+
+    // Only in the installed Linux. The agent waits for cloud-init to finish.
+    WaitingForCloudInit,
 }

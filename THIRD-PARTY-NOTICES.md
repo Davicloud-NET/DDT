@@ -32,8 +32,8 @@ closure, grouped here by the project they come from.
 `/app/legal` holds LICENSE, NOTICE, this file and `licenses/`. The server serves them without
 sign-in at `/api/about/legal/<path>`, for example `/api/about/legal/LICENSE`.
 
-A release's `/app` also holds `ddt-agent.exe`, `ddt-console.zip` and `ddt-agent-linux-x64`, which
-the server hands to the machines it deploys, and `linux-boot/`, the Linux boot environment it starts
+A release's `/app` also holds `ddt-agent.exe`, `ddt-console.zip`, `ddt-agent-linux-x64` and
+`ddt-console-linux-x64.zip`, which the server hands to the machines it deploys, and `linux-boot/`, the Linux boot environment it starts
 machines in. They're described in their own sections below, and their licence texts are in the same
 `legal` folder.
 
@@ -336,7 +336,7 @@ notices at start-up, and `ddt-agent --licenses` prints these texts.
 `build/Publish-Console.ps1` publishes the graphical console the agent starts in Windows PE as one
 NativeAOT executable, `ddt-console.exe`, with the two native libraries it draws with,
 `libSkiaSharp.dll` and `libHarfBuzzSharp.dll`, next to it. Besides DDT's own code, from
-`DDT.MachineConsole` and `DDT.ConsoleProtocol`, they contain:
+`DDT.MachineConsole`, `DDT.MachineConsole.Windows` and `DDT.ConsoleProtocol`, they contain:
 
 - The .NET runtime and libraries and the Visual C++ startup code, as described for the agent above.
 - Avalonia, the UI framework: `Avalonia`, `Avalonia.HarfBuzz`, `Avalonia.Remote.Protocol`,
@@ -375,6 +375,31 @@ The console carries LICENSE, NOTICE and the texts in `licenses/avalonia`, `licen
 `licenses/skiasharp`, `licenses/dotnet` and `licenses/fonts`, and its licences view, on F3, shows
 DDT's attribution notice, the list above and each of those texts.
 
+## The console for Linux, `ddt-console`
+
+`build/Publish-LinuxConsole.ps1` publishes the console for Linux as one NativeAOT executable,
+`ddt-console`, with `libSkiaSharp.so` and `libHarfBuzzSharp.so` next to it, and zips the three into
+`ddt-console-linux-x64.zip`. It is built on AlmaLinux 8 and needs only the system's glibc. Besides
+DDT's own code, from `DDT.MachineConsole`, `DDT.MachineConsole.Linux` and `DDT.ConsoleProtocol`,
+they contain:
+
+- The .NET runtime and libraries, compiled in by NativeAOT, under the MIT licence in
+  [licenses/dotnet/LICENSE.TXT](licenses/dotnet/LICENSE.TXT), with the code by others listed in
+  [licenses/dotnet/THIRD-PARTY-NOTICES.TXT](licenses/dotnet/THIRD-PARTY-NOTICES.TXT).
+- Avalonia as for the console in Windows PE, with `Avalonia.LinuxFramebuffer` in place of
+  `Avalonia.Win32`, at the version `Directory.Packages.props` names. The additional permission in
+  [NOTICE](NOTICE) covers this console too.
+- `MicroCom.Runtime`, `SkiaSharp` and `HarfBuzzSharp` as for the console in Windows PE, and
+  `SkiaSharp.NativeAssets.Linux.NoDependencies` and `HarfBuzzSharp.NativeAssets.Linux`, whose
+  `libSkiaSharp.so` and `libHarfBuzzSharp.so` are Skia and HarfBuzz built for Linux, with the
+  notices in [licenses/skiasharp/THIRD-PARTY-NOTICES.txt](licenses/skiasharp/THIRD-PARTY-NOTICES.txt).
+- The fonts named for the console in Windows PE.
+- Keyboard tables made from xkeyboard-config by `src/DDT.MachineConsole/Keyboard/Layouts/make_layouts.py`,
+  under the licences in [licenses/xkeyboard-config/copyright](licenses/xkeyboard-config/copyright).
+
+The console carries the same texts as the console in Windows PE and `licenses/xkeyboard-config`,
+and shows them on F3.
+
 ## Windows PE and the Windows ADK
 
 A boot image built by `build/Build-BootImage.ps1` consists mostly of files from Windows PE and the
@@ -392,8 +417,8 @@ loaders `shimx64.efi` and `grubx64.efi`, the kernel `vmlinuz`, and the initramfs
 compiles none of it. The loaders and the kernel are files of Debian packages as Debian signed them,
 and `base.img` packs files of Debian packages with DDT's own start scripts from
 `build/LinuxBoot/rootfs`: the kernel modules unpacked, the keymaps converted to the kernel's binary
-form, everything else as it is. `ddt.img`, the second initramfs, holds DDT's agent for Linux,
-described above.
+form, everything else as it is. `ddt.img`, the second initramfs, holds DDT's agent for Linux and
+its console, described above.
 
 `build/LinuxBoot/packages.lock.json` pins every package by version and SHA-256 at one snapshot of
 Debian's archive, and `ddt-linux-boot.json` in the folder lists them with the folder's files.

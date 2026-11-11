@@ -16,6 +16,9 @@ ARG TOOLS_IMAGE
 FROM scratch AS agent
 COPY placeholder/ /
 
+# The graphical console beside the agent: --build-context console=<folder>. Without it the agent keeps its text.
+FROM scratch AS console
+
 FROM ${TOOLS_IMAGE} AS installed
 COPY packages.lock.json /src/
 # The tools come from the lock's snapshot too. apt would refuse its Release files, which are past their date.
@@ -57,9 +60,10 @@ RUN python3 /src/assemble.py /src /packages /tree /out \
 FROM base AS build
 COPY manifest.py /src/
 COPY --from=agent / /agent/ddt/
+COPY --from=console / /agent/ddt/
 RUN python3 /src/mkcpio.py --mtime "$(cat /src/mtime)" /agent /tmp/ddt.cpio \
     && zstd -q -19 -T1 /tmp/ddt.cpio -o /out/ddt.img \
-    && python3 /src/manifest.py /src/packages.lock.json /out /agent/ddt/ddt-agent
+    && python3 /src/manifest.py /src/packages.lock.json /out /agent/ddt/ddt-agent /agent/ddt/ddt-console
 
 FROM scratch AS export
 COPY --from=build /out/ /

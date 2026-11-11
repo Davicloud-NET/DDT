@@ -11,6 +11,46 @@ namespace DDT.Agent;
 // the agent.
 internal sealed class ConsoleUpdate(IAgentServer server, AgentLog log, RunningAgent agent)
 {
+    // On Linux another account starts it, and the agent's mask would make the files root's alone.
+    private const UnixFileMode Readable = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead;
+
+    private const UnixFileMode Executable = Readable | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+
+    // The executable of the console the server offers, in a folder of its own below directory, for an agent with no
+    // console beside it. Null when the server offers none or it cannot be fetched.
+    public static async Task<string?> ServerConsoleAsync(IAgentServer server, AgentLog log, string directory, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(server);
+        ArgumentNullException.ThrowIfNull(log);
+
+        try
+        {
+            ConsoleRelease? release = await server.GetConsoleReleaseAsync(cancellationToken).ConfigureAwait(false);
+
+            if (release is null)
+            {
+                return null;
+            }
+
+            if (!IsConsole(release))
+            {
+                throw new InvalidDataException("the server names other files than the console's");
+            }
+
+            return await FetchAsync(server, release, directory, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+        catch (Exception exception)
+        {
+            log.Warning($"Cannot fetch the console the server offers ({exception.Message}).");
+
+            return null;
+        }
+    }
+
     // Returns the new console's executable, or null to keep the current one. Nothing that goes wrong here stops the
     // machine.
     public async Task<string?> NewConsoleAsync(CancellationToken cancellationToken)
@@ -40,7 +80,10 @@ internal sealed class ConsoleUpdate(IAgentServer server, AgentLog log, RunningAg
                 return null;
             }
 
-            return await FetchAsync(release, cancellationToken).ConfigureAwait(false);
+            string id = Id(release);
+            log.Information($"The server offers another console, {id}. Switching to it.");
+
+            return await FetchAsync(server, release, agent.Directory, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -55,8 +98,8 @@ internal sealed class ConsoleUpdate(IAgentServer server, AgentLog log, RunningAg
     }
 
     private static bool IsConsole(ConsoleRelease release) =>
-        release.Files.Count == ConsolePipe.Files.Count
-        && ConsolePipe.Files.All(name => release.Files.Count(file => file.Name == name) == 1)
+        release.Files.Count == ConsolePipe.OwnFiles.Count
+        && ConsolePipe.OwnFiles.All(name => release.Files.Count(file => file.Name == name) == 1)
         && release.Files.All(file => file.Size >= 0 && file.Sha256.Length == 64 && file.Sha256.All(char.IsAsciiHexDigit));
 
     private static async Task<bool> HoldsAsync(string folder, ConsoleRelease release, CancellationToken cancellationToken)
@@ -72,27 +115,39 @@ internal sealed class ConsoleUpdate(IAgentServer server, AgentLog log, RunningAg
         return true;
     }
 
-    private async Task<string> FetchAsync(ConsoleRelease release, CancellationToken cancellationToken)
+    private static string Id(ConsoleRelease release) =>
+        release.Files.Single(file => file.Name == ConsolePipe.OwnFileName).Sha256[..12].ToLowerInvariant();
+
+    private static async Task<string> FetchAsync(IAgentServer server, ConsoleRelease release, string directory, CancellationToken cancellationToken)
     {
-        string id = release.Files.Single(file => file.Name == ConsolePipe.FileName).Sha256[..12].ToLowerInvariant();
-        string folder = Path.Combine(agent.Directory, $"console-{id}");
-        log.Information($"The server offers another console, {id}. Switching to it.");
+        string folder = Path.Combine(directory, $"console-{Id(release)}");
 
         if (!await HoldsAsync(folder, release, cancellationToken).ConfigureAwait(false))
         {
             Directory.CreateDirectory(folder);
 
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(folder, Executable);
+            }
+
             foreach (ConsoleReleaseFile file in release.Files)
             {
+                string path = Path.Combine(folder, file.Name);
                 await ReleaseFiles.FetchAsync(
-                    Path.Combine(folder, file.Name),
+                    path,
                     file.Sha256,
                     file.Size,
                     (destination, token) => server.DownloadConsoleFileAsync(file.Name, destination, token),
                     cancellationToken).ConfigureAwait(false);
+
+                if (!OperatingSystem.IsWindows())
+                {
+                    File.SetUnixFileMode(path, file.Name == ConsolePipe.OwnFileName ? Executable : Readable);
+                }
             }
         }
 
-        return Path.Combine(folder, ConsolePipe.FileName);
+        return Path.Combine(folder, ConsolePipe.OwnFileName);
     }
 }

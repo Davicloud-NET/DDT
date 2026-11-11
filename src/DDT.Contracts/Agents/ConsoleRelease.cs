@@ -11,4 +11,7 @@ public sealed record ConsoleRelease(IReadOnlyList<ConsoleReleaseFile> Files)
     // The files of a console, named the way ConsolePipe.Files names them for the agent. The console comes first, then
     // the two libraries it draws with.
     public static IReadOnlyList<string> FileNames { get; } = ["ddt-console.exe", "libSkiaSharp.dll", "libHarfBuzzSharp.dll"];
+
+    // The console for Linux, as ConsolePipe.LinuxFiles names them.
+    public static IReadOnlyList<string> LinuxFileNames { get; } = ["ddt-console", "libSkiaSharp.so", "libHarfBuzzSharp.so"];
 }

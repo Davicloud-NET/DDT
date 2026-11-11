@@ -39,9 +39,17 @@ public static class ConsoleValues
         _ => ConsoleStepState.Pending,
     };
 
-    // The console's protocol has no Linux phases and no wait for cloud-init yet. They show as Windows' and as preparing.
-    public static ConsolePhase ToConsole(SequencePhase phase) =>
-        SequenceKinds.IsBoot(phase) ? ConsolePhase.WindowsPE : ConsolePhase.Windows;
+    public static ConsolePhase ToConsole(SequencePhase phase) => phase switch
+    {
+        SequencePhase.Windows => ConsolePhase.Windows,
+        SequencePhase.LinuxBoot => ConsolePhase.LinuxBoot,
+        SequencePhase.Linux => ConsolePhase.Linux,
+        _ => ConsolePhase.WindowsPE,
+    };
+
+    // The boot environment a restart into the boot environment reaches from this one.
+    public static RestartTarget BootTarget(AgentEnvironment environment) =>
+        environment is AgentEnvironment.LinuxBoot or AgentEnvironment.Linux ? RestartTarget.LinuxBoot : RestartTarget.WindowsPE;
 
     public static ConsoleActivity ToConsole(RunActivity activity) => activity switch
     {
@@ -53,6 +61,7 @@ public static class ConsoleValues
         RunActivity.Removing => ConsoleActivity.Removing,
         RunActivity.WaitingForInput => ConsoleActivity.WaitingForInput,
         RunActivity.Paused => ConsoleActivity.Paused,
+        RunActivity.WaitingForCloudInit => ConsoleActivity.WaitingForCloudInit,
         _ => ConsoleActivity.Preparing,
     };
 

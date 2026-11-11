@@ -21,8 +21,17 @@ public static class ConsolePipe
 
     private const string NamePrefix = "ddt-console-";
 
+    public const string LinuxFileName = "ddt-console";
+
     // The files the console needs. That's the executable and the two libraries it draws with, which always go with it.
     public static IReadOnlyList<string> Files { get; } = [FileName, "libSkiaSharp.dll", "libHarfBuzzSharp.dll"];
+
+    public static IReadOnlyList<string> LinuxFiles { get; } = [LinuxFileName, "libSkiaSharp.so", "libHarfBuzzSharp.so"];
+
+    // The console of the system this runs on, which an agent starts and fetches.
+    public static string OwnFileName => OperatingSystem.IsWindows() ? FileName : LinuxFileName;
+
+    public static IReadOnlyList<string> OwnFiles => OperatingSystem.IsWindows() ? Files : LinuxFiles;
 
     public static bool IsSession(IReadOnlyList<string> args)
     {
@@ -46,14 +55,14 @@ public static class ConsolePipe
     public static NamedPipeClientStream CreateClient(string name) =>
         new(".", name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
 
-    // The pipe name in a console's command line, or null when there is none.
+    // The pipe name in a console's command line, or null when there is none. On Linux it may be a socket's full path.
     public static string? NameFrom(IReadOnlyList<string> args)
     {
         ArgumentNullException.ThrowIfNull(args);
 
         for (int index = 0; index < args.Count - 1; index++)
         {
-            if (args[index] == PipeArgument && args[index + 1].StartsWith(NamePrefix, StringComparison.Ordinal))
+            if (args[index] == PipeArgument && IsName(args[index + 1]))
             {
                 return args[index + 1];
             }
@@ -61,4 +70,8 @@ public static class ConsolePipe
 
         return null;
     }
+
+    private static bool IsName(string value) =>
+        value.StartsWith(NamePrefix, StringComparison.Ordinal)
+        || (value.StartsWith('/') && value[(value.LastIndexOf('/') + 1)..].StartsWith(NamePrefix, StringComparison.Ordinal));
 }

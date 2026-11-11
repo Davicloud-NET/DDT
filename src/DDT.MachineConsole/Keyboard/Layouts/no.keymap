@@ -1,0 +1,136 @@
+# DDT keyboard layout no, sampled from xkb-data 2.42-1 with libxkbcommon 1.7.0-2.
+# Written by make_layouts.py, do not edit. A line is an evdev code and what the key types with nothing,
+# Shift, AltGr, Shift+AltGr, then the same four with Caps Lock on. A cell is a code point in hex, - for
+# nothing, or ^ and the combining mark of a dead key. The keypad is sampled with Num Lock on.
+# A dead line is a combining mark, the key after it and what the two make, in hex; 20 is a space, which
+# gives the accent alone. Letters from Unicode 15.1.0.
+altgr 1
+2 31 21 a1 b9 31 21 a1 b9
+3 32 22 40 b2 32 22 40 b2
+4 33 23 a3 b3 33 23 a3 b3
+5 34 a4 24 bc 34 a4 24 bc
+6 35 25 20ac 2030 35 25 20ac 2030
+7 36 26 a5 215d 36 26 a5 215d
+8 37 2f 7b f7 37 2f 7b f7
+9 38 28 5b ab 38 28 5b ab
+10 39 29 5d bb 39 29 5d bb
+11 30 3d 7d b0 30 3d 7d b0
+12 2b 3f b1 bf 2b 3f b1 bf
+13 5c ^300 ^301 ac 5c ^300 ^301 ac
+16 71 51 40 3a9 51 71 40 3a9
+17 77 57 17f a7 57 77 53 a7
+18 65 45 20ac a2 45 65 20ac a2
+19 72 52 ae 2122 52 72 ae 2122
+20 74 54 fe de 54 74 de fe
+21 79 59 2190 a5 59 79 2190 a5
+22 75 55 2193 2191 55 75 2193 2191
+23 69 49 2192 131 49 69 2192 131
+24 6f 4f 153 152 4f 6f 152 153
+25 70 50 3c0 3a0 50 70 3a0 3c0
+26 e5 c5 ^308 ^30a c5 e5 ^308 ^30a
+27 ^308 ^302 ^303 ^30c ^308 ^302 ^303 ^30c
+30 61 41 aa ba 41 61 aa ba
+31 73 53 df 1e9e 53 73 df 1e9e
+32 64 44 f0 d0 44 64 d0 f0
+33 66 46 111 aa 46 66 110 aa
+34 67 47 14b 14a 47 67 14a 14b
+35 68 48 127 126 48 68 126 127
+36 6a 4a ^309 ^31b 4a 6a ^309 ^31b
+37 6b 4b 138 26 4b 6b 138 26
+38 6c 4c 142 141 4c 6c 141 142
+39 f8 d8 ^301 ^30b d8 f8 ^301 ^30b
+40 e6 c6 ^302 ^30c c6 e6 ^302 ^30c
+41 7c a7 a6 b6 7c a7 a6 b6
+43 27 2a ^30b d7 27 2a ^30b d7
+44 7a 5a ab 3c 5a 7a ab 3c
+45 78 58 bb 3e 58 78 bb 3e
+46 63 43 a9 a9 43 63 a9 a9
+47 76 56 201e 201a 56 76 201e 201a
+48 62 42 201c 2018 42 62 201c 2018
+49 6e 4e 201d 2019 4e 6e 201d 2019
+50 6d 4d b5 ba 4d 6d 39c ba
+51 2c 3b ^327 ^328 2c 3b ^327 ^328
+52 2e 3a 2026 b7 2e 3a 2026 b7
+53 2d 5f 2013 2014 2d 5f 2013 2014
+57 20 20 a0 202f 20 20 a0 202f
+86 3c 3e bd be 3c 3e bd be
+55 2a 22c5 d7 - 2a 22c5 d7 -
+71 37 - 37 - 37 - 37 -
+72 38 - 38 - 38 - 38 -
+73 39 - 39 - 39 - 39 -
+74 2d 2212 2212 - 2d 2212 2212 -
+75 34 - 34 - 34 - 34 -
+76 35 - 35 - 35 - 35 -
+77 36 - 36 - 36 - 36 -
+78 2b 2b 2b - 2b 2b 2b -
+79 31 - 31 - 31 - 31 -
+80 32 - 32 - 32 - 32 -
+81 33 - 33 - 33 - 33 -
+82 30 - 30 - 30 - 30 -
+83 2c - 2c - 2c - 2c -
+98 2f 2215 f7 - 2f 2215 f7 -
+dead 300 20 60
+dead 300 41 c0
+dead 300 45 c8
+dead 300 49 cc
+dead 300 4f d2
+dead 300 55 d9
+dead 300 61 e0
+dead 300 65 e8
+dead 300 69 ec
+dead 300 6f f2
+dead 300 75 f9
+dead 301 20 b4
+dead 301 41 c1
+dead 301 45 c9
+dead 301 49 cd
+dead 301 4f d3
+dead 301 55 da
+dead 301 59 dd
+dead 301 61 e1
+dead 301 65 e9
+dead 301 69 ed
+dead 301 6f f3
+dead 301 75 fa
+dead 301 79 fd
+dead 302 20 5e
+dead 302 41 c2
+dead 302 45 ca
+dead 302 49 ce
+dead 302 4f d4
+dead 302 55 db
+dead 302 61 e2
+dead 302 65 ea
+dead 302 69 ee
+dead 302 6f f4
+dead 302 75 fb
+dead 303 20 7e
+dead 303 41 c3
+dead 303 4e d1
+dead 303 4f d5
+dead 303 61 e3
+dead 303 6e f1
+dead 303 6f f5
+dead 308 20 a8
+dead 308 41 c4
+dead 308 45 cb
+dead 308 49 cf
+dead 308 4f d6
+dead 308 55 dc
+dead 308 61 e4
+dead 308 65 eb
+dead 308 69 ef
+dead 308 6f f6
+dead 308 75 fc
+dead 308 79 ff
+dead 309 20 309
+dead 30a 20 b0
+dead 30a 41 c5
+dead 30a 61 e5
+dead 30b 20 2dd
+dead 30c 20 2c7
+dead 31b 20 31b
+dead 327 20 b8
+dead 327 43 c7
+dead 327 63 e7
+dead 328 20 2db

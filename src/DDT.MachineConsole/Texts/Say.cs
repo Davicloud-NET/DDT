@@ -61,26 +61,33 @@ public static class Say
         _ => l.T("The server answered unexpectedly. Its log says why."),
     };
 
-    public static string Activity(Localizer l, ConsoleActivity activity) => activity switch
+    // Linux says the Linux sibling of a sentence that names Windows.
+    public static string Activity(Localizer l, ConsoleActivity activity, bool linux) => activity switch
     {
         ConsoleActivity.Preparing => l.T("Checking the run"),
         ConsoleActivity.Step => l.T("Running a step"),
+        ConsoleActivity.HandingOver when linux => l.T("Handing the run over to the installed Linux"),
         ConsoleActivity.HandingOver => l.T("Handing the run over to the installed Windows"),
         ConsoleActivity.Restarting => l.T("Restarting"),
         ConsoleActivity.WaitingForWindowsSetup => l.T("Waiting for Windows setup"),
+        ConsoleActivity.WaitingForCloudInit => l.T("Waiting for cloud-init"),
         ConsoleActivity.Finishing => l.T("Making the disk bootable and sending the last reports"),
         ConsoleActivity.WaitingForInput => l.T("Waiting for answers"),
         ConsoleActivity.Paused => l.T("Paused"),
         _ => l.T("Removing the agent"),
     };
 
-    public static string RestartTarget(Localizer l, RestartTarget target) => target == ConsoleProtocol.RestartTarget.WindowsPE
-        ? l.T("Restarting into Windows PE")
-        : l.T("Restarting into the installed system");
+    public static string RestartTarget(Localizer l, RestartTarget target) => target switch
+    {
+        ConsoleProtocol.RestartTarget.WindowsPE => l.T("Restarting into Windows PE"),
+        ConsoleProtocol.RestartTarget.LinuxBoot => l.T("Restarting into the Linux boot environment"),
+        _ => l.T("Restarting into the installed system"),
+    };
 
-    public static string RestartReason(Localizer l, RestartReason reason) => reason switch
+    public static string RestartReason(Localizer l, RestartReason reason, bool linux) => reason switch
     {
         ConsoleProtocol.RestartReason.StepAsked => l.T("A step asked for a restart."),
+        ConsoleProtocol.RestartReason.HandOver when linux => l.T("The run goes on in the installed Linux."),
         ConsoleProtocol.RestartReason.HandOver => l.T("The run goes on in the installed Windows."),
         ConsoleProtocol.RestartReason.RunDone => l.T("The run is done."),
         _ => l.T("A restart was still pending."),
@@ -104,9 +111,13 @@ public static class Say
         _ => null,
     };
 
-    public static string Phase(Localizer l, ConsolePhase phase) => phase == ConsolePhase.WindowsPE
-        ? l.T("In Windows PE")
-        : l.T("In the installed Windows");
+    public static string Phase(Localizer l, ConsolePhase phase) => phase switch
+    {
+        ConsolePhase.WindowsPE => l.T("In Windows PE"),
+        ConsolePhase.LinuxBoot => l.T("In the Linux boot environment"),
+        ConsolePhase.Linux => l.T("In the installed Linux"),
+        _ => l.T("In the installed Windows"),
+    };
 
     public static string Level(Localizer l, ConsoleLogLevel level) => level switch
     {

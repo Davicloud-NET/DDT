@@ -268,7 +268,7 @@ public sealed class PipeMachineConsoleTests : IAsyncDisposable
     public void StartsTheConsoleNextToTheAgentOnlyWhereSomeoneMayBeAtTheMachine()
     {
         Directory.CreateDirectory(_directory);
-        string besideAgent = Path.Combine(_directory, ConsolePipe.FileName);
+        string besideAgent = Path.Combine(_directory, ConsolePipe.OwnFileName);
         AgentOptions options = new(new Uri("https://ddt.example:8443/"), null, DryRun: false, 1, NoUpdate: false, null);
 
         Assert.Null(PipeMachineConsole.PathFor(options, inputRedirected: false, _directory));

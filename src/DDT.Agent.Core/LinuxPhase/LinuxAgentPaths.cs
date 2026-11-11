@@ -42,6 +42,9 @@ public sealed record LinuxAgentPaths(string Root)
     // The agent's own place for the seed. The script's is still mounted while the agent starts.
     public string SeedMount => Path.Combine(Run, "seed");
 
+    // The console's socket, which the console's user must reach. The run folder is root's alone.
+    public string ConsoleSockets => At("/run/ddt-console");
+
     // Where cloud-init keeps the script parts of the vendor-data it ran for this instance.
     public string VendorScripts => At("/var/lib/cloud/instance/scripts/vendor");
 

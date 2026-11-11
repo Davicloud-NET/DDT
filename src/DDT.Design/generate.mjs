@@ -28,7 +28,7 @@ const header = [...licence.map((line) => `/* ${line} */`), "", `/* ${written} */
 
 // The console's fonts, which src/DDT.MachineConsole/Assets/Fonts/cut_fonts.py cuts: one static face per weight and
 // width a type uses, named after both.
-const consoleFonts = "avares://ddt-console/Assets/Fonts";
+const consoleFonts = "avares://DDT.MachineConsole/Assets/Fonts";
 const consoleFamilies = { sans: "Archivo", mono: "Martian Mono" };
 
 export function readTokens() {

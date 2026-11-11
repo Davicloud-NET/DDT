@@ -1,0 +1,71 @@
+# DDT keyboard layout us, sampled from xkb-data 2.42-1 with libxkbcommon 1.7.0-2.
+# Written by make_layouts.py, do not edit. A line is an evdev code and what the key types with nothing,
+# Shift, AltGr, Shift+AltGr, then the same four with Caps Lock on. A cell is a code point in hex, - for
+# nothing, or ^ and the combining mark of a dead key. The keypad is sampled with Num Lock on.
+# A dead line is a combining mark, the key after it and what the two make, in hex; 20 is a space, which
+# gives the accent alone. Letters from Unicode 15.1.0.
+altgr 0
+2 31 21 31 21 31 21 31 21
+3 32 40 32 40 32 40 32 40
+4 33 23 33 23 33 23 33 23
+5 34 24 34 24 34 24 34 24
+6 35 25 35 25 35 25 35 25
+7 36 5e 36 5e 36 5e 36 5e
+8 37 26 37 26 37 26 37 26
+9 38 2a 38 2a 38 2a 38 2a
+10 39 28 39 28 39 28 39 28
+11 30 29 30 29 30 29 30 29
+12 2d 5f 2d 5f 2d 5f 2d 5f
+13 3d 2b 3d 2b 3d 2b 3d 2b
+16 71 51 71 51 51 71 51 71
+17 77 57 77 57 57 77 57 77
+18 65 45 65 45 45 65 45 65
+19 72 52 72 52 52 72 52 72
+20 74 54 74 54 54 74 54 74
+21 79 59 79 59 59 79 59 79
+22 75 55 75 55 55 75 55 75
+23 69 49 69 49 49 69 49 69
+24 6f 4f 6f 4f 4f 6f 4f 6f
+25 70 50 70 50 50 70 50 70
+26 5b 7b 5b 7b 5b 7b 5b 7b
+27 5d 7d 5d 7d 5d 7d 5d 7d
+30 61 41 61 41 41 61 41 61
+31 73 53 73 53 53 73 53 73
+32 64 44 64 44 44 64 44 64
+33 66 46 66 46 46 66 46 66
+34 67 47 67 47 47 67 47 67
+35 68 48 68 48 48 68 48 68
+36 6a 4a 6a 4a 4a 6a 4a 6a
+37 6b 4b 6b 4b 4b 6b 4b 6b
+38 6c 4c 6c 4c 4c 6c 4c 6c
+39 3b 3a 3b 3a 3b 3a 3b 3a
+40 27 22 27 22 27 22 27 22
+41 60 7e 60 7e 60 7e 60 7e
+43 5c 7c 5c 7c 5c 7c 5c 7c
+44 7a 5a 7a 5a 5a 7a 5a 7a
+45 78 58 78 58 58 78 58 78
+46 63 43 63 43 43 63 43 63
+47 76 56 76 56 56 76 56 76
+48 62 42 62 42 42 62 42 62
+49 6e 4e 6e 4e 4e 6e 4e 6e
+50 6d 4d 6d 4d 4d 6d 4d 6d
+51 2c 3c 2c 3c 2c 3c 2c 3c
+52 2e 3e 2e 3e 2e 3e 2e 3e
+53 2f 3f 2f 3f 2f 3f 2f 3f
+57 20 20 20 20 20 20 20 20
+86 5c 7c 5c 7c 5c 7c 5c 7c
+55 2a 2a 2a 2a 2a 2a 2a 2a
+71 37 - 37 - 37 - 37 -
+72 38 - 38 - 38 - 38 -
+73 39 - 39 - 39 - 39 -
+74 2d 2d 2d 2d 2d 2d 2d 2d
+75 34 - 34 - 34 - 34 -
+76 35 - 35 - 35 - 35 -
+77 36 - 36 - 36 - 36 -
+78 2b 2b 2b 2b 2b 2b 2b 2b
+79 31 - 31 - 31 - 31 -
+80 32 - 32 - 32 - 32 -
+81 33 - 33 - 33 - 33 -
+82 30 - 30 - 30 - 30 -
+83 2e - 2e - 2e - 2e -
+98 2f 2f 2f 2f 2f 2f 2f 2f

@@ -38,6 +38,7 @@ public sealed class LinuxAgentRemoval(LinuxAgentPaths paths, IMountedSeeds seeds
         Leftovers.Delete(paths.Unit, log);
         await SystemctlAsync(["daemon-reload"], cancellationToken).ConfigureAwait(false);
         Leftovers.Delete(paths.Agent, log);
+        RemoveConsole();
         DeleteEmpty(paths.Program);
         RemoveFromRunFolder();
 
@@ -154,6 +155,25 @@ public sealed class LinuxAgentRemoval(LinuxAgentPaths paths, IMountedSeeds seeds
             {
                 Leftovers.Delete(folder, log);
             }
+        }
+    }
+
+    // The console the server offered and its logo, which the agent downloaded beside itself.
+    private void RemoveConsole()
+    {
+        if (!Directory.Exists(paths.Program))
+        {
+            return;
+        }
+
+        foreach (string folder in Directory.GetDirectories(paths.Program, "console-*"))
+        {
+            Leftovers.Delete(folder, log);
+        }
+
+        foreach (string logo in Directory.GetFiles(paths.Program, "console-logo-*.png"))
+        {
+            Leftovers.Delete(logo, log);
         }
     }
 

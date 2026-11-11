@@ -69,4 +69,10 @@ public static class AgentRoutes
     public static string PlatformRelease(string platform) => $"api/agents/releases/{Uri.EscapeDataString(platform)}";
 
     public static string PlatformReleaseBinary(string platform) => $"api/agents/releases/{Uri.EscapeDataString(platform)}/binary";
+
+    // The console for that platform, answered with a ConsoleRelease, and its files.
+    public static string PlatformConsoleRelease(string platform) => $"api/agents/releases/{Uri.EscapeDataString(platform)}/console";
+
+    public static string PlatformConsoleReleaseFile(string platform, string name) =>
+        $"api/agents/releases/{Uri.EscapeDataString(platform)}/console/{Uri.EscapeDataString(name)}";
 }

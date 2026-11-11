@@ -111,6 +111,15 @@ describe("cacheEventHandlers", () => {
       sha256: "cd34",
     });
     expect(queryClient.getQueryData(["settings-agent"])).toEqual(agent);
+
+    // So has the console for Linux.
+    emit("linuxConsoleChanged", { ...agent, sha256: "ef56" });
+
+    expect(queryClient.getQueryData(["settings-agent-linux-console"])).toEqual({
+      ...agent,
+      sha256: "ef56",
+    });
+    expect(queryClient.getQueryData(["settings-agent-console"])).toBeUndefined();
     expect(invalidate).not.toHaveBeenCalled();
 
     queryClient.setQueryData(["settings-certificate"], { subject: "CN=old", servedHere: true });

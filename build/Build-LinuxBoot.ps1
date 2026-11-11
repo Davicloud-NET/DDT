@@ -40,6 +40,10 @@ param(
     # and no machine can be deployed from the result.
     [string] $AgentFolder,
 
+    # The folder with the console for Linux as Publish-LinuxConsole.ps1 writes it, which goes into ddt.img beside the
+    # agent. Without it the agent shows its text console.
+    [string] $ConsoleFolder,
+
     # Builds every stage again, which downloads the packages again.
     [switch] $NoCache
 )
@@ -73,6 +77,17 @@ if ($AgentFolder) {
     $arguments += @('--build-context', "agent=$AgentFolder")
 }
 
+if ($ConsoleFolder) {
+    $ConsoleFolder = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ConsoleFolder)
+    foreach ($name in 'ddt-console', 'libSkiaSharp.so', 'libHarfBuzzSharp.so') {
+        if (-not (Test-Path -LiteralPath (Join-Path $ConsoleFolder $name))) {
+            throw "There is no $name in $ConsoleFolder."
+        }
+    }
+
+    $arguments += @('--build-context', "console=$ConsoleFolder")
+}
+
 if ($NoCache) { $arguments += '--no-cache' }
 $arguments += $context
 
@@ -96,6 +111,13 @@ if ($manifest.PSObject.Properties['agent']) {
 }
 else {
     Write-Host 'ddt.img holds the placeholder, not an agent. Pass -AgentFolder for a boot environment that deploys machines.'
+}
+
+if ($manifest.PSObject.Properties['console']) {
+    Write-Host "ddt.img holds the console $($manifest.console.version), SHA-256 $($manifest.console.sha256)."
+}
+else {
+    Write-Host 'ddt.img holds no console, so machines show the text console. Pass -ConsoleFolder for the graphical one.'
 }
 
 Write-Host "The shim is signed under: $($manifest.shimSignedUnder -join ', ')"

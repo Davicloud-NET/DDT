@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.InstalledPhase;
 using DDT.Agent.Sequences;
@@ -47,6 +48,13 @@ public sealed class LinuxPhaseLoopBuilder
     // What removes the agent once the run is over. Null is the agent's own removal.
     public IAgentRemoval? Removal { get; init; }
 
+    // The console on the machine's screen and what it shows. Null for none.
+    public IDeploySession? Session { get; init; }
+
+    public ConsoleStatus? Status { get; init; }
+
+    public ConsoleLogo? Logo { get; init; }
+
     public InstalledPhaseLoop Build()
     {
         LinuxPhaseRebooter rebooter = new(Tools, Log);
@@ -66,6 +74,9 @@ public sealed class LinuxPhaseLoopBuilder
             Root = Paths.State,
             AgentVersion = AgentVersion,
             DryRun = DryRun,
+            Session = Session,
+            Status = Status,
+            Logo = Logo,
         }.Build();
     }
 
@@ -88,6 +99,7 @@ public sealed class LinuxPhaseLoopBuilder
             Log = Log,
             TimeProvider = TimeProvider,
             Options = options,
+            Status = Status,
             AccountTools = new AccountTools(Shares, new NoLogons()),
         }.Build();
     }

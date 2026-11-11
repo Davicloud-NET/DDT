@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Runtime.InteropServices;
-
 namespace DDT.MachineConsole.Texts;
 
-// The catalogs that DDT.MachineConsole.csproj embeds, and the language the console starts in.
-public static partial class Catalogs
+// The catalogs that DDT.MachineConsole.csproj embeds.
+public static class Catalogs
 {
     private const ushort PrimaryLanguageMask = 0x3FF;
     private const ushort German = 0x07;
@@ -23,22 +21,7 @@ public static partial class Catalogs
         return PoCatalog.Read(reader);
     }
 
-    // The language of Windows PE's user interface. The console runs with the invariant culture, so it asks Windows.
-    public static UiLanguage FromWindows()
-    {
-        try
-        {
-            return FromLanguageId(GetUserDefaultUILanguage());
-        }
-        catch (EntryPointNotFoundException)
-        {
-            return UiLanguage.English;
-        }
-    }
-
+    // A Windows language id, such as GetUserDefaultUILanguage gives.
     public static UiLanguage FromLanguageId(ushort languageId) =>
         (languageId & PrimaryLanguageMask) == German ? UiLanguage.German : UiLanguage.English;
-
-    [LibraryImport("kernel32.dll")]
-    private static partial ushort GetUserDefaultUILanguage();
 }

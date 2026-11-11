@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 
 namespace DDT.Agent.LinuxPhase;
@@ -25,6 +26,10 @@ internal sealed record LinuxPhaseMachine(LinuxAgentPaths Paths, TextWriter Outpu
     // Whether the output goes to the journal, which reads a line's priority from its first characters.
     public bool OutputIsJournal { get; init; }
 
+    // Starts the console on the machine's screen. Null for no console.
+    public IConsoleUnit? ConsoleUnit { get; init; }
+
     // The machine the unit runs on.
-    public static LinuxPhaseMachine Own() => new(LinuxAgentPaths.Machine, Console.Out, Environment.ProcessPath);
+    public static LinuxPhaseMachine Own() =>
+        new(LinuxAgentPaths.Machine, Console.Out, Environment.ProcessPath) { ConsoleUnit = new LinuxConsoleUnit(TimeProvider.System) };
 }

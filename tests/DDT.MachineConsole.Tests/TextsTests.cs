@@ -110,15 +110,29 @@ public sealed class TextsTests
         Assert.Equal(german, Say.Stage(Localizer.Embedded(UiLanguage.German), stage));
 
     // Each activity has its own words. One that fell through to the last case would say the agent removes itself.
-    [Fact]
-    public void SaysEveryActivityInWordsOfItsOwn()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SaysEveryActivityInWordsOfItsOwn(bool linux)
     {
         Localizer english = Localizer.Embedded(UiLanguage.English);
-        string[] said = [.. Enum.GetValues<ConsoleActivity>().Select(activity => Say.Activity(english, activity))];
+        string[] said = [.. Enum.GetValues<ConsoleActivity>().Select(activity => Say.Activity(english, activity, linux))];
 
         Assert.Equal(said.Length, said.Distinct().Count());
-        Assert.Equal("Waiting for answers", Say.Activity(english, ConsoleActivity.WaitingForInput));
-        Assert.Equal("Angehalten", Say.Activity(Localizer.Embedded(UiLanguage.German), ConsoleActivity.Paused));
+        Assert.Equal("Waiting for answers", Say.Activity(english, ConsoleActivity.WaitingForInput, linux));
+        Assert.Equal("Angehalten", Say.Activity(Localizer.Embedded(UiLanguage.German), ConsoleActivity.Paused, linux));
+    }
+
+    [Fact]
+    public void SaysEveryPhaseAndRestartTargetInWordsOfItsOwn()
+    {
+        Localizer english = Localizer.Embedded(UiLanguage.English);
+        string[] phases = [.. Enum.GetValues<ConsolePhase>().Select(phase => Say.Phase(english, phase))];
+        string[] targets = [.. Enum.GetValues<RestartTarget>().Select(target => Say.RestartTarget(english, target))];
+
+        Assert.Equal(["In Windows PE", "In the installed Windows", "In the Linux boot environment", "In the installed Linux"], phases);
+        Assert.Equal(targets.Length, targets.Distinct().Count());
+        Assert.Equal("In der Linux-Startumgebung", Say.Phase(Localizer.Embedded(UiLanguage.German), ConsolePhase.LinuxBoot));
     }
 
     [Fact]

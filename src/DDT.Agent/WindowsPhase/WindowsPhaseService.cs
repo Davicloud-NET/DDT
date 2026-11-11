@@ -67,7 +67,7 @@ public static class WindowsPhaseService
 
         await using (console.ConfigureAwait(false))
         {
-            ConsoleStatus status = new(console, version, options.ServerUrl, null, dryRun: false);
+            ConsoleStatus status = new(console, AgentEnvironment.Windows, version, options.ServerUrl, null, dryRun: false);
             log.MachineConsole = console;
             session = new DeploySession(
                 windowsRoot,
@@ -75,7 +75,7 @@ public static class WindowsPhaseService
                 new SessionRegistry(Registry.LocalMachine, Registry.Users, tools),
                 log,
                 TimeProvider.System,
-                (sid, pipeName) => console.Start(() => SessionMachineConsole.CreatePipe(pipeName, sid)));
+                (sid, pipeName) => console.Start(() => SessionPipe.Create(pipeName, sid)));
 
             InstalledPhaseLoop loop = Loop(parts, Runner(parts, staged, status), session, status);
 

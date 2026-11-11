@@ -50,6 +50,11 @@
     <PackageVersion Include="Avalonia.Skia" Version="12.1.4" />
     <PackageVersion Include="Avalonia.Themes.Simple" Version="12.1.4" />
     <PackageVersion Include="Avalonia.Win32" Version="12.1.4" />
+    <!-- The Linux head's keyboard uses Avalonia's private input API, so an upgrade must check EvdevInputBackend. -->
+    <PackageVersion Include="Avalonia.LinuxFramebuffer" Version="12.1.4" />
+    <!-- The libSkiaSharp.so without fontconfig, and the one Avalonia.Skia brings, which is only switched off. -->
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
     <!-- Referenced only to switch them off: the build telemetry of Avalonia.BuildServices, and ANGLE, which software
          rendering never loads. -->
     <PackageVersion Include="Avalonia.Angle.Windows.Natives" Version="2.1.27548.20260419" />

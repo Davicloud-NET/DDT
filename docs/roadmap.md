@@ -116,9 +116,15 @@ Three parts, each a pull request that works by itself. The first two are built.
      netboot, so no boot image has to be built for it.
    - Tried in QEMU on the cloud images of Debian 13 and Ubuntu 24.04, with Secure Boot on. Not
      tried on Hyper-V or on a physical PC yet.
-3. **The graphical console on Linux**, in the boot environment and in the installed Linux. Not
-   built. Until then the Linux boot environment keeps its text console, and the agent in the
-   installed Linux has none: a Pause there is continued on the web.
+3. **The graphical console on Linux**, in the boot environment and in the installed Linux.
+   - The same console as in Windows PE, drawn on the firmware's framebuffer, with the keyboard
+     read directly and typed by the layout the server sets. Shift+F10 opens a shell in the boot
+     environment.
+   - In the installed Linux the agent starts it as a unit of its own, as a user of its own, on a
+     free terminal, and only that unit is let into its socket. It shows nothing where a display
+     manager runs, where there is no framebuffer, or on a system without glibc.
+   - The server offers it like the agent, from the Server page or the release.
+   - Tried in QEMU with Secure Boot on. Not tried on Hyper-V or on a physical PC yet.
 
 Decided for all three parts:
 

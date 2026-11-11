@@ -75,7 +75,7 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
         }
     }
 
-    // The ddt-console.exe next to the agent, unless a dry run or redirected input says nobody is at the machine.
+    // The console next to the agent, unless a dry run or redirected input says nobody is at the machine.
     // A console named with --console starts in any case.
     public static string? PathFor(AgentOptions options, bool inputRedirected, string agentDirectory)
     {
@@ -86,7 +86,7 @@ public sealed class PipeMachineConsole : IMachineConsole, IAsyncDisposable
             return path;
         }
 
-        string besideAgent = Path.Combine(agentDirectory, ConsolePipe.FileName);
+        string besideAgent = Path.Combine(agentDirectory, ConsolePipe.OwnFileName);
 
         return !options.DryRun && !inputRedirected && File.Exists(besideAgent) ? besideAgent : null;
     }

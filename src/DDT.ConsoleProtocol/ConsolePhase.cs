@@ -4,9 +4,11 @@
 
 namespace DDT.ConsoleProtocol;
 
-// Where a step runs. That's Windows PE, or the installed Windows after the hand-over, where no console shows it.
+// Where a step runs: a boot environment, or the installed system after the hand-over.
 public enum ConsolePhase
 {
     WindowsPE,
     Windows,
+    LinuxBoot,
+    Linux,
 }

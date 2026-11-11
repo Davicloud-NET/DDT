@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.ConsoleProtocol;
+using DDT.MachineConsole.Machine;
 using DDT.MachineConsole.Texts;
 using DDT.MachineConsole.ViewModels;
 
@@ -12,8 +13,12 @@ namespace DDT.MachineConsole.Tests;
 // prompts. No test ever starts cmd.exe or restarts anything.
 internal sealed class TestConsole
 {
-    // session makes the console the shell of DDT's session in the installed Windows, where closing signs out.
-    public TestConsole(UiLanguage language = UiLanguage.English, bool canRestart = false, bool session = false)
+    // session makes the console the shell of DDT's session in the installed system; in Windows closing signs out.
+    public TestConsole(
+        UiLanguage language = UiLanguage.English,
+        bool canRestart = false,
+        bool session = false,
+        HostSystem system = HostSystem.Windows)
     {
         Power = new FakePower(canRestart);
         Model = new MainViewModel(
@@ -22,7 +27,10 @@ internal sealed class TestConsole
             Prompt,
             (id, answer) => Answers.Add((id, answer)),
             () => Closed++,
-            session);
+            session)
+        {
+            System = system,
+        };
     }
 
     public MainViewModel Model { get; }

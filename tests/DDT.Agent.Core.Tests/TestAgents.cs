@@ -73,7 +73,7 @@ internal static class TestAgents
     public static ConsoleStatus Status(ISignInPrompt prompt, AgentLog log) => Status(new TextMachineConsole(prompt, log));
 
     public static ConsoleStatus Status(IMachineConsole console) =>
-        new(console, Version, new Uri(Configuration.ServerUrl!), "German (Germany)", dryRun: true);
+        new(console, AgentEnvironment.WindowsPE, Version, new Uri(Configuration.ServerUrl!), "German (Germany)", dryRun: true);
 
     // WinPE keeps it in its own directory. Here it gets a separate one, because the tests' dry runs delete X when they
     // end and would delete the marker with it.

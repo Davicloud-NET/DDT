@@ -23,31 +23,46 @@ public static class SettingsConsoleEndpoints
     {
         ArgumentNullException.ThrowIfNull(group);
 
-        group.MapGet("/agent/console", ReadConsoleAsync).RequireAuthorization(DdtPolicies.Administrator);
-        group.MapPut("/agent/console", UploadConsoleAsync).RequireAuthorization(DdtPolicies.Administrator);
-        group.MapDelete("/agent/console", RemoveConsoleAsync).RequireAuthorization(DdtPolicies.Administrator);
+        Map(group, "/agent/console", ConsoleUpload.Windows);
+        Map(group, "/agent/linux/console", ConsoleUpload.Linux);
 
         return group;
     }
 
-    private static async Task<Ok<AgentBinaryView>> ReadConsoleAsync(ReleaseUploads uploads, CancellationToken cancellationToken) =>
-        TypedResults.Ok(await uploads.ConsoleAsync(cancellationToken).ConfigureAwait(false));
+    private static void Map(RouteGroupBuilder group, string route, ConsoleUpload console)
+    {
+        group.MapGet(route, async (ReleaseUploads uploads, CancellationToken cancellationToken) =>
+                TypedResults.Ok(await uploads.ConsoleAsync(console, cancellationToken).ConfigureAwait(false)))
+            .RequireAuthorization(DdtPolicies.Administrator);
+        group.MapPut(
+                route,
+                ([AsParameters] SettingsCaller caller, ReleaseUploads uploads, CancellationToken cancellationToken) =>
+                    UploadConsoleAsync(console, caller, uploads, cancellationToken))
+            .RequireAuthorization(DdtPolicies.Administrator);
+        group.MapDelete(
+                route,
+                ([AsParameters] SettingsCaller caller, ReleaseUploads uploads, CancellationToken cancellationToken) =>
+                    RemoveConsoleAsync(console, caller, uploads, cancellationToken))
+            .RequireAuthorization(DdtPolicies.Administrator);
+    }
 
     // 404 when no console was uploaded.
     private static async Task<Results<Ok<AgentBinaryView>, NotFound>> RemoveConsoleAsync(
-        [AsParameters] SettingsCaller caller,
+        ConsoleUpload console,
+        SettingsCaller caller,
         ReleaseUploads uploads,
         CancellationToken cancellationToken) =>
-        await uploads.RemoveConsoleAsync(caller.Actor, cancellationToken).ConfigureAwait(false) is { } view
+        await uploads.RemoveConsoleAsync(console, caller.Actor, cancellationToken).ConfigureAwait(false) is { } view
             ? TypedResults.Ok(view)
             : TypedResults.NotFound();
 
     private static async Task<IResult> UploadConsoleAsync(
-        [AsParameters] SettingsCaller caller,
+        ConsoleUpload console,
+        SettingsCaller caller,
         ReleaseUploads uploads,
         CancellationToken cancellationToken)
     {
-        if (uploads.ConsoleConfigured)
+        if (uploads.ConsoleConfigured(console))
         {
             return ServerProblems.Problem(ServerMessages.SettingsConsoleConfigured.With(), StatusCodes.Status409Conflict);
         }
@@ -68,7 +83,7 @@ public static class SettingsConsoleEndpoints
         }
 
         (ReleaseUploadStatus status, AgentBinaryView? uploaded) = await uploads
-            .UploadConsoleAsync(caller.Context.Request.Body, caller.Actor, cancellationToken)
+            .UploadConsoleAsync(console, caller.Context.Request.Body, caller.Actor, cancellationToken)
             .ConfigureAwait(false);
 
         return (status, uploaded) switch

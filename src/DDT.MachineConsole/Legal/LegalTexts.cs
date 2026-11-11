@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Reflection;
 using System.Text;
 using DDT.MachineConsole.Texts;
 
 namespace DDT.MachineConsole.Legal;
 
-// The licence texts that DDT.MachineConsole.csproj embeds under these names. The console ships to machines by itself,
-// inside a boot image, so it has to carry the texts its licences require.
+// The licence texts that DDT.MachineConsole.csproj embeds under these names, and those a head adds under licenses/. The
+// console ships to machines by itself, so it has to carry the texts its licences require.
 public static class LegalTexts
 {
     // A line this short ends on purpose, like a heading or a copyright line.
@@ -30,6 +31,7 @@ public static class LegalTexts
         new("licenses/dotnet/THIRD-PARTY-NOTICES.TXT"),
         new("licenses/fonts/Archivo-OFL.txt"),
         new("licenses/fonts/MartianMono-OFL.txt"),
+        .. HeadDocuments(),
     ];
 
     public static string Title(Localizer l, Document document)
@@ -49,18 +51,29 @@ public static class LegalTexts
             "licenses/dotnet/LICENSE.TXT" => l.T(".NET: MIT licence"),
             "licenses/dotnet/THIRD-PARTY-NOTICES.TXT" => l.T(".NET: software by others in it"),
             "licenses/fonts/Archivo-OFL.txt" => l.T("Archivo: SIL Open Font License"),
-            _ => l.T("Martian Mono: SIL Open Font License"),
+            "licenses/fonts/MartianMono-OFL.txt" => l.T("Martian Mono: SIL Open Font License"),
+            "licenses/xkeyboard-config/copyright" => l.T("xkeyboard-config: the keyboard layouts' licence"),
+            _ => document.File,
         };
     }
 
     public static string Read(string file)
     {
         using Stream resource = typeof(LegalTexts).Assembly.GetManifestResourceStream(file)
+            ?? Assembly.GetEntryAssembly()?.GetManifestResourceStream(file)
             ?? throw new InvalidOperationException($"This console was built without {file}.");
         using StreamReader reader = new(resource);
 
         return reader.ReadToEnd();
     }
+
+    private static IEnumerable<Document> HeadDocuments() =>
+        Assembly.GetEntryAssembly() is { } head && head != typeof(LegalTexts).Assembly
+            ? head.GetManifestResourceNames()
+                .Where(name => name.StartsWith("licenses/", StringComparison.Ordinal))
+                .Order(StringComparer.Ordinal)
+                .Select(name => new Document(name))
+            : [];
 
     // Joins lines that the text file only broke for width, so they wrap to the view. A paragraph also ends at a list
     // item, a rule, a line after a short one like a heading, and an indented line that doesn't continue a list item.

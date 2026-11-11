@@ -41,18 +41,18 @@ public sealed class AgentUpdateTests : IDisposable
     // The console next to the agent, like in a boot image, with its own contents.
     private string BootConsole(IReadOnlyList<byte[]> contents)
     {
-        foreach ((string name, byte[] content) in ConsolePipe.Files.Zip(contents))
+        foreach ((string name, byte[] content) in ConsolePipe.OwnFiles.Zip(contents))
         {
             File.WriteAllBytes(Path.Combine(_directory, name), content);
         }
 
-        return Path.Combine(_directory, ConsolePipe.FileName);
+        return Path.Combine(_directory, ConsolePipe.OwnFileName);
     }
 
-    private static byte[][] ConsoleContents() => [.. ConsolePipe.Files.Select(_ => RandomNumberGenerator.GetBytes(2000))];
+    private static byte[][] ConsoleContents() => [.. ConsolePipe.OwnFiles.Select(_ => RandomNumberGenerator.GetBytes(2000))];
 
     private static ConsoleRelease ConsoleOf(IReadOnlyList<byte[]> contents) =>
-        new([.. ConsolePipe.Files.Zip(contents, (name, content) => new ConsoleReleaseFile(name, Convert.ToHexStringLower(SHA256.HashData(content)), content.Length))]);
+        new([.. ConsolePipe.OwnFiles.Zip(contents, (name, content) => new ConsoleReleaseFile(name, Convert.ToHexStringLower(SHA256.HashData(content)), content.Length))]);
 
     private static ScriptedAgentServer Offering(IReadOnlyList<byte[]> console, Func<AgentRelease?>? agent = null)
     {
@@ -60,7 +60,7 @@ public sealed class AgentUpdateTests : IDisposable
             .OnRelease(agent ?? (() => new AgentRelease(CurrentSha256, 10)))
             .OnConsoleRelease(() => ConsoleOf(console));
 
-        foreach ((string name, byte[] content) in ConsolePipe.Files.Zip(console))
+        foreach ((string name, byte[] content) in ConsolePipe.OwnFiles.Zip(console))
         {
             server.WithConsoleFile(name, content);
         }
@@ -378,9 +378,9 @@ public sealed class AgentUpdateTests : IDisposable
         string folder = Path.Combine(_directory, $"console-{ConsoleOf(offered).Files[0].Sha256[..12]}");
         (string path, IReadOnlyList<string> arguments) = Assert.Single(relauncher.Started);
         Assert.Equal(AgentPath, path);
-        Assert.Equal(["--config", "agent.json", AgentOptions.ConsoleArgument, Path.Combine(folder, ConsolePipe.FileName), AgentOptions.NoUpdateArgument], arguments);
+        Assert.Equal(["--config", "agent.json", AgentOptions.ConsoleArgument, Path.Combine(folder, ConsolePipe.OwnFileName), AgentOptions.NoUpdateArgument], arguments);
 
-        foreach ((string name, byte[] content) in ConsolePipe.Files.Zip(offered))
+        foreach ((string name, byte[] content) in ConsolePipe.OwnFiles.Zip(offered))
         {
             Assert.Equal(content, await File.ReadAllBytesAsync(Path.Combine(folder, name), TestContext.Current.CancellationToken));
         }
@@ -435,7 +435,7 @@ public sealed class AgentUpdateTests : IDisposable
     public async Task NeverStartsAConsoleThatDoesNotMatch()
     {
         byte[][] offered = ConsoleContents();
-        ScriptedAgentServer server = Offering(offered).WithConsoleFile(ConsolePipe.Files[1], RandomNumberGenerator.GetBytes(2000));
+        ScriptedAgentServer server = Offering(offered).WithConsoleFile(ConsolePipe.OwnFiles[1], RandomNumberGenerator.GetBytes(2000));
         ScriptedRelauncher relauncher = new(() => 0);
         AgentUpdate update = WithConsole(server, relauncher, BootConsole(ConsoleContents()));
 

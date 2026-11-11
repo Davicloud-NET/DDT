@@ -22,6 +22,11 @@ public static class RunPath
     }
 
     // True if any node sits inside another. Then the run is a tree, and the screens count its steps "on this path".
+    // A run of a Linux sequence, whose steps run in the Linux boot environment and the installed Linux.
+    public static bool IsLinux(ConsoleRun run) => run.Steps.Any(step => step.Phase is ConsolePhase.LinuxBoot or ConsolePhase.Linux);
+
+    public static bool IsInstalled(ConsolePhase phase) => phase is ConsolePhase.Windows or ConsolePhase.Linux;
+
     public static bool IsTree(ConsoleRun run)
     {
         ArgumentNullException.ThrowIfNull(run);

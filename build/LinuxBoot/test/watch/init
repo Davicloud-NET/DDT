@@ -13,6 +13,9 @@ export PATH
 # A shell gives a program in the background /dev/null as its input, and /dev is empty until /init mounts it.
 mkdir -p /dev
 mknod /dev/null c 1 3
+# ddttext=1 on the kernel's command line: no graphical console, so the agent's lines stay readable on the first screen.
+# shellcheck disable=SC2154
+[ -n "${ddttext:-}" ] && rm -f /ddt/ddt-console
 /ddt-test/screen &
 /ddt-test/disk &
 exec /init

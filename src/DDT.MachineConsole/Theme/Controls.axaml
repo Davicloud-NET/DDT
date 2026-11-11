@@ -5,9 +5,11 @@
 <!-- The console's control themes. The focus ring is drawn outside the part, so nothing shifts. Hover and selection
      fade in a layer of the new tone, because a colour faded from transparent would pass through white on the way. -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:embedding="clr-namespace:Avalonia.Controls.Embedding;assembly=Avalonia.Controls">
 
-  <ControlTheme x:Key="{x:Type Window}" TargetType="Window">
+  <!-- The page under everything, for a window and for the Linux framebuffer's top level, which has no windows. -->
+  <ControlTheme x:Key="ConsolePage" TargetType="TopLevel">
     <Setter Property="Background" Value="{DynamicResource SgPage}" />
     <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
     <Setter Property="FontFamily" Value="{DynamicResource SgTypeBodyFamily}" />
@@ -26,6 +28,12 @@
       </ControlTemplate>
     </Setter>
   </ControlTheme>
+
+  <ControlTheme x:Key="{x:Type Window}" TargetType="Window" BasedOn="{StaticResource ConsolePage}" />
+
+  <ControlTheme x:Key="{x:Type embedding:EmbeddableControlRoot}"
+                TargetType="embedding:EmbeddableControlRoot"
+                BasedOn="{StaticResource ConsolePage}" />
 
   <!-- Keys. Secondary is the default. Primary is the single next step on a screen, filled with ink. Danger is an
        outline until it may be pressed, and then filled red. Quiet has no edge. -->

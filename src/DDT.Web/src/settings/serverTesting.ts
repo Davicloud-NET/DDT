@@ -204,6 +204,7 @@ export function serveServer(
       "GET /api/settings": () => json(overview()),
       "GET /api/settings/agent/linux": () => json(agentView()),
       "GET /api/settings/agent/console": () => json(agentView()),
+      "GET /api/settings/agent/linux/console": () => json(agentView()),
       "GET /api/server/logs": () => json([]),
       ...handlers,
     },

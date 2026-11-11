@@ -105,7 +105,7 @@ public sealed class MachineRegistrar(
                 consoleLanguage)
             {
                 BootReturns = continued is { BootReturns: > 0 } ? continued.BootReturns : null,
-                ConsoleKeyboardLayout = machine.AgentEnvironment == AgentEnvironment.LinuxBoot
+                ConsoleKeyboardLayout = machine.AgentEnvironment is AgentEnvironment.LinuxBoot or AgentEnvironment.Linux
                     ? settings.Current.Deployment.ConsoleKeyboardLayout
                     : null,
             };

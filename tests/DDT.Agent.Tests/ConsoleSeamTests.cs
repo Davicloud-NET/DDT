@@ -6,6 +6,7 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using DDT.Agent.Consoles;
+using DDT.Agent.Deployment;
 using DDT.ConsoleProtocol;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
@@ -433,22 +434,36 @@ public sealed class ConsoleSeamTests : IDisposable
     [Fact]
     public void GivesEveryActivityOfARunItsConsoleActivity()
     {
-        foreach (RunActivity activity in Enum.GetValues<RunActivity>().Except([RunActivity.WaitingForCloudInit]))
+        foreach (RunActivity activity in Enum.GetValues<RunActivity>())
         {
             Assert.Equal(activity.ToString(), ConsoleValues.ToConsole(activity).ToString());
         }
-
-        // The protocol has no word for the wait for cloud-init before its version 4.
-        Assert.Equal(ConsoleActivity.Preparing, ConsoleValues.ToConsole(RunActivity.WaitingForCloudInit));
     }
 
-    [Theory]
-    [InlineData(SequencePhase.WindowsPE, ConsolePhase.WindowsPE)]
-    [InlineData(SequencePhase.LinuxBoot, ConsolePhase.WindowsPE)]
-    [InlineData(SequencePhase.Windows, ConsolePhase.Windows)]
-    [InlineData(SequencePhase.Linux, ConsolePhase.Windows)]
-    public void ShowsALinuxPhaseAsTheWindowsPhaseOfItsRole(SequencePhase phase, ConsolePhase shown)
+    [Fact]
+    public void GivesEveryPhaseItsConsolePhase()
     {
-        Assert.Equal(shown, ConsoleValues.ToConsole(phase));
+        foreach (SequencePhase phase in Enum.GetValues<SequencePhase>())
+        {
+            Assert.Equal(phase.ToString(), ConsoleValues.ToConsole(phase).ToString());
+        }
+    }
+
+    // A restart into the boot environment goes back to the one the agent runs in or came from.
+    [Theory]
+    [InlineData(AgentEnvironment.WindowsPE, RestartTarget.WindowsPE)]
+    [InlineData(AgentEnvironment.Windows, RestartTarget.WindowsPE)]
+    [InlineData(AgentEnvironment.LinuxBoot, RestartTarget.LinuxBoot)]
+    [InlineData(AgentEnvironment.Linux, RestartTarget.LinuxBoot)]
+    public void RestartsIntoTheBootEnvironmentOfItsSystem(AgentEnvironment environment, RestartTarget target)
+    {
+        ScriptedMachineConsole console = new();
+        ConsoleStatus status = new(console, environment, "1.0.0", new Uri("https://ddt.test:8443/"), null, dryRun: true);
+
+        status.Restarting(RestartReason.StepAsked, RestartInto.BootEnvironment);
+        Assert.Equal(new ConsoleRestart(RestartReason.StepAsked, target), console.States[^1].Restart);
+
+        status.Restarting(RestartReason.HandOver, RestartInto.InstalledSystem);
+        Assert.Equal(new ConsoleRestart(RestartReason.HandOver, RestartTarget.InstalledSystem), console.States[^1].Restart);
     }
 }

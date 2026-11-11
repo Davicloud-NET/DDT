@@ -304,6 +304,10 @@ msgid "For {domain}. DDT keeps the password for this run only."
 msgstr "For {domain}. DDT keeps the password for this run only."
 
 #: Texts/Say.cs
+msgid "Handing the run over to the installed Linux"
+msgstr "Handing the run over to the installed Linux"
+
+#: Texts/Say.cs
 msgid "Handing the run over to the installed Windows"
 msgstr "Handing the run over to the installed Windows"
 
@@ -312,8 +316,16 @@ msgid "Identity"
 msgstr "Identity"
 
 #: Texts/Say.cs
+msgid "In the installed Linux"
+msgstr "In the installed Linux"
+
+#: Texts/Say.cs
 msgid "In the installed Windows"
 msgstr "In the installed Windows"
+
+#: Texts/Say.cs
+msgid "In the Linux boot environment"
+msgstr "In the Linux boot environment"
 
 #: Texts/Say.cs
 msgid "In Windows PE"
@@ -516,8 +528,16 @@ msgid "Password"
 msgstr "Password"
 
 #: ViewModels/PauseViewModel.cs
+msgid "Pause, step {number} of {count} on this path, in the installed Linux"
+msgstr "Pause, step {number} of {count} on this path, in the installed Linux"
+
+#: ViewModels/PauseViewModel.cs
 msgid "Pause, step {number} of {count} on this path, in the installed Windows"
 msgstr "Pause, step {number} of {count} on this path, in the installed Windows"
+
+#: ViewModels/PauseViewModel.cs
+msgid "Pause, step {number} of {count} on this path, in the Linux boot environment"
+msgstr "Pause, step {number} of {count} on this path, in the Linux boot environment"
 
 #: ViewModels/PauseViewModel.cs
 msgid "Pause, step {number} of {count} on this path, in Windows PE"
@@ -554,6 +574,10 @@ msgstr "Restarting"
 #: Texts/Say.cs
 msgid "Restarting into the installed system"
 msgstr "Restarting into the installed system"
+
+#: Texts/Say.cs
+msgid "Restarting into the Linux boot environment"
+msgstr "Restarting into the Linux boot environment"
 
 #: Texts/Say.cs
 msgid "Restarting into Windows PE"
@@ -610,6 +634,10 @@ msgstr "Server"
 #: Texts/Say.cs
 msgid "Setting a variable"
 msgstr "Setting a variable"
+
+#: ViewModels/MainViewModel.cs
+msgid "Shell"
+msgstr "Shell"
 
 #: ViewModels/SignInViewModel.cs
 msgid "Sign in"
@@ -672,16 +700,32 @@ msgid "Starting the agent"
 msgstr "Starting the agent"
 
 #: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count} on this path, in the installed Linux"
+msgstr "Step {number} of {count} on this path, in the installed Linux"
+
+#: ViewModels/RunViewModel.cs
 msgid "Step {number} of {count} on this path, in the installed Windows"
 msgstr "Step {number} of {count} on this path, in the installed Windows"
+
+#: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count} on this path, in the Linux boot environment"
+msgstr "Step {number} of {count} on this path, in the Linux boot environment"
 
 #: ViewModels/RunViewModel.cs
 msgid "Step {number} of {count} on this path, in Windows PE"
 msgstr "Step {number} of {count} on this path, in Windows PE"
 
 #: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count}, in the installed Linux"
+msgstr "Step {number} of {count}, in the installed Linux"
+
+#: ViewModels/RunViewModel.cs
 msgid "Step {number} of {count}, in the installed Windows"
 msgstr "Step {number} of {count}, in the installed Windows"
+
+#: ViewModels/RunViewModel.cs
+msgid "Step {number} of {count}, in the Linux boot environment"
+msgstr "Step {number} of {count}, in the Linux boot environment"
 
 #: ViewModels/RunViewModel.cs
 msgid "Step {number} of {count}, in Windows PE"
@@ -746,6 +790,10 @@ msgstr "The last {count} requests failed. The agent tries again by itself."
 #: ViewModels/RunViewModel.cs
 msgid "The run failed"
 msgstr "The run failed"
+
+#: Texts/Say.cs
+msgid "The run goes on in the installed Linux."
+msgstr "The run goes on in the installed Linux."
 
 #: Texts/Say.cs
 msgid "The run goes on in the installed Windows."
@@ -819,6 +867,10 @@ msgstr "Type {word} to write it all the same"
 msgid "Unknown bus"
 msgstr "Unknown bus"
 
+#: ViewModels/NoticeViewModel.cs
+msgid "Unknown keyboard layout {layout}. Keys type as on a US keyboard."
+msgstr "Unknown keyboard layout {layout}. Keys type as on a US keyboard."
+
 #: Texts/Say.cs
 msgid "Unknown model"
 msgstr "Unknown model"
@@ -858,6 +910,10 @@ msgstr "Waiting for answers"
 #: Texts/Say.cs
 msgid "Waiting for authorization"
 msgstr "Waiting for authorization"
+
+#: Texts/Say.cs
+msgid "Waiting for cloud-init"
+msgstr "Waiting for cloud-init"
 
 #: ViewModels/HeaderViewModel.cs
 msgid "Waiting for the agent"
@@ -902,6 +958,10 @@ msgstr "Writing the cloud-init seed"
 #: Texts/Say.cs
 msgid "Writing the disk image"
 msgstr "Writing the disk image"
+
+#: Legal/LegalTexts.cs
+msgid "xkeyboard-config: the keyboard layouts' licence"
+msgstr "xkeyboard-config: the keyboard layouts' licence"
 
 #: ViewModels/ChoiceFieldViewModel.cs
 msgid "Yes"

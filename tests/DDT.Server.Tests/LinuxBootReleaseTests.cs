@@ -31,7 +31,9 @@ public sealed partial class LinuxBootReleaseTests
         Assert.Contains($"Join-Path $payload '{LinuxBootEnvironment.FolderName}'", installer, StringComparison.Ordinal);
         Assert.Contains($"Join-Path $payload '{AgentReleaseStores.LinuxFileName}'", installer, StringComparison.Ordinal);
         Assert.Contains($"/context/artifacts/bundle/{LinuxBootEnvironment.FolderName} /app/{LinuxBootEnvironment.FolderName}", dockerfile, StringComparison.Ordinal);
-        Assert.Contains($"ddt-console.zip {AgentReleaseStores.LinuxFileName};", dockerfile, StringComparison.Ordinal);
+        Assert.Contains($"ddt-console.zip {AgentReleaseStores.LinuxFileName} {ConsoleReleaseStores.LinuxFileName};", dockerfile, StringComparison.Ordinal);
+        Assert.Contains($"artifacts/installer-work/payload/{ConsoleReleaseStores.LinuxFileName}", jobs["installer"], StringComparison.Ordinal);
+        Assert.Contains($"Join-Path $payload '{ConsoleReleaseStores.LinuxFileName}'", installer, StringComparison.Ordinal);
 
         // Neither job would say so if the files were not there, so each checks that they are.
         Assert.Contains("The MSI's payload has no $file.", jobs["installer"], StringComparison.Ordinal);
@@ -105,11 +107,12 @@ public sealed partial class LinuxBootReleaseTests
         Assert.DoesNotContain("environment:", linux, StringComparison.Ordinal);
         Assert.DoesNotContain("permissions:", linux, StringComparison.Ordinal);
         Assert.DoesNotContain("cache", linux.Replace("--no-cache", string.Empty, StringComparison.Ordinal), StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(2, Regex.Count(linux, "docker buildx build "));
-        Assert.Equal(2, Regex.Count(linux, "--no-cache"));
+        Assert.Equal(3, Regex.Count(linux, "docker buildx build "));
+        Assert.Equal(3, Regex.Count(linux, "--no-cache"));
         Assert.All((string[])["sign-programs", "sign-installer"], job => Assert.DoesNotContain("linux", jobs[job], StringComparison.OrdinalIgnoreCase));
         Assert.Contains("DDT_VERSION=$VERSION", linux, StringComparison.Ordinal);
         Assert.Contains("'.agent.version == $version'", linux, StringComparison.Ordinal);
+        Assert.Contains("'.console.version == $version'", linux, StringComparison.Ordinal);
     }
 
     // One lock has to give one base.img wherever it is built. The lock names it, and both workflows compare.

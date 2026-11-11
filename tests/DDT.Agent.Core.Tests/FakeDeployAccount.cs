@@ -25,7 +25,9 @@ internal sealed class FakeDeployAccount(List<string> events) : IDeployAccount
 
     public int? SessionId() => Session;
 
-    public string Profile() => @"C:\Users\DDTDeploy";
+    public string ProfilePath { get; set; } = @"C:\Users\DDTDeploy";
+
+    public string Profile() => ProfilePath;
 
     public bool HasWinget() => HasAlias;
 

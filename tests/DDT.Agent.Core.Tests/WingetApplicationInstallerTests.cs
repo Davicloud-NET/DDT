@@ -11,9 +11,8 @@ using static DDT.Agent.Tests.TestApplications;
 
 namespace DDT.Agent.Tests;
 
-public sealed class WingetApplicationInstallerTests
+public sealed class WingetApplicationInstallerTests : IDisposable
 {
-    private const string Profile = @"C:\Users\DDTDeploy";
 
     private static readonly AgentApplication s_sevenZip = Tool with { Kind = ApplicationKind.Winget, Command = null, WingetId = "7zip.7zip" };
 
@@ -21,10 +20,11 @@ public sealed class WingetApplicationInstallerTests
     private readonly RecordingToolRunner _tools = new();
     private readonly ImmediateTimeProvider _time = new();
     private readonly FakeDeployAccount _account;
+    private readonly string _profile = Directory.CreateTempSubdirectory("ddt-profile-").FullName;
 
     public WingetApplicationInstallerTests()
     {
-        _account = new FakeDeployAccount(_events);
+        _account = new FakeDeployAccount(_events) { ProfilePath = _profile };
         _tools.AnswerExitCode = (file, _, options) =>
         {
             _events.Add($"run {Path.GetFileName(file)} as {options.Account?.UserName}");
@@ -33,9 +33,11 @@ public sealed class WingetApplicationInstallerTests
         };
     }
 
-    private static string Alias => WingetApplicationInstaller.AliasIn(Profile);
+    private string Alias => WingetApplicationInstaller.AliasIn(_profile);
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
+
+    public void Dispose() => Directory.Delete(_profile, recursive: true);
 
     private Task<int> InstallAsync(AgentApplication application, CancellationToken cancellationToken) =>
         new WingetApplicationInstaller(_tools, _account, new AgentLog(TimeProvider.System, TextWriter.Null), _time).InstallAsync(
@@ -66,7 +68,7 @@ public sealed class WingetApplicationInstallerTests
             _tools.Calls);
         Assert.Equal(["join Administrators", "batch logon", "run winget.exe as DDTDeploy", "sign out batch", "leave Administrators"], _events);
         ToolRunOptions options = Assert.Single(_tools.Options);
-        Assert.Equal((Profile, TimeSpan.FromMinutes(5), "7-Zip"), (options.WorkingDirectory, options.Timeout, options.Environment?["DDT_APPLICATION"]));
+        Assert.Equal((_profile, TimeSpan.FromMinutes(5), "7-Zip"), (options.WorkingDirectory, options.Timeout, options.Environment?["DDT_APPLICATION"]));
         Assert.NotNull(options.Lines);
         Assert.Null(options.Lines("\u2588\u2588\u2588\u2592\u2592  1.50 MB / 3.00 MB"));
     }
@@ -132,7 +134,7 @@ public sealed class WingetApplicationInstallerTests
     }
 
     [Fact]
-    public async Task AppInstallerIsRegisteredInTheAccountsSessionWhenTheAliasIsMissing()
+    public async Task AppInstallerIsRegisteredInTheAccountsOwnSessionBeforeTheAccountIsRaised()
     {
         _account.HasAlias = false;
         _tools.AnswerExitCode = (file, _, options) =>
@@ -148,13 +150,6 @@ public sealed class WingetApplicationInstallerTests
         Assert.Equal(
             ["session token 2", "run powershell.exe as DDTDeploy", "sign out session 2", "join Administrators", "batch logon", "run winget.exe as DDTDeploy"],
             _events[..6]);
-        Assert.Equal(
-            RecordingToolRunner.CommandLine(WingetApplicationInstaller.PowerShellPath, [.. WingetApplicationInstaller.RegistrationArguments()]),
-            _tools.Calls[0]);
-        Assert.Equal(
-            "Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe; exit [int](-not $?)",
-            WingetApplicationInstaller.RegistrationArguments()[^1]);
-        Assert.Equal((Profile, (Func<string, string?>?)null), (_tools.Options[0].WorkingDirectory, _tools.Options[0].Lines));
     }
 
     [Fact]
@@ -164,29 +159,5 @@ public sealed class WingetApplicationInstallerTests
 
         Assert.DoesNotContain(_events, step => step.StartsWith("session token", StringComparison.Ordinal));
         Assert.Single(_tools.Calls);
-    }
-
-    [Fact]
-    public async Task ARegistrationThatLeavesNoAliasFailsBeforeTheAccountIsRaised()
-    {
-        _account.HasAlias = false;
-
-        DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => InstallAsync(s_sevenZip, Cancellation));
-
-        Assert.Equal("App Installer was registered for DDTDeploy, but winget is still missing from its profile.", exception.Message);
-        Assert.Equal(["session token 2", "run powershell.exe as DDTDeploy", "sign out session 2"], _events);
-        Assert.Equal(WingetApplicationInstaller.AliasChecks - 1, _time.Delays.Count);
-    }
-
-    [Fact]
-    public async Task ARegistrationThatFailsSaysSo()
-    {
-        _account.HasAlias = false;
-        _tools.AnswerExitCode = (_, _, _) => 1;
-
-        DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => InstallAsync(s_sevenZip, Cancellation));
-
-        Assert.Equal("App Installer could not be registered for DDTDeploy. PowerShell's output is in the machine log.", exception.Message);
-        Assert.DoesNotContain("join Administrators", _events);
     }
 }

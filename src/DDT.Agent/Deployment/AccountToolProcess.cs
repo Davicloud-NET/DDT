@@ -14,8 +14,8 @@ namespace DDT.Agent.Deployment;
 internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
 {
     private AccountDesktop? _desktop;
-    private FileStream? _output;
-    private FileStream? _error;
+    private Stream? _output;
+    private Stream? _error;
     private SafeKernelHandle? _process;
     private SafeKernelHandle? _thread;
     private SafeKernelHandle? _job;
@@ -29,13 +29,20 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
 
     public unsafe void Start(WindowsAccountSession account, string commandLine, string? workingDirectory, IReadOnlyDictionary<string, string>? environment)
     {
-        string desktopName = account.Desktop ?? OwnDesktop(account);
+        if (account.Desktop is { } sessionDesktop)
+        {
+            StartInSession(account, sessionDesktop, commandLine, workingDirectory, environment);
+
+            return;
+        }
+
+        _desktop = AccountDesktop.Create(account.LogonSid.Value);
         AccountToolPipes pipes = AccountToolPipes.Create();
         char* environmentBlock = AccountEnvironment.Build(account.Token, environment);
 
         try
         {
-            fixed (char* desktop = desktopName)
+            fixed (char* desktop = _desktop.Name)
             {
                 StartupInfoEx startup = pipes.StartupInfo(desktop);
                 (_process, _thread) = StartSuspended(account, commandLine, workingDirectory, environmentBlock, &startup);
@@ -44,11 +51,7 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
             _job = KillOnCloseJob();
             Assign(_job, _process, account.UserName);
             (_output, _error) = pipes.TakeReadEnds();
-
-            if (ResumeThread(_thread) == ResumeFailed)
-            {
-                throw DeploymentStepException.ForLastWin32Error($"The script could not be resumed after it started as {account.UserName}");
-            }
+            Resume(_thread, account.UserName);
         }
         catch
         {
@@ -124,14 +127,60 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         _desktop?.Dispose();
     }
 
-    private string OwnDesktop(WindowsAccountSession account)
+    // A handle cannot be inherited into another session, so this start passes none: no pipes, no attribute list. The
+    // output streams stay empty, and the tool reports through a file.
+    private unsafe void StartInSession(
+        WindowsAccountSession account,
+        string sessionDesktop,
+        string commandLine,
+        string? workingDirectory,
+        IReadOnlyDictionary<string, string>? environment)
     {
-        _desktop = AccountDesktop.Create(account.LogonSid.Value);
+        char* environmentBlock = AccountEnvironment.Build(account.Token, environment);
+        (SafeKernelHandle Process, SafeKernelHandle Thread) started;
 
-        return _desktop.Name;
+        try
+        {
+            fixed (char* desktop = sessionDesktop)
+            {
+                // STARTUPINFOW is STARTUPINFOEXW without the attribute list at its end.
+                StartupInfoEx startup = new() { Size = (uint)(sizeof(StartupInfoEx) - sizeof(void*)), Desktop = desktop };
+                started = StartSuspended(account, commandLine, workingDirectory, environmentBlock, &startup);
+            }
+        }
+        finally
+        {
+            AccountEnvironment.Free(environmentBlock);
+        }
+
+        (_process, _thread) = started;
+        _output = Stream.Null;
+        _error = Stream.Null;
+
+        try
+        {
+            _job = KillOnCloseJob();
+            Assign(_job, started.Process, account.UserName);
+            Resume(started.Thread, account.UserName);
+        }
+        catch
+        {
+            // Not in the job yet, so closing it would leave the suspended process behind.
+            _ = TerminateProcess(started.Process, 1);
+
+            throw;
+        }
     }
 
-    // The command line has to be writable.
+    private static void Resume(SafeKernelHandle thread, string userName)
+    {
+        if (ResumeThread(thread) == ResumeFailed)
+        {
+            throw DeploymentStepException.ForLastWin32Error($"The script could not be resumed after it started as {userName}");
+        }
+    }
+
+    // The command line has to be writable. Only a start on a desktop of its own inherits the handles of its list.
     private static unsafe (SafeKernelHandle Process, SafeKernelHandle Thread) StartSuspended(
         WindowsAccountSession account,
         string commandLine,
@@ -139,6 +188,7 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         char* environmentBlock,
         StartupInfoEx* startup)
     {
+        bool inSession = account.Desktop is not null;
         char[] command = [.. commandLine, '\0'];
         ProcessInformation info;
 
@@ -150,14 +200,15 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
                 command0,
                 0,
                 0,
-                inheritHandles: true,
-                CreateSuspended | CreateUnicodeEnvironment | CreateNoWindow | ExtendedStartupInfoPresent,
+                inheritHandles: !inSession,
+                CreateSuspended | CreateUnicodeEnvironment | CreateNoWindow | (inSession ? 0 : ExtendedStartupInfoPresent),
                 environmentBlock,
                 workingDirectory,
                 startup,
                 out info))
             {
-                throw DeploymentStepException.ForLastWin32Error($"The script could not be started as {account.UserName}");
+                throw DeploymentStepException.ForLastWin32Error(
+                    inSession ? $"It could not be started in the session of {account.UserName}" : $"The script could not be started as {account.UserName}");
             }
         }
 

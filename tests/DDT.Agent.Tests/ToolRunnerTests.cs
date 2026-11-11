@@ -110,13 +110,13 @@ public sealed class ToolRunnerTests
     }
 
     [Fact]
-    public async Task AToolAsAnAccountGetsAllItsOptionsIncludingAStartWithoutAHandleList()
+    public async Task AToolAsAnAccountGetsItsOptions()
     {
         AgentLog log = new(new ImmediateTimeProvider(), TextWriter.Null);
         RecordingAccountProcessStarter starter = new();
         ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode, starter);
         using IAccountSession account = await new DryRunAccountLogons(log).LogOnAsync(new AgentAccount("DDTDeploy", "unused"), TestContext.Current.CancellationToken);
-        ToolRunOptions options = new(@"C:\Users\DDTDeploy", Account: account) { WithoutHandleList = true };
+        ToolRunOptions options = new(@"C:\Users\DDTDeploy", Account: account);
 
         await tools.RunForExitCodeAsync(@"C:\Users\DDTDeploy\AppData\Local\Microsoft\WindowsApps\winget.exe", ["--version"], options, TestContext.Current.CancellationToken);
 

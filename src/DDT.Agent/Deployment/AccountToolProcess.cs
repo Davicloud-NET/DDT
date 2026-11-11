@@ -48,7 +48,7 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         {
             fixed (char* desktop = _desktop.Name)
             {
-                StartupInfoEx startup = pipes.StartupInfo(desktop, handleList: !options.WithoutHandleList);
+                StartupInfoEx startup = pipes.StartupInfo(desktop);
                 (_process, _thread) = StartSuspended(account, commandLine, options.WorkingDirectory, environmentBlock, &startup);
             }
 
@@ -179,8 +179,7 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         }
     }
 
-    // The command line has to be writable. A start in the account's session inherits nothing, one on a desktop of its
-    // own inherits its list's handles, or every inheritable one without a list.
+    // The command line has to be writable. Only a start on a desktop of its own inherits the handles of its list.
     private unsafe (SafeKernelHandle Process, SafeKernelHandle Thread) StartSuspended(
         WindowsAccountSession account,
         string commandLine,
@@ -189,7 +188,6 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         StartupInfoEx* startup)
     {
         bool inSession = account.Desktop is not null;
-        bool listed = startup->AttributeList is not null;
         char[] command = [.. commandLine, '\0'];
         ProcessInformation info;
 
@@ -202,18 +200,14 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
                 0,
                 0,
                 inheritHandles: !inSession,
-                CreateSuspended | CreateUnicodeEnvironment | CreateNoWindow | (listed ? ExtendedStartupInfoPresent : 0),
+                CreateSuspended | CreateUnicodeEnvironment | CreateNoWindow | (inSession ? 0 : ExtendedStartupInfoPresent),
                 environmentBlock,
                 workingDirectory,
                 startup,
                 out info))
             {
-                DeploymentStepException failure = DeploymentStepException.ForLastWin32Error(
+                throw DeploymentStepException.ForLastWin32Error(
                     inSession ? $"{_tool} could not be started in the session of {account.UserName}" : $"{_tool} could not be started as {account.UserName}");
-                log.Information(
-                    $"CreateProcessAsUser refused {_tool} {(inSession ? "in the session, with no handles" : listed ? "with a handle list" : "without a handle list")}.");
-
-                throw failure;
             }
         }
 

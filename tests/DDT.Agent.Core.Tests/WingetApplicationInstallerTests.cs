@@ -69,7 +69,6 @@ public sealed class WingetApplicationInstallerTests : IDisposable
         Assert.Equal(["join Administrators", "batch logon", "run winget.exe as DDTDeploy", "sign out batch", "leave Administrators"], _events);
         ToolRunOptions options = Assert.Single(_tools.Options);
         Assert.Equal((_profile, TimeSpan.FromMinutes(5), "7-Zip"), (options.WorkingDirectory, options.Timeout, options.Environment?["DDT_APPLICATION"]));
-        Assert.True(options.WithoutHandleList);
         Assert.NotNull(options.Lines);
         Assert.Null(options.Lines("\u2588\u2588\u2588\u2592\u2592  1.50 MB / 3.00 MB"));
     }

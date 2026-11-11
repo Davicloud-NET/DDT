@@ -9,8 +9,7 @@ using static DDT.Agent.Deployment.AccountNativeMethods;
 
 namespace DDT.Agent.Deployment;
 
-// The two output pipes of a tool started as an account, and NUL as its input. With a handle list these are the only
-// handles it inherits.
+// The two output pipes of a tool started as an account, and NUL as its input. These are the only handles it inherits.
 [SupportedOSPlatform("windows")]
 internal sealed unsafe class AccountToolPipes : IDisposable
 {
@@ -39,15 +38,15 @@ internal sealed unsafe class AccountToolPipes : IDisposable
         return new AccountToolPipes(outputRead, outputWrite, errorRead, errorWrite, input);
     }
 
-    // Sets up the child's ends, and with handleList the attribute list that lets it inherit only those, whatever else
-    // the agent holds open. Without it the size is STARTUPINFOW's, which is STARTUPINFOEXW without the list at its end.
-    public StartupInfoEx StartupInfo(char* desktop, bool handleList)
+    // Sets up the child's ends, and the attribute list that lets it inherit only those, whatever else the agent holds
+    // open.
+    public StartupInfoEx StartupInfo(char* desktop)
     {
-        _handleList = handleList ? HandleList(_outputWrite, _errorWrite, _input) : null;
+        _handleList = HandleList(_outputWrite, _errorWrite, _input);
 
         return new StartupInfoEx
         {
-            Size = (uint)(handleList ? sizeof(StartupInfoEx) : sizeof(StartupInfoEx) - sizeof(void*)),
+            Size = (uint)sizeof(StartupInfoEx),
             Flags = StartfUseStdHandles,
             Desktop = desktop,
             StandardInput = _input.DangerousGetHandle(),
@@ -88,8 +87,7 @@ internal sealed unsafe class AccountToolPipes : IDisposable
         _errorRead.Dispose();
     }
 
-    // The parent's end is never inheritable, not even for a moment, because a start without a handle list hands out
-    // every inheritable handle.
+    // The parent's end is never inheritable, not even for a moment.
     private static (SafeFileHandle Read, SafeFileHandle Write) Pipe()
     {
         if (!CreatePipe(out SafeFileHandle read, out SafeFileHandle write, null, 0))
@@ -124,11 +122,13 @@ internal sealed unsafe class AccountToolPipes : IDisposable
         return handle;
     }
 
+    // The list keeps a pointer to the handles, not a copy, so they live behind it in the same block.
     private static void* HandleList(SafeFileHandle output, SafeFileHandle error, SafeFileHandle input)
     {
         nuint size = 0;
         _ = InitializeProcThreadAttributeList(null, 1, 0, ref size);
-        void* list = NativeMemory.Alloc(size);
+        nuint handlesAt = (size + (nuint)sizeof(nint) - 1) & ~((nuint)sizeof(nint) - 1);
+        void* list = NativeMemory.Alloc(handlesAt + (nuint)(sizeof(nint) * 3));
 
         if (!InitializeProcThreadAttributeList(list, 1, 0, ref size))
         {
@@ -138,7 +138,7 @@ internal sealed unsafe class AccountToolPipes : IDisposable
             throw failure;
         }
 
-        nint* handles = stackalloc nint[3];
+        nint* handles = (nint*)((byte*)list + handlesAt);
         handles[0] = output.DangerousGetHandle();
         handles[1] = error.DangerousGetHandle();
         handles[2] = input.DangerousGetHandle();

@@ -33,20 +33,13 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         _tool = Path.GetFileName(fileName);
         string commandLine = WindowsCommandLine.Build(fileName, arguments);
 
-        if (account.Desktop is { } sessionDesktop)
-        {
-            StartInSession(account, sessionDesktop, commandLine, options);
-
-            return;
-        }
-
-        _desktop = AccountDesktop.Create(account.LogonSid.Value);
+        string desktopName = account.Desktop ?? OwnDesktop(account);
         AccountToolPipes pipes = AccountToolPipes.Create();
         char* environmentBlock = AccountEnvironment.Build(account.Token, options.Environment);
 
         try
         {
-            fixed (char* desktop = _desktop.Name)
+            fixed (char* desktop = desktopName)
             {
                 StartupInfoEx startup = pipes.StartupInfo(desktop);
                 (_process, _thread) = StartSuspended(account, commandLine, options.WorkingDirectory, environmentBlock, &startup);
@@ -131,44 +124,11 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         _desktop?.Dispose();
     }
 
-    // A handle cannot be inherited into another session, so this start passes none: no pipes, no attribute list. The
-    // output streams stay empty, and the tool reports through a file.
-    private unsafe void StartInSession(WindowsAccountSession account, string sessionDesktop, string commandLine, ToolRunOptions options)
+    private string OwnDesktop(WindowsAccountSession account)
     {
-        char* environmentBlock = AccountEnvironment.Build(account.Token, options.Environment);
-        (SafeKernelHandle Process, SafeKernelHandle Thread) started;
+        _desktop = AccountDesktop.Create(account.LogonSid.Value);
 
-        try
-        {
-            fixed (char* desktop = sessionDesktop)
-            {
-                // STARTUPINFOW is STARTUPINFOEXW without the attribute list at its end.
-                StartupInfoEx startup = new() { Size = (uint)(sizeof(StartupInfoEx) - sizeof(void*)), Desktop = desktop };
-                started = StartSuspended(account, commandLine, options.WorkingDirectory, environmentBlock, &startup);
-            }
-        }
-        finally
-        {
-            AccountEnvironment.Free(environmentBlock);
-        }
-
-        (_process, _thread) = started;
-        _output = Stream.Null;
-        _error = Stream.Null;
-
-        try
-        {
-            _job = KillOnCloseJob();
-            Assign(_job, started.Process, account.UserName);
-            Resume(started.Thread, account.UserName);
-        }
-        catch
-        {
-            // Not in the job yet, so closing it would leave the suspended process behind.
-            _ = TerminateProcess(started.Process, 1);
-
-            throw;
-        }
+        return _desktop.Name;
     }
 
     private void Resume(SafeKernelHandle thread, string userName)
@@ -179,7 +139,7 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         }
     }
 
-    // The command line has to be writable. Only a start on a desktop of its own inherits the handles of its list.
+    // The command line has to be writable.
     private unsafe (SafeKernelHandle Process, SafeKernelHandle Thread) StartSuspended(
         WindowsAccountSession account,
         string commandLine,
@@ -187,7 +147,6 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         char* environmentBlock,
         StartupInfoEx* startup)
     {
-        bool inSession = account.Desktop is not null;
         char[] command = [.. commandLine, '\0'];
         ProcessInformation info;
 
@@ -199,15 +158,16 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
                 command0,
                 0,
                 0,
-                inheritHandles: !inSession,
-                CreateSuspended | CreateUnicodeEnvironment | CreateNoWindow | (inSession ? 0 : ExtendedStartupInfoPresent),
+                inheritHandles: true,
+                CreateSuspended | CreateUnicodeEnvironment | CreateNoWindow | ExtendedStartupInfoPresent,
                 environmentBlock,
                 workingDirectory,
                 startup,
                 out info))
             {
-                throw DeploymentStepException.ForLastWin32Error(
-                    inSession ? $"{_tool} could not be started in the session of {account.UserName}" : $"{_tool} could not be started as {account.UserName}");
+                throw DeploymentStepException.ForLastWin32Error(account.Desktop is null
+                    ? $"{_tool} could not be started as {account.UserName}"
+                    : $"{_tool} could not be started in the session of {account.UserName}");
             }
         }
 

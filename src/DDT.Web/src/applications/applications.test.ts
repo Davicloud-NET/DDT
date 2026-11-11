@@ -113,7 +113,11 @@ describe("the application form", () => {
         command: null,
         successExitCodes: [0],
         restartExitCodes: [3010],
-        detection: { kind: "packageFamily", familyName: "Contoso.App_8wekyb3d8bbwe" },
+        detection: {
+          kind: "packageFamily",
+          familyName: "Contoso.App_8wekyb3d8bbwe",
+          minimumVersion: "1.2.3.0",
+        },
       },
     });
     const unknown = uploadedApplicationEdit({
@@ -126,7 +130,11 @@ describe("the application form", () => {
       packageId: "p1",
       command: null,
       restartExitCodes: [3010],
-      detection: { kind: "packageFamily", familyName: "Contoso.App_8wekyb3d8bbwe" },
+      detection: {
+        kind: "packageFamily",
+        familyName: "Contoso.App_8wekyb3d8bbwe",
+        minimumVersion: "1.2.3.0",
+      },
     });
     expect(unknown.kind).toBe("Command");
     expect(unknown.files?.packageId).toBe("p1");
@@ -186,7 +194,11 @@ describe("the application form", () => {
           familyName: " Contoso.App_8wekyb3d8bbwe ",
         },
       }).detection,
-    ).toEqual({ kind: "packageFamily", familyName: "Contoso.App_8wekyb3d8bbwe" });
+    ).toEqual({
+      kind: "packageFamily",
+      familyName: "Contoso.App_8wekyb3d8bbwe",
+      minimumVersion: null,
+    });
   });
 
   it("shows a kind's own fields and puts the others' problems in the notice", () => {

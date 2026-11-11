@@ -144,7 +144,7 @@ internal static class ApplicationUploads
             null,
             [0],
             [3010],
-            new PackageFamilyDetection(main.FamilyName));
+            new PackageFamilyDetection(main.FamilyName, main.Version));
     }
 
     private static MsixManifest? ManifestOf(string path)

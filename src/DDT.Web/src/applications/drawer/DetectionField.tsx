@@ -105,17 +105,29 @@ export function DetectionField({ detection, findings, onChange }: DetectionField
       ) : null}
 
       {detection.kind === "packageFamily" ? (
-        <TextField
-          label={<Trans>Package family name</Trans>}
-          hint={<Trans>Found when the package is provisioned for all users</Trans>}
-          {...textProps}
-          placeholder="Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"
-          value={detection.familyName}
-          onChange={(familyName) => {
-            set({ familyName });
-          }}
-          {...at("familyName")}
-        />
+        <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-3">
+          <TextField
+            label={<Trans>Package family name</Trans>}
+            hint={<Trans>Found when the package is provisioned for all users</Trans>}
+            {...textProps}
+            placeholder="Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"
+            value={detection.familyName}
+            onChange={(familyName) => {
+              set({ familyName });
+            }}
+            {...at("familyName")}
+          />
+          <TextField
+            label={<Trans>Minimum version</Trans>}
+            {...textProps}
+            placeholder="1.2.3.4"
+            value={detection.minimumVersion}
+            onChange={(minimumVersion) => {
+              set({ minimumVersion });
+            }}
+            {...at("minimumVersion")}
+          />
+        </div>
       ) : null}
     </div>
   );

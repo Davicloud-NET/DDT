@@ -147,8 +147,8 @@ Three parts, each a pull request that works by itself. The first is built.
    - The library, under Library > Applications: an entry holds files and a silent command, with
      success and restart codes. An upload suggests the command for MSI, WiX Burn, Inno Setup, NSIS
      and InstallShield. An MSIX or Appx package is provisioned for all users.
-   - Detection, optional per entry: an MSI product code, an uninstall key, a file with a minimum
-     version, or a package family. Without one the application is always installed.
+   - Detection, optional per entry: an MSI product code, an uninstall key, or a file or a package
+     family, each with a minimum version. Without one the application is always installed.
    - Dependencies, installed first, and bundles: ordered lists of applications.
    - An Install applications step installs a list of applications and bundles, and the names a
      value holds. Where an installer asks for a restart, the step restarts and goes on. A failed

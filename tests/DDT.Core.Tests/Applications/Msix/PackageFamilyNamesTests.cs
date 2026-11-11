@@ -48,4 +48,12 @@ public sealed class PackageFamilyNamesTests
     [InlineData("Microsoft.DesktopAppInstaller_8wekyb3d8bbwe", false)]
     public void TellsWhetherAPackageFullNameIsOfTheFamily(string fullName, bool isOf) =>
         Assert.Equal(isOf, PackageFamilyNames.IsOfFamily(fullName, PackageFamilyNames.Example));
+
+    [Theory]
+    [InlineData("Microsoft.PowerShell_2026.1110.418.0_neutral_~_8wekyb3d8bbwe", "2026.1110.418.0")]
+    [InlineData("Microsoft.VCLibs.140.00_14.0.30704.0_x64__8wekyb3d8bbwe", "14.0.30704.0")]
+    [InlineData("Microsoft.VCLibs.140.00_14.0_x64__8wekyb3d8bbwe", null)]
+    [InlineData("Microsoft.DesktopAppInstaller_8wekyb3d8bbwe", null)]
+    [InlineData("", null)]
+    public void ReadsTheVersionOutOfAFullName(string fullName, string? version) => Assert.Equal(version, PackageFamilyNames.VersionOf(fullName));
 }

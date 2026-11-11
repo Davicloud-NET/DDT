@@ -55,6 +55,20 @@ public sealed class WindowsApplicationDetectorTests
         Assert.False(Detector.IsInstalled(new PackageFamilyDetection("Contoso_8wekyb3d8bbwe")));
     }
 
+    // App Installer 1.21 in the image does not count for an upload of 1.29.
+    [Theory]
+    [InlineData("Microsoft.DesktopAppInstaller_1.21.10120.0_x64__8wekyb3d8bbwe", "1.29.30.0", false)]
+    [InlineData("Microsoft.DesktopAppInstaller_1.29.30.0_x64__8wekyb3d8bbwe", "1.29.30.0", true)]
+    [InlineData("Microsoft.DesktopAppInstaller_2026.917.151.0_neutral_~_8wekyb3d8bbwe", "1.29.30.0", true)]
+    [InlineData("Microsoft.DesktopAppInstaller_1.21.10120.0_x64__8wekyb3d8bbwe", null, true)]
+    [InlineData("Microsoft.DesktopAppInstaller_1.29_x64__8wekyb3d8bbwe", "1.29.30.0", false)]
+    public void APackageFamilyWithAVersionNeedsAtLeastThatOne(string fullName, string? minimum, bool installed)
+    {
+        _machine.Provisioned.Add(fullName);
+
+        Assert.Equal(installed, Detector.IsInstalled(new PackageFamilyDetection("Microsoft.DesktopAppInstaller_8wekyb3d8bbwe", minimum)));
+    }
+
     [Theory]
     [InlineData("23.1.0.0", "23.1", true)]
     [InlineData("23.1.0.0", "23.01", true)]

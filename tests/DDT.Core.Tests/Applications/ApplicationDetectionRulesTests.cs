@@ -5,6 +5,7 @@
 using DDT.Contracts.Applications;
 using DDT.Contracts.Messages;
 using DDT.Core.Applications;
+using DDT.Core.Applications.Msix;
 using Xunit;
 
 namespace DDT.Core.Tests.Applications;
@@ -114,6 +115,16 @@ public sealed class ApplicationDetectionRulesTests
             ApplicationRulesTests.Command with { Detection = new PackageFamilyDetection(family) },
             "detection.familyName",
             ServerMessages.ApplicationPackageFamily);
+
+    [Fact]
+    public void APackageFamilyTakesAVersionOfFourNumbers()
+    {
+        Assert.Empty(ApplicationRules.Check(ApplicationRulesTests.Command with { Detection = new PackageFamilyDetection(PackageFamilyNames.Example, "1.21.10120.0") }, null));
+        ApplicationRulesTests.AssertProblem(
+            ApplicationRulesTests.Command with { Detection = new PackageFamilyDetection(PackageFamilyNames.Example, "1.21.x") },
+            "detection.minimumVersion",
+            ServerMessages.ApplicationDetectionVersion);
+    }
 
     [Fact]
     public void NoDetectionIsFine() => Assert.Empty(ApplicationRules.Check(ApplicationRulesTests.Command with { Detection = null }, null));

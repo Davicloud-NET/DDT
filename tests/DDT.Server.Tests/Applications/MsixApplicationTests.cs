@@ -46,7 +46,7 @@ public sealed class MsixApplicationTests(DdtApplication application) : IClassFix
         Assert.Equal(
             (ApplicationKind.Msix, "Contoso App", "Contoso", "1.2.3.0", (string?)null),
             (suggestion.Kind, suggestion.Name, suggestion.Publisher, suggestion.Version, suggestion.Command));
-        Assert.Equal(new PackageFamilyDetection(Family), suggestion.Detection);
+        Assert.Equal(new PackageFamilyDetection(Family, "1.2.3.0"), suggestion.Detection);
         Assert.Equal([0], suggestion.SuccessExitCodes);
         Assert.Equal([3010], suggestion.RestartExitCodes);
     }
@@ -66,7 +66,7 @@ public sealed class MsixApplicationTests(DdtApplication application) : IClassFix
         Assert.Equal(
             (ApplicationKind.Msix, "Contoso.App", (string?)null, "2.0.0.0", (string?)null),
             (suggestion.Kind, suggestion.Name, suggestion.Publisher, suggestion.Version, suggestion.Command));
-        Assert.Equal(new PackageFamilyDetection(Family), suggestion.Detection);
+        Assert.Equal(new PackageFamilyDetection(Family, "2.0.0.0"), suggestion.Detection);
         Assert.Equal(HttpStatusCode.Created, (await administrator.PostAsync(ApplicationsPath, Msix(Unique("Contoso"), upload.Files.PackageId))).StatusCode);
     }
 

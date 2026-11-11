@@ -66,7 +66,12 @@ export function detectionEditOf(detection: ApplicationDetection | null): Detecti
         minimumVersion: detection.minimumVersion ?? "",
       };
     case "packageFamily":
-      return { ...noDetection, kind: "packageFamily", familyName: detection.familyName };
+      return {
+        ...noDetection,
+        kind: "packageFamily",
+        familyName: detection.familyName,
+        minimumVersion: detection.minimumVersion ?? "",
+      };
     default:
       return noDetection;
   }
@@ -154,7 +159,11 @@ export function detectionOf(edit: DetectionEdit): ApplicationDetection | null {
         minimumVersion: optional(edit.minimumVersion),
       };
     case "packageFamily":
-      return { kind: "packageFamily", familyName: edit.familyName.trim() };
+      return {
+        kind: "packageFamily",
+        familyName: edit.familyName.trim(),
+        minimumVersion: optional(edit.minimumVersion),
+      };
     case "none":
       return null;
   }

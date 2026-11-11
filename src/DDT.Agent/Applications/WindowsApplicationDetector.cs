@@ -23,9 +23,20 @@ public sealed class WindowsApplicationDetector(
         ProductCodeDetection product => products.IsInstalled(product.ProductCode),
         UninstallKeyDetection key => uninstallKeys.Exists(key.KeyName.Trim()),
         FileDetection file => HasFile(file),
-        PackageFamilyDetection family => packages.FullNames().Any(fullName => PackageFamilyNames.IsOfFamily(fullName, family.FamilyName.Trim())),
+        PackageFamilyDetection family => packages.FullNames().Any(fullName => IsProvisioned(fullName, family)),
         _ => false,
     };
+
+    // A full name whose version cannot be read is not new enough for a rule that asks for one.
+    public static bool IsProvisioned(string fullName, PackageFamilyDetection rule)
+    {
+        ArgumentNullException.ThrowIfNull(fullName);
+        ArgumentNullException.ThrowIfNull(rule);
+
+        return PackageFamilyNames.IsOfFamily(fullName, rule.FamilyName.Trim())
+            && (string.IsNullOrWhiteSpace(rule.MinimumVersion)
+                || (PackageFamilyNames.VersionOf(fullName) is { } version && FileVersions.IsAtLeast(version, rule.MinimumVersion)));
+    }
 
     // A file without a version is not new enough for a rule that asks for one.
     private bool HasFile(FileDetection rule)

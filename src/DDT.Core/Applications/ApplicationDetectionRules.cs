@@ -34,8 +34,8 @@ public static partial class ApplicationDetectionRules
             case FileDetection file:
                 CheckFile(file, add);
                 break;
-            case PackageFamilyDetection family when !PackageFamilyNames.IsFamilyName(family.FamilyName?.Trim()):
-                add("detection.familyName", ServerMessages.ApplicationPackageFamily.With("example", PackageFamilyNames.Example));
+            case PackageFamilyDetection family:
+                CheckFamily(family, add);
                 break;
         }
     }
@@ -92,6 +92,19 @@ public static partial class ApplicationDetectionRules
         }
 
         if (!IsVersion(file.MinimumVersion))
+        {
+            add("detection.minimumVersion", ServerMessages.ApplicationDetectionVersion.With());
+        }
+    }
+
+    private static void CheckFamily(PackageFamilyDetection family, Action<string, ServerMessage> add)
+    {
+        if (!PackageFamilyNames.IsFamilyName(family.FamilyName?.Trim()))
+        {
+            add("detection.familyName", ServerMessages.ApplicationPackageFamily.With("example", PackageFamilyNames.Example));
+        }
+
+        if (!IsVersion(family.MinimumVersion))
         {
             add("detection.minimumVersion", ServerMessages.ApplicationDetectionVersion.With());
         }

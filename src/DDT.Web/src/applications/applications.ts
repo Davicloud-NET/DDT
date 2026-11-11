@@ -15,7 +15,7 @@ export type ApplicationDetection =
   | { kind: "productCode"; productCode: string }
   | { kind: "uninstallKey"; keyName: string }
   | { kind: "file"; path: string; minimumVersion?: string | null }
-  | { kind: "packageFamily"; familyName: string };
+  | { kind: "packageFamily"; familyName: string; minimumVersion?: string | null };
 
 // The uploaded files, kept as a package the Packages page does not list.
 export interface ApplicationFiles {

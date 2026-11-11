@@ -64,7 +64,7 @@ public sealed class AgentApplicationContractTests
             new ProductCodeDetection("{23170F69-40C1-2702-2301-000001000000}"),
             new UninstallKeyDetection("7-Zip"),
             new FileDetection(@"C:\Program Files\7-Zip\7z.exe", "23.1"),
-            new PackageFamilyDetection("Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"),
+            new PackageFamilyDetection("Microsoft.DesktopAppInstaller_8wekyb3d8bbwe", "1.21.10120.0"),
         ];
 
         foreach (ApplicationDetection detection in detections)
@@ -83,7 +83,7 @@ public sealed class AgentApplicationContractTests
             StringComparison.Ordinal);
         Assert.Contains(
             """
-            "detection":{"kind":"packageFamily","familyName":"Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"}
+            "detection":{"kind":"packageFamily","familyName":"Microsoft.DesktopAppInstaller_8wekyb3d8bbwe","minimumVersion":"1.21.10120.0"}
             """,
             JsonSerializer.Serialize(new AgentStepApplications([Application(detections[3])]), AgentJsonContext.Default.AgentStepApplications),
             StringComparison.Ordinal);

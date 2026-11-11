@@ -33,8 +33,8 @@ public sealed class ApplicationWireFormatTests
             new FileDetection(@"%ProgramFiles%\7-Zip\7z.exe", "24.9"),
             """{"kind":"file","path":"%ProgramFiles%\\7-Zip\\7z.exe","minimumVersion":"24.9"}"""),
         ["packageFamily"] = (
-            new PackageFamilyDetection("Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"),
-            """{"kind":"packageFamily","familyName":"Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"}"""),
+            new PackageFamilyDetection("Microsoft.DesktopAppInstaller_8wekyb3d8bbwe", "1.21.10120.0"),
+            """{"kind":"packageFamily","familyName":"Microsoft.DesktopAppInstaller_8wekyb3d8bbwe","minimumVersion":"1.21.10120.0"}"""),
     };
 
     public static TheoryData<string> Detections => [.. s_detections.Keys];
@@ -54,6 +54,12 @@ public sealed class ApplicationWireFormatTests
         Assert.Equal(
             new FileDetection(@"C:\app.exe"),
             JsonSerializer.Deserialize("""{"path":"C:\\app.exe","kind":"file"}""", DdtJsonContext.Default.ApplicationDetection));
+
+    [Fact]
+    public void ReadsAPackageFamilyStoredWithoutAVersion() =>
+        Assert.Equal(
+            new PackageFamilyDetection("Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"),
+            JsonSerializer.Deserialize("""{"kind":"packageFamily","familyName":"Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"}""", DdtJsonContext.Default.ApplicationDetection));
 
     [Fact]
     public void RefusesAnUnknownDetection() =>
@@ -92,7 +98,7 @@ public sealed class ApplicationWireFormatTests
     [Fact]
     public void WritesTheSuggestionOfAnMsixUpload() =>
         Assert.Equal(
-            """{"files":{"packageId":"0197a3c0-0000-7000-8000-000000000003","name":"Contoso.App.msix","sizeBytes":2048},"suggestion":{"kind":"Msix","name":"Contoso App","publisher":"Contoso","version":"1.2.3.0","command":null,"successExitCodes":[0],"restartExitCodes":[3010],"detection":{"kind":"packageFamily","familyName":"Contoso.App_8wekyb3d8bbwe"}}}""",
+            """{"files":{"packageId":"0197a3c0-0000-7000-8000-000000000003","name":"Contoso.App.msix","sizeBytes":2048},"suggestion":{"kind":"Msix","name":"Contoso App","publisher":"Contoso","version":"1.2.3.0","command":null,"successExitCodes":[0],"restartExitCodes":[3010],"detection":{"kind":"packageFamily","familyName":"Contoso.App_8wekyb3d8bbwe","minimumVersion":"1.2.3.0"}}}""",
             JsonSerializer.Serialize(
                 new ApplicationUpload(
                     new ApplicationFiles(s_package, "Contoso.App.msix", 2048),
@@ -104,7 +110,7 @@ public sealed class ApplicationWireFormatTests
                         null,
                         [0],
                         [3010],
-                        new PackageFamilyDetection("Contoso.App_8wekyb3d8bbwe"))),
+                        new PackageFamilyDetection("Contoso.App_8wekyb3d8bbwe", "1.2.3.0"))),
                 DdtJsonContext.Default.ApplicationUpload));
 
     [Fact]

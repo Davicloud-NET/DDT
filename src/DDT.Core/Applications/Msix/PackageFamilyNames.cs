@@ -75,10 +75,23 @@ public static partial class PackageFamilyNames
             && fullName.EndsWith(publisherId, StringComparison.OrdinalIgnoreCase);
     }
 
+    // The version in a full name, its second part, or null when it has none of four numbers.
+    public static string? VersionOf(string fullName)
+    {
+        ArgumentNullException.ThrowIfNull(fullName);
+
+        string[] parts = fullName.Split('_');
+
+        return parts.Length == 5 && FullNameVersion().IsMatch(parts[1]) ? parts[1] : null;
+    }
+
     // The manifest schema's ST_PackageName.
     [GeneratedRegex(@"^[A-Za-z0-9.\-]{3,50}\z", RegexOptions.CultureInvariant)]
     private static partial Regex IdentityName();
 
     [GeneratedRegex(@"^[A-Za-z0-9.\-]{3,50}_[0-9a-hjkmnp-tv-z]{13}\z", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
     private static partial Regex FamilyName();
+
+    [GeneratedRegex(@"^[0-9]{1,5}(?:\.[0-9]{1,5}){3}\z", RegexOptions.CultureInvariant)]
+    private static partial Regex FullNameVersion();
 }

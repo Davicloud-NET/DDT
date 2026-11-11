@@ -140,7 +140,11 @@ describe("ApplicationDrawer", () => {
           command: null,
           successExitCodes: [0],
           restartExitCodes: [3010],
-          detection: { kind: "packageFamily", familyName: "Contoso.App_8wekyb3d8bbwe" },
+          detection: {
+            kind: "packageFamily",
+            familyName: "Contoso.App_8wekyb3d8bbwe",
+            minimumVersion: "1.2.3.0",
+          },
         },
       }),
       "POST /api/applications": (request) => {
@@ -161,6 +165,7 @@ describe("ApplicationDrawer", () => {
     expect(within(drawer).getByRole("textbox", { name: "Package family name" })).toHaveValue(
       "Contoso.App_8wekyb3d8bbwe",
     );
+    expect(within(drawer).getByRole("textbox", { name: "Minimum version" })).toHaveValue("1.2.3.0");
 
     press(within(drawer).getByRole("button", { name: "Save application" }));
 
@@ -171,7 +176,11 @@ describe("ApplicationDrawer", () => {
         packageId: "p8",
         command: null,
         restartExitCodes: [3010],
-        detection: { kind: "packageFamily", familyName: "Contoso.App_8wekyb3d8bbwe" },
+        detection: {
+          kind: "packageFamily",
+          familyName: "Contoso.App_8wekyb3d8bbwe",
+          minimumVersion: "1.2.3.0",
+        },
       }),
     ]);
   });

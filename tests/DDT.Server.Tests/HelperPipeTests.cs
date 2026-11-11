@@ -59,4 +59,32 @@ public sealed class HelperPipeTests
 
         await server.StopAsync(cancellationToken);
     }
+
+    [Fact]
+    [SupportedOSPlatform("windows")]
+    public async Task TheHelperIsThereBetweenTwoRequests()
+    {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "The helper is a Windows service.");
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        string name = "DDT.Helper.Test." + Guid.NewGuid().ToString("N");
+
+        using WindowsIdentity account = WindowsIdentity.GetCurrent();
+        using HelperPipeServer server = new(
+            name,
+            account.User ?? throw new InvalidOperationException("This account has no SID."),
+            (_, _, _) => Task.FromResult<string?>(null),
+            NullLogger<HelperPipeServer>.Instance);
+        await server.StartAsync(cancellationToken);
+
+        PipeBootImageHelper helper = new(name, TimeSpan.FromMinutes(2));
+
+        for (int round = 0; round < 50; round++)
+        {
+            await helper.RunAsync(new HelperRequest { Kind = HelperRequest.InstallAdk }, cancellationToken).ToListAsync(cancellationToken);
+
+            Assert.True(helper.Available);
+        }
+
+        await server.StopAsync(cancellationToken);
+    }
 }

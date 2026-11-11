@@ -36,6 +36,9 @@ public sealed class ToolRunner(
     // Tools that say what they did on their error output, as systemctl does. Their lines there are no warnings.
     public IReadOnlySet<string> PlainErrorOutput { get; init; } = new HashSet<string>(StringComparer.Ordinal);
 
+    // Decoders for the tools that write another code page than decoder reads, by file name.
+    public IReadOnlyDictionary<string, ToolOutputDecoder> Decoders { get; init; } = new Dictionary<string, ToolOutputDecoder>();
+
     public async Task<IReadOnlyList<string>> RunAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(fileName);
@@ -48,12 +51,13 @@ public sealed class ToolRunner(
         using Process process = Start(StartInfo(fileName, arguments), tool);
 
         List<string> lines = [];
-        Task output = ToolOutput.ForwardAsync(process.StandardOutput.BaseStream, decoder, line =>
+        ToolOutputDecoder toolDecoder = DecoderOf(tool);
+        Task output = ToolOutput.ForwardAsync(process.StandardOutput.BaseStream, toolDecoder, line =>
         {
             lines.Add(line);
             log.Information(line);
         });
-        Task errors = ToolOutput.ForwardAsync(process.StandardError.BaseStream, decoder, PlainErrorOutput.Contains(tool) ? log.Information : log.Warning);
+        Task errors = ToolOutput.ForwardAsync(process.StandardError.BaseStream, toolDecoder, PlainErrorOutput.Contains(tool) ? log.Information : log.Warning);
 
         try
         {
@@ -101,8 +105,9 @@ public sealed class ToolRunner(
         long started = timeProvider.GetTimestamp();
         using IToolProcess process = StartFor(fileName, arguments, options, tool);
 
-        Task output = ToolOutput.ForwardAsync(process.StandardOutput, decoder, Filtered(options.Lines, log.Information));
-        Task errors = ToolOutput.ForwardAsync(process.StandardError, decoder, Filtered(options.Lines, log.Warning));
+        ToolOutputDecoder toolDecoder = DecoderOf(tool);
+        Task output = ToolOutput.ForwardAsync(process.StandardOutput, toolDecoder, Filtered(options.Lines, log.Information));
+        Task errors = ToolOutput.ForwardAsync(process.StandardError, toolDecoder, Filtered(options.Lines, log.Warning));
 
         try
         {
@@ -177,6 +182,8 @@ public sealed class ToolRunner(
 
         return string.Join(' ', new[] { fileName }.Concat(arguments).Select(Quote));
     }
+
+    private ToolOutputDecoder DecoderOf(string tool) => Decoders.TryGetValue(tool, out ToolOutputDecoder? own) ? own : decoder;
 
     private static Action<string> Filtered(Func<string, string?>? lines, Action<string> write) =>
         lines is null

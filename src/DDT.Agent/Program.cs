@@ -64,7 +64,7 @@ static Task<int> DryRunAsync(StartedAgent agent, CancellationToken cancellationT
 static Task<int> RunAsync(StartedAgent agent, CancellationToken cancellationToken)
 {
     (_, HttpAgentServer server, AgentLog log, ConsoleStatus status, PipeMachineConsole? graphical, _, string version) = agent;
-    ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode, new AccountProcessStarter(log));
+    ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode, new AccountProcessStarter(log)) { Decoders = WindowsToolDecoders.All };
     UefiVariables firmware = new();
     DiskpartPartitioner disks = new(tools, log, TimeProvider.System, AppContext.BaseDirectory);
     BcdbootWriter bcdWriter = new(tools, firmware, log);

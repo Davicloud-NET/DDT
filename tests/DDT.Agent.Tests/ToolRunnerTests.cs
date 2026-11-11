@@ -29,6 +29,27 @@ public sealed class ToolRunnerTests
         Assert.StartsWith("cmd.exe ended with exit code 0x00000000 after ", lines[^1].Message, StringComparison.Ordinal);
     }
 
+    // A line that is valid UTF-8 never reaches a decoder, so the tool prints "für" in code page 850.
+    [Fact]
+    public async Task AToolWithADecoderOfItsOwnIsReadWithIt()
+    {
+        string file = Path.Combine(Path.GetTempPath(), $"ddt-oem-{Guid.NewGuid():N}.txt");
+        await File.WriteAllBytesAsync(file, [0x66, 0x81, 0x72], TestContext.Current.CancellationToken);
+        ToolRunner tools = new(new AgentLog(new ImmediateTimeProvider(), TextWriter.Null), TimeProvider.System, AnsiCodePage.Decode)
+        {
+            Decoders = new Dictionary<string, ToolOutputDecoder>(StringComparer.OrdinalIgnoreCase) { ["CMD.EXE"] = bytes => AnsiCodePage.Decode(850, bytes) },
+        };
+
+        try
+        {
+            Assert.Equal(["für"], await tools.RunAsync(s_cmd, ["/c", "type", file], TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
     [Fact]
     public async Task FailsOnANonZeroExitCodeNamingTheToolAndTheCode()
     {

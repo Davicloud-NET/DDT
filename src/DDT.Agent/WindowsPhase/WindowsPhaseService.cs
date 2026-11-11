@@ -56,7 +56,7 @@ public static class WindowsPhaseService
 
         string version = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "unknown";
         using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate);
-        ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode, new AccountProcessStarter(log));
+        ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode, new AccountProcessStarter(log)) { Decoders = WindowsToolDecoders.All };
         ServiceParts parts = new(windowsRoot, log, server, tools, new WindowsRebooter(tools), version);
         AgentConfiguration staged = options.ForInstalledSystem();
 

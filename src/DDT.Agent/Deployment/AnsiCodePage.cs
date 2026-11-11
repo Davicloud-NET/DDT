@@ -7,16 +7,21 @@ using System.Text;
 
 namespace DDT.Agent.Deployment;
 
-// Windows' ANSI code page, which older programs such as tree write into a pipe.
+// Windows' ANSI code page, which older programs such as tree write into a pipe, and its OEM one, which dism writes.
 public static partial class AnsiCodePage
 {
-    private const uint Id = 0;
+    private const uint Ansi = 0;
+    private const uint Oem = 1;
 
-    public static unsafe string Decode(ReadOnlySpan<byte> bytes)
+    public static string Decode(ReadOnlySpan<byte> bytes) => Decode(Ansi, bytes);
+
+    public static string DecodeOem(ReadOnlySpan<byte> bytes) => Decode(Oem, bytes);
+
+    public static unsafe string Decode(uint codePage, ReadOnlySpan<byte> bytes)
     {
         fixed (byte* input = bytes)
         {
-            int length = MultiByteToWideChar(Id, 0, input, bytes.Length, null, 0);
+            int length = MultiByteToWideChar(codePage, 0, input, bytes.Length, null, 0);
 
             if (length <= 0)
             {
@@ -27,7 +32,7 @@ public static partial class AnsiCodePage
 
             fixed (char* output = text)
             {
-                return new string(output, 0, MultiByteToWideChar(Id, 0, input, bytes.Length, output, length));
+                return new string(output, 0, MultiByteToWideChar(codePage, 0, input, bytes.Length, output, length));
             }
         }
     }

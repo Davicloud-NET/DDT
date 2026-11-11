@@ -60,7 +60,11 @@ public sealed class WingetApplicationInstaller(
         await _registration.EnsureAsync(session, profile, cancellationToken).ConfigureAwait(false);
 
         using DeployAccountElevation raised = await DeployAccountElevation.RaiseAsync(account, log, cancellationToken).ConfigureAwait(false);
-        ToolRunOptions options = new(profile, launch.Environment, TimeSpan.FromMinutes(application.TimeoutMinutes), raised.Session, WingetOutput.Line);
+        // CreateProcessAsUser refuses winget's alias from session 0 with a handle list (error 87).
+        ToolRunOptions options = new(profile, launch.Environment, TimeSpan.FromMinutes(application.TimeoutMinutes), raised.Session, WingetOutput.Line)
+        {
+            WithoutHandleList = true,
+        };
         IReadOnlyList<string> arguments = Arguments(application.WingetId.Trim(), application.WingetVersion);
 
         return await tools.RunForExitCodeAsync(AliasIn(profile), arguments, options, cancellationToken).ConfigureAwait(false);

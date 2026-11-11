@@ -147,7 +147,7 @@ public sealed class ToolRunner(
                 throw new DeploymentStepException($"{tool} was to run as {account.UserName}, but this agent cannot start a process as an account.");
             }
 
-            return accountProcessStarter.Start(account, fileName, arguments, options.WorkingDirectory, options.Environment);
+            return accountProcessStarter.Start(account, fileName, arguments, options);
         }
 
         ProcessStartInfo start = StartInfo(fileName, arguments);

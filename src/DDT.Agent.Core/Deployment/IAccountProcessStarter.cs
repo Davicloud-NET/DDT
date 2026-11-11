@@ -6,12 +6,7 @@ namespace DDT.Agent.Deployment;
 
 public interface IAccountProcessStarter
 {
-    // Starts fileName as the account, which is already signed in. The process gets the account's environment plus the
-    // variables in environment. A tool that can't start throws DeploymentStepException.
-    IToolProcess Start(
-        IAccountSession account,
-        string fileName,
-        IReadOnlyList<string> arguments,
-        string? workingDirectory,
-        IReadOnlyDictionary<string, string>? environment);
+    // Starts fileName as the account, which is already signed in, in options' working directory. The process gets the
+    // account's environment plus options' variables. A tool that can't start throws DeploymentStepException.
+    IToolProcess Start(IAccountSession account, string fileName, IReadOnlyList<string> arguments, ToolRunOptions options);
 }

@@ -9,7 +9,8 @@ using static DDT.Agent.Deployment.AccountNativeMethods;
 
 namespace DDT.Agent.Deployment;
 
-// The two output pipes of a tool started as an account, and NUL as its input. These are the only handles it inherits.
+// The two output pipes of a tool started as an account, and NUL as its input. With a handle list these are the only
+// handles it inherits.
 [SupportedOSPlatform("windows")]
 internal sealed unsafe class AccountToolPipes : IDisposable
 {
@@ -31,23 +32,22 @@ internal sealed unsafe class AccountToolPipes : IDisposable
 
     public static AccountToolPipes Create()
     {
-        SecurityAttributes inheritable = new() { Length = (uint)sizeof(SecurityAttributes), InheritHandle = 1 };
-        (SafeFileHandle outputRead, SafeFileHandle outputWrite) = Pipe(&inheritable);
-        (SafeFileHandle errorRead, SafeFileHandle errorWrite) = Pipe(&inheritable);
+        (SafeFileHandle outputRead, SafeFileHandle outputWrite) = Pipe();
+        (SafeFileHandle errorRead, SafeFileHandle errorWrite) = Pipe();
         SafeFileHandle input = NulForReading();
 
         return new AccountToolPipes(outputRead, outputWrite, errorRead, errorWrite, input);
     }
 
-    // Sets up the child's ends, and the attribute list that lets it inherit only those, whatever else the agent holds
-    // open.
-    public StartupInfoEx StartupInfo(char* desktop)
+    // Sets up the child's ends, and with handleList the attribute list that lets it inherit only those, whatever else
+    // the agent holds open. Without it the size is STARTUPINFOW's, which is STARTUPINFOEXW without the list at its end.
+    public StartupInfoEx StartupInfo(char* desktop, bool handleList)
     {
-        _handleList = HandleList(_outputWrite, _errorWrite, _input);
+        _handleList = handleList ? HandleList(_outputWrite, _errorWrite, _input) : null;
 
         return new StartupInfoEx
         {
-            Size = (uint)sizeof(StartupInfoEx),
+            Size = (uint)(handleList ? sizeof(StartupInfoEx) : sizeof(StartupInfoEx) - sizeof(void*)),
             Flags = StartfUseStdHandles,
             Desktop = desktop,
             StandardInput = _input.DangerousGetHandle(),
@@ -88,15 +88,16 @@ internal sealed unsafe class AccountToolPipes : IDisposable
         _errorRead.Dispose();
     }
 
-    private static (SafeFileHandle Read, SafeFileHandle Write) Pipe(SecurityAttributes* inheritable)
+    // The parent's end is never inheritable, not even for a moment, because a start without a handle list hands out
+    // every inheritable handle.
+    private static (SafeFileHandle Read, SafeFileHandle Write) Pipe()
     {
-        if (!CreatePipe(out SafeFileHandle read, out SafeFileHandle write, inheritable, 0))
+        if (!CreatePipe(out SafeFileHandle read, out SafeFileHandle write, null, 0))
         {
             throw DeploymentStepException.ForLastWin32Error("An output pipe for the script could not be created");
         }
 
-        // The parent's end of the pipe is never handed to the child.
-        if (!SetHandleInformation(read, HandleFlagInherit, 0))
+        if (!SetHandleInformation(write, HandleFlagInherit, HandleFlagInherit))
         {
             DeploymentStepException failure = DeploymentStepException.ForLastWin32Error("An output pipe for the script could not be set up");
             read.Dispose();

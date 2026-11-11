@@ -46,6 +46,10 @@ public sealed class InstallerSuggestionsTests
     }
 
     [Fact]
+    public void ABurnBundleTakesAnotherVersionAlreadyInstalledAsSuccess() =>
+        Assert.Equal([0, 1638], InstallerSuggestions.For(new InstallerFacts(InstallerKind.Burn), "bundle.exe")?.SuccessExitCodes);
+
+    [Fact]
     public void AnNsisInstallerHasNoRestartCode()
     {
         Assert.Empty(InstallerSuggestions.For(new InstallerFacts(InstallerKind.Nsis), "setup.exe")?.RestartExitCodes ?? [-1]);

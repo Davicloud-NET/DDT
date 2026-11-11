@@ -11,10 +11,14 @@ public static class InstallerSuggestions
     private const int RestartRequired = 3010;
     private const int RestartStarted = 1641;
 
+    // ERROR_PRODUCT_VERSION: another version of the product is installed, as after a newer runtime came with another
+    // application.
+    private const int AnotherVersion = 1638;
+
     private static readonly Dictionary<InstallerKind, Convention> s_conventions = new()
     {
         [InstallerKind.Msi] = new(true, "/qn /norestart", [Success], [RestartRequired, RestartStarted]),
-        [InstallerKind.Burn] = new(false, "/quiet /norestart", [Success], [RestartRequired]),
+        [InstallerKind.Burn] = new(false, "/quiet /norestart", [Success, AnotherVersion], [RestartRequired]),
 
         // Inno Setup returns 0 after a successful install that needs a restart unless /RESTARTEXITCODE says otherwise.
         [InstallerKind.InnoSetup] = new(false, "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /RESTARTEXITCODE=3010", [Success], [RestartRequired]),

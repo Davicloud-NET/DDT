@@ -31,7 +31,8 @@ are part of the licence of this material, and anyone who conveys it must pass th
 
 Additional permissions under section 7 of the GNU General Public License, version 3
 
-1. Avalonia. DDT's console at the machine, ddt-console.exe, is built from src/DDT.MachineConsole
+1. Avalonia. DDT's console at the machine, ddt-console.exe on Windows and ddt-console on Linux, is
+   built from src/DDT.MachineConsole, src/DDT.MachineConsole.Windows, src/DDT.MachineConsole.Linux
    and src/DDT.ConsoleProtocol with Avalonia, which contains code under the Microsoft Public
    License. For that console:
 

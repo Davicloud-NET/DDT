@@ -46,7 +46,7 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
 
         AgentRegistration registration = Assert.Single(server.Registrations);
         Assert.Equal(
-            ("run-token-1", AgentEnvironment.Windows, 5, null, null),
+            ("run-token-1", AgentEnvironment.Windows, 6, null, null),
             (registration.RunToken, registration.Environment, registration.SequenceVersion, registration.ResumeToken, registration.Disks));
 
         // The installed Windows reports the same facts as WinPE did, because conditions test them in both phases.

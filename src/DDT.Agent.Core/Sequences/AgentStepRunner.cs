@@ -25,6 +25,11 @@ public sealed class AgentStepRunner(
 
     public const string JoinDomainInLinux = "Joining the domain runs in Windows, but this agent was asked to run it in the installed Linux.";
 
+    public static string ApplicationsInBoot(SequencePhase phase) =>
+        $"Applications install in Windows, after the hand-over, but this agent was asked to install them in {AgentEnvironments.OfBootPhase(phase)}.";
+
+    public const string ApplicationsInLinux = "Applications install in Windows, but this agent was asked to install them in the installed Linux.";
+
     public async Task<StepResult> RunAsync(SequenceStep step, StepContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(step);
@@ -79,15 +84,23 @@ public sealed class AgentStepRunner(
             return StepResult.RebootRequired();
         }
 
-        if (step is JoinDomainStep && context.Phase != SequencePhase.Windows)
+        if (context.Phase != SequencePhase.Windows && OnlyInWindows(step, context.Phase) is { } elsewhere)
         {
-            return StepResult.Failed(SequenceKinds.IsBoot(context.Phase) ? JoinDomainInBoot(context.Phase) : JoinDomainInLinux);
+            return StepResult.Failed(elsewhere);
         }
 
         return runners.FirstOrDefault(runner => runner.Runs(step)) is { } kind
             ? await kind.RunAsync(step, context, resources, cancellationToken).ConfigureAwait(false)
             : StepResult.Failed(UnknownKind);
     }
+
+    // Why a step that only runs in the installed Windows cannot run in this phase, or null for any other step.
+    private static string? OnlyInWindows(SequenceStep step, SequencePhase phase) => step switch
+    {
+        JoinDomainStep => SequenceKinds.IsBoot(phase) ? JoinDomainInBoot(phase) : JoinDomainInLinux,
+        InstallApplicationsStep => SequenceKinds.IsBoot(phase) ? ApplicationsInBoot(phase) : ApplicationsInLinux,
+        _ => null,
+    };
 
     private void LogResult(SequenceStep step, StepResult result, string duration)
     {
@@ -98,6 +111,9 @@ public sealed class AgentStepRunner(
                 break;
             case StepOutcome.RebootRequired:
                 log.Information($"Step {step.Name} finished after {duration}. The machine restarts before the next step.");
+                break;
+            case StepOutcome.RestartAndContinue:
+                log.Information($"Step {step.Name} restarts the machine after {duration}, and goes on after the restart.");
                 break;
             default:
                 log.Information($"Step {step.Name} finished after {duration}.");

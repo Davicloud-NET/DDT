@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.Applications;
 using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Sequences;
@@ -40,6 +41,14 @@ public sealed class WindowsStepRunners : IStepRunners
             new JoinDomainStepRunner(Joiner, Server, session, heartbeat.ReportNowAsync, Log, TimeProvider),
             new RunScriptStepRunner(Tools, new WindowsScriptLauncher(), downloads, session, Log, Options.WorkDirectory),
             new PauseStepRunner(heartbeat, run.Console, Log, TimeProvider),
+            new InstallApplicationsStepRunner(Server, session, heartbeat.ReportNowAsync, Applications(session, downloads), Log, TimeProvider),
         ];
     }
+
+    // A dry run finds no application installed, whatever this computer has.
+    private ApplicationInstaller Applications(RunSession session, RunDownloads downloads) => new(
+        Options.DryRun ? new DryRunApplicationDetector(Log) : WindowsApplicationDetector.ForThisMachine(),
+        [new CommandApplicationInstaller(Tools, Log)],
+        new ApplicationFolders(downloads, session, Options.WorkDirectory),
+        Log);
 }

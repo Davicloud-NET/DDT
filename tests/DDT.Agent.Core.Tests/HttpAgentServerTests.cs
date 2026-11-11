@@ -511,6 +511,27 @@ public sealed class HttpAgentServerTests
     }
 
     [Fact]
+    public async Task FetchesTheApplicationsOfARunningStep()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        byte[] body = Encoding.UTF8.GetBytes(
+            $$"""{"applications":[{"id":"{{s_stepId:D}}","name":"Tool","kind":"Command","command":"setup.exe /S","successExitCodes":[0],"restartExitCodes":[],"detection":null,"timeoutMinutes":5,"continueOnFailure":false,"wingetId":null,"wingetVersion":null,"files":null,"dependsOn":[]}]}""");
+        using TcpListener listener = new(IPAddress.Loopback, 0);
+        listener.Start();
+
+        Task<string> serving = AnswerAsync(listener, Json(body), body, cancellationToken);
+        using HttpAgentServer server = new(AddressOf(listener), null, s_answeredInTime);
+
+        AgentStepApplications applications = await server.GetRunStepApplicationsAsync(s_machineId, "session", s_runId, s_stepId, cancellationToken);
+
+        Assert.StartsWith(
+            $"GET /api/agents/{s_machineId:D}/runs/{s_runId:D}/steps/{s_stepId:D}/applications HTTP/1.1",
+            await serving,
+            StringComparison.Ordinal);
+        Assert.Equal(("Tool", "setup.exe /S"), (Assert.Single(applications.Applications).Name, applications.Applications[0].Command));
+    }
+
+    [Fact]
     public async Task SendsTheAnswersGivenAtTheMachine()
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;

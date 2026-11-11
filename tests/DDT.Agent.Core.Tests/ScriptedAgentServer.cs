@@ -31,6 +31,7 @@ internal sealed class ScriptedAgentServer : IAgentServer
     private readonly Queue<Func<Guid, string>> _runUnattends = new();
     private readonly Queue<Func<Guid, AgentJoinDomainCredentials>> _runCredentials = new();
     private readonly Queue<Func<Guid, AgentStepAccounts>> _runStepAccounts = new();
+    private readonly Queue<Func<Guid, AgentStepApplications>> _runStepApplications = new();
     private readonly Queue<Func<AgentInputAnswers, AgentAnswersResult>> _runAnswers = new();
     private readonly List<string> _calls = [];
     private readonly List<AgentRunReport> _sentRunReports = [];
@@ -143,6 +144,9 @@ internal sealed class ScriptedAgentServer : IAgentServer
 
     // Receives the step id.
     public ScriptedAgentServer OnRunStepAccounts(Func<Guid, AgentStepAccounts> response) => Enqueue(_runStepAccounts, response);
+
+    // Receives the step id.
+    public ScriptedAgentServer OnRunApplications(Func<Guid, AgentStepApplications> response) => Enqueue(_runStepApplications, response);
 
     // Receives the answers given at the machine to the inputs a run waits for.
     public ScriptedAgentServer OnRunAnswers(Func<AgentInputAnswers, AgentAnswersResult> response) => Enqueue(_runAnswers, response);
@@ -386,6 +390,9 @@ internal sealed class ScriptedAgentServer : IAgentServer
 
     public Task<AgentStepAccounts> GetRunStepAccountsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken) =>
         Answer($"run-accounts {stepId} {token}", _runStepAccounts, response => response(stepId));
+
+    public Task<AgentStepApplications> GetRunStepApplicationsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken) =>
+        Answer($"run-applications {stepId} {token}", _runStepApplications, response => response(stepId));
 
     public Task<AgentAnswersResult> AnswerRunInputsAsync(Guid machineId, string token, Guid runId, AgentInputAnswers answers, CancellationToken cancellationToken)
     {

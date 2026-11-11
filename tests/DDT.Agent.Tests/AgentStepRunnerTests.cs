@@ -4,6 +4,7 @@
 
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Applications;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 using Xunit;
@@ -13,6 +14,13 @@ namespace DDT.Agent.Tests;
 public sealed class AgentStepRunnerTests
 {
     private static readonly RebootStep s_reboot = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000a6"), Name = "Restart" };
+
+    private static readonly InstallApplicationsStep s_install = new()
+    {
+        Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000ab"),
+        Name = "Install applications",
+        Applications = [new ApplicationReference(TestApplications.Tool.Id, ApplicationReferenceKind.Application)],
+    };
 
     [Fact]
     public async Task ARestartStepAsksForTheRestart()
@@ -37,6 +45,36 @@ public sealed class AgentStepRunnerTests
         Assert.Equal(
             StepResult.Failed($"Joining the domain runs in Windows, after the hand-over, but this agent was asked to run it in {name}."),
             result);
+    }
+
+    [Theory]
+    [InlineData(SequencePhase.WindowsPE, "Applications install in Windows, after the hand-over, but this agent was asked to install them in Windows PE.")]
+    [InlineData(SequencePhase.LinuxBoot, "Applications install in Windows, after the hand-over, but this agent was asked to install them in the Linux boot environment.")]
+    [InlineData(SequencePhase.Linux, "Applications install in Windows, but this agent was asked to install them in the installed Linux.")]
+    public async Task InstallingApplicationsFailsOutsideTheInstalledWindowsWithoutAskingTheServer(SequencePhase phase, string error)
+    {
+        using WindowsStepRunnerFixture run = new([s_install]);
+
+        StepResult result = await run.Steps.RunAsync(s_install, run.Context(phase), TestContext.Current.CancellationToken);
+
+        Assert.Equal(StepResult.Failed(error), result);
+        Assert.Empty(run.Server.Calls);
+    }
+
+    [Fact]
+    public async Task AStepThatRestartsAndGoesOnSaysSo()
+    {
+        using WindowsStepRunnerFixture run = new([s_install]);
+        run.Session.RunRoot = Path.Combine(run.Tools.Root, "C");
+        run.Server.OnRunApplications(_ => new AgentStepApplications([TestApplications.Runtime, TestApplications.Tool]));
+        run.ToolRunner.AnswerExitCode = (_, _, _) => 3010;
+
+        StepResult result = await run.Steps.RunAsync(s_install, run.Context(SequencePhase.Windows), TestContext.Current.CancellationToken);
+
+        Assert.Equal(StepOutcome.RestartAndContinue, result.Outcome);
+        Assert.Equal(
+            "Step Install applications restarts the machine after 0 s, and goes on after the restart.",
+            (await run.SentLinesAsync())[^1].Message);
     }
 
     [Fact]

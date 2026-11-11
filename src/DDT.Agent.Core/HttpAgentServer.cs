@@ -243,6 +243,14 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         CancellationToken cancellationToken) =>
         GetAsync(AgentRoutes.RunStepAccounts(machineId, runId, stepId), token, AgentJsonContext.Default.AgentStepAccounts, cancellationToken);
 
+    public Task<AgentStepApplications> GetRunStepApplicationsAsync(
+        Guid machineId,
+        string token,
+        Guid runId,
+        Guid stepId,
+        CancellationToken cancellationToken) =>
+        GetAsync(AgentRoutes.RunStepApplications(machineId, runId, stepId), token, AgentJsonContext.Default.AgentStepApplications, cancellationToken);
+
     public void Dispose() => _client.Dispose();
 
     private HttpClient NewClient()

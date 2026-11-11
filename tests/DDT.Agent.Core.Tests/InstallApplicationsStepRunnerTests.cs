@@ -211,7 +211,7 @@ public sealed class InstallApplicationsStepRunnerTests
 
     [Theory]
     [InlineData(ApplicationKind.Msix, "Tool is of a kind this agent cannot install.")]
-    [InlineData(ApplicationKind.Winget, "Tool is a winget package, which this agent cannot install yet.")]
+    [InlineData(ApplicationKind.Winget, "Tool is a winget package, which only the agent in the installed Windows installs.")]
     public async Task AKindThisAgentCannotInstallFailsItsApplication(ApplicationKind kind, string error)
     {
         using ApplicationRunFixture run = new ApplicationRunFixture().Serve(Tool with { Kind = kind, Command = null });

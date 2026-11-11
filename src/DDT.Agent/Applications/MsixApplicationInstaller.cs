@@ -16,6 +16,8 @@ public sealed class MsixApplicationInstaller(IToolRunner tools, AgentLog log) : 
 {
     public ApplicationKind Kind => ApplicationKind.Msix;
 
+    public ApplicationOutcome Judge(AgentApplication application, int exitCode) => ApplicationInstaller.ByExitCodes(application, exitCode);
+
     public static IReadOnlyList<string> Arguments(string folder, MsixLayout layout, string logFile)
     {
         ArgumentNullException.ThrowIfNull(layout);

@@ -24,7 +24,7 @@ public sealed class ApplicationDryRunTests(DryRunLab lab)
     private static readonly TimeSpan s_runTimeout = TimeSpan.FromMinutes(3);
 
     // A dry run takes every installer's exit code as 0, so the first application asks for a restart with 0. The step
-    // names only the second, which brings the first as its dependency.
+    // names the second, which brings the first as its dependency, and a winget package.
     [Fact(Timeout = 600_000)]
     public async Task AnApplicationThatAsksForARestartRestartsTheMachineOnceInsideTheStep()
     {
@@ -35,11 +35,18 @@ public sealed class ApplicationDryRunTests(DryRunLab lab)
         ApplicationView second = await CreateApplicationAsync(
             Request("E2E after the restart") with { DependsOn = [first.Id], Detection = new FileDetection(@"%ProgramFiles%\E2E\app.exe", "1.0") },
             cancellationToken);
+        ApplicationView winget = await CreateApplicationAsync(
+            Request("E2E winget") with { Kind = ApplicationKind.Winget, Command = null, WingetId = "7zip.7zip", WingetVersion = "24.09" },
+            cancellationToken);
         InstallApplicationsStep install = new()
         {
             Id = Guid.CreateVersion7(),
             Name = "Install applications",
-            Applications = [new ApplicationReference(second.Id, ApplicationReferenceKind.Application)],
+            Applications =
+            [
+                new ApplicationReference(second.Id, ApplicationReferenceKind.Application),
+                new ApplicationReference(winget.Id, ApplicationReferenceKind.Application),
+            ],
         };
         RunScriptStep after = DryRunTests.Script("After the applications", SequencePhase.Windows, "echo after");
         SequenceView sequence = await lab.CreateSequenceAsync(
@@ -65,7 +72,12 @@ public sealed class ApplicationDryRunTests(DryRunLab lab)
         Assert.Equal(1, agent.Output.Count($"Step {install.Name} restarts the machine after"));
         Assert.Equal(1, agent.Output.Count(@"Dry run: %ProgramFiles%\E2E\app.exe at version 1.0 or later is not looked for, and taken as missing."));
         Assert.Equal(1, agent.Output.Count($"Installing {second.Name}."));
-        Assert.Equal(1, agent.Output.Count("Applications: 2 installed."));
+        Assert.Equal(1, agent.Output.Count($"Installing {winget.Name}."));
+        Assert.Equal(1, agent.Output.Count("Dry run: DDTDeploy is not added to Administrators."));
+        Assert.Equal(1, agent.Output.Lines.Count(line => line.Contains("taken as exit code 0", StringComparison.Ordinal)
+            && line.Contains(@"\WindowsApps\winget.exe install --id 7zip.7zip --exact --version 24.09 --source winget --scope machine", StringComparison.Ordinal)));
+        Assert.Equal(1, agent.Output.Count("DDTDeploy is a standard account again."));
+        Assert.Equal(1, agent.Output.Count("Applications: 3 installed."));
         Assert.Equal(1, agent.Output.Lines.Count(line => line.Contains("taken as exit code 0", StringComparison.Ordinal) && line.Contains($"{first.Id:D}.cmd", StringComparison.Ordinal)));
         Assert.Equal(1, agent.Output.Lines.Count(line => line.Contains("taken as exit code 0", StringComparison.Ordinal) && line.Contains($"{second.Id:D}.cmd", StringComparison.Ordinal)));
         Assert.Equal(1, agent.Output.Count($"Step {install.Name} finished after"));

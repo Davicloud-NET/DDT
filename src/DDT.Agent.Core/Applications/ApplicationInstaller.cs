@@ -26,7 +26,7 @@ public sealed class ApplicationInstaller(
 
         return application.Kind switch
         {
-            ApplicationKind.Winget => $"{application.Name} is a winget package, which this agent cannot install yet.",
+            ApplicationKind.Winget => $"{application.Name} is a winget package, which only the agent in the installed Windows installs.",
             _ => $"{application.Name} is of a kind this agent cannot install.",
         };
     }
@@ -74,10 +74,11 @@ public sealed class ApplicationInstaller(
         return await RunAsync(kind, install, markStarted, percent, cancellationToken).ConfigureAwait(false);
     }
 
-    private static ApplicationOutcome Failed(string message, int? exitCode = null) => new(ApplicationState.Failed, message, ExitCode: exitCode);
-
-    private static ApplicationOutcome Verdict(AgentApplication application, int exitCode)
+    // The application's success and restart codes judge the exit code.
+    public static ApplicationOutcome ByExitCodes(AgentApplication application, int exitCode)
     {
+        ArgumentNullException.ThrowIfNull(application);
+
         if (application.SuccessExitCodes.Contains(exitCode))
         {
             return new ApplicationOutcome(ApplicationState.Installed, $"Installed {application.Name}.", ExitCode: exitCode);
@@ -87,6 +88,8 @@ public sealed class ApplicationInstaller(
             ? new ApplicationOutcome(ApplicationState.Installed, $"Installed {application.Name}, which asks for a restart with exit code {exitCode}.", true, exitCode)
             : Failed(ExitCodeFailed(application, exitCode), exitCode);
     }
+
+    private static ApplicationOutcome Failed(string message, int? exitCode = null) => new(ApplicationState.Failed, message, ExitCode: exitCode);
 
     // The unpacked files are deleted however the installer ended, also when unpacking failed halfway.
     private async Task<ApplicationOutcome> RunAsync(
@@ -110,7 +113,7 @@ public sealed class ApplicationInstaller(
                 ? $"Installing {application.Name} again, because the machine restarted while it installed."
                 : $"Installing {application.Name}.");
 
-            return Verdict(application, await kind.InstallAsync(launch, cancellationToken).ConfigureAwait(false));
+            return kind.Judge(application, await kind.InstallAsync(launch, cancellationToken).ConfigureAwait(false));
         }
         catch (DeploymentStepException exception)
         {

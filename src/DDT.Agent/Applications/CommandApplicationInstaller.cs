@@ -15,6 +15,8 @@ public sealed class CommandApplicationInstaller(IToolRunner tools, AgentLog log)
 {
     public ApplicationKind Kind => ApplicationKind.Command;
 
+    public ApplicationOutcome Judge(AgentApplication application, int exitCode) => ApplicationInstaller.ByExitCodes(application, exitCode);
+
     public async Task<int> InstallAsync(ApplicationLaunch launch, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(launch);

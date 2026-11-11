@@ -96,6 +96,20 @@ public sealed class ToolRunnerTests
     }
 
     [Fact]
+    public async Task TheOptionsLinesRewriteOrDropWhatTheLogGets()
+    {
+        (ToolRunner tools, ScriptedAgentServer server, AgentLog log) = Create();
+        ToolRunOptions options = new(Lines: line => line.StartsWith("noise", StringComparison.Ordinal) ? null : line.ToUpperInvariant());
+
+        await tools.RunForExitCodeAsync(s_cmd, ["/d", "/c", "echo noise& echo out& echo noise 1>&2& echo err 1>&2"], options, TestContext.Current.CancellationToken);
+
+        List<AgentLogLine> lines = await SentAsync(server, log);
+        Assert.Contains(lines, line => line is { Level: AgentLogLevel.Information, Message: "OUT" });
+        Assert.Contains(lines, line => line is { Level: AgentLogLevel.Warning, Message: "ERR" });
+        Assert.DoesNotContain(lines, line => line.Message.StartsWith("noise", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task RunsInTheWorkingDirectoryWithTheExtraVariables()
     {
         (ToolRunner tools, ScriptedAgentServer server, AgentLog log) = Create();

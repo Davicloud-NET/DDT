@@ -69,15 +69,17 @@ public static class WindowsPhaseService
         {
             ConsoleStatus status = new(console, AgentEnvironment.Windows, version, options.ServerUrl, null, dryRun: false);
             log.MachineConsole = console;
+            WindowsSessionAccounts accounts = new();
             session = new DeploySession(
                 windowsRoot,
-                new WindowsSessionAccounts(),
+                accounts,
                 new SessionRegistry(Registry.LocalMachine, Registry.Users, tools),
                 log,
                 TimeProvider.System,
                 (sid, pipeName) => console.Start(() => SessionPipe.Create(pipeName, sid)));
 
-            InstalledPhaseLoop loop = Loop(parts, Runner(parts, staged, status), session, status);
+            SequenceRunner runner = Runner(parts, staged, status, new WindowsDeployAccount(session, accounts, log));
+            InstalledPhaseLoop loop = Loop(parts, runner, session, status);
 
             // The control manager only needs to know whether the service failed.
             return await loop.RunAsync(cancellationToken).ConfigureAwait(false) switch
@@ -88,7 +90,7 @@ public static class WindowsPhaseService
         }
     }
 
-    private static SequenceRunner Runner(ServiceParts parts, AgentConfiguration staged, ConsoleStatus status)
+    private static SequenceRunner Runner(ServiceParts parts, AgentConfiguration staged, ConsoleStatus status, WindowsDeployAccount account)
     {
         AgentLog log = parts.Log;
         ToolRunner tools = parts.Tools;
@@ -114,6 +116,7 @@ public static class WindowsPhaseService
                 Log = log,
                 TimeProvider = TimeProvider.System,
                 Options = options,
+                DeployAccount = account,
             },
             BcdWriter = bcdWriter,
             BootOrder = bcdWriter,

@@ -101,8 +101,8 @@ public sealed class ToolRunner(
         long started = timeProvider.GetTimestamp();
         using IToolProcess process = StartFor(fileName, arguments, options, tool);
 
-        Task output = ToolOutput.ForwardAsync(process.StandardOutput, decoder, log.Information);
-        Task errors = ToolOutput.ForwardAsync(process.StandardError, decoder, log.Warning);
+        Task output = ToolOutput.ForwardAsync(process.StandardOutput, decoder, Filtered(options.Lines, log.Information));
+        Task errors = ToolOutput.ForwardAsync(process.StandardError, decoder, Filtered(options.Lines, log.Warning));
 
         try
         {
@@ -177,6 +177,17 @@ public sealed class ToolRunner(
 
         return string.Join(' ', new[] { fileName }.Concat(arguments).Select(Quote));
     }
+
+    private static Action<string> Filtered(Func<string, string?>? lines, Action<string> write) =>
+        lines is null
+            ? write
+            : line =>
+            {
+                if (lines(line) is { } kept)
+                {
+                    write(kept);
+                }
+            };
 
     private static ProcessStartInfo StartInfo(string fileName, IReadOnlyList<string> arguments)
     {

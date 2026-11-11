@@ -26,6 +26,9 @@ public sealed class WindowsStepRunners : IStepRunners
 
     public required SequenceRunnerOptions Options { get; init; }
 
+    // winget runs as it. Only the installed Windows has one, and a dry run stands in for it.
+    public IDeployAccount? DeployAccount { get; init; }
+
     public IReadOnlyList<IStepKindRunner> For(StepRunnerParts run)
     {
         ArgumentNullException.ThrowIfNull(run);
@@ -48,7 +51,19 @@ public sealed class WindowsStepRunners : IStepRunners
     // A dry run finds no application installed, whatever this computer has.
     private ApplicationInstaller Applications(RunSession session, RunDownloads downloads) => new(
         Options.DryRun ? new DryRunApplicationDetector(Log) : WindowsApplicationDetector.ForThisMachine(),
-        [new CommandApplicationInstaller(Tools, Log), new MsixApplicationInstaller(Tools, Log)],
+        Kinds(),
         new ApplicationFolders(downloads, session, Options.WorkDirectory),
         Log);
+
+    private List<IApplicationKindInstaller> Kinds()
+    {
+        List<IApplicationKindInstaller> kinds = [new CommandApplicationInstaller(Tools, Log), new MsixApplicationInstaller(Tools, Log)];
+
+        if (DeployAccount is { } account)
+        {
+            kinds.Add(new WingetApplicationInstaller(Tools, account, Log, TimeProvider));
+        }
+
+        return kinds;
+    }
 }

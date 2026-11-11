@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Agent.Applications;
+using DDT.Contracts.Agents;
 using DDT.Contracts.Applications;
 
 namespace DDT.Agent.Tests;
@@ -18,6 +19,8 @@ internal sealed class RecordingApplicationInstaller(List<string> events) : IAppl
     public Func<ApplicationLaunch, int>? ExitCode { get; set; }
 
     public Action<ApplicationLaunch>? Seen { get; set; }
+
+    public ApplicationOutcome Judge(AgentApplication application, int exitCode) => ApplicationInstaller.ByExitCodes(application, exitCode);
 
     public Task<int> InstallAsync(ApplicationLaunch launch, CancellationToken cancellationToken)
     {

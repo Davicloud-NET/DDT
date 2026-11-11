@@ -134,6 +134,12 @@ public sealed class ApplicationRulesTests
         Assert.Empty(ApplicationRules.Check(Command with { SuccessExitCodes = [], RestartExitCodes = [0, 3010] }, null));
 
     [Fact]
+    public void AWingetPackageTakesNoExitCodesAtAll() =>
+        Assert.Empty(ApplicationRules.Check(
+            Command with { Kind = ApplicationKind.Winget, PackageId = null, Command = null, WingetId = "Git.Git", SuccessExitCodes = [], RestartExitCodes = [] },
+            null));
+
+    [Fact]
     public void RefusesTooManySuccessCodes() =>
         AssertProblem(Command with { SuccessExitCodes = [.. Enumerable.Range(1, 17)], RestartExitCodes = [0] }, "successExitCodes", ServerMessages.SequenceSuccessExitCodes);
 

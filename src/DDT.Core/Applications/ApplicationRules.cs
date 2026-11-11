@@ -35,7 +35,7 @@ public static partial class ApplicationRules
             Add("kind", ServerMessages.ApplicationKindChoose.With());
         }
 
-        CheckExitCodes(request.SuccessExitCodes, request.RestartExitCodes, Add);
+        CheckExitCodes(request, Add);
         ApplicationDetectionRules.Check(request.Detection, Add);
         CheckDependencies(request.DependsOn ?? [], id, Add);
 
@@ -158,9 +158,12 @@ public static partial class ApplicationRules
     }
 
     // No success code is fine when restart codes are set, so an installer can always end in a restart, as MDT's Reboot did.
-    private static void CheckExitCodes(IReadOnlyList<int>? success, IReadOnlyList<int>? restart, Action<string, ServerMessage> add)
+    // winget's own exit codes decide first, so a winget package needs none.
+    private static void CheckExitCodes(SaveApplicationRequest request, Action<string, ServerMessage> add)
     {
-        int least = restart is { Count: > 0 } ? 0 : 1;
+        IReadOnlyList<int>? success = request.SuccessExitCodes;
+        IReadOnlyList<int>? restart = request.RestartExitCodes;
+        int least = request.Kind == ApplicationKind.Winget || restart is { Count: > 0 } ? 0 : 1;
 
         if (success is null || success.Count < least || success.Count > ApplicationLimits.MaxExitCodes)
         {

@@ -194,6 +194,11 @@ msgctxt "settings.oidc.provisionAdministrator"
 msgid "{administrator} would make every identity the provider signs in that DDT has not seen an administrator. Use {viewer} or {operator}, or map a group to {administrator} in GroupRoleMap."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "application.dependencyGone"
+msgid "{application} depends on an application that is no longer in the library."
+msgstr ""
+
 #: src/runs/RunPanel.tsx
 msgid "{assigned}. The machine has not started it yet."
 msgstr ""
@@ -568,6 +573,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.phaseValueOtherKindWarning"
 msgid "{kind, select, Linux {This sequence writes a raw disk image, so its phase is LinuxBoot or Linux and never {value}.} other {This sequence installs Windows, so its phase is WindowsPE or Windows and never {value}.}}"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.commandNotUsed"
+msgid "{kind, select, Msix {An MSIX package} other {A winget package}} needs no command. Leave it empty."
 msgstr ""
 
 #: src/runs/steps/RunStepItem.tsx
@@ -1421,6 +1431,11 @@ msgctxt "bootImage.busy"
 msgid "A build or an install of the ADK is running already. Wait for it to end."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "application.bundleMembers"
+msgid "A bundle holds 1 to {max} applications."
+msgstr ""
+
 #: src/settings/server/ConfigurationPanel.tsx
 msgid "A change takes a restart of DDT."
 msgstr ""
@@ -1828,6 +1843,11 @@ msgstr ""
 
 #: src/settings/deploymentDefaults/WindowsSetupGroup.tsx
 msgid "A Windows time zone id. Left empty, Windows picks one from the language."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.filesNotUsed"
+msgid "A winget package has no files. Remove them."
 msgstr ""
 
 #: src/settings/directory/DirectoryTest.tsx
@@ -2311,6 +2331,21 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "stepAccount.apiToken"
 msgid "An API token cannot change the accounts that steps use. Sign in on the web to do this."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.tooManyDependencies"
+msgid "An application can depend on at most {max} others."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.dependsOnItself"
+msgid "An application cannot depend on itself."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.nameTaken"
+msgid "An application or bundle is already called {name}."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3043,6 +3078,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.inputKind"
 msgid "Choose the kind of answer."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.kind"
+msgid "Choose the kind of application."
 msgstr ""
 
 #: src/settings/logo/useLogoChange.ts
@@ -3986,6 +4026,11 @@ msgctxt "user.nameEmpty"
 msgid "Enter a user name."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "application.detectionVersion"
+msgid "Enter a version of 1 to 4 numbers up to 65535, such as 1.2.3.4, or leave it empty."
+msgstr ""
+
 #: src/inputs/inputs.ts
 msgid "Enter an answer."
 msgstr ""
@@ -4020,6 +4065,11 @@ msgid "Enter the code of your authenticator as well."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "application.commandRequired"
+msgid "Enter the command that installs the application."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.repeatNeedsUntil"
 msgid "Enter the condition that ends the repeat."
 msgstr ""
@@ -4027,6 +4077,16 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.ifNeedsTest"
 msgid "Enter the condition the IF tests."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.detectionPath"
+msgid "Enter the full path of a file, such as {example}, in at most {max} characters."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.uninstallKey"
+msgid "Enter the key name under Uninstall without a path, in at most {max} characters."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -4047,6 +4107,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "stepAccount.passwordRequired"
 msgid "Enter the password."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.productCode"
+msgid "Enter the product code as a GUID, such as {example}."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -4095,6 +4160,16 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "namedValue.nameEmpty"
 msgid "Enter the value's name."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.wingetVersion"
+msgid "Enter the version as winget shows it, in at most {max} characters, or leave it empty."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.wingetId"
+msgid "Enter the winget ID, such as Mozilla.Firefox, in at most {max} characters."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -6751,6 +6826,11 @@ msgctxt "sequence.sharesOnlyOnSteps"
 msgid "Only a step connects shares, for as long as it runs. Give them to the steps inside that need them."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "application.wingetNotUsed"
+msgid "Only a winget package has a winget ID and version. Leave them empty."
+msgstr ""
+
 #: src/boot/BuildPanel.tsx
 msgid "Only administrators build the boot image."
 msgstr ""
@@ -9273,6 +9353,11 @@ msgid "The cloud-init seed can be written only after a step that writes a raw di
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "application.commandLength"
+msgid "The command can have at most {max} characters and no line breaks."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "upload.compressedDamaged"
 msgid "The compressed file is damaged: {detail}"
 msgstr ""
@@ -9953,6 +10038,11 @@ msgid "the name"
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "application.nameSemicolon"
+msgid "The name cannot contain a semicolon."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "common.nameLength"
 msgid "The name must have 1 to {max} characters and no control characters."
 msgstr ""
@@ -10041,6 +10131,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "settings.oidcTest.otherIssuer"
 msgid "The provider names itself {issuer}, not {authority}. Enter {issuer} as the authority."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.publisherLength"
+msgid "The publisher can have at most {max} characters and no control characters."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10511,6 +10606,11 @@ msgstr ""
 msgid "The version and the licence texts could not be loaded."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "application.versionLength"
+msgid "The version can have at most {max} characters and no control characters."
+msgstr ""
+
 #: src/settings/networkBoot/neighbours/WdsChoices.tsx
 msgid "The WDS boot menu offers DDT now."
 msgstr ""
@@ -10594,6 +10694,11 @@ msgstr ""
 msgid "There was no value."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "application.dependencyCycle"
+msgid "These applications depend on each other in a circle: {path}."
+msgstr ""
+
 #: src/settings/certificate/ServerNames.tsx
 #: src/settings/LoggingPanel.tsx
 #: src/settings/parts/SettingsSection.tsx
@@ -10646,6 +10751,16 @@ msgstr ""
 
 #: src/machines/assign/assignText.ts
 msgid "This also authorizes the machine, which then runs the sequence and receives the deployment passwords."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.listedTwice"
+msgid "This application is listed twice."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.gone"
+msgid "This application is no longer in the library."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -11204,6 +11319,11 @@ msgstr ""
 
 #: src/settings/LinuxConsolePanel.tsx
 msgid "Upload the console for Linux"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.filesRequired"
+msgid "Upload the MSIX package."
 msgstr ""
 
 #: src/images/ImagesTable.tsx

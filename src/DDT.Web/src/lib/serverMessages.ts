@@ -33,6 +33,102 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "account.passwordInDirectory",
     message: "This account is managed by the directory. Change the password there.",
   }),
+  "application.bundleMembers": msg({
+    context: "application.bundleMembers",
+    message: "A bundle holds 1 to {max} applications.",
+  }),
+  "application.commandLength": msg({
+    context: "application.commandLength",
+    message: "The command can have at most {max} characters and no line breaks.",
+  }),
+  "application.commandNotUsed": msg({
+    context: "application.commandNotUsed",
+    message: "{kind, select, Msix {An MSIX package} other {A winget package}} needs no command. Leave it empty.",
+  }),
+  "application.commandRequired": msg({
+    context: "application.commandRequired",
+    message: "Enter the command that installs the application.",
+  }),
+  "application.dependencyCycle": msg({
+    context: "application.dependencyCycle",
+    message: "These applications depend on each other in a circle: {path}.",
+  }),
+  "application.dependencyGone": msg({
+    context: "application.dependencyGone",
+    message: "{application} depends on an application that is no longer in the library.",
+  }),
+  "application.dependsOnItself": msg({
+    context: "application.dependsOnItself",
+    message: "An application cannot depend on itself.",
+  }),
+  "application.detectionPath": msg({
+    context: "application.detectionPath",
+    message: "Enter the full path of a file, such as {example}, in at most {max} characters.",
+  }),
+  "application.detectionVersion": msg({
+    context: "application.detectionVersion",
+    message: "Enter a version of 1 to 4 numbers up to 65535, such as 1.2.3.4, or leave it empty.",
+  }),
+  "application.filesNotUsed": msg({
+    context: "application.filesNotUsed",
+    message: "A winget package has no files. Remove them.",
+  }),
+  "application.filesRequired": msg({
+    context: "application.filesRequired",
+    message: "Upload the MSIX package.",
+  }),
+  "application.gone": msg({
+    context: "application.gone",
+    message: "This application is no longer in the library.",
+  }),
+  "application.kind": msg({
+    context: "application.kind",
+    message: "Choose the kind of application.",
+  }),
+  "application.listedTwice": msg({
+    context: "application.listedTwice",
+    message: "This application is listed twice.",
+  }),
+  "application.nameSemicolon": msg({
+    context: "application.nameSemicolon",
+    message: "The name cannot contain a semicolon.",
+  }),
+  "application.nameTaken": msg({
+    context: "application.nameTaken",
+    message: "An application or bundle is already called {name}.",
+  }),
+  "application.productCode": msg({
+    context: "application.productCode",
+    message: "Enter the product code as a GUID, such as {example}.",
+  }),
+  "application.publisherLength": msg({
+    context: "application.publisherLength",
+    message: "The publisher can have at most {max} characters and no control characters.",
+  }),
+  "application.tooManyDependencies": msg({
+    context: "application.tooManyDependencies",
+    message: "An application can depend on at most {max} others.",
+  }),
+  "application.uninstallKey": msg({
+    context: "application.uninstallKey",
+    message: "Enter the key name under Uninstall without a path, in at most {max} characters.",
+  }),
+  "application.versionLength": msg({
+    context: "application.versionLength",
+    message: "The version can have at most {max} characters and no control characters.",
+  }),
+  "application.wingetId": msg({
+    context: "application.wingetId",
+    message: "Enter the winget ID, such as Mozilla.Firefox, in at most {max} characters.",
+  }),
+  "application.wingetNotUsed": msg({
+    context: "application.wingetNotUsed",
+    message: "Only a winget package has a winget ID and version. Leave them empty.",
+  }),
+  "application.wingetVersion": msg({
+    context: "application.wingetVersion",
+    message: "Enter the version as winget shows it, in at most {max} characters, or leave it empty.",
+  }),
   "audit.rangeEnd": msg({
     context: "audit.rangeEnd",
     message: "The end of the range must come after its start.",

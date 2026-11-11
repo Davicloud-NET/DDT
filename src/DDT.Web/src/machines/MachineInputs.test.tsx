@@ -6,6 +6,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { MachineSummary } from "@/machines/machines";
+import { applicationView, bundleView } from "@/test/applicationBuilders";
 import type { InputDeclaration } from "@/sequences/sequences";
 import { fill, press } from "@/test/aria";
 import { expectNoAxeViolations } from "@/test/axe";
@@ -292,5 +293,68 @@ describe("inputs asked on the web", () => {
 
     expect(room).toHaveValue("B-204");
     expect(within(dialog).getByText("Where it stands.")).toBeInTheDocument();
+  });
+
+  // As the server asks it: what is still in the library, by its current name, and the ticked ones chosen.
+  it("asks another sequence's applications as a tick list from the library, and sends their ids", async () => {
+    const machine = machineSummary();
+    const zip = applicationView({ name: "7-Zip 24" });
+    const office = bundleView();
+    const gone = "0197a3c0-0000-7000-8000-0000000000ff";
+    const apps = input({
+      name: "Apps",
+      label: "Applications",
+      kind: "Applications",
+      offered: [
+        { id: zip.id, kind: "Application" },
+        { id: office.id, kind: "Bundle" },
+        { id: gone, kind: "Application" },
+        { id: zip.id, kind: "Bundle" },
+      ],
+      ticked: [office.id, gone],
+    });
+    const { server } = await renderPage({
+      path: "/machines",
+      user: operator,
+      routes: routes(machine, {
+        [`GET /api/machines/${machine.id}/sequence`]: { body: sequenceResolution() },
+        [`GET /api/sequences/${sequenceId}`]: {
+          body: {
+            ...sequenceView(installWindows, []),
+            definition: { version: 6, steps: [], inputs: [apps] },
+          },
+        },
+        "GET /api/applications": { body: [zip] },
+        "GET /api/application-bundles": { body: [office] },
+        [`POST /api/machines/${machine.id}/deployments`]: {
+          body: { ...machine, deployment: deploymentSummary() },
+        },
+      }),
+    });
+
+    const dialog = await openAssign();
+    const group = await within(dialog).findByRole("group", { name: "Applications" });
+    await within(group).findByRole("checkbox", { name: "Office basics" });
+
+    expect(
+      within(group)
+        .getAllByRole("checkbox")
+        .map((box) => box.closest("label")?.textContent),
+    ).toEqual(["7-Zip 24", "Office basics"]);
+    expect(within(group).getByRole("checkbox", { name: "Office basics" })).toBeChecked();
+
+    press(within(group).getByRole("checkbox", { name: "7-Zip 24" }));
+    press(within(dialog).getByRole("button", { name: "Assign sequence" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(server.changes().map((request) => request.body)).toEqual([
+      {
+        sequenceId,
+        computerName: null,
+        answers: [{ name: "Apps", value: `${office.id};${zip.id}` }],
+      },
+    ]);
   });
 });

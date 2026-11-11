@@ -7,6 +7,7 @@ import { Trans } from "@lingui/react/macro";
 import { useContext } from "react";
 
 import { OrderedPicker } from "@/applications/drawer/OrderedPicker";
+import { libraryEntries } from "@/applications/libraryEntries";
 
 import { EditorLock } from "../editorLock";
 import { TextSetting } from "../fields/TextSetting";
@@ -22,18 +23,7 @@ export function InstallApplicationsFields({
   onChange,
 }: KindFieldsProps<InstallApplicationsStep>) {
   const locked = useContext(EditorLock);
-  const options: (ApplicationReference & { name: string })[] = [
-    ...catalog.bundles.map((bundle) => ({
-      id: bundle.id,
-      kind: "Bundle" as const,
-      name: bundle.name,
-    })),
-    ...catalog.applications.map((application) => ({
-      id: application.id,
-      kind: "Application" as const,
-      name: application.name,
-    })),
-  ];
+  const options = libraryEntries(catalog.applications, catalog.bundles);
   const referenceOf = (id: string): ApplicationReference => {
     const known = options.find((option) => option.id === id) ??
       step.applications.find((reference) => reference.id === id) ?? { kind: "Application" };

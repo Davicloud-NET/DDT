@@ -414,6 +414,10 @@ msgstr "{count, plural, one {The sequence {sequences} uses this account. Choose 
 msgid "{count} bytes"
 msgstr "{count} bytes"
 
+#: src/inputs/fields/MultiChoiceField.tsx
+msgid "{count} chosen"
+msgstr "{count} chosen"
+
 #: src/sequences/steps/SetVariableFields.tsx
 msgid "{current}, which steps may not set"
 msgstr "{current}, which steps may not set"
@@ -1189,6 +1193,10 @@ msgstr "{sequenceName} does not erase the disk of {label}."
 #: src/machines/assign/AssignConsequences.tsx
 msgid "{sequenceName} erases all data on the disk of {label}."
 msgstr "{sequenceName} erases all data on the disk of {label}."
+
+#: src/sequences/builder/variables/InputApplications.tsx
+msgid "{shown} starts ticked"
+msgstr "{shown} starts ticked"
 
 #: src/machines/page/MachineHeader.tsx
 msgid "{signedInBy} signed in at the machine."
@@ -2172,6 +2180,7 @@ msgstr "Add account"
 msgid "Add an application"
 msgstr "Add an application"
 
+#: src/sequences/builder/variables/InputApplications.tsx
 #: src/sequences/steps/InstallApplicationsFields.tsx
 msgid "Add an application or bundle"
 msgstr "Add an application or bundle"
@@ -2955,6 +2964,7 @@ msgstr "Built at a time not recorded"
 #: src/applications/applicationView.ts
 #: src/applications/bundles/BundleDrawer.tsx
 #: src/applications/bundles/BundlesTable.tsx
+#: src/sequences/builder/variables/InputApplications.tsx
 msgid "Bundle"
 msgstr "Bundle"
 
@@ -6512,6 +6522,10 @@ msgctxt "settings.certificate.nothingToConfirm"
 msgid "No certificate waits for a confirmation."
 msgstr "No certificate waits for a confirmation."
 
+#: src/inputs/fields/MultiChoiceField.tsx
+msgid "No choice matches."
+msgstr "No choice matches."
+
 #: src/settings/signIn/ClaimRolesGroup.tsx
 msgid "No claim value is listed, so a new account gets the role above."
 msgstr "No claim value is listed, so a new account gets the role above."
@@ -7049,6 +7063,10 @@ msgstr "Offer 1 to {max} applications and bundles."
 #: src/settings/signIn/SingleSignOnSettings.tsx
 msgid "Offer single sign-on on the sign-in page"
 msgstr "Offer single sign-on on the sign-in page"
+
+#: src/sequences/builder/variables/InputApplications.tsx
+msgid "Offered"
+msgstr "Offered"
 
 #: src/sequences/steps/DomainJoinCheck.tsx
 msgid "OK"
@@ -8428,8 +8446,13 @@ msgid "Scripts may run as this account"
 msgstr "Scripts may run as this account"
 
 #: src/app/palette/Palette.tsx
+#: src/inputs/fields/MultiChoiceField.tsx
 msgid "Search"
 msgstr "Search"
+
+#: src/inputs/fields/MultiChoiceField.tsx
+msgid "Search {label}"
+msgstr "Search {label}"
 
 #: src/settings/directory/UsersGroup.tsx
 #: src/users/directory/DirectoryOn.tsx
@@ -11457,6 +11480,10 @@ msgstr "This WIM holds no x64 Windows image."
 msgctxt "sequence.inputTickedNotOffered"
 msgid "Tick only applications and bundles the input offers."
 msgstr "Tick only applications and bundles the input offers."
+
+#: src/sequences/builder/variables/InputApplications.tsx
+msgid "Ticked"
+msgstr "Ticked"
 
 #: src/sequences/steps/WriteUnattendFields.tsx
 #: src/settings/deploymentDefaults/WindowsSetupGroup.tsx

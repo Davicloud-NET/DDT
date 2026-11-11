@@ -10,9 +10,12 @@ import { Button as AriaButton } from "react-aria-components";
 import { FieldErrorText } from "@/ui/FieldErrorText";
 
 interface PickedRowProps {
+  id: string;
   index: number;
   // Null for an application that is no longer in the library.
   name: string | null;
+  note: string | null;
+  extra: ((id: string, shown: string) => ReactNode) | undefined;
   isLast: boolean;
   isReadOnly: boolean;
   errors: readonly string[];
@@ -43,7 +46,7 @@ function RowKey(props: {
 
 // One picked application with its place in the order.
 export function PickedRow(props: PickedRowProps) {
-  const { index, name, isLast, isReadOnly, errors, onMove, onRemove } = props;
+  const { id, index, name, note, extra, isLast, isReadOnly, errors, onMove, onRemove } = props;
   const { t } = useLingui();
   const number = index + 1;
   const shown = name ?? t`Not in the library`;
@@ -55,6 +58,8 @@ export function PickedRow(props: PickedRowProps) {
         <span className={name === null ? "flex-1 truncate text-muted" : "flex-1 truncate text-ink"}>
           {shown}
         </span>
+        {note === null ? null : <span className="shrink-0 type-small text-muted">{note}</span>}
+        {extra?.(id, shown)}
         {isReadOnly ? null : (
           <>
             <RowKey

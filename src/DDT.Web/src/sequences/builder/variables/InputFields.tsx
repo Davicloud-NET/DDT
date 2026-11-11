@@ -10,6 +10,7 @@ import type { Findings } from "../../problems";
 import type { InputDeclaration } from "../../sequences";
 import { AccountInputFields } from "./AccountInputFields";
 import { orNull, type InputPartProps } from "./declarationFields";
+import { InputApplications } from "./InputApplications";
 import { InputAskSettings } from "./InputAskSettings";
 import { InputChoices } from "./InputChoices";
 import { InputDefault } from "./InputDefault";
@@ -64,7 +65,9 @@ export function InputFields({
       {listed ? <InputChoices {...part} /> : null}
       {input.kind === "Account" ? (
         <AccountInputFields {...part} />
-      ) : input.kind === "Applications" ? null : (
+      ) : input.kind === "Applications" ? (
+        <InputApplications {...part} />
+      ) : (
         <InputDefault {...part} />
       )}
       {input.kind === "Text" ? <MaxLengthSetting {...part} /> : null}

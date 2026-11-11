@@ -414,6 +414,10 @@ msgstr ""
 msgid "{count} bytes"
 msgstr ""
 
+#: src/inputs/fields/MultiChoiceField.tsx
+msgid "{count} chosen"
+msgstr ""
+
 #: src/sequences/steps/SetVariableFields.tsx
 msgid "{current}, which steps may not set"
 msgstr ""
@@ -1188,6 +1192,10 @@ msgstr ""
 
 #: src/machines/assign/AssignConsequences.tsx
 msgid "{sequenceName} erases all data on the disk of {label}."
+msgstr ""
+
+#: src/sequences/builder/variables/InputApplications.tsx
+msgid "{shown} starts ticked"
 msgstr ""
 
 #: src/machines/page/MachineHeader.tsx
@@ -2172,6 +2180,7 @@ msgstr ""
 msgid "Add an application"
 msgstr ""
 
+#: src/sequences/builder/variables/InputApplications.tsx
 #: src/sequences/steps/InstallApplicationsFields.tsx
 msgid "Add an application or bundle"
 msgstr ""
@@ -2955,6 +2964,7 @@ msgstr ""
 #: src/applications/applicationView.ts
 #: src/applications/bundles/BundleDrawer.tsx
 #: src/applications/bundles/BundlesTable.tsx
+#: src/sequences/builder/variables/InputApplications.tsx
 msgid "Bundle"
 msgstr ""
 
@@ -6512,6 +6522,10 @@ msgctxt "settings.certificate.nothingToConfirm"
 msgid "No certificate waits for a confirmation."
 msgstr ""
 
+#: src/inputs/fields/MultiChoiceField.tsx
+msgid "No choice matches."
+msgstr ""
+
 #: src/settings/signIn/ClaimRolesGroup.tsx
 msgid "No claim value is listed, so a new account gets the role above."
 msgstr ""
@@ -7048,6 +7062,10 @@ msgstr ""
 
 #: src/settings/signIn/SingleSignOnSettings.tsx
 msgid "Offer single sign-on on the sign-in page"
+msgstr ""
+
+#: src/sequences/builder/variables/InputApplications.tsx
+msgid "Offered"
 msgstr ""
 
 #: src/sequences/steps/DomainJoinCheck.tsx
@@ -8428,7 +8446,12 @@ msgid "Scripts may run as this account"
 msgstr ""
 
 #: src/app/palette/Palette.tsx
+#: src/inputs/fields/MultiChoiceField.tsx
 msgid "Search"
+msgstr ""
+
+#: src/inputs/fields/MultiChoiceField.tsx
+msgid "Search {label}"
 msgstr ""
 
 #: src/settings/directory/UsersGroup.tsx
@@ -11456,6 +11479,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.inputTickedNotOffered"
 msgid "Tick only applications and bundles the input offers."
+msgstr ""
+
+#: src/sequences/builder/variables/InputApplications.tsx
+msgid "Ticked"
 msgstr ""
 
 #: src/sequences/steps/WriteUnattendFields.tsx

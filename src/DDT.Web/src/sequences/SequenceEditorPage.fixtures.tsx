@@ -21,6 +21,7 @@ import { flowDefinition, flowPhases, windowsImageId } from "@/test/flowSequence"
 import { ToastRegion } from "@/ui/ToastRegion";
 
 import type { AccountView } from "@/accounts/accounts";
+import type { ApplicationBundleView, ApplicationView } from "@/applications/applications";
 import { SequenceEditorPage } from "./SequenceEditorPage";
 import type { RunScriptStep, SaveSequenceRequest, SequenceStep, SequenceView } from "./sequences";
 import { sequenceSearch } from "./sequenceSearch";
@@ -122,6 +123,13 @@ interface ServeOptions {
   step?: string;
   narrow?: boolean;
   accounts?: AccountView[];
+  // Without it, the library isn't served, like on an older server.
+  library?: Library;
+}
+
+interface Library {
+  applications: ApplicationView[];
+  bundles: ApplicationBundleView[];
 }
 
 // jsdom has no scrollTo or matchMedia. A narrow window matches the phone's max-width queries.
@@ -149,6 +157,7 @@ function stubServer(
   initial: SequenceView,
   answer: SaveAnswer | undefined,
   accounts: AccountView[],
+  library: Library | undefined,
 ) {
   let stored = initial;
   let deleted = false;
@@ -200,6 +209,13 @@ function stubServer(
           return Promise.resolve(json([]));
         case "GET /api/accounts":
           return Promise.resolve(json(accounts));
+        case "GET /api/applications":
+        case "GET /api/application-bundles":
+          return Promise.resolve(
+            library === undefined
+              ? new Response(null, { status: 404 })
+              : json(path.endsWith("bundles") ? library.bundles : library.applications),
+          );
         case "GET /api/deployments/options":
           return Promise.resolve(
             json({
@@ -254,10 +270,10 @@ function editorRouter(step: string | undefined) {
 export function serve(
   user: CurrentUser,
   initial: SequenceView,
-  { answer, step, narrow = false, accounts = [account] }: ServeOptions = {},
+  { answer, step, narrow = false, accounts = [account], library }: ServeOptions = {},
 ) {
   stubWindow(narrow);
-  const { saves, reads, remove } = stubServer(user, initial, answer, accounts);
+  const { saves, reads, remove } = stubServer(user, initial, answer, accounts, library);
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = editorRouter(step);

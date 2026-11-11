@@ -15,13 +15,15 @@ interface OrderedPickerProps {
   // The field the server's problems name, such as dependsOn; a row's is dependsOn[0].
   field: string;
   ids: readonly string[];
-  // Every application that may be picked, with its name.
-  options: readonly { id: string; name: string }[];
+  // Every application that may be picked, with its name and a note such as "Bundle".
+  options: readonly { id: string; name: string; note?: string }[];
   addLabel: string;
   findings: Findings;
   onChange: (ids: string[]) => void;
   // Shows the list without the keys that change it.
   isReadOnly?: boolean;
+  // More controls of a row, such as a tick.
+  rowExtra?: (id: string, shown: string) => ReactNode;
 }
 
 // An ordered list of applications: picked from the library, moved up and down, and removed.
@@ -29,7 +31,7 @@ export function OrderedPicker(props: OrderedPickerProps) {
   const { label, field, ids, options, addLabel, findings, onChange, isReadOnly = false } = props;
   const labelId = useId();
   const left = options.filter((option) => !ids.includes(option.id));
-  const nameOf = (id: string) => options.find((option) => option.id === id)?.name ?? null;
+  const optionOf = (id: string) => options.find((option) => option.id === id);
 
   const move = (from: number, to: number) => {
     const next = [...ids];
@@ -52,7 +54,10 @@ export function OrderedPicker(props: OrderedPickerProps) {
             <PickedRow
               key={id}
               index={index}
-              name={nameOf(id)}
+              name={optionOf(id)?.name ?? null}
+              note={optionOf(id)?.note ?? null}
+              extra={props.rowExtra}
+              id={id}
               isLast={index === ids.length - 1}
               isReadOnly={isReadOnly}
               errors={fieldFindings(findings, `${field}[${String(index)}]`).problems}
@@ -79,7 +84,12 @@ export function OrderedPicker(props: OrderedPickerProps) {
           }}
         >
           {left.map((option) => (
-            <ListBoxItem key={option.id} id={option.id}>
+            <ListBoxItem
+              key={option.id}
+              id={option.id}
+              textValue={option.name}
+              description={option.note}
+            >
               {option.name}
             </ListBoxItem>
           ))}

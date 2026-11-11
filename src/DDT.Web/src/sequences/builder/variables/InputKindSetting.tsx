@@ -8,10 +8,17 @@ import { ChoiceSetting } from "../../fields/ChoiceSetting";
 import type { InputKind } from "../../sequences";
 import type { InputPartProps } from "./declarationFields";
 
-const inputKinds: InputKind[] = ["Text", "Choice", "MultiChoice", "YesNo", "Account"];
+const inputKinds: InputKind[] = [
+  "Text",
+  "Choice",
+  "MultiChoice",
+  "YesNo",
+  "Account",
+  "Applications",
+];
 
 // The kind of answer an input takes. Switching kinds keeps only what the new kind can use: choices for a list, a
-// destination for an account. Applications has no editor yet, so it's only listed for an input that has it.
+// destination for an account, what an Applications input offers.
 export function InputKindSetting({ input, at, findings, update }: InputPartProps) {
   const { t } = useLingui();
   const kindLabels: Record<InputKind, string> = {
@@ -22,8 +29,6 @@ export function InputKindSetting({ input, at, findings, update }: InputPartProps
     Account: t`An account, for the run alone`,
     Applications: t`Applications from the library`,
   };
-  const offered: InputKind[] =
-    input.kind === "Applications" ? [...inputKinds, "Applications"] : inputKinds;
 
   return (
     <ChoiceSetting
@@ -31,9 +36,10 @@ export function InputKindSetting({ input, at, findings, update }: InputPartProps
       field={at("kind")}
       findings={findings}
       value={input.kind}
-      choices={offered.map((kind) => ({ id: kind, label: kindLabels[kind] }))}
+      choices={inputKinds.map((kind) => ({ id: kind, label: kindLabels[kind] }))}
       onChange={(chosen) => {
         const kind = chosen as InputKind;
+        const applications = kind === "Applications";
 
         update(
           {
@@ -43,8 +49,9 @@ export function InputKindSetting({ input, at, findings, update }: InputPartProps
                 ? (input.account ?? { domain: null, hosts: [], runAs: false })
                 : null,
             choices: kind === "Choice" || kind === "MultiChoice" ? input.choices : [],
-            offered: kind === "Applications" ? (input.offered ?? null) : null,
-            ticked: kind === "Applications" ? (input.ticked ?? null) : null,
+            offered: applications ? (input.offered ?? []) : null,
+            ticked: applications ? (input.ticked ?? []) : null,
+            ...(applications ? { default: null, maxLength: null } : {}),
           },
           true,
         );

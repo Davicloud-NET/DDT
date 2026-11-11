@@ -52,6 +52,10 @@ public static partial class ServerMessages
         "sequence.wingetNeedsSession",
         "{application} installs with winget, which needs a Write answer file step.");
 
+    public static readonly MessageTemplate SequenceApplicationsVariableSetBySteps = Define(
+        "sequence.applicationsVariableSetBySteps",
+        "Steps set {name}, but applications are chosen when the run starts.");
+
     // Why a run cannot install a step's applications. A run that starts says them in English.
 
     public static readonly MessageTemplate DeploymentApplicationUnknown = Define(

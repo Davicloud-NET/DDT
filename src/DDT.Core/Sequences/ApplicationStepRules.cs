@@ -65,6 +65,10 @@ internal static class ApplicationStepRules
         {
             add("variable", ServerMessages.SequenceAccountInputAsValue.With("name", name));
         }
+        else if (names.ChangesDuringRun(name))
+        {
+            add("variable", ServerMessages.SequenceApplicationsVariableSetBySteps.With("name", name));
+        }
         else if (!names.IsKnown(name))
         {
             names.Tested(name);

@@ -309,6 +309,7 @@
   "sequence.applicationRepeated": "This application or bundle is listed twice.",
   "sequence.applicationsChoose": "Choose applications or bundles, or a value that names them.",
   "sequence.applicationsTooMany": "A step installs at most {max} applications and bundles.",
+  "sequence.applicationsVariableSetBySteps": "Steps set {name}, but applications are chosen when the run starts.",
   "sequence.cannotGoOn": "The sequence cannot go on when {activity, select, partition {partitioning the disk} image {applying the image} other {writing the raw disk image}} fails.",
   "sequence.cannotSkip": "The sequence cannot skip {activity, select, partition {partitioning the disk} image {applying the image} other {writing the raw disk image}}, so this step cannot have conditions.",
   "sequence.changedWhileDeleting": "The sequence changed, or a rule chose it, while it was being deleted. Look at it again before deleting it.",

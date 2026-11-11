@@ -73,6 +73,23 @@ public sealed class ApplicationStepRulesTests
     }
 
     [Fact]
+    public void RefusesAValueThatStepsSetBecauseTheApplicationsAreChosenAtTheStart()
+    {
+        InstallApplicationsStep install = Install() with { Variable = "extras" };
+        SequenceDefinition definition = InWindows(install) with { Variables = [new VariableDeclaration { Name = "Extras", SetBySteps = true }] };
+
+        AssertOnly(Validate(definition), install, "variable", "sequence.applicationsVariableSetBySteps");
+    }
+
+    [Fact]
+    public void TakesADeclaredValueThatStepsDoNotSet()
+    {
+        SequenceDefinition definition = InWindows(Install() with { Variable = "Extras" }) with { Variables = [new VariableDeclaration { Name = "Extras" }] };
+
+        Assert.Empty(Validate(definition));
+    }
+
+    [Fact]
     public void RefusesAnEntryTwiceAndAnEmptyOne()
     {
         InstallApplicationsStep install = Install(s_office, s_sevenZip, s_office, new ApplicationReference(Guid.Empty, ApplicationReferenceKind.Application));

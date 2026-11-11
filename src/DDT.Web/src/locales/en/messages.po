@@ -9327,6 +9327,11 @@ msgstr "Steps may change it"
 msgid "Steps of {name}"
 msgstr "Steps of {name}"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.applicationsVariableSetBySteps"
+msgid "Steps set {name}, but applications are chosen when the run starts."
+msgstr "Steps set {name}, but applications are chosen when the run starts."
+
 #: src/settings/networkBoot/neighbours/DhcpHere.tsx
 msgid "Stop sending option 60"
 msgstr "Stop sending option 60"

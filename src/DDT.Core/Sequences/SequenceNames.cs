@@ -348,7 +348,8 @@ internal sealed partial class SequenceNames
         return true;
     }
 
-    private bool ChangesDuringRun(string name) =>
+    // Run variables such as LastExitCode, and the variables steps may set.
+    public bool ChangesDuringRun(string name) =>
         MachineVariableNames.ChangeDuringRun.Contains(name, StringComparer.OrdinalIgnoreCase)
         || (_variables.TryGetValue(name, out VariableDeclaration? variable) && variable.SetBySteps);
 

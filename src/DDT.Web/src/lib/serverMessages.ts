@@ -1249,6 +1249,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.applicationsTooMany",
     message: "A step installs at most {max} applications and bundles.",
   }),
+  "sequence.applicationsVariableSetBySteps": msg({
+    context: "sequence.applicationsVariableSetBySteps",
+    message: "Steps set {name}, but applications are chosen when the run starts.",
+  }),
   "sequence.cannotGoOn": msg({
     context: "sequence.cannotGoOn",
     message: "The sequence cannot go on when {activity, select, partition {partitioning the disk} image {applying the image} other {writing the raw disk image}} fails.",

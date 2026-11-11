@@ -2644,6 +2644,7 @@ msgstr "Anwendungsbibliothek"
 msgid "Applications"
 msgstr "Anwendungen"
 
+#: src/images/import/MdtApplicationChoices.tsx
 #: src/sequences/steps/InstallApplicationsFields.tsx
 msgid "Applications and bundles"
 msgstr "Anwendungen und Bündel"
@@ -2651,10 +2652,6 @@ msgstr "Anwendungen und Bündel"
 #: src/sequences/builder/variables/InputKindSetting.tsx
 msgid "Applications from the library"
 msgstr "Anwendungen aus der Bibliothek"
-
-#: src/images/import/MdtNotImported.tsx
-msgid "Applications: {applications}."
-msgstr "Anwendungen: {applications}."
 
 #: src/settings/parts/ApplyStates.tsx
 msgid "Applied"
@@ -2984,6 +2981,10 @@ msgstr "Bündel geändert"
 #: src/audit/auditView.ts
 msgid "Bundle deleted"
 msgstr "Bündel gelöscht"
+
+#: src/images/import/MdtApplicationChoices.tsx
+msgid "Bundle."
+msgstr "Bündel."
 
 #: src/applications/ApplicationsPage.tsx
 #: src/applications/bundles/BundlesTable.tsx
@@ -5149,6 +5150,10 @@ msgstr "Im installierten Windows"
 msgid "In the installed Windows, after the hand-over"
 msgstr "Im installierten Windows, nach der Übergabe"
 
+#: src/images/import/MdtApplicationChoices.tsx
+msgid "In the library already."
+msgstr "Bereits in der Bibliothek."
+
 #: src/sequences/steps.ts
 msgid "in the Linux boot environment"
 msgstr "in der Linux-Startumgebung"
@@ -5441,6 +5446,16 @@ msgstr "Italienisch"
 #: src/runs/decisions.ts
 msgid "Iteration {times} of at most {most}"
 msgstr "Durchlauf {times} von höchstens {most}"
+
+#: src/lib/serverMessages.ts
+msgctxt "import.dependencyMissing"
+msgid "Its dependency {dependency} is not in the library, so it was left out."
+msgstr "Die Abhängigkeit {dependency} ist nicht in der Bibliothek und wurde weggelassen."
+
+#: src/lib/serverMessages.ts
+msgctxt "import.dependencyCycle"
+msgid "Its dependency {dependency} would close a circle, so it was left out."
+msgstr "Die Abhängigkeit {dependency} würde einen Kreis schließen und wurde weggelassen."
 
 #: src/machines/actions/StopConfirm.tsx
 msgid "Its disk is left half written."
@@ -6051,6 +6066,11 @@ msgstr "Trifft jetzt auf kein bekanntes Gerät zu."
 #: src/images/import/ImportPanel.tsx
 msgid "MDT deployment share"
 msgstr "MDT-Bereitstellungsfreigabe"
+
+#: src/lib/serverMessages.ts
+msgctxt "import.workingDirectory"
+msgid "MDT ran it in {folder}. DDT runs it in the folder of its files."
+msgstr "MDT startete sie in {folder}. DDT startet sie im Ordner ihrer Dateien."
 
 #: src/conditions/conditionSubjects.ts
 msgid "memory"
@@ -6869,6 +6889,11 @@ msgstr "Knoten"
 #: src/users/directory/DirectoryCheckResult.tsx
 msgid "None"
 msgstr "Keine"
+
+#: src/lib/serverMessages.ts
+msgctxt "import.bundleEmpty"
+msgid "None of its applications is in the library."
+msgstr "Keine seiner Anwendungen ist in der Bibliothek."
 
 #: src/conditions/conditions.ts
 msgid "None of these hold"
@@ -10924,6 +10949,7 @@ msgstr "Die Server, auf denen es Netzwerkfreigaben verbinden darf, etwa files.co
 msgid "The share has no folder of Out-of-Box Drivers with drivers in it."
 msgstr "Die Freigabe hat keinen Ordner unter Out-of-Box Drivers, der Treiber enthält."
 
+#: src/images/import/MdtApplicationChoices.tsx
 #: src/images/import/MdtShareChoices.tsx
 msgid "The share lists none."
 msgstr "Die Freigabe führt keine auf."
@@ -12320,6 +12346,10 @@ msgstr "Mit einem gespeicherten Konto"
 msgid "With another attribute, every account is taken for a new one at its next sign-in."
 msgstr "Mit einem anderen Attribut gilt jedes Konto bei seiner nächsten Anmeldung als neues Konto."
 
+#: src/images/import/MdtApplicationChoices.tsx
+msgid "With files."
+msgstr "Mit Dateien."
+
 #: src/accounts/drawer/AccountFields.tsx
 msgid "With its domain, as DOMAIN\\user or user@corp.example."
 msgstr "Mit seiner Domäne, als DOMÄNE\\Benutzer oder benutzer@corp.example."
@@ -12339,6 +12369,10 @@ msgstr "Mit aktiviertem Secure Boot muss die Firmware des Geräts einer von {cas
 #: src/sequences/builder/nodeDetail.ts
 msgid "With the join account of the deployment defaults"
 msgstr "Mit dem Beitrittskonto der Standardwerte der Bereitstellung"
+
+#: src/images/import/MdtApplicationChoices.tsx
+msgid "Without files."
+msgstr "Ohne Dateien."
 
 #: src/machines/secureBoot.ts
 msgid "without Microsoft's third-party UEFI CA"

@@ -15,6 +15,8 @@ public sealed class FieldProblems
 
     public int Count => _fields.Count;
 
+    public IEnumerable<ServerMessage> Messages => _fields.Values.SelectMany(messages => messages);
+
     public void Add(string field, ServerMessage message)
     {
         ArgumentNullException.ThrowIfNull(field);

@@ -6,6 +6,7 @@ using DDT.Contracts.Images;
 using DDT.Contracts.Import;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Messages;
+using DDT.Server.Applications;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
 using DDT.Server.Import;
@@ -17,8 +18,8 @@ using Microsoft.AspNetCore.Routing;
 
 namespace DDT.Server.Endpoints;
 
-// Imports from the server's own disks: a WIM, ESD or ISO, and an MDT deployment share's images and drivers. A browser
-// upload of five gigabytes is the slowest part of a first deployment, and an MDT shop has the files there already.
+// Imports from the server's own disks: a WIM, ESD or ISO, and an MDT deployment share's images, drivers and applications.
+// A browser upload of five gigabytes is the slowest part of a first deployment, and an MDT shop has the files there already.
 public static class ImageImportEndpoints
 {
     public static RouteGroupBuilder MapImageImportEndpoints(this RouteGroupBuilder group)
@@ -27,7 +28,7 @@ public static class ImageImportEndpoints
 
         group.MapGet("/", Read).RequireAuthorization(DdtPolicies.Administrator);
         group.MapPost("/", ImportFilesAsync).RequireAuthorization(DdtPolicies.Administrator);
-        group.MapPost("/mdt/inspect", InspectShare).RequireAuthorization(DdtPolicies.Administrator);
+        group.MapPost("/mdt/inspect", InspectShareAsync).RequireAuthorization(DdtPolicies.Administrator);
         group.MapPost("/mdt", ImportShareAsync).RequireAuthorization(DdtPolicies.Administrator);
 
         return group;
@@ -59,13 +60,25 @@ public static class ImageImportEndpoints
             items.Add(new ImportItem(UploadKind.Image, Path.GetFileName(allowed), allowed, []));
         }
 
-        return await StartAsync(items, $"{items.Count} files.", services, context, cancellationToken).ConfigureAwait(false);
+        return await StartAsync(new ImportStart(items, null, $"{items.Count} files."), services, context, cancellationToken).ConfigureAwait(false);
     }
 
-    private static Results<Ok<MdtShareView>, ProblemHttpResult> InspectShare(InspectMdtShareRequest request, ImportFolders folders) =>
-        Share(request.Path, folders) is { } share
-            ? TypedResults.Ok(MdtShare.Read(share))
-            : ServerProblems.Problem(ServerMessages.ImportNotAShare.With("path", request.Path ?? string.Empty), StatusCodes.Status400BadRequest);
+    private static async Task<Results<Ok<MdtShareView>, ProblemHttpResult>> InspectShareAsync(
+        InspectMdtShareRequest request,
+        ImportFolders folders,
+        ApplicationViews applications,
+        CancellationToken cancellationToken)
+    {
+        if (Share(request.Path, folders) is not { } share)
+        {
+            return ServerProblems.Problem(ServerMessages.ImportNotAShare.With("path", request.Path ?? string.Empty), StatusCodes.Status400BadRequest);
+        }
+
+        ApplicationRows rows = await applications.RowsAsync(cancellationToken).ConfigureAwait(false);
+        HashSet<string> names = [.. rows.Applications.Values.Select(a => a.NormalizedName), .. rows.Bundles.Select(b => b.NormalizedName)];
+
+        return TypedResults.Ok(MdtShare.Read(share, names));
+    }
 
     private static async Task<Results<Accepted, ProblemHttpResult>> ImportShareAsync(
         ImportMdtShareRequest request,
@@ -79,7 +92,12 @@ public static class ImageImportEndpoints
         }
 
         // Only what the share's own lists name is read, whatever the request says
-        MdtShareView view = MdtShare.Read(share);
+        MdtShareView view = MdtShare.Read(share, new HashSet<string>());
+        IReadOnlyList<MdtShareApplication> entries = MdtApplications.Read(share);
+        MdtApplicationChoice choice = new(
+            share,
+            entries,
+            [.. entries.Where(entry => (request.Applications ?? []).Any(id => MdtApplications.Key(id) == entry.Id))]);
         List<ImportItem> items =
         [
             .. view.ImageFiles
@@ -96,30 +114,30 @@ public static class ImageImportEndpoints
                     $"From the MDT deployment share {share}, {group.Name}.")),
         ];
 
-        return await StartAsync(items, $"{items.Count} images and driver groups of the MDT deployment share {share}.", services, context, cancellationToken)
-            .ConfigureAwait(false);
+        string detail = $"{items.Count} images and driver groups and {choice.Chosen.Count} applications and bundles of the MDT deployment share {share}.";
+
+        return await StartAsync(new ImportStart(items, choice, detail), services, context, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Results<Accepted, ProblemHttpResult>> StartAsync(
-        List<ImportItem> items,
-        string detail,
+        ImportStart start,
         ImageImportServices services,
         HttpContext context,
         CancellationToken cancellationToken)
     {
-        if (items.Count == 0)
+        if (start.Items.Count + (start.Choice?.Chosen.Count ?? 0) == 0)
         {
             return ServerProblems.Problem(ServerMessages.ImportNothing.With(), StatusCodes.Status400BadRequest);
         }
 
         Actor actor = SettingsEndpoints.SettingsActor(context);
 
-        if (!services.Imports.TryStart(items, actor))
+        if (!services.Imports.TryStart(start.Items, actor, start.Choice))
         {
             return ServerProblems.Problem(ServerMessages.ImportBusy.With(), StatusCodes.Status409Conflict);
         }
 
-        services.Database.AuditEvents.Add(AuditEvents.Create(AuditActions.ImportStarted, null, actor, services.TimeProvider.GetUtcNow(), detail));
+        services.Database.AuditEvents.Add(AuditEvents.Create(AuditActions.ImportStarted, null, actor, services.TimeProvider.GetUtcNow(), start.Detail));
         await services.Database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return TypedResults.Accepted((string?)null);
@@ -136,4 +154,6 @@ public static class ImageImportEndpoints
 
         return parts.Length > 1 ? string.Join(' ', parts[1..]) : group.Name;
     }
+
+    private sealed record ImportStart(List<ImportItem> Items, MdtApplicationChoice? Choice, string Detail);
 }

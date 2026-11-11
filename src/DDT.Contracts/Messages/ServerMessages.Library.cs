@@ -187,6 +187,24 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate ImportUnreadable = Define("import.unreadable", "The server could not read it: {reason}");
 
+    // What an MDT application lost on the way. dependency is a name, or a guid the share does not list.
+
+    public static readonly MessageTemplate ImportDependencyMissing = Define(
+        "import.dependencyMissing",
+        "Its dependency {dependency} is not in the library, so it was left out.");
+
+    public static readonly MessageTemplate ImportDependencyCycle = Define(
+        "import.dependencyCycle",
+        "Its dependency {dependency} would close a circle, so it was left out.");
+
+    public static readonly MessageTemplate ImportWorkingDirectory = Define(
+        "import.workingDirectory",
+        "MDT ran it in {folder}. DDT runs it in the folder of its files.");
+
+    public static readonly MessageTemplate ImportBundleEmpty = Define(
+        "import.bundleEmpty",
+        "None of its applications is in the library.");
+
     public static readonly MessageTemplate GptNoTable = Define(
         "gpt.noTable",
         "The file has no GUID partition table, so it is not a UEFI disk image. Upload a disk image such as a distribution's cloud image.");

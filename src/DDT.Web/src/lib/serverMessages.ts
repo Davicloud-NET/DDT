@@ -729,9 +729,21 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "image.withoutArchitecture",
     message: "{image} does not say which processor it is for, and DDT deploys only x64 Windows. Choose an x64 image.",
   }),
+  "import.bundleEmpty": msg({
+    context: "import.bundleEmpty",
+    message: "None of its applications is in the library.",
+  }),
   "import.busy": msg({
     context: "import.busy",
     message: "An import is running already. Wait for it to end.",
+  }),
+  "import.dependencyCycle": msg({
+    context: "import.dependencyCycle",
+    message: "Its dependency {dependency} would close a circle, so it was left out.",
+  }),
+  "import.dependencyMissing": msg({
+    context: "import.dependencyMissing",
+    message: "Its dependency {dependency} is not in the library, so it was left out.",
   }),
   "import.failed": msg({
     context: "import.failed",
@@ -756,6 +768,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "import.unreadable": msg({
     context: "import.unreadable",
     message: "The server could not read it: {reason}",
+  }),
+  "import.workingDirectory": msg({
+    context: "import.workingDirectory",
+    message: "MDT ran it in {folder}. DDT runs it in the folder of its files.",
   }),
   "iso.noWindowsImage": msg({
     context: "iso.noWindowsImage",

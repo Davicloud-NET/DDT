@@ -64,8 +64,45 @@ const share: MdtShareView = {
       model: null,
     },
   ],
+  applications: [
+    {
+      id: "{a1}",
+      name: "7-Zip 24.09",
+      version: "24.09",
+      publisher: "Igor Pavlov",
+      hasFiles: true,
+      kind: "Application",
+      inLibrary: false,
+    },
+    {
+      id: "{a2}",
+      name: "VC++ Runtime",
+      version: null,
+      publisher: null,
+      hasFiles: false,
+      kind: "Application",
+      inLibrary: false,
+    },
+    {
+      id: "{a3}",
+      name: "Base Bundle",
+      version: null,
+      publisher: null,
+      hasFiles: false,
+      kind: "Bundle",
+      inLibrary: false,
+    },
+    {
+      id: "{a4}",
+      name: "Viewer",
+      version: null,
+      publisher: null,
+      hasFiles: true,
+      kind: "Application",
+      inLibrary: true,
+    },
+  ],
   notImported: {
-    applications: ["7-Zip"],
     taskSequences: ["Deploy Windows 11"],
     rules: ["Default"],
   },
@@ -177,9 +214,20 @@ describe("ImportPanel", () => {
       }),
     ).toBeChecked();
     expect(dialog).toHaveTextContent("Task sequences: Deploy Windows 11.");
-    expect(dialog).toHaveTextContent("Applications: 7-Zip.");
+    expect(
+      within(dialog).getByRole("checkbox", { name: /^7-Zip 24\.09\s*With files\.$/ }),
+    ).toBeChecked();
+    expect(
+      within(dialog).getByRole("checkbox", { name: /^Base Bundle\s*Bundle\.$/ }),
+    ).toBeChecked();
+    const viewer = within(dialog).getByRole("checkbox", {
+      name: /^Viewer\s*In the library already\.$/,
+    });
+    expect(viewer).toBeDisabled();
+    expect(viewer).not.toBeChecked();
 
     press(within(dialog).getByRole("checkbox", { name: /WinPE x64/ }));
+    press(within(dialog).getByRole("checkbox", { name: /^VC\+\+ Runtime\s*Without files\.$/ }));
     press(within(dialog).getByRole("button", { name: "Import" }));
 
     await waitFor(() => {
@@ -189,7 +237,55 @@ describe("ImportPanel", () => {
       path: "D:\\DeploymentShare",
       imageFiles: [".\\Operating Systems\\W11\\sources\\install.wim"],
       driverGroups: ["{g1}"],
+      applications: ["{a1}", "{a3}"],
     });
+  });
+
+  it("says what became of each application and what it lost on the way", async () => {
+    await open({
+      "GET /api/images/import": {
+        body: {
+          ...sources,
+          job: status({
+            state: "Finished",
+            item: null,
+            results: [
+              {
+                name: "Notepad++",
+                outcome: "Added",
+                reason: null,
+                reasonText: null,
+                notes: [
+                  { code: "import.dependencyMissing", args: { dependency: "Runtime" } },
+                  { code: "import.workingDirectory", args: { folder: "Other" } },
+                ],
+              },
+              { name: "7-Zip", outcome: "Existing", reason: null, reasonText: null, notes: [] },
+              {
+                name: "Empty Bundle",
+                outcome: "Refused",
+                reason: { code: "import.bundleEmpty", args: {} },
+                reasonText: "None of its applications is in the library.",
+              },
+            ],
+          }),
+        },
+      },
+    });
+
+    expect(await screen.findByText("Notepad++ is in the library now.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Its dependency Runtime is not in the library, so it was left out."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("MDT ran it in Other. DDT runs it in the folder of its files."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("7-Zip was in the library already.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Empty Bundle was not imported. None of its applications is in the library.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("says where to put files when the server has none, and asks nothing for a viewer", async () => {

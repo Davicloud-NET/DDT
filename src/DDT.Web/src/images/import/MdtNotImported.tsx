@@ -9,10 +9,9 @@ import type { MdtShareView } from "./imports";
 // What an MDT deployment share holds that DDT has no place for yet, by name, so nobody thinks it came along.
 export function MdtNotImported({ notImported }: { notImported: MdtShareView["notImported"] }) {
   const sequences = notImported.taskSequences.join(", ");
-  const applications = notImported.applications.join(", ");
   const sections = notImported.rules.join(", ");
 
-  if (sequences === "" && applications === "" && sections === "") {
+  if (sequences === "" && sections === "") {
     return null;
   }
 
@@ -24,11 +23,6 @@ export function MdtNotImported({ notImported }: { notImported: MdtShareView["not
       {sequences === "" ? null : (
         <p>
           <Trans>Task sequences: {sequences}. Build them again from a template.</Trans>
-        </p>
-      )}
-      {applications === "" ? null : (
-        <p>
-          <Trans>Applications: {applications}.</Trans>
         </p>
       )}
       {sections === "" ? null : (

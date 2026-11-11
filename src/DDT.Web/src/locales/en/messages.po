@@ -2644,6 +2644,7 @@ msgstr "Application library"
 msgid "Applications"
 msgstr "Applications"
 
+#: src/images/import/MdtApplicationChoices.tsx
 #: src/sequences/steps/InstallApplicationsFields.tsx
 msgid "Applications and bundles"
 msgstr "Applications and bundles"
@@ -2651,10 +2652,6 @@ msgstr "Applications and bundles"
 #: src/sequences/builder/variables/InputKindSetting.tsx
 msgid "Applications from the library"
 msgstr "Applications from the library"
-
-#: src/images/import/MdtNotImported.tsx
-msgid "Applications: {applications}."
-msgstr "Applications: {applications}."
 
 #: src/settings/parts/ApplyStates.tsx
 msgid "Applied"
@@ -2984,6 +2981,10 @@ msgstr "Bundle changed"
 #: src/audit/auditView.ts
 msgid "Bundle deleted"
 msgstr "Bundle deleted"
+
+#: src/images/import/MdtApplicationChoices.tsx
+msgid "Bundle."
+msgstr "Bundle."
 
 #: src/applications/ApplicationsPage.tsx
 #: src/applications/bundles/BundlesTable.tsx
@@ -5149,6 +5150,10 @@ msgstr "In the installed Windows"
 msgid "In the installed Windows, after the hand-over"
 msgstr "In the installed Windows, after the hand-over"
 
+#: src/images/import/MdtApplicationChoices.tsx
+msgid "In the library already."
+msgstr "In the library already."
+
 #: src/sequences/steps.ts
 msgid "in the Linux boot environment"
 msgstr "in the Linux boot environment"
@@ -5441,6 +5446,16 @@ msgstr "Italian"
 #: src/runs/decisions.ts
 msgid "Iteration {times} of at most {most}"
 msgstr "Iteration {times} of at most {most}"
+
+#: src/lib/serverMessages.ts
+msgctxt "import.dependencyMissing"
+msgid "Its dependency {dependency} is not in the library, so it was left out."
+msgstr "Its dependency {dependency} is not in the library, so it was left out."
+
+#: src/lib/serverMessages.ts
+msgctxt "import.dependencyCycle"
+msgid "Its dependency {dependency} would close a circle, so it was left out."
+msgstr "Its dependency {dependency} would close a circle, so it was left out."
 
 #: src/machines/actions/StopConfirm.tsx
 msgid "Its disk is left half written."
@@ -6051,6 +6066,11 @@ msgstr "Matches no known machine now."
 #: src/images/import/ImportPanel.tsx
 msgid "MDT deployment share"
 msgstr "MDT deployment share"
+
+#: src/lib/serverMessages.ts
+msgctxt "import.workingDirectory"
+msgid "MDT ran it in {folder}. DDT runs it in the folder of its files."
+msgstr "MDT ran it in {folder}. DDT runs it in the folder of its files."
 
 #: src/conditions/conditionSubjects.ts
 msgid "memory"
@@ -6869,6 +6889,11 @@ msgstr "Node"
 #: src/users/directory/DirectoryCheckResult.tsx
 msgid "None"
 msgstr "None"
+
+#: src/lib/serverMessages.ts
+msgctxt "import.bundleEmpty"
+msgid "None of its applications is in the library."
+msgstr "None of its applications is in the library."
 
 #: src/conditions/conditions.ts
 msgid "None of these hold"
@@ -10924,6 +10949,7 @@ msgstr "The servers it may connect shares on, such as files.corp.example."
 msgid "The share has no folder of Out-of-Box Drivers with drivers in it."
 msgstr "The share has no folder of Out-of-Box Drivers with drivers in it."
 
+#: src/images/import/MdtApplicationChoices.tsx
 #: src/images/import/MdtShareChoices.tsx
 msgid "The share lists none."
 msgstr "The share lists none."
@@ -12320,6 +12346,10 @@ msgstr "With a stored account"
 msgid "With another attribute, every account is taken for a new one at its next sign-in."
 msgstr "With another attribute, every account is taken for a new one at its next sign-in."
 
+#: src/images/import/MdtApplicationChoices.tsx
+msgid "With files."
+msgstr "With files."
+
 #: src/accounts/drawer/AccountFields.tsx
 msgid "With its domain, as DOMAIN\\user or user@corp.example."
 msgstr "With its domain, as DOMAIN\\user or user@corp.example."
@@ -12339,6 +12369,10 @@ msgstr "With Secure Boot on, the machine's firmware has to trust one of {cas}."
 #: src/sequences/builder/nodeDetail.ts
 msgid "With the join account of the deployment defaults"
 msgstr "With the join account of the deployment defaults"
+
+#: src/images/import/MdtApplicationChoices.tsx
+msgid "Without files."
+msgstr "Without files."
 
 #: src/machines/secureBoot.ts
 msgid "without Microsoft's third-party UEFI CA"

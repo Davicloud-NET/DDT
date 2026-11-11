@@ -120,9 +120,9 @@ internal static class ApplicationUploads
 
         return new ApplicationSuggestion(
             ApplicationKind.Command,
-            Name(facts.Name),
-            Text(facts.Publisher, ApplicationLimits.MaxPublisherLength),
-            Text(facts.Version, ApplicationLimits.MaxVersionLength),
+            SuggestedName(facts.Name),
+            SuggestedText(facts.Publisher, ApplicationLimits.MaxPublisherLength),
+            SuggestedText(facts.Version, ApplicationLimits.MaxVersionLength),
             suggestion.CommandLine,
             suggestion.SuccessExitCodes,
             suggestion.RestartExitCodes,
@@ -138,9 +138,9 @@ internal static class ApplicationUploads
 
         return new ApplicationSuggestion(
             ApplicationKind.Msix,
-            Name(main.DisplayName),
-            Text(main.PublisherDisplayName, ApplicationLimits.MaxPublisherLength),
-            Text(main.Version, ApplicationLimits.MaxVersionLength),
+            SuggestedName(main.DisplayName),
+            SuggestedText(main.PublisherDisplayName, ApplicationLimits.MaxPublisherLength),
+            SuggestedText(main.Version, ApplicationLimits.MaxVersionLength),
             null,
             [0],
             [3010],
@@ -154,10 +154,10 @@ internal static class ApplicationUploads
         return MsixManifestReader.Read(package);
     }
 
-    private static string? Name(string? value) =>
+    public static string? SuggestedName(string? value) =>
         LibraryEntries.Bounded(ApplicationNames.Clean(value?.Replace(ApplicationNames.Separator, ',')), ApplicationLimits.MaxNameLength);
 
-    private static string? Text(string? value, int maxLength) =>
+    public static string? SuggestedText(string? value, int maxLength) =>
         string.IsNullOrWhiteSpace(value) || value.Any(char.IsControl) ? null : LibraryEntries.Bounded(value.Trim(), maxLength);
 
     private static bool IsZip(string fileName) => fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);

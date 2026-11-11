@@ -20,12 +20,14 @@ export interface ImportFile {
   modifiedUtc: string;
 }
 
-// What became of one file or driver group. reason is why it was refused, and reasonText the same in English.
+// What became of one file, driver group, application or bundle. reason is why it was refused, and reasonText the
+// same in English. notes are what an imported application lost on the way.
 export interface ImportResult {
   name: string;
   outcome: "Added" | "Existing" | "Refused";
   reason: ServerMessage | null;
   reasonText: string | null;
+  notes?: ServerMessage[] | null;
 }
 
 // An import as the page follows it. item is what is being read, doneBytes of totalBytes how far that is.
@@ -66,12 +68,24 @@ export interface MdtDriverGroup {
   model: string | null;
 }
 
+// An application or bundle of the share. inLibrary says the library has one of that name already.
+export interface MdtApplication {
+  id: string;
+  name: string;
+  version: string | null;
+  publisher: string | null;
+  hasFiles: boolean;
+  kind: "Application" | "Bundle";
+  inLibrary: boolean;
+}
+
 // What an MDT deployment share holds that DDT imports, and what it has no place for yet.
 export interface MdtShareView {
   path: string;
   imageFiles: MdtImageFile[];
   driverGroups: MdtDriverGroup[];
-  notImported: { applications: string[]; taskSequences: string[]; rules: string[] };
+  applications: MdtApplication[];
+  notImported: { taskSequences: string[]; rules: string[] };
 }
 
 export const importSourcesQuery = queryOptions({
@@ -96,8 +110,9 @@ export function importShare(
   path: string,
   imageFiles: string[],
   driverGroups: string[],
+  applications: string[],
 ): Promise<void> {
-  return apiPost("/api/images/import/mdt", { path, imageFiles, driverGroups });
+  return apiPost("/api/images/import/mdt", { path, imageFiles, driverGroups, applications });
 }
 
 // The hub's status goes into the sources the page holds. The images and packages an import adds arrive by themselves.

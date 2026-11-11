@@ -14,8 +14,8 @@ import { Notice } from "@/ui/Notice";
 import { importShare, mdtShareQuery } from "./imports";
 import { MdtShareChoices } from "./MdtShareChoices";
 
-// What an MDT deployment share holds, to choose from: its image files and its driver groups. Opens for a path and
-// closes once the import has started, which the panel then follows.
+// What an MDT deployment share holds, to choose from: its image files, driver groups and applications. Opens for a path
+// and closes once the import has started, which the panel then follows.
 export function MdtShareDialog({ path, onClose }: { path: string | null; onClose: () => void }) {
   const share = useQuery({ ...mdtShareQuery(path ?? ""), enabled: path !== null });
   // What was unticked. Everything the share can give is ticked at first.
@@ -23,12 +23,17 @@ export function MdtShareDialog({ path, onClose }: { path: string | null; onClose
   const view = path === null ? undefined : share.data;
   const images = view?.imageFiles.filter((file) => file.found && !left.has(file.file)) ?? [];
   const groups = view?.driverGroups.filter((group) => !left.has(group.id)) ?? [];
+  const applications =
+    view?.applications.filter(
+      (application) => !application.inLibrary && !left.has(application.id),
+    ) ?? [];
   const start = useMutation({
     mutationFn: () =>
       importShare(
         path ?? "",
         images.map((file) => file.file),
         groups.map((group) => group.id),
+        applications.map((application) => application.id),
       ),
     onSuccess: close,
   });
@@ -57,7 +62,9 @@ export function MdtShareDialog({ path, onClose }: { path: string | null; onClose
           </Button>
           <Button
             variant="primary"
-            isDisabled={start.isPending || images.length + groups.length === 0}
+            isDisabled={
+              start.isPending || images.length + groups.length + applications.length === 0
+            }
             onPress={() => {
               start.mutate();
             }}

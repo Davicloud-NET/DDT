@@ -269,8 +269,8 @@ machine that will not come back from its installed Linux.
 
 Better you hear it here than find out on a Friday afternoon:
 
-- **winget.** Applications from winget are not built yet. And applications have met only tests and
-  dry runs so far, no real machine. Windows Update and BitLocker are the rest of milestone M9.
+- **Applications on a real machine.** Applications, winget packages included, have met only tests
+  and dry runs so far. Windows Update and BitLocker are the rest of milestone M9.
 - **Importing task sequences and `CustomSettings.ini`.** You rebuild them, as described above.
 - **Refresh and replace.** No USMT yet, so DDT erases the disk and installs. That comes with M10.
 - **Capturing a reference image.** Also M10. Until then, capture the way you do today and import

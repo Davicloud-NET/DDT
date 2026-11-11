@@ -141,7 +141,7 @@ Decided for all three parts:
 
 ## M9 Applications and Windows configuration
 
-Three parts, each a pull request that works by itself. The first is built, except winget.
+Three parts, each a pull request that works by itself. The first is built.
 
 1. **Applications.** [Applications]
    - The library, under Library > Applications: an entry holds files and a silent command, with
@@ -158,7 +158,11 @@ Three parts, each a pull request that works by itself. The first is built, excep
      lists. Rules name applications.
    - The MDT import brings a share's applications and bundles
      ([coming-from-mdt.md](coming-from-mdt.md)).
-   - Not built: winget packages.
+   - winget packages, by ID and an optional version, installed for the machine:
+     - need a Write answer file step, because winget runs in DDT's session;
+     - run as its account DDTDeploy, an administrator only while winget runs;
+     - need internet on the machine;
+     - Windows 11 and Windows Server 2025, which bring winget.
    - Tried in unit tests and end-to-end dry runs only. Not on a virtual or physical machine yet;
      DISM for MSIX never ran.
 2. **Windows in the run.**

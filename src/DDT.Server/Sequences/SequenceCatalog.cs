@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Packages;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 using DDT.Server.Accounts;
@@ -21,7 +22,12 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
     public async Task<SequenceReferences> ReferencesAsync(CancellationToken cancellationToken)
     {
         List<Image> images = await database.Images.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
-        List<Package> packages = await database.Packages.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+        // A step names an application, never its files.
+        List<Package> packages = await database.Packages
+            .AsNoTracking()
+            .Where(p => p.Kind != PackageKind.Application)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
         DeploymentOptions deployment = settings.Current.Deployment;
         List<string> ruleValues = await database.Rules.AsNoTracking().Select(rule => rule.Values).ToListAsync(cancellationToken).ConfigureAwait(false);
         List<string> roleValues = await database.MachineRoles.AsNoTracking().Select(role => role.Values).ToListAsync(cancellationToken).ConfigureAwait(false);

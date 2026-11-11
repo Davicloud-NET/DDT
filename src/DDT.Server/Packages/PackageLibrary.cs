@@ -36,7 +36,7 @@ internal sealed class PackageLibrary(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        Package? package = await database.Packages.FirstOrDefaultAsync(p => p.Id == id, cancellationToken).ConfigureAwait(false);
+        Package? package = await LibraryPackageAsync(id, cancellationToken).ConfigureAwait(false);
 
         if (package is null)
         {
@@ -88,7 +88,7 @@ internal sealed class PackageLibrary(
 
         await using (await store.LibraryLock.EnterAsync(cancellationToken).ConfigureAwait(false))
         {
-            Package? package = await database.Packages.FirstOrDefaultAsync(p => p.Id == id, cancellationToken).ConfigureAwait(false);
+            Package? package = await LibraryPackageAsync(id, cancellationToken).ConfigureAwait(false);
 
             if (package is null)
             {
@@ -128,6 +128,10 @@ internal sealed class PackageLibrary(
 
         return LibraryDeletion.Deleted;
     }
+
+    // An application's files change only with their application.
+    private Task<Package?> LibraryPackageAsync(Guid id, CancellationToken cancellationToken) =>
+        database.Packages.FirstOrDefaultAsync(p => p.Id == id && p.Kind != PackageKind.Application, cancellationToken);
 
     // Only drivers go into the boot image. WinPE loads drivers, and nothing runs a files package there before a
     // sequence does.

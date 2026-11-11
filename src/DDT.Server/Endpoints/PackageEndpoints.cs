@@ -33,7 +33,11 @@ public static class PackageEndpoints
 
     private static async Task<Ok<IReadOnlyList<PackageSummary>>> ListAsync(DdtDbContext database, CancellationToken cancellationToken)
     {
-        List<Package> packages = await database.Packages.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<Package> packages = await database.Packages
+            .AsNoTracking()
+            .Where(p => p.Kind != PackageKind.Application)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 
         return TypedResults.Ok<IReadOnlyList<PackageSummary>>(
         [

@@ -176,4 +176,5 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(SaveApplicationBundleRequest))]
 [JsonSerializable(typeof(ApplicationBundlesRemovedEvent))]
 [JsonSerializable(typeof(ApplicationReference))]
+[JsonSerializable(typeof(ApplicationUpload))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Applications;
 using DDT.Contracts.Packages;
+using DDT.Server.Applications;
 using DDT.Server.Data;
 using DDT.Server.Live;
 using DDT.Server.Machines;
@@ -12,8 +14,8 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Images;
 
-// Adds an uploaded zip to the library as a package. It logs under ImageUploadCompleter's category, because the logging
-// settings may name that category.
+// Adds an uploaded zip to the library as a package, or as an application's files, which only applications show. It logs
+// under ImageUploadCompleter's category, because the logging settings may name that category.
 public sealed partial class PackageUploadCommitter(
     ImageStore store,
     UploadRefusals refusals,
@@ -28,25 +30,38 @@ public sealed partial class PackageUploadCommitter(
         ArgumentNullException.ThrowIfNull(upload);
 
         PackageKind kind = LibraryEntries.PackageKindOf(upload.Kind);
-        (PackageInspection inspection, string sha256) = await InspectAsync(upload, kind, cancellationToken).ConfigureAwait(false);
+        bool isApplication = kind == PackageKind.Application;
+        string source = isApplication
+            ? await ApplicationUploads.SourceAsync(store, upload, cancellationToken).ConfigureAwait(false)
+            : store.PartPath(upload.Id);
+        (PackageInspection inspection, string sha256) = await InspectAsync(source, kind, cancellationToken).ConfigureAwait(false);
 
         if (inspection.RefusalMessage is { } refusal)
         {
             return await refusals.RefuseAsync(database, upload, refusal, cancellationToken).ConfigureAwait(false);
         }
 
+        ApplicationSuggestion? suggestion = isApplication
+            ? await ApplicationUploads.SuggestAsync(store, upload, cancellationToken).ConfigureAwait(false)
+            : null;
+
         await using SemaphoreHold hold = await store.LibraryLock.EnterAsync(cancellationToken).ConfigureAwait(false);
 
         DateTimeOffset now = timeProvider.GetUtcNow();
         Package? existing = await database.Packages
-            .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Sha256 == sha256 && p.Kind == kind, CancellationToken.None)
             .ConfigureAwait(false);
         Package package = existing ?? NewPackage(upload, sha256, inspection, now, actor);
 
         if (existing is null)
         {
+            package.SizeBytes = new FileInfo(source).Length;
             database.Packages.Add(package);
+        }
+        else if (isApplication)
+        {
+            // Files no application names are swept a day after their upload. Uploading them again starts that day anew.
+            existing.UploadedUtc = now;
         }
 
         // An upload that adds nothing is still recorded, under the package that already has its file.
@@ -61,29 +76,46 @@ public sealed partial class PackageUploadCommitter(
 
         upload.CompletedSha256 = sha256;
         upload.UpdatedUtc = now;
-        await LibraryFiles.SaveWithFileAsync(store, database, store.PartPath(upload.Id), sha256).ConfigureAwait(false);
+        await LibraryFiles.SaveWithFileAsync(store, database, source, sha256).ConfigureAwait(false);
+        File.Delete(store.PartPath(upload.Id));
 
-        if (existing is not null)
+        return Completed(package, existing is null, upload, suggestion);
+    }
+
+    // An application's files are never pushed: the Packages page does not show them.
+    private UploadCompletion Completed(Package package, bool added, ImageUpload upload, ApplicationSuggestion? suggestion)
+    {
+        UploadCompletionStatus status = added ? UploadCompletionStatus.Added : UploadCompletionStatus.Existing;
+
+        if (added)
         {
-            return new UploadCompletion(UploadCompletionStatus.Existing, [], Package: PackageSummaries.From(existing));
+            LogPackageAdded(package.Kind, package.Id, upload.Id, upload.FileName, package.Sha256);
         }
 
-        PackageSummary added = PackageSummaries.From(package);
-        live.PackageChanged(added);
-        LogPackageAdded(kind, package.Id, upload.Id, upload.FileName, sha256);
+        if (package.Kind == PackageKind.Application)
+        {
+            return new UploadCompletion(status, [], Application: new ApplicationUpload(ApplicationUploads.Files(package), suggestion));
+        }
 
-        return new UploadCompletion(UploadCompletionStatus.Added, [], Package: added);
+        PackageSummary summary = PackageSummaries.From(package);
+
+        if (added)
+        {
+            live.PackageChanged(summary);
+        }
+
+        return new UploadCompletion(status, [], Package: summary);
     }
 
     // Sha256 is empty for a refused zip.
-    private async Task<(PackageInspection Inspection, string Sha256)> InspectAsync(ImageUpload upload, PackageKind kind, CancellationToken cancellationToken)
+    private static async Task<(PackageInspection Inspection, string Sha256)> InspectAsync(string source, PackageKind kind, CancellationToken cancellationToken)
     {
         PackageInspection inspection;
         string sha256 = "";
 
         // Buffered and synchronous, because the zip's directory is read a few bytes at a time.
         await using (FileStream stream = new(
-            store.PartPath(upload.Id),
+            source,
             FileMode.Open,
             FileAccess.Read,
             FileShare.Read,

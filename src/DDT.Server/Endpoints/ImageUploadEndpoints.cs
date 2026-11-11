@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Security.Claims;
+using DDT.Contracts.Applications;
 using DDT.Contracts.Images;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
@@ -137,8 +138,7 @@ public static class ImageUploadEndpoints
     private static async Task<Results<
         Created<IReadOnlyList<ImageSummary>>,
         Ok<IReadOnlyList<ImageSummary>>,
-        Created<PackageSummary>,
-        Ok<PackageSummary>,
+        Results<Created<PackageSummary>, Ok<PackageSummary>, Created<ApplicationUpload>, Ok<ApplicationUpload>>,
         ProblemHttpResult,
         StatusCodeHttpResult>> CompleteAsync(
         Guid id,
@@ -162,12 +162,10 @@ public static class ImageUploadEndpoints
 
         switch (completion.Status)
         {
-            case UploadCompletionStatus.Added when completion.Package is { } package:
-                return TypedResults.Created((string?)null, package);
+            case UploadCompletionStatus.Added or UploadCompletionStatus.Existing when completion.Package is not null || completion.Application is not null:
+                return LibraryEntry(completion);
             case UploadCompletionStatus.Added:
                 return TypedResults.Created((string?)null, completion.Images);
-            case UploadCompletionStatus.Existing when completion.Package is { } package:
-                return TypedResults.Ok(package);
             case UploadCompletionStatus.Existing:
                 return TypedResults.Ok(completion.Images);
             case UploadCompletionStatus.NotFound:
@@ -205,6 +203,18 @@ public static class ImageUploadEndpoints
             UploadDiscardStatus.Discarded => TypedResults.NoContent(),
             UploadDiscardStatus.NotFound => TypedResults.NotFound(),
             UploadDiscardStatus.Busy => RetryLater(context, ServerMessages.UploadInUse),
+            _ => throw new UnreachableException(),
+        };
+
+    // Created when the upload added the package or the application's files, OK when they were in the library already.
+    private static Results<Created<PackageSummary>, Ok<PackageSummary>, Created<ApplicationUpload>, Ok<ApplicationUpload>> LibraryEntry(
+        UploadCompletion completion) =>
+        (completion.Status == UploadCompletionStatus.Added, completion.Application, completion.Package) switch
+        {
+            (true, { } application, _) => TypedResults.Created((string?)null, application),
+            (false, { } application, _) => TypedResults.Ok(application),
+            (true, _, { } package) => TypedResults.Created((string?)null, package),
+            (false, _, { } package) => TypedResults.Ok(package),
             _ => throw new UnreachableException(),
         };
 

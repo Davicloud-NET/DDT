@@ -9,4 +9,7 @@ public enum PackageKind
 {
     Drivers,
     Files,
+
+    // An application's files. Only its application shows them; the Packages page does not.
+    Application,
 }

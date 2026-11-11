@@ -99,6 +99,173 @@ namespace DDT.Server.Migrations.SqlServer
                     b.ToTable("Accounts", "ddt");
                 });
 
+            modelBuilder.Entity("DDT.Server.Applications.Application", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Command")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<bool>("ContinueOnFailure")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DependsOn")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("Detection")
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<Guid?>("PackageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Publisher")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("RestartExitCodes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<long>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("SuccessExitCodes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<int>("TimeoutMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UpdatedByName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("UpdatedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Version")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("WingetId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("WingetVersion")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique();
+
+                    b.HasIndex("PackageId");
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.ToTable("Applications", "ddt");
+                });
+
+            modelBuilder.Entity("DDT.Server.Applications.ApplicationBundle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("Members")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<long>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("UpdatedByName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("UpdatedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique();
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.ToTable("ApplicationBundles", "ddt");
+                });
+
             modelBuilder.Entity("DDT.Server.Data.AuditEvent", b =>
                 {
                     b.Property<long>("Id")
@@ -1546,6 +1713,25 @@ namespace DDT.Server.Migrations.SqlServer
                 });
 
             modelBuilder.Entity("DDT.Server.Accounts.Account", b =>
+                {
+                    b.HasOne("DDT.Server.Data.DdtUser", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId");
+                });
+
+            modelBuilder.Entity("DDT.Server.Applications.Application", b =>
+                {
+                    b.HasOne("DDT.Server.Packages.Package", null)
+                        .WithMany()
+                        .HasForeignKey("PackageId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DDT.Server.Data.DdtUser", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId");
+                });
+
+            modelBuilder.Entity("DDT.Server.Applications.ApplicationBundle", b =>
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()

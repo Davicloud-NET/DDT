@@ -96,4 +96,10 @@ public static class AuditActions
     public const string AccountChanged = "account.changed";
     public const string AccountDeleted = "account.deleted";
     public const string AccountRefused = "account.refused";
+    public const string ApplicationCreated = "application.created";
+    public const string ApplicationChanged = "application.changed";
+    public const string ApplicationDeleted = "application.deleted";
+    public const string ApplicationBundleCreated = "application.bundle-created";
+    public const string ApplicationBundleChanged = "application.bundle-changed";
+    public const string ApplicationBundleDeleted = "application.bundle-deleted";
 }

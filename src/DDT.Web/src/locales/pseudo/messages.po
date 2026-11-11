@@ -5676,6 +5676,11 @@ msgid "Machines appear here when they netboot on a network DDT answers."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "application.filesInUse"
+msgid "Machines are installing these files or are waiting to. Cancel those runs or let them finish first."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "package.inUse"
 msgid "Machines are waiting to install this package or are installing it. Cancel those runs or let them finish, then delete it."
 msgstr ""
@@ -8628,6 +8633,11 @@ msgid "SMBIOS UUID"
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "application.changedMeanwhile"
+msgid "Someone changed it meanwhile. Look at it again."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "stepAccount.changedMeanwhile"
 msgid "Someone changed the account meanwhile. Look at it again."
 msgstr ""
@@ -10581,6 +10591,11 @@ msgid "The uploaded console was not removed. {reason}"
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "application.filesGone"
+msgid "The uploaded files are no longer on the server. Upload them again."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.userDataVendorPrefixWarning"
 msgid "The user-data sets prefix under vendor_data, so cloud-init starts vendor scripts through that command. One of them is DDT's, which installs the agent in the installed Linux. If the command does not run it to its end, the steps there never run."
 msgstr ""
@@ -10761,6 +10776,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "application.gone"
 msgid "This application is no longer in the library."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "application.inUse"
+msgid "This application is used by {users}. Take it out there first."
 msgstr ""
 
 #: src/lib/serverMessages.ts

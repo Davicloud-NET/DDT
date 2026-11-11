@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Accounts;
+using DDT.Contracts.Applications;
 using DDT.Contracts.Audit;
 using DDT.Contracts.BootImage;
 using DDT.Contracts.Deployments;
@@ -309,6 +310,34 @@ public sealed partial class LiveNotifier(
         ArgumentNullException.ThrowIfNull(accountIds);
 
         _ = PushEventAsync(LiveEvents.AccountsRemoved, new AccountsRemovedEvent([.. accountIds]));
+    }
+
+    public void ApplicationChanged(ApplicationView application)
+    {
+        ArgumentNullException.ThrowIfNull(application);
+
+        _ = PushEventAsync(LiveEvents.ApplicationChanged, application);
+    }
+
+    public void ApplicationsRemoved(IEnumerable<Guid> applicationIds)
+    {
+        ArgumentNullException.ThrowIfNull(applicationIds);
+
+        _ = PushEventAsync(LiveEvents.ApplicationsRemoved, new ApplicationsRemovedEvent([.. applicationIds]));
+    }
+
+    public void ApplicationBundleChanged(ApplicationBundleView bundle)
+    {
+        ArgumentNullException.ThrowIfNull(bundle);
+
+        _ = PushEventAsync(LiveEvents.ApplicationBundleChanged, bundle);
+    }
+
+    public void ApplicationBundlesRemoved(IEnumerable<Guid> bundleIds)
+    {
+        ArgumentNullException.ThrowIfNull(bundleIds);
+
+        _ = PushEventAsync(LiveEvents.ApplicationBundlesRemoved, new ApplicationBundlesRemovedEvent([.. bundleIds]));
     }
 
     // Every event carries what changed, so a page patches what it shows rather than loading it again.

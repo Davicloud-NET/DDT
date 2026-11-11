@@ -76,12 +76,13 @@ public sealed class ApplicationWireFormatTests
             null,
             60,
             true,
+            [new ApplicationUse(s_other, "Office", ApplicationUseKind.Bundle)],
             3,
             s_updated,
             "jane");
 
         Assert.Equal(
-            $$"""{"id":"{{Id}}","name":"7-Zip","description":null,"publisher":"Igor Pavlov","version":"24.09","kind":"Command","files":{"packageId":"{{Package}}","name":"7z2409-x64.msi","sizeBytes":1617920},"command":"msiexec /i 7z2409-x64.msi /qn","successExitCodes":[0],"restartExitCodes":[3010],"detection":{"kind":"uninstallKey","keyName":"7-Zip"},"dependsOn":["{{Other}}"],"wingetId":null,"wingetVersion":null,"timeoutMinutes":60,"continueOnFailure":true,"revision":3,"updatedUtc":"2026-11-11T10:00:00+00:00","updatedBy":"jane"}""",
+            $$"""{"id":"{{Id}}","name":"7-Zip","description":null,"publisher":"Igor Pavlov","version":"24.09","kind":"Command","files":{"packageId":"{{Package}}","name":"7z2409-x64.msi","sizeBytes":1617920},"command":"msiexec /i 7z2409-x64.msi /qn","successExitCodes":[0],"restartExitCodes":[3010],"detection":{"kind":"uninstallKey","keyName":"7-Zip"},"dependsOn":["{{Other}}"],"wingetId":null,"wingetVersion":null,"timeoutMinutes":60,"continueOnFailure":true,"usedBy":[{"id":"{{Other}}","name":"Office","kind":"Bundle"}],"revision":3,"updatedUtc":"2026-11-11T10:00:00+00:00","updatedBy":"jane"}""",
             JsonSerializer.Serialize(view, DdtJsonContext.Default.ApplicationView));
     }
 
@@ -102,9 +103,9 @@ public sealed class ApplicationWireFormatTests
     [Fact]
     public void WritesABundle() =>
         Assert.Equal(
-            $$"""{"id":"{{Id}}","name":"Office","description":"Every office PC","members":["{{Other}}"],"revision":1,"updatedUtc":"2026-11-11T10:00:00+00:00","updatedBy":null}""",
+            $$"""{"id":"{{Id}}","name":"Office","description":"Every office PC","members":["{{Other}}"],"usedBy":[],"revision":1,"updatedUtc":"2026-11-11T10:00:00+00:00","updatedBy":null}""",
             JsonSerializer.Serialize(
-                new ApplicationBundleView(s_id, "Office", "Every office PC", [s_other], 1, s_updated, null),
+                new ApplicationBundleView(s_id, "Office", "Every office PC", [s_other], [], 1, s_updated, null),
                 DdtJsonContext.Default.ApplicationBundleView));
 
     [Fact]

@@ -5676,6 +5676,11 @@ msgid "Machines appear here when they netboot on a network DDT answers."
 msgstr "Geräte erscheinen hier, wenn sie in einem Netzwerk, in dem DDT antwortet, per Netzwerk starten."
 
 #: src/lib/serverMessages.ts
+msgctxt "application.filesInUse"
+msgid "Machines are installing these files or are waiting to. Cancel those runs or let them finish first."
+msgstr "Geräte installieren diese Dateien gerade oder warten darauf. Brechen Sie diese Ausführungen ab oder lassen Sie sie zuerst fertig werden."
+
+#: src/lib/serverMessages.ts
 msgctxt "package.inUse"
 msgid "Machines are waiting to install this package or are installing it. Cancel those runs or let them finish, then delete it."
 msgstr "Geräte warten darauf, dieses Paket zu installieren, oder installieren es gerade. Brechen Sie diese Ausführungen ab oder lassen Sie sie fertig werden, und löschen Sie es dann."
@@ -8628,6 +8633,11 @@ msgid "SMBIOS UUID"
 msgstr "SMBIOS-UUID"
 
 #: src/lib/serverMessages.ts
+msgctxt "application.changedMeanwhile"
+msgid "Someone changed it meanwhile. Look at it again."
+msgstr "Jemand hat es inzwischen geändert. Sehen Sie es sich erneut an."
+
+#: src/lib/serverMessages.ts
 msgctxt "stepAccount.changedMeanwhile"
 msgid "Someone changed the account meanwhile. Look at it again."
 msgstr "Jemand hat das Konto inzwischen geändert. Sehen Sie es sich erneut an."
@@ -10581,6 +10591,11 @@ msgid "The uploaded console was not removed. {reason}"
 msgstr "Die hochgeladene Konsole wurde nicht entfernt. {reason}"
 
 #: src/lib/serverMessages.ts
+msgctxt "application.filesGone"
+msgid "The uploaded files are no longer on the server. Upload them again."
+msgstr "Die hochgeladenen Dateien sind nicht mehr auf dem Server. Laden Sie sie erneut hoch."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.userDataVendorPrefixWarning"
 msgid "The user-data sets prefix under vendor_data, so cloud-init starts vendor scripts through that command. One of them is DDT's, which installs the agent in the installed Linux. If the command does not run it to its end, the steps there never run."
 msgstr "Die Datei user-data setzt prefix unter vendor_data, daher startet cloud-init Vendor-Skripte über diesen Befehl. Eines davon ist das von DDT, das den Agent im installierten Linux installiert. Führt der Befehl es nicht bis zum Ende aus, laufen die Schritte dort nie."
@@ -10762,6 +10777,11 @@ msgstr "Diese Anwendung steht zweimal in der Liste."
 msgctxt "application.gone"
 msgid "This application is no longer in the library."
 msgstr "Diese Anwendung ist nicht mehr in der Bibliothek."
+
+#: src/lib/serverMessages.ts
+msgctxt "application.inUse"
+msgid "This application is used by {users}. Take it out there first."
+msgstr "Diese Anwendung wird von {users} verwendet. Nehmen Sie sie dort zuerst heraus."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.certificate.newRootUpload"

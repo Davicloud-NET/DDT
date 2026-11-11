@@ -10,6 +10,7 @@ public sealed record ApplicationBundleView(
     string Name,
     string? Description,
     IReadOnlyList<Guid> Members,
+    IReadOnlyList<ApplicationUse> UsedBy,
     long Revision,
     DateTimeOffset UpdatedUtc,
     string? UpdatedBy);

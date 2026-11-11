@@ -37,6 +37,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "application.bundleMembers",
     message: "A bundle holds 1 to {max} applications.",
   }),
+  "application.changedMeanwhile": msg({
+    context: "application.changedMeanwhile",
+    message: "Someone changed it meanwhile. Look at it again.",
+  }),
   "application.commandLength": msg({
     context: "application.commandLength",
     message: "The command can have at most {max} characters and no line breaks.",
@@ -69,6 +73,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "application.detectionVersion",
     message: "Enter a version of 1 to 4 numbers up to 65535, such as 1.2.3.4, or leave it empty.",
   }),
+  "application.filesGone": msg({
+    context: "application.filesGone",
+    message: "The uploaded files are no longer on the server. Upload them again.",
+  }),
+  "application.filesInUse": msg({
+    context: "application.filesInUse",
+    message: "Machines are installing these files or are waiting to. Cancel those runs or let them finish first.",
+  }),
   "application.filesNotUsed": msg({
     context: "application.filesNotUsed",
     message: "A winget package has no files. Remove them.",
@@ -80,6 +92,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "application.gone": msg({
     context: "application.gone",
     message: "This application is no longer in the library.",
+  }),
+  "application.inUse": msg({
+    context: "application.inUse",
+    message: "This application is used by {users}. Take it out there first.",
   }),
   "application.kind": msg({
     context: "application.kind",

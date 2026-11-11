@@ -102,4 +102,20 @@ public static partial class ServerMessages
     public static readonly MessageTemplate ApplicationBundleMembers = Define(
         "application.bundleMembers",
         "A bundle holds 1 to {max} applications.");
+
+    public static readonly MessageTemplate ApplicationFilesGone = Define(
+        "application.filesGone",
+        "The uploaded files are no longer on the server. Upload them again.");
+
+    public static readonly MessageTemplate ApplicationInUse = Define(
+        "application.inUse",
+        "This application is used by {users}. Take it out there first.");
+
+    public static readonly MessageTemplate ApplicationFilesInUse = Define(
+        "application.filesInUse",
+        "Machines are installing these files or are waiting to. Cancel those runs or let them finish first.");
+
+    public static readonly MessageTemplate ApplicationChangedMeanwhile = Define(
+        "application.changedMeanwhile",
+        "Someone changed it meanwhile. Look at it again.");
 }

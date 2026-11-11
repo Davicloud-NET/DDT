@@ -627,6 +627,23 @@ namespace DDT.Server.Migrations.PostgreSql
                     b.ToTable("Deployments", "ddt");
                 });
 
+            modelBuilder.Entity("DDT.Server.Deployments.DeploymentApplicationPlan", b =>
+                {
+                    b.Property<Guid>("DeploymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("StepId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Applications")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("DeploymentId", "StepId");
+
+                    b.ToTable("DeploymentApplicationPlans", "ddt");
+                });
+
             modelBuilder.Entity("DDT.Server.Deployments.DeploymentArtifact", b =>
                 {
                     b.Property<long>("Id")
@@ -1624,6 +1641,15 @@ namespace DDT.Server.Migrations.PostgreSql
                         .WithMany()
                         .HasForeignKey("TaskSequenceId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("DDT.Server.Deployments.DeploymentApplicationPlan", b =>
+                {
+                    b.HasOne("DDT.Server.Deployments.Deployment", null)
+                        .WithMany()
+                        .HasForeignKey("DeploymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DDT.Server.Deployments.DeploymentArtifact", b =>

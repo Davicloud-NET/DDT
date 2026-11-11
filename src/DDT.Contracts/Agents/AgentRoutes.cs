@@ -54,6 +54,10 @@ public static class AgentRoutes
     public static string RunStepAccounts(Guid machineId, Guid runId, Guid stepId) =>
         $"api/agents/{machineId:D}/runs/{runId:D}/steps/{stepId:D}/accounts";
 
+    // GET the step's AgentStepApplications while it runs, in Windows. Their files come from RunFile.
+    public static string RunStepApplications(Guid machineId, Guid runId, Guid stepId) =>
+        $"api/agents/{machineId:D}/runs/{runId:D}/steps/{stepId:D}/applications";
+
     // Frozen. Agents inside old boot images call these, so the paths never change.
     public const string Release = "api/agents/release";
 

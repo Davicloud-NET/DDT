@@ -52,6 +52,24 @@ public static partial class ServerMessages
         "sequence.wingetNeedsSession",
         "{application} installs with winget, which needs a Write answer file step.");
 
+    // Why a run cannot install a step's applications. A run that starts says them in English.
+
+    public static readonly MessageTemplate DeploymentApplicationUnknown = Define(
+        "deployment.applicationUnknown",
+        "{step} is to install {name}, which is no application or bundle in the library.");
+
+    public static readonly MessageTemplate DeploymentApplicationDependencyGone = Define(
+        "deployment.applicationDependencyGone",
+        "{application}, which {step} installs, depends on an application that is no longer in the library.");
+
+    public static readonly MessageTemplate DeploymentApplicationFilesGone = Define(
+        "deployment.applicationFilesGone",
+        "The files of {application}, which {step} installs, are no longer in the library.");
+
+    public static readonly MessageTemplate DeploymentApplicationCycle = Define(
+        "deployment.applicationCycle",
+        "The applications {step} installs depend on each other in a circle: {path}.");
+
     public static readonly MessageTemplate ApplicationBundleInUse = Define(
         "application.bundleInUse",
         "This bundle is used by {users}. Take it out there first.");

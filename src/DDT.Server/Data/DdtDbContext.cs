@@ -46,6 +46,8 @@ public abstract class DdtDbContext(DbContextOptions options)
 
     public DbSet<DeploymentStep> DeploymentSteps => Set<DeploymentStep>();
 
+    public DbSet<DeploymentApplicationPlan> DeploymentApplicationPlans => Set<DeploymentApplicationPlan>();
+
     public DbSet<Rule> Rules => Set<Rule>();
 
     public DbSet<MachineRole> MachineRoles => Set<MachineRole>();
@@ -81,6 +83,7 @@ public abstract class DdtDbContext(DbContextOptions options)
         builder.ApplyConfiguration(new DeploymentStepConfiguration());
         builder.ApplyConfiguration(new RunCredentialConfiguration());
         builder.ApplyConfiguration(new DeploymentArtifactConfiguration());
+        builder.ApplyConfiguration(new DeploymentApplicationPlanConfiguration());
         builder.ApplyConfiguration(new PackageConfiguration());
         builder.ApplyConfiguration(new TaskSequenceConfiguration());
         builder.ApplyConfiguration(new RuleConfiguration());

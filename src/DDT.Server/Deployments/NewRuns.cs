@@ -118,14 +118,26 @@ public sealed class NewRuns(
             : (false, DeploymentDecision.Invalid("allowSecureBootMismatch", secureBootProblem));
     }
 
-    // Creates the run, adds the DeploymentInputsAnswered audit and keeps the Account answers. Returns a refusal for the
-    // first account that can't be kept. A refused run stays tracked, so the caller mustn't save.
+    // Creates the run, adds the DeploymentInputsAnswered audit and keeps the Account answers. Returns a refusal for
+    // applications the library can't install or the first account that can't be kept. A refused run stays tracked, so
+    // the caller mustn't save.
     public async Task<(Deployment Run, DeploymentDecision? Refusal)> CreateAsync(NewRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
 
         RunRequest request = run.Request;
         Deployment deployment = Create(run);
+        (IReadOnlyList<DeploymentApplicationPlan> plans, ServerMessage? applications) = RunApplicationPlans.Fixed(
+            deployment.Id,
+            request.Sequence.Definition,
+            ApplicationLibrary.From(request.Sequence.References));
+
+        if (applications is not null)
+        {
+            return (deployment, DeploymentDecision.Conflict(applications));
+        }
+
+        database.DeploymentApplicationPlans.AddRange(plans);
 
         if (await values.KeepAccountsAsync(deployment, request.Sequence.Definition, request.Answers, request.Giver, cancellationToken)
             .ConfigureAwait(false) is { } problem)

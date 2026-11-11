@@ -2,10 +2,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Applications;
 using DDT.Contracts.Deployments;
+using DDT.Contracts.Packages;
 using DDT.Contracts.Sequences;
 using DDT.Core.CloudInit;
+using DDT.Server.Applications;
 using DDT.Server.Deployments;
+using DDT.Server.Packages;
 using Xunit;
 
 namespace DDT.Server.Tests;
@@ -66,6 +70,29 @@ public sealed class RunSnapshotSizeTests
         Assert.Equal(
             (((long)partition.SystemPartitionMegabytes + partition.RecoveryPartitionMegabytes + 16) * Megabyte) + (17000 * Megabyte),
             required);
+    }
+
+    // An application's files are downloaded and unpacked in the installed Windows, like a package.
+    [Fact]
+    public void CountsTheFilesOfTheApplicationsAStepInstalls()
+    {
+        PartitionStep partition = new() { Id = Guid.NewGuid(), Name = "Partition", SystemPartitionMegabytes = 260, RecoveryPartitionMegabytes = 0 };
+        ApplyImageStep apply = new() { Id = Guid.NewGuid(), Name = "Apply", ImageId = Guid.NewGuid() };
+        Package files = new() { Id = Guid.NewGuid(), Name = "office.zip", Kind = PackageKind.Application, Sha256 = "", SizeBytes = 700 * Megabyte, ExpandedBytes = 900 * Megabyte };
+        Application office = new() { Id = Guid.NewGuid(), Name = "Office", NormalizedName = "OFFICE", PackageId = files.Id };
+        InstallApplicationsStep install = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "Install",
+            Applications = [new ApplicationReference(office.Id, ApplicationReferenceKind.Application)],
+        };
+        ApplicationLibrary library = new(new Dictionary<Guid, Application> { [office.Id] = office }, new Dictionary<Guid, ApplicationBundle>(), new Dictionary<Guid, Package> { [files.Id] = files });
+
+        long required = RunSnapshots.RequiredBytes(
+            new SequenceDefinition(SequenceDefinition.CurrentVersion, [partition, apply, install]),
+            [Artifact(apply.Id, ArtifactKind.Image, 4000 * Megabyte, 9000 * Megabyte), .. RunApplicationPlans.FixedArtifacts(Guid.Empty, install, library)]);
+
+        Assert.Equal(((260 + 16) * Megabyte) + (13000 * Megabyte) + (1600 * Megabyte), required);
     }
 
     private static DeploymentArtifact Artifact(Guid stepId, ArtifactKind kind, long size, long expanded) => new()

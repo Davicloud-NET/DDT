@@ -23,12 +23,9 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
     public async Task<SequenceReferences> ReferencesAsync(CancellationToken cancellationToken)
     {
         List<Image> images = await database.Images.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
-        // A step names an application, never its files.
-        List<Package> packages = await database.Packages
-            .AsNoTracking()
-            .Where(p => p.Kind != PackageKind.Application)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
+        // Application files apart: a step names an application, never its files.
+        ILookup<bool, Package> packages = (await database.Packages.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false))
+            .ToLookup(p => p.Kind == PackageKind.Application);
         DeploymentOptions deployment = settings.Current.Deployment;
         List<string> ruleValues = await database.Rules.AsNoTracking().Select(rule => rule.Values).ToListAsync(cancellationToken).ConfigureAwait(false);
         List<string> roleValues = await database.MachineRoles.AsNoTracking().Select(role => role.Values).ToListAsync(cancellationToken).ConfigureAwait(false);
@@ -42,7 +39,7 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
 
         return new SequenceReferences(
             images.ToDictionary(i => i.Id),
-            packages.ToDictionary(p => p.Id),
+            packages[false].ToDictionary(p => p.Id),
             !string.IsNullOrWhiteSpace(deployment.Domain.Name),
             !string.IsNullOrEmpty(deployment.LocalAdministrator.Password))
         {
@@ -50,6 +47,7 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
             ValueNames = valueNames,
             Applications = applications.ToDictionary(a => a.Id),
             ApplicationBundles = bundles.ToDictionary(b => b.Id),
+            ApplicationFiles = packages[true].ToDictionary(p => p.Id),
         };
     }
 

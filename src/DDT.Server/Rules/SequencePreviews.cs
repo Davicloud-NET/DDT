@@ -99,6 +99,6 @@ internal sealed class SequencePreviews(DdtDbContext database, SequenceResolver r
             MachineValues.Answers(RunAnswer.Read(resolution.Deployment?.Answers)),
             settings.Current.Deployment));
 
-        return (preview.Values, preview.InputDefaults, MachineValues.ProblemsOf(preview));
+        return (preview.Values, InputPrefills.Of(definition, preview.InputDefaults), MachineValues.ProblemsOf(preview));
     }
 }

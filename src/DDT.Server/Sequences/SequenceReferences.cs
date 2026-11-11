@@ -27,4 +27,7 @@ public sealed record SequenceReferences(
     public IReadOnlyDictionary<Guid, Application> Applications { get; init; } = new Dictionary<Guid, Application>();
 
     public IReadOnlyDictionary<Guid, ApplicationBundle> ApplicationBundles { get; init; } = new Dictionary<Guid, ApplicationBundle>();
+
+    // The packages that hold applications' files, by ID. Packages leaves them out.
+    public IReadOnlyDictionary<Guid, Package> ApplicationFiles { get; init; } = new Dictionary<Guid, Package>();
 }

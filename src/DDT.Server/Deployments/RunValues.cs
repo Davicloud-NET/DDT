@@ -259,8 +259,9 @@ public sealed class RunValues(DdtDbContext database, MachineValues machineValues
 
         string? prefill = input.Kind == InputKind.Account
             ? null
-            : resolution?.InputDefaults.FirstOrDefault(value => string.Equals(value.Name, input.Name, StringComparison.OrdinalIgnoreCase))?.Value
-                ?? input.Default;
+            : InputPrefills.Of(
+                input,
+                resolution?.InputDefaults.FirstOrDefault(value => string.Equals(value.Name, input.Name, StringComparison.OrdinalIgnoreCase))?.Value ?? input.Default);
 
         return new AgentInput(
             input.Name,

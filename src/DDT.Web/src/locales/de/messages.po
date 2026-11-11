@@ -204,6 +204,11 @@ msgctxt "sequence.wingetNeedsSession"
 msgid "{application} installs with winget, which needs a Write answer file step."
 msgstr "{application} wird mit winget installiert, das einen Schritt „Antwortdatei schreiben“ braucht."
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.applicationDependencyGone"
+msgid "{application}, which {step} installs, depends on an application that is no longer in the library."
+msgstr "{application}, das {step} installiert, braucht eine Anwendung, die nicht mehr in der Bibliothek ist."
+
 #: src/runs/RunPanel.tsx
 msgid "{assigned}. The machine has not started it yet."
 msgstr "{assigned}. Das Gerät hat sie noch nicht gestartet."
@@ -1205,6 +1210,11 @@ msgstr "{size} GB"
 #: src/machines/list/runDetail.ts
 msgid "{step} {percent}%"
 msgstr "{step} {percent} %"
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.applicationUnknown"
+msgid "{step} is to install {name}, which is no application or bundle in the library."
+msgstr "{step} soll {name} installieren, aber das ist keine Anwendung und kein Bündel der Bibliothek."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.stepApplicationGone"
@@ -9618,6 +9628,11 @@ msgctxt "sequence.unattendBeforeImage"
 msgid "The answer file can be written only after the image is applied."
 msgstr "Die Antwortdatei kann erst geschrieben werden, nachdem das Image angewendet ist."
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.applicationCycle"
+msgid "The applications {step} installs depend on each other in a circle: {path}."
+msgstr "Die Anwendungen, die {step} installiert, hängen im Kreis voneinander ab: {path}."
+
 #: src/sequences/builder/nodeDetail.ts
 msgid "The applications {variable} names"
 msgstr "Die Anwendungen aus {variable}"
@@ -10065,6 +10080,11 @@ msgstr "Die Datei darf nicht leer sein und muss auf das Speichervolume des Serve
 msgctxt "upload.fileName"
 msgid "The file name must have 1 to {max} characters and no control characters."
 msgstr "Der Dateiname muss 1 bis {max} Zeichen und keine Steuerzeichen haben."
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.applicationFilesGone"
+msgid "The files of {application}, which {step} installs, are no longer in the library."
+msgstr "Die Dateien von {application}, das {step} installiert, sind nicht mehr in der Bibliothek."
 
 #: src/about/AboutPage.tsx
 msgid "The GNU General Public License, version 3"

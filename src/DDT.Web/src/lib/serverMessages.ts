@@ -277,6 +277,22 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "deployment.answerYesNo",
     message: "{label} is answered with yes or no.",
   }),
+  "deployment.applicationCycle": msg({
+    context: "deployment.applicationCycle",
+    message: "The applications {step} installs depend on each other in a circle: {path}.",
+  }),
+  "deployment.applicationDependencyGone": msg({
+    context: "deployment.applicationDependencyGone",
+    message: "{application}, which {step} installs, depends on an application that is no longer in the library.",
+  }),
+  "deployment.applicationFilesGone": msg({
+    context: "deployment.applicationFilesGone",
+    message: "The files of {application}, which {step} installs, are no longer in the library.",
+  }),
+  "deployment.applicationUnknown": msg({
+    context: "deployment.applicationUnknown",
+    message: "{step} is to install {name}, which is no application or bundle in the library.",
+  }),
   "deployment.approveThenChooseDisk": msg({
     context: "deployment.approveThenChooseDisk",
     message: "{sequence} erases a disk, and this machine has more than one. Approve it without a sequence, then sign in at it and choose the disk there.",

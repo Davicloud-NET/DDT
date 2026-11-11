@@ -691,6 +691,24 @@ namespace DDT.Server.Migrations.SqlServer
                     b.ToTable("Deployments", "ddt");
                 });
 
+            modelBuilder.Entity("DDT.Server.Deployments.DeploymentApplicationPlan", b =>
+                {
+                    b.Property<Guid>("DeploymentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("StepId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Applications")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.HasKey("DeploymentId", "StepId");
+
+                    b.ToTable("DeploymentApplicationPlans", "ddt");
+                });
+
             modelBuilder.Entity("DDT.Server.Deployments.DeploymentArtifact", b =>
                 {
                     b.Property<long>("Id")
@@ -1761,6 +1779,15 @@ namespace DDT.Server.Migrations.SqlServer
                         .WithMany()
                         .HasForeignKey("TaskSequenceId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("DDT.Server.Deployments.DeploymentApplicationPlan", b =>
+                {
+                    b.HasOne("DDT.Server.Deployments.Deployment", null)
+                        .WithMany()
+                        .HasForeignKey("DeploymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DDT.Server.Deployments.DeploymentArtifact", b =>

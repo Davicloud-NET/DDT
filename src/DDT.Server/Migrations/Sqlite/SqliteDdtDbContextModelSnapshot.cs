@@ -621,6 +621,23 @@ namespace DDT.Server.Migrations.Sqlite
                     b.ToTable("Deployments", "ddt");
                 });
 
+            modelBuilder.Entity("DDT.Server.Deployments.DeploymentApplicationPlan", b =>
+                {
+                    b.Property<Guid>("DeploymentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("StepId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Applications")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("DeploymentId", "StepId");
+
+                    b.ToTable("DeploymentApplicationPlans", "ddt");
+                });
+
             modelBuilder.Entity("DDT.Server.Deployments.DeploymentArtifact", b =>
                 {
                     b.Property<long>("Id")
@@ -1610,6 +1627,15 @@ namespace DDT.Server.Migrations.Sqlite
                         .WithMany()
                         .HasForeignKey("TaskSequenceId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("DDT.Server.Deployments.DeploymentApplicationPlan", b =>
+                {
+                    b.HasOne("DDT.Server.Deployments.Deployment", null)
+                        .WithMany()
+                        .HasForeignKey("DeploymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DDT.Server.Deployments.DeploymentArtifact", b =>

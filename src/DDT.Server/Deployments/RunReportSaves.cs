@@ -6,6 +6,7 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Server.Data;
 using DDT.Server.Endpoints;
+using DDT.Server.Images;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using Microsoft.EntityFrameworkCore;
@@ -65,6 +66,12 @@ internal sealed class RunReportSaves(
 
         string? address = reported.Address;
         DeploymentState? before = (await database.Deployments.FindAsync([reported.RunId], cancellationToken).ConfigureAwait(false))?.State;
+
+        // A report can start the run, which can add application files to it. They must not go before the save.
+        await using SemaphoreHold? hold = before == DeploymentState.Assigned
+            ? await reports.EnterLibraryAsync(cancellationToken).ConfigureAwait(false)
+            : null;
+
         DeploymentDecision decision = await reports.ApplyAsync(machine, reported.RunId, reported.Report, address, cancellationToken).ConfigureAwait(false);
 
         if (decision.Outcome == DeploymentOutcome.Unchanged && decision.Deployment is { } unchanged)

@@ -204,6 +204,11 @@ msgctxt "sequence.wingetNeedsSession"
 msgid "{application} installs with winget, which needs a Write answer file step."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.applicationDependencyGone"
+msgid "{application}, which {step} installs, depends on an application that is no longer in the library."
+msgstr ""
+
 #: src/runs/RunPanel.tsx
 msgid "{assigned}. The machine has not started it yet."
 msgstr ""
@@ -1204,6 +1209,11 @@ msgstr ""
 
 #: src/machines/list/runDetail.ts
 msgid "{step} {percent}%"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.applicationUnknown"
+msgid "{step} is to install {name}, which is no application or bundle in the library."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -9618,6 +9628,11 @@ msgctxt "sequence.unattendBeforeImage"
 msgid "The answer file can be written only after the image is applied."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "deployment.applicationCycle"
+msgid "The applications {step} installs depend on each other in a circle: {path}."
+msgstr ""
+
 #: src/sequences/builder/nodeDetail.ts
 msgid "The applications {variable} names"
 msgstr ""
@@ -10064,6 +10079,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "upload.fileName"
 msgid "The file name must have 1 to {max} characters and no control characters."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "deployment.applicationFilesGone"
+msgid "The files of {application}, which {step} installs, are no longer in the library."
 msgstr ""
 
 #: src/about/AboutPage.tsx

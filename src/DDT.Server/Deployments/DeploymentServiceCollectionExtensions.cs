@@ -30,6 +30,8 @@ public static class DeploymentServiceCollectionExtensions
         services.AddScoped<WaitingRuns>();
         services.AddScoped<RunTermination>();
         services.AddScoped<RunStarts>();
+        services.AddScoped<RunApplicationAdditions>();
+        services.AddScoped<RunApplications>();
         services.AddScoped<RunReports>();
         services.AddScoped<RunValues>();
         services.AddScoped<StepAccountLookup>();
@@ -43,13 +45,7 @@ public static class DeploymentServiceCollectionExtensions
         services.AddScoped<RunReportSaves>();
         services.AddScoped<RunFiles>();
         services.AddScoped<RunHistory>();
-
-        // The passwords of stored accounts and of accounts given for one run. They only reach the steps of runs.
-        services.AddSingleton<AccountProtector>();
-        services.AddSingleton<RunCredentialProtector>();
-        services.AddScoped<AccountViews>();
-        services.AddScoped<AccountEditor>();
-        services.AddScoped<RunCredentials>();
+        services.AddRunAccounts();
         services.TryAddSingleton<IDomainDirectory, LdapDomainDirectory>();
         services.AddScoped<DomainJoinCheck>();
         services.AddSingleton<AbandonedRunSweeper>();
@@ -58,5 +54,15 @@ public static class DeploymentServiceCollectionExtensions
         services.AddHostedService(provider => provider.GetRequiredService<RunCredentialSweeper>());
 
         return services;
+    }
+
+    // The passwords of stored accounts and of accounts given for one run. They only reach the steps of runs.
+    private static void AddRunAccounts(this IServiceCollection services)
+    {
+        services.AddSingleton<AccountProtector>();
+        services.AddSingleton<RunCredentialProtector>();
+        services.AddScoped<AccountViews>();
+        services.AddScoped<AccountEditor>();
+        services.AddScoped<RunCredentials>();
     }
 }

@@ -9,6 +9,7 @@ using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 using DDT.Server.Applications;
 using DDT.Server.Data;
+using DDT.Server.Images;
 using DDT.Server.Machines;
 using DDT.Server.Rules;
 using DDT.Server.Settings;
@@ -16,9 +17,11 @@ using DDT.Server.Settings;
 namespace DDT.Server.Deployments;
 
 // Starts an assigned run when its agent's first report or the answers given at the machine ask for it. Nothing here
-// saves.
-public sealed class RunStarts(DdtDbContext database, RunQueries queries, RunValues values, DdtSettings settings)
+// saves. The caller holds EnterLibraryAsync's lock until it has saved, since a start can add application files.
+public sealed class RunStarts(DdtDbContext database, RunQueries queries, RunValues values, RunApplicationAdditions applications, DdtSettings settings)
 {
+    public Task<SemaphoreHold> EnterLibraryAsync(CancellationToken cancellationToken) => applications.EnterLibraryAsync(cancellationToken);
+
     // The values are worked out now, with one settings snapshot for the checks and the capture. So a save in between
     // can't start a run with values nobody checked. Anything that keeps the run from starting ends it before any disk
     // is touched. The exception is a required input the machine asks: the run waits at its start until someone answers
@@ -46,7 +49,9 @@ public sealed class RunStarts(DdtDbContext database, RunQueries queries, RunValu
             }
 
             RunInputs inputs = RunInputs.From(check.Resolution.Effective, snapshot.Deployment, now) with { Facts = RunInputs.FactsOf(machine) };
-            problem = ValuesProblem(check, webOnly) ?? SettingsProblem(definition, inputs);
+            problem = ValuesProblem(check, webOnly)
+                ?? SettingsProblem(definition, inputs)
+                ?? await applications.AddAsync(run, definition, check.Resolution, cancellationToken).ConfigureAwait(false);
 
             if (problem is null)
             {

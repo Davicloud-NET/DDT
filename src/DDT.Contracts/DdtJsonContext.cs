@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using DDT.Contracts.About;
 using DDT.Contracts.Accounts;
+using DDT.Contracts.Agents;
 using DDT.Contracts.Applications;
 using DDT.Contracts.Audit;
 using DDT.Contracts.Authentication;
@@ -177,4 +178,5 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(ApplicationBundlesRemovedEvent))]
 [JsonSerializable(typeof(ApplicationReference))]
 [JsonSerializable(typeof(ApplicationUpload))]
+[JsonSerializable(typeof(IReadOnlyList<AgentApplication>))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

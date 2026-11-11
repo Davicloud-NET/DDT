@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 
 import type { DeploymentSummary } from "@/deployments/deployments";
 import { formattingLocale } from "@/i18n/i18n";
@@ -14,6 +14,10 @@ import { stepDuration } from "../runs";
 
 export function passesText(passes: number): string {
   return t`Ran ${passes} times, the last is shown.`;
+}
+
+export function restartsText(restarts: number): string {
+  return plural(restarts, { one: "Restarted once", other: "Restarted # times" });
 }
 
 // When the node ran, in which phase and how long, or why it has no times.

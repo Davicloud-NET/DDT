@@ -85,12 +85,13 @@ export interface DeploymentStepView {
   // The container the node sits in, or null at the top level. depth counts containers from 0.
   parentId?: string | null;
   depth?: number;
-  // The node's latest visit: how many times it was entered, a repeat's iteration, the branch an IF took, and its
-  // tests as they were decided.
+  // The node's latest visit: how many times it was entered, a repeat's iteration, the branch an IF took, its tests
+  // as they were decided, and how often it restarted the machine and went on.
   pass?: number;
   iteration?: number;
   branch?: IfBranch | null;
   evaluation?: TestEvaluation[] | null;
+  restarts?: number;
 }
 
 // What a run downloads: the image it applies, or a package of drivers or files.

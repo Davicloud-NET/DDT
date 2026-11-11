@@ -25,9 +25,10 @@ public sealed record DeploymentStepView(
     Guid? ParentId = null,
     // The nesting depth, counting containers from 0.
     int Depth = 0,
-    // Pass, Iteration, Branch and Evaluation describe the node's latest visit, as in StepRunState. Earlier visits are
-    // in the log.
+    // Pass, Iteration, Branch, Evaluation and Restarts describe the node's latest visit, as in StepRunState. Earlier
+    // visits are in the log.
     int Pass = 0,
     int Iteration = 0,
     IfBranch? Branch = null,
-    IReadOnlyList<TestEvaluation>? Evaluation = null);
+    IReadOnlyList<TestEvaluation>? Evaluation = null,
+    int Restarts = 0);

@@ -219,16 +219,18 @@ internal static class RunProgress
         }
 
         step.Iteration = 0;
+        step.Restarts = 0;
         step.Branch = null;
         step.Evaluation = null;
         Decided(step, reported);
     }
 
-    // What the visit decided so far: a repeat's iteration, an IF's branch and the tests behind either. The tests come
-    // from the agent, so they're held to the same bounds the engine keeps.
+    // What the visit decided so far: a repeat's iteration, a step's restarts, an IF's branch and the tests behind
+    // either. The tests come from the agent, so they're held to the same bounds the engine keeps.
     private static void Decided(DeploymentStep step, StepRunState reported)
     {
         step.Iteration = Math.Max(step.Iteration, reported.Iteration);
+        step.Restarts = Math.Max(step.Restarts, reported.Restarts);
         step.Branch = reported.Branch ?? step.Branch;
 
         if (reported.Evaluation is { } evaluation)

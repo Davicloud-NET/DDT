@@ -665,6 +665,9 @@ namespace DDT.Server.Migrations.SqlServer
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
 
+                    b.Property<int>("Restarts")
+                        .HasColumnType("int");
+
                     b.Property<DateTimeOffset?>("StartedUtc")
                         .HasColumnType("datetimeoffset");
 

@@ -148,6 +148,11 @@ public sealed class RunReports(DdtDbContext database, RunQueries queries, RunSta
             return "The report names a visit, a time through a repeat or a branch that cannot be.";
         }
 
+        if (report.Steps.Any(s => s.Restarts is < 0 or > DeploymentLimits.MaxStepRestarts))
+        {
+            return "The report counts restarts of a step that cannot be.";
+        }
+
         if (report.BootReturns is < 0 or > DeploymentLimits.MaxBootReturns)
         {
             return "The report counts starts of the boot environment that cannot be.";

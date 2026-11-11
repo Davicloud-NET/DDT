@@ -603,6 +603,9 @@ namespace DDT.Server.Migrations.Sqlite
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Restarts")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTimeOffset?>("StartedUtc")
                         .HasColumnType("TEXT");
 

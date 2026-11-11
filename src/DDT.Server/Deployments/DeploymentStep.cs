@@ -47,6 +47,9 @@ public sealed class DeploymentStep
 
     public IfBranch? Branch { get; set; }
 
+    // How often the visit restarted the machine and went on.
+    public int Restarts { get; set; }
+
     // The node's tests as they were decided, as a list of TestEvaluation written by DdtJsonContext. Null for none.
     public string? Evaluation { get; set; }
 }

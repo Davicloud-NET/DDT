@@ -59,6 +59,22 @@ describe("withStep", () => {
     ).toBe(3);
   });
 
+  it("keeps a step that restarted in its visit and counts its restarts up, never down", () => {
+    const next = stateAfter(
+      { state: "Running", pass: 1, restarts: 1, startedUtc: "2026-11-11T10:00:00Z" },
+      { state: "Running", pass: 1, restarts: 2, startedUtc: "2026-11-11T10:00:00Z" },
+    );
+
+    expect(next?.restarts).toBe(2);
+    expect(next?.pass).toBe(1);
+    expect(
+      stateAfter(
+        { state: "Running", pass: 1, restarts: 2 },
+        { state: "Running", pass: 1, restarts: 1 },
+      )?.restarts,
+    ).toBe(2);
+  });
+
   it("takes the branch and the evaluation an IF pushes", () => {
     const next = stateAfter(
       { kind: "if", state: "Running", pass: 1 },

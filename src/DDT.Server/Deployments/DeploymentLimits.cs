@@ -34,6 +34,9 @@ public static class DeploymentLimits
     // Far more starts of the boot environment after a hand-over than an agent counts before it gives the run up.
     public const int MaxBootReturns = 100;
 
+    // Far more restarts in one visit of a step than any step's limit allows.
+    public const int MaxStepRestarts = 100;
+
     // How long an agent told to restart counts as about to. It restarts at once, so one that still polls then did not.
     public static readonly TimeSpan RestartOrderOpen = TimeSpan.FromSeconds(30);
 }

@@ -13,7 +13,7 @@ import { StateTag } from "@/ui/StateTag";
 import { decisionOutcomes, decisionTitle } from "../decisions";
 import type { PathNode } from "../runPath";
 import { crumbText, pathStateLabel, pathStateTone } from "../runView";
-import { passesText, timeText } from "./detailsText";
+import { passesText, restartsText, timeText } from "./detailsText";
 import { Outcome } from "./Outcome";
 
 interface NodeDetailsProps {
@@ -50,6 +50,9 @@ export function NodeDetails({ node, run, subjects, now, onShowLog }: NodeDetails
       <p className="type-small text-muted">{timeText(node, run, now)}</p>
       {(step?.pass ?? 0) > 1 && node.entry.number !== null ? (
         <p className="type-small text-muted">{passesText(step?.pass ?? 0)}</p>
+      ) : null}
+      {(step?.restarts ?? 0) > 0 ? (
+        <p className="type-small text-muted">{restartsText(step?.restarts ?? 0)}</p>
       ) : null}
       {step?.state === "Failed" ? (
         <p className="type-small text-fail-text">

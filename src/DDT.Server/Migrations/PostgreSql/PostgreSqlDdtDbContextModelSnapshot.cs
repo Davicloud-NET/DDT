@@ -611,6 +611,9 @@ namespace DDT.Server.Migrations.PostgreSql
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
 
+                    b.Property<int>("Restarts")
+                        .HasColumnType("integer");
+
                     b.Property<DateTimeOffset?>("StartedUtc")
                         .HasColumnType("timestamp with time zone");
 

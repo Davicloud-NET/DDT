@@ -217,8 +217,8 @@ public static partial class ApplicationRules
         }
     }
 
-    // winget's PackageIdentifier: 1 to 8 parts of up to 32 characters, split by dots. One part is a Microsoft Store ID
-    // such as 9NBLGGH4NNS1.
-    [GeneratedRegex(@"^[^.\s\\/:*?""<>|\p{Cc}]{1,32}(?:\.[^.\s\\/:*?""<>|\p{Cc}]{1,32}){0,7}\z", RegexOptions.CultureInvariant)]
+    // winget's PackageIdentifier: 2 to 8 parts of up to 32 characters, split by dots. A Microsoft Store ID has one part
+    // and is not in the winget source the agent installs from.
+    [GeneratedRegex(@"^[^.\s\\/:*?""<>|\p{Cc}]{1,32}(?:\.[^.\s\\/:*?""<>|\p{Cc}]{1,32}){1,7}\z", RegexOptions.CultureInvariant)]
     private static partial Regex WingetId();
 }

@@ -97,13 +97,13 @@ public sealed class ApplicationRulesTests
     [Theory]
     [InlineData("Mozilla.Firefox")]
     [InlineData("Microsoft.VisualStudio.2022.Community")]
-    [InlineData("9NBLGGH4NNS1")]
     [InlineData("Git.Git")]
     [InlineData("Notepad++.Notepad++")]
     public void AcceptsWingetIds(string id) => Assert.True(ApplicationRules.IsWingetId(id));
 
     [Theory]
     [InlineData("")]
+    [InlineData("9NBLGGH4NNS1")]
     [InlineData("Mozilla Firefox")]
     [InlineData("Mozilla..Firefox")]
     [InlineData(".Firefox")]

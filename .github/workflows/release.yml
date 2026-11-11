@@ -64,11 +64,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: global.json
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
 
@@ -100,7 +100,7 @@ jobs:
           $unsigned = (New-Item -ItemType Directory -Force -Path artifacts\unsigned).FullName
           Copy-Item "$work\payload\DDT.Host.exe", "$work\payload\ddt-agent.exe", "$work\console\ddt-console.exe" $unsigned
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: staged
           path: |
@@ -109,7 +109,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unsigned-programs
           path: artifacts/unsigned/
@@ -125,7 +125,7 @@ jobs:
     timeout-minutes: 15
     environment: signing
     steps:
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: unsigned-programs
           path: unsigned
@@ -177,7 +177,7 @@ jobs:
           output_path: ${{ github.workspace }}\signed
           signing_method: v2
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: signed-programs
           path: signed/
@@ -248,7 +248,7 @@ jobs:
           ls -l artifacts/linux-boot-sources/ddt-linux-boot-sources.tar
 
       # For the MSI and, through it, the container image
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: linux
           path: |
@@ -259,7 +259,7 @@ jobs:
           retention-days: 1
 
       # For the release's files and the image of the sources
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: linux-boot-sources
           path: artifacts/linux-boot-sources/ddt-linux-boot-sources.tar
@@ -279,16 +279,16 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: global.json
 
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: staged
           path: artifacts/installer-work
 
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: ${{ !inputs.dry_run }}
         with:
           name: signed-programs
@@ -306,7 +306,7 @@ jobs:
           }
 
       # Where Build-Installer.ps1 looks for the agent for Linux and the Linux boot environment
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: linux
           path: artifacts
@@ -329,7 +329,7 @@ jobs:
 
       # For the container image, which can't compile the Windows programs on Linux. The Linux files go the same way,
       # so the image holds exactly what the MSI holds.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: bundle
           path: |
@@ -340,7 +340,7 @@ jobs:
             artifacts/installer-work/payload/linux-boot/
           if-no-files-found: error
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unsigned-msi
           path: artifacts/installer/DDT.msi
@@ -356,7 +356,7 @@ jobs:
     timeout-minutes: 15
     environment: signing
     steps:
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: unsigned-msi
           path: unsigned
@@ -383,7 +383,7 @@ jobs:
           output_path: ${{ github.workspace }}\signed
           signing_method: v2
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: signed-msi
           path: signed/DDT.msi
@@ -403,7 +403,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ inputs.dry_run && 'unsigned-msi' || 'signed-msi' }}
           path: artifacts/installer
@@ -414,7 +414,7 @@ jobs:
         run: .\build\Test-Signature.ps1 artifacts\installer\DDT.msi
 
       # The source code of the Linux boot environment the MSI holds, which goes out beside it
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: linux-boot-sources
           path: artifacts/linux-boot-sources
@@ -455,20 +455,20 @@ jobs:
           [IO.File]::WriteAllText('artifacts\release-text\notes.md', $text.Replace('{version}', $env:VERSION))
 
       # What the release job publishes, and what a dry run leaves to look at
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release
           path: artifacts/release/
           if-no-files-found: error
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-text
           path: artifacts/release-text/notes.md
           if-no-files-found: error
 
       # For a pull request to microsoft/winget-pkgs, by hand until a bot account has a fork.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !inputs.prerelease }}
         with:
           name: winget-manifests
@@ -492,12 +492,12 @@ jobs:
           persist-credentials: false
 
       # Where build/Dockerfile looks for the agents and console the server offers and for the Linux boot environment
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: bundle
           path: artifacts/bundle
 
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: linux-boot-sources
           path: artifacts/linux-boot-sources
@@ -528,7 +528,7 @@ jobs:
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         if: ${{ !inputs.dry_run }}
         with:
           registry: ghcr.io
@@ -570,12 +570,12 @@ jobs:
     env:
       VERSION: ${{ needs.programs.outputs.version }}
     steps:
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release
           path: release
 
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-text
           path: text

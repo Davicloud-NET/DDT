@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.ComponentModel;
 using System.Security.Principal;
 using DDT.Agent.Deployment;
 using DDT.Agent.InstalledPhase;
@@ -80,6 +81,7 @@ public sealed class DeploySession(
     // sign-in, so its settings can name the console as its shell.
     public async Task PrepareAsync(CancellationToken cancellationToken)
     {
+        Lower();
         string console = ConsolePathIn(windowsRoot);
 
         if (!File.Exists(console) || await _store.LoadAsync(cancellationToken).ConfigureAwait(false) is not { } file)
@@ -109,6 +111,16 @@ public sealed class DeploySession(
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             log.Warning($"DDT's session could not be prepared ({LogText.OneLine(exception)}). The run goes on, but the machine shows Windows' own screens.");
+        }
+    }
+
+    // The password the account has now, for a sign-in of the service's own. The LSA secret holds it once setup has
+    // finished, the file before. Null when neither does.
+    public string? Password()
+    {
+        lock (_lock)
+        {
+            return accounts.AutoLogonPassword() ?? _store.Load()?.Password;
         }
     }
 
@@ -205,6 +217,22 @@ public sealed class DeploySession(
         log.Information($"DDT's session is gone: {AccountName} and its profile are deleted, and Windows' sign-in settings are as they were.");
 
         return true;
+    }
+
+    // A winget install raises the account to an administrator. A power loss in the middle must not leave it one.
+    private void Lower()
+    {
+        try
+        {
+            if (accounts.Exists(AccountName) && accounts.LeaveAdministrators(AccountName))
+            {
+                log.Warning($"{AccountName} was left an administrator by an install a restart cut off. It is a standard account again.");
+            }
+        }
+        catch (Win32Exception exception)
+        {
+            log.Warning($"{AccountName} could not be taken out of Administrators ({exception.Message}).");
+        }
     }
 
     // Creates the account with the password the answer file signs in with. If that was already replaced, it uses a new

@@ -166,6 +166,49 @@ public sealed class DeploySessionTests : IDisposable
     }
 
     [Fact]
+    public async Task AStartOfTheServiceTakesTheAccountOutOfAdministratorsWhereAnInstallLeftIt()
+    {
+        await PlanAsync();
+        await Session().PrepareAsync(Cancellation);
+        _accounts.JoinAdministrators(DeploySession.AccountName);
+
+        await Session().PrepareAsync(Cancellation);
+
+        Assert.False(_accounts.IsAdministrator(DeploySession.AccountName));
+        Assert.Contains("take DDTDeploy out of Administrators", _accounts.Calls);
+        Assert.Contains("DDTDeploy was left an administrator by an install a restart cut off.", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AStartOfTheServiceLeavesAStandardAccountAlone()
+    {
+        await PlanAsync();
+        await Session().PrepareAsync(Cancellation);
+
+        await Session().PrepareAsync(Cancellation);
+
+        Assert.DoesNotContain("take DDTDeploy out of Administrators", _accounts.Calls);
+        Assert.DoesNotContain("administrator", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ThePasswordForTheServicesOwnSignInIsTheOneTheAccountHasNow()
+    {
+        await PlanAsync();
+        DeploySession session = Session();
+        await session.PrepareAsync(Cancellation);
+        string planned = File.Password!;
+
+        Assert.Equal(planned, session.Password());
+
+        session.SetupFinished();
+        session.SessionIsUp();
+
+        Assert.NotEqual(planned, session.Password());
+        Assert.Equal(_accounts.PasswordOf(DeploySession.AccountName), session.Password());
+    }
+
+    [Fact]
     public async Task WritesToTheRegistryOfTheSignedInAccountWithoutLoadingIt()
     {
         await PlanAsync();

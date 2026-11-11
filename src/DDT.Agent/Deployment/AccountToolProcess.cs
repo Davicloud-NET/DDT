@@ -29,16 +29,15 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
 
     public unsafe void Start(WindowsAccountSession account, string commandLine, string? workingDirectory, IReadOnlyDictionary<string, string>? environment)
     {
-        AccountDesktop desktop = AccountDesktop.Create(account.LogonSid.Value);
-        _desktop = desktop;
+        string desktopName = account.Desktop ?? OwnDesktop(account);
         AccountToolPipes pipes = AccountToolPipes.Create();
         char* environmentBlock = AccountEnvironment.Build(account.Token, environment);
 
         try
         {
-            fixed (char* desktopName = desktop.Name)
+            fixed (char* desktop = desktopName)
             {
-                StartupInfoEx startup = pipes.StartupInfo(desktopName);
+                StartupInfoEx startup = pipes.StartupInfo(desktop);
                 (_process, _thread) = StartSuspended(account, commandLine, workingDirectory, environmentBlock, &startup);
             }
 
@@ -123,6 +122,13 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         _thread?.Dispose();
         _process?.Dispose();
         _desktop?.Dispose();
+    }
+
+    private string OwnDesktop(WindowsAccountSession account)
+    {
+        _desktop = AccountDesktop.Create(account.LogonSid.Value);
+
+        return _desktop.Name;
     }
 
     // The command line has to be writable.

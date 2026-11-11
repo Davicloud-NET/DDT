@@ -16,6 +16,7 @@ internal sealed class FakeSessionAccounts : ISessionAccounts
     private readonly List<string> _calls = [];
     private readonly Dictionary<string, string> _passwords = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _disabled = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _administrators = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<int> _sessions = [];
 
     public string ProfilePath { get; set; } = @"C:\Users\DDTDeploy";
@@ -123,6 +124,40 @@ internal sealed class FakeSessionAccounts : ISessionAccounts
             _calls.Add($"delete {name}");
 
             return _passwords.Remove(name);
+        }
+    }
+
+    public bool IsAdministrator(string name)
+    {
+        lock (_lock)
+        {
+            return _administrators.Contains(name);
+        }
+    }
+
+    public void JoinAdministrators(string name)
+    {
+        lock (_lock)
+        {
+            if (_administrators.Add(name))
+            {
+                _calls.Add($"add {name} to Administrators");
+            }
+        }
+    }
+
+    public bool LeaveAdministrators(string name)
+    {
+        lock (_lock)
+        {
+            if (!_administrators.Remove(name))
+            {
+                return false;
+            }
+
+            _calls.Add($"take {name} out of Administrators");
+
+            return true;
         }
     }
 

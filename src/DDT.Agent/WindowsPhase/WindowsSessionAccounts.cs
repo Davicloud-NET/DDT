@@ -47,22 +47,36 @@ public sealed unsafe class WindowsSessionAccounts : ISessionAccounts
         Check(status, $"The account {name} could not be created");
 
         // On a workstation a new account is already in Users. This makes sure of it, because signing in needs it.
-        SecurityIdentifier users = new(WellKnownSidType.BuiltinUsersSid, null);
-        string group = users.Translate(typeof(NTAccount)).Value.Split('\\')[^1];
-        SecurityIdentifier account = Sid(name);
-        byte[] sid = new byte[account.BinaryLength];
-        account.GetBinaryForm(sid, 0);
+        int added = Membership(WellKnownSidType.BuiltinUsersSid, name, add: true);
 
-        fixed (byte* member = sid)
+        if (added != SessionNativeMethods.ErrorMemberInAlias)
         {
-            nint entry = (nint)member;
-            int added = SessionNativeMethods.NetLocalGroupAddMembers(null, group, 0, &entry, 1);
-
-            if (added != SessionNativeMethods.ErrorMemberInAlias)
-            {
-                Check(added, $"The account {name} could not be added to {group}");
-            }
+            Check(added, $"The account {name} could not be added to Users");
         }
+
+        return true;
+    }
+
+    public void JoinAdministrators(string name)
+    {
+        int added = Membership(WellKnownSidType.BuiltinAdministratorsSid, name, add: true);
+
+        if (added != SessionNativeMethods.ErrorMemberInAlias)
+        {
+            Check(added, $"The account {name} could not be added to Administrators");
+        }
+    }
+
+    public bool LeaveAdministrators(string name)
+    {
+        int removed = Membership(WellKnownSidType.BuiltinAdministratorsSid, name, add: false);
+
+        if (removed == SessionNativeMethods.ErrorMemberNotInAlias)
+        {
+            return false;
+        }
+
+        Check(removed, $"The account {name} could not be taken out of Administrators");
 
         return true;
     }
@@ -293,6 +307,24 @@ public sealed unsafe class WindowsSessionAccounts : ISessionAccounts
         finally
         {
             SessionNativeMethods.WtsFreeMemory(buffer);
+        }
+    }
+
+    // The group's name comes from its well-known SID, because it's translated. The member goes by its SID.
+    private int Membership(WellKnownSidType groupSid, string name, bool add)
+    {
+        string group = new SecurityIdentifier(groupSid, null).Translate(typeof(NTAccount)).Value.Split('\\')[^1];
+        SecurityIdentifier account = Sid(name);
+        byte[] sid = new byte[account.BinaryLength];
+        account.GetBinaryForm(sid, 0);
+
+        fixed (byte* member = sid)
+        {
+            nint entry = (nint)member;
+
+            return add
+                ? SessionNativeMethods.NetLocalGroupAddMembers(null, group, 0, &entry, 1)
+                : SessionNativeMethods.NetLocalGroupDelMembers(null, group, 0, &entry, 1);
         }
     }
 

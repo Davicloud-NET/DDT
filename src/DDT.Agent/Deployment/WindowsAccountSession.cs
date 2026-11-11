@@ -19,12 +19,18 @@ public sealed unsafe class WindowsAccountSession : IAccountSession
     private readonly nint _profile;
     private bool _disposed;
 
-    private WindowsAccountSession(string userName, SafeKernelHandle token, nint profile, SecurityIdentifier logonSid)
+    private WindowsAccountSession(
+        string userName,
+        SafeKernelHandle token,
+        nint profile,
+        SecurityIdentifier logonSid,
+        string? desktop = null)
     {
         UserName = userName;
         _token = token;
         _profile = profile;
         LogonSid = logonSid;
+        Desktop = desktop;
     }
 
     public string UserName { get; }
@@ -34,6 +40,9 @@ public sealed unsafe class WindowsAccountSession : IAccountSession
     public SecurityIdentifier LogonSid { get; }
 
     internal SafeKernelHandle Token => _token;
+
+    // The session's own desktop for a token from a signed-in session. Null gives each process a desktop of its own.
+    internal string? Desktop { get; }
 
     // DOMAIN\user signs in to DOMAIN, a UPN signs in as it is, and a bare name signs in as a local account. The
     // profile only takes the name.
@@ -55,11 +64,35 @@ public sealed unsafe class WindowsAccountSession : IAccountSession
         return at >= 0 ? (userName, null, userName[..at]) : (userName, ".", userName);
     }
 
-    internal static WindowsAccountSession LogOn(AgentAccount account, AgentLog log)
+    // The token of the user signed in to the session, which runs on the session's desktop with the user's own rights.
+    internal static WindowsAccountSession InSession(int sessionId, string userName)
+    {
+        if (!WtsQueryUserToken((uint)sessionId, out SafeKernelHandle token))
+        {
+            DeploymentStepException failure =
+                DeploymentStepException.ForLastWin32Error($"The token of {userName} in session {sessionId} could not be read");
+            token.Dispose();
+
+            throw failure;
+        }
+
+        try
+        {
+            return new WindowsAccountSession(userName, token, 0, LogonSidOf(token), @"winsta0\default");
+        }
+        catch
+        {
+            token.Dispose();
+
+            throw;
+        }
+    }
+
+    internal static WindowsAccountSession LogOn(AgentAccount account, AgentLog log, int logonType = LogonInteractive)
     {
         (string user, string? domain, string profileName) = Split(account.UserName);
 
-        if (!LogonUser(user, domain, account.Password, LogonInteractive, LogonProviderDefault, out SafeKernelHandle token))
+        if (!LogonUser(user, domain, account.Password, logonType, LogonProviderDefault, out SafeKernelHandle token))
         {
             DeploymentStepException failure = DeploymentStepException.ForLastWin32Error($"{account.UserName} could not sign in on this computer");
             token.Dispose();

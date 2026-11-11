@@ -13,6 +13,7 @@ namespace DDT.Agent.Deployment;
 internal static unsafe partial class AccountNativeMethods
 {
     public const int LogonInteractive = 2;
+    public const int LogonBatch = 4;
     public const int LogonProviderDefault = 0;
 
     public const int TokenGroups = 2;
@@ -144,6 +145,11 @@ internal static unsafe partial class AccountNativeMethods
     [LibraryImport("advapi32.dll", EntryPoint = "LogonUserW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool LogonUser(string userName, string? domain, string password, int logonType, int logonProvider, out SafeKernelHandle token);
+
+    // The primary token of the user signed in to a session. Only SYSTEM may ask.
+    [LibraryImport("wtsapi32.dll", EntryPoint = "WTSQueryUserToken", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool WtsQueryUserToken(uint sessionId, out SafeKernelHandle token);
 
     [LibraryImport("advapi32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

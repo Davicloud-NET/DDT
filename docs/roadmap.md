@@ -79,7 +79,7 @@ model grows with it:
 
 ## M8 Linux
 
-Three parts, each a pull request that works by itself. The first two are built.
+Built, in three parts, each a pull request that works by itself.
 
 1. **The Linux boot environment and the agent for Linux.** Built. A netbooted Linux environment
    writes Linux images, and Windows PE is used for Windows only: the ADK's licence allows Windows
@@ -97,7 +97,6 @@ Three parts, each a pull request that works by itself. The first two are built.
      the disk is written and first in the boot order.
    - A machine that started the other environment restarts into the right one. Its sign-in goes
      along in a UEFI variable, and where the firmware does not keep that, someone signs in again.
-   - The console in this environment is text.
 2. **The run goes on in the installed Linux**, as it goes on in the installed Windows. Built.
    [install.md](install.md), section 4.9, has the details.
    - The Linux boot environment hands the run over on the cloud-init seed: the agent, the run's
@@ -116,7 +115,7 @@ Three parts, each a pull request that works by itself. The first two are built.
      netboot, so no boot image has to be built for it.
    - Tried in QEMU on the cloud images of Debian 13 and Ubuntu 24.04, with Secure Boot on. Not
      tried on Hyper-V or on a physical PC yet.
-3. **The graphical console on Linux**, in the boot environment and in the installed Linux.
+3. **The graphical console on Linux**, in the boot environment and in the installed Linux. Built.
    - The same console as in Windows PE, drawn on the firmware's framebuffer, with the keyboard
      read directly and typed by the layout the server sets. Shift+F10 opens a shell in the boot
      environment.

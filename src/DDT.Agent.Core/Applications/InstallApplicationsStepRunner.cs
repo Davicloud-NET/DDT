@@ -114,7 +114,9 @@ public sealed class InstallApplicationsStepRunner(
         }
 
         int decided = Decided(applications, progress);
-        ScaledProgress percent = new(install.Context.Progress, Percent(decided, applications.Count), Percent(decided + 1, applications.Count));
+        // Unpacking fills half of the application's share, as in Inject drivers. The rest comes once it is decided.
+        int start = Percent(decided, applications.Count);
+        ScaledProgress percent = new(install.Context.Progress, start, (start + Percent(decided + 1, applications.Count)) / 2);
 
         async Task MarkStartedAsync()
         {

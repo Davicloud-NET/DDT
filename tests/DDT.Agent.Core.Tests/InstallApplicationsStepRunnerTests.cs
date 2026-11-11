@@ -116,6 +116,22 @@ public sealed class InstallApplicationsStepRunnerTests
     }
 
     [Fact]
+    public async Task TheStepReachesHundredOnlyOnceItsOnlyApplicationIsDone()
+    {
+        TestZip zip = new(("setup.cmd", "echo setup"));
+        AgentApplication tool = Tool with { Files = new AgentApplicationFiles(zip.Sha256, zip.Content.Length, 10, "tool.zip") };
+        using ApplicationRunFixture run = new ApplicationRunFixture().Serve(tool);
+        run.Server.ServeFile(zip.Sha256, zip.Content);
+        int highest = -1;
+        run.Installer.Seen = _ => highest = run.Progress.Values.Max();
+
+        await run.RunAsync();
+
+        Assert.Equal(50, highest);
+        Assert.Equal(100, run.Progress.Values[^1]);
+    }
+
+    [Fact]
     public async Task TooLittleFreeSpaceFailsTheApplicationBeforeItsFilesDownload()
     {
         AgentApplication tool = Tool with { Files = new AgentApplicationFiles(new string('a', 64), 1024L * 1024 * 1024, 1024L * 1024 * 1024, "tool.zip") };

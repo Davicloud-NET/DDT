@@ -20,7 +20,7 @@ public sealed class LinuxRunTests
 
         Assert.Equal("Writing the disk image", run.Heading);
         Assert.Equal("Step 1 of 5, in the Linux boot environment", run.Position);
-        Assert.Equal("Leave this machine on. It restarts by itself and finishes in Linux.", run.Note);
+        Assert.Equal("Leave this machine on. It restarts by itself.", run.Note);
         Assert.Equal(["In the Linux boot environment", "In the installed Linux"], run.Phases.Select(phase => phase.Label));
         Assert.Equal([2, 3], run.Phases.Select(phase => phase.Steps));
 
@@ -28,7 +28,7 @@ public sealed class LinuxRunTests
         run = Assert.IsType<RunViewModel>(console.Model.Screen);
 
         Assert.Equal("Step 3 of 5, in the installed Linux", run.Position);
-        Assert.Equal("Leave this machine on. This screen says when the run is done.", run.Note);
+        Assert.Equal("Leave this machine on.", run.Note);
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public sealed class LinuxRunTests
         RunViewModel run = Assert.IsType<RunViewModel>(console.Model.Screen);
 
         Assert.Equal("Schritt 1 von 5, in der Linux-Startumgebung", run.Position);
-        Assert.Equal("Lassen Sie dieses Gerät eingeschaltet. Es startet von selbst neu und wird in Linux fertig.", run.Note);
+        Assert.Equal("Lassen Sie dieses Gerät eingeschaltet. Es startet von selbst neu.", run.Note);
 
         console.Show(Scenarios.WaitingForCloudInit);
         Assert.Equal("Wartet auf cloud-init", Assert.IsType<RunViewModel>(console.Model.Screen).Heading);
@@ -72,7 +72,7 @@ public sealed class LinuxRunTests
         RunViewModel run = Assert.IsType<RunViewModel>(console.Model.Screen);
 
         Assert.Equal("Restarting into the Linux boot environment", run.Heading);
-        Assert.Equal("A step asked for a restart. The run goes on after it.", run.Detail);
+        Assert.Equal("A step asked for a restart.", run.Detail);
     }
 
     [Fact]

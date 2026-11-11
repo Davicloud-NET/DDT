@@ -1834,6 +1834,10 @@ msgstr ""
 msgid "A zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll, of at most 128 MB."
 msgstr ""
 
+#: src/settings/LinuxConsolePanel.tsx
+msgid "A zip of the console's three files, at most 128 MB."
+msgstr ""
+
 #: src/about/AboutPage.tsx
 #: src/app/UserMenu.tsx
 #: src/auth/SignInPage.tsx
@@ -3405,6 +3409,10 @@ msgstr ""
 
 #: src/settings/LinuxAgentPanel.tsx
 msgid "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration. Remove the key and restart DDT to upload it here."
+msgstr ""
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "DDT:Agent:LinuxConsolePath names the console for Linux in configuration. Remove the key and restart DDT to upload it here."
 msgstr ""
 
 #: src/settings/certificate/ServedCertificate.tsx
@@ -5605,6 +5613,10 @@ msgstr ""
 
 #: src/settings/logo/RemoveLogoDialog.tsx
 msgid "Machines show no logo on their console from their next registration."
+msgstr ""
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Machines show the console for Linux this server came with, or the one the Linux boot environment brings."
 msgstr ""
 
 #: src/boot/StoredBuilds.tsx
@@ -9281,6 +9293,18 @@ msgstr ""
 msgid "The console at the machine"
 msgstr ""
 
+#: src/settings/LinuxConsolePanel.tsx
+msgid "The console for Linux could not be read."
+msgstr ""
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "The console for Linux this server came with"
+msgstr ""
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "The console for Linux uploaded here"
+msgstr ""
+
 #: src/settings/ConsolePanel.tsx
 msgid "The console in their boot image"
 msgstr ""
@@ -9295,7 +9319,7 @@ msgid "The console may be at most {max} MB, zipped and unpacked."
 msgstr ""
 
 #: src/settings/LinuxConsolePanel.tsx
-msgid "The console runs as root in the Linux boot environment, so uploading it needs your password again."
+msgid "The console runs as root on every machine that starts the Linux boot environment."
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
@@ -9303,7 +9327,7 @@ msgid "The console runs as SYSTEM on every machine that netboots."
 msgstr ""
 
 #: src/settings/LinuxConsolePanel.tsx
-msgid "The console the Linux boot environment brings, and none in the installed Linux"
+msgid "The console the Linux boot environment brings"
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
@@ -10789,6 +10813,7 @@ msgid "This server came with agent {version}, which is newer than the uploaded o
 msgstr ""
 
 #: src/settings/ConsolePanel.tsx
+#: src/settings/LinuxConsolePanel.tsx
 msgid "This server came with console {version}, which is newer than the uploaded one."
 msgstr ""
 
@@ -11175,10 +11200,6 @@ msgstr ""
 msgid "Uploaded"
 msgstr ""
 
-#: src/settings/LinuxConsolePanel.tsx
-msgid "Uploaded. Machines show the console with ddt-console of SHA-256 {uploaded}."
-msgstr ""
-
 #: src/settings/logo/LogoChange.tsx
 msgid "Uploaded. Machines show the logo when they next register."
 msgstr ""
@@ -11193,6 +11214,10 @@ msgstr ""
 
 #: src/settings/LinuxAgentPanel.tsx
 msgid "Uploaded. Machines that start the Linux boot environment from now on run it."
+msgstr ""
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Uploaded. Machines with the agent for Linux show it from now on."
 msgstr ""
 
 #: src/uploads/UploadProgress.tsx

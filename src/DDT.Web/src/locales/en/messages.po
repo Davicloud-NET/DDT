@@ -1834,6 +1834,10 @@ msgstr "a zip file"
 msgid "A zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll, of at most 128 MB."
 msgstr "A zip of ddt-console.exe, libSkiaSharp.dll and libHarfBuzzSharp.dll, of at most 128 MB."
 
+#: src/settings/LinuxConsolePanel.tsx
+msgid "A zip of the console's three files, at most 128 MB."
+msgstr "A zip of the console's three files, at most 128 MB."
+
 #: src/about/AboutPage.tsx
 #: src/app/UserMenu.tsx
 #: src/auth/SignInPage.tsx
@@ -3406,6 +3410,10 @@ msgstr "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration, so
 #: src/settings/LinuxAgentPanel.tsx
 msgid "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration. Remove the key and restart DDT to upload it here."
 msgstr "DDT:Agent:LinuxBinaryPath names the agent for Linux in configuration. Remove the key and restart DDT to upload it here."
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "DDT:Agent:LinuxConsolePath names the console for Linux in configuration. Remove the key and restart DDT to upload it here."
+msgstr "DDT:Agent:LinuxConsolePath names the console for Linux in configuration. Remove the key and restart DDT to upload it here."
 
 #: src/settings/certificate/ServedCertificate.tsx
 msgid "DDT:Https:GenerateSelfSignedCertificate is false in configuration, so DDT issues no certificate here."
@@ -5606,6 +5614,10 @@ msgstr "Machines show"
 #: src/settings/logo/RemoveLogoDialog.tsx
 msgid "Machines show no logo on their console from their next registration."
 msgstr "Machines show no logo on their console from their next registration."
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Machines show the console for Linux this server came with, or the one the Linux boot environment brings."
+msgstr "Machines show the console for Linux this server came with, or the one the Linux boot environment brings."
 
 #: src/boot/StoredBuilds.tsx
 msgid "Machines that netboot from now on get this build."
@@ -9281,6 +9293,18 @@ msgstr "The conditions of a step can have at most {max} tests together."
 msgid "The console at the machine"
 msgstr "The console at the machine"
 
+#: src/settings/LinuxConsolePanel.tsx
+msgid "The console for Linux could not be read."
+msgstr "The console for Linux could not be read."
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "The console for Linux this server came with"
+msgstr "The console for Linux this server came with"
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "The console for Linux uploaded here"
+msgstr "The console for Linux uploaded here"
+
 #: src/settings/ConsolePanel.tsx
 msgid "The console in their boot image"
 msgstr "The console in their boot image"
@@ -9295,16 +9319,16 @@ msgid "The console may be at most {max} MB, zipped and unpacked."
 msgstr "The console may be at most {max} MB, zipped and unpacked."
 
 #: src/settings/LinuxConsolePanel.tsx
-msgid "The console runs as root in the Linux boot environment, so uploading it needs your password again."
-msgstr "The console runs as root in the Linux boot environment, so uploading it needs your password again."
+msgid "The console runs as root on every machine that starts the Linux boot environment."
+msgstr "The console runs as root on every machine that starts the Linux boot environment."
 
 #: src/settings/ConsolePanel.tsx
 msgid "The console runs as SYSTEM on every machine that netboots."
 msgstr "The console runs as SYSTEM on every machine that netboots."
 
 #: src/settings/LinuxConsolePanel.tsx
-msgid "The console the Linux boot environment brings, and none in the installed Linux"
-msgstr "The console the Linux boot environment brings, and none in the installed Linux"
+msgid "The console the Linux boot environment brings"
+msgstr "The console the Linux boot environment brings"
 
 #: src/settings/ConsolePanel.tsx
 msgid "The console this server came with"
@@ -10789,6 +10813,7 @@ msgid "This server came with agent {version}, which is newer than the uploaded o
 msgstr "This server came with agent {version}, which is newer than the uploaded one."
 
 #: src/settings/ConsolePanel.tsx
+#: src/settings/LinuxConsolePanel.tsx
 msgid "This server came with console {version}, which is newer than the uploaded one."
 msgstr "This server came with console {version}, which is newer than the uploaded one."
 
@@ -11175,10 +11200,6 @@ msgstr "Upload the console for Linux"
 msgid "Uploaded"
 msgstr "Uploaded"
 
-#: src/settings/LinuxConsolePanel.tsx
-msgid "Uploaded. Machines show the console with ddt-console of SHA-256 {uploaded}."
-msgstr "Uploaded. Machines show the console with ddt-console of SHA-256 {uploaded}."
-
 #: src/settings/logo/LogoChange.tsx
 msgid "Uploaded. Machines show the logo when they next register."
 msgstr "Uploaded. Machines show the logo when they next register."
@@ -11194,6 +11215,10 @@ msgstr "Uploaded. Machines that netboot from now on show it."
 #: src/settings/LinuxAgentPanel.tsx
 msgid "Uploaded. Machines that start the Linux boot environment from now on run it."
 msgstr "Uploaded. Machines that start the Linux boot environment from now on run it."
+
+#: src/settings/LinuxConsolePanel.tsx
+msgid "Uploaded. Machines with the agent for Linux show it from now on."
+msgstr "Uploaded. Machines with the agent for Linux show it from now on."
 
 #: src/uploads/UploadProgress.tsx
 msgid "Uploading {file}"

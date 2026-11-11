@@ -60,9 +60,7 @@ describe("LinuxConsolePanel", () => {
     );
 
     expect(
-      await screen.findByText(
-        "The console for Linux this server came with, since none was uploaded",
-      ),
+      await screen.findByText("The console for Linux this server came with"),
     ).toBeInTheDocument();
     expect(screen.getByText("26.1.540")).toBeInTheDocument();
 
@@ -76,9 +74,7 @@ describe("LinuxConsolePanel", () => {
     await typePassword();
 
     expect(
-      await screen.findByText(
-        `Uploaded. Machines show the console with ddt-console of SHA-256 ${sha256}.`,
-      ),
+      await screen.findByText("Uploaded. Machines with the agent for Linux show it from now on."),
     ).toBeInTheDocument();
     expect(screen.getByText("The console for Linux uploaded here")).toBeInTheDocument();
     expect(sent(requests, "PUT", upload).map((request) => request.headers)).toEqual([
@@ -97,9 +93,7 @@ describe("LinuxConsolePanel", () => {
     serveServer({ "GET /api/settings/agent": () => json(agentView()) }, { tab: "agent" });
 
     expect(
-      await screen.findByText(
-        "The console the Linux boot environment brings, and none in the installed Linux",
-      ),
+      await screen.findByText("The console the Linux boot environment brings"),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Drop ddt-console-linux-x64.zip here, or choose it."),

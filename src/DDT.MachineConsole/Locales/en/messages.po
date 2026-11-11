@@ -151,10 +151,6 @@ msgstr "Choosing a task sequence"
 msgid "Close the console"
 msgstr "Close the console"
 
-#: ViewModels/EndViewModel.cs
-msgid "Close the console to leave it. Linux then shows its sign-in prompt."
-msgstr "Close the console to leave it. Linux then shows its sign-in prompt."
-
 #: ViewModels/MachineViewModel.cs
 msgid "Close the details"
 msgstr "Close the details"
@@ -870,6 +866,10 @@ msgstr "Type {word} to write it all the same"
 #: Texts/Say.cs
 msgid "Unknown bus"
 msgstr "Unknown bus"
+
+#: ViewModels/NoticeViewModel.cs
+msgid "Unknown keyboard layout {layout}. Keys type as on a US keyboard."
+msgstr "Unknown keyboard layout {layout}. Keys type as on a US keyboard."
 
 #: Texts/Say.cs
 msgid "Unknown model"

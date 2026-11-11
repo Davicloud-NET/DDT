@@ -151,10 +151,6 @@ msgstr "Tasksequenz wird gewählt"
 msgid "Close the console"
 msgstr "Konsole schließen"
 
-#: ViewModels/EndViewModel.cs
-msgid "Close the console to leave it. Linux then shows its sign-in prompt."
-msgstr "Schließen Sie die Konsole, um sie zu verlassen. Linux zeigt dann seine Anmeldung."
-
 #: ViewModels/MachineViewModel.cs
 msgid "Close the details"
 msgstr "Details schließen"
@@ -870,6 +866,10 @@ msgstr "Geben Sie {word} ein, um es trotzdem zu schreiben"
 #: Texts/Say.cs
 msgid "Unknown bus"
 msgstr "Unbekannter Bus"
+
+#: ViewModels/NoticeViewModel.cs
+msgid "Unknown keyboard layout {layout}. Keys type as on a US keyboard."
+msgstr "Unbekanntes Tastaturlayout {layout}. Die Tasten schreiben wie auf einer US-Tastatur."
 
 #: Texts/Say.cs
 msgid "Unknown model"

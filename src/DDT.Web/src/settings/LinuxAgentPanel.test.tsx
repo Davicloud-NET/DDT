@@ -70,7 +70,9 @@ describe("LinuxAgentPanel", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("26.1.512")).toBeInTheDocument();
     expect(
-      screen.getByText(/runs as root on every machine that starts the Linux boot environment/),
+      screen.getByText(
+        /The agent runs as root on every machine that starts the Linux boot environment/,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Remove the uploaded agent for Linux" }),

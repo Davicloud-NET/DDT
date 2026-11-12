@@ -37,7 +37,7 @@ public sealed class MdtApplicationImportTests : IDisposable
 
         MdtShareView view = await RegisteredMachine.ReadAsync<MdtShareView>(await administrator.PostAsync($"{Mdt}/inspect", new InspectMdtShareRequest(share)));
 
-        Assert.Equal(12, view.Applications.Count);
+        Assert.Equal(13, view.Applications.Count);
         Assert.Equal(
             new MdtApplication(SevenZip, "7-Zip 24.09", "24.09", "Igor Pavlov", true, ApplicationReferenceKind.Application, false),
             view.Applications[0]);
@@ -96,6 +96,30 @@ public sealed class MdtApplicationImportTests : IDisposable
         Assert.True(MdtApplicationRequests.NamesPackage(" \"Contoso.App.APPX\" "));
         Assert.False(MdtApplicationRequests.NamesPackage("Contoso.App.msixbundle"));
     }
+
+    [Fact]
+    public async Task ACommandThatUsesMdtsScriptsIsImportedWithANote()
+    {
+        SignedInClient administrator = await _application.AdministratorAsync();
+
+        ImportStatus job = await ImportAsync(administrator, Wallpaper);
+
+        ImportResult result = job.Results.Single();
+        Assert.Equal(ImportOutcome.Added, result.Outcome);
+        Assert.Equal([("import.mdtName", "%SCRIPTROOT%")], (result.Notes ?? []).Select(note => (note.Code, note.Args.Values.Single().ToString())));
+        Assert.Equal("""cscript.exe "%SCRIPTROOT%\ZTIPowerShell.wsf" /ScriptFile:Wallpaper.ps1""", Assert.Single(await ApplicationsAsync(administrator)).Command);
+    }
+
+    [Theory]
+    [InlineData(@"%DeployRoot%\Tools\x64\tool.exe", "%DeployRoot%")]
+    [InlineData(@"cmd /c copy x %deploydrive%\y", "%deploydrive%")]
+    [InlineData("%ToolRoot%\\a.exe & %ResourceRoot%\\b.exe", "%ToolRoot%")]
+    [InlineData("cscript LTIApply.wsf /pe", "LTIApply.wsf")]
+    [InlineData(@"cscript.exe Scripts\LiteTouch.wsf", "LiteTouch.wsf")]
+    [InlineData("cscript MyZTIScript.wsf", null)]
+    [InlineData("setup.exe /S", null)]
+    public void FindsTheFirstOfMdtsNamesInACommand(string command, string? name) =>
+        Assert.Equal(name, MdtApplicationRequests.MdtNameIn(command));
 
     [Fact]
     public async Task ADependencyOnABundleBecomesItsApplicationsAndWhatIsLostIsNoted()

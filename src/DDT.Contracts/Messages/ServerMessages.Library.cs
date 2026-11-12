@@ -201,6 +201,10 @@ public static partial class ServerMessages
         "import.workingDirectory",
         "MDT ran it in {folder}. DDT runs it in the folder of its files.");
 
+    public static readonly MessageTemplate ImportMdtName = Define(
+        "import.mdtName",
+        "Its command uses MDT's {name}, which DDT does not have.");
+
     public static readonly MessageTemplate ImportBundleEmpty = Define(
         "import.bundleEmpty",
         "None of its applications is in the library.");

@@ -22,6 +22,7 @@ internal static class MdtApplicationShares
     public const string Viewer = "{a0000000-0000-0000-0000-00000000000a}";
     public const string UsesViewer = "{a0000000-0000-0000-0000-00000000000b}";
     public const string StoreApp = "{a0000000-0000-0000-0000-00000000000c}";
+    public const string Wallpaper = "{a0000000-0000-0000-0000-00000000000d}";
     public const string Missing = "{ffffffff-0000-0000-0000-000000000000}";
 
     public const string ProductCode = "{23170F69-40C1-2702-2409-000001000000}";
@@ -78,6 +79,10 @@ internal static class MdtApplicationShares
                 <LastModifiedTime>11/12/2026 09:14:22</LastModifiedTime><LastModifiedBy>CONTOSO\admin</LastModifiedBy>
               </application>
               <application><Name>No guid</Name><CommandLine>x.cmd</CommandLine></application>
+              <application guid="{Wallpaper}" hide="" enable="True">
+                <Name>Wallpaper</Name><ShortName>Wallpaper</ShortName>
+                <CommandLine>cscript.exe "%SCRIPTROOT%\ZTIPowerShell.wsf" /ScriptFile:Wallpaper.ps1</CommandLine><WorkingDirectory>.</WorkingDirectory>
+              </application>
               <application guid="{SevenZip}"><Name>7-Zip listed twice</Name><CommandLine>x.cmd</CommandLine></application>
             </applications>
             """);

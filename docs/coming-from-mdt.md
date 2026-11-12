@@ -186,6 +186,8 @@ The import dialog brings a share's applications and bundles over:
 - **UninstallKey** becomes an uninstall key detection, also a GUID, as MDT looks it up.
 - **App packages.** A command that names an .appx or .appxbundle becomes an MSIX application, with
   the frameworks under Dependencies and the licence beside it.
+- **MDT's own names.** DDT has no %ScriptRoot%, %DeployRoot% and the like, and no ZTI or LTI
+  scripts. A command that uses them is imported with a note.
 - **Reboot.** `Reboot=True` imports as no success code and the restart codes 0 and 3010, so the
   machine restarts after the installer whatever it returns. `Reboot=False` imports as success 0 and
   restart 3010.

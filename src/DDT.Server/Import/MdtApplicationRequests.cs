@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text.RegularExpressions;
 using DDT.Contracts.Applications;
 using DDT.Contracts.Messages;
 using DDT.Server.Applications;
@@ -11,7 +12,7 @@ namespace DDT.Server.Import;
 
 // An MDT application as the save of a DDT application. MDT restarted after an application with Reboot set whatever its
 // installer returned; DDT restarts on a restart code, so then 0 and 3010 are both restart codes.
-public static class MdtApplicationRequests
+public static partial class MdtApplicationRequests
 {
     // suggestion is what the upload of the files suggests. A package the command names becomes an MSIX application.
     public static SaveApplicationRequest Of(
@@ -55,6 +56,17 @@ public static class MdtApplicationRequests
             : null;
     }
 
+    public static ServerMessage? MdtNameNote(MdtShareApplication application)
+    {
+        ArgumentNullException.ThrowIfNull(application);
+
+        return MdtNameIn(application.CommandLine) is { } name ? ServerMessages.ImportMdtName.With("name", name) : null;
+    }
+
+    // The first of MDT's variables or scripts that the command names, which DDT does not have, or null.
+    public static string? MdtNameIn(string? command) =>
+        command is not null && MdtName().Match(command) is { Success: true } found ? found.Value : null;
+
     // MDT provisions a command that ends in .appx or .appxbundle with DISM instead of running it.
     public static bool NamesPackage(string? commandLine) =>
         commandLine?.Trim().Trim('"') is { } path
@@ -64,4 +76,9 @@ public static class MdtApplicationRequests
     private static UninstallKeyDetection? Detection(string? uninstallKey) => uninstallKey is null ? null : new UninstallKeyDetection(uninstallKey);
 
     private static string Folder(string? path) => (path ?? "").Replace('/', '\\').TrimStart('.').Trim('\\').Trim();
+
+    [GeneratedRegex(
+        @"%(?:ScriptRoot|DeployRoot|ToolRoot|ResourceRoot|DeployDrive)%|\b(?:ZTI|LTI|LiteTouch)[^\\/:*?""<>|\s]*\.wsf\b",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex MdtName();
 }

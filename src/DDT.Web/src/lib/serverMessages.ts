@@ -749,6 +749,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "import.failed",
     message: "The server could not add it. Its log says why.",
   }),
+  "import.mdtName": msg({
+    context: "import.mdtName",
+    message: "Its command uses MDT's {name}, which DDT does not have.",
+  }),
   "import.noSuchFile": msg({
     context: "import.noSuchFile",
     message: "{path} is no longer there.",

@@ -5448,6 +5448,11 @@ msgid "Iteration {times} of at most {most}"
 msgstr "Durchlauf {times} von höchstens {most}"
 
 #: src/lib/serverMessages.ts
+msgctxt "import.mdtName"
+msgid "Its command uses MDT's {name}, which DDT does not have."
+msgstr "Ihr Befehl nutzt {name} von MDT, das DDT nicht hat."
+
+#: src/lib/serverMessages.ts
 msgctxt "import.dependencyMissing"
 msgid "Its dependency {dependency} is not in the library, so it was left out."
 msgstr "Die Abhängigkeit {dependency} ist nicht in der Bibliothek und wurde weggelassen."

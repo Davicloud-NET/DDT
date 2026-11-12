@@ -82,6 +82,11 @@ public sealed class MdtApplicationImporter(CurrentImport state, LibraryFileImpor
             notes.Add(note);
         }
 
+        if (MdtApplicationRequests.MdtNameNote(application) is { } mdtName)
+        {
+            notes.Add(mdtName);
+        }
+
         AsyncServiceScope scope = scopes.CreateAsyncScope();
 
         await using (scope.ConfigureAwait(false))

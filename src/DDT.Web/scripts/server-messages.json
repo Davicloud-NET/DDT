@@ -184,6 +184,7 @@
   "import.dependencyCycle": "Its dependency {dependency} would close a circle, so it was left out.",
   "import.dependencyMissing": "Its dependency {dependency} is not in the library, so it was left out.",
   "import.failed": "The server could not add it. Its log says why.",
+  "import.mdtName": "Its command uses MDT's {name}, which DDT does not have.",
   "import.noSuchFile": "{path} is no longer there.",
   "import.notAShare": "{path} is no MDT deployment share in one of this server's import folders: a share has Control\\OperatingSystems.xml.",
   "import.notAllowed": "{path} is no WIM, ESD or ISO in one of this server's import folders.",

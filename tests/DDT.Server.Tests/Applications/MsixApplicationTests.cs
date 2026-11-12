@@ -64,7 +64,7 @@ public sealed class MsixApplicationTests(DdtApplication application) : IClassFix
 
         ApplicationSuggestion suggestion = Assert.IsType<ApplicationSuggestion>(upload.Suggestion);
         Assert.Equal(
-            (ApplicationKind.Msix, "Contoso.App", (string?)null, "2.0.0.0", (string?)null),
+            (ApplicationKind.Msix, "Contoso.App", "Microsoft Corporation", "2.0.0.0", (string?)null),
             (suggestion.Kind, suggestion.Name, suggestion.Publisher, suggestion.Version, suggestion.Command));
         Assert.Equal(new PackageFamilyDetection(Family, "2.0.0.0"), suggestion.Detection);
         Assert.Equal(HttpStatusCode.Created, (await administrator.PostAsync(ApplicationsPath, Msix(Unique("Contoso"), upload.Files.PackageId))).StatusCode);

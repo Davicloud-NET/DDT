@@ -4,6 +4,8 @@
 
 using System.Buffers.Binary;
 using System.IO.Compression;
+using System.Security;
+using System.Text;
 using DDT.Core.Applications.Msix;
 using Xunit;
 
@@ -38,7 +40,7 @@ public sealed class MsixManifestReaderTests
     {
         MsixManifest? bundle = Read(TestMsix.Bundle("Contoso.App"));
 
-        Assert.Equal(new MsixManifest("Contoso.App", TestMsix.Microsoft, "2.0.0.0", null, "Contoso.App", null, false, true), bundle);
+        Assert.Equal(new MsixManifest("Contoso.App", TestMsix.Microsoft, "2.0.0.0", null, "Contoso.App", "Microsoft Corporation", false, true), bundle);
     }
 
     [Theory]
@@ -47,6 +49,51 @@ public sealed class MsixManifestReaderTests
     [InlineData(" ")]
     public void ADisplayNameFromTheResourcesFallsBackToTheIdentityName(string displayName) =>
         Assert.Equal("Contoso.App", Read(TestMsix.Zip(("AppxManifest.xml", TestMsix.Manifest("Contoso.App", displayName))))?.DisplayName);
+
+    // Microsoft.PowerShell's bundle names nothing itself, its x64 package says PowerShell and Microsoft Corporation.
+    [Fact]
+    public void ABundleIsNamedByItsFirstApplicationPackage()
+    {
+        string bundleManifest = TestMsix.BundleManifest("Contoso.App").Replace(
+            "<Packages />",
+            """<Packages><Package Type="resource" FileName="Contoso.App_de.msix" /><Package Type="application" FileName="Contoso.App_x64.msix" /></Packages>""",
+            StringComparison.Ordinal);
+        byte[] bundle = TestMsix.Zip(
+            CompressionLevel.NoCompression,
+            ("AppxMetadata/AppxBundleManifest.xml", Encoding.UTF8.GetBytes(bundleManifest)),
+            ("Contoso.App_de.msix", TestMsix.Zip(("AppxManifest.xml", TestMsix.Manifest("Contoso.App", "Ressourcen")))),
+            ("Contoso.App_x64.msix", TestMsix.Package("Contoso.App")));
+
+        MsixManifest? read = Read(bundle);
+
+        Assert.Equal(("Contoso App", "Contoso", "2.0.0.0", true), (read?.DisplayName, read?.PublisherDisplayName, read?.Version, read?.IsBundle));
+    }
+
+    [Fact]
+    public void ABundleWhosePackageCannotBeReadKeepsItsIdentitysNames()
+    {
+        string bundleManifest = TestMsix.BundleManifest("Contoso.App").Replace(
+            "<Packages />",
+            """<Packages><Package Type="application" FileName="Contoso.App_x64.msix" /></Packages>""",
+            StringComparison.Ordinal);
+
+        MsixManifest? read = Read(TestMsix.Zip(("AppxMetadata/AppxBundleManifest.xml", bundleManifest), ("Contoso.App_x64.msix", "no zip")));
+
+        Assert.Equal(("Contoso.App", "Microsoft Corporation"), (read?.DisplayName, read?.PublisherDisplayName));
+    }
+
+    [Theory]
+    [InlineData("ms-resource:PublisherName", "CN=Microsoft Corporation, O=Microsoft Corporation, C=US", "Microsoft Corporation")]
+    [InlineData("ms-resource:PublisherName", "O=Contoso, CN=\"Contoso, Ltd.\", C=AT", "Contoso, Ltd.")]
+    [InlineData("ms-resource:PublisherName", "O=Contoso, C=AT", null)]
+    public void APublisherFromTheResourcesFallsBackToTheCommonName(string shown, string publisher, string? expected)
+    {
+        string manifest = TestMsix.Manifest("Contoso.App")
+            .Replace("<PublisherDisplayName>Contoso</PublisherDisplayName>", $"<PublisherDisplayName>{shown}</PublisherDisplayName>", StringComparison.Ordinal)
+            .Replace(SecurityElement.Escape(TestMsix.Microsoft), SecurityElement.Escape(publisher), StringComparison.Ordinal);
+
+        Assert.Equal(expected, Read(TestMsix.Zip(("AppxManifest.xml", manifest)))?.PublisherDisplayName);
+    }
 
     [Fact]
     public void ReadsTheOlderAppxManifestToo()

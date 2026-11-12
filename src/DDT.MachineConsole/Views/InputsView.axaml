@@ -79,7 +79,7 @@
                   <TextBlock Classes="label" Text="{Binding Label}" />
                   <TextBlock Classes="small muted" Text="{Binding OptionalLabel}" IsVisible="{Binding IsOptional}" VerticalAlignment="Bottom" />
                 </StackPanel>
-                <ItemsControl ItemsSource="{Binding Keys}" Margin="4" IsVisible="{Binding !IsSearchable}">
+                <ItemsControl ItemsSource="{Binding Keys}" Padding="4" IsVisible="{Binding !IsSearchable}">
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                       <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10" />

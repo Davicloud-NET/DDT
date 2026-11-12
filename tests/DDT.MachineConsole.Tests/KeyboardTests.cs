@@ -2,10 +2,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Runtime.InteropServices;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using DDT.ConsoleProtocol;
 using DDT.MachineConsole.ViewModels;
 using DDT.MachineConsole.Views;
@@ -292,6 +299,24 @@ public sealed class KeyboardTests
         window.Close();
     });
 
+    // A key of a short tick list shows the focus ring once the keyboard reaches it, outside its edge as on the other
+    // keys.
+    [Fact]
+    public Task TheTickKeyWithTheFocusShowsTheFocusRing() => Headless.RunAsync(() =>
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.State(ConsoleStage.Choosing)).Ask(10, Scenarios.Inputs(refused: true));
+        MainWindow window = Open(console);
+        ToggleButton german = window.GetVisualDescendants().OfType<ToggleButton>().First();
+        Color before = PixelBeside(window, german);
+
+        Press(window, Key.Tab);
+
+        Assert.True(german.IsFocused);
+        Color ring = ((ISolidColorBrush)german.GetVisualDescendants().OfType<Border>().Single(border => border.Name == "focus").BorderBrush!).Color;
+        Assert.False(IsNear(before, ring), $"{before} is already the ring's {ring}.");
+        Assert.True(IsNear(PixelBeside(window, german), ring), $"{PixelBeside(window, german)} is not the ring's {ring}.");
+        window.Close();
+    });
     private static MainWindow Open(TestConsole console)
     {
         MainWindow window = new(console.Model, fullScreen: false) { Width = 1024, Height = 768 };
@@ -320,4 +345,21 @@ public sealed class KeyboardTests
         window.KeyRelease(key, modifiers, PhysicalKey.None, null);
         Settle();
     }
+
+    // The pixel 3 px left of the key's middle, inside the ring drawn 2 to 4 px outside its edge.
+    private static Color PixelBeside(Window window, Control key)
+    {
+        Point at = key.TranslatePoint(new Point(-3, key.Bounds.Height / 2), window) ?? throw new InvalidOperationException("The key is not in the window.");
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        using WriteableBitmap frame = window.CaptureRenderedFrame() ?? throw new InvalidOperationException("Nothing was drawn.");
+        using ILockedFramebuffer buffer = frame.Lock();
+        byte[] pixel = BitConverter.GetBytes(Marshal.ReadInt32(buffer.Address, ((int)at.Y * buffer.RowBytes) + ((int)at.X * 4)));
+
+        return buffer.Format == PixelFormat.Rgba8888
+            ? Color.FromArgb(pixel[3], pixel[0], pixel[1], pixel[2])
+            : Color.FromArgb(pixel[3], pixel[2], pixel[1], pixel[0]);
+    }
+
+    private static bool IsNear(Color drawn, Color expected) =>
+        Math.Abs(drawn.R - expected.R) + Math.Abs(drawn.G - expected.G) + Math.Abs(drawn.B - expected.B) < 40;
 }

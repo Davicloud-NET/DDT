@@ -399,6 +399,36 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
             _tools.Calls);
     }
 
+    // Off before anything else at every start, back before DDT's session ends, whether the run is done or failed.
+    [Theory]
+    [InlineData(0, DeploymentState.Done, "end the session, signing out")]
+    [InlineData(1, DeploymentState.Failed, "end the session once someone signed out")]
+    public async Task AutomaticRepairIsOffWhileTheRunGoesOn(int exitCode, DeploymentState state, string sessionEnd)
+    {
+        _toolRunner.AnswerExitCode = (_, _, _) => exitCode;
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run))
+            .OnRunReport(state, _ => new AgentRunReportResult("session-e", "resume-e", null));
+
+        await RunAsync(server, new() { Session = new FakeDeploySession(_tools), AutomaticRepair = new FakeAutomaticRepair(_tools) });
+
+        Assert.Equal(
+            ["automatic repair off", "prepare the session", "setup finished", "the session takes over the sign-in", "automatic repair back", sessionEnd, "remove"],
+            _tools.Calls.Where(call => call != "reboot"));
+    }
+
+    [Fact]
+    public async Task AServiceWithoutARunOnlyPutsAutomaticRepairBack()
+    {
+        int exitCode = await RunAsync(new ScriptedAgentServer(), new() { AutomaticRepair = new FakeAutomaticRepair(_tools) });
+
+        Assert.Equal(AgentExitCodes.Stopped, exitCode);
+        Assert.Equal(["automatic repair back", "remove"], _tools.Calls);
+    }
+
     [Fact]
     public async Task AfterAFailureTheSessionShowsItUntilSomeoneSignsOut()
     {

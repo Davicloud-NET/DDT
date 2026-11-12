@@ -137,7 +137,7 @@ public static class WindowsPhaseService
             Server = parts.Server,
             IdentityReader = new HardwareMachineIdentityReader(new FirmwareTables(), new SystemHardware(), new UefiVariables(), new WindowsSecureBoot()),
             Runner = runner,
-            Profile = WindowsPhaseProfile.With(new RegistrySetupProbe()),
+            Profile = WindowsPhaseProfile.With(new RegistrySetupProbe(), new AutomaticRepair(parts.WindowsRoot, parts.Tools, parts.Log)),
             Rebooter = parts.Rebooter,
             RestartMarker = new VolatileRestartMarker(parts.Log),
             Removal = new AgentRemoval(parts.WindowsRoot, parts.Tools, new MoveFileRestartDeleter(parts.Log), parts.Log),

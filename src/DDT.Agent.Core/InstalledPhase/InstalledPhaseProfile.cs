@@ -18,6 +18,9 @@ public sealed record InstalledPhaseProfile
     // The system's own setup, which comes before the run's next step.
     public required ISetupProbe Setup { get; init; }
 
+    // Windows' Automatic Repair. Null where the system has none to turn off.
+    public IAutomaticRepair? AutomaticRepair { get; init; }
+
     // What the run reports while it waits for that setup.
     public required RunActivity WaitActivity { get; init; }
 

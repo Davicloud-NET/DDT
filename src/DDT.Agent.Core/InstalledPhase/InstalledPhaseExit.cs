@@ -49,6 +49,8 @@ internal sealed class InstalledPhaseExit(
     // finds the run over and ends what's left.
     public async Task<int> RemoveAsync(int exitCode, bool signOut, CancellationToken cancellationToken)
     {
+        await PutBackAutomaticRepairAsync().ConfigureAwait(false);
+
         if (!await console.EndAsync(signOut, cancellationToken).ConfigureAwait(false))
         {
             log.Information("The agent was stopped while DDT's session ended. It ends it and removes itself when it next starts.");
@@ -67,6 +69,8 @@ internal sealed class InstalledPhaseExit(
     // leads to another.
     public async Task<int> RemoveAndRestartAsync(CancellationToken cancellationToken)
     {
+        await PutBackAutomaticRepairAsync().ConfigureAwait(false);
+
         if (!await console.EndAsync(signOut: true, cancellationToken).ConfigureAwait(false))
         {
             log.Information("The agent was stopped while DDT's session ended. It ends it and removes itself when it next starts.");
@@ -93,4 +97,7 @@ internal sealed class InstalledPhaseExit(
 
         return AgentExitCodes.Deployed;
     }
+
+    // Not stopped by the stop token: the run is over, and Windows must not keep it off.
+    private Task PutBackAutomaticRepairAsync() => profile.AutomaticRepair?.PutBackAsync(CancellationToken.None) ?? Task.CompletedTask;
 }

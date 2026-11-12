@@ -10,8 +10,9 @@ namespace DDT.Core.Applications.Msix;
 // cannot be read in place, so it is copied to a file in scratch first, which goes when it is read.
 public static class MsixZipLayout
 {
-    // Call for a zip that passed the package check, so its entries are what they claim.
-    public static MsixLayoutResult Read(Stream zip, string scratch)
+    // Call for a zip that passed the package check, so its entries are what they claim. withBundleNames is for the upload's
+    // suggestion, see MsixManifestReader.
+    public static MsixLayoutResult Read(Stream zip, string scratch, bool withBundleNames = false)
     {
         ArgumentNullException.ThrowIfNull(zip);
         ArgumentException.ThrowIfNullOrEmpty(scratch);
@@ -24,10 +25,10 @@ public static class MsixZipLayout
             files.TryAdd(entry.FullName.Replace('\\', '/'), entry);
         }
 
-        return MsixLayouts.Of([.. files.Keys], file => ManifestOf(files[file], scratch), file => IsLicense(files[file]));
+        return MsixLayouts.Of([.. files.Keys], file => ManifestOf(files[file], scratch, withBundleNames), file => IsLicense(files[file]));
     }
 
-    private static MsixManifest? ManifestOf(ZipArchiveEntry entry, string scratch)
+    private static MsixManifest? ManifestOf(ZipArchiveEntry entry, string scratch, bool withBundleNames)
     {
         try
         {
@@ -35,7 +36,7 @@ public static class MsixZipLayout
 
             if (data.CanSeek)
             {
-                return MsixManifestReader.Read(data);
+                return MsixManifestReader.Read(data, withBundleNames);
             }
 
             Directory.CreateDirectory(scratch);
@@ -49,7 +50,7 @@ public static class MsixZipLayout
             data.CopyTo(copy);
             copy.Position = 0;
 
-            return MsixManifestReader.Read(copy);
+            return MsixManifestReader.Read(copy, withBundleNames);
         }
         catch (InvalidDataException)
         {

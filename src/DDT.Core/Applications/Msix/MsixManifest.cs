@@ -4,8 +4,9 @@
 
 namespace DDT.Core.Applications.Msix;
 
-// What a package's AppxManifest.xml or a bundle's AppxBundleManifest.xml says about it, a bundle's names from its first
-// application package. DisplayName falls back to the identity name, PublisherDisplayName to the CN of Publisher.
+// What a package's AppxManifest.xml or a bundle's AppxBundleManifest.xml says about it, with a bundle's names from its
+// first application package when asked for. DisplayName falls back to the identity name, PublisherDisplayName to the CN
+// of Publisher.
 public sealed record MsixManifest(
     string Name,
     string Publisher,

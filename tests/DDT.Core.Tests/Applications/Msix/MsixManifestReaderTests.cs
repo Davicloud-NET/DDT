@@ -13,11 +13,11 @@ namespace DDT.Core.Tests.Applications.Msix;
 
 public sealed class MsixManifestReaderTests
 {
-    private static MsixManifest? Read(byte[] package)
+    private static MsixManifest? Read(byte[] package, bool withBundleNames = false)
     {
         using MemoryStream data = new(package);
 
-        return MsixManifestReader.Read(data);
+        return MsixManifestReader.Read(data, withBundleNames);
     }
 
     [Fact]
@@ -64,9 +64,12 @@ public sealed class MsixManifestReaderTests
             ("Contoso.App_de.msix", TestMsix.Zip(("AppxManifest.xml", TestMsix.Manifest("Contoso.App", "Ressourcen")))),
             ("Contoso.App_x64.msix", TestMsix.Package("Contoso.App")));
 
-        MsixManifest? read = Read(bundle);
+        MsixManifest? read = Read(bundle, withBundleNames: true);
 
         Assert.Equal(("Contoso App", "Contoso", "2.0.0.0", true), (read?.DisplayName, read?.PublisherDisplayName, read?.Version, read?.IsBundle));
+
+        // The agent reads the bundle before DISM and needs no names, so it leaves the package inside alone.
+        Assert.Equal(("Contoso.App", "Microsoft Corporation"), (Read(bundle)?.DisplayName, Read(bundle)?.PublisherDisplayName));
     }
 
     [Fact]
@@ -77,7 +80,7 @@ public sealed class MsixManifestReaderTests
             """<Packages><Package Type="application" FileName="Contoso.App_x64.msix" /></Packages>""",
             StringComparison.Ordinal);
 
-        MsixManifest? read = Read(TestMsix.Zip(("AppxMetadata/AppxBundleManifest.xml", bundleManifest), ("Contoso.App_x64.msix", "no zip")));
+        MsixManifest? read = Read(TestMsix.Zip(("AppxMetadata/AppxBundleManifest.xml", bundleManifest), ("Contoso.App_x64.msix", "no zip")), withBundleNames: true);
 
         Assert.Equal(("Contoso.App", "Microsoft Corporation"), (read?.DisplayName, read?.PublisherDisplayName));
     }

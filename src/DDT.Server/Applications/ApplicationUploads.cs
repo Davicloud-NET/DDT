@@ -62,7 +62,7 @@ internal static class ApplicationUploads
 
         using (FileStream zip = new(part, FileMode.Open, FileAccess.Read, FileShare.Read))
         {
-            msix = MsixZipLayout.Read(zip, store.UploadsDirectory);
+            msix = MsixZipLayout.Read(zip, store.UploadsDirectory, withBundleNames: true);
         }
 
         // Packages with a problem suggest nothing: the problem shows when the application is saved.
@@ -151,7 +151,7 @@ internal static class ApplicationUploads
     {
         using FileStream package = new(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 
-        return MsixManifestReader.Read(package);
+        return MsixManifestReader.Read(package, withBundleNames: true);
     }
 
     public static string? SuggestedName(string? value) =>

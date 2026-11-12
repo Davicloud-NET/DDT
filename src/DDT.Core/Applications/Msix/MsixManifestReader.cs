@@ -26,8 +26,9 @@ public static partial class MsixManifestReader
 
     private const string ResourcePrefix = "ms-resource:";
 
-    // Null when it is no package or bundle that can be read. The stream must be seekable.
-    public static MsixManifest? Read(Stream package)
+    // Null when it is no package or bundle that can be read. The stream must be seekable. withBundleNames reads a bundle's
+    // names from its application package, which only the upload's suggestion needs.
+    public static MsixManifest? Read(Stream package, bool withBundleNames = false)
     {
         ArgumentNullException.ThrowIfNull(package);
 
@@ -54,7 +55,9 @@ public static partial class MsixManifestReader
                 return null;
             }
 
-            return FromRoot(root, bundle is null ? MsixXml.Child(root, "Properties") : MainProperties(archive, root), isBundle: bundle is not null);
+            XElement? properties = bundle is null ? MsixXml.Child(root, "Properties") : withBundleNames ? MainProperties(archive, root) : null;
+
+            return FromRoot(root, properties, isBundle: bundle is not null);
         }
         catch (Exception exception) when (exception is InvalidDataException or EndOfStreamException or NotSupportedException)
         {

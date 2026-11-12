@@ -16,7 +16,7 @@ public static class MsixFolderLayout
                 .Select(file => Path.GetRelativePath(folder, file).Replace('\\', '/'))]
             : [];
 
-        return MsixLayouts.Of(files, file => Open(folder, file, MsixManifestReader.Read), file => Open(folder, file, MsixXml.IsLicense));
+        return MsixLayouts.Of(files, file => Open(folder, file, package => MsixManifestReader.Read(package)), file => Open(folder, file, MsixXml.IsLicense));
     }
 
     public static string FullPath(string folder, string file) => Path.Combine(folder, file.Replace('/', Path.DirectorySeparatorChar));

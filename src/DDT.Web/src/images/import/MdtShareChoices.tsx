@@ -20,7 +20,7 @@ export function MdtShareChoices({
 }: {
   view: MdtShareView;
   left: ReadonlySet<string>;
-  onToggle: (id: string, chosen: boolean) => void;
+  onToggle: (id: string, chosen: boolean, byDefault?: boolean) => void;
 }) {
   return (
     <div className="flex flex-col gap-4">

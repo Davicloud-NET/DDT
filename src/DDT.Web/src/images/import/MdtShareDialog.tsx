@@ -11,22 +11,21 @@ import { Dialog } from "@/ui/Dialog";
 import { ListSkeleton } from "@/ui/ListSkeleton";
 import { Notice } from "@/ui/Notice";
 
-import { importShare, mdtShareQuery } from "./imports";
+import { importShare, isChosen, mdtShareQuery } from "./imports";
 import { MdtShareChoices } from "./MdtShareChoices";
 
 // What an MDT deployment share holds, to choose from: its image files, driver groups and applications. Opens for a path
 // and closes once the import has started, which the panel then follows.
 export function MdtShareDialog({ path, onClose }: { path: string | null; onClose: () => void }) {
   const share = useQuery({ ...mdtShareQuery(path ?? ""), enabled: path !== null });
-  // What was unticked. Everything the share can give is ticked at first.
+  // What differs from the start, where everything the share can give is ticked but a disabled application.
   const [left, setLeft] = useState<ReadonlySet<string>>(new Set());
   const view = path === null ? undefined : share.data;
   const images = view?.imageFiles.filter((file) => file.found && !left.has(file.file)) ?? [];
   const groups = view?.driverGroups.filter((group) => !left.has(group.id)) ?? [];
   const applications =
-    view?.applications.filter(
-      (application) => !application.inLibrary && !left.has(application.id),
-    ) ?? [];
+    view?.applications.filter((application) => isChosen(application, left)) ?? [];
+
   const start = useMutation({
     mutationFn: () =>
       importShare(
@@ -83,11 +82,11 @@ export function MdtShareDialog({ path, onClose }: { path: string | null; onClose
         <MdtShareChoices
           view={view}
           left={left}
-          onToggle={(id, chosen) => {
+          onToggle={(id, chosen, byDefault = true) => {
             setLeft((current) => {
               const next = new Set(current);
 
-              if (chosen) {
+              if (chosen === byDefault) {
                 next.delete(id);
               } else {
                 next.add(id);

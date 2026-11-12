@@ -73,6 +73,7 @@ const share: MdtShareView = {
       hasFiles: true,
       kind: "Application",
       inLibrary: false,
+      enabled: true,
     },
     {
       id: "{a2}",
@@ -82,6 +83,7 @@ const share: MdtShareView = {
       hasFiles: false,
       kind: "Application",
       inLibrary: false,
+      enabled: true,
     },
     {
       id: "{a3}",
@@ -91,6 +93,7 @@ const share: MdtShareView = {
       hasFiles: false,
       kind: "Bundle",
       inLibrary: false,
+      enabled: true,
     },
     {
       id: "{a4}",
@@ -100,6 +103,17 @@ const share: MdtShareView = {
       hasFiles: true,
       kind: "Application",
       inLibrary: true,
+      enabled: true,
+    },
+    {
+      id: "{a5}",
+      name: "Old Tool",
+      version: null,
+      publisher: null,
+      hasFiles: false,
+      kind: "Application",
+      inLibrary: false,
+      enabled: false,
     },
   ],
   notImported: {
@@ -191,7 +205,7 @@ describe("ImportPanel", () => {
     expect(server.count("GET /api/images/import")).toBe(1);
   });
 
-  it("shows what an MDT deployment share holds and imports what stays ticked", async () => {
+  it("shows what an MDT deployment share holds and imports what is ticked, a disabled entry only when ticked", async () => {
     const { server } = await open({
       "POST /api/images/import/mdt/inspect": { body: share },
       "POST /api/images/import/mdt": { status: 202 },
@@ -225,6 +239,11 @@ describe("ImportPanel", () => {
     });
     expect(viewer).toBeDisabled();
     expect(viewer).not.toBeChecked();
+    const disabled = within(dialog).getByRole("checkbox", {
+      name: /^Old Tool\s*Disabled in MDT\. Without files\.$/,
+    });
+    expect(disabled).not.toBeChecked();
+    press(disabled);
 
     press(within(dialog).getByRole("checkbox", { name: /WinPE x64/ }));
     press(within(dialog).getByRole("checkbox", { name: /^VC\+\+ Runtime\s*Without files\.$/ }));
@@ -237,7 +256,7 @@ describe("ImportPanel", () => {
       path: "D:\\DeploymentShare",
       imageFiles: [".\\Operating Systems\\W11\\sources\\install.wim"],
       driverGroups: ["{g1}"],
-      applications: ["{a1}", "{a3}"],
+      applications: ["{a1}", "{a3}", "{a5}"],
     });
   });
 

@@ -17,7 +17,9 @@ public sealed record MdtShareApplication(
     string? Source,
     string? UninstallKey,
     bool Reboot,
-    IReadOnlyList<string> Dependencies)
+    IReadOnlyList<string> Dependencies,
+    // enable="False" only hides it from MDT's wizard. MDT still installs it for a bundle that depends on it.
+    bool Enabled = true)
 {
     // MDT makes a bundle of an application without a command that depends on others.
     public bool IsBundle => string.IsNullOrWhiteSpace(CommandLine) && Dependencies.Count > 0;

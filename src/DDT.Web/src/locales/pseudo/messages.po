@@ -3884,6 +3884,10 @@ msgstr ""
 msgid "Disabled"
 msgstr ""
 
+#: src/images/import/MdtApplicationChoices.tsx
+msgid "Disabled in MDT."
+msgstr ""
+
 #: src/settings/parts/SettingsSection.tsx
 #: src/uploads/UnfinishedUploads.tsx
 msgid "Discard"

@@ -6,9 +6,10 @@ import { Trans } from "@lingui/react/macro";
 
 import { Checkbox } from "@/ui/Checkbox";
 
-import type { MdtApplication } from "./imports";
+import { isChosen, type MdtApplication } from "./imports";
 
-// The share's applications and bundles with a box each. One the library has by name already cannot be ticked.
+// The share's applications and bundles with a box each. One the library has by name already cannot be ticked, and one
+// disabled in MDT starts unticked.
 export function MdtApplicationChoices({
   applications,
   left,
@@ -16,7 +17,7 @@ export function MdtApplicationChoices({
 }: {
   applications: MdtApplication[];
   left: ReadonlySet<string>;
-  onToggle: (id: string, chosen: boolean) => void;
+  onToggle: (id: string, chosen: boolean, byDefault: boolean) => void;
 }) {
   return (
     <section className="flex flex-col gap-2">
@@ -31,15 +32,20 @@ export function MdtApplicationChoices({
       {applications.map((application) => (
         <Checkbox
           key={application.id}
-          isSelected={!application.inLibrary && !left.has(application.id)}
+          isSelected={isChosen(application, left)}
           isDisabled={application.inLibrary}
           onChange={(chosen) => {
-            onToggle(application.id, chosen);
+            onToggle(application.id, chosen, application.enabled);
           }}
         >
           <span className="flex min-w-0 flex-col">
             <span>{application.name}</span>
             <span className="type-small text-muted">
+              {application.enabled ? null : (
+                <>
+                  <Trans>Disabled in MDT.</Trans>{" "}
+                </>
+              )}
               <Detail application={application} />
             </span>
           </span>

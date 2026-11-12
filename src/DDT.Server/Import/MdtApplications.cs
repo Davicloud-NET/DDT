@@ -41,7 +41,8 @@ public static class MdtApplications
                 Value(entry, "Source"),
                 Value(entry, "UninstallKey"),
                 string.Equals(Value(entry, "Reboot"), "True", StringComparison.OrdinalIgnoreCase),
-                [.. Children(entry, "Dependency").Select(dependency => Key(dependency.Value)).OfType<string>().Distinct()]);
+                [.. Children(entry, "Dependency").Select(dependency => Key(dependency.Value)).OfType<string>().Distinct()],
+                !string.Equals(entry.Attribute("enable")?.Value.Trim(), "False", StringComparison.OrdinalIgnoreCase));
         }
 
         return [.. read.Values];
@@ -60,7 +61,8 @@ public static class MdtApplications
             application.Publisher,
             application.HasFiles,
             application.IsBundle ? ApplicationReferenceKind.Bundle : ApplicationReferenceKind.Application,
-            libraryNames.Contains(ApplicationNames.Normalize(application.Name) ?? ""));
+            libraryNames.Contains(ApplicationNames.Normalize(application.Name) ?? ""),
+            application.Enabled);
     }
 
     // A guid in the form {lower case}, with or without braces in the file. Anything else stays as written, so a note can

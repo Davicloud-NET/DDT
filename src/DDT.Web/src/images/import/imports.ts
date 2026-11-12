@@ -68,7 +68,8 @@ export interface MdtDriverGroup {
   model: string | null;
 }
 
-// An application or bundle of the share. inLibrary says the library has one of that name already.
+// An application or bundle of the share. inLibrary says the library has one of that name already. A disabled one
+// only hides from MDT's wizard; MDT still installs it for a bundle that depends on it.
 export interface MdtApplication {
   id: string;
   name: string;
@@ -77,6 +78,12 @@ export interface MdtApplication {
   hasFiles: boolean;
   kind: "Application" | "Bundle";
   inLibrary: boolean;
+  enabled: boolean;
+}
+
+// toggled holds what differs from the start: an enabled application unticked, or a disabled one ticked.
+export function isChosen(application: MdtApplication, toggled: ReadonlySet<string>): boolean {
+  return !application.inLibrary && application.enabled !== toggled.has(application.id);
 }
 
 // What an MDT deployment share holds that DDT imports, and what it has no place for yet.

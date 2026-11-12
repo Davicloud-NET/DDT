@@ -50,7 +50,7 @@ internal static class MdtApplicationShares
                 <Name>VC++ Runtime</Name><CommandLine>\\files\apps\vc_redist.x64.exe /install /quiet</CommandLine>
                 <WorkingDirectory /><Source /><UninstallKey>VCRuntime</UninstallKey><Reboot>TRUE</Reboot>
               </application>
-              <application guid="{Notepad}" enable="False">
+              <application guid="{Notepad}" enable="false">
                 <Name>Notepad++; portable</Name><CommandLine>npp.exe /S</CommandLine>
                 <WorkingDirectory>.\Applications\Other</WorkingDirectory><Source>.\Applications\Notepad</Source>
                 <Dependency>{Runtime.ToUpperInvariant()}</Dependency><Dependency>{BaseBundle}</Dependency><Dependency>{Missing}</Dependency>

@@ -7,7 +7,7 @@ using DDT.Contracts.Applications;
 namespace DDT.Contracts.Import;
 
 // An application or bundle of an MDT deployment share, by its guid. Name is what DDT would call it, and InLibrary says
-// an application or bundle of that name is in the library already.
+// an application or bundle of that name is in the library already. Enabled is MDT's enable attribute.
 public sealed record MdtApplication(
     string Id,
     string Name,
@@ -15,4 +15,5 @@ public sealed record MdtApplication(
     string? Publisher,
     bool HasFiles,
     ApplicationReferenceKind Kind,
-    bool InLibrary);
+    bool InLibrary,
+    bool Enabled = true);

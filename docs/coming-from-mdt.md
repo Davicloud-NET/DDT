@@ -193,6 +193,8 @@ The import dialog brings a share's applications and bundles over:
   restart 3010.
 - **Dependencies** come along. A dependency on a bundle becomes that bundle's applications.
   Bundles keep their order.
+- **Disabled applications** are listed unticked. MDT still installs one for a bundle that depends on it,
+  and so does the import.
 - **What is left out**, a dependency that is missing or would close a circle, is named in the
   result.
 - **Names the library has already** are left alone, and the imported entries link to them. A second

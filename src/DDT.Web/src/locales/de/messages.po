@@ -3884,6 +3884,10 @@ msgstr "Konto deaktivieren"
 msgid "Disabled"
 msgstr "Deaktiviert"
 
+#: src/images/import/MdtApplicationChoices.tsx
+msgid "Disabled in MDT."
+msgstr "In MDT deaktiviert."
+
 #: src/settings/parts/SettingsSection.tsx
 #: src/uploads/UnfinishedUploads.tsx
 msgid "Discard"

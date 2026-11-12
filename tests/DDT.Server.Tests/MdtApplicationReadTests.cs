@@ -39,6 +39,15 @@ public sealed class MdtApplicationReadTests : IDisposable
     }
 
     [Fact]
+    public void OnlyEnableFalseDisablesAnEntry()
+    {
+        IReadOnlyList<MdtShareApplication> read = MdtApplications.Read(_share);
+
+        Assert.Equal([Notepad], read.Where(entry => !entry.Enabled).Select(entry => entry.Id));
+        Assert.False(MdtApplications.View(Read(Notepad), new HashSet<string>()).Enabled);
+    }
+
+    [Fact]
     public void TakesGuidsWithOrWithoutBracesAndTrueInAnyCase()
     {
         MdtShareApplication runtime = Read(Runtime);

@@ -12,8 +12,11 @@ internal sealed record TestExeOptions
 
     public Version? FixedVersion { get; init; }
 
-    // Bytes after the version resource in .rsrc, such as Inno Setup's offset table.
+    // Bytes after the resources in .rsrc, outside the directory.
     public byte[] MoreResources { get; init; } = [];
+
+    // Inno Setup's offset table, as RT_RCDATA 11111.
+    public byte[]? InnoOffsetTable { get; init; }
 
     // The content of a .wixburn section, when there is one.
     public byte[]? BurnSection { get; init; }

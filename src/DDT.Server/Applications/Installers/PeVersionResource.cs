@@ -13,58 +13,14 @@ namespace DDT.Server.Applications.Installers;
 internal static class PeVersionResource
 {
     private const uint VersionResourceType = 16;
-    private const uint SubdirectoryFlag = 0x80000000;
     private const uint FixedInfoSignature = 0xFEEF04BD;
     private const int FixedInfoLength = 52;
     private const int NodeHeaderLength = 6;
 
-    public static PeVersionInfo Read(ReadOnlySpan<byte> section, PeSection layout, uint resourceRva)
-    {
-        int directory = (int)(resourceRva - layout.VirtualAddress);
-
-        if (resourceRva < layout.VirtualAddress || directory >= section.Length
-            || Child(section, directory, directory, VersionResourceType) is not { } names
-            || Child(section, directory, names, null) is not { } languages
-            || Child(section, directory, languages, null) is not { } data
-            || data + 8 > section.Length)
-        {
-            return PeVersionInfo.None;
-        }
-
-        uint rva = BinaryPrimitives.ReadUInt32LittleEndian(section[data..]);
-        uint length = BinaryPrimitives.ReadUInt32LittleEndian(section[(data + 4)..]);
-        long start = (long)rva - layout.VirtualAddress;
-
-        return rva < layout.VirtualAddress || start + length > section.Length
-            ? PeVersionInfo.None
-            : Parse(section.Slice((int)start, (int)length));
-    }
-
-    // The offset an entry of the resource directory at offset points to: the one with the id, or else the first.
-    private static int? Child(ReadOnlySpan<byte> section, int root, int offset, uint? id)
-    {
-        if (offset < 0 || offset + 16 > section.Length)
-        {
-            return null;
-        }
-
-        int count = BinaryPrimitives.ReadUInt16LittleEndian(section[(offset + 12)..]) + BinaryPrimitives.ReadUInt16LittleEndian(section[(offset + 14)..]);
-
-        for (int index = 0; index < count && offset + 16 + (index * 8) + 8 <= section.Length; index++)
-        {
-            ReadOnlySpan<byte> entry = section[(offset + 16 + (index * 8))..];
-            uint name = BinaryPrimitives.ReadUInt32LittleEndian(entry);
-
-            if (id is null || name == id)
-            {
-                long target = root + (long)(BinaryPrimitives.ReadUInt32LittleEndian(entry[4..]) & ~SubdirectoryFlag);
-
-                return target < section.Length ? (int)target : null;
-            }
-        }
-
-        return null;
-    }
+    public static PeVersionInfo Read(ReadOnlySpan<byte> section, PeSection layout, uint resourceRva) =>
+        PeResourceDirectory.Find(section, layout, resourceRva, VersionResourceType, null) is (int start, int length)
+            ? Parse(section.Slice(start, length))
+            : PeVersionInfo.None;
 
     private static PeVersionInfo Parse(ReadOnlySpan<byte> info)
     {

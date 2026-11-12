@@ -15,7 +15,6 @@ internal static class TestExe
     private const int OptionalHeader = PeOffset + 24;
     private const int HeadersLength = 0x400;
     private const uint ResourceRva = 0x2000;
-    private const int VersionOffset = 0x58;
 
     public static byte[] Create(TestExeOptions options)
     {
@@ -78,30 +77,56 @@ internal static class TestExe
         return file;
     }
 
-    // The resource directory: RT_VERSION, id 1, language 1033, then the data entry and the VS_VERSIONINFO.
+    // The resource directory: per resource a type, a name and a language 1033 level, then the data entries and data.
     private static byte[] Resources(TestExeOptions options)
     {
-        if (options.VersionStrings.Count == 0 && options.FixedVersion is null)
+        List<(uint Type, uint Name, byte[] Data)> resources = [];
+
+        if (options.InnoOffsetTable is { } table)
+        {
+            resources.Add((10, 11111, table));
+        }
+
+        if (options.VersionStrings.Count > 0 || options.FixedVersion is not null)
+        {
+            resources.Add((16, 1, VersionInfo(options)));
+        }
+
+        if (resources.Count == 0)
         {
             return [.. new byte[16], .. options.MoreResources];
         }
 
-        byte[] version = VersionInfo(options);
-        byte[] directory = new byte[VersionOffset];
-        Directory(directory, 0x00, 16, 0x80000018);
-        Directory(directory, 0x18, 1, 0x80000030);
-        Directory(directory, 0x30, 1033, 0x48);
-        BinaryPrimitives.WriteUInt32LittleEndian(directory.AsSpan(0x48), ResourceRva + VersionOffset);
-        BinaryPrimitives.WriteInt32LittleEndian(directory.AsSpan(0x4C), version.Length);
+        int levels = 16 + (resources.Count * 8);
+        byte[] directory = new byte[levels + (resources.Count * 64)];
+        List<byte> data = [];
+        BinaryPrimitives.WriteUInt16LittleEndian(directory.AsSpan(14), (ushort)resources.Count);
 
-        return [.. directory, .. Align(version, 4), .. options.MoreResources];
+        for (int index = 0; index < resources.Count; index++)
+        {
+            (uint type, uint name, byte[] bytes) = resources[index];
+            int names = levels + (index * 64);
+            Entry(directory, 16 + (index * 8), type, 0x80000000 | (uint)names);
+            Directory(directory, names, name, 0x80000000 | (uint)(names + 24));
+            Directory(directory, names + 24, 1033, (uint)(names + 48));
+            BinaryPrimitives.WriteUInt32LittleEndian(directory.AsSpan(names + 48), ResourceRva + (uint)(directory.Length + data.Count));
+            BinaryPrimitives.WriteInt32LittleEndian(directory.AsSpan(names + 52), bytes.Length);
+            data.AddRange(Align(bytes, 4));
+        }
+
+        return [.. directory, .. data, .. options.MoreResources];
     }
 
     private static void Directory(byte[] resources, int offset, uint id, uint target)
     {
         BinaryPrimitives.WriteUInt16LittleEndian(resources.AsSpan(offset + 14), 1);
-        BinaryPrimitives.WriteUInt32LittleEndian(resources.AsSpan(offset + 16), id);
-        BinaryPrimitives.WriteUInt32LittleEndian(resources.AsSpan(offset + 20), target);
+        Entry(resources, offset + 16, id, target);
+    }
+
+    private static void Entry(byte[] resources, int offset, uint id, uint target)
+    {
+        BinaryPrimitives.WriteUInt32LittleEndian(resources.AsSpan(offset), id);
+        BinaryPrimitives.WriteUInt32LittleEndian(resources.AsSpan(offset + 4), target);
     }
 
     private static byte[] VersionInfo(TestExeOptions options)

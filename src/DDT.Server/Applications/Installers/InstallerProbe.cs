@@ -47,7 +47,26 @@ public static class InstallerProbe
             : installer.ReadAtMost(resourceSection.RawOffset, (int)Math.Min(resourceSection.RawLength, MaxResourceLength));
         PeVersionInfo version = resourceSection is null ? PeVersionInfo.None : PeVersionResource.Read(resources, resourceSection, layout.ResourceRva);
         (InstallerKind kind, string? bundleCode) = ExecutableInstallerMarkers.Recognize(installer, layout, resources);
+        string? uninstallKey = UninstallKeyOf(installer, kind, layout, resources, resourceSection);
 
-        return new InstallerFacts(kind, version.ProductName, version.CompanyName, version.ProductVersion, BundleCode: bundleCode);
+        return new InstallerFacts(kind, version.ProductName, version.CompanyName, version.ProductVersion, BundleCode: bundleCode, UninstallKey: uninstallKey);
+    }
+
+    // The file comes from outside and the readers decompress parts of it, so any failure there is no key, never an
+    // error for the upload.
+    private static string? UninstallKeyOf(Stream installer, InstallerKind kind, PeLayout layout, ReadOnlySpan<byte> resources, PeSection? resourceSection)
+    {
+        try
+        {
+            return kind switch
+            {
+                InstallerKind.InnoSetup when resourceSection is not null => InnoSetupKey.Read(installer, resources, resourceSection, layout.ResourceRva),
+                _ => null,
+            };
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            return null;
+        }
     }
 }

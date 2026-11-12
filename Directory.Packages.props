@@ -44,6 +44,11 @@
     <PackageVersion Include="DiscUtils.Udf" Version="0.16.13" />
   </ItemGroup>
 
+  <ItemGroup Label="Applications">
+    <!-- LZMA for the headers of Inno Setup and NSIS installers, server only. -->
+    <PackageVersion Include="SharpCompress" Version="0.50.8" />
+  </ItemGroup>
+
   <ItemGroup Label="Console">
     <PackageVersion Include="Avalonia" Version="12.1.4" />
     <PackageVersion Include="Avalonia.HarfBuzz" Version="12.1.4" />

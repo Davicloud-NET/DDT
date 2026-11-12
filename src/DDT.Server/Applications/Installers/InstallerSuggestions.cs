@@ -41,7 +41,7 @@ public static class InstallerSuggestions
 
         string command = convention.ViaMsiexec ? $"msiexec /i \"{fileName}\" {convention.Arguments}" : $"\"{fileName}\" {convention.Arguments}";
         string? productCode = facts.Kind == InstallerKind.Msi ? Code(facts.ProductCode) : null;
-        string? uninstallKey = facts.Kind == InstallerKind.Burn ? Code(facts.BundleCode) : null;
+        string? uninstallKey = facts.Kind == InstallerKind.Burn ? Code(facts.BundleCode) : facts.UninstallKey;
 
         return new InstallerSuggestion(command, [.. convention.SuccessExitCodes], [.. convention.RestartExitCodes], productCode, uninstallKey);
     }

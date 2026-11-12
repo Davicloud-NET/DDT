@@ -5,7 +5,7 @@
 namespace DDT.Server.Applications.Installers;
 
 // A silent install the library proposes for an upload. ProductCode suggests an MSI detection rule, UninstallKey one on
-// the uninstall key a Burn bundle registers; the usual x86 engine puts it in the 32-bit view (WOW6432Node).
+// the uninstall key a Burn bundle, an Inno Setup or an NSIS installer registers, in either registry view.
 public sealed record InstallerSuggestion(
     string CommandLine,
     IReadOnlyList<int> SuccessExitCodes,

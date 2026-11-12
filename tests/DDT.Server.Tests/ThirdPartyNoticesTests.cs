@@ -36,15 +36,17 @@ public sealed class ThirdPartyNoticesTests
         string notices = await File.ReadAllTextAsync(Path.Combine(root, "THIRD-PARTY-NOTICES.md"), cancellationToken);
 
         List<string> shipped = [];
-        shipped.AddRange(await NuGetPackagesAsync(Path.Combine(root, "src", "DDT.Host", "obj", "project.assets.json"), cancellationToken));
+        List<string> host = await NuGetPackagesAsync(Path.Combine(root, "src", "DDT.Host", "obj", "project.assets.json"), cancellationToken);
+        shipped.AddRange(host);
         List<string> agent = await NuGetPackagesAsync(Path.Combine(root, "src", "DDT.Agent", "obj", "project.assets.json"), cancellationToken);
         shipped.AddRange(agent);
         List<string> linuxAgent = await NuGetPackagesAsync(Path.Combine(root, "src", "DDT.Agent.Linux", "obj", "project.assets.json"), cancellationToken);
         shipped.AddRange(linuxAgent);
-        shipped.AddRange(await NuGetPackagesAsync(
+        List<string> console = await NuGetPackagesAsync(
             Path.Combine(root, "src", "DDT.MachineConsole.Windows", "obj", "project.assets.json"),
             cancellationToken,
-            ConsoleTarget));
+            ConsoleTarget);
+        shipped.AddRange(console);
         List<string> linuxConsole = await NuGetPackagesAsync(
             Path.Combine(root, "src", "DDT.MachineConsole.Linux", "obj", "project.assets.json"),
             cancellationToken,
@@ -57,6 +59,10 @@ public sealed class ThirdPartyNoticesTests
         // DDT.Agent.Core references it, so the agent's restore has to list what its library brings.
         Assert.Contains("ZstdSharp.Port", agent);
         Assert.Contains("ZstdSharp.Port", linuxAgent);
+
+        // The installer readers' LZMA stays on the server.
+        Assert.Contains("SharpCompress", host);
+        Assert.All(new[] { agent, linuxAgent, console, linuxConsole }, packages => Assert.DoesNotContain("SharpCompress", packages));
         Assert.Contains("SkiaSharp.NativeAssets.Win32", shipped);
         Assert.Contains("Avalonia.LinuxFramebuffer", linuxConsole);
         Assert.Contains("react", shipped);

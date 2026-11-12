@@ -45,6 +45,14 @@ public sealed class InstallerSuggestionsTests
         Assert.Equal([3010], suggestion?.RestartExitCodes);
     }
 
+    [Theory]
+    [InlineData(InstallerKind.InnoSetup, "Example App_is1")]
+    [InlineData(InstallerKind.Nsis, "Example App")]
+    public void AnInnoSetupOrNsisInstallerSuggestsTheKeyItWrites(InstallerKind kind, string key)
+    {
+        Assert.Equal(key, InstallerSuggestions.For(new InstallerFacts(kind, UninstallKey: key), "setup.exe")?.UninstallKey);
+    }
+
     [Fact]
     public void ABurnBundleTakesAnotherVersionAlreadyInstalledAsSuccess() =>
         Assert.Equal([0, 1638], InstallerSuggestions.For(new InstallerFacts(InstallerKind.Burn), "bundle.exe")?.SuccessExitCodes);

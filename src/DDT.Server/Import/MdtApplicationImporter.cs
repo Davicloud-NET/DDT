@@ -70,7 +70,7 @@ public sealed class MdtApplicationImporter(CurrentImport state, LibraryFileImpor
             return Refused(application, problem);
         }
 
-        (Guid? packageId, ServerMessage? refusal) = await FilesAsync(run, application, cancellationToken).ConfigureAwait(false);
+        (ApplicationUpload? upload, ServerMessage? refusal) = await FilesAsync(run, application, cancellationToken).ConfigureAwait(false);
 
         if (refusal is not null)
         {
@@ -87,7 +87,7 @@ public sealed class MdtApplicationImporter(CurrentImport state, LibraryFileImpor
         await using (scope.ConfigureAwait(false))
         {
             EditOutcome<ApplicationView> outcome = await scope.ServiceProvider.GetRequiredService<ApplicationEditor>()
-                .CreateAsync(MdtApplicationRequests.Of(application, packageId, dependsOn), run.Actor, cancellationToken)
+                .CreateAsync(MdtApplicationRequests.Of(application, upload?.Files.PackageId, dependsOn, upload?.Suggestion), run.Actor, cancellationToken)
                 .ConfigureAwait(false);
 
             if (outcome.Saved is not { } saved)
@@ -102,8 +102,8 @@ public sealed class MdtApplicationImporter(CurrentImport state, LibraryFileImpor
         }
     }
 
-    // The package of the Source folder's files, or none for an application without.
-    private async Task<(Guid? PackageId, ServerMessage? Refusal)> FilesAsync(Run run, MdtShareApplication application, CancellationToken cancellationToken)
+    // The upload of the Source folder's files, or none for an application without.
+    private async Task<(ApplicationUpload? Upload, ServerMessage? Refusal)> FilesAsync(Run run, MdtShareApplication application, CancellationToken cancellationToken)
     {
         if (!application.HasFiles)
         {
@@ -119,7 +119,7 @@ public sealed class MdtApplicationImporter(CurrentImport state, LibraryFileImpor
             .ConfigureAwait(false);
 
         return completion.Application is { } upload
-            ? (upload.Files.PackageId, null)
+            ? (upload, null)
             : (null, completion.Refusal ?? ServerMessages.ImportFailed.With());
     }
 

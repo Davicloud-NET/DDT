@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Server.Tests.Applications;
+
 namespace DDT.Server.Tests;
 
 // An MDT deployment share with applications and bundles, Applications.xml as the Deployment Workbench writes it, with
@@ -19,6 +21,7 @@ internal static class MdtApplicationShares
     public const string NoCommand = "{a0000000-0000-0000-0000-000000000009}";
     public const string Viewer = "{a0000000-0000-0000-0000-00000000000a}";
     public const string UsesViewer = "{a0000000-0000-0000-0000-00000000000b}";
+    public const string StoreApp = "{a0000000-0000-0000-0000-00000000000c}";
     public const string Missing = "{ffffffff-0000-0000-0000-000000000000}";
 
     public const string ProductCode = "{23170F69-40C1-2702-2409-000001000000}";
@@ -31,6 +34,7 @@ internal static class MdtApplicationShares
         Files(share, "7-Zip 24.09", ("7z.msi", "msi"), (Path.Combine("docs", "readme.txt"), "read me"));
         Files(share, "Notepad", ("npp.exe", "exe"));
         Files(share, "Viewer", ("viewer.exe", "exe"));
+        StoreAppFiles(Path.Combine(share, "Applications", "Contoso App"));
 
         File.WriteAllText(Path.Combine(control, "Applications.xml"), $"""
             <?xml version="1.0"?>
@@ -65,6 +69,14 @@ internal static class MdtApplicationShares
                 <DisplayName>Viewer</DisplayName><CommandLine>viewer.exe /S</CommandLine><Source>.\Applications\Viewer</Source>
               </application>
               <application guid="{UsesViewer}"><Name>Uses Viewer</Name><CommandLine>plugin.cmd</CommandLine><Dependency>{Viewer}</Dependency></application>
+              <application guid="{StoreApp}" hide="True" enable="True">
+                <Name>Contoso App</Name><Comments></Comments><ShortName>Contoso App</ShortName><Version></Version><Publisher></Publisher>
+                <Language></Language><Source>.\Applications\Contoso App</Source><Destination>.\Applications\Contoso App</Destination>
+                <WorkingDirectory>.\Applications\Contoso App</WorkingDirectory><UninstallKey></UninstallKey><Reboot>False</Reboot>
+                <CommandLine>Contoso.App.appxbundle</CommandLine><SupportedPlatform>All x64 Windows 10 and Newer</SupportedPlatform>
+                <CreatedTime>11/12/2026 09:14:22</CreatedTime><CreatedBy>CONTOSO\admin</CreatedBy>
+                <LastModifiedTime>11/12/2026 09:14:22</LastModifiedTime><LastModifiedBy>CONTOSO\admin</LastModifiedBy>
+              </application>
               <application><Name>No guid</Name><CommandLine>x.cmd</CommandLine></application>
               <application guid="{SevenZip}"><Name>7-Zip listed twice</Name><CommandLine>x.cmd</CommandLine></application>
             </applications>
@@ -83,5 +95,14 @@ internal static class MdtApplicationShares
             Directory.CreateDirectory(Path.GetDirectoryName(file) ?? path);
             File.WriteAllText(file, content);
         }
+    }
+
+    // An app bundle, its framework under Dependencies\x64 and its Store licence, as MDT's own layout has them.
+    private static void StoreAppFiles(string folder)
+    {
+        Directory.CreateDirectory(Path.Combine(folder, "Dependencies", "x64"));
+        File.WriteAllBytes(Path.Combine(folder, "Contoso.App.appxbundle"), TestMsix.Bundle("Contoso.App"));
+        File.WriteAllBytes(Path.Combine(folder, "Dependencies", "x64", "Microsoft.VCLibs.x64.appx"), TestMsix.Package("Microsoft.VCLibs.140.00", framework: true));
+        File.WriteAllText(Path.Combine(folder, "Contoso.App_License1.xml"), """<License Version="1" xmlns="urn:schemas-microsoft-com:windows:store:licensing:ls"/>""");
     }
 }

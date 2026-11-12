@@ -21,7 +21,7 @@ public sealed class MdtApplicationReadTests : IDisposable
         IReadOnlyList<MdtShareApplication> read = MdtApplications.Read(_share);
 
         Assert.Equal(
-            ["7-Zip 24.09", "VC++ Runtime", "Notepad++, portable", "Base Bundle", "Inner Bundle", "Cycle One", "Cycle Two", "Empty Bundle", "No Command", "Viewer", "Uses Viewer"],
+            ["7-Zip 24.09", "VC++ Runtime", "Notepad++, portable", "Base Bundle", "Inner Bundle", "Cycle One", "Cycle Two", "Empty Bundle", "No Command", "Viewer", "Uses Viewer", "Contoso App"],
             read.Select(entry => entry.Name));
         Assert.Equal(
             [BaseBundle, InnerBundle, EmptyBundle],
@@ -97,7 +97,7 @@ public sealed class MdtApplicationReadTests : IDisposable
         MdtApplicationOrder order = MdtApplicationGraph.Order([entries[Notepad], .. applications.Where(entry => entry.Id != Notepad)], dependencies);
 
         Assert.Equal(
-            ["VC++ Runtime", "7-Zip 24.09", "Notepad++, portable", "Cycle Two", "Cycle One", "No Command", "Viewer", "Uses Viewer"],
+            ["VC++ Runtime", "7-Zip 24.09", "Notepad++, portable", "Cycle Two", "Cycle One", "No Command", "Viewer", "Uses Viewer", "Contoso App"],
             order.Applications.Select(entry => entry.Name));
         Assert.Equal([(CycleTwo, CycleOne)], order.Cut);
     }

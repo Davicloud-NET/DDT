@@ -37,7 +37,7 @@ public sealed class MdtApplicationImportTests : IDisposable
 
         MdtShareView view = await RegisteredMachine.ReadAsync<MdtShareView>(await administrator.PostAsync($"{Mdt}/inspect", new InspectMdtShareRequest(share)));
 
-        Assert.Equal(11, view.Applications.Count);
+        Assert.Equal(12, view.Applications.Count);
         Assert.Equal(
             new MdtApplication(SevenZip, "7-Zip 24.09", "24.09", "Igor Pavlov", true, ApplicationReferenceKind.Application, false),
             view.Applications[0]);
@@ -78,6 +78,23 @@ public sealed class MdtApplicationImportTests : IDisposable
         Assert.Equal(new UninstallKeyDetection("VCRuntime"), runtime.Detection);
         Assert.Empty(runtime.SuccessExitCodes);
         Assert.Equal([0, 3010], runtime.RestartExitCodes);
+    }
+
+    [Fact]
+    public async Task AnAppBundleTheCommandNamesBecomesAnMsixApplicationWithItsDependencyAndLicence()
+    {
+        SignedInClient administrator = await _application.AdministratorAsync();
+
+        ImportStatus job = await ImportAsync(administrator, StoreApp);
+
+        Assert.Equal(new ImportResult("Contoso App", ImportOutcome.Added, Notes: []), job.Results.Single(), ResultComparer.Instance);
+        ApplicationView app = Assert.Single(await ApplicationsAsync(administrator));
+        Assert.Equal((ApplicationKind.Msix, (string?)null), (app.Kind, app.Command));
+        Assert.Equal(new PackageFamilyDetection("Contoso.App_8wekyb3d8bbwe", "2.0.0.0"), app.Detection);
+        Assert.Equal([0], app.SuccessExitCodes);
+        Assert.Equal([3010], app.RestartExitCodes);
+        Assert.True(MdtApplicationRequests.NamesPackage(" \"Contoso.App.APPX\" "));
+        Assert.False(MdtApplicationRequests.NamesPackage("Contoso.App.msixbundle"));
     }
 
     [Fact]

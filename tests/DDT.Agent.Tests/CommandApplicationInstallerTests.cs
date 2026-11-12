@@ -47,6 +47,28 @@ public sealed class CommandApplicationInstallerTests : IDisposable
         Assert.False(File.Exists(file));
     }
 
+    // The real cmd runs a for loop's variables as typed, here calling both .cmd files in the working directory.
+    [Fact]
+    public async Task ALoopVariableReachesCmdAsTyped()
+    {
+        string work = Work();
+        File.WriteAllText(Path.Combine(work, "first.cmd"), "@echo first> first.txt\r\n");
+        File.WriteAllText(Path.Combine(work, "second.cmd"), "@echo second> second.txt\r\n");
+
+        Assert.Equal(0, await RunInCmdAsync(@"cmd.exe /c for %i in ( *.cmd ) do call ""%~fi""", work));
+        Assert.True(File.Exists(Path.Combine(work, "first.txt")));
+        Assert.True(File.Exists(Path.Combine(work, "second.txt")));
+    }
+
+    [Fact]
+    public async Task AReferenceStillExpandsInCmd()
+    {
+        string work = Work();
+
+        Assert.Equal(0, await RunInCmdAsync("cmd.exe /c echo %SystemRoot%> out.txt", work));
+        Assert.Equal(Environment.GetEnvironmentVariable("SystemRoot"), File.ReadAllText(Path.Combine(work, "out.txt")).Trim());
+    }
+
     [Fact]
     public async Task AnApplicationWithoutACommandLineRunsNothing()
     {
@@ -57,5 +79,20 @@ public sealed class CommandApplicationInstallerTests : IDisposable
 
         Assert.Equal("It has no command line. Give it one in the library, then assign the sequence again.", refused.Message);
         Assert.Empty(_tools.Calls);
+    }
+
+    private string Work()
+    {
+        Directory.CreateDirectory(Scripts);
+
+        return Directory.CreateDirectory(Path.Combine(_root, "work")).FullName;
+    }
+
+    private Task<int> RunInCmdAsync(string command, string work)
+    {
+        ApplicationLaunch launch = new(Tool with { Command = command }, work, Scripts, _root, new Dictionary<string, string>());
+
+        return new CommandApplicationInstaller(new ToolRunner(_log, TimeProvider.System, AnsiCodePage.Decode), _log)
+            .InstallAsync(launch, TestContext.Current.CancellationToken);
     }
 }

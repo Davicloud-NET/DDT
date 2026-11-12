@@ -9,8 +9,7 @@ using DDT.Contracts.Applications;
 
 namespace DDT.Agent.Applications;
 
-// Runs a Command application's command line as SYSTEM, from a cmd file as a script runs, so quotes reach the installer
-// as written. cmd expands %variables% in it, nothing else changes it.
+// Runs a Command application's command line as SYSTEM from a cmd file; cmd expands %NAME% references, nothing else.
 public sealed class CommandApplicationInstaller(IToolRunner tools, AgentLog log) : IApplicationKindInstaller
 {
     public ApplicationKind Kind => ApplicationKind.Command;
@@ -29,7 +28,7 @@ public sealed class CommandApplicationInstaller(IToolRunner tools, AgentLog log)
         }
 
         string file = Path.Combine(launch.Scripts, application.Id.ToString("D") + ".cmd");
-        await File.WriteAllBytesAsync(file, WindowsScriptLauncher.CmdFile(application.Command), cancellationToken).ConfigureAwait(false);
+        await File.WriteAllBytesAsync(file, WindowsScriptLauncher.CmdFile(CommandPercents.ForBatchFile(application.Command)), cancellationToken).ConfigureAwait(false);
 
         try
         {

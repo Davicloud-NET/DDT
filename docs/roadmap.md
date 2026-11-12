@@ -165,8 +165,8 @@ Three parts, each a pull request that works by itself. The first is built.
      - run as its account DDTDeploy, an administrator only while winget runs;
      - need internet on the machine;
      - Windows 11 and Windows Server 2025, which bring winget.
-   - Tried in unit tests and end-to-end dry runs only. Not on a virtual or physical machine yet;
-     DISM for MSIX never ran.
+   - Tried on a Hyper-V virtual machine with Windows 11 25H2. Not on Windows Server or a physical
+     machine yet.
 2. **Windows in the run.**
    - **Windows Update** during a run, from Microsoft Update or WSUS, before and after the
      applications, restarting until nothing is left to install. [Windows Update steps]

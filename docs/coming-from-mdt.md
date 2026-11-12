@@ -183,7 +183,7 @@ The import dialog brings a share's applications and bundles over:
   and nothing else.
 - **The working folder.** DDT runs the command in the folder of the unpacked files, not in MDT's
   WorkingDirectory. Where the two differ, the result says so.
-- **UninstallKey** becomes a detection: a GUID a product code, anything else an uninstall key.
+- **UninstallKey** becomes an uninstall key detection, also a GUID, as MDT looks it up.
 - **Reboot.** `Reboot=True` imports as no success code and the restart codes 0 and 3010, so the
   machine restarts after the installer whatever it returns. `Reboot=False` imports as success 0 and
   restart 3010.

@@ -4,7 +4,6 @@
 
 using DDT.Contracts.Applications;
 using DDT.Contracts.Messages;
-using DDT.Core.Applications;
 using DDT.Server.Applications;
 using DDT.Server.Images;
 
@@ -47,11 +46,8 @@ public static class MdtApplicationRequests
             : null;
     }
 
-    // A GUID is an MSI's product code, anything else the name of a key under Uninstall.
-    private static ApplicationDetection? Detection(string? uninstallKey) =>
-        ApplicationDetectionRules.NormalizedProductCode(uninstallKey) is { } productCode ? new ProductCodeDetection(productCode)
-        : uninstallKey is null ? null
-        : new UninstallKeyDetection(uninstallKey);
+    // MDT looks the value up under Uninstall, also a GUID, which may be a Burn bundle's and no MSI's product code.
+    private static UninstallKeyDetection? Detection(string? uninstallKey) => uninstallKey is null ? null : new UninstallKeyDetection(uninstallKey);
 
     private static string Folder(string? path) => (path ?? "").Replace('/', '\\').TrimStart('.').Trim('\\').Trim();
 }

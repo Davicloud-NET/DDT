@@ -46,7 +46,7 @@ public sealed class MdtApplicationImportTests : IDisposable
     }
 
     [Fact]
-    public async Task AnApplicationWithASourceFolderGetsItsFilesAndItsProductCode()
+    public async Task AnApplicationWithASourceFolderGetsItsFilesAndItsUninstallKeyEvenAGuid()
     {
         SignedInClient administrator = await _application.AdministratorAsync();
 
@@ -57,7 +57,7 @@ public sealed class MdtApplicationImportTests : IDisposable
         Assert.Equal(
             (ApplicationKind.Command, "msiexec /i 7z.msi /qn", "Packs files.", "Igor Pavlov", "24.09"),
             (sevenZip.Kind, sevenZip.Command, sevenZip.Description, sevenZip.Publisher, sevenZip.Version));
-        Assert.Equal(new ProductCodeDetection(ProductCode), sevenZip.Detection);
+        Assert.Equal(new UninstallKeyDetection(ProductCode), sevenZip.Detection);
         Assert.Equal([0], sevenZip.SuccessExitCodes);
         Assert.Equal([3010], sevenZip.RestartExitCodes);
         Guid packageId = sevenZip.Files?.PackageId ?? Guid.Empty;

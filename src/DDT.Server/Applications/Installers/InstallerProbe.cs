@@ -61,6 +61,7 @@ public static class InstallerProbe
             return kind switch
             {
                 InstallerKind.InnoSetup when resourceSection is not null => InnoSetupKey.Read(installer, resources, resourceSection, layout.ResourceRva),
+                InstallerKind.Nsis => NsisUninstallKey.Read(installer, layout.OverlayOffset),
                 _ => null,
             };
         }

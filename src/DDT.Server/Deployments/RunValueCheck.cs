@@ -20,14 +20,15 @@ public sealed record RunValueCheck(
     // An input only the machine asks has no answer.
     bool HasUnansweredMachineInput)
 {
-    // An input only the machine asks is asked on every run, also with a default. The console asked it at the pick.
+    // An input only the machine asks is asked on every run, also with a default. The console asked it at the pick, and
+    // answers sent from the machine or its page may leave it empty.
     public bool AsksMachine(Deployment run)
     {
         ArgumentNullException.ThrowIfNull(run);
 
-        return HasUnansweredMachineInput && run.Source != DeploymentSource.Console;
+        return HasUnansweredMachineInput && run.Source != DeploymentSource.Console && !run.InputsAsked;
     }
 
-    // The run waits at its start. Answers the machine just gave may leave an input only it asks empty.
-    public bool Waits(Deployment run, bool machineAnswered) => Missing.Count > 0 || (!machineAnswered && AsksMachine(run));
+    // The run waits at its start.
+    public bool Waits(Deployment run) => Missing.Count > 0 || AsksMachine(run);
 }

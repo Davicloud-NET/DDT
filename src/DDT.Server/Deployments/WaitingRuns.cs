@@ -42,7 +42,7 @@ public sealed class WaitingRuns(
 
         RunValueCheck waiting = await values.CheckAsync(machine, run, definition, deployment, cancellationToken).ConfigureAwait(false);
 
-        if (!waiting.Waits(run, machineAnswered: false))
+        if (!waiting.Waits(run))
         {
             return new RunAnswering(run.Answers, [], [], null, Refused: true);
         }
@@ -72,7 +72,9 @@ public sealed class WaitingRuns(
             return new RunAnswering(before, waiting.AskedAtMachine, problems, null, Refused: false);
         }
 
-        run.InputsPending = check.Waits(run, given.AtMachine) && (given.AtMachine || run.InputsPending);
+        // Whoever was shown the inputs and sent them answered, also where a field stayed empty.
+        run.InputsAsked |= check.Missing.Count == 0;
+        run.InputsPending = check.Waits(run) && (given.AtMachine || run.InputsPending);
         run.UpdatedUtc = now;
         Actor answeredBy = given.Actor with { MachineId = given.AtMachine ? machine.Id : null };
 

@@ -547,6 +547,9 @@ namespace DDT.Server.Migrations.PostgreSql
                     b.Property<string>("Inputs")
                         .HasColumnType("text");
 
+                    b.Property<bool>("InputsAsked")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("InputsPending")
                         .HasColumnType("boolean");
 

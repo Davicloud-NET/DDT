@@ -102,6 +102,9 @@ public sealed class Deployment
     // The run waits at its start for answers to its inputs. See RunValueCheck.Waits.
     public bool InputsPending { get; set; }
 
+    // The run's inputs were answered once, at the machine or on its page, with nothing required left missing.
+    public bool InputsAsked { get; set; }
+
     // The Pause step the run waits at, its pass, and the message the agent worked out for it. Null while the run isn't
     // paused.
     public Guid? PauseStepId { get; set; }

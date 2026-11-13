@@ -541,6 +541,9 @@ namespace DDT.Server.Migrations.Sqlite
                     b.Property<string>("Inputs")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("InputsAsked")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("InputsPending")
                         .HasColumnType("INTEGER");
 

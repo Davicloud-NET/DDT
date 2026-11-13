@@ -175,7 +175,7 @@ public sealed class RunReports(DdtDbContext database, RunQueries queries, RunSta
     private async Task<DeploymentDecision> StartedAsync(ReceivedReport received, CancellationToken cancellationToken)
     {
         (Machine machine, Deployment run, AgentRunReport report) = (received.Machine, received.Run, received.Report);
-        RunStart start = await starts.StartAsync(machine, run, new RunStartCause(received.Address, received.Now), cancellationToken).ConfigureAwait(false);
+        RunStart start = await starts.StartAsync(machine, run, received.Address, received.Now, cancellationToken).ConfigureAwait(false);
 
         if (start.Error is { } problem)
         {

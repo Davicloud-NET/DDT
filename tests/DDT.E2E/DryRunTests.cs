@@ -138,7 +138,7 @@ public sealed class DryRunTests(DryRunLab lab)
 
         lab.AssertClean(
             [agent],
-            [TokenRefused, $"Step {packaged.Name} was stopped."],
+            [TokenRefused, $"Step {packaged.Name} was stopped"],
             ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
     }
 

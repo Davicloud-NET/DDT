@@ -157,18 +157,11 @@ public sealed class InstalledPhaseLoop
             return await SendFinalReportAsync(contact, run, local, final, cancellationToken).ConfigureAwait(false);
         }
 
-        if (!await _setup.WaitAsync(contact, run, local, cancellationToken).ConfigureAwait(false))
+        if (await GoOnAwakeAsync(contact, run, local, cancellationToken).ConfigureAwait(false) is not { } result)
         {
             return null;
         }
 
-        RunResult result = await _runner
-            .GoOnInInstalledSystemAsync(
-                Request(contact, run, local),
-                _profile.Phase,
-                _exit.RecordRestart,
-                cancellationToken)
-            .ConfigureAwait(false);
         next.RunToken = contact.Tokens.RunToken ?? next.RunToken;
         next.Unsent = result.UnsentReport;
 
@@ -178,6 +171,21 @@ public sealed class InstalledPhaseLoop
         }
 
         return await ExitCodeForAsync(result, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Null when the next registration decides. The machine stays awake until the runner returns.
+    private async Task<RunResult?> GoOnAwakeAsync(InstalledPhaseContact contact, AgentRun run, LocalRun local, CancellationToken cancellationToken)
+    {
+        using IDisposable? awake = _profile.KeepAwake?.Hold();
+
+        if (!await _setup.WaitAsync(contact, run, local, cancellationToken).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        return await _runner
+            .GoOnInInstalledSystemAsync(Request(contact, run, local), _profile.Phase, _exit.RecordRestart, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     // The first-logon settings are fetched before the Done report, while the server still has the run running.

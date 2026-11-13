@@ -16,7 +16,8 @@ public static class WindowsPhaseProfile
         ISetupProbe setup,
         IAutomaticRepair? automaticRepair,
         IDeploymentRecord? record = null,
-        IFirstLogon? firstLogon = null) => new()
+        IFirstLogon? firstLogon = null,
+        IKeepAwake? keepAwake = null) => new()
         {
             Environment = AgentEnvironment.Windows,
             Phase = SequencePhase.Windows,
@@ -24,6 +25,7 @@ public static class WindowsPhaseProfile
             AutomaticRepair = automaticRepair,
             DeploymentRecord = record,
             FirstLogon = firstLogon,
+            KeepAwake = keepAwake,
             WaitActivity = RunActivity.WaitingForWindowsSetup,
             RestartsAfterRemoval = true,
             Texts = new WindowsPhaseTexts(),

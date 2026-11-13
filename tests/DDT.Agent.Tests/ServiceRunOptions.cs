@@ -28,4 +28,6 @@ internal sealed record ServiceRunOptions
     public IDeploymentRecord? DeploymentRecord { get; init; }
 
     public IFirstLogon? FirstLogon { get; init; }
+
+    public IKeepAwake? KeepAwake { get; init; }
 }

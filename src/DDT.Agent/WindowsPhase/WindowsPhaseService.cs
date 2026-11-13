@@ -79,7 +79,7 @@ public static class WindowsPhaseService
                 (sid, pipeName) => console.Start(() => SessionPipe.Create(pipeName, sid)));
 
             SequenceRunner runner = Runner(parts, staged, status, new WindowsDeployAccount(session, accounts, log));
-            InstalledPhaseLoop loop = Loop(parts, runner, session, status, new WindowsFirstLogon(Registry.LocalMachine, accounts));
+            InstalledPhaseLoop loop = Loop(parts, runner, session, status, new WindowsFirstLogon(Registry.LocalMachine, accounts, FirstLogonScript.Folder, FirstLogonFolder.Create));
 
             // The control manager only needs to know whether the service failed.
             return await loop.RunAsync(cancellationToken).ConfigureAwait(false) switch

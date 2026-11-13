@@ -67,8 +67,8 @@ public sealed class FirstLogonDryRunTests(DryRunLab lab)
         {
             Assert.Equal(1, agent.Output.Count("local administrator yes, domain join no"));
             Assert.Equal(0, agent.Output.Count("automatic logon as"));
-            Assert.Equal(1, agent.Output.Count("Dry run: in Windows, RunOnce would run cmd /c echo one"));
-            Assert.Equal(1, agent.Output.Count("Dry run: in Windows, RunOnce would run cmd /c echo two"));
+            Assert.Equal(1, agent.Output.Count("Dry run: in Windows, the first-logon script would run cmd /c echo one"));
+            Assert.Equal(1, agent.Output.Count("Dry run: in Windows, the first-logon script would run cmd /c echo two"));
             Assert.Equal(1, agent.Output.Count("Dry run: in Windows, Winlogon would sign in as Admin 2 times."));
             Assert.Equal(1, agent.Output.Count("Set up 2 first-logon commands and the automatic logon of Admin, 2 times, from the next start of Windows."));
 
@@ -94,7 +94,7 @@ public sealed class FirstLogonDryRunTests(DryRunLab lab)
         await using (agent)
         {
             Assert.Equal(1, agent.Output.Count("local administrator yes, domain join no, automatic logon as Admin, 2 first-logon commands"));
-            Assert.Equal(0, agent.Output.Count("RunOnce would run"));
+            Assert.Equal(0, agent.Output.Count("the first-logon script would run"));
             Assert.Equal(0, agent.Output.Count("Winlogon would sign in"));
 
             lab.AssertClean([agent], [], ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));

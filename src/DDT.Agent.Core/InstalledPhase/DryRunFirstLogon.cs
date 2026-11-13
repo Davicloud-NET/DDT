@@ -15,7 +15,7 @@ public sealed class DryRunFirstLogon(AgentLog log) : IFirstLogon
 
         foreach (string command in firstLogon.Commands)
         {
-            log.Information($"Dry run: in Windows, RunOnce would run {command}");
+            log.Information($"Dry run: in Windows, the first-logon script would run {command}");
         }
 
         if (firstLogon.AutoLogon is { } autoLogon)

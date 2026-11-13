@@ -2,21 +2,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Globalization;
 using DDT.Agent.InstalledPhase;
 using DDT.Contracts.Agents;
 using Microsoft.Win32;
 
 namespace DDT.Agent.WindowsPhase;
 
-// The commands as HKLM RunOnce values, which Windows runs at the next sign-in of an administrator, and the automatic
+// The commands as a script that an HKLM RunOnce value starts at the next sign-in of an administrator, and the automatic
 // logon as Winlogon values with the password as the LSA secret. Only after DDT's session put Winlogon back.
-public sealed class WindowsFirstLogon(RegistryKey machine, ISessionAccounts accounts) : IFirstLogon
+public sealed class WindowsFirstLogon(RegistryKey machine, ISessionAccounts accounts, string scriptFolder, Action<string> createFolder) : IFirstLogon
 {
     public const string RunOncePath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce";
 
-    // Numbered, so they're written and listed in the step's order.
-    public static string ValueName(int index) => string.Create(CultureInfo.InvariantCulture, $"DDT first logon {index + 1:00}");
+    public const string ValueName = "DDT first logon";
 
     public void SetUp(AgentFirstLogon firstLogon)
     {
@@ -24,12 +22,12 @@ public sealed class WindowsFirstLogon(RegistryKey machine, ISessionAccounts acco
 
         if (firstLogon.Commands.Count > 0)
         {
-            using RegistryKey runOnce = machine.CreateSubKey(RunOncePath);
+            createFolder(scriptFolder);
+            string script = Path.Combine(scriptFolder, FirstLogonScript.FileName);
+            File.WriteAllBytes(script, FirstLogonScript.File(firstLogon.Commands));
 
-            for (int index = 0; index < firstLogon.Commands.Count; index++)
-            {
-                runOnce.SetValue(ValueName(index), firstLogon.Commands[index], RegistryValueKind.String);
-            }
+            using RegistryKey runOnce = machine.CreateSubKey(RunOncePath);
+            runOnce.SetValue(ValueName, FirstLogonScript.RunOnceCommand(script), RegistryValueKind.String);
         }
 
         if (firstLogon.AutoLogon is { } autoLogon)

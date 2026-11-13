@@ -42,8 +42,9 @@ COPY licenses/openssl/ licenses/openssl/
 COPY licenses/zstd/ licenses/zstd/
 # The release's version, as 26.1.412. Nothing in here can count the commits, so without it Build is 0.
 ARG DDT_VERSION
+# Restores again: a restore layer from the build cache comes without the cache mount's packages.
 RUN --mount=type=cache,id=ddt-agent-linux-nuget,target=/root/.nuget/packages \
-    dotnet publish src/DDT.Agent.Linux/DDT.Agent.Linux.csproj -c Release --no-restore -o /out ${DDT_VERSION:+-p:Version=$DDT_VERSION}
+    dotnet publish src/DDT.Agent.Linux/DDT.Agent.Linux.csproj -c Release -o /out ${DDT_VERSION:+-p:Version=$DDT_VERSION}
 # The boot environment has no library to lend the agent, and the server reads the agent's version out of the file.
 RUN if readelf -l -d /out/ddt-agent | grep -E 'INTERP|NEEDED'; then \
         echo "ddt-agent is not static: it names an interpreter or a library." >&2; exit 1; \

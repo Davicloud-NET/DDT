@@ -32,8 +32,8 @@ public sealed class SequenceWireFormatTests
             new InjectDriversStep { Id = s_id, Name = "Drivers", RequireMatch = true },
             $$"""{"kind":"injectDrivers","requireMatch":true,"id":"{{Id}}","name":"Drivers","conditions":[],"continueOnError":false,"rebootAfter":false}"""),
         ["writeUnattend"] = (
-            new WriteUnattendStep { Id = s_id, Name = "Answer file", TimeZone = "W. Europe Standard Time", LocalAdministrator = true, Owner = "IT", HideWirelessSetup = false },
-            $$"""{"kind":"writeUnattend","timeZone":"W. Europe Standard Time","locale":null,"keyboard":null,"localAdministrator":true,"uiLanguage":null,"organization":null,"owner":"IT","hideEulaPage":true,"hideOemRegistration":true,"hideOnlineAccounts":true,"hideWirelessSetup":false,"id":"{{Id}}","name":"Answer file","conditions":[],"continueOnError":false,"rebootAfter":false}"""),
+            new WriteUnattendStep { Id = s_id, Name = "Answer file", TimeZone = "W. Europe Standard Time", LocalAdministrator = true, Owner = "IT", HideWirelessSetup = false, FirstLogonCommands = ["cmd /c echo one"], AutoLogon = AutoLogonKind.LocalAdministrator },
+            $$"""{"kind":"writeUnattend","timeZone":"W. Europe Standard Time","locale":null,"keyboard":null,"localAdministrator":true,"uiLanguage":null,"organization":null,"owner":"IT","hideEulaPage":true,"hideOemRegistration":true,"hideOnlineAccounts":true,"hideWirelessSetup":false,"firstLogonCommands":["cmd /c echo one"],"autoLogon":"LocalAdministrator","autoLogonCount":1,"id":"{{Id}}","name":"Answer file","conditions":[],"continueOnError":false,"rebootAfter":false}"""),
         ["joinDomain"] = (
             new JoinDomainStep { Id = s_id, Name = "Join", OrganizationalUnit = "OU=Clients,DC=corp,DC=example", RebootAfter = true },
             $$"""{"kind":"joinDomain","organizationalUnit":"OU=Clients,DC=corp,DC=example","id":"{{Id}}","name":"Join","conditions":[],"continueOnError":false,"rebootAfter":true}"""),

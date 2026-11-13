@@ -58,21 +58,12 @@ public static class AgentDeploymentEndpoints
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentImage);
 
-        group.MapGet("/{id:guid}/runs/{runId:guid}/steps/{stepId:guid}/unattend", ReadAnswerFileAsync)
-            .RequireAuthorization(DdtPolicies.Machine)
-            .RequireRateLimiting(RateLimitPolicies.AgentMachine);
-
-        group.MapGet("/{id:guid}/runs/{runId:guid}/steps/{stepId:guid}/credentials", ReadJoinCredentialsAsync)
-            .RequireAuthorization(DdtPolicies.Machine)
-            .RequireRateLimiting(RateLimitPolicies.AgentMachine);
-
-        group.MapGet("/{id:guid}/runs/{runId:guid}/steps/{stepId:guid}/accounts", ReadStepAccountsAsync)
-            .RequireAuthorization(DdtPolicies.Machine)
-            .RequireRateLimiting(RateLimitPolicies.AgentMachine);
-
-        group.MapGet("/{id:guid}/runs/{runId:guid}/steps/{stepId:guid}/applications", ReadStepApplicationsAsync)
-            .RequireAuthorization(DdtPolicies.Machine)
-            .RequireRateLimiting(RateLimitPolicies.AgentMachine);
+        MapMachineGet(group, "/{id:guid}/runs/{runId:guid}/steps/{stepId:guid}/unattend", ReadAnswerFileAsync);
+        MapMachineGet(group, "/{id:guid}/runs/{runId:guid}/steps/{stepId:guid}/credentials", ReadJoinCredentialsAsync);
+        // As the run ends in Windows, while it still runs there.
+        MapMachineGet(group, "/{id:guid}/runs/{runId:guid}/first-logon", ReadFirstLogonAsync);
+        MapMachineGet(group, "/{id:guid}/runs/{runId:guid}/steps/{stepId:guid}/accounts", ReadStepAccountsAsync);
+        MapMachineGet(group, "/{id:guid}/runs/{runId:guid}/steps/{stepId:guid}/applications", ReadStepApplicationsAsync);
 
         // An agent from before task sequences never gets an image deployment from this server, so it has no reason to
         // call these. They're answered here, not by the web UI's fallback page, which would answer a GET with 200.
@@ -86,6 +77,11 @@ public static class AgentDeploymentEndpoints
 
         return group;
     }
+
+    private static void MapMachineGet(RouteGroupBuilder group, string pattern, Delegate handler) =>
+        group.MapGet(pattern, handler)
+            .RequireAuthorization(DdtPolicies.Machine)
+            .RequireRateLimiting(RateLimitPolicies.AgentMachine);
 
     private static ProblemHttpResult Gone() =>
         TypedResults.Problem(
@@ -211,7 +207,7 @@ public static class AgentDeploymentEndpoints
         [AsParameters] AgentStepRoute route,
         HttpContext context,
         DdtDbContext database,
-        RunSecrets secrets,
+        RunAnswerFiles answerFiles,
         CancellationToken cancellationToken)
     {
         if (await SecretMachineAsync(route.Id, context, database, cancellationToken).ConfigureAwait(false) is not { } machine)
@@ -221,7 +217,7 @@ public static class AgentDeploymentEndpoints
                 : TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
         }
 
-        (string? answer, string? refusal) = await secrets
+        (string? answer, string? refusal) = await answerFiles
             .AnswerFileAsync(machine, route.RunId, route.StepId, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
             .ConfigureAwait(false);
 
@@ -261,6 +257,34 @@ public static class AgentDeploymentEndpoints
         await SavedAsync(context, database, cancellationToken).ConfigureAwait(false);
 
         return TypedResults.Ok(credentials);
+    }
+
+    private static async Task<Results<Ok<AgentFirstLogon>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> ReadFirstLogonAsync(
+        [AsParameters] AgentRunRoute route,
+        HttpContext context,
+        DdtDbContext database,
+        FirstLogonSecrets secrets,
+        CancellationToken cancellationToken)
+    {
+        if (await SecretMachineAsync(route.Id, context, database, cancellationToken).ConfigureAwait(false) is not { } machine)
+        {
+            return Principals.IsMachine(context.User, route.Id)
+                ? TypedResults.Unauthorized()
+                : TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
+        }
+
+        (AgentFirstLogon? read, string? refusal) = await secrets
+            .ForAgentAsync(machine, route.RunId, context.Connection.RemoteIpAddress?.ToString(), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (refusal is not null || read is null)
+        {
+            return TypedResults.Problem(title: refusal, statusCode: StatusCodes.Status409Conflict);
+        }
+
+        await SavedAsync(context, database, cancellationToken).ConfigureAwait(false);
+
+        return TypedResults.Ok(read);
     }
 
     private static async Task<Results<Ok<AgentStepAccounts>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> ReadStepAccountsAsync(

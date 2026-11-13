@@ -90,6 +90,8 @@ public sealed class UnattendRenderer
             RegisteredOrganization = Value(step.Organization) ?? Value(inputs.Organization),
             RegisteredOwner = Value(step.Owner) ?? Value(inputs.Owner),
             Oobe = new OobePages(step.HideEulaPage, step.HideOemRegistration, step.HideOnlineAccounts, step.HideWirelessSetup),
+            FirstLogonCommands = sources.FirstLogon?.Commands ?? [],
+            AutoLogon = sources.FirstLogon?.AutoLogon,
         };
     }
 

@@ -136,6 +136,7 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
             ImageName = run.State == DeploymentState.Running ? await AppliedImageAsync(run.Id, artifacts, cancellationToken).ConfigureAwait(false) : null,
             ServerName = ServerNames.DnsName(),
             SkipDeploymentRecord = !settings.Current.Deployment.WriteRecord,
+            SetsUpFirstLogon = FirstLogonSecrets.AtRunEnd(definition),
         };
     }
 

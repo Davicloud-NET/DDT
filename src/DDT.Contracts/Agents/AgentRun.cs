@@ -36,4 +36,6 @@ public sealed record AgentRun(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ImageName = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ServerName = null,
     // Deployment:WriteRecord off. An older server never sends it, so its runs get the record.
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool SkipDeploymentRecord = false);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool SkipDeploymentRecord = false,
+    // The run goes on in Windows, so the agent fetches the first-logon commands and the automatic logon as it ends.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool SetsUpFirstLogon = false);

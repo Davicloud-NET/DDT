@@ -3,80 +3,24 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Agents;
-using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
 using DDT.Core.Templates;
 using DDT.Server.Accounts;
 using DDT.Server.Data;
 using DDT.Server.Machines;
 using DDT.Server.Settings;
-using Microsoft.EntityFrameworkCore;
 
 namespace DDT.Server.Deployments;
 
-// The answer file and the join credentials a run needs. They're only handed to its agent while their step runs, and
-// every read is audited. The caller saves the audit rows before it answers.
+// The join credentials a run needs. They're only handed to its agent while their step runs, and every read is audited.
+// The caller saves the audit rows before it answers.
 public sealed class RunSecrets(
     DdtDbContext database,
-    UnattendRenderer renderer,
     DdtSettings settings,
     RunQueries queries,
     StepAccountLookup lookup,
     TimeProvider timeProvider)
 {
-    public async Task<(string? AnswerFile, string? Refusal)> AnswerFileAsync(
-        Machine machine,
-        Guid runId,
-        Guid stepId,
-        string? address,
-        CancellationToken cancellationToken)
-    {
-        (RunningStep? running, string? refusal) = await queries.RunningStepAsync(machine, runId, stepId, cancellationToken).ConfigureAwait(false);
-
-        if (running is null)
-        {
-            return (null, refusal);
-        }
-
-        if (running.Step is not WriteUnattendStep unattend)
-        {
-            return (null, "That step writes no answer file.");
-        }
-
-        DeploymentOptions deployment = settings.Current.Deployment;
-        string? password = deployment.LocalAdministrator.Password;
-
-        if (unattend.LocalAdministrator && string.IsNullOrEmpty(password))
-        {
-            return (null, "The step adds the local administrator, but DDT:Deployment:LocalAdministrator has no password any more.");
-        }
-
-        string? language = await database.DeploymentArtifacts
-            .AsNoTracking()
-            .Where(a => a.DeploymentId == runId && a.Kind == ArtifactKind.Image)
-            .Select(a => a.Language)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        UnattendSources sources = new(running.Inputs)
-        {
-            ImageLanguage = language,
-            Password = password,
-            ProductKey = deployment.ProductKey,
-            MacAddress = machine.PrimaryMac,
-        };
-        (string? answerFile, string? problem) = renderer.Render(sources, unattend, TemplateValues(machine, running.Run));
-
-        if (problem is not null)
-        {
-            return (null, problem);
-        }
-
-        Audit(running.Run, machine, address, $"The answer file of step {unattend.Name} ({stepId:D}) of {running.Run.Title}.");
-
-        return (answerFile, null);
-    }
-
     // Hands out the credentials to join the configured domain the run started with. A domain named elsewhere could send
     // the join account to a foreign controller. A step that names an account joins that account's domain instead. Joins
     // run in Windows, so only the service there gets the credentials.
@@ -195,7 +139,7 @@ public sealed class RunSecrets(
 
     // The values the run started with and the variables its steps set since, by name, plus the machine's facts. No
     // value overrides a fact except the computer name.
-    private static Func<string, string?> TemplateValues(Machine machine, Deployment run)
+    internal static Func<string, string?> TemplateValues(Machine machine, Deployment run)
     {
         Dictionary<string, string> values = new(RunValues.Effective(run) ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase);
 

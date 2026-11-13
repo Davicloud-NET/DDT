@@ -25,6 +25,11 @@ public static class AccountSites
                 sites.Add(new AccountSite(step, "account", account, AccountPurpose.Join, null));
             }
 
+            if (step is WriteUnattendStep { AutoLogon: AutoLogonKind.Account, AutoLogonAccount: { } autoLogon })
+            {
+                sites.Add(new AccountSite(step, "autoLogonAccount", autoLogon, AccountPurpose.AutoLogon, null));
+            }
+
             IReadOnlyList<ShareConnection?> shares = step.Shares ?? [];
 
             for (int index = 0; index < shares.Count; index++)

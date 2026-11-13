@@ -25,4 +25,8 @@ public sealed record UnattendSettings(
 
     // Null is DHCP.
     public StaticNetwork? Network { get; init; }
+
+    public IReadOnlyList<string> FirstLogonCommands { get; init; } = [];
+
+    public AutoLogonAccount? AutoLogon { get; init; }
 }

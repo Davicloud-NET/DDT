@@ -1257,6 +1257,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.applicationsVariableSetBySteps",
     message: "Steps set {name}, but applications are chosen when the run starts.",
   }),
+  "sequence.autoLogonCount": msg({
+    context: "sequence.autoLogonCount",
+    message: "Use a number from 1 to {max}.",
+  }),
+  "sequence.autoLogonNeedsAdministrator": msg({
+    context: "sequence.autoLogonNeedsAdministrator",
+    message: "Add the local administrator to sign in as it.",
+  }),
   "sequence.cannotGoOn": msg({
     context: "sequence.cannotGoOn",
     message: "The sequence cannot go on when {activity, select, partition {partitioning the disk} image {applying the image} other {writing the raw disk image}} fails.",
@@ -1356,6 +1364,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.featuresTooMany": msg({
     context: "sequence.featuresTooMany",
     message: "A step enables at most {max} features.",
+  }),
+  "sequence.firstLogonCommandEmpty": msg({
+    context: "sequence.firstLogonCommandEmpty",
+    message: "Enter a command.",
+  }),
+  "sequence.firstLogonCommandTooLong": msg({
+    context: "sequence.firstLogonCommandTooLong",
+    message: "Use at most {max} characters.",
+  }),
+  "sequence.firstLogonCommandsTooMany": msg({
+    context: "sequence.firstLogonCommandsTooMany",
+    message: "Use at most {max} commands.",
   }),
   "sequence.ifNeedsTest": msg({
     context: "sequence.ifNeedsTest",

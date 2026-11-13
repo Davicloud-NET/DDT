@@ -28,6 +28,54 @@ internal static class UnattendStepRules
 
         CheckLength(step.Organization, "organization", problems);
         CheckLength(step.Owner, "owner", problems);
+        CheckCommands(step.FirstLogonCommands ?? [], problems);
+        CheckAutoLogon(step, names, problems);
+    }
+
+    private static void CheckCommands(IReadOnlyList<string> commands, StepProblems problems)
+    {
+        if (commands.Count > WriteUnattendStep.MaxFirstLogonCommands)
+        {
+            problems.Add("firstLogonCommands", ServerMessages.SequenceFirstLogonCommandsTooMany.With("max", WriteUnattendStep.MaxFirstLogonCommands));
+
+            return;
+        }
+
+        for (int index = 0; index < commands.Count; index++)
+        {
+            string field = $"firstLogonCommands[{index}]";
+
+            if (string.IsNullOrWhiteSpace(commands[index]))
+            {
+                problems.Add(field, ServerMessages.SequenceFirstLogonCommandEmpty.With());
+            }
+            else if (commands[index].Trim().Length > WriteUnattendStep.MaxCommandLength)
+            {
+                problems.Add(field, ServerMessages.SequenceFirstLogonCommandTooLong.With("max", WriteUnattendStep.MaxCommandLength));
+            }
+        }
+    }
+
+    private static void CheckAutoLogon(WriteUnattendStep step, SequenceNames names, StepProblems problems)
+    {
+        if (step.AutoLogon == AutoLogonKind.None)
+        {
+            return;
+        }
+
+        if (step.AutoLogonCount is < 1 or > WriteUnattendStep.MaxAutoLogonCount)
+        {
+            problems.Add("autoLogonCount", ServerMessages.SequenceAutoLogonCount.With("max", WriteUnattendStep.MaxAutoLogonCount));
+        }
+
+        if (step.AutoLogon == AutoLogonKind.LocalAdministrator && !step.LocalAdministrator)
+        {
+            problems.Add("autoLogon", ServerMessages.SequenceAutoLogonNeedsAdministrator.With());
+        }
+        else if (step.AutoLogon == AutoLogonKind.Account)
+        {
+            names.CheckAccount(step.AutoLogonAccount, "autoLogonAccount", problems.Add);
+        }
     }
 
     private static void CheckLength(string? value, string field, StepProblems problems)

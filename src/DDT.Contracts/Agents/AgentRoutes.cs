@@ -50,6 +50,9 @@ public static class AgentRoutes
     public static string RunStepCredentials(Guid machineId, Guid runId, Guid stepId) =>
         $"api/agents/{machineId:D}/runs/{runId:D}/steps/{stepId:D}/credentials";
 
+    // GET the AgentFirstLogon as a run in Windows ends, while it still runs there.
+    public static string RunFirstLogon(Guid machineId, Guid runId) => $"api/agents/{machineId:D}/runs/{runId:D}/first-logon";
+
     // GET the step's AgentStepAccounts: its run-as account and its share connections.
     public static string RunStepAccounts(Guid machineId, Guid runId, Guid stepId) =>
         $"api/agents/{machineId:D}/runs/{runId:D}/steps/{stepId:D}/accounts";

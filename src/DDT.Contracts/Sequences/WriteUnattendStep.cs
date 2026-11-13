@@ -10,6 +10,12 @@ namespace DDT.Contracts.Sequences;
 // its password. The password stays in the server's configuration.
 public sealed record WriteUnattendStep : SequenceStep
 {
+    public const int MaxFirstLogonCommands = 20;
+
+    public const int MaxCommandLength = 1024;
+
+    public const int MaxAutoLogonCount = 99;
+
     public string? TimeZone { get; init; }
 
     public string? Locale { get; init; }
@@ -35,6 +41,24 @@ public sealed record WriteUnattendStep : SequenceStep
 
     public bool HideWirelessSetup { get; init; } = true;
 
+    // Version 7. Run in order at the first sign-in of an administrator. In the answer file when the sequence has no
+    // Windows step, otherwise set up by the agent as the run ends.
+    public IReadOnlyList<string> FirstLogonCommands { get; init; } = [];
+
+    public AutoLogonKind AutoLogon { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public AccountReference? AutoLogonAccount { get; init; }
+
+    public int AutoLogonCount { get; init; } = 1;
+
+    [JsonIgnore]
+    public bool SetsFirstLogon => (FirstLogonCommands ?? []).Count > 0 || AutoLogon != AutoLogonKind.None;
+
     [JsonIgnore]
     public override SequencePhase? RequiredPhase => SequencePhase.WindowsPE;
+
+    // An older agent would not set them up as a run in Windows ends.
+    [JsonIgnore]
+    public override int MinimumVersion => SetsFirstLogon ? 7 : 1;
 }

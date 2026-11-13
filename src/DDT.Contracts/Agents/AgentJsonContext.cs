@@ -34,6 +34,7 @@ namespace DDT.Contracts.Agents;
 [JsonSerializable(typeof(AgentRunReport))]
 [JsonSerializable(typeof(AgentRunReportResult))]
 [JsonSerializable(typeof(AgentJoinDomainCredentials))]
+[JsonSerializable(typeof(AgentFirstLogon))]
 [JsonSerializable(typeof(AgentInputAnswers))]
 [JsonSerializable(typeof(AgentAnswersResult))]
 [JsonSerializable(typeof(AgentStepAccounts))]

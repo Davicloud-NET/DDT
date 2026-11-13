@@ -23,4 +23,24 @@ public static partial class ServerMessages
     public static readonly MessageTemplate SequenceRegisteredTooLong = Define(
         "sequence.registeredTooLong",
         "Use at most {max} characters.");
+
+    public static readonly MessageTemplate SequenceFirstLogonCommandsTooMany = Define(
+        "sequence.firstLogonCommandsTooMany",
+        "Use at most {max} commands.");
+
+    public static readonly MessageTemplate SequenceFirstLogonCommandEmpty = Define(
+        "sequence.firstLogonCommandEmpty",
+        "Enter a command.");
+
+    public static readonly MessageTemplate SequenceFirstLogonCommandTooLong = Define(
+        "sequence.firstLogonCommandTooLong",
+        "Use at most {max} characters.");
+
+    public static readonly MessageTemplate SequenceAutoLogonCount = Define(
+        "sequence.autoLogonCount",
+        "Use a number from 1 to {max}.");
+
+    public static readonly MessageTemplate SequenceAutoLogonNeedsAdministrator = Define(
+        "sequence.autoLogonNeedsAdministrator",
+        "Add the local administrator to sign in as it.");
 }

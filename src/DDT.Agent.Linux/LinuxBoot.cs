@@ -105,7 +105,10 @@ public static class LinuxBoot
                 new ConsoleKeyWait(TimeProvider.System),
                 new ConsoleSignInPrompt(log, TimeProvider.System, keyboardLayout: null),
                 log,
-                TimeProvider.System),
+                TimeProvider.System)
+            {
+                Screen = agent.Graphical,
+            },
             DiskStart = new FirmwareDiskStart(firmware, log),
             Restart = rebooter.RestartIntoDiskAsync,
             Carried = carrier.Take,

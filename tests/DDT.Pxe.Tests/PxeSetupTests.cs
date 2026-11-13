@@ -64,6 +64,19 @@ public sealed class PxeSetupTests
     }
 
     [Theory]
+    [InlineData(254, true)]
+    [InlineData(255, false)]
+    public void TakesABootFileThatFitsOption67WithItsNul(int length, bool accepted)
+    {
+        PxeOptions options = new()
+        {
+            BootTargets = { ["X64Uefi"] = new BootTargetOptions { Method = "Tftp", BootFile = new string('a', length) } },
+        };
+
+        Assert.Equal(accepted, PxeSetup.FindProblems(options).Count == 0);
+    }
+
+    [Theory]
     [InlineData("10")]
     [InlineData("::1")]
     [InlineData("relay.example")]

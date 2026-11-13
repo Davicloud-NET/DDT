@@ -262,7 +262,7 @@ public sealed class LinuxBootReturn(IAgentServer server, AgentMachine machine, C
     // True when someone stopped the countdown with a key and then confirmed to start over instead of the restart.
     private Task<bool> StartsOverAsync(bool taken, CancellationToken cancellationToken)
     {
-        log.Information(StartOver.CanAsk ? $"{LinuxBootReturnTexts.RestartsSoon} {StartOverQuestion.Offer}" : LinuxBootReturnTexts.RestartsSoon);
+        log.Information(StartOver.CanAsk ? $"{LinuxBootReturnTexts.RestartsSoon} {StartOver.Offering}" : LinuxBootReturnTexts.RestartsSoon);
 
         return StartOver.ConfirmedWithinAsync(Wait, taken, cancellationToken);
     }

@@ -1197,11 +1197,12 @@ is damaged, and the agent leaves that one as it is. The server then answers for 
 machine has in its installed Linux, if it has one, and the agent waits for that answer without
 the 30 seconds' limit, since such a seed gives it nothing to go by.
 
-**The question at the console.** During the ten seconds before such a restart, the text console
-offers a way out: "To start over here instead, press a key within that time. The agent then asks
-before it ends the run." A key only stops the countdown. The agent then wants the word `END`
+**The question at the console.** During the ten seconds before such a restart, the console
+offers a way out. The graphical console shows the countdown with a button to stop the restart;
+the text console says "To start over here instead, press a key within that time. The agent then
+asks before it ends the run." Either only stops the countdown. The agent then wants the word `END`
 typed, in capitals, as `ERASE` is typed for a disk, and waits a minute for it. Any other answer,
-`end` among them, or none, restarts the machine into the installed Linux, and the agent says
+`end` among them, Back, or none, restarts the machine into the installed Linux, and the agent says
 that only that word in capital letters ends the run. After `END` the agent clears the seed and
 registers without a token, which ends the run on the server, whose error then says that the
 agent reported someone at the machine chose to start over. The machine has to be authorized
@@ -1408,9 +1409,18 @@ away when the machine started from the network, the machine was back on its disk
 later, nothing counted, and the run went on once the server was back. In `journalctl -u
 ddt-agent -p warning` only warnings and errors showed. The disk held no token afterwards.
 
+Tried on a second physical PC, a Lenovo ThinkCentre M72e with firmware of 2018, Secure Boot on and
+Microsoft's CA of 2011, again beside the router's DHCP server. Its firmware asked TFTP for the boot
+file's name with one byte more on the end until DDT ended option 67 with a NUL. A sequence wrote
+Debian 13 to its SATA disk, ran a script in the installed Linux and stopped at a Pause, with the
+graphical console in the boot environment and in the installed Linux. Netbooted during the Pause,
+the console's offer ran out and the machine went back to the Pause; a key and Esc did the same; a
+key and `END` ended the run, and the boot environment waited without one. The agent left on the
+disk was refused at its next start and removed itself. Continued at the console, the run ended
+Done.
+
 Not tried yet: a PC of another make, and a firmware that trusts only Microsoft's 2023 CA. For the
-run in the installed Linux: Hyper-V and any physical PC, firmware other than OVMF for the way
-back, an image with SELinux, a root file system that copies on write, a share with Kerberos or
+run in the installed Linux: Hyper-V, an image with SELinux, a root file system that copies on write, a share with Kerberos or
 on a host with several addresses, an image without cloud-init or systemd, and a `power_state`
 that powers off.
 

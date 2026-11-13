@@ -98,7 +98,7 @@ public sealed class ProxyDhcpReplyWriterTests
         }
 
         // Some firmware reads only one of the two and they disagree about which.
-        Assert.Equal("ddt/x64/wdsmgfw.efi", option67);
+        Assert.Equal("ddt/x64/wdsmgfw.efi\0", option67);
     }
 
     [Fact]
@@ -145,6 +145,6 @@ public sealed class ProxyDhcpReplyWriterTests
             }
         }
 
-        Assert.Equal(new string('a', 200), option67);
+        Assert.Equal(new string('a', 200) + "\0", option67);
     }
 }

@@ -47,7 +47,7 @@ public sealed class AgentStartup(AgentPlatform platform)
         using HttpAgentServer server = ServerOf(options!.ServerUrl, options.RootCertificate);
 
         AgentLog log = new(TimeProvider.System, Console.Out);
-        TextMachineConsole text = new(new ConsoleSignInPrompt(log, TimeProvider.System, options.KeyboardLayout), log);
+        TextMachineConsole text = TextConsole(log, options.KeyboardLayout);
 
         // If there's a graphical console, it starts before anything else, so it shows the update check and the
         // connection too. The text console stays underneath it and takes over if it goes away.
@@ -76,6 +76,9 @@ public sealed class AgentStartup(AgentPlatform platform)
             ? await platform.DryRunAsync(agent, stop.Token).ConfigureAwait(false)
             : await platform.RunAsync(agent, stop.Token).ConfigureAwait(false);
     }
+
+    private static TextMachineConsole TextConsole(AgentLog log, string? keyboardLayout) =>
+        new(new ConsoleSignInPrompt(log, TimeProvider.System, keyboardLayout), log) { Keys = new ConsoleKeyWait(TimeProvider.System) };
 
     private HttpAgentServer ServerOf(Uri url, X509Certificate2? rootCertificate) =>
         new(url, rootCertificate) { Environment = platform.BootEnvironment, ReleasePlatform = platform.ReleasePlatform };

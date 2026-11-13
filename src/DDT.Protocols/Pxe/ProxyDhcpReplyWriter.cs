@@ -54,7 +54,8 @@ public static class ProxyDhcpReplyWriter
             options.Write(DhcpOption.ClientMachineIdentifier, reply.MachineIdentifier.Span);
         }
 
-        options.WriteAscii(DhcpOption.BootFileName, reply.BootFileName);
+        // NUL terminated: some firmware reads a byte past the option and asks TFTP for the name plus that byte.
+        options.WriteAscii(DhcpOption.BootFileName, reply.BootFileName, nulTerminated: true);
 
         if (!reply.VendorSpecific.IsEmpty)
         {

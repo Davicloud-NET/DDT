@@ -15,6 +15,9 @@ public sealed class TextMachineConsole(ISignInPrompt prompt, AgentLog log) : IMa
 {
     private readonly TextConsoleInputs _inputs = new(prompt, log);
 
+    // For the offer to start over, which a key takes. Without it the offer is never taken.
+    public IKeyWait? Keys { get; init; }
+
     public bool CanAsk => prompt.IsAvailable;
 
     public bool AnswersLater => false;
@@ -43,6 +46,8 @@ public sealed class TextMachineConsole(ISignInPrompt prompt, AgentLog log) : IMa
             SecureBootQuestion secureBoot => SecureBootAsync(secureBoot, cancellationToken),
             InputsQuestion inputs => _inputs.AskAsync(inputs, cancellationToken),
             PauseQuestion pause => PauseAsync(pause, cancellationToken),
+            StartOverOfferQuestion offer => OfferAsync(offer, cancellationToken),
+            EndRunQuestion endRun => EndRunAsync(endRun, cancellationToken),
             _ => throw new ArgumentException("The text console does not know this question.", nameof(question)),
         };
     }
@@ -171,6 +176,30 @@ public sealed class TextMachineConsole(ISignInPrompt prompt, AgentLog log) : IMa
             ? null
             : new ConsoleAnswer(Continue: true);
     }
+
+    // The agent already said what a key does here.
+    private async Task<ConsoleAnswer?> OfferAsync(StartOverOfferQuestion question, CancellationToken cancellationToken)
+    {
+        if (Keys is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return await Keys.PressedWithinAsync(TimeSpan.FromSeconds(question.Seconds), cancellationToken).ConfigureAwait(false)
+                ? new ConsoleAnswer(Continue: true)
+                : null;
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<ConsoleAnswer?> EndRunAsync(EndRunQuestion question, CancellationToken cancellationToken) =>
+        Typed(await prompt.ReadLineAsync($"Type {question.Word} to end the run and start over here", secret: false, cancellationToken)
+            .ConfigureAwait(false));
 
     private static ConsoleAnswer? Typed(string? typed) => typed is null ? null : new ConsoleAnswer(Text: typed);
 

@@ -344,6 +344,37 @@ public sealed class QuestionTests
         Assert.False(pause.CanGoBack);
     }
 
+    [Fact]
+    public void StopsTheRestartIntoLinuxWithContinue()
+    {
+        TestConsole console = Asked(10, new StartOverOfferQuestion(true, 10));
+        StartOverOfferViewModel offer = Assert.IsType<StartOverOfferViewModel>(console.Model.Question);
+
+        Assert.Equal("In 10 seconds. To end the run and start over here, stop the restart.", offer.Text);
+        offer.SubmitCommand.Execute(null);
+
+        Assert.Equal([(10, new ConsoleAnswer(Continue: true))], console.Answers);
+    }
+
+    [Fact]
+    public void EndsTheRunOnlyWithTheTypedWordAndGoesBackToLinux()
+    {
+        TestConsole console = Asked(11, new EndRunQuestion(false, "END"));
+        EndRunViewModel endRun = Assert.IsType<EndRunViewModel>(console.Model.Question);
+
+        Assert.StartsWith("The installed Linux has not taken the run over.", endRun.Warning, StringComparison.Ordinal);
+        endRun.Typed = "end";
+        Assert.False(endRun.SubmitCommand.CanExecute(null));
+        endRun.Typed = "END";
+        endRun.SubmitCommand.Execute(null);
+
+        TestConsole back = Asked(12, new EndRunQuestion(true, "END"));
+        back.Model.Question!.BackCommand.Execute(null);
+
+        Assert.Equal([(11, new ConsoleAnswer(Text: "END"))], console.Answers);
+        Assert.Equal([(12, new ConsoleAnswer(Back: true))], back.Answers);
+    }
+
     private static TestConsole Asked(int id, ConsoleQuestion question)
     {
         ConsoleStage stage = question is SignInQuestion ? ConsoleStage.WaitingForAuthorization : ConsoleStage.Choosing;

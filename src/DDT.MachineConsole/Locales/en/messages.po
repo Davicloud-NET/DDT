@@ -107,6 +107,10 @@ msgstr "Back to the task sequences"
 msgid "Back, erase nothing"
 msgstr "Back, erase nothing"
 
+#: ViewModels/EndRunViewModel.cs
+msgid "Back, restart into Linux"
+msgstr "Back, restart into Linux"
+
 #: ViewModels/SecureBootViewModel.cs
 msgid "Back, write nothing"
 msgstr "Back, write nothing"
@@ -255,6 +259,18 @@ msgstr "Dry run"
 msgid "Empty"
 msgstr "Empty"
 
+#: ViewModels/EndRunViewModel.cs
+msgid "End the run"
+msgstr "End the run"
+
+#: ViewModels/EndRunViewModel.cs
+msgid "End the run?"
+msgstr "End the run?"
+
+#: ViewModels/EndRunViewModel.cs
+msgid "Ends the run"
+msgstr "Ends the run"
+
 #: ViewModels/EraseViewModel.cs
 msgid "Erase and continue"
 msgstr "Erase and continue"
@@ -330,6 +346,10 @@ msgstr "In the Linux boot environment"
 #: Texts/Say.cs
 msgid "In Windows PE"
 msgstr "In Windows PE"
+
+#: ViewModels/StartOverOfferViewModel.cs
+msgid "In {seconds} seconds. To end the run and start over here, stop the restart."
+msgstr "In {seconds} seconds. To end the run and start over here, stop the restart."
 
 #: Texts/Say.cs
 msgid "Info"
@@ -571,6 +591,10 @@ msgstr "Restart this machine now?"
 msgid "Restarting"
 msgstr "Restarting"
 
+#: ViewModels/StartOverOfferViewModel.cs
+msgid "Restarting into the installed Linux"
+msgstr "Restarting into the installed Linux"
+
 #: Texts/Say.cs
 msgid "Restarting into the installed system"
 msgstr "Restarting into the installed system"
@@ -735,6 +759,10 @@ msgstr "Step {number} of {count}, in Windows PE"
 msgid "Step {number}, {name}: {state}"
 msgstr "Step {number}, {name}: {state}"
 
+#: ViewModels/StartOverOfferViewModel.cs
+msgid "Stop the restart"
+msgstr "Stop the restart"
+
 #: Texts/Say.cs
 msgid "Stopped"
 msgstr "Stopped"
@@ -779,6 +807,10 @@ msgstr "The disk image"
 msgid "the HarfBuzz authors"
 msgstr "the HarfBuzz authors"
 
+#: ViewModels/EndRunViewModel.cs
+msgid "The installed Linux has not taken the run over. Ending it means authorizing this machine again."
+msgstr "The installed Linux has not taken the run over. Ending it means authorizing this machine again."
+
 #: ViewModels/ConnectionViewModel.cs
 msgid "The last request failed. The agent tries again by itself."
 msgstr "The last request failed. The agent tries again by itself."
@@ -794,6 +826,10 @@ msgstr "The run failed"
 #: Texts/Say.cs
 msgid "The run goes on in the installed Linux."
 msgstr "The run goes on in the installed Linux."
+
+#: ViewModels/EndRunViewModel.cs
+msgid "The run goes on in the installed Linux. Ending it means authorizing this machine again."
+msgstr "The run goes on in the installed Linux. Ending it means authorizing this machine again."
 
 #: Texts/Say.cs
 msgid "The run goes on in the installed Windows."
@@ -854,6 +890,10 @@ msgstr "Trusted CAs"
 #: ViewModels/TypedWordViewModel.cs
 msgid "Type {word} in capitals."
 msgstr "Type {word} in capitals."
+
+#: ViewModels/EndRunViewModel.cs
+msgid "Type {word} to end the run"
+msgstr "Type {word} to end the run"
 
 #: ViewModels/EraseViewModel.cs
 msgid "Type {word} to erase the disk"

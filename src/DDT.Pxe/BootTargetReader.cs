@@ -16,7 +16,8 @@ namespace DDT.Pxe;
 internal static class BootTargetReader
 {
     private const int MaxServerHostNameLength = 63;
-    private const int MaxBootFileLength = 255;
+    // Option 67 holds 255 bytes, one of them the NUL.
+    private const int MaxBootFileLength = 254;
 
     public static Dictionary<ClientArchitecture, BootTarget> Read(PxeOptions options, List<SettingProblem> problems)
     {

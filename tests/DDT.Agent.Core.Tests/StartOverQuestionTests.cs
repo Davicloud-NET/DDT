@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.ConsoleProtocol;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -112,5 +113,49 @@ public sealed class StartOverQuestionTests : IDisposable
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => asking);
         Assert.DoesNotContain("Nobody answered", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    // The graphical console takes the keyboard, so both steps are its own screens.
+    [Fact]
+    public async Task OnTheGraphicalConsoleBothStepsAreItsQuestions()
+    {
+        FakeKeyWait keys = new() { Pressed = true };
+        ScriptedSignInPrompt prompt = new("END");
+        ScriptedMachineConsole screen = new(_ => new ConsoleAnswer(Continue: true), ScriptedMachineConsole.Typed("END"));
+        StartOverQuestion question = new(keys, prompt, _log, _time) { Screen = screen };
+
+        Assert.Equal(StartOverQuestion.ScreenOffer, question.Offering);
+        Assert.True(await question.ConfirmedWithinAsync(s_countdown, taken: false, TestContext.Current.CancellationToken));
+
+        Assert.Equal([new StartOverOfferQuestion(false, 10), new EndRunQuestion(false, "END")], screen.Questions);
+        Assert.Empty(keys.Waits);
+        Assert.Empty(prompt.Labels);
+    }
+
+    [Fact]
+    public async Task AnOfferNobodyTookIsWithdrawnAndAsksNothingMore()
+    {
+        ScriptedMachineConsole screen = new();
+        StartOverQuestion question = new(new FakeKeyWait(), new ScriptedSignInPrompt(), _log, _time) { Screen = screen };
+
+        Assert.False(await question.ConfirmedWithinAsync(s_countdown, taken: true, TestContext.Current.CancellationToken));
+
+        Assert.Equal([new StartOverOfferQuestion(true, 10)], screen.Questions);
+        Assert.Equal(1, screen.Withdrawn);
+        Assert.Contains(s_countdown, _time.Delays);
+    }
+
+    [Theory]
+    [InlineData("end", false)]
+    [InlineData(null, true)]
+    public async Task BackOrAnotherWordOnTheScreenRestartsIntoLinux(string? typed, bool back)
+    {
+        ConsoleAnswer answer = back ? new ConsoleAnswer(Back: true) : new ConsoleAnswer(Text: typed);
+        ScriptedMachineConsole screen = new(_ => new ConsoleAnswer(Continue: true), _ => answer);
+        StartOverQuestion question = new(new FakeKeyWait(), new ScriptedSignInPrompt(), _log, _time) { Screen = screen };
+
+        Assert.False(await question.ConfirmedWithinAsync(s_countdown, taken: true, TestContext.Current.CancellationToken));
+
+        Assert.Contains(back ? StartOverQuestion.Declined : StartOverQuestion.NotConfirmed, _console.ToString(), StringComparison.Ordinal);
     }
 }

@@ -114,10 +114,9 @@ Two things that save an afternoon:
 - **Has a web UI that stays live.** Changes show up the moment they happen, no reload button
   required. Light and dark, English and German, and it fits on a phone, for approving a machine
   from the couch.
-- **Puts a console at the machine.** A graphical console in Windows PE lets a technician sign in,
-  pick a sequence and watch it run. Shift+F10 still gets you a command prompt. The Linux boot
-  environment does the same in text for now, and the agent in the installed Linux has no console:
-  its run is on the web.
+- **Puts a console at the machine.** A graphical console lets a technician sign in, pick a sequence
+  and watch it run, in Windows PE, in the Linux boot environment and in the installed system.
+  Shift+F10 still gets you a command prompt, or a shell on Linux.
 - **Is secure by default.** HTTPS only, with DDT's own root certificate. A machine gets no image,
   package or secret until it is authorized: by someone signing in at it, by an approval on the web,
   or by a zero-touch network you chose. Local accounts, LDAP and OpenID Connect, two-factor
@@ -159,10 +158,11 @@ Who helps with what:
 
 DDT is young, and what it publishes for now are pre-releases. It has deployed Windows to Hyper-V
 test machines and netbooted real hardware. The Linux boot environment is newer: it has deployed
-Debian to Hyper-V and QEMU virtual machines and to one laptop, with Secure Boot on. Runs that carry
-on inside the installed Linux are newer still: they have run on the Debian 13 and Ubuntu 24.04
-cloud images in QEMU virtual machines with Secure Boot on, and on no Hyper-V machine and no real
-hardware yet. Treat all of it as a preview.
+Debian to Hyper-V and QEMU virtual machines and to two Lenovo PCs, with Secure Boot on. Runs that
+carry on inside the installed Linux are newer still: they have run on the Debian 13 and Ubuntu
+24.04 cloud images in QEMU virtual machines and on Debian 13 on one desktop PC, with Secure Boot
+on, and so has the graphical console on Linux, on no Hyper-V machine yet. Treat all of it as a
+preview.
 
 | | Milestone | |
 |---|---|---|
@@ -172,16 +172,11 @@ hardware yet. Treat all of it as a preview.
 | M6.5 | The real UI: a new web UI, the graphical console, settings on web pages | ✅ Done |
 | M6.6 | Installing DDT with one command, on Windows Server and on Linux | ✅ Done |
 | M7 | A node-based flow builder for task sequences | ✅ Done |
-| M8 | Linux: a boot environment of its own, runs that carry on inside the installed Linux, the graphical console | 🔜 Part 2 of 3 |
+| M8 | Linux: a boot environment of its own, runs that carry on inside the installed Linux, the graphical console | ✅ Done |
 | M9 | Applications and Windows configuration | Planned |
 | M10 | Golden images and the machine lifecycle | Planned |
 | M11 | Beyond netboot and beyond a single site | Planned |
 | M12 | Documentation, the proper kind | Planned |
-
-M8 comes in three parts: the Linux boot environment and the agent for Linux, which write Linux
-images in place of Windows PE, the run that carries on inside the installed Linux, and the graphical
-console on Linux, in the boot environment and in the installed Linux. The third is built and tried
-in QEMU.
 
 The [roadmap](docs/roadmap.md) has the details, and what is not planned at all.
 

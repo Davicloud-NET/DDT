@@ -87,6 +87,8 @@ public sealed class ConsoleProtocolTests
         ["pause"] = new QuestionMessage(8, new PauseQuestion("Check the BIOS", "Check the BIOS of PC-0042, then continue.")),
         ["answer with values"] = new AnswerMessage(7, new ConsoleAnswer(Values: [new ConsoleInputValue("Office", "ProPlus"), new ConsoleInputValue("JoinAccount", null, @"CORP\join", "Secret")])),
         ["continue"] = new AnswerMessage(8, new ConsoleAnswer(Continue: true)),
+        ["start over offer"] = new QuestionMessage(9, new StartOverOfferQuestion(true, 10)),
+        ["end run"] = new QuestionMessage(10, new EndRunQuestion(false, "END")),
     };
 
     // Every kind of input is asked in words, and a password never ends up in text a log would show.

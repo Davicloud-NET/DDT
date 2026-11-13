@@ -42,8 +42,9 @@ COPY licenses/fonts/ licenses/fonts/
 COPY licenses/xkeyboard-config/ licenses/xkeyboard-config/
 # The release's version, as 26.1.412. Nothing in here can count the commits, so without it Build is 0.
 ARG DDT_VERSION
+# Restores again: a restore layer from the build cache comes without the cache mount's packages.
 RUN --mount=type=cache,id=ddt-console-linux-nuget,target=/root/.nuget/packages \
-    dotnet publish src/DDT.MachineConsole.Linux/DDT.MachineConsole.Linux.csproj -c Release --no-restore -o /out \
+    dotnet publish src/DDT.MachineConsole.Linux/DDT.MachineConsole.Linux.csproj -c Release -o /out \
         -p:LinkerFlavor=lld ${DDT_VERSION:+-p:Version=$DDT_VERSION}
 # The console may need glibc and nothing else: no fontconfig, libinput, libxkbcommon or udev.
 RUN needs=$(for file in ddt-console libSkiaSharp.so libHarfBuzzSharp.so; do \

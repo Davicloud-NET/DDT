@@ -18,5 +18,17 @@ public static class UpdateNames
         return missing.Length == 0 ? update.Title : $"{update.Title} ({string.Join(", ", missing)})";
     }
 
-    public static string HResult(int hResult) => "0x" + hResult.ToString("X8", CultureInfo.InvariantCulture);
+    // The hex code, and a name for the few codes the spike saw.
+    public static string HResult(int hResult)
+    {
+        string code = "0x" + hResult.ToString("X8", CultureInfo.InvariantCulture);
+
+        return unchecked((uint)hResult) switch
+        {
+            0x8024000B => code + ", cancelled",
+            0x80240032 => code + ", invalid search criteria",
+            0x00240003 => code + ", succeeded with errors",
+            _ => code,
+        };
+    }
 }

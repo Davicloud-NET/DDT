@@ -26,7 +26,7 @@ public sealed class DryRunWindowsUpdateTests : IDisposable
 
         for (int turn = 0; turn < 3; turn++)
         {
-            WindowsUpdateStepRunner runner = new(new DryRunWindowsUpdate(new AgentLog(new ImmediateTimeProvider(), console), _jobs), new AgentLog(new ImmediateTimeProvider(), console), new ManualTimeProvider());
+            WindowsUpdateStepRunner runner = new(() => new DryRunWindowsUpdate(new AgentLog(new ImmediateTimeProvider(), console), _jobs), new AgentLog(new ImmediateTimeProvider(), console), new ManualTimeProvider());
             StepContext context = new(Guid.NewGuid(), SequencePhase.Windows, new MachineVariables("Dell Inc.", "Latitude 5440", "SN-1", "4c4c4544-0042-3510-8052-b4c04f4d3232", ["00155D010203"], "PC-042", SequencePhase.Windows), new Dictionary<string, string>(), new RecordingProgress())
             {
                 Checkpoint = new StepCheckpoint(saved, turn, false, _ => Task.CompletedTask),

@@ -49,8 +49,8 @@ internal sealed class WindowsStepRunnerFixture(
     // DISM through ToolRunner.
     public EnableFeaturesStepRunner EnableFeatures => new(new DismWindowsFeatures(ToolRunner, InjectDriversStepRunner.DismPath), Log);
 
-    // The placeholder until Windows Update is reached through COM.
-    public WindowsUpdateStepRunner WindowsUpdate => new(new UnbuiltWindowsUpdate(), Log, Time);
+    // Windows Update that finds nothing.
+    public WindowsUpdateStepRunner WindowsUpdate => new(() => new FakeWindowsUpdate(), Log, Time);
 
     // Stands in for signing accounts in and connecting shares.
     public FakeAccountTools Accounts { get; } = new();

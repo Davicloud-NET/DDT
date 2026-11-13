@@ -8,7 +8,7 @@ namespace DDT.Agent.Tests;
 
 // Windows Update as the spike saw it: each search answers with the next of Found, a stop ends a download at once, and
 // an installation held by HoldInstall ends only when the test releases it, stop or not.
-internal sealed class FakeWindowsUpdate : IWindowsUpdate
+internal sealed class FakeWindowsUpdate : IWindowsUpdate, IDisposable
 {
     private readonly Lock _lock = new();
     private readonly List<string> _calls = [];
@@ -54,6 +54,10 @@ internal sealed class FakeWindowsUpdate : IWindowsUpdate
     }
 
     public List<WindowsUpdateSearch> Searches { get; } = [];
+
+    public int Disposals { get; private set; }
+
+    public void Dispose() => Disposals++;
 
     public Task<bool> IsRestartPendingAsync(CancellationToken cancellationToken)
     {

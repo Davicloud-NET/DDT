@@ -108,14 +108,14 @@ public sealed class AgentStepRunnerTests
     }
 
     [Fact]
-    public async Task WindowsUpdateFailsUntilItIsBuiltIn()
+    public async Task WindowsUpdateRunsInTheInstalledWindows()
     {
         WindowsUpdateStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000af"), Name = "Updates" };
         using WindowsStepRunnerFixture run = new([step]);
 
         StepResult result = await run.Steps.RunAsync(step, run.Context(SequencePhase.Windows), TestContext.Current.CancellationToken);
 
-        Assert.Equal(StepResult.Failed(UnbuiltWindowsUpdate.NotBuilt), result);
+        Assert.Equal(StepResult.Done(), result);
     }
 
     [Fact]

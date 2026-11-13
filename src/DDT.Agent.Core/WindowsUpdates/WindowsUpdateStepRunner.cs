@@ -9,8 +9,9 @@ using DDT.Core.Sequences;
 namespace DDT.Agent.WindowsUpdates;
 
 // Searches, downloads and installs until Windows Update offers nothing more, restarting as the updates ask. A turn is
-// one run between restarts; the checkpoint keeps what was installed and what failed over all of them.
-public sealed class WindowsUpdateStepRunner(IWindowsUpdate updates, AgentLog log, TimeProvider timeProvider) : IStepKindRunner<WindowsUpdateStep>
+// one run between restarts; the checkpoint keeps what was installed and what failed over all of them. Each turn opens
+// Windows Update and disposes it when it ends.
+public sealed class WindowsUpdateStepRunner(Func<IWindowsUpdate> open, AgentLog log, TimeProvider timeProvider) : IStepKindRunner<WindowsUpdateStep>
 {
     // Searches in one turn before the step restarts the machine anyway.
     public const int MaxPasses = 5;
@@ -42,6 +43,20 @@ public sealed class WindowsUpdateStepRunner(IWindowsUpdate updates, AgentLog log
         ArgumentNullException.ThrowIfNull(step);
         ArgumentNullException.ThrowIfNull(context);
 
+        IWindowsUpdate updates = open();
+
+        try
+        {
+            return await TurnAsync(updates, step, context, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            (updates as IDisposable)?.Dispose();
+        }
+    }
+
+    private async Task<StepResult> TurnAsync(IWindowsUpdate updates, WindowsUpdateStep step, StepContext context, CancellationToken cancellationToken)
+    {
         UpdateCheckpoint done = UpdateCheckpoint.Read(context.Checkpoint.Saved);
 
         if (await updates.IsRestartPendingAsync(cancellationToken).ConfigureAwait(false))
@@ -51,7 +66,7 @@ public sealed class WindowsUpdateStepRunner(IWindowsUpdate updates, AgentLog log
             return Restart(step, context, done, []);
         }
 
-        if (await WaitWhileBusyAsync(cancellationToken).ConfigureAwait(false) is { } busy)
+        if (await WaitWhileBusyAsync(updates, cancellationToken).ConfigureAwait(false) is { } busy)
         {
             return busy;
         }
@@ -85,7 +100,7 @@ public sealed class WindowsUpdateStepRunner(IWindowsUpdate updates, AgentLog log
     }
 
     // Null once Windows Update is free.
-    private async Task<StepResult?> WaitWhileBusyAsync(CancellationToken cancellationToken)
+    private async Task<StepResult?> WaitWhileBusyAsync(IWindowsUpdate updates, CancellationToken cancellationToken)
     {
         TimeSpan waited = TimeSpan.Zero;
 

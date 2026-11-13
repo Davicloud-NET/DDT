@@ -110,4 +110,25 @@ public sealed class WindowsUpdateStepRunnerWaitTests
         Assert.True(_run.Updates.AbortAsked);
         _run.Updates.HoldInstall.SetResult();
     }
+
+    [Fact]
+    public async Task ATurnDisposesWindowsUpdateWhenItEnds()
+    {
+        await _run.RunAsync(s_step);
+
+        Assert.Equal(1, _run.Updates.Disposals);
+    }
+
+    [Fact]
+    public async Task ATurnThatFailsDisposesWindowsUpdateToo()
+    {
+        _run.Updates.Found.Add([WindowsUpdateStepRunnerTests.s_cumulative]);
+        _run.Updates.HoldDownload = true;
+
+        Task<StepResult> running = _run.RunAsync(s_step);
+        await _run.Time.AdvanceUntilAsync(TimeSpan.FromHours(1), () => running.IsCompleted);
+
+        await Assert.ThrowsAsync<DeploymentStepException>(() => running);
+        Assert.Equal(1, _run.Updates.Disposals);
+    }
 }

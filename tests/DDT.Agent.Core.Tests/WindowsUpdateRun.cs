@@ -27,7 +27,7 @@ internal sealed class WindowsUpdateRun
     public string Log => _console.ToString();
 
     public Task<StepResult> RunAsync(WindowsUpdateStep step, string? saved = null, int restarts = 0, CancellationToken? cancellationToken = null) =>
-        new WindowsUpdateStepRunner(Updates, new AgentLog(new ImmediateTimeProvider(), _console), Time)
+        new WindowsUpdateStepRunner(() => Updates, new AgentLog(new ImmediateTimeProvider(), _console), Time)
             .RunAsync(step, Context(saved, restarts), cancellationToken ?? TestContext.Current.CancellationToken);
 
     private StepContext Context(string? saved, int restarts) =>

@@ -65,6 +65,8 @@ export interface DeploymentSummary {
   // both out.
   waiting?: boolean;
   pauseMessage?: string | null;
+  // What the running step does now, such as the application it installs. Older servers leave it out.
+  stepDetail?: string | null;
 }
 
 // One step of a run as the agent last reported it; a run of a tree has one per node, containers included.

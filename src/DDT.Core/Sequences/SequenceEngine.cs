@@ -11,7 +11,11 @@ namespace DDT.Core.Sequences;
 // leaf still marked Running after a restart has failed and doesn't run again, unless it's Resumable or asked for that
 // restart. Containers have no side effects, so entering and leaving them waits for the next save. A resume repeats those
 // moves the same way.
-public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store, IProgress<StepPercent> progress)
+public sealed class SequenceEngine(
+    IStepRunner runner,
+    ISequenceStateStore store,
+    IProgress<StepPercent> progress,
+    IProgress<StepDetail>? details = null)
 {
     public const string InterruptedError = "The machine restarted or the agent stopped while this step ran.";
 
@@ -99,6 +103,7 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
         StepContext context = new(walk.RunId, phase, inPhase, walk.Variables, new StepPercentProgress(step.Id, progress))
         {
             Checkpoint = Checkpoint(walk, step, order, turn?.Progress, found && turn is not { RestartDue: true }),
+            Detail = new StepDetailProgress(step.Id, details),
         };
         StepResult result = step is SetVariableStep set
             ? SetVariable(set, walk.Definition, inPhase)

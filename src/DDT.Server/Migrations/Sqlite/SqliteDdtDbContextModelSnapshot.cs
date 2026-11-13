@@ -514,6 +514,10 @@ namespace DDT.Server.Migrations.Sqlite
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CurrentStepDetail")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("CurrentStepIndex")
                         .HasColumnType("INTEGER");
 

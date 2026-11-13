@@ -520,6 +520,10 @@ namespace DDT.Server.Migrations.PostgreSql
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
 
+                    b.Property<string>("CurrentStepDetail")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<int?>("CurrentStepIndex")
                         .HasColumnType("integer");
 

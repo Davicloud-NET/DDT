@@ -576,6 +576,11 @@ namespace DDT.Server.Migrations.SqlServer
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
 
+                    b.Property<string>("CurrentStepDetail")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
                     b.Property<int?>("CurrentStepIndex")
                         .HasColumnType("int");
 

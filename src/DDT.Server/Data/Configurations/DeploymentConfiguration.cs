@@ -24,6 +24,7 @@ internal sealed class DeploymentConfiguration : IEntityTypeConfiguration<Deploym
         builder.Property(d => d.BootEnvironment).HasConversion<string>().HasMaxLength(16);
         builder.Property(d => d.RequestedByName).HasMaxLength(256);
         builder.Property(d => d.CurrentStepName).HasMaxLength(DeploymentLimits.MaxStepNameLength);
+        builder.Property(d => d.CurrentStepDetail).HasMaxLength(DeploymentLimits.MaxStepDetailLength);
         builder.Property(d => d.CurrentPhase).HasConversion<string>().HasMaxLength(16);
         builder.Property(d => d.Activity).HasConversion<string>().HasMaxLength(32);
         builder.Property(d => d.Error).HasMaxLength(DeploymentLimits.MaxErrorLength);

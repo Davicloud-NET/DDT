@@ -67,6 +67,7 @@ export function RunActivity({
         isTree={path?.isTree === true}
         boot={bootPhase(kindOfNodes((path?.nodes ?? []).map((node) => node.node)))}
         artifact={artifact}
+        detail={run.stepDetail ?? null}
         now={now}
       />
     );

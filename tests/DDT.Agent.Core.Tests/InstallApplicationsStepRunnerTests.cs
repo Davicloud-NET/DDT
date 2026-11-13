@@ -25,6 +25,7 @@ public sealed class InstallApplicationsStepRunnerTests
         Assert.Equal(StepResult.Done(), result);
         Assert.Equal(["save", "install Runtime", "save", "install Tool"], run.Events);
         Assert.Equal([50, 100], run.Progress.Values.Where(value => value % 50 == 0 && value > 0).Distinct());
+        Assert.Equal(["Runtime", "Tool"], run.Details.Values);
         Assert.Equal(
             [
                 (AgentLogLevel.Information, "Installing Runtime."),

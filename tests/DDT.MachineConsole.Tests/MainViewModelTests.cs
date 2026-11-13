@@ -204,6 +204,21 @@ public sealed class MainViewModelTests
         Assert.Null(console.Model.Question);
     }
 
+    // What the running step does now is a line of its own, and only while the step runs.
+    [Fact]
+    public void ShowsTheRunningStepsDetailUnderItsName()
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.Running with { Run = Scenarios.Running.Run! with { StepDetail = "7-Zip 24.08" } });
+        RunViewModel run = Assert.IsType<RunViewModel>(console.Model.Screen);
+
+        Assert.Equal(("Apply image", "7-Zip 24.08", true), (run.Detail, run.StepDetail, run.HasStepDetail));
+
+        console.Show(Scenarios.Restarting with { Run = Scenarios.Restarting.Run! with { StepDetail = "7-Zip 24.08" } });
+        RunViewModel restarting = Assert.IsType<RunViewModel>(console.Model.Screen);
+
+        Assert.Equal(((string?)null, false), (restarting.StepDetail, restarting.HasStepDetail));
+    }
+
     // Continued on the web. The agent withdraws the question, and the run screen shows the run as waiting until the
     // next state says it continues.
     [Fact]

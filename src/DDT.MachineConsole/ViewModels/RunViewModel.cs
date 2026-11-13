@@ -64,6 +64,11 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
 
     public bool HasDetail => !string.IsNullOrEmpty(Detail);
 
+    // What the running step does now, as the agent wrote it, such as the application it installs.
+    public string? StepDetail => Stage == ConsoleStage.Running && CurrentStep is not null ? Run?.StepDetail : null;
+
+    public bool HasStepDetail => !string.IsNullOrEmpty(StepDetail);
+
     public string? Position
     {
         get

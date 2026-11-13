@@ -82,6 +82,12 @@ describe("MachinePage", () => {
     ).toBeInTheDocument();
   });
 
+  it("says what the running step does now, as the agent put it", async () => {
+    await open(answers([machine()], [run({ stepDetail: "Windows 11 Pro" })], [view()]));
+
+    expect(await screen.findByText("Apply image: Windows 11 Pro")).toBeInTheDocument();
+  });
+
   it("shows only a step's log lines once asked from its row", async () => {
     await open(
       answers(

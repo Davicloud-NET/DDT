@@ -7,7 +7,8 @@ using System.Text.Json.Serialization;
 namespace DDT.ConsoleProtocol;
 
 // One message over the pipe between the agent and its console. The agent sends hello, refused, state, log, question and
-// withdraw. The console sends hello and answer. Any change to a message needs a new HelloMessage.CurrentVersion.
+// withdraw. The console sends hello and answer. Any change to a message needs a new HelloMessage.CurrentVersion, except
+// a member left out while unset, which an older console ignores.
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(HelloMessage), "hello")]
 [JsonDerivedType(typeof(RefusedMessage), "refused")]

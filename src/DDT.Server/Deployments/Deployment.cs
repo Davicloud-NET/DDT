@@ -64,6 +64,9 @@ public sealed class Deployment
 
     public string? CurrentStepName { get; set; }
 
+    // What the running step said it does now, such as the application it installs. Null between steps.
+    public string? CurrentStepDetail { get; set; }
+
     public int Percent { get; set; }
 
     public SequencePhase? CurrentPhase { get; set; }

@@ -67,6 +67,29 @@ public sealed class RunHeartbeatTests
         Assert.Equal((TestRuns.Unattend.Id, 0), (report.CurrentStepId, report.Percent));
     }
 
+    // The detail is the running step's, cut to what the server keeps, and gone once the next step runs.
+    [Fact]
+    public void ReportsTheRunningStepsDetailUntilTheNextStep()
+    {
+        int changes = 0;
+        _heartbeat.Update(State(StepState.Done, StepState.Running, StepState.Pending));
+        _heartbeat.Changed += () => changes++;
+
+        _heartbeat.Report(new StepDetail(TestRuns.Apply.Id, "  7-Zip 24.08 "));
+        _heartbeat.Report(new StepDetail(TestRuns.Apply.Id, "7-Zip 24.08"));
+        _heartbeat.Report(new StepDetail(TestRuns.Partition.Id, "Not running"));
+
+        Assert.Equal(("7-Zip 24.08", "7-Zip 24.08", 1), (_heartbeat.Snapshot(DeploymentState.Running).StepDetail, _heartbeat.Position.Detail, changes));
+
+        _heartbeat.Report(new StepDetail(TestRuns.Apply.Id, new string('x', 300)));
+
+        Assert.Equal(RunHeartbeat.MaxDetailLength, _heartbeat.Snapshot(DeploymentState.Running).StepDetail?.Length);
+
+        _heartbeat.Update(State(StepState.Done, StepState.Done, StepState.Running));
+
+        Assert.Equal(((string?)null, (string?)null), (_heartbeat.Snapshot(DeploymentState.Running).StepDetail, _heartbeat.Position.Detail));
+    }
+
     // The console at the machine reads the position after each change. It tells a step that hasn't reported its
     // progress apart from one at 0 %.
     [Fact]

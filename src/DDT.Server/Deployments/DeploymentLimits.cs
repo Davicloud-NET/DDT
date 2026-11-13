@@ -12,6 +12,9 @@ public static class DeploymentLimits
     // SequenceValidator allows 100 characters, and a draft saved with more is never assigned.
     public const int MaxStepNameLength = 128;
 
+    // The column's length. A longer detail is cut, like an error.
+    public const int MaxStepDetailLength = 128;
+
     // The column's length. A pause message the agent reports is cut to fit, like an error, instead of being refused.
     public const int MaxPauseMessageLength = 1024;
 

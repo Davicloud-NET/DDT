@@ -296,6 +296,23 @@ public sealed class SequenceEngineTests
         Assert.Equal([new StepPercent(partition.Id, 40)], percents.Reports);
     }
 
+    [Fact]
+    public async Task ReportsTheStepDetailWithTheStepsId()
+    {
+        PartitionStep partition = Partition();
+        ScriptedStepRunner runner = new ScriptedStepRunner().On(partition, (context, _) =>
+        {
+            context.Detail.Report("7-Zip 24.08");
+
+            return Task.FromResult(StepResult.Done());
+        });
+        StepDetails details = new();
+
+        await new SequenceEngine(runner, new BlobStore(), new StepPercents(), details).RunAsync(Start(partition), s_machine, Token);
+
+        Assert.Equal([new StepDetail(partition.Id, "7-Zip 24.08")], details.Reports);
+    }
+
     [Theory]
     [InlineData(StepState.Done)]
     [InlineData(StepState.Skipped)]

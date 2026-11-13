@@ -199,7 +199,7 @@ public sealed class ConsoleStatus
         lock (_lock)
         {
             // Read under this lock, so a change made meanwhile on another thread is never shown before an older one.
-            (SequenceState? sequenceState, Guid? stepId, int? percent, RunActivity activity) = heartbeat.Position;
+            (SequenceState? sequenceState, Guid? stepId, int? percent, string? detail, RunActivity activity) = heartbeat.Position;
 
             if (_state.Run is not { } run || sequenceState is null || sequenceState.RunId != run.Id)
             {
@@ -213,6 +213,7 @@ public sealed class ConsoleStatus
                     Steps = Steps(sequenceState),
                     CurrentStepId = stepId,
                     Percent = stepId is null ? null : percent,
+                    StepDetail = stepId is null ? null : detail,
                     Activity = ConsoleValues.ToConsole(activity),
                 },
             });

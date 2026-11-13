@@ -31,4 +31,6 @@ public sealed record DeploymentSummary(
     string? Error,
     // The run needs someone to answer its inputs or to continue a pause.
     bool Waiting = false,
-    string? PauseMessage = null);
+    string? PauseMessage = null,
+    // What the running step does now, such as the application it installs.
+    string? StepDetail = null);

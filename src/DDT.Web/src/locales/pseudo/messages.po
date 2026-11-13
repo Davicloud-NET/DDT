@@ -637,6 +637,10 @@ msgid "{kind}, {where}."
 msgstr ""
 
 #: src/runs/panel/CurrentStep.tsx
+msgid "{kind}: {detail}"
+msgstr ""
+
+#: src/runs/panel/CurrentStep.tsx
 msgid "{kind}: {file}, {size}"
 msgstr ""
 

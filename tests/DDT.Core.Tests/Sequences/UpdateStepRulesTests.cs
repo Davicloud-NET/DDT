@@ -48,9 +48,8 @@ public sealed class UpdateStepRulesTests
         Assert.Equal(8, new WindowsUpdateStep { Id = Guid.NewGuid(), Name = "Windows Update" }.RestartLimit);
     }
 
-    // The JSON source generator sets every init member, so a document without the limit reads 0, which is refused.
     [Fact]
-    public void ReadsTheRestartLimitFromTheDocumentAndRefusesADocumentWithoutIt()
+    public void ReadsTheRestartLimitFromTheDocumentAndTakesTheDefaultWithoutIt()
     {
         WindowsUpdateStep read = Assert.IsType<WindowsUpdateStep>(
             JsonSerializer.Deserialize($$"""{"kind":"windowsUpdate","restartLimit":3,"id":"{{Guid.NewGuid()}}","name":"Updates","conditions":[]}""", DdtJsonContext.Default.SequenceStep));
@@ -58,7 +57,8 @@ public sealed class UpdateStepRulesTests
             JsonSerializer.Deserialize($$"""{"kind":"windowsUpdate","id":"{{Guid.NewGuid()}}","name":"Updates","conditions":[]}""", DdtJsonContext.Default.SequenceStep));
 
         Assert.Equal((3, 3), (read.AllowedRestarts, read.RestartLimit));
-        AssertOnly(Validate(InWindows(missing)), missing, "restartLimit", "sequence.updatesRestarts");
+        Assert.Equal(WindowsUpdateStep.DefaultRestarts, missing.RestartLimit);
+        Assert.Empty(Validate(InWindows(missing)));
     }
 
     [Fact]

@@ -33,13 +33,14 @@ public sealed record WriteUnattendStep : SequenceStep
     public string? Owner { get; init; }
 
     // The out-of-box pages the answer file hides. All on is the answer file before these switches.
-    public bool HideEulaPage { get; init; } = true;
+    // Set, not init: the generated JSON reader gives a missing init property its type's default, not this one.
+    public bool HideEulaPage { get; set; } = true;
 
-    public bool HideOemRegistration { get; init; } = true;
+    public bool HideOemRegistration { get; set; } = true;
 
-    public bool HideOnlineAccounts { get; init; } = true;
+    public bool HideOnlineAccounts { get; set; } = true;
 
-    public bool HideWirelessSetup { get; init; } = true;
+    public bool HideWirelessSetup { get; set; } = true;
 
     // Version 7. Run in order at the first sign-in of an administrator. In the answer file when the sequence has no
     // Windows step, otherwise set up by the agent as the run ends.
@@ -50,7 +51,7 @@ public sealed record WriteUnattendStep : SequenceStep
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public AccountReference? AutoLogonAccount { get; init; }
 
-    public int AutoLogonCount { get; init; } = 1;
+    public int AutoLogonCount { get; set; } = 1;
 
     [JsonIgnore]
     public bool SetsFirstLogon => (FirstLogonCommands ?? []).Count > 0 || AutoLogon != AutoLogonKind.None;

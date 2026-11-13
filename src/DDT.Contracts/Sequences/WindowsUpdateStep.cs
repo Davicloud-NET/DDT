@@ -20,14 +20,15 @@ public sealed record WindowsUpdateStep : SequenceStep
 
     public bool OptionalUpdates { get; init; }
 
-    public bool MicrosoftProducts { get; init; } = true;
+    // Set, not init: the generated JSON reader gives a missing init property its type's default, not this one.
+    public bool MicrosoftProducts { get; set; } = true;
 
     // "KB5031234" or "5031234".
     public IReadOnlyList<string> ExcludedKbs { get; init; } = [];
 
     // The step's own limit, 1 to MaxRestarts. The engine reads it through RestartLimit.
     [JsonPropertyName("restartLimit")]
-    public int AllowedRestarts { get; init; } = DefaultRestarts;
+    public int AllowedRestarts { get; set; } = DefaultRestarts;
 
     [JsonIgnore]
     public override SequencePhase? RequiredPhase => SequencePhase.Windows;

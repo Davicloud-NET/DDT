@@ -1409,9 +1409,18 @@ away when the machine started from the network, the machine was back on its disk
 later, nothing counted, and the run went on once the server was back. In `journalctl -u
 ddt-agent -p warning` only warnings and errors showed. The disk held no token afterwards.
 
+Tried on a second physical PC, a Lenovo ThinkCentre M72e with firmware of 2018, Secure Boot on and
+Microsoft's CA of 2011, again beside the router's DHCP server. Its firmware asked TFTP for the boot
+file's name with one byte more on the end until DDT ended option 67 with a NUL. A sequence wrote
+Debian 13 to its SATA disk, ran a script in the installed Linux and stopped at a Pause, with the
+graphical console in the boot environment and in the installed Linux. Netbooted during the Pause,
+the console's offer ran out and the machine went back to the Pause; a key and Esc did the same; a
+key and `END` ended the run, and the boot environment waited without one. The agent left on the
+disk was refused at its next start and removed itself. Continued at the console, the run ended
+Done.
+
 Not tried yet: a PC of another make, and a firmware that trusts only Microsoft's 2023 CA. For the
-run in the installed Linux: Hyper-V and any physical PC, firmware other than OVMF for the way
-back, an image with SELinux, a root file system that copies on write, a share with Kerberos or
+run in the installed Linux: Hyper-V, an image with SELinux, a root file system that copies on write, a share with Kerberos or
 on a host with several addresses, an image without cloud-init or systemd, and a `power_state`
 that powers off.
 

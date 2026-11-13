@@ -158,10 +158,11 @@ Who helps with what:
 
 DDT is young, and what it publishes for now are pre-releases. It has deployed Windows to Hyper-V
 test machines and netbooted real hardware. The Linux boot environment is newer: it has deployed
-Debian to Hyper-V and QEMU virtual machines and to one laptop, with Secure Boot on. Runs that carry
-on inside the installed Linux are newer still: they have run on the Debian 13 and Ubuntu 24.04
-cloud images in QEMU virtual machines with Secure Boot on, and so has the graphical console on
-Linux, on no Hyper-V machine and no real hardware yet. Treat all of it as a preview.
+Debian to Hyper-V and QEMU virtual machines and to two Lenovo PCs, with Secure Boot on. Runs that
+carry on inside the installed Linux are newer still: they have run on the Debian 13 and Ubuntu
+24.04 cloud images in QEMU virtual machines and on Debian 13 on one desktop PC, with Secure Boot
+on, and so has the graphical console on Linux, on no Hyper-V machine yet. Treat all of it as a
+preview.
 
 | | Milestone | |
 |---|---|---|

@@ -88,6 +88,11 @@ public sealed class InstalledPhaseLoop
             return AgentExitCodes.Stopped;
         }
 
+        if (_profile.AutomaticRepair is { } repair)
+        {
+            await repair.TurnOffAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         await _setup.PrepareSessionAsync(cancellationToken).ConfigureAwait(false);
 
         return await GoOnWithRunAsync(local.State.RunId, local.RunToken, cancellationToken).ConfigureAwait(false);

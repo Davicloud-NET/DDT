@@ -8,6 +8,7 @@ import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import type { ServerArguments } from "@/lib/serverText";
 import type { ImageBootCapability } from "@/images/images";
 
+import type { ApplicationReference, InputDeclaration, VariableDeclaration } from "./declarations";
 import type { ConditionNode, StepCondition } from "./sequenceConditions";
 
 // LinuxBoot (version 4) is the netbooted Linux that writes a Linux sequence's disk. Linux (version 5) is the installed
@@ -155,6 +156,13 @@ export interface PauseStep extends StepBase {
   continueAfterMinutes: number | null;
 }
 
+// Version 6. Installs applications and bundles in order, then those the value variable names, separated by ";".
+export interface InstallApplicationsStep extends StepBase {
+  kind: "installApplications";
+  applications: ApplicationReference[];
+  variable: string | null;
+}
+
 // The kind values are stored in sequences and run snapshots, so they never change. A step is a node of the
 // sequence's tree: a leaf, or a container whose bodies hold more nodes.
 export type SequenceStep =
@@ -171,7 +179,8 @@ export type SequenceStep =
   | IfStep
   | RepeatStep
   | SetVariableStep
-  | PauseStep;
+  | PauseStep
+  | InstallApplicationsStep;
 
 export type StepKind = SequenceStep["kind"];
 
@@ -179,47 +188,15 @@ export type ContainerStep = GroupStep | IfStep | RepeatStep;
 
 export type ContainerKind = ContainerStep["kind"];
 
-// A value the sequence uses, such as ComputerName or Office. default is a template. Only a variable with setBySteps
-// may be changed by a Set variable step or a script's output during the run.
-export interface VariableDeclaration {
-  name: string;
-  default: string | null;
-  description: string | null;
-  setBySteps: boolean;
-}
-
-export type InputKind = "Text" | "Choice" | "MultiChoice" | "YesNo" | "Account";
-
-export type InputAsk = "Both" | "Web" | "Machine";
-
-// label is what the person sees, and value is what the answer sets. A null label shows the value.
-export interface InputChoice {
-  value: string;
-  label: string | null;
-}
-
-// Where an Account input's account may be used: the domain it joins, the share hosts it may connect to, and
-// whether a script may run as it.
-export interface AccountDestination {
-  domain: string | null;
-  hosts: string[];
-  runAs: boolean;
-}
-
-// A question asked before the run starts, on the web, at the machine or both. name is the variable its answer sets.
-// An Account input doesn't set one, and steps name it in an AccountReference. choices are for Choice and MultiChoice.
-export interface InputDeclaration {
-  name: string;
-  label: string;
-  help: string | null;
-  kind: InputKind;
-  choices: InputChoice[];
-  default: string | null;
-  required: boolean;
-  maxLength: number | null;
-  askAt: InputAsk;
-  account: AccountDestination | null;
-}
+export type {
+  AccountDestination,
+  ApplicationReference,
+  InputAsk,
+  InputChoice,
+  InputDeclaration,
+  InputKind,
+  VariableDeclaration,
+} from "./declarations";
 
 // version is the schema version. It goes up with each step kind or member that older agents would ignore. The server
 // stores the lowest version a sequence needs, and leaves out variables and inputs while there are none.
@@ -276,7 +253,7 @@ export interface SequenceSummary {
 
 // SequenceDefinition.CurrentVersion: the highest version this page knows, and the one it writes. The server stores
 // each sequence with the lowest version it needs.
-export const SEQUENCE_VERSION = 5;
+export const SEQUENCE_VERSION = 6;
 
 // Every problem keeps the sequence from running. Warnings don't.
 export interface SequenceProblem {

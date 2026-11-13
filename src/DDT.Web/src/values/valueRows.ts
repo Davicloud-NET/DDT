@@ -20,6 +20,28 @@ function sameName(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
 }
 
+// An Applications input's answer is ids. The run's inputs name the ones the library still has.
+function applicationNames(
+  name: string,
+  value: string,
+  definition: SequenceDefinition | null,
+  inputs: readonly RunInputView[] | null,
+): string {
+  const declared = definition?.inputs?.find((input) => sameName(input.name, name));
+  const asked = inputs?.find((input) => sameName(input.input.name, name))?.input;
+
+  if (declared?.kind !== "Applications" || asked === undefined) {
+    return value;
+  }
+
+  return value
+    .split(";")
+    .filter((id) => id.trim().length > 0)
+    .map((id) => id.trim())
+    .map((id) => asked.choices.find((choice) => sameName(choice.value, id))?.label ?? id)
+    .join("; ");
+}
+
 // The values a run works with and where each came from. That's the values it started with, plus the ones its steps
 // set later, as the agent reported them. A step that set a value is named by its number and name.
 export function valueRows({
@@ -56,6 +78,8 @@ export function valueRows({
     );
   const answeredBy = (name: string) =>
     inputs?.find((input) => sameName(input.input.name, name))?.answeredBy ?? null;
+  const shown = (name: string, value: string | null) =>
+    value === null ? null : applicationNames(name, value, definition, inputs);
   const reported = Object.entries(variables ?? {});
 
   const rows = usedValues(values).map((value): ValueRow => {
@@ -74,7 +98,7 @@ export function valueRows({
 
     return {
       name: value.name,
-      value: value.value,
+      value: shown(value.name, value.value),
       source: valueSourceText(value, {
         answeredBy: answeredBy(value.name),
         step: value.source === "Step" ? stepNamed(value.sourceId) : null,

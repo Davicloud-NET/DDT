@@ -173,7 +173,7 @@ preview.
 | M6.6 | Installing DDT with one command, on Windows Server and on Linux | ✅ Done |
 | M7 | A node-based flow builder for task sequences | ✅ Done |
 | M8 | Linux: a boot environment of its own, runs that carry on inside the installed Linux, the graphical console | ✅ Done |
-| M9 | Applications and Windows configuration | Planned |
+| M9 | Applications and Windows configuration | 🔜 Part 1 of 3 |
 | M10 | Golden images and the machine lifecycle | Planned |
 | M11 | Beyond netboot and beyond a single site | Planned |
 | M12 | Documentation, the proper kind | Planned |

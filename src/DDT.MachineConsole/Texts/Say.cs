@@ -108,6 +108,7 @@ public static class Say
         "writeCloudInitSeed" => l.T("Writing the cloud-init seed"),
         "setVariable" => l.T("Setting a variable"),
         "pause" => l.T("Paused"),
+        "installApplications" => l.T("Installing applications"),
         _ => null,
     };
 

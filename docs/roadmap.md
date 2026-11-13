@@ -141,23 +141,47 @@ Decided for all three parts:
 
 ## M9 Applications and Windows configuration
 
-- **Applications.** A library entry holds an application's files, its silent install command, its
-  success and restart codes, what it depends on and the bundles it is in. An Install applications
-  step installs a list, a bundle, or what a rule or an input chose, and restarts between them where
-  they ask. [Applications]
-- **Windows Update** during a run, from Microsoft Update or WSUS, before and after the applications,
-  restarting until nothing is left to install. [Windows Update steps]
-- **Offline servicing** in Windows PE: updates, language packs and features on demand added to the
-  applied image. [Packages, Install Updates Offline, Install Language Packs]
-- **A fuller answer file**: product key, organization and owner, UI language, first-logon commands,
-  automatic logon, the out-of-box pages to skip, and a static network. [ZTIConfigure]
-- **BitLocker**, prepared in Windows PE and turned on in Windows, with the recovery key stored in
-  Active Directory and in DDT. [Pre-provision BitLocker, Enable BitLocker]
-- **Roles and features**, for Windows Server. [Install Roles and Features]
-- **A deployment record** in the machine's registry: the sequence, its revision, the run and the
-  date. [Tattoo]
-- **Autopilot registration**: the run uploads the machine's hardware hash, so DDT hands machines
-  over to Intune. Not in MDT, but Microsoft points MDT users to Autopilot.
+Three parts, each a pull request that works by itself. The first is built.
+
+1. **Applications.** [Applications]
+   - The library, under Library > Applications: an entry holds files and a silent command, with
+     success and restart codes. An upload suggests the command for MSI, WiX Burn, Inno Setup, NSIS
+     and InstallShield. An MSIX or Appx package is provisioned for all users.
+   - Detection an upload suggests: an MSI's product code; the uninstall key of a Burn bundle, of an
+     Inno Setup installer (`<AppId>_is1`) and of an NSIS installer that writes one literal key.
+   - Detection, optional per entry: an MSI product code, an uninstall key, or a file or a package
+     family, each with a minimum version. Without one the application is always installed.
+   - Dependencies, installed first, and bundles: ordered lists of applications.
+   - An Install applications step installs a list of applications and bundles, and the names a
+     value holds. Where an installer asks for a restart, the step restarts and goes on. A failed
+     application stops the step, unless its entry lets the run go on. After a power loss detection
+     decides; without it the application is installed once more.
+   - An Applications input: a tick list on the web and in the console, with a search on long
+     lists. Rules name applications.
+   - The MDT import brings a share's applications and bundles
+     ([coming-from-mdt.md](coming-from-mdt.md)).
+   - winget packages, by ID and an optional version, installed for the machine:
+     - need a Write answer file step, because winget runs in DDT's session;
+     - run as its account DDTDeploy, an administrator only while winget runs;
+     - need internet on the machine;
+     - Windows 11 and Windows Server 2025, which bring winget.
+   - Tried on a Hyper-V virtual machine with Windows 11 25H2. Not on Windows Server or a physical
+     machine yet.
+2. **Windows in the run.**
+   - **Windows Update** during a run, from Microsoft Update or WSUS, before and after the
+     applications, restarting until nothing is left to install. [Windows Update steps]
+   - **Roles and features**, for Windows Server. [Install Roles and Features]
+   - **A fuller answer file**: product key, organization and owner, UI language, first-logon
+     commands, automatic logon, the out-of-box pages to skip, and a static network. [ZTIConfigure]
+   - **A deployment record** in the machine's registry: the sequence, its revision, the run and the
+     date. [Tattoo]
+3. **Servicing and security.**
+   - **Offline servicing** in Windows PE: updates, language packs and features on demand added to
+     the applied image. [Packages, Install Updates Offline, Install Language Packs]
+   - **BitLocker**, prepared in Windows PE and turned on in Windows, with the recovery key stored
+     in Active Directory and in DDT. [Pre-provision BitLocker, Enable BitLocker]
+   - **Autopilot registration**: the run uploads the machine's hardware hash, so DDT hands machines
+     over to Intune. Not in MDT, but Microsoft points MDT users to Autopilot.
 
 ## M10 Golden images and the machine lifecycle
 

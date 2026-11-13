@@ -83,6 +83,7 @@ const inputKinds = {
   MultiChoice: true,
   YesNo: true,
   Account: true,
+  Applications: true,
 } satisfies Record<InputKind, true>;
 const inputAsks = { Both: true, Web: true, Machine: true } satisfies Record<InputAsk, true>;
 
@@ -141,16 +142,23 @@ describe("the sequence mirror", () => {
     expect(Object.keys(everyStep).sort()).toEqual(["steps", "version"]);
     expect(Object.keys(everyNode).sort()).toEqual(["inputs", "steps", "variables", "version"]);
     // The server stores a sequence with the lowest version it needs: 1 for Windows alone, 3 for a tree, 4 with a raw
-    // disk image and 5 with a step in the installed Linux.
+    // disk image, 5 with a step in the installed Linux and 6 with applications.
     expect(fixture.definition.version).toBe(1);
-    expect(everyStep.version).toBe(SEQUENCE_VERSION);
-    expect(everyNode.version).toBe(3);
+    expect(everyStep.version).toBe(5);
+    expect(everyNode.version).toBe(SEQUENCE_VERSION);
   });
 
   it("works out the version a document needs as the server does", () => {
     expect(requiredVersion(fixture.definition as SequenceDefinition)).toBe(1);
-    expect(requiredVersion(everyStep as SequenceDefinition)).toBe(SEQUENCE_VERSION);
-    expect(requiredVersion(everyNode)).toBe(3);
+    expect(requiredVersion(everyStep as SequenceDefinition)).toBe(5);
+    expect(requiredVersion(everyNode)).toBe(SEQUENCE_VERSION);
+    expect(requiredVersion({ steps: [], inputs: everyNode.inputs?.slice(0, 1) ?? [] })).toBe(3);
+    expect(
+      requiredVersion({
+        steps: [],
+        inputs: (everyNode.inputs ?? []).filter((input) => input.kind === "Applications"),
+      }),
+    ).toBe(SEQUENCE_VERSION);
   });
 
   it("knows exactly the server's kinds of step", () => {
@@ -269,8 +277,18 @@ describe("the sequence mirror", () => {
     }
 
     for (const asked of inputs) {
-      expectMirrored("input", asked, input);
+      const { offered, ticked, ...rest } = asked;
+
+      expectMirrored("input", rest, input);
+
+      for (const reference of offered ?? []) {
+        expectMirrored("application", reference, { id: "", kind: "" });
+      }
+
+      expect(ticked === undefined || Array.isArray(ticked)).toBe(true);
     }
+
+    expect(inputs.some((asked) => (asked.offered ?? []).length > 0)).toBe(true);
 
     expect(new Set(inputs.map((asked) => asked.kind))).toEqual(new Set(Object.keys(inputKinds)));
     expect(new Set(inputs.map((asked) => asked.askAt))).toEqual(new Set(Object.keys(inputAsks)));

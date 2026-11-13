@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { webInputs } from "@/inputs/inputs";
+import { useDocumentInputs } from "@/inputs/useDocumentInputs";
 import type { MachineSummary } from "@/machines/machines";
 import { isRuleChoice, sequenceResolutionQuery, valuesComputerName } from "@/rules/rules";
 import { canRun, sequenceQuery, sequencesQuery } from "@/sequences/sequences";
@@ -26,13 +27,14 @@ export function useSequenceChoice(machine: MachineSummary) {
     runnable.find((candidate) => candidate.id === ruleChoice?.sequenceId) ??
     runnable[0] ??
     null;
-  // The resolution already has the inputs of the sequence the rules choose for the machine. Another sequence's inputs
-  // are read from its document.
+  // The resolution already has the inputs of the sequence the rules choose for the machine, as the server asks them.
+  // Another sequence's inputs are read from its document.
   const resolved = sequence !== null && sequence.id === resolution.data?.sequenceId;
   const document = useQuery({
     ...sequenceQuery(sequence?.id ?? ""),
     enabled: sequence !== null && !resolution.isPending && !resolved,
   });
+  const declared = useDocumentInputs(resolved ? null : document.data?.definition.inputs);
   // A name from the machine's values, such as a rule's name pattern, counts as a name. One typed here still wins over
   // it.
   const valuesName =
@@ -48,11 +50,9 @@ export function useSequenceChoice(machine: MachineSummary) {
     sequence,
     setChosenId,
     document,
-    inputs: webInputs(
-      resolved ? resolution.data?.inputs : (document.data?.definition.inputs ?? null),
-    ),
+    inputs: resolved ? webInputs(resolution.data?.inputs) : declared.inputs,
     defaults: resolved ? (resolution.data?.inputDefaults ?? []) : [],
-    inputsKnown: resolved || document.isSuccess || document.isError,
+    inputsKnown: resolved || (document.isSuccess && declared.known) || document.isError,
     valuesName,
   };
 }

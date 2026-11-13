@@ -23,6 +23,7 @@ namespace DDT.Contracts.Sequences;
 [JsonDerivedType(typeof(RepeatStep), "repeat")]
 [JsonDerivedType(typeof(SetVariableStep), "setVariable")]
 [JsonDerivedType(typeof(PauseStep), "pause")]
+[JsonDerivedType(typeof(InstallApplicationsStep), "installApplications")]
 public abstract record SequenceStep
 {
     // Stable across edits, because run state, reports and problems name a step by it.
@@ -73,6 +74,10 @@ public abstract record SequenceStep
     // does no harm.
     [JsonIgnore]
     public virtual bool Resumable => false;
+
+    // How often a step may restart the machine and go on. 0 lets it not ask at all.
+    [JsonIgnore]
+    public virtual int RestartLimit => 0;
 
     // Returns a copy whose bodies hold these nodes, one list per body in the order of Bodies. A leaf has no bodies and
     // is returned as is.

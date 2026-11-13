@@ -11,12 +11,13 @@ namespace DDT.Agent.WindowsPhase;
 // The installed Windows as the installed phase's loop sees it.
 public static class WindowsPhaseProfile
 {
-    // setup says what Windows setup still does, which a dry run and the tests fake.
-    public static InstalledPhaseProfile With(ISetupProbe setup) => new()
+    // setup says what Windows setup still does, which a dry run and the tests fake, as they fake automaticRepair.
+    public static InstalledPhaseProfile With(ISetupProbe setup, IAutomaticRepair? automaticRepair) => new()
     {
         Environment = AgentEnvironment.Windows,
         Phase = SequencePhase.Windows,
         Setup = setup,
+        AutomaticRepair = automaticRepair,
         WaitActivity = RunActivity.WaitingForWindowsSetup,
         RestartsAfterRemoval = true,
         Texts = new WindowsPhaseTexts(),

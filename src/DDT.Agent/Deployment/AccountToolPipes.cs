@@ -31,9 +31,8 @@ internal sealed unsafe class AccountToolPipes : IDisposable
 
     public static AccountToolPipes Create()
     {
-        SecurityAttributes inheritable = new() { Length = (uint)sizeof(SecurityAttributes), InheritHandle = 1 };
-        (SafeFileHandle outputRead, SafeFileHandle outputWrite) = Pipe(&inheritable);
-        (SafeFileHandle errorRead, SafeFileHandle errorWrite) = Pipe(&inheritable);
+        (SafeFileHandle outputRead, SafeFileHandle outputWrite) = Pipe();
+        (SafeFileHandle errorRead, SafeFileHandle errorWrite) = Pipe();
         SafeFileHandle input = NulForReading();
 
         return new AccountToolPipes(outputRead, outputWrite, errorRead, errorWrite, input);
@@ -88,15 +87,15 @@ internal sealed unsafe class AccountToolPipes : IDisposable
         _errorRead.Dispose();
     }
 
-    private static (SafeFileHandle Read, SafeFileHandle Write) Pipe(SecurityAttributes* inheritable)
+    // The parent's end is never inheritable, not even for a moment.
+    private static (SafeFileHandle Read, SafeFileHandle Write) Pipe()
     {
-        if (!CreatePipe(out SafeFileHandle read, out SafeFileHandle write, inheritable, 0))
+        if (!CreatePipe(out SafeFileHandle read, out SafeFileHandle write, null, 0))
         {
             throw DeploymentStepException.ForLastWin32Error("An output pipe for the script could not be created");
         }
 
-        // The parent's end of the pipe is never handed to the child.
-        if (!SetHandleInformation(read, HandleFlagInherit, 0))
+        if (!SetHandleInformation(write, HandleFlagInherit, HandleFlagInherit))
         {
             DeploymentStepException failure = DeploymentStepException.ForLastWin32Error("An output pipe for the script could not be set up");
             read.Dispose();
@@ -123,11 +122,13 @@ internal sealed unsafe class AccountToolPipes : IDisposable
         return handle;
     }
 
+    // The list keeps a pointer to the handles, not a copy, so they live behind it in the same block.
     private static void* HandleList(SafeFileHandle output, SafeFileHandle error, SafeFileHandle input)
     {
         nuint size = 0;
         _ = InitializeProcThreadAttributeList(null, 1, 0, ref size);
-        void* list = NativeMemory.Alloc(size);
+        nuint handlesAt = (size + (nuint)sizeof(nint) - 1) & ~((nuint)sizeof(nint) - 1);
+        void* list = NativeMemory.Alloc(handlesAt + (nuint)(sizeof(nint) * 3));
 
         if (!InitializeProcThreadAttributeList(list, 1, 0, ref size))
         {
@@ -137,7 +138,7 @@ internal sealed unsafe class AccountToolPipes : IDisposable
             throw failure;
         }
 
-        nint* handles = stackalloc nint[3];
+        nint* handles = (nint*)((byte*)list + handlesAt);
         handles[0] = output.DangerousGetHandle();
         handles[1] = error.DangerousGetHandle();
         handles[2] = input.DangerousGetHandle();

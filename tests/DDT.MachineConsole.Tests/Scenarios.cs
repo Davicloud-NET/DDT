@@ -244,6 +244,37 @@ internal static class Scenarios
         ],
         null);
 
+    // An Applications input as the server asks it: a long tick list of the library's names by id, two ticked.
+    public static InputsQuestion Applications => new(
+        "Windows 11 24H2 with Office",
+        [
+            new ConsoleInput(
+                "Apps",
+                "Applications",
+                "Installed after Windows.",
+                ConsoleInputKind.MultiChoice,
+                [
+                    new ConsoleChoice("app-7zip", "7-Zip"),
+                    new ConsoleChoice("app-reader", "Adobe Acrobat Reader"),
+                    new ConsoleChoice("app-git", "Git"),
+                    new ConsoleChoice("app-chrome", "Google Chrome"),
+                    new ConsoleChoice("app-m365", "Microsoft 365 Apps"),
+                    new ConsoleChoice("app-teams", "Microsoft Teams"),
+                    new ConsoleChoice("app-firefox", "Mozilla Firefox"),
+                    new ConsoleChoice("app-notepad", "Notepad++"),
+                    new ConsoleChoice("bundle-lab", "Lab tools"),
+                    new ConsoleChoice("app-putty", "PuTTY"),
+                    new ConsoleChoice("app-vlc", "VLC media player"),
+                    new ConsoleChoice("app-code", "Visual Studio Code"),
+                ],
+                "app-7zip;app-m365",
+                false,
+                null,
+                null),
+            new ConsoleInput("Owner", "Owner of this PC", null, ConsoleInputKind.Text, [], null, false, 20, null),
+        ],
+        null);
+
     public static ConsoleState Restarting => State(ConsoleStage.Restarting) with
     {
         Run = Run([.. Done(5), .. Pending(3)], null, null, ConsoleActivity.Restarting),

@@ -3,8 +3,10 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Diagnostics.CodeAnalysis;
+using DDT.Contracts.Applications;
 using DDT.Contracts.Images;
 using DDT.Contracts.Packages;
+using DDT.Server.Applications;
 using DDT.Server.Data;
 using DDT.Server.Packages;
 using Microsoft.EntityFrameworkCore;
@@ -34,10 +36,17 @@ internal static class LibraryEntries
             .FirstOrDefaultAsync(p => p.Sha256 == sha256 && p.Kind == kind, cancellationToken)
             .ConfigureAwait(false);
 
-        // The package was deleted after this upload added it.
-        return package is null
-            ? new UploadCompletion(UploadCompletionStatus.NotFound, [])
-            : new UploadCompletion(UploadCompletionStatus.Existing, [], Package: PackageSummaries.From(package));
+        // The package was deleted after this upload added it. An application's files are answered without the
+        // suggestion, which was read from the part file.
+        return package switch
+        {
+            null => new UploadCompletion(UploadCompletionStatus.NotFound, []),
+            { Kind: PackageKind.Application } => new UploadCompletion(
+                UploadCompletionStatus.Existing,
+                [],
+                Application: new ApplicationUpload(ApplicationUploads.Files(package), null)),
+            _ => new UploadCompletion(UploadCompletionStatus.Existing, [], Package: PackageSummaries.From(package)),
+        };
     }
 
     public static async Task<IReadOnlyList<ImageSummary>> ImagesOfAsync(DdtDbContext database, string sha256, CancellationToken cancellationToken)
@@ -52,7 +61,12 @@ internal static class LibraryEntries
         return [.. images.Select(ImageSummaries.From)];
     }
 
-    public static PackageKind PackageKindOf(UploadKind kind) => kind == UploadKind.Drivers ? PackageKind.Drivers : PackageKind.Files;
+    public static PackageKind PackageKindOf(UploadKind kind) => kind switch
+    {
+        UploadKind.Drivers => PackageKind.Drivers,
+        UploadKind.Application => PackageKind.Application,
+        _ => PackageKind.Files,
+    };
 
     // A WIM's XML is whatever its author wrote, and PostgreSQL refuses a value longer than its column.
     [return: NotNullIfNotNull(nameof(value))]

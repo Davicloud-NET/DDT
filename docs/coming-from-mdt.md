@@ -12,7 +12,8 @@ read. The pictures here show sample data; your server names will be nicer.
 
 | In MDT | In DDT |
 |---|---|
-| The deployment share | The library: *Library* with *OS images*, *Drivers* and *Files* |
+| The deployment share | The library: *Library* with *OS images*, *Drivers*, *Files* and *Applications* |
+| Applications and application bundles | *Library, Applications*, and the step **Install applications** |
 | `LiteTouchPE_x64.wim` | The boot image, under *Boot, Boot image* |
 | Update Deployment Share | The button **Build the boot image** |
 | A selection profile for WinPE drivers | **Add to the Windows PE boot image**, on a driver package |
@@ -90,8 +91,8 @@ A few things work differently from LiteTouch:
 
 ## Bringing the deployment share along
 
-DDT reads a deployment share and takes two things out of it: the operating systems and the
-Out-of-Box Drivers. It only reads. Nothing in the share is changed, and MDT keeps working with it.
+DDT reads a deployment share and takes three things out of it: the operating systems, the
+Out-of-Box Drivers, and the applications with their bundles. It only reads. Nothing in the share is changed, and MDT keeps working with it.
 
 DDT imports from folders it has been told about, so tell it once. Add this to
 `C:\ProgramData\DDT\ddt.ini` and restart the service `DDT`:
@@ -121,10 +122,11 @@ Then open *Library, OS images*:
    folder name and the package is matched to those machines from then on. A folder DDT cannot make
    sense of, like `WinPE x64`, comes over without a model; set one under *Library, Drivers*, or
    flag it for the boot image if that is what it was for.
-3. **Not imported yet.** DDT lists what it found and leaves behind, so nothing vanishes silently:
-   task sequences, applications and `CustomSettings.ini`. The next chapters say what to do about
-   the first and the last.
-4. **Import** starts the copying. A full share takes a while, mostly for reading gigabytes of WIM.
+3. **Applications and bundles.** Each comes along with a box of its own. One you disabled in MDT
+   is listed without a tick. The chapter on applications below says how.
+4. **Not imported yet.** DDT lists what it found and leaves behind, so nothing vanishes silently:
+   task sequences and `CustomSettings.ini`. The next chapters say what to do about them.
+5. **Import** starts the copying. A full share takes a while, mostly for reading gigabytes of WIM.
 
 ## Task sequences
 
@@ -168,6 +170,38 @@ role under *Deployment, Machine roles*, and a rule then hands out the role inste
 Rules are checked from the top, and the first one to set a value wins, much like the `Priority`
 line. The Rules page lets you try a machine against them and shows which rules matched and where
 each value came from, which beats reading `BDD.log` backwards.
+
+## Applications
+
+*Library, Applications* is the counterpart of MDT's Applications folder, bundles included. An
+**Install applications** step installs them, and an **Applications** input asks at the machine which
+ones, as the Deployment Wizard's application page did.
+
+The import dialog brings a share's applications and bundles over:
+
+- **Files.** An application with a Source folder gets its files. One without keeps its command line
+  and nothing else.
+- **The working folder.** DDT runs the command in the folder of the unpacked files, not in MDT's
+  WorkingDirectory. Where the two differ, the result says so.
+- **UninstallKey** becomes an uninstall key detection, also a GUID, as MDT looks it up.
+- **App packages.** A command that names an .appx or .appxbundle becomes an MSIX application, with
+  the frameworks under Dependencies and the licence beside it.
+- **MDT's own names.** DDT has no %ScriptRoot%, %DeployRoot% and the like, and no ZTI or LTI
+  scripts. A command that uses them is imported with a note.
+- **Reboot.** `Reboot=True` imports as no success code and the restart codes 0 and 3010, so the
+  machine restarts after the installer whatever it returns. `Reboot=False` imports as success 0 and
+  restart 3010.
+- **Dependencies** come along. A dependency on a bundle becomes that bundle's applications.
+  Bundles keep their order.
+- **Disabled applications** are listed unticked. MDT still installs one for a bundle that depends on it,
+  and so does the import.
+- **What is left out**, a dependency that is missing or would close a circle, is named in the
+  result.
+- **Names the library has already** are left alone, and the imported entries link to them. A second
+  import adds nothing.
+
+The reader of `Applications.xml` was written from memory of the format and has not met a real
+share yet. Check the result before you count on it.
 
 ## At the machine
 
@@ -241,9 +275,8 @@ machine that will not come back from its installed Linux.
 
 Better you hear it here than find out on a Friday afternoon:
 
-- **Applications.** There is no application library yet, and no bundles. A Run script step can
-  bring a zip from *Library, Files* along and install what is in it, and that is all for now.
-  Applications are the heart of milestone M9, together with Windows Update and BitLocker.
+- **Applications on a real machine.** Applications, winget packages included, have met only tests
+  and dry runs so far. Windows Update and BitLocker are the rest of milestone M9.
 - **Importing task sequences and `CustomSettings.ini`.** You rebuild them, as described above.
 - **Refresh and replace.** No USMT yet, so DDT erases the disk and installs. That comes with M10.
 - **Capturing a reference image.** Also M10. Until then, capture the way you do today and import

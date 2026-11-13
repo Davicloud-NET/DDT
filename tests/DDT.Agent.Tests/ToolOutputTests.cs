@@ -4,6 +4,7 @@
 
 using System.Text;
 using DDT.Agent.Deployment;
+using DDT.Agent.Sequences;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -42,6 +43,14 @@ public sealed class ToolOutputTests
         string longLine = new('ä', 5000);
 
         Assert.Equal([longLine, "end"], await LinesOfAsync(Encoding.UTF8.GetBytes($"{longLine}\nend\n")));
+    }
+
+    // dism writes "für" in the OEM code page, 850 on a German Windows, where 0x81 is ü.
+    [Fact]
+    public void DismsTextIsReadInTheOemCodePage()
+    {
+        Assert.Equal("für", AnsiCodePage.Decode(850, [0x66, 0x81, 0x72]));
+        Assert.Equal<ToolOutputDecoder>(AnsiCodePage.DecodeOem, WindowsToolDecoders.All[Path.GetFileName(InjectDriversStepRunner.DismPath)]);
     }
 
     [Fact]

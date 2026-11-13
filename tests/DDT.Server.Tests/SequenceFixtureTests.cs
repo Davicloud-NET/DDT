@@ -9,6 +9,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DDT.Contracts;
+using DDT.Contracts.Applications;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 using DDT.Server.Sequences;
@@ -22,6 +23,8 @@ public sealed class SequenceFixtureTests
 {
     private static readonly Guid s_imageId = new("0193a4b2-0000-7000-8000-0000000000a1");
     private static readonly Guid s_packageId = new("0193a4b2-0000-7000-8000-0000000000b1");
+    private static readonly Guid s_applicationId = new("0193a4b2-0000-7000-8000-0000000000d1");
+    private static readonly Guid s_bundleId = new("0193a4b2-0000-7000-8000-0000000000d2");
 
     [Fact]
     public async Task TheWebFixtureIsTheInstallWindowsTemplate()
@@ -181,8 +184,8 @@ public sealed class SequenceFixtureTests
         Assert.Equal(Enum.GetValues<InputKind>(), inputKinds);
         Assert.Equal(Enum.GetValues<InputAsk>(), asks);
 
-        // A sequence that installs Windows needs nothing of version 4.
-        Assert.Equal(3, definition.Version);
+        // Installing applications needs version 6, and a sequence that installs Windows nothing of versions 4 and 5.
+        Assert.Equal(6, definition.Version);
         Assert.Empty(SequenceValidator.Analyse(definition).Problems);
 
         await MatchFixtureAsync("every-node.sequence.json", definition, "the nodes built here");
@@ -268,7 +271,18 @@ public sealed class SequenceFixtureTests
             Name = "Configure",
             Conditions = [new StepCondition(MachineVariableNames.Phase, ConditionOperator.Equals, "Windows")],
             ContinueOnError = true,
-            Steps = [repeat, new PauseStep { Id = StepId(10), Name = "Check the BIOS", Message = "Check {{ComputerName}}.", ContinueAfterMinutes = 30 }],
+            Steps =
+            [
+                repeat,
+                new PauseStep { Id = StepId(10), Name = "Check the BIOS", Message = "Check {{ComputerName}}.", ContinueAfterMinutes = 30 },
+                new InstallApplicationsStep
+                {
+                    Id = StepId(12),
+                    Name = "Install applications",
+                    Applications = [new ApplicationReference(s_bundleId, ApplicationReferenceKind.Bundle), new ApplicationReference(s_applicationId, ApplicationReferenceKind.Application)],
+                    Variable = "Extras",
+                },
+            ],
         },
     ];
 
@@ -306,6 +320,14 @@ public sealed class SequenceFixtureTests
             Label = "Installer",
             Kind = InputKind.Account,
             Account = new AccountDestination { Hosts = ["files.corp.example"], RunAs = true },
+        },
+        new InputDeclaration
+        {
+            Name = "Extras",
+            Label = "Extras",
+            Kind = InputKind.Applications,
+            Offered = [new ApplicationReference(s_applicationId, ApplicationReferenceKind.Application), new ApplicationReference(s_bundleId, ApplicationReferenceKind.Bundle)],
+            Ticked = [s_applicationId],
         },
     ];
 

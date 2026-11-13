@@ -17,6 +17,8 @@ public sealed class RunDownloads(
     TimeProvider timeProvider,
     TimeSpan tokenWait)
 {
+    public long AvailableBytes(string path) => freeSpace.AvailableBytes(path);
+
     // Downloads into directory as <sha256><extension>, resuming a part file an earlier attempt left there. Returns the
     // file.
     public async Task<string> DownloadAsync(

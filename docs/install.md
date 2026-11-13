@@ -498,7 +498,7 @@ Done, with (a):
   refused and says so.
 - **SQL Server.** Its model differs in two places. Every text column has the collation
   `Latin1_General_100_BIN2`, so text is compared exactly as on the other two, not only hashes and
-  tokens. And the thirteen references that name a user are not cleared by the database, which
+  tokens. And the fifteen references that name a user are not cleared by the database, which
   refuses `SET NULL` where two paths lead from a user to a table: DDT clears them in the
   transaction that deletes the user (src/DDT.Server/Data/UserReferences.cs). The directory id's
   unique index has its filter, and EF Core's own lock (`sp_getapplock`) serializes migrations.
@@ -1444,9 +1444,9 @@ went on with the DHCP Server role in the server VM. The quick start has to warn 
   `Control\OperatingSystems.xml` and imports each operating system's image file, and reads
   `Control\DriverGroups.xml` and `Control\Drivers.xml` and makes a driver package of each driver
   group from `Out-of-Box Drivers`, matched to its model when the group's path follows the common
-  `Make\Model` layout and left for the administrator otherwise. It lists what it cannot import yet,
-  from `Control\CustomSettings.ini`, `Applications.xml` and `TaskSequences.xml`, with what each holds,
-  and those follow once M7 and M9 give them a place. On a UNC path the server reads as its computer
+  `Make\Model` layout and left for the administrator otherwise. It imports the applications and
+  bundles of `Control\Applications.xml` (M9). It lists what it cannot import, from
+  `Control\CustomSettings.ini` and `TaskSequences.xml`, with what each holds. On a UNC path the server reads as its computer
   account, which the share has to allow.
 
 Done:
@@ -1469,8 +1469,15 @@ Done:
   lists in each, and the folders of Out-of-Box Drivers that hold drivers, each of which becomes a
   driver package named after its path. Where the path ends in a maker DDT knows by name and a
   model, such as `Dell Inc.\Latitude 7440`, the package is for that model; otherwise it is for
-  none until someone sets it. The dialog names the applications, the task sequences and the
-  sections of `CustomSettings.ini`, which are not imported.
+  none until someone sets it. The dialog names the task sequences and the sections of
+  `CustomSettings.ini`, which are not imported.
+- **MDT applications** (M9) are listed with their bundles, one box each. Each application imports
+  after its dependencies, bundles last, through the library's editors
+  (src/DDT.Server/Import/MdtApplicationImporter.cs). Source folder to files, UninstallKey to a
+  product-code or uninstall-key detection, `Reboot=True` to restart codes 0 and 3010 with no
+  success code. A missing dependency or one that closes a circle is left out and named; a name the
+  library has is linked to, not imported again. The reader was written from memory of
+  `Applications.xml` and has not met a real share.
 
 Left: an import folder is named in configuration and not on a page, so an MDT shop edits `ddt.ini`
 once. A command at an elevated prompt would spare that, as `settings netboot-interface` does for

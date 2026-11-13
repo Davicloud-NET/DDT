@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Server.Accounts;
+using DDT.Server.Applications;
 using DDT.Server.Data.Configurations;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
@@ -45,11 +46,17 @@ public abstract class DdtDbContext(DbContextOptions options)
 
     public DbSet<DeploymentStep> DeploymentSteps => Set<DeploymentStep>();
 
+    public DbSet<DeploymentApplicationPlan> DeploymentApplicationPlans => Set<DeploymentApplicationPlan>();
+
     public DbSet<Rule> Rules => Set<Rule>();
 
     public DbSet<MachineRole> MachineRoles => Set<MachineRole>();
 
     public DbSet<Account> Accounts => Set<Account>();
+
+    public DbSet<Application> Applications => Set<Application>();
+
+    public DbSet<ApplicationBundle> ApplicationBundles => Set<ApplicationBundle>();
 
     public DbSet<RunCredential> RunCredentials => Set<RunCredential>();
 
@@ -76,11 +83,14 @@ public abstract class DdtDbContext(DbContextOptions options)
         builder.ApplyConfiguration(new DeploymentStepConfiguration());
         builder.ApplyConfiguration(new RunCredentialConfiguration());
         builder.ApplyConfiguration(new DeploymentArtifactConfiguration());
+        builder.ApplyConfiguration(new DeploymentApplicationPlanConfiguration());
         builder.ApplyConfiguration(new PackageConfiguration());
         builder.ApplyConfiguration(new TaskSequenceConfiguration());
         builder.ApplyConfiguration(new RuleConfiguration());
         builder.ApplyConfiguration(new MachineRoleConfiguration());
         builder.ApplyConfiguration(new AccountConfiguration());
+        builder.ApplyConfiguration(new ApplicationConfiguration());
+        builder.ApplyConfiguration(new ApplicationBundleConfiguration());
         builder.ApplyConfiguration(new ApiTokenConfiguration());
         builder.ApplyConfiguration(new SettingsSectionConfiguration());
         builder.ApplyConfiguration(new SettingsHostStateConfiguration());

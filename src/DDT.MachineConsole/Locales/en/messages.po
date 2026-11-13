@@ -355,6 +355,10 @@ msgstr "In {seconds} seconds. To end the run and start over here, stop the resta
 msgid "Info"
 msgstr "Info"
 
+#: Texts/Say.cs
+msgid "Installing applications"
+msgstr "Installing applications"
+
 #: ViewModels/MachineFacts.cs
 msgid "IP address"
 msgstr "IP address"
@@ -478,6 +482,10 @@ msgstr "Next field"
 #: ViewModels/MachineViewModel.cs
 msgid "No"
 msgstr "No"
+
+#: ViewModels/MultiChoiceFieldViewModel.cs
+msgid "No choice matches."
+msgstr "No choice matches."
 
 #: ViewModels/MachineViewModel.cs
 msgid "No disk DDT can install on."
@@ -626,6 +634,10 @@ msgstr "Running a script"
 #: Texts/Say.cs
 msgid "Running a step"
 msgstr "Running a step"
+
+#: ViewModels/MultiChoiceFieldViewModel.cs
+msgid "Search"
+msgstr "Search"
 
 #: ViewModels/MachineViewModel.cs
 msgid "Secure Boot"
@@ -879,6 +891,10 @@ msgstr "This program comes with ABSOLUTELY NO WARRANTY."
 msgid "This screen keeps what the agent showed last."
 msgstr "This screen keeps what the agent showed last."
 
+#: ViewModels/InputsViewModel.cs
+msgid "Tick"
+msgstr "Tick"
+
 #: ViewModels/LogViewModel.cs
 msgid "Times in UTC, by this machine's clock."
 msgstr "Times in UTC, by this machine's clock."
@@ -1010,6 +1026,10 @@ msgstr "Yes"
 #: Texts/Say.cs
 msgid "{count} bytes"
 msgstr "{count} bytes"
+
+#: ViewModels/MultiChoiceFieldViewModel.cs
+msgid "{count} chosen"
+msgstr "{count} chosen"
 
 #: Texts/Say.cs
 msgid "{count} partitions"

@@ -9,9 +9,10 @@ import { formatBytes } from "@/lib/format";
 import { Checkbox } from "@/ui/Checkbox";
 
 import type { MdtDriverGroup, MdtImageFile, MdtShareView } from "./imports";
+import { MdtApplicationChoices } from "./MdtApplicationChoices";
 import { MdtNotImported } from "./MdtNotImported";
 
-// The share's image files and driver groups with a box each, and below them what DDT has no place for yet.
+// The share's images, driver groups and applications with a box each, and below them what DDT has no place for yet.
 export function MdtShareChoices({
   view,
   left,
@@ -19,7 +20,7 @@ export function MdtShareChoices({
 }: {
   view: MdtShareView;
   left: ReadonlySet<string>;
-  onToggle: (id: string, chosen: boolean) => void;
+  onToggle: (id: string, chosen: boolean, byDefault?: boolean) => void;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -69,6 +70,8 @@ export function MdtShareChoices({
           </Checkbox>
         ))}
       </section>
+
+      <MdtApplicationChoices applications={view.applications} left={left} onToggle={onToggle} />
 
       <MdtNotImported notImported={view.notImported} />
     </div>

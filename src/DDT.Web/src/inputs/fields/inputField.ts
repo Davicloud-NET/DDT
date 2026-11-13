@@ -22,3 +22,16 @@ export function choicesOf(input: AskedInput): { value: string; label: string }[]
     label: choice.label ?? choice.value,
   }));
 }
+
+// A list of more choices than this gets a search field.
+export const SEARCH_ABOVE = 8;
+
+// The choices whose label holds the search, ignoring case.
+export function matchingChoices<T extends { label: string }>(
+  choices: readonly T[],
+  search: string,
+): T[] {
+  const wanted = search.trim().toLocaleLowerCase();
+
+  return choices.filter((choice) => choice.label.toLocaleLowerCase().includes(wanted));
+}

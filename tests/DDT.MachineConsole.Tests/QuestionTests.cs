@@ -375,6 +375,65 @@ public sealed class QuestionTests
         Assert.Equal([(12, new ConsoleAnswer(Back: true))], back.Answers);
     }
 
+    // More than eight choices get a search. A row the search hides stays ticked, and the count says how many are.
+    [Fact]
+    public void SearchesALongListAndKeepsTheTicksItHides()
+    {
+        TestConsole console = Asked(13, Scenarios.Applications);
+        InputsViewModel inputs = Assert.IsType<InputsViewModel>(console.Model.Question);
+        MultiChoiceFieldViewModel apps = Assert.IsType<MultiChoiceFieldViewModel>(inputs.Fields[0]);
+
+        Assert.True(apps.IsSearchable);
+        Assert.True(inputs.HasLongLists);
+        Assert.Empty(apps.Keys);
+        Assert.Equal("2 chosen", apps.ChosenText);
+
+        apps.Search = " MICRO ";
+        Assert.Equal(["Microsoft 365 Apps", "Microsoft Teams"], apps.Shown.Select(item => item.Label));
+
+        apps.Move(1);
+        apps.Move(5);
+        apps.TickHighlighted();
+        Assert.Equal("Microsoft Teams", apps.Highlighted?.Label);
+        Assert.Equal("3 chosen", apps.ChosenText);
+
+        apps.Search = "zip";
+        Assert.Null(apps.Highlighted);
+        inputs.SubmitCommand.Execute(null);
+
+        Assert.Equal(new ConsoleInputValue("Apps", "app-7zip;app-m365;app-teams"), Assert.Single(console.Answers).Answer.Values?[0]);
+    }
+
+    [Fact]
+    public void ShowsEightChoicesAsKeysWithoutASearch()
+    {
+        ConsoleInput listed = Scenarios.Applications.Inputs[0];
+        TestConsole console = Asked(13, new InputsQuestion("Lab PCs", [listed with { Choices = [.. listed.Choices.Take(8)] }], null));
+        InputsViewModel inputs = Assert.IsType<InputsViewModel>(console.Model.Question);
+        MultiChoiceFieldViewModel apps = Assert.IsType<MultiChoiceFieldViewModel>(inputs.Fields[0]);
+
+        Assert.False(apps.IsSearchable);
+        Assert.False(inputs.HasLongLists);
+        Assert.Equal(8, apps.Keys.Count);
+        Assert.False(apps.HasNoMatch);
+    }
+
+    [Fact]
+    public void SaysWhenTheSearchMatchesNothing()
+    {
+        TestConsole console = Asked(13, Scenarios.Applications);
+        MultiChoiceFieldViewModel apps = Assert.IsType<MultiChoiceFieldViewModel>(Assert.IsType<InputsViewModel>(console.Model.Question).Fields[0]);
+
+        apps.Search = "Photoshop";
+        apps.Move(1);
+        apps.TickHighlighted();
+
+        Assert.True(apps.HasNoMatch);
+        Assert.Null(apps.Highlighted);
+        Assert.Equal("No choice matches.", apps.NoMatchText);
+        Assert.Equal("2 chosen", apps.ChosenText);
+    }
+
     private static TestConsole Asked(int id, ConsoleQuestion question)
     {
         ConsoleStage stage = question is SignInQuestion ? ConsoleStage.WaitingForAuthorization : ConsoleStage.Choosing;

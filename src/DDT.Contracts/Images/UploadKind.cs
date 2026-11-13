@@ -10,4 +10,7 @@ public enum UploadKind
     Image,
     Drivers,
     Files,
+
+    // A zip, or any single file the server zips, for an application.
+    Application,
 }

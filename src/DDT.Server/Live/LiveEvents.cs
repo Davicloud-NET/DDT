@@ -105,4 +105,18 @@ public static class LiveEvents
 
     // Carries an AccountsRemovedEvent, so clients drop the accounts without loading the list again.
     public const string AccountsRemoved = "accountsRemoved";
+
+    // Carries an ApplicationView, the same as GET /api/applications lists, when an application was created or changed,
+    // or what names it changed.
+    public const string ApplicationChanged = "applicationChanged";
+
+    // Carries an ApplicationsRemovedEvent.
+    public const string ApplicationsRemoved = "applicationsRemoved";
+
+    // Carries an ApplicationBundleView, the same as GET /api/application-bundles lists, when a bundle was created or
+    // changed.
+    public const string ApplicationBundleChanged = "applicationBundleChanged";
+
+    // Carries an ApplicationBundlesRemovedEvent.
+    public const string ApplicationBundlesRemoved = "applicationBundlesRemoved";
 }

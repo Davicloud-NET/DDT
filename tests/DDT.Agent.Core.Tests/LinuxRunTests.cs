@@ -6,6 +6,7 @@ using System.Text;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Applications;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
 using DDT.Contracts.Sequences;
@@ -208,7 +209,7 @@ public sealed class LinuxRunTests : IDisposable
         Assert.StartsWith("Install Linux cannot run: The Linux boot environment has no partition to unpack a package on", packageServer.RunReports[^1].Error, StringComparison.Ordinal);
     }
 
-    // The agent says version 5, so the server hands it such a run, and the boot environment asks for the hand-over at
+    // The agent says version 6, so the server hands it such a run, and the boot environment asks for the hand-over at
     // the first step in the installed Linux.
     [Fact]
     public async Task TakesARunWithStepsInTheInstalledLinuxAndHandsItOverAfterTheSeed()
@@ -217,11 +218,33 @@ public sealed class LinuxRunTests : IDisposable
 
         (RunResult result, ScriptedAgentServer server, _) = await RunAsync(Run(steps: [s_write, s_seed, installed]));
 
-        Assert.Equal(5, SupportedSequences.Version);
+        Assert.Equal(6, SupportedSequences.Version);
         Assert.Equal(RunOutcome.Restarting, result.Outcome);
         Assert.Equal(["list", "clean 0", "hand over", "reboot"], _tools.Calls);
         Assert.Empty(_toolRunner.Calls);
         Assert.Equal((DeploymentState.Running, RunActivity.Restarting), (server.RunReports[^1].State, server.RunReports[^1].Activity));
+    }
+
+    // The agent for Linux says version 6 too, but installing applications belongs to a Windows sequence.
+    [Fact]
+    public async Task RefusesASequenceThatInstallsApplicationsBeforeTheDiskIsTouched()
+    {
+        InstallApplicationsStep install = new()
+        {
+            Id = Guid.Parse("0193a4b2-0000-7000-8000-00000000e00a"),
+            Name = "Install applications",
+            Applications = [new ApplicationReference(Guid.Parse("0193a4b2-0000-7000-8000-00000000e00b"), ApplicationReferenceKind.Application)],
+        };
+
+        (RunResult result, ScriptedAgentServer server, _) = await RunAsync(Run(steps: [s_write, s_seed, install]));
+
+        Assert.Equal(RunOutcome.Failed, result.Outcome);
+        Assert.Empty(_tools.Calls);
+        Assert.Empty(_toolRunner.Calls);
+        Assert.Equal(
+            "Install Linux cannot run: A sequence either installs Windows or writes a raw disk image. This step belongs to installing Windows. " +
+            "Correct the sequence and assign it again.",
+            server.RunReports[^1].Error);
     }
 
     [Fact]

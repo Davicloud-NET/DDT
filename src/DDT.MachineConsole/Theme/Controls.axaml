@@ -435,6 +435,8 @@
   </ControlTheme>
 
   <ControlTheme x:Key="ChoiceToggle" TargetType="ToggleButton">
+    <!-- Avalonia clips a templated control to its bounds, which cuts off a ring drawn outside them. -->
+    <Setter Property="ClipToBounds" Value="False" />
     <Setter Property="Background" Value="{DynamicResource SgKeySecondary}" />
     <Setter Property="Foreground" Value="{DynamicResource SgInk}" />
     <Setter Property="BorderBrush" Value="{DynamicResource SgControl}" />

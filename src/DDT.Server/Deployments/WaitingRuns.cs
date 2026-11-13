@@ -4,6 +4,7 @@
 
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
+using DDT.Server.Applications;
 using DDT.Server.Data;
 using DDT.Server.Machines;
 using DDT.Server.Settings;
@@ -29,7 +30,9 @@ public sealed class WaitingRuns(
         ArgumentNullException.ThrowIfNull(run);
         ArgumentNullException.ThrowIfNull(given);
 
-        SequenceDefinition definition = await queries.DefinitionAsync(run, cancellationToken).ConfigureAwait(false);
+        SequenceDefinition definition = await ApplicationInputs
+            .AskedAsync(database, await queries.DefinitionAsync(run, cancellationToken).ConfigureAwait(false), cancellationToken)
+            .ConfigureAwait(false);
         DeploymentOptions deployment = settings.Current.Deployment;
 
         if (run.State != DeploymentState.Assigned)

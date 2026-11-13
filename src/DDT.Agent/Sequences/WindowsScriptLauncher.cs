@@ -23,23 +23,18 @@ public sealed class WindowsScriptLauncher : IScriptLauncher
 
     public static string PowerShellIn(string systemDirectory) => Path.Combine(systemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
 
-    // cmd reads a script in the console's code page, line by line, so the first line switches it to UTF-8 for the rest.
     // Windows PowerShell 5.1 reads a file without a byte order mark as ANSI.
     public static byte[] ScriptFile(RunScriptStep step)
     {
         ArgumentNullException.ThrowIfNull(step);
 
-        string text = step.Script.ReplaceLineEndings("\r\n");
-
-        if (!text.EndsWith("\r\n", StringComparison.Ordinal))
-        {
-            text += "\r\n";
-        }
-
         return step.Interpreter == ScriptInterpreter.PowerShell
-            ? [.. Encoding.UTF8.Preamble, .. Encoding.UTF8.GetBytes(text)]
-            : Encoding.UTF8.GetBytes($"@chcp 65001 >nul\r\n{text}");
+            ? [.. Encoding.UTF8.Preamble, .. Encoding.UTF8.GetBytes(Lines(step.Script))]
+            : CmdFile(step.Script);
     }
+
+    // cmd reads a script in the console's code page, line by line, so the first line switches it to UTF-8 for the rest.
+    public static byte[] CmdFile(string script) => Encoding.UTF8.GetBytes($"@chcp 65001 >nul\r\n{Lines(script)}");
 
     // PowerShell and the programs it starts write in the console's code page, so a cmd file switches the console to
     // UTF-8 first and passes PowerShell's exit code on. cmd would expand a % in a path.
@@ -80,4 +75,11 @@ public sealed class WindowsScriptLauncher : IScriptLauncher
     }
 
     private static string Escape(string path) => path.Replace("%", "%%", StringComparison.Ordinal);
+
+    private static string Lines(string script)
+    {
+        string text = script.ReplaceLineEndings("\r\n");
+
+        return text.EndsWith("\r\n", StringComparison.Ordinal) ? text : text + "\r\n";
+    }
 }

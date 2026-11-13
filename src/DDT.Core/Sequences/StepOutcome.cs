@@ -9,4 +9,5 @@ public enum StepOutcome
     Done,
     Failed,
     RebootRequired,
+    RestartAndContinue,
 }

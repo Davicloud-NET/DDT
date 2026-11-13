@@ -14,12 +14,13 @@ namespace DDT.Agent.Deployment;
 internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
 {
     private AccountDesktop? _desktop;
-    private FileStream? _output;
-    private FileStream? _error;
+    private Stream? _output;
+    private Stream? _error;
     private SafeKernelHandle? _process;
     private SafeKernelHandle? _thread;
     private SafeKernelHandle? _job;
     private int _exitCode;
+    private string _tool = "The tool";
 
     public Stream StandardOutput => _output ?? throw new InvalidOperationException("The process has not started.");
 
@@ -27,29 +28,27 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
 
     public int ExitCode => _exitCode;
 
-    public unsafe void Start(WindowsAccountSession account, string commandLine, string? workingDirectory, IReadOnlyDictionary<string, string>? environment)
+    public unsafe void Start(WindowsAccountSession account, string fileName, IReadOnlyList<string> arguments, ToolRunOptions options)
     {
-        AccountDesktop desktop = AccountDesktop.Create(account.LogonSid.Value);
-        _desktop = desktop;
+        _tool = Path.GetFileName(fileName);
+        string commandLine = WindowsCommandLine.Build(fileName, arguments);
+
+        string desktopName = account.Desktop ?? OwnDesktop(account);
         AccountToolPipes pipes = AccountToolPipes.Create();
-        char* environmentBlock = AccountEnvironment.Build(account.Token, environment);
+        char* environmentBlock = AccountEnvironment.Build(account.Token, options.Environment);
 
         try
         {
-            fixed (char* desktopName = desktop.Name)
+            fixed (char* desktop = desktopName)
             {
-                StartupInfoEx startup = pipes.StartupInfo(desktopName);
-                (_process, _thread) = StartSuspended(account, commandLine, workingDirectory, environmentBlock, &startup);
+                StartupInfoEx startup = pipes.StartupInfo(desktop);
+                (_process, _thread) = StartSuspended(account, commandLine, options.WorkingDirectory, environmentBlock, &startup);
             }
 
             _job = KillOnCloseJob();
             Assign(_job, _process, account.UserName);
             (_output, _error) = pipes.TakeReadEnds();
-
-            if (ResumeThread(_thread) == ResumeFailed)
-            {
-                throw DeploymentStepException.ForLastWin32Error($"The script could not be resumed after it started as {account.UserName}");
-            }
+            Resume(_thread, account.UserName);
         }
         catch
         {
@@ -107,7 +106,7 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         }
         catch (Exception exception)
         {
-            log.Warning($"The script could not be stopped ({exception.Message}).");
+            log.Warning($"{_tool} could not be stopped ({exception.Message}).");
         }
 
         return Task.CompletedTask;
@@ -125,8 +124,23 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         _desktop?.Dispose();
     }
 
+    private string OwnDesktop(WindowsAccountSession account)
+    {
+        _desktop = AccountDesktop.Create(account.LogonSid.Value);
+
+        return _desktop.Name;
+    }
+
+    private void Resume(SafeKernelHandle thread, string userName)
+    {
+        if (ResumeThread(thread) == ResumeFailed)
+        {
+            throw DeploymentStepException.ForLastWin32Error($"{_tool} could not be resumed after it started as {userName}");
+        }
+    }
+
     // The command line has to be writable.
-    private static unsafe (SafeKernelHandle Process, SafeKernelHandle Thread) StartSuspended(
+    private unsafe (SafeKernelHandle Process, SafeKernelHandle Thread) StartSuspended(
         WindowsAccountSession account,
         string commandLine,
         string? workingDirectory,
@@ -151,7 +165,9 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
                 startup,
                 out info))
             {
-                throw DeploymentStepException.ForLastWin32Error($"The script could not be started as {account.UserName}");
+                throw DeploymentStepException.ForLastWin32Error(account.Desktop is null
+                    ? $"{_tool} could not be started as {account.UserName}"
+                    : $"{_tool} could not be started in the session of {account.UserName}");
             }
         }
 
@@ -183,11 +199,11 @@ internal sealed class AccountToolProcess(AgentLog log) : IToolProcess
         return job;
     }
 
-    private static void Assign(SafeKernelHandle job, SafeKernelHandle process, string userName)
+    private void Assign(SafeKernelHandle job, SafeKernelHandle process, string userName)
     {
         if (!AssignProcessToJobObject(job, process))
         {
-            throw DeploymentStepException.ForLastWin32Error($"The script started as {userName} could not be put in its job");
+            throw DeploymentStepException.ForLastWin32Error($"{_tool} started as {userName} could not be put in its job");
         }
     }
 }

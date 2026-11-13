@@ -4,5 +4,10 @@
 
 namespace DDT.Contracts.Import;
 
-// ImageFiles are MdtImageFile.File and DriverGroups MdtDriverGroup.Id, as the share's view gave them.
-public sealed record ImportMdtShareRequest(string Path, IReadOnlyList<string> ImageFiles, IReadOnlyList<string> DriverGroups);
+// ImageFiles are MdtImageFile.File, DriverGroups MdtDriverGroup.Id and Applications MdtApplication.Id, as the share's
+// view gave them.
+public sealed record ImportMdtShareRequest(
+    string Path,
+    IReadOnlyList<string> ImageFiles,
+    IReadOnlyList<string> DriverGroups,
+    IReadOnlyList<string>? Applications = null);

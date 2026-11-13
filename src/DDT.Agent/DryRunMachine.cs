@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.Applications;
 using DDT.Agent.Consoles;
 using DDT.Agent.Deployment;
 using DDT.Agent.InstalledPhase;
@@ -87,7 +88,7 @@ public sealed class DryRunMachine(
                 Server = windowsServer,
                 IdentityReader = Identity(),
                 Runner = Runner(windowsServer, new DryRunDiskPartitioner(options.Root, log), tools, rebooter, SequencePhase.Windows),
-                Profile = WindowsPhaseProfile.With(new DryRunSetupProbe(log)),
+                Profile = WindowsPhaseProfile.With(new DryRunSetupProbe(log), new DryRunAutomaticRepair(log)),
                 Rebooter = rebooter,
                 RestartMarker = new DryRunRestartMarker(log),
                 Removal = new DryRunAgentRemoval(new AgentRemoval(Windows, tools, new DryRunRestartDeleter(log), log), options.Root, log),
@@ -148,6 +149,7 @@ public sealed class DryRunMachine(
                 Log = log,
                 TimeProvider = timeProvider,
                 Options = runnerOptions,
+                DeployAccount = inWindows ? new DryRunDeployAccount(DeploySession.AccountName, log) : null,
             },
             BcdWriter = bcdWriter,
             BootOrder = bcdWriter,

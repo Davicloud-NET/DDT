@@ -29,6 +29,27 @@ public sealed class ToolRunnerTests
         Assert.StartsWith("cmd.exe ended with exit code 0x00000000 after ", lines[^1].Message, StringComparison.Ordinal);
     }
 
+    // A line that is valid UTF-8 never reaches a decoder, so the tool prints "für" in code page 850.
+    [Fact]
+    public async Task AToolWithADecoderOfItsOwnIsReadWithIt()
+    {
+        string file = Path.Combine(Path.GetTempPath(), $"ddt-oem-{Guid.NewGuid():N}.txt");
+        await File.WriteAllBytesAsync(file, [0x66, 0x81, 0x72], TestContext.Current.CancellationToken);
+        ToolRunner tools = new(new AgentLog(new ImmediateTimeProvider(), TextWriter.Null), TimeProvider.System, AnsiCodePage.Decode)
+        {
+            Decoders = new Dictionary<string, ToolOutputDecoder>(StringComparer.OrdinalIgnoreCase) { ["CMD.EXE"] = bytes => AnsiCodePage.Decode(850, bytes) },
+        };
+
+        try
+        {
+            Assert.Equal(["für"], await tools.RunAsync(s_cmd, ["/c", "type", file], TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
     [Fact]
     public async Task FailsOnANonZeroExitCodeNamingTheToolAndTheCode()
     {
@@ -93,6 +114,34 @@ public sealed class ToolRunnerTests
         Assert.Contains(lines, line => line is { Level: AgentLogLevel.Information, Message: "out" });
         Assert.Contains(lines, line => line is { Level: AgentLogLevel.Warning, Message: "err" });
         Assert.StartsWith("cmd.exe ended with exit code 3010 after ", lines[^1].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TheOptionsLinesRewriteOrDropWhatTheLogGets()
+    {
+        (ToolRunner tools, ScriptedAgentServer server, AgentLog log) = Create();
+        ToolRunOptions options = new(Lines: line => line.StartsWith("noise", StringComparison.Ordinal) ? null : line.ToUpperInvariant());
+
+        await tools.RunForExitCodeAsync(s_cmd, ["/d", "/c", "echo noise& echo out& echo noise 1>&2& echo err 1>&2"], options, TestContext.Current.CancellationToken);
+
+        List<AgentLogLine> lines = await SentAsync(server, log);
+        Assert.Contains(lines, line => line is { Level: AgentLogLevel.Information, Message: "OUT" });
+        Assert.Contains(lines, line => line is { Level: AgentLogLevel.Warning, Message: "ERR" });
+        Assert.DoesNotContain(lines, line => line.Message.StartsWith("noise", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AToolAsAnAccountGetsItsOptions()
+    {
+        AgentLog log = new(new ImmediateTimeProvider(), TextWriter.Null);
+        RecordingAccountProcessStarter starter = new();
+        ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode, starter);
+        using IAccountSession account = await new DryRunAccountLogons(log).LogOnAsync(new AgentAccount("DDTDeploy", "unused"), TestContext.Current.CancellationToken);
+        ToolRunOptions options = new(@"C:\Users\DDTDeploy", Account: account);
+
+        await tools.RunForExitCodeAsync(@"C:\Users\DDTDeploy\AppData\Local\Microsoft\WindowsApps\winget.exe", ["--version"], options, TestContext.Current.CancellationToken);
+
+        Assert.Equal((@"C:\Users\DDTDeploy\AppData\Local\Microsoft\WindowsApps\winget.exe", options), Assert.Single(starter.Starts));
     }
 
     [Fact]

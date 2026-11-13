@@ -274,6 +274,8 @@ internal sealed partial class SequenceNames
             CheckChoices(input, at, add);
         }
 
+        ApplicationInputRules.Check(input, at, add);
+
         if (input.MaxLength is < 1 or > SequenceValidator.MaxAnswerLength)
         {
             add($"{at}.maxLength", ServerMessages.SequenceInputMaxLength.With("max", SequenceValidator.MaxAnswerLength));
@@ -346,7 +348,8 @@ internal sealed partial class SequenceNames
         return true;
     }
 
-    private bool ChangesDuringRun(string name) =>
+    // Run variables such as LastExitCode, and the variables steps may set.
+    public bool ChangesDuringRun(string name) =>
         MachineVariableNames.ChangeDuringRun.Contains(name, StringComparer.OrdinalIgnoreCase)
         || (_variables.TryGetValue(name, out VariableDeclaration? variable) && variable.SetBySteps);
 

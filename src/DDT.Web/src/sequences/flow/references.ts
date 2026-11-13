@@ -75,6 +75,15 @@ function names(reference: AccountReference | null | undefined, name: string): bo
   );
 }
 
+// A Set variable step sets the variable, and Install applications reads the names of more applications from it.
+function namedVariable(node: SequenceStep, name: string): boolean {
+  return (
+    (node.kind === "setVariable" || node.kind === "installApplications") &&
+    node.variable !== null &&
+    sameName(node.variable, name)
+  );
+}
+
 // The fields of one node that refer to name, in the order referencesTo lists them.
 function fieldsNaming(node: SequenceStep, name: string): string[] {
   const fields: string[] = [];
@@ -93,7 +102,7 @@ function fieldsNaming(node: SequenceStep, name: string): string[] {
     }
   }
 
-  if (node.kind === "setVariable" && sameName(node.variable, name)) {
+  if (namedVariable(node, name)) {
     fields.push("variable");
   }
 
@@ -204,7 +213,7 @@ function renamedNode(node: SequenceStep, from: string, to: string): SequenceStep
     }
   }
 
-  if (node.kind === "setVariable" && sameName(node.variable, from)) {
+  if (namedVariable(node, from)) {
     record.variable = to;
   }
 

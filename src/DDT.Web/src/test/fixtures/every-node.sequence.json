@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 6,
   "steps": [
     {
       "kind": "partition",
@@ -280,6 +280,25 @@
           "conditions": [],
           "continueOnError": false,
           "rebootAfter": false
+        },
+        {
+          "kind": "installApplications",
+          "applications": [
+            {
+              "id": "0193a4b2-0000-7000-8000-0000000000d2",
+              "kind": "Bundle"
+            },
+            {
+              "id": "0193a4b2-0000-7000-8000-0000000000d1",
+              "kind": "Application"
+            }
+          ],
+          "variable": "Extras",
+          "id": "00000000-0000-4000-8000-000000000013",
+          "name": "Install applications",
+          "conditions": [],
+          "continueOnError": false,
+          "rebootAfter": false
         }
       ],
       "id": "00000000-0000-4000-8000-000000000005",
@@ -409,6 +428,31 @@
         ],
         "runAs": true
       }
+    },
+    {
+      "name": "Extras",
+      "label": "Extras",
+      "help": null,
+      "kind": "Applications",
+      "choices": [],
+      "default": null,
+      "required": false,
+      "maxLength": null,
+      "askAt": "Both",
+      "account": null,
+      "offered": [
+        {
+          "id": "0193a4b2-0000-7000-8000-0000000000d1",
+          "kind": "Application"
+        },
+        {
+          "id": "0193a4b2-0000-7000-8000-0000000000d2",
+          "kind": "Bundle"
+        }
+      ],
+      "ticked": [
+        "0193a4b2-0000-7000-8000-0000000000d1"
+      ]
     }
   ]
 }

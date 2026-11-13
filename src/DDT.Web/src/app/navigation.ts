@@ -46,6 +46,7 @@ export const categories: NavigationCategory[] = [
       { to: "/library/images", label: msg`OS images` },
       { to: "/library/drivers", label: msg`Drivers` },
       { to: "/library/files", label: msg`Files` },
+      { to: "/library/applications", label: msg`Applications` },
     ],
   },
   {

@@ -4,6 +4,7 @@
 
 import { t } from "@lingui/core/macro";
 
+import type { LibraryEntry } from "@/applications/libraryEntries";
 import type { ApiError } from "@/lib/api";
 import type {
   AccountDestination,
@@ -12,6 +13,8 @@ import type {
   InputKind,
 } from "@/sequences/sequences";
 import type { ResolvedValue } from "@/values/values";
+
+import { askedApplications } from "./applicationInputs";
 
 // The questions a sequence asks before its run starts, as the web asks them. They're asked when a run is assigned or
 // approved, and on the machine's page while a run waits for its answers.
@@ -53,21 +56,31 @@ export interface AnswerDraft {
 
 export type AnswerDrafts = Record<string, AnswerDraft>;
 
-// The inputs a sequence asks on the web, in its order.
-export function webInputs(inputs: readonly InputDeclaration[] | null | undefined): AskedInput[] {
+// The inputs a sequence asks on the web, in its order. The server sends an Applications input asked already; one in a
+// sequence's document is asked from the library here.
+export function webInputs(
+  inputs: readonly InputDeclaration[] | null | undefined,
+  library: readonly LibraryEntry[] = [],
+): AskedInput[] {
   return (inputs ?? [])
     .filter((input) => input.askAt !== "Machine")
-    .map((input) => ({
-      name: input.name,
-      label: input.label,
-      help: input.help,
-      kind: input.kind,
-      choices: input.choices,
-      default: input.default,
-      required: input.required,
-      maxLength: input.maxLength,
-      account: input.account,
-    }));
+    .map((input) =>
+      input.kind === "Applications" ? askedApplications(input, library) : declaredInput(input),
+    );
+}
+
+function declaredInput(input: InputDeclaration): AskedInput {
+  return {
+    name: input.name,
+    label: input.label,
+    help: input.help,
+    kind: input.kind,
+    choices: input.choices,
+    default: input.default,
+    required: input.required,
+    maxLength: input.maxLength,
+    account: input.account,
+  };
 }
 
 // A run's input as the server lists it, with its account's destination from the sequence the run was given.
@@ -109,7 +122,8 @@ export function initialDrafts(
         input.name,
         {
           value: input.kind === "Account" ? "" : start,
-          values: input.kind === "MultiChoice" ? listOf(start) : [],
+          values:
+            input.kind === "MultiChoice" || input.kind === "Applications" ? listOf(start) : [],
           userName: input.kind === "Account" ? start : "",
           password: "",
         },
@@ -137,6 +151,7 @@ export function prefilledBy(
 function empty(input: AskedInput, draft: AnswerDraft | undefined): boolean {
   switch (input.kind) {
     case "MultiChoice":
+    case "Applications":
       return (draft?.values ?? []).length === 0;
     case "Account":
       return (draft?.userName.trim() ?? "") === "" || (draft?.password ?? "") === "";
@@ -154,6 +169,7 @@ export function answersOf(inputs: readonly AskedInput[], drafts: AnswerDrafts): 
 
       switch (input.kind) {
         case "MultiChoice":
+        case "Applications":
           return { name: input.name, value: (draft?.values ?? []).join(";") };
         case "Account":
           return {
@@ -180,7 +196,7 @@ export function missingAnswers(
         input.name,
         input.kind === "Account"
           ? t`Enter the user name and the password.`
-          : input.kind === "Choice" || input.kind === "MultiChoice" || input.kind === "YesNo"
+          : input.kind !== "Text"
             ? t`Choose an answer.`
             : t`Enter an answer.`,
       ]),

@@ -26,12 +26,11 @@ public sealed partial class HelperPipeServer(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            NamedPipeServerStream pipe = NamedPipeServerStreamAcl.Create(
-                pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 0, 0, Security());
+        NamedPipeServerStream pipe = Create();
 
-            await using (pipe.ConfigureAwait(false))
+        try
+        {
+            while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
@@ -47,9 +46,22 @@ public sealed partial class HelperPipeServer(
                     // A broken request or connection must not stop the service. The next one gets a fresh pipe.
                     LogFailed(exception);
                 }
+
+                // The next pipe exists before this one goes, so the helper never looks absent between two requests.
+                NamedPipeServerStream next = Create();
+                await pipe.DisposeAsync().ConfigureAwait(false);
+                pipe = next;
             }
         }
+        finally
+        {
+            await pipe.DisposeAsync().ConfigureAwait(false);
+        }
     }
+
+    // Two instances only while one request's pipe hands over to the next.
+    private NamedPipeServerStream Create() => NamedPipeServerStreamAcl.Create(
+        pipeName, PipeDirection.InOut, 2, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 0, 0, Security());
 
     private PipeSecurity Security()
     {
@@ -57,6 +69,14 @@ public sealed partial class HelperPipeServer(
         security.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.NetworkSid, null), PipeAccessRights.FullControl, AccessControlType.Deny));
         security.AddAccessRule(new PipeAccessRule(client, PipeAccessRights.ReadWrite, AccessControlType.Allow));
         security.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null), PipeAccessRights.FullControl, AccessControlType.Allow));
+
+        // Creating the next instance needs a right ReadWrite lacks. The helper runs as SYSTEM, a test as its own account.
+        using WindowsIdentity self = WindowsIdentity.GetCurrent();
+
+        if (self.User is { } owner)
+        {
+            security.AddAccessRule(new PipeAccessRule(owner, PipeAccessRights.FullControl, AccessControlType.Allow));
+        }
 
         return security;
     }

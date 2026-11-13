@@ -120,6 +120,10 @@ public static partial class ServerMessages
         "sequence.restartWithRawImage",
         "The Linux boot environment keeps the run's state in memory, so it cannot restart during a run. The installed Linux can.");
 
+    public static readonly MessageTemplate SequenceRestartLimitWindowsOnly = Define(
+        "sequence.restartLimitWindowsOnly",
+        "This step can go on after a restart only in Windows.");
+
     public static readonly MessageTemplate SequencePackageWithRawImage = Define(
         "sequence.packageWithRawImage",
         "The Linux boot environment has no partition to unpack a package on, so a script there cannot have one. A script in the " +

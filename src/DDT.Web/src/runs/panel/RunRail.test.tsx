@@ -56,3 +56,30 @@ describe("the phases above a run's rail", () => {
     expect(screen.queryByText(/^In /)).not.toBeInTheDocument();
   });
 });
+
+describe("the line under a step on a run's rail", () => {
+  function renderDone(restarts: number) {
+    const steps = [leaf("a")];
+    const path = runPath({ version: 5, steps }, [
+      stepView({ stepId: "a", index: 0, state: "Done", phase: "Windows", restarts }),
+    ]);
+
+    render(
+      <I18nProvider i18n={i18n}>
+        <RunRail run={deploymentSummary({ state: "Running" })} view={null} path={path} now={0} />
+      </I18nProvider>,
+    );
+  }
+
+  it("counts the restarts of a step that restarted and went on", () => {
+    renderDone(2);
+
+    expect(screen.getByText("2 restarts")).toBeInTheDocument();
+  });
+
+  it("counts none for a step that never restarted", () => {
+    renderDone(0);
+
+    expect(screen.queryByText(/restart/)).not.toBeInTheDocument();
+  });
+});

@@ -7,6 +7,7 @@ using DDT.Contracts.Deployments;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Sequences;
 using DDT.Server.Data;
+using DDT.Server.Images;
 using DDT.Server.Machines;
 using DDT.Server.Sequences;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,9 @@ namespace DDT.Server.Deployments;
 // nothing. The server stamps the times, because the WinPE clock can be hours off. Nothing here saves.
 public sealed class RunReports(DdtDbContext database, RunQueries queries, RunStarts starts, TimeProvider timeProvider)
 {
+    // A report can start the run, so the caller holds this from before ApplyAsync until it has saved.
+    public Task<SemaphoreHold> EnterLibraryAsync(CancellationToken cancellationToken) => starts.EnterLibraryAsync(cancellationToken);
+
     public async Task<DeploymentDecision> ApplyAsync(
         Machine machine,
         Guid runId,
@@ -146,6 +150,11 @@ public sealed class RunReports(DdtDbContext database, RunQueries queries, RunSta
         if (report.Steps.Any(s => s.Pass < 0 || s.Iteration < 0 || (s.Branch is { } branch && !Enum.IsDefined(branch))))
         {
             return "The report names a visit, a time through a repeat or a branch that cannot be.";
+        }
+
+        if (report.Steps.Any(s => s.Restarts is < 0 or > DeploymentLimits.MaxStepRestarts))
+        {
+            return "The report counts restarts of a step that cannot be.";
         }
 
         if (report.BootReturns is < 0 or > DeploymentLimits.MaxBootReturns)

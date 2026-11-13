@@ -35,6 +35,8 @@ public static class ImageServiceCollectionExtensions
         services.AddHostedService(provider => provider.GetRequiredService<ImageUploadSweeper>());
         services.AddSingleton<ImportFolders>();
         services.AddSingleton<CurrentImport>();
+        services.AddSingleton<LibraryFileImport>();
+        services.AddSingleton<MdtApplicationImporter>();
         services.AddSingleton<LibraryImports>();
         services.AddSingleton<BootImageCatalog>();
         services.TryAddSingleton<InstalledAdk>();

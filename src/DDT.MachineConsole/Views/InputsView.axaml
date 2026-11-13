@@ -7,6 +7,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DDT.MachineConsole.ViewModels"
              xmlns:c="using:DDT.MachineConsole.Controls"
+             xmlns:v="using:DDT.MachineConsole.Views"
              x:Class="DDT.MachineConsole.Views.InputsView"
              x:DataType="vm:InputsViewModel">
   <Grid RowDefinitions="Auto,*,Auto" RowSpacing="16" VerticalAlignment="Center">
@@ -78,7 +79,7 @@
                   <TextBlock Classes="label" Text="{Binding Label}" />
                   <TextBlock Classes="small muted" Text="{Binding OptionalLabel}" IsVisible="{Binding IsOptional}" VerticalAlignment="Bottom" />
                 </StackPanel>
-                <ItemsControl ItemsSource="{Binding Items}" Margin="4">
+                <ItemsControl ItemsSource="{Binding Keys}" Padding="4" IsVisible="{Binding !IsSearchable}">
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                       <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10" />
@@ -92,6 +93,7 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                <v:ChoiceSearchView IsVisible="{Binding IsSearchable}" />
                 <TextBlock Classes="body muted" Text="{Binding Help}" IsVisible="{Binding HasHelp}" />
                 <TextBlock Name="FieldError" Classes="body failText" Text="{Binding Error}" IsVisible="{Binding HasError}" />
               </StackPanel>
@@ -140,6 +142,10 @@
           <c:KeyCap Key="←" />
           <c:KeyCap Key="→" />
           <TextBlock Classes="body ink2" Text="{Binding ChooseHint}" VerticalAlignment="Center" Margin="4,0,0,0" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasLongLists}">
+          <c:KeyCap Key="Space" />
+          <TextBlock Classes="body ink2" Text="{Binding TickHint}" VerticalAlignment="Center" Margin="4,0,0,0" />
         </StackPanel>
       </StackPanel>
       <Button Name="Submit" Grid.Column="3" Classes="primary" IsDefault="True" Command="{Binding SubmitCommand}">

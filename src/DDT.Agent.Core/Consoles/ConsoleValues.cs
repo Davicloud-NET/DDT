@@ -82,6 +82,7 @@ public static class ConsoleValues
         RepeatStep => "repeat",
         SetVariableStep => "setVariable",
         PauseStep => "pause",
+        InstallApplicationsStep => "installApplications",
         _ => "step",
     };
 }

@@ -8,15 +8,21 @@ using DDT.Core.Templates;
 namespace DDT.Core.Sequences;
 
 // Runs a run's tree from its cursor on, in the run's current phase. A leaf's Running mark is saved before it runs. So a
-// leaf still marked Running after a restart has failed and doesn't run again, unless it's Resumable. Containers have
-// no side effects, so entering and leaving them waits for the next save. A resume repeats those moves the same way.
+// leaf still marked Running after a restart has failed and doesn't run again, unless it's Resumable or asked for that
+// restart. Containers have no side effects, so entering and leaving them waits for the next save. A resume repeats those
+// moves the same way.
 public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store, IProgress<StepPercent> progress)
 {
     public const string InterruptedError = "The machine restarted or the agent stopped while this step ran.";
 
+    public const string RestartNotAllowedError = "The step asked to restart the machine and go on, which this kind of step may not do.";
+
     // What LastStepFailed holds after a step has run.
     public const string StepFailed = "Yes";
     public const string StepSucceeded = "No";
+
+    public static string TooManyRestarts(int limit) =>
+        $"The machine restarted more than {limit} times while this step ran, more than the step may have.";
 
     public async Task<SequenceRunResult> RunAsync(SequenceState state, MachineVariables machine, CancellationToken cancellationToken)
     {
@@ -80,32 +86,20 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
         MachineVariables inPhase = walk.Machine(machine, phase);
         int order = walk.OrderOf(step);
         bool found = walk[order].State == StepState.Running;
+        StepTurn? turn = found ? walk.Turns.Of(step.Id, walk[order].Pass) : null;
+        (bool runs, SequenceRunResult? ended) = found
+            ? await TakeUpAsync(walk, step, order, turn).ConfigureAwait(false)
+            : await StartAsync(walk, step, order, inPhase).ConfigureAwait(false);
 
-        if (found && !step.Resumable)
+        if (!runs)
         {
-            return await RecordAsync(walk, step, order, StepResult.Failed(InterruptedError)).ConfigureAwait(false);
+            return ended;
         }
 
-        // A resumable step still marked Running continues the visit its mark was saved for. Its conditions aren't
-        // checked again.
-        if (!found)
+        StepContext context = new(walk.RunId, phase, inPhase, walk.Variables, new StepPercentProgress(step.Id, progress))
         {
-            ConditionResult conditions = ConditionEvaluator.Evaluate(step, inPhase);
-
-            if (!conditions.Held)
-            {
-                walk.Skip(order, conditions.Evaluations);
-
-                return await SaveOrFailAsync(walk).ConfigureAwait(false);
-            }
-
-            if (await BeginAsync(walk, order, conditions.Evaluations).ConfigureAwait(false) is { } failed)
-            {
-                return failed;
-            }
-        }
-
-        StepContext context = new(walk.RunId, phase, inPhase, walk.Variables, new StepPercentProgress(step.Id, progress));
+            Checkpoint = Checkpoint(walk, step, order, turn?.Progress, found && turn is not { RestartDue: true }),
+        };
         StepResult result = step is SetVariableStep set
             ? SetVariable(set, walk.Definition, inPhase)
             : await RunStepAsync(step, context, cancellationToken).ConfigureAwait(false);
@@ -121,11 +115,78 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
         return await RecordAsync(walk, step, order, result).ConfigureAwait(false);
     }
 
-    // Saves the Running mark before the leaf runs. If the save fails, the leaf and the run fail.
-    private async Task<SequenceRunResult?> BeginAsync(SequenceWalk walk, int order, IReadOnlyList<TestEvaluation> evaluations)
+    // The leaf runs once its conditions hold and its Running mark is saved.
+    private async Task<(bool Runs, SequenceRunResult? Ended)> StartAsync(
+        SequenceWalk walk,
+        SequenceStep step,
+        int order,
+        MachineVariables machine)
     {
-        walk.Begin(order, evaluations);
+        ConditionResult conditions = ConditionEvaluator.Evaluate(step, machine);
 
+        if (!conditions.Held)
+        {
+            walk.Skip(order, conditions.Evaluations);
+
+            return (false, await SaveOrFailAsync(walk).ConfigureAwait(false));
+        }
+
+        walk.Begin(order, conditions.Evaluations);
+
+        return await SaveMarkAsync(walk, order).ConfigureAwait(false) is { } failed ? (false, failed) : (true, null);
+    }
+
+    // A leaf still marked Running continues the visit its mark was saved for. Its conditions aren't checked again.
+    private async Task<(bool Runs, SequenceRunResult? Ended)> TakeUpAsync(SequenceWalk walk, SequenceStep step, int order, StepTurn? turn)
+    {
+        bool due = turn is { RestartDue: true };
+
+        if (!due && !step.Resumable)
+        {
+            return (false, await RecordAsync(walk, step, order, StepResult.Failed(InterruptedError)).ConfigureAwait(false));
+        }
+
+        // A kind without a limit runs again as it always did, so its saved state doesn't change.
+        if (!due && step.RestartLimit == 0)
+        {
+            return (true, null);
+        }
+
+        walk.Restarted(order);
+
+        if (turn is not null)
+        {
+            walk.Turns.Keep(turn with { RestartDue = false });
+        }
+
+        if (step.RestartLimit > 0 && walk[order].Restarts > step.RestartLimit)
+        {
+            StepResult over = StepResult.Failed(TooManyRestarts(step.RestartLimit));
+
+            return (false, await RecordAsync(walk, step, order, over).ConfigureAwait(false));
+        }
+
+        return await SaveMarkAsync(walk, order).ConfigureAwait(false) is { } unsaved ? (false, unsaved) : (true, null);
+    }
+
+    private StepCheckpoint Checkpoint(SequenceWalk walk, SequenceStep step, int order, string? saved, bool interrupted)
+    {
+        int pass = walk[order].Pass;
+
+        return new StepCheckpoint(saved, walk[order].Restarts, interrupted, async kept =>
+        {
+            walk.Turns.Keep(new StepTurn(step.Id, pass, false, kept));
+
+            if (await SaveAsync(walk).ConfigureAwait(false) is { } error)
+            {
+                throw new IOException(error);
+            }
+        });
+    }
+
+    // Saves the Running mark before the leaf runs. If the save fails, the leaf and the run fail.
+    private async Task<SequenceRunResult?> SaveMarkAsync(SequenceWalk walk, int order)
+    {
         if (await SaveAsync(walk).ConfigureAwait(false) is not { } error)
         {
             return null;
@@ -139,6 +200,17 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
     // Null when the run continues after the leaf.
     private async Task<SequenceRunResult?> RecordAsync(SequenceWalk walk, SequenceStep step, int order, StepResult result)
     {
+        if (result.Outcome == StepOutcome.RestartAndContinue)
+        {
+            if (step.RestartLimit > 0)
+            {
+                return await RestartAndContinueAsync(walk, step, order, result).ConfigureAwait(false);
+            }
+
+            result = StepResult.Failed(RestartNotAllowedError);
+        }
+
+        walk.Turns.Drop(step.Id);
         walk.Record(result);
 
         if (result.Outcome == StepOutcome.Failed)
@@ -159,6 +231,15 @@ public sealed class SequenceEngine(IStepRunner runner, ISequenceStateStore store
         // The saved state points at the step after this one, so a restart continues there, even inside a repeat or
         // an IF.
         return result.Outcome == StepOutcome.RebootRequired || step.RebootAfter ? walk.Result(SequenceOutcome.RebootRequired) : null;
+    }
+
+    // The step stays Running and isn't finished. Its turn says the restart is due, so it runs again after it.
+    private async Task<SequenceRunResult> RestartAndContinueAsync(SequenceWalk walk, SequenceStep step, int order, StepResult result)
+    {
+        walk.Record(result);
+        walk.Turns.Keep(new StepTurn(step.Id, walk[order].Pass, true, result.Progress));
+
+        return await SaveOrFailAsync(walk).ConfigureAwait(false) ?? walk.Result(SequenceOutcome.RebootRequired);
     }
 
     private async Task<StepResult> RunStepAsync(SequenceStep step, StepContext context, CancellationToken cancellationToken)

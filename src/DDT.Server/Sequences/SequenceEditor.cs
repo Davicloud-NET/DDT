@@ -4,7 +4,6 @@
 
 using DDT.Contracts.Messages;
 using DDT.Contracts.Sequences;
-using DDT.Server.Accounts;
 using DDT.Server.Data;
 using DDT.Server.Endpoints;
 using DDT.Server.Live;
@@ -19,7 +18,7 @@ namespace DDT.Server.Sequences;
 internal sealed class SequenceEditor(
     DdtDbContext database,
     SequenceCatalog catalog,
-    AccountViews accounts,
+    SequenceUseUpdates uses,
     LiveNotifier live,
     TimeProvider timeProvider)
 {
@@ -63,7 +62,7 @@ internal sealed class SequenceEditor(
         }
 
         live.SequenceChanged(new SequenceChangedEvent(sequence.Id, sequence.Revision, sequence.UpdatedByName));
-        await accounts.PushUsesAsync(live, AccountViews.UsesChanged(null, null, sequence.Definition, sequence.Name), cancellationToken).ConfigureAwait(false);
+        await uses.PushAsync(null, null, sequence.Definition, sequence.Name, cancellationToken).ConfigureAwait(false);
 
         return EditOutcome<SequenceView>.Done(await catalog.ViewAsync(sequence, cancellationToken).ConfigureAwait(false));
     }
@@ -162,12 +161,12 @@ internal sealed class SequenceEditor(
         }
 
         live.SequenceChanged(new SequenceChangedEvent(sequence.Id, null, actor.Name));
-        await accounts.PushUsesAsync(live, AccountViews.UsesChanged(sequence.Definition, sequence.Name, null, null), cancellationToken).ConfigureAwait(false);
+        await uses.PushAsync(sequence.Definition, sequence.Name, null, null, cancellationToken).ConfigureAwait(false);
 
         return (true, null);
     }
 
-    // savedName and savedDefinition are the values before this save. They tell which account uses to push again.
+    // savedName and savedDefinition are the values before this save. They tell which uses to push again.
     private async Task<EditOutcome<SequenceView>> SaveChangedAsync(
         TaskSequence sequence,
         string savedName,
@@ -194,9 +193,7 @@ internal sealed class SequenceEditor(
         }
 
         live.SequenceChanged(new SequenceChangedEvent(sequence.Id, sequence.Revision, sequence.UpdatedByName));
-        await accounts
-            .PushUsesAsync(live, AccountViews.UsesChanged(savedDefinition, savedName, sequence.Definition, sequence.Name), cancellationToken)
-            .ConfigureAwait(false);
+        await uses.PushAsync(savedDefinition, savedName, sequence.Definition, sequence.Name, cancellationToken).ConfigureAwait(false);
 
         // A rule shows the name of the sequence it chooses.
         if (savedName != sequence.Name && await database.Rules.AnyAsync(r => r.TaskSequenceId == sequence.Id, cancellationToken).ConfigureAwait(false))

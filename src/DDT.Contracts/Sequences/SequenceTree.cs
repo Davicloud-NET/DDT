@@ -70,6 +70,11 @@ public static class SequenceTree
 
         int version = definition.Variables is { Count: > 0 } || definition.Inputs is { Count: > 0 } ? TreeVersion : 1;
 
+        foreach (InputDeclaration? input in definition.Inputs ?? [])
+        {
+            version = Math.Max(version, input?.MinimumVersion ?? TreeVersion);
+        }
+
         foreach (NodePosition position in Walk(definition))
         {
             SequenceStep node = position.Step;

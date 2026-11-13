@@ -103,7 +103,7 @@ public sealed partial class InputsView : UserControl
 
                 InputElement? target = container.GetVisualDescendants()
                     .OfType<InputElement>()
-                    .FirstOrDefault(element => element is TextBox or ListBox or ToggleButton && element.IsEffectivelyEnabled);
+                    .FirstOrDefault(element => element is TextBox or ListBox or ToggleButton && element.IsEffectivelyEnabled && element.IsEffectivelyVisible);
 
                 switch (target)
                 {

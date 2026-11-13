@@ -22,6 +22,7 @@ internal static unsafe partial class SessionNativeMethods
     public const int NerrUserExists = 2224;
     public const int ErrorFileNotFound = 2;
     public const int ErrorPathNotFound = 3;
+    public const int ErrorMemberNotInAlias = 1377;
     public const int ErrorMemberInAlias = 1378;
 
     // HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS), which CreateProfile returns for a profile that is there already.
@@ -91,6 +92,9 @@ internal static unsafe partial class SessionNativeMethods
     // Level 0 takes LOCALGROUP_MEMBERS_INFO_0, a SID pointer per member.
     [LibraryImport("netapi32.dll", EntryPoint = "NetLocalGroupAddMembers", StringMarshalling = StringMarshalling.Utf16)]
     public static partial int NetLocalGroupAddMembers(string? server, string groupName, uint level, void* buffer, uint count);
+
+    [LibraryImport("netapi32.dll", EntryPoint = "NetLocalGroupDelMembers", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial int NetLocalGroupDelMembers(string? server, string groupName, uint level, void* buffer, uint count);
 
     // The LSA functions return an NTSTATUS.
     [LibraryImport("advapi32.dll")]

@@ -11,16 +11,12 @@ namespace DDT.Agent.Deployment;
 [SupportedOSPlatform("windows")]
 public sealed class AccountProcessStarter(AgentLog log) : IAccountProcessStarter
 {
-    public IToolProcess Start(
-        IAccountSession account,
-        string fileName,
-        IReadOnlyList<string> arguments,
-        string? workingDirectory,
-        IReadOnlyDictionary<string, string>? environment)
+    public IToolProcess Start(IAccountSession account, string fileName, IReadOnlyList<string> arguments, ToolRunOptions options)
     {
         ArgumentNullException.ThrowIfNull(account);
         ArgumentException.ThrowIfNullOrEmpty(fileName);
         ArgumentNullException.ThrowIfNull(arguments);
+        ArgumentNullException.ThrowIfNull(options);
 
         if (account is not WindowsAccountSession windows)
         {
@@ -32,7 +28,7 @@ public sealed class AccountProcessStarter(AgentLog log) : IAccountProcessStarter
         try
         {
             started = new AccountToolProcess(log);
-            started.Start(windows, WindowsCommandLine.Build(fileName, arguments), workingDirectory, environment);
+            started.Start(windows, fileName, arguments, options);
 
             return started;
         }

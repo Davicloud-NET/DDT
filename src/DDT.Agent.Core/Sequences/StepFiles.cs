@@ -10,6 +10,7 @@ internal static class StepFiles
     public const string ScriptsFolder = "scripts";
     public const string PackagesFolder = "packages";
     public const string CacheFolder = "cache";
+    public const string LogsFolder = "logs";
 
     // After the step's id: its shell script, and the file its script sets variables in.
     public const string ShellExtension = ".sh";

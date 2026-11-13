@@ -19,4 +19,6 @@ public sealed record StepRunState(
     // The path an IF took.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IfBranch? Branch = null,
     // The node's tests as they were decided, at most TestEvaluation.MaxPerNode of them.
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<TestEvaluation>? Evaluation = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<TestEvaluation>? Evaluation = null,
+    // How often the step ran again after a restart in this visit.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] int Restarts = 0);

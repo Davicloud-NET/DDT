@@ -14,6 +14,7 @@ using DDT.Contracts.Images;
 using DDT.Contracts.Packages;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
+using DDT.Server.Applications;
 using DDT.Server.Data;
 using DDT.Server.Images;
 using DDT.Server.Machines;
@@ -185,6 +186,7 @@ public static class RunSnapshots
                 .Select(p => Package(runId, step.Id, ArtifactKind.Drivers, p)),
             RunScriptStep { PackageId: { } packageId } when references.Packages.TryGetValue(packageId, out Package? package) =>
                 [Package(runId, step.Id, ArtifactKind.Files, package)],
+            InstallApplicationsStep install => RunApplicationPlans.FixedArtifacts(runId, install, ApplicationLibrary.From(references)),
             _ => [],
         };
 

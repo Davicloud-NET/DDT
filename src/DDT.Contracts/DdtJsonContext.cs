@@ -6,15 +6,17 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using DDT.Contracts.About;
 using DDT.Contracts.Accounts;
+using DDT.Contracts.Agents;
+using DDT.Contracts.Applications;
 using DDT.Contracts.Audit;
-using DDT.Contracts.BootImage;
-using DDT.Contracts.Import;
-using DDT.Contracts.Netboot;
 using DDT.Contracts.Authentication;
+using DDT.Contracts.BootImage;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Images;
+using DDT.Contracts.Import;
 using DDT.Contracts.Machines;
 using DDT.Contracts.Messages;
+using DDT.Contracts.Netboot;
 using DDT.Contracts.Packages;
 using DDT.Contracts.Rules;
 using DDT.Contracts.Sequences;
@@ -166,4 +168,15 @@ namespace DDT.Contracts;
 [JsonSerializable(typeof(IReadOnlyList<AccountView>))]
 [JsonSerializable(typeof(SaveAccountRequest))]
 [JsonSerializable(typeof(AccountsRemovedEvent))]
+[JsonSerializable(typeof(ApplicationView))]
+[JsonSerializable(typeof(IReadOnlyList<ApplicationView>))]
+[JsonSerializable(typeof(SaveApplicationRequest))]
+[JsonSerializable(typeof(ApplicationsRemovedEvent))]
+[JsonSerializable(typeof(ApplicationBundleView))]
+[JsonSerializable(typeof(IReadOnlyList<ApplicationBundleView>))]
+[JsonSerializable(typeof(SaveApplicationBundleRequest))]
+[JsonSerializable(typeof(ApplicationBundlesRemovedEvent))]
+[JsonSerializable(typeof(ApplicationReference))]
+[JsonSerializable(typeof(ApplicationUpload))]
+[JsonSerializable(typeof(IReadOnlyList<AgentApplication>))]
 public sealed partial class DdtJsonContext : JsonSerializerContext;

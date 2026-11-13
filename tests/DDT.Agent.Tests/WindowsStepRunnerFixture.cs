@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.Applications;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
@@ -30,11 +31,24 @@ internal sealed class WindowsStepRunnerFixture(
 
     public RunScriptStepRunner RunScript => new(ToolRunner, new WindowsScriptLauncher(), Downloads, Session, Log, WorkDirectory);
 
+    // Command applications through ToolRunner, and a dry run's detector.
+    public InstallApplicationsStepRunner InstallApplications => new(
+        Server,
+        Session,
+        ReportRunningAsync,
+        new ApplicationInstaller(
+            new DryRunApplicationDetector(Log),
+            [new CommandApplicationInstaller(ToolRunner, Log)],
+            new ApplicationFolders(Downloads, Session, WorkDirectory),
+            Log),
+        Log,
+        Time);
+
     // Stands in for signing accounts in and connecting shares.
     public FakeAccountTools Accounts { get; } = new();
 
     public StepAccounts StepAccounts => new(Server, Session, ReportRunningAsync, Accounts.Tools, Log, Time);
 
     public AgentStepRunner Steps =>
-        new([Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript], StepAccounts, TokenRejections.Add, Log, Time);
+        new([Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, InstallApplications], StepAccounts, TokenRejections.Add, Log, Time);
 }

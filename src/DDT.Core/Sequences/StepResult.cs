@@ -11,6 +11,9 @@ public sealed record StepResult(StepOutcome Outcome, string? Error, IReadOnlyDic
     // repeat can retry until a script works. Null leaves LastExitCode as it was.
     public int? ExitCode { get; init; }
 
+    // What the step gets back as its checkpoint's Saved when it runs again after the restart.
+    public string? Progress { get; init; }
+
     public static StepResult Done(IReadOnlyDictionary<string, string>? outputs = null) => new(StepOutcome.Done, null, outputs);
 
     public static StepResult Failed(string error) => new(StepOutcome.Failed, error, null);
@@ -18,4 +21,8 @@ public sealed record StepResult(StepOutcome Outcome, string? Error, IReadOnlyDic
     // The step is done, and the machine has to restart before the next one.
     public static StepResult RebootRequired(IReadOnlyDictionary<string, string>? outputs = null) =>
         new(StepOutcome.RebootRequired, null, outputs);
+
+    // The step isn't done: the machine restarts, then the same step runs again.
+    public static StepResult RestartAndContinue(string? progress, IReadOnlyDictionary<string, string>? outputs = null) =>
+        new(StepOutcome.RestartAndContinue, null, outputs) { Progress = progress };
 }

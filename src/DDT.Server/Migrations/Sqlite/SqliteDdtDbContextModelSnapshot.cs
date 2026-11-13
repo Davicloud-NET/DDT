@@ -88,6 +88,155 @@ namespace DDT.Server.Migrations.Sqlite
                     b.ToTable("Accounts", "ddt");
                 });
 
+            modelBuilder.Entity("DDT.Server.Applications.Application", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Command")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("ContinueOnFailure")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DependsOn")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Detection")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("PackageId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Publisher")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RestartExitCodes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SuccessExitCodes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TimeoutMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("UpdatedByName")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("UpdatedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Version")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WingetId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WingetVersion")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique();
+
+                    b.HasIndex("PackageId");
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.ToTable("Applications", "ddt");
+                });
+
+            modelBuilder.Entity("DDT.Server.Applications.ApplicationBundle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Members")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("UpdatedByName")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("UpdatedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique();
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.ToTable("ApplicationBundles", "ddt");
+                });
+
             modelBuilder.Entity("DDT.Server.Data.AuditEvent", b =>
                 {
                     b.Property<long>("Id")
@@ -472,6 +621,23 @@ namespace DDT.Server.Migrations.Sqlite
                     b.ToTable("Deployments", "ddt");
                 });
 
+            modelBuilder.Entity("DDT.Server.Deployments.DeploymentApplicationPlan", b =>
+                {
+                    b.Property<Guid>("DeploymentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("StepId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Applications")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("DeploymentId", "StepId");
+
+                    b.ToTable("DeploymentApplicationPlans", "ddt");
+                });
+
             modelBuilder.Entity("DDT.Server.Deployments.DeploymentArtifact", b =>
                 {
                     b.Property<long>("Id")
@@ -602,6 +768,9 @@ namespace DDT.Server.Migrations.Sqlite
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Restarts")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTimeOffset?>("StartedUtc")
                         .HasColumnType("TEXT");
@@ -1412,6 +1581,27 @@ namespace DDT.Server.Migrations.Sqlite
                         .OnDelete(DeleteBehavior.SetNull);
                 });
 
+            modelBuilder.Entity("DDT.Server.Applications.Application", b =>
+                {
+                    b.HasOne("DDT.Server.Packages.Package", null)
+                        .WithMany()
+                        .HasForeignKey("PackageId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DDT.Server.Data.DdtUser", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("DDT.Server.Applications.ApplicationBundle", b =>
+                {
+                    b.HasOne("DDT.Server.Data.DdtUser", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
             modelBuilder.Entity("DDT.Server.Data.SettingsSection", b =>
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", null)
@@ -1437,6 +1627,15 @@ namespace DDT.Server.Migrations.Sqlite
                         .WithMany()
                         .HasForeignKey("TaskSequenceId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("DDT.Server.Deployments.DeploymentApplicationPlan", b =>
+                {
+                    b.HasOne("DDT.Server.Deployments.Deployment", null)
+                        .WithMany()
+                        .HasForeignKey("DeploymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DDT.Server.Deployments.DeploymentArtifact", b =>

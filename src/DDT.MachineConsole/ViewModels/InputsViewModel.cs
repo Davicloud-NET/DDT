@@ -53,6 +53,10 @@ public sealed class InputsViewModel : QuestionViewModel
 
     public string ChooseHint => T("Choose");
 
+    public bool HasLongLists => _fields.Any(input => input is MultiChoiceFieldViewModel { IsSearchable: true });
+
+    public string TickHint => T("Tick");
+
     public string SubmitLabel => T("Continue");
 
     public string BackLabel => T("Back to the task sequences");

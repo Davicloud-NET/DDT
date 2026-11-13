@@ -11,7 +11,7 @@ import { ProgressBar } from "@/ui/ProgressBar";
 
 import type { ImportResult, ImportStatus } from "./imports";
 
-// How far the running import is, and what became of each file of the last one.
+// How far the running import is, and what became of each file, application and bundle of the last one.
 export function ImportProgress({ job }: { job: ImportStatus }) {
   const item = job.item ?? "";
   const position = job.results.length + 1;
@@ -33,8 +33,13 @@ export function ImportProgress({ job }: { job: ImportStatus }) {
         <Notice tone={refused.length > 0 ? "attention" : "info"}>
           <span className="flex flex-col gap-1">
             {job.results.map((result, index) => (
-              <span key={index}>
+              <span key={index} className="flex flex-col">
                 <Outcome result={result} />
+                {(result.notes ?? []).map((note, at) => (
+                  <span key={at} className="type-small text-ink-2">
+                    {serverText(note.code, note.args, note.code)}
+                  </span>
+                ))}
               </span>
             ))}
           </span>

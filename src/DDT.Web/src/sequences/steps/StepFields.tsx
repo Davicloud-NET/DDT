@@ -5,6 +5,7 @@
 import type { SequenceStep } from "../sequences";
 import { ApplyImageFields } from "./ApplyImageFields";
 import { InjectDriversFields } from "./InjectDriversFields";
+import { InstallApplicationsFields } from "./InstallApplicationsFields";
 import { JoinDomainFields } from "./JoinDomainFields";
 import type { KindFieldsProps } from "./kindFields";
 import { PartitionFields } from "./PartitionFields";
@@ -41,6 +42,8 @@ export function StepFields({ step, ...rest }: KindFieldsProps<SequenceStep>) {
       return <SetVariableFields step={step} {...rest} />;
     case "pause":
       return <PauseFields step={step} {...rest} />;
+    case "installApplications":
+      return <InstallApplicationsFields step={step} {...rest} />;
     // The inspector shows a container's own fields.
     case "group":
     case "if":

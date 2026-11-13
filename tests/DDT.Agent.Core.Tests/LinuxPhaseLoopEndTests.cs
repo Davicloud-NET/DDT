@@ -100,8 +100,21 @@ public sealed class LinuxPhaseLoopEndTests : IDisposable
             .OnRegister(_ => LinuxPhaseFixture.Continued())
             .OnNext(_ => LinuxPhaseFixture.Next("session-1", run))
             .OnRegister(_ => throw NothingToContinue());
-        server.AnswerRunReports = (_, _) => throw new AgentTokenRejectedException("The server refused the token.");
-        _linux.Tools.Running = (_, stopped) => Task.Delay(Timeout.InfiniteTimeSpan, stopped);
+        using ManualResetEventSlim running = new();
+
+        // The refusal waits for the script. A report ahead of it would end the run before the step began.
+        server.AnswerRunReports = (_, _) =>
+        {
+            running.Wait(TimeSpan.FromSeconds(30));
+
+            throw new AgentTokenRejectedException("The server refused the token.");
+        };
+        _linux.Tools.Running = (_, stopped) =>
+        {
+            running.Set();
+
+            return Task.Delay(Timeout.InfiniteTimeSpan, stopped);
+        };
 
         int exitCode = await _linux.RunAsync(server);
 

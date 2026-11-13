@@ -21,7 +21,8 @@ using Microsoft.Net.Http.Headers;
 namespace DDT.Server.Endpoints;
 
 // What an authorized machine needs to run a task sequence: the sequences it may choose, its run, the run's files and,
-// just in time, its secrets. Everything needs the machine's own session token, in its current generation.
+// just in time, its secrets and a step's applications. Everything needs the machine's own session token, in its
+// current generation.
 public static class AgentDeploymentEndpoints
 {
     public static RouteGroupBuilder MapAgentDeploymentEndpoints(this RouteGroupBuilder group)
@@ -66,6 +67,10 @@ public static class AgentDeploymentEndpoints
             .RequireRateLimiting(RateLimitPolicies.AgentMachine);
 
         group.MapGet("/{id:guid}/runs/{runId:guid}/steps/{stepId:guid}/accounts", ReadStepAccountsAsync)
+            .RequireAuthorization(DdtPolicies.Machine)
+            .RequireRateLimiting(RateLimitPolicies.AgentMachine);
+
+        group.MapGet("/{id:guid}/runs/{runId:guid}/steps/{stepId:guid}/applications", ReadStepApplicationsAsync)
             .RequireAuthorization(DdtPolicies.Machine)
             .RequireRateLimiting(RateLimitPolicies.AgentMachine);
 
@@ -284,6 +289,29 @@ public static class AgentDeploymentEndpoints
         await SavedAsync(context, database, cancellationToken).ConfigureAwait(false);
 
         return TypedResults.Ok(read);
+    }
+
+    private static async Task<Results<Ok<AgentStepApplications>, ForbidHttpResult, UnauthorizedHttpResult, NotFound, ProblemHttpResult>> ReadStepApplicationsAsync(
+        [AsParameters] AgentStepRoute route,
+        HttpContext context,
+        DdtDbContext database,
+        RunApplications applications,
+        CancellationToken cancellationToken)
+    {
+        if (await SecretMachineAsync(route.Id, context, database, cancellationToken).ConfigureAwait(false) is not { } machine)
+        {
+            return Principals.IsMachine(context.User, route.Id)
+                ? TypedResults.Unauthorized()
+                : TypedResults.Forbid(authenticationSchemes: [DdtAuthenticationSchemes.Machine]);
+        }
+
+        (AgentStepApplications? read, string? refusal) = await applications
+            .ReadAsync(machine, route.RunId, route.StepId, cancellationToken)
+            .ConfigureAwait(false);
+
+        return refusal is not null || read is null
+            ? TypedResults.Problem(title: refusal, statusCode: StatusCodes.Status409Conflict)
+            : TypedResults.Ok(read);
     }
 
     // The machine the token names, in the token's generation, or null.

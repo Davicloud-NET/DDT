@@ -78,7 +78,8 @@ public static class DeploymentSummaries
             step.Pass,
             step.Iteration,
             step.Branch,
-            ReadEvaluation(step.Evaluation));
+            ReadEvaluation(step.Evaluation),
+            step.Restarts);
     }
 
     public static string? WriteEvaluation(IReadOnlyList<TestEvaluation>? evaluation) =>

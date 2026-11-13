@@ -9,4 +9,5 @@ public sealed record MdtShareView(
     string Path,
     IReadOnlyList<MdtImageFile> ImageFiles,
     IReadOnlyList<MdtDriverGroup> DriverGroups,
+    IReadOnlyList<MdtApplication> Applications,
     MdtNotImported NotImported);

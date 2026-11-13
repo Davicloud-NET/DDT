@@ -4,6 +4,7 @@
 
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
+using DDT.Server.Applications;
 using DDT.Server.Data;
 using DDT.Server.Sequences;
 using Microsoft.EntityFrameworkCore;
@@ -45,8 +46,11 @@ public static class DeploymentViews
             .ConfigureAwait(false);
 
         SequenceDefinition? definition = snapshot is null ? null : SequenceDocuments.Read(snapshot.Definition);
-        IReadOnlyList<RunInputView>? inputs = definition?.Inputs is { Count: > 0 } declared
-            ? await InputsAsync(database, run, declared, cancellationToken).ConfigureAwait(false)
+        SequenceDefinition? asked = definition is null
+            ? null
+            : await ApplicationInputs.AskedAsync(database, definition, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<RunInputView>? inputs = asked?.Inputs is { Count: > 0 }
+            ? await InputsAsync(database, run, asked, cancellationToken).ConfigureAwait(false)
             : null;
 
         return new DeploymentView(
@@ -68,7 +72,7 @@ public static class DeploymentViews
     private static async Task<IReadOnlyList<RunInputView>> InputsAsync(
         DdtDbContext database,
         Deployment run,
-        IReadOnlyList<InputDeclaration> declared,
+        SequenceDefinition asked,
         CancellationToken cancellationToken)
     {
         var accounts = await database.RunCredentials
@@ -81,7 +85,7 @@ public static class DeploymentViews
 
         return
         [
-            .. declared.OfType<InputDeclaration>().Select(input =>
+            .. (asked.Inputs ?? []).OfType<InputDeclaration>().Select(input =>
             {
                 bool account = input.Kind == InputKind.Account;
                 RunAnswer? answer = account ? null : answers.FirstOrDefault(a => string.Equals(a.Name, input.Name, StringComparison.OrdinalIgnoreCase));

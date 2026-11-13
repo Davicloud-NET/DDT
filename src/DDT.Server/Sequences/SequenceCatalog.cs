@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Contracts.Packages;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
 using DDT.Server.Accounts;
+using DDT.Server.Applications;
 using DDT.Server.Data;
 using DDT.Server.Deployments;
 using DDT.Server.Images;
@@ -21,10 +23,14 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
     public async Task<SequenceReferences> ReferencesAsync(CancellationToken cancellationToken)
     {
         List<Image> images = await database.Images.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
-        List<Package> packages = await database.Packages.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+        // Application files apart: a step names an application, never its files.
+        ILookup<bool, Package> packages = (await database.Packages.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false))
+            .ToLookup(p => p.Kind == PackageKind.Application);
         DeploymentOptions deployment = settings.Current.Deployment;
         List<string> ruleValues = await database.Rules.AsNoTracking().Select(rule => rule.Values).ToListAsync(cancellationToken).ConfigureAwait(false);
         List<string> roleValues = await database.MachineRoles.AsNoTracking().Select(role => role.Values).ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<Application> applications = await database.Applications.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<ApplicationBundle> bundles = await database.ApplicationBundles.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
 
         // A disabled rule counts too. It names the value on purpose, and it may be enabled again.
         HashSet<string> valueNames = new(
@@ -33,12 +39,15 @@ public sealed class SequenceCatalog(DdtDbContext database, DdtSettings settings,
 
         return new SequenceReferences(
             images.ToDictionary(i => i.Id),
-            packages.ToDictionary(p => p.Id),
+            packages[false].ToDictionary(p => p.Id),
             !string.IsNullOrWhiteSpace(deployment.Domain.Name),
             !string.IsNullOrEmpty(deployment.LocalAdministrator.Password))
         {
             Accounts = await accounts.FactsAsync(cancellationToken).ConfigureAwait(false),
             ValueNames = valueNames,
+            Applications = applications.ToDictionary(a => a.Id),
+            ApplicationBundles = bundles.ToDictionary(b => b.Id),
+            ApplicationFiles = packages[true].ToDictionary(p => p.Id),
         };
     }
 

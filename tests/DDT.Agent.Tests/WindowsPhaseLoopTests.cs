@@ -46,7 +46,7 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
 
         AgentRegistration registration = Assert.Single(server.Registrations);
         Assert.Equal(
-            ("run-token-1", AgentEnvironment.Windows, 5, null, null),
+            ("run-token-1", AgentEnvironment.Windows, 6, null, null),
             (registration.RunToken, registration.Environment, registration.SequenceVersion, registration.ResumeToken, registration.Disks));
 
         // The installed Windows reports the same facts as WinPE did, because conditions test them in both phases.
@@ -397,6 +397,36 @@ public sealed class WindowsPhaseLoopTests : WindowsPhaseLoopTestBase
         Assert.Equal(
             ["prepare the session", "register", "setup finished", "the session takes over the sign-in", "end the session, signing out", "remove", "reboot"],
             _tools.Calls);
+    }
+
+    // Off before anything else at every start, back before DDT's session ends, whether the run is done or failed.
+    [Theory]
+    [InlineData(0, DeploymentState.Done, "end the session, signing out")]
+    [InlineData(1, DeploymentState.Failed, "end the session once someone signed out")]
+    public async Task AutomaticRepairIsOffWhileTheRunGoesOn(int exitCode, DeploymentState state, string sessionEnd)
+    {
+        _toolRunner.AnswerExitCode = (_, _, _) => exitCode;
+        AgentRun run = Run(TestRuns.Script(4, SequencePhase.Windows));
+        await HandOverAsync(run);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run))
+            .OnRunReport(state, _ => new AgentRunReportResult("session-e", "resume-e", null));
+
+        await RunAsync(server, new() { Session = new FakeDeploySession(_tools), AutomaticRepair = new FakeAutomaticRepair(_tools) });
+
+        Assert.Equal(
+            ["automatic repair off", "prepare the session", "setup finished", "the session takes over the sign-in", "automatic repair back", sessionEnd, "remove"],
+            _tools.Calls.Where(call => call != "reboot"));
+    }
+
+    [Fact]
+    public async Task AServiceWithoutARunOnlyPutsAutomaticRepairBack()
+    {
+        int exitCode = await RunAsync(new ScriptedAgentServer(), new() { AutomaticRepair = new FakeAutomaticRepair(_tools) });
+
+        Assert.Equal(AgentExitCodes.Stopped, exitCode);
+        Assert.Equal(["automatic repair back", "remove"], _tools.Calls);
     }
 
     [Fact]

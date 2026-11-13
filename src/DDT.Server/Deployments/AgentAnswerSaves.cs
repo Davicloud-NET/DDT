@@ -6,6 +6,7 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Server.Data;
 using DDT.Server.Endpoints;
+using DDT.Server.Images;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using Microsoft.Extensions.Logging;
@@ -61,6 +62,10 @@ internal sealed class AgentAnswerSaves(
                 null);
         }
 
+        // A start can add application files to the run, which must not go before the save.
+        await using SemaphoreHold? hold = check.Missing.Count == 0
+            ? await starts.EnterLibraryAsync(cancellationToken).ConfigureAwait(false)
+            : null;
         RunStart? start = check.Missing.Count == 0
             ? await starts.StartAsync(machine, run, address, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false)
             : null;

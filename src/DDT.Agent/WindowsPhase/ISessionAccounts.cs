@@ -26,6 +26,12 @@ public interface ISessionAccounts
     // False when there was no such account.
     bool Delete(string name);
 
+    // Administrators by its SID, whatever the group is called in this language. Already a member is fine.
+    void JoinAdministrators(string name);
+
+    // False when it was no member.
+    bool LeaveAdministrators(string name);
+
     // The auto-logon password Windows keeps as an LSA secret, or null when there is none.
     string? AutoLogonPassword();
 

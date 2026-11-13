@@ -30,7 +30,7 @@ public sealed class MigrationTests
     public void OnlySqlServerLeavesClearingAUsersReferencesToDdt()
     {
         Assert.Equal(
-            [0, 0, 13],
+            [0, 0, 15],
             new[] { DatabaseProvider.Sqlite, DatabaseProvider.PostgreSql, DatabaseProvider.SqlServer }.Select(provider =>
             {
                 using DdtDbContext context = Context(provider);

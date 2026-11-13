@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 
 import type { DeploymentStepView, DeploymentSummary } from "@/deployments/deployments";
 import { formatDuration } from "@/lib/format";
@@ -38,7 +38,7 @@ export function phasesOf(
 }
 
 // The short line under a step's number on the rail: its percentage while it runs, how long it has been paused, how
-// many times a step in a repeat ran, else how long it took.
+// many times a step in a repeat ran or restarted, else how long it took.
 function leafMeta(leaf: PathNode | undefined, now: number): string | undefined {
   const step = leaf?.step ?? null;
 
@@ -60,6 +60,12 @@ function leafMeta(leaf: PathNode | undefined, now: number): string | undefined {
 
       if (passes > 1) {
         return t`${passes} passes`;
+      }
+
+      const restarts = step.restarts ?? 0;
+
+      if (restarts > 0) {
+        return plural(restarts, { one: "# restart", other: "# restarts" });
       }
 
       const duration = stepDuration(step, now);

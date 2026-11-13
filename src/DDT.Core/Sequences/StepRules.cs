@@ -68,6 +68,11 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goe
             problems.Add(null, ServerMessages.SequenceOnceInRepeat.With());
         }
 
+        if (step.RestartLimit > 0 && step.RequiredPhase != SequencePhase.Windows)
+        {
+            problems.Add(PhaseField(step), ServerMessages.SequenceRestartLimitWindowsOnly.With());
+        }
+
         // In a Linux sequence, the Windows installation rules would only restate the same problem in other words.
         if (otherKind && Linux)
         {
@@ -239,6 +244,9 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goe
                 break;
             case PauseStep pause:
                 CheckPause(pause, place, problems);
+                break;
+            case InstallApplicationsStep install:
+                ApplicationStepRules.Check(install, names, problems);
                 break;
             default:
                 problems.Add("kind", ServerMessages.SequenceUnknownStep.With());

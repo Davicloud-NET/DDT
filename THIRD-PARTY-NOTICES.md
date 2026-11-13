@@ -135,6 +135,14 @@ with it.
 repository at commit `59d7cadab839c6d8dfcf52f8be5efe6d2ced190f`, which version 0.16.13 was built
 from, because the packages carry none. The server reads a Windows image out of an ISO with them.
 
+### SharpCompress
+
+`SharpCompress`, Copyright (c) 2014 Adam Hathcock, under the MIT licence. Text:
+[licenses/sharpcompress/LICENSE.txt](licenses/sharpcompress/LICENSE.txt), taken from the
+SharpCompress repository at commit `ef3a923211d6043a3b8d95c96b2808516866efc5`, which version 0.50.8
+was built from, because the package carries none. The server unpacks the LZMA-compressed headers of
+uploaded Inno Setup and NSIS installers with it.
+
 ### SQLitePCLRaw and SQLite
 
 `SQLitePCLRaw.bundle_e_sqlite3`, `SQLitePCLRaw.core`, `SQLitePCLRaw.lib.e_sqlite3` and

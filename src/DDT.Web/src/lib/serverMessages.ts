@@ -33,6 +33,150 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "account.passwordInDirectory",
     message: "This account is managed by the directory. Change the password there.",
   }),
+  "application.bundleInUse": msg({
+    context: "application.bundleInUse",
+    message: "This bundle is used by {users}. Take it out there first.",
+  }),
+  "application.bundleMembers": msg({
+    context: "application.bundleMembers",
+    message: "A bundle holds 1 to {max} applications.",
+  }),
+  "application.changedMeanwhile": msg({
+    context: "application.changedMeanwhile",
+    message: "Someone changed it meanwhile. Look at it again.",
+  }),
+  "application.commandLength": msg({
+    context: "application.commandLength",
+    message: "The command can have at most {max} characters and no line breaks.",
+  }),
+  "application.commandNotUsed": msg({
+    context: "application.commandNotUsed",
+    message: "{kind, select, Msix {An MSIX package} other {A winget package}} needs no command. Leave it empty.",
+  }),
+  "application.commandRequired": msg({
+    context: "application.commandRequired",
+    message: "Enter the command that installs the application.",
+  }),
+  "application.dependencyCycle": msg({
+    context: "application.dependencyCycle",
+    message: "These applications depend on each other in a circle: {path}.",
+  }),
+  "application.dependencyGone": msg({
+    context: "application.dependencyGone",
+    message: "{application} depends on an application that is no longer in the library.",
+  }),
+  "application.dependsOnItself": msg({
+    context: "application.dependsOnItself",
+    message: "An application cannot depend on itself.",
+  }),
+  "application.detectionPath": msg({
+    context: "application.detectionPath",
+    message: "Enter the full path of a file, such as {example}, in at most {max} characters.",
+  }),
+  "application.detectionVersion": msg({
+    context: "application.detectionVersion",
+    message: "Enter a version of 1 to 4 numbers up to 65535, such as 1.2.3.4, or leave it empty.",
+  }),
+  "application.filesGone": msg({
+    context: "application.filesGone",
+    message: "The uploaded files are no longer on the server. Upload them again.",
+  }),
+  "application.filesInUse": msg({
+    context: "application.filesInUse",
+    message: "Machines are installing these files or are waiting to. Cancel those runs or let them finish first.",
+  }),
+  "application.filesNotUsed": msg({
+    context: "application.filesNotUsed",
+    message: "A winget package has no files. Remove them.",
+  }),
+  "application.filesRequired": msg({
+    context: "application.filesRequired",
+    message: "Upload the MSIX package.",
+  }),
+  "application.gone": msg({
+    context: "application.gone",
+    message: "This application is no longer in the library.",
+  }),
+  "application.inUse": msg({
+    context: "application.inUse",
+    message: "This application is used by {users}. Take it out there first.",
+  }),
+  "application.kind": msg({
+    context: "application.kind",
+    message: "Choose the kind of application.",
+  }),
+  "application.listedTwice": msg({
+    context: "application.listedTwice",
+    message: "This application is listed twice.",
+  }),
+  "application.msixNone": msg({
+    context: "application.msixNone",
+    message: "The files hold no MSIX or Appx package.",
+  }),
+  "application.msixOnlyFrameworks": msg({
+    context: "application.msixOnlyFrameworks",
+    message: "The files hold only framework packages. Add the package that uses them.",
+  }),
+  "application.msixTooMany": msg({
+    context: "application.msixTooMany",
+    message: "The files hold more than {max} packages.",
+  }),
+  "application.msixTwoLicenses": msg({
+    context: "application.msixTwoLicenses",
+    message: "The files hold more than one licence: {files}. Keep one.",
+  }),
+  "application.msixTwoMains": msg({
+    context: "application.msixTwoMains",
+    message: "The files hold more than one main package: {packages}. Keep one.",
+  }),
+  "application.msixUnreadable": msg({
+    context: "application.msixUnreadable",
+    message: "{file} is no MSIX or Appx package that can be read.",
+  }),
+  "application.nameSemicolon": msg({
+    context: "application.nameSemicolon",
+    message: "The name cannot contain a semicolon.",
+  }),
+  "application.nameTaken": msg({
+    context: "application.nameTaken",
+    message: "An application or bundle is already called {name}.",
+  }),
+  "application.packageFamily": msg({
+    context: "application.packageFamily",
+    message: "Enter the package family name, such as {example}.",
+  }),
+  "application.productCode": msg({
+    context: "application.productCode",
+    message: "Enter the product code as a GUID, such as {example}.",
+  }),
+  "application.publisherLength": msg({
+    context: "application.publisherLength",
+    message: "The publisher can have at most {max} characters and no control characters.",
+  }),
+  "application.tooManyDependencies": msg({
+    context: "application.tooManyDependencies",
+    message: "An application can depend on at most {max} others.",
+  }),
+  "application.uninstallKey": msg({
+    context: "application.uninstallKey",
+    message: "Enter the key name under Uninstall without a path, in at most {max} characters.",
+  }),
+  "application.versionLength": msg({
+    context: "application.versionLength",
+    message: "The version can have at most {max} characters and no control characters.",
+  }),
+  "application.wingetId": msg({
+    context: "application.wingetId",
+    message: "Enter the winget ID, such as Mozilla.Firefox, in at most {max} characters.",
+  }),
+  "application.wingetNotUsed": msg({
+    context: "application.wingetNotUsed",
+    message: "Only a winget package has a winget ID and version. Leave them empty.",
+  }),
+  "application.wingetVersion": msg({
+    context: "application.wingetVersion",
+    message: "Enter the version as winget shows it, in at most {max} characters, or leave it empty.",
+  }),
   "audit.rangeEnd": msg({
     context: "audit.rangeEnd",
     message: "The end of the range must come after its start.",
@@ -160,6 +304,22 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "deployment.answerYesNo": msg({
     context: "deployment.answerYesNo",
     message: "{label} is answered with yes or no.",
+  }),
+  "deployment.applicationCycle": msg({
+    context: "deployment.applicationCycle",
+    message: "The applications {step} installs depend on each other in a circle: {path}.",
+  }),
+  "deployment.applicationDependencyGone": msg({
+    context: "deployment.applicationDependencyGone",
+    message: "{application}, which {step} installs, depends on an application that is no longer in the library.",
+  }),
+  "deployment.applicationFilesGone": msg({
+    context: "deployment.applicationFilesGone",
+    message: "The files of {application}, which {step} installs, are no longer in the library.",
+  }),
+  "deployment.applicationUnknown": msg({
+    context: "deployment.applicationUnknown",
+    message: "{step} is to install {name}, which is no application or bundle in the library.",
   }),
   "deployment.approveThenChooseDisk": msg({
     context: "deployment.approveThenChooseDisk",
@@ -569,13 +729,29 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "image.withoutArchitecture",
     message: "{image} does not say which processor it is for, and DDT deploys only x64 Windows. Choose an x64 image.",
   }),
+  "import.bundleEmpty": msg({
+    context: "import.bundleEmpty",
+    message: "None of its applications is in the library.",
+  }),
   "import.busy": msg({
     context: "import.busy",
     message: "An import is running already. Wait for it to end.",
   }),
+  "import.dependencyCycle": msg({
+    context: "import.dependencyCycle",
+    message: "Its dependency {dependency} would close a circle, so it was left out.",
+  }),
+  "import.dependencyMissing": msg({
+    context: "import.dependencyMissing",
+    message: "Its dependency {dependency} is not in the library, so it was left out.",
+  }),
   "import.failed": msg({
     context: "import.failed",
     message: "The server could not add it. Its log says why.",
+  }),
+  "import.mdtName": msg({
+    context: "import.mdtName",
+    message: "Its command uses MDT's {name}, which DDT does not have.",
   }),
   "import.noSuchFile": msg({
     context: "import.noSuchFile",
@@ -596,6 +772,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "import.unreadable": msg({
     context: "import.unreadable",
     message: "The server could not read it: {reason}",
+  }),
+  "import.workingDirectory": msg({
+    context: "import.workingDirectory",
+    message: "MDT ran it in {folder}. DDT runs it in the folder of its files.",
   }),
   "iso.noWindowsImage": msg({
     context: "iso.noWindowsImage",
@@ -1057,6 +1237,26 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.accountPasswordUnreadable",
     message: "The password of the account {account} no longer decrypts with this server's key ring. Enter it again on the Accounts page.",
   }),
+  "sequence.applicationEmpty": msg({
+    context: "sequence.applicationEmpty",
+    message: "Choose an application or a bundle.",
+  }),
+  "sequence.applicationRepeated": msg({
+    context: "sequence.applicationRepeated",
+    message: "This application or bundle is listed twice.",
+  }),
+  "sequence.applicationsChoose": msg({
+    context: "sequence.applicationsChoose",
+    message: "Choose applications or bundles, or a value that names them.",
+  }),
+  "sequence.applicationsTooMany": msg({
+    context: "sequence.applicationsTooMany",
+    message: "A step installs at most {max} applications and bundles.",
+  }),
+  "sequence.applicationsVariableSetBySteps": msg({
+    context: "sequence.applicationsVariableSetBySteps",
+    message: "Steps set {name}, but applications are chosen when the run starts.",
+  }),
   "sequence.cannotGoOn": msg({
     context: "sequence.cannotGoOn",
     message: "The sequence cannot go on when {activity, select, partition {partitioning the disk} image {applying the image} other {writing the raw disk image}} fails.",
@@ -1165,6 +1365,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.imageIsWindows",
     message: "{image} is a Windows image, which an Apply image step applies. Choose a raw disk image.",
   }),
+  "sequence.inputApplicationGone": msg({
+    context: "sequence.inputApplicationGone",
+    message: "{input} offers an application or bundle that is no longer in the library.",
+  }),
   "sequence.inputAskAt": msg({
     context: "sequence.inputAskAt",
     message: "Choose where the input is asked: on the web, at the machine, or both.",
@@ -1200,6 +1404,22 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.inputMaxLength": msg({
     context: "sequence.inputMaxLength",
     message: "The longest answer can have 1 to {max} characters.",
+  }),
+  "sequence.inputNotForApplications": msg({
+    context: "sequence.inputNotForApplications",
+    message: "An Applications input {field, select, choices {takes no choices} default {takes no default} other {takes no longest answer}}.",
+  }),
+  "sequence.inputOffered": msg({
+    context: "sequence.inputOffered",
+    message: "Offer 1 to {max} applications and bundles.",
+  }),
+  "sequence.inputOfferedOnlyApplications": msg({
+    context: "sequence.inputOfferedOnlyApplications",
+    message: "Only an Applications input offers applications.",
+  }),
+  "sequence.inputTickedNotOffered": msg({
+    context: "sequence.inputTickedNotOffered",
+    message: "Tick only applications and bundles the input offers.",
   }),
   "sequence.keyboard": msg({
     context: "sequence.keyboard",
@@ -1353,6 +1573,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.restartBeforePartition",
     message: "Windows PE can restart only after the disk is partitioned, because the run's state is kept on the disk.",
   }),
+  "sequence.restartLimitWindowsOnly": msg({
+    context: "sequence.restartLimitWindowsOnly",
+    message: "This step can go on after a restart only in Windows.",
+  }),
   "sequence.restartWithRawImage": msg({
     context: "sequence.restartWithRawImage",
     message: "The Linux boot environment keeps the run's state in memory, so it cannot restart during a run. The installed Linux can.",
@@ -1436,6 +1660,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.shellRebootExitCodes": msg({
     context: "sequence.shellRebootExitCodes",
     message: "A shell script ends with an exit code from 0 to 255. For a restart use 194, which is what a shell makes of exit 3010.",
+  }),
+  "sequence.stepApplicationGone": msg({
+    context: "sequence.stepApplicationGone",
+    message: "{step} names an application or bundle that is no longer in the library.",
   }),
   "sequence.stepCount": msg({
     context: "sequence.stepCount",
@@ -1588,6 +1816,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.windowsWithRawImage": msg({
     context: "sequence.windowsWithRawImage",
     message: "A sequence either installs Windows or writes a raw disk image. This step belongs to installing Windows.",
+  }),
+  "sequence.wingetNeedsSession": msg({
+    context: "sequence.wingetNeedsSession",
+    message: "{application} installs with winget, which needs a Write answer file step.",
   }),
   "settings.agent.configured": msg({
     context: "settings.agent.configured",

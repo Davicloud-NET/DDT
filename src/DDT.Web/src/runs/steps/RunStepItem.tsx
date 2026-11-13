@@ -17,6 +17,7 @@ import { NodeGlyph } from "@/ui/NodeGlyph";
 import { StateTag } from "@/ui/StateTag";
 
 import { decisionLine } from "../decisions";
+import { restartsText } from "../flow/detailsText";
 import { skipReason, stepDuration } from "../runs";
 import { pathStateLabel, pathStateTone } from "../runView";
 import { Crumbs } from "./Crumbs";
@@ -60,6 +61,7 @@ export function RunStepItem({
   const phase = phaseLabel(step.phase);
   const decision = decisionLine(node.node, step, subjects);
   const passes = step.pass ?? 0;
+  const restarts = step.restarts ?? 0;
 
   return (
     <li
@@ -95,6 +97,9 @@ export function RunStepItem({
           <span className="type-small text-muted">
             <Trans>Ran {passes} times, the last is shown.</Trans>
           </span>
+        ) : null}
+        {restarts > 0 ? (
+          <span className="type-small text-muted">{restartsText(restarts)}</span>
         ) : null}
         {step.state === "Failed" ? (
           <StepFailure node={node} steps={steps} runState={runState} />

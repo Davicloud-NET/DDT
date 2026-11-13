@@ -22,4 +22,6 @@ internal sealed record ServiceRunOptions
     public IDeploySession? Session { get; init; }
 
     public ConsoleStatus? Status { get; init; }
+
+    public IAutomaticRepair? AutomaticRepair { get; init; }
 }

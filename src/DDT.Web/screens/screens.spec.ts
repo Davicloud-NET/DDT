@@ -26,6 +26,7 @@ import {
 import { treeMachine, treeMachineId, treeRunId, treeRunView } from "@/test/treeRun";
 import { node } from "@/test/treeSequence";
 
+import { applications, bundles } from "./applications";
 import {
   accounts,
   roles,
@@ -429,6 +430,23 @@ test.describe("dark", () => {
     await expect(page).toHaveScreenshot("accounts-dark.png");
   });
 });
+
+// The application library of an office, in both themes.
+for (const scheme of ["light", "dark"] as const) {
+  test.describe(scheme, () => {
+    test.use({ colorScheme: scheme });
+
+    test("applications", async ({ page }) => {
+      await show(page, "/library/applications", {
+        "GET /api/applications": applications,
+        "GET /api/application-bundles": bundles,
+      });
+      await expect(page.getByRole("grid", { name: "Applications" })).toBeVisible();
+
+      await expect(page).toHaveScreenshot(`applications-${scheme}.png`);
+    });
+  });
+}
 
 test("the console's logo", async ({ page }) => {
   await show(page, "/deployment/defaults", deploymentDefaults);

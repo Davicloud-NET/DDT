@@ -37,8 +37,9 @@ export interface ImageSummary {
   sourceSha256: string | null;
 }
 
-// What a completed upload becomes: images from a WIM, or a package from a zip of drivers or of files.
-export type UploadKind = "Image" | "Drivers" | "Files";
+// What a completed upload becomes: images from a WIM, or a package from a zip of drivers or of files. An application's
+// upload is any file, which the server zips unless it is one.
+export type UploadKind = "Image" | "Drivers" | "Files" | "Application";
 
 export interface CreateImageUploadRequest {
   fileName: string;

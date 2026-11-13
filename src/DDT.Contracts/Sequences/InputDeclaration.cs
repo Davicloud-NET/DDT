@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text.Json.Serialization;
+using DDT.Contracts.Applications;
+
 namespace DDT.Contracts.Sequences;
 
 // A question asked before the run starts. It's asked on the web when a run is assigned or approved, at the machine
@@ -32,4 +35,15 @@ public sealed record InputDeclaration
 
     // Only for an Account input. Where the account may be used, the same as for a stored account.
     public AccountDestination? Account { get; init; }
+
+    // Only for an Applications input: what it offers, in order, and the ids of those that start ticked.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<ApplicationReference>? Offered { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<Guid>? Ticked { get; init; }
+
+    // The lowest SequenceDefinition.Version whose agents know this kind of input.
+    [JsonIgnore]
+    public int MinimumVersion => Kind == InputKind.Applications ? 6 : 3;
 }

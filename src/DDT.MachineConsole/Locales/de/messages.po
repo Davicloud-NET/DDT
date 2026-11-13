@@ -355,6 +355,10 @@ msgstr "In {seconds} Sekunden. Halten Sie den Neustart an, um die Ausführung zu
 msgid "Info"
 msgstr "Info"
 
+#: Texts/Say.cs
+msgid "Installing applications"
+msgstr "Anwendungen werden installiert"
+
 #: ViewModels/MachineFacts.cs
 msgid "IP address"
 msgstr "IP-Adresse"
@@ -478,6 +482,10 @@ msgstr "Nächstes Feld"
 #: ViewModels/MachineViewModel.cs
 msgid "No"
 msgstr "Nein"
+
+#: ViewModels/MultiChoiceFieldViewModel.cs
+msgid "No choice matches."
+msgstr "Keine Auswahl passt."
 
 #: ViewModels/MachineViewModel.cs
 msgid "No disk DDT can install on."
@@ -626,6 +634,10 @@ msgstr "Skript wird ausgeführt"
 #: Texts/Say.cs
 msgid "Running a step"
 msgstr "Ein Schritt läuft"
+
+#: ViewModels/MultiChoiceFieldViewModel.cs
+msgid "Search"
+msgstr "Suchen"
 
 #: ViewModels/MachineViewModel.cs
 msgid "Secure Boot"
@@ -879,6 +891,10 @@ msgstr "Dieses Programm kommt OHNE JEGLICHE GEWÄHRLEISTUNG."
 msgid "This screen keeps what the agent showed last."
 msgstr "Diese Anzeige behält, was der Agent zuletzt gezeigt hat."
 
+#: ViewModels/InputsViewModel.cs
+msgid "Tick"
+msgstr "Anhaken"
+
 #: ViewModels/LogViewModel.cs
 msgid "Times in UTC, by this machine's clock."
 msgstr "Zeiten in UTC, nach der Uhr dieses Geräts."
@@ -1010,6 +1026,10 @@ msgstr "Ja"
 #: Texts/Say.cs
 msgid "{count} bytes"
 msgstr "{count} Bytes"
+
+#: ViewModels/MultiChoiceFieldViewModel.cs
+msgid "{count} chosen"
+msgstr "{count} ausgewählt"
 
 #: Texts/Say.cs
 msgid "{count} partitions"

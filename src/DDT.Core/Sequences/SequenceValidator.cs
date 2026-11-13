@@ -38,6 +38,9 @@ public static class SequenceValidator
     public const int MaxExitCodes = 16;
     public const int MaxSeedFileBytes = 64 * 1024;
 
+    // Applications and bundles that a step installs or an input offers.
+    public const int MaxApplications = 256;
+
     // Microsoft's minimums are 260 MB for the system partition on 4K native disks and 300 MB for a recovery
     // partition. The upper limits only catch typos, which would otherwise fail after the disk was cleaned.
     private const int MinSystemPartitionMegabytes = 260;

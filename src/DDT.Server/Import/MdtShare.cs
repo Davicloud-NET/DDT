@@ -8,8 +8,8 @@ using DDT.Contracts.Import;
 
 namespace DDT.Server.Import;
 
-// Reads an MDT deployment share by the lists in its Control folder: the operating systems' image files, and the
-// folders of Out-of-Box Drivers as groups with the drivers in each. It only reads; the share stays as it is.
+// Reads an MDT deployment share by the lists in its Control folder: the operating systems' image files, the folders of
+// Out-of-Box Drivers as groups with the drivers in each, and the applications. It only reads; the share stays as it is.
 public static class MdtShare
 {
     // A folder whose makers DDT knows by name, so "Dell Inc.\Latitude 7440" is a model and "WinPE x64\Net" is none
@@ -21,16 +21,18 @@ public static class MdtShare
 
     public static bool IsShare(string folder) => File.Exists(Path.Combine(folder, "Control", "OperatingSystems.xml"));
 
-    public static MdtShareView Read(string root)
+    // libraryNames are the library's applications and bundles by ApplicationNames.Normalize.
+    public static MdtShareView Read(string root, IReadOnlySet<string> libraryNames)
     {
         ArgumentException.ThrowIfNullOrEmpty(root);
+        ArgumentNullException.ThrowIfNull(libraryNames);
 
         return new MdtShareView(
             root,
             ImageFiles(root),
             [.. Groups(root).Select(group => View(group.Id, group.Name, group.Folders))],
+            [.. MdtApplications.Read(root).Select(application => MdtApplications.View(application, libraryNames))],
             new MdtNotImported(
-                Names(root, "Applications.xml", "application"),
                 Names(root, "TaskSequences.xml", "ts"),
                 Sections(Path.Combine(root, "Control", "CustomSettings.ini"))));
     }
@@ -109,7 +111,7 @@ public static class MdtShare
         [.. Elements(root, list, element).Select(entry => entry.Element("Name")?.Value.Trim()).OfType<string>().Where(name => name.Length > 0)];
 
     // A list in the share's Control folder. One that is missing or broken holds nothing to import.
-    private static IEnumerable<XElement> Elements(string root, string list, string element)
+    internal static IEnumerable<XElement> Elements(string root, string list, string element)
     {
         string path = Path.Combine(root, "Control", list);
 

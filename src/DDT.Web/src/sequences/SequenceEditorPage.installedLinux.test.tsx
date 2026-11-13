@@ -9,7 +9,12 @@ import { press } from "@/test/aria";
 import { toasts } from "@/ui/toasts";
 
 import { administrator, field, opened, saveWait, serve, view } from "./SequenceEditorPage.fixtures";
-import type { RunScriptStep, SequencePhase, SequenceView } from "./sequences";
+import {
+  SEQUENCE_VERSION,
+  type RunScriptStep,
+  type SequencePhase,
+  type SequenceView,
+} from "./sequences";
 import { newStep } from "./steps";
 
 const inBoot = "Linux boot environment, before the hand-over";
@@ -139,7 +144,7 @@ describe("SequenceEditorPage, a step in the installed Linux", () => {
         rebootExitCodes: [194],
       });
     }, saveWait);
-    expect(saves.at(-1)?.definition.version).toBe(5);
+    expect(saves.at(-1)?.definition.version).toBe(SEQUENCE_VERSION);
   });
 
   it("gives a script 194 to ask for a restart with when it moves to the installed Linux", async () => {

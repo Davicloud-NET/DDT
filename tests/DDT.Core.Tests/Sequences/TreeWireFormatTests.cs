@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using DDT.Contracts;
 using DDT.Contracts.Agents;
+using DDT.Contracts.Applications;
 using DDT.Contracts.Sequences;
 using Xunit;
 
@@ -48,6 +49,15 @@ public sealed class TreeWireFormatTests
         ["pause"] = (
             new PauseStep { Id = s_id, Name = "Node", Message = "Check the BIOS.", ContinueAfterMinutes = 30 },
             $$"""{"kind":"pause","message":"Check the BIOS.","continueAfterMinutes":30,{{Base}}}"""),
+        ["installApplications"] = (
+            new InstallApplicationsStep
+            {
+                Id = s_id,
+                Name = "Node",
+                Applications = [new ApplicationReference(s_other, ApplicationReferenceKind.Bundle), new ApplicationReference(Guid.Parse(Inner), ApplicationReferenceKind.Application)],
+                Variable = "Extras",
+            },
+            $$"""{"kind":"installApplications","applications":[{"id":"{{Other}}","kind":"Bundle"},{"id":"{{Inner}}","kind":"Application"}],"variable":"Extras",{{Base}}}"""),
         ["when and shares"] = (
             new RebootStep
             {
@@ -236,6 +246,35 @@ public sealed class TreeWireFormatTests
         SequenceState read = JsonSerializer.Deserialize(json, AgentJsonContext.Default.SequenceState)
             ?? throw new InvalidOperationException("The state did not read back.");
         Assert.Equal(new NodeCursor(s_restart.Id, false), read.Cursor);
+        Assert.Equal(json, JsonSerializer.Serialize(read, AgentJsonContext.Default.SequenceState));
+    }
+
+    // A step that goes on after a restart adds its count and its turn. Other states leave both out, as above.
+    [Fact]
+    public void WritesAndReadsRestartsAndTurns()
+    {
+        SequenceState state = new(
+            SequenceState.TreeFormat,
+            s_other,
+            new SequenceDefinition(3, [s_restart]),
+            SequencePhase.Windows,
+            -1,
+            [new StepRunState(s_restart.Id, StepState.Running, null, Pass: 1, Restarts: 2)],
+            new Dictionary<string, string>(StringComparer.Ordinal),
+            new NodeCursor(s_restart.Id, false),
+            [new StepTurn(s_restart.Id, 1, true, "7zip,office")]);
+        string json =
+            $$"""{"format":2,"runId":"{{Other}}","definition":{"version":3,"steps":[{{Restart}}]},"phase":"Windows","nextIndex":-1,""" +
+            $$"""
+            "steps":[{"stepId":"{{Inner}}","state":"Running","error":null,"pass":1,"restarts":2}],"variables":{},"cursor":{"nodeId":"{{Inner}}","leaving":false},"turns":[{"stepId":"{{Inner}}","pass":1,"restartDue":true,"progress":"7zip,office"}]}
+            """;
+
+        Assert.Equal(json, JsonSerializer.Serialize(state, AgentJsonContext.Default.SequenceState));
+
+        SequenceState read = JsonSerializer.Deserialize(json, AgentJsonContext.Default.SequenceState)
+            ?? throw new InvalidOperationException("The state did not read back.");
+        Assert.Equal(2, Assert.Single(read.Steps).Restarts);
+        Assert.Equal(new StepTurn(s_restart.Id, 1, true, "7zip,office"), Assert.Single(read.Turns ?? []));
         Assert.Equal(json, JsonSerializer.Serialize(read, AgentJsonContext.Default.SequenceState));
     }
 

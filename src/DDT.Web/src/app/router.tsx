@@ -14,6 +14,7 @@ import {
 import { AboutPage } from "@/about/AboutPage";
 import { AccountPage } from "@/account/AccountPage";
 import { AccountsPage } from "@/accounts/AccountsPage";
+import { ApplicationsPage } from "@/applications/ApplicationsPage";
 import { AuditPage } from "@/audit/AuditPage";
 import { currentUserQuery } from "@/auth/auth";
 import { BootImagePage } from "@/boot/BootImagePage";
@@ -180,6 +181,11 @@ const filesRoute = createRoute({
   path: "/library/files",
   component: FilesPage,
 });
+const applicationsRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/library/applications",
+  component: ApplicationsPage,
+});
 const bootImageRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/boot/image",
@@ -247,6 +253,7 @@ const routeTree = rootRoute.addChildren([
     imagesRoute,
     driversRoute,
     filesRoute,
+    applicationsRoute,
     bootImageRoute,
     networkBootRoute,
     usersRoute,

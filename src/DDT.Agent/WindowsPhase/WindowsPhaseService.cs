@@ -56,7 +56,7 @@ public static class WindowsPhaseService
 
         string version = typeof(AgentLoop).Assembly.GetName().Version?.ToString(3) ?? "unknown";
         using HttpAgentServer server = new(options!.ServerUrl, options.RootCertificate);
-        ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode, new AccountProcessStarter(log));
+        ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode, new AccountProcessStarter(log)) { Decoders = WindowsToolDecoders.All };
         ServiceParts parts = new(windowsRoot, log, server, tools, new WindowsRebooter(tools), version);
         AgentConfiguration staged = options.ForInstalledSystem();
 
@@ -69,15 +69,17 @@ public static class WindowsPhaseService
         {
             ConsoleStatus status = new(console, AgentEnvironment.Windows, version, options.ServerUrl, null, dryRun: false);
             log.MachineConsole = console;
+            WindowsSessionAccounts accounts = new();
             session = new DeploySession(
                 windowsRoot,
-                new WindowsSessionAccounts(),
+                accounts,
                 new SessionRegistry(Registry.LocalMachine, Registry.Users, tools),
                 log,
                 TimeProvider.System,
                 (sid, pipeName) => console.Start(() => SessionPipe.Create(pipeName, sid)));
 
-            InstalledPhaseLoop loop = Loop(parts, Runner(parts, staged, status), session, status);
+            SequenceRunner runner = Runner(parts, staged, status, new WindowsDeployAccount(session, accounts, log));
+            InstalledPhaseLoop loop = Loop(parts, runner, session, status);
 
             // The control manager only needs to know whether the service failed.
             return await loop.RunAsync(cancellationToken).ConfigureAwait(false) switch
@@ -88,7 +90,7 @@ public static class WindowsPhaseService
         }
     }
 
-    private static SequenceRunner Runner(ServiceParts parts, AgentConfiguration staged, ConsoleStatus status)
+    private static SequenceRunner Runner(ServiceParts parts, AgentConfiguration staged, ConsoleStatus status, WindowsDeployAccount account)
     {
         AgentLog log = parts.Log;
         ToolRunner tools = parts.Tools;
@@ -114,6 +116,7 @@ public static class WindowsPhaseService
                 Log = log,
                 TimeProvider = TimeProvider.System,
                 Options = options,
+                DeployAccount = account,
             },
             BcdWriter = bcdWriter,
             BootOrder = bcdWriter,
@@ -134,7 +137,7 @@ public static class WindowsPhaseService
             Server = parts.Server,
             IdentityReader = new HardwareMachineIdentityReader(new FirmwareTables(), new SystemHardware(), new UefiVariables(), new WindowsSecureBoot()),
             Runner = runner,
-            Profile = WindowsPhaseProfile.With(new RegistrySetupProbe()),
+            Profile = WindowsPhaseProfile.With(new RegistrySetupProbe(), new AutomaticRepair(parts.WindowsRoot, parts.Tools, parts.Log)),
             Rebooter = parts.Rebooter,
             RestartMarker = new VolatileRestartMarker(parts.Log),
             Removal = new AgentRemoval(parts.WindowsRoot, parts.Tools, new MoveFileRestartDeleter(parts.Log), parts.Log),

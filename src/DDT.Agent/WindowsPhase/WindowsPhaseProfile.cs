@@ -17,15 +17,15 @@ public static class WindowsPhaseProfile
         IAutomaticRepair? automaticRepair,
         IDeploymentRecord? record = null,
         IFirstLogon? firstLogon = null) => new()
-    {
-        Environment = AgentEnvironment.Windows,
-        Phase = SequencePhase.Windows,
-        Setup = setup,
-        AutomaticRepair = automaticRepair,
-        DeploymentRecord = record,
-        FirstLogon = firstLogon,
-        WaitActivity = RunActivity.WaitingForWindowsSetup,
-        RestartsAfterRemoval = true,
-        Texts = new WindowsPhaseTexts(),
-    };
+        {
+            Environment = AgentEnvironment.Windows,
+            Phase = SequencePhase.Windows,
+            Setup = setup,
+            AutomaticRepair = automaticRepair,
+            DeploymentRecord = record,
+            FirstLogon = firstLogon,
+            WaitActivity = RunActivity.WaitingForWindowsSetup,
+            RestartsAfterRemoval = true,
+            Texts = new WindowsPhaseTexts(),
+        };
 }

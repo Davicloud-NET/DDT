@@ -13,7 +13,9 @@ public sealed class FirstLogonScriptTests : IDisposable
 {
     private readonly string _parent = Directory.CreateTempSubdirectory("ddt first logon ").FullName;
 
-    private string Folder => Path.Combine(_parent, "FirstLogon");
+    private string DdtFolder => Path.Combine(_parent, "DDT");
+
+    private string Folder => Path.Combine(DdtFolder, "FirstLogon");
 
     private string Script => Path.Combine(Folder, FirstLogonScript.FileName);
 
@@ -63,6 +65,21 @@ public sealed class FirstLogonScriptTests : IDisposable
 
         Assert.False(Directory.Exists(Folder));
         Assert.True(File.Exists(Output));
+    }
+
+    [Fact]
+    public async Task RemovesTheDdtFolderAboveOnlyWhenNothingElseIsInIt()
+    {
+        await RunAsync("echo one>>\"%DDT_TEST_OUT%\"");
+        bool removedWhenEmpty = !Directory.Exists(DdtFolder);
+        Directory.CreateDirectory(DdtFolder);
+        await File.WriteAllTextAsync(Path.Combine(DdtFolder, "other.txt"), "other", TestContext.Current.CancellationToken);
+
+        await RunAsync("echo two>>\"%DDT_TEST_OUT%\"");
+
+        Assert.True(removedWhenEmpty);
+        Assert.False(Directory.Exists(Folder));
+        Assert.True(File.Exists(Path.Combine(DdtFolder, "other.txt")));
     }
 
     [Fact]

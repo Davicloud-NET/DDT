@@ -20,7 +20,7 @@ public sealed class DryRunFirstLogon(AgentLog log) : IFirstLogon
 
         if (firstLogon.AutoLogon is { } autoLogon)
         {
-            log.Information($"Dry run: in Windows, Winlogon would sign in as {FirstLogonTexts.Account(autoLogon)} {autoLogon.Count} times.");
+            log.Information($"Dry run: in Windows, Winlogon would sign in as {FirstLogonTexts.Account(autoLogon)} {autoLogon.Count} time{(autoLogon.Count == 1 ? "" : "s")}.");
         }
     }
 }

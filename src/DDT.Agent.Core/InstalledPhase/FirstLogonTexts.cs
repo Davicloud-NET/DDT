@@ -23,7 +23,7 @@ public static class FirstLogonTexts
         string commands = $"{firstLogon.Commands.Count} first-logon command{(firstLogon.Commands.Count == 1 ? "" : "s")}";
 
         return firstLogon.AutoLogon is { } autoLogon
-            ? $"{commands} and the automatic logon of {Account(autoLogon)}, {autoLogon.Count} times"
+            ? $"{commands} and the automatic logon of {Account(autoLogon)}, {autoLogon.Count} time{(autoLogon.Count == 1 ? "" : "s")}"
             : commands;
     }
 }

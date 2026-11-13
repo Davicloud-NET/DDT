@@ -116,6 +116,18 @@ public sealed class ToolRunnerTests
         Assert.StartsWith("cmd.exe ended with exit code 3010 after ", lines[^1].Message, StringComparison.Ordinal);
     }
 
+    // A negative code is an HRESULT, such as DISM's for a feature it does not know.
+    [Fact]
+    public async Task LogsANegativeExitCodeInHex()
+    {
+        (ToolRunner tools, ScriptedAgentServer server, AgentLog log) = Create();
+
+        int exitCode = await tools.RunForExitCodeAsync(s_cmd, ["/d", "/c", "exit /b -2146498548"], new ToolRunOptions(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(unchecked((int)0x800F080C), exitCode);
+        Assert.StartsWith("cmd.exe ended with exit code 0x800F080C after ", (await SentAsync(server, log))[^1].Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task TheOptionsLinesRewriteOrDropWhatTheLogGets()
     {

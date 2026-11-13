@@ -21,7 +21,8 @@ public static class FirstLogonScript
     public static string RunOnceCommand(string script) => $"\"{WindowsScriptLauncher.CmdPath}\" /d /c \"{script}\"";
 
     // Each command in a subroutine of its own, so its exit /b or setlocal ends there and a failure goes on to the next.
-    // (goto) ends the batch before del removes the file, so cmd never reads past it.
+    // (goto) ends the batch before del removes the file, so cmd never reads past it. The DDT folder above goes too
+    // once it is empty.
     public static byte[] File(IReadOnlyList<string> commands)
     {
         ArgumentNullException.ThrowIfNull(commands);
@@ -33,7 +34,7 @@ public static class FirstLogonScript
             text.Append(CultureInfo.InvariantCulture, $"@call :command{index + 1}\r\n");
         }
 
-        text.Append("@(goto) 2>nul & del \"%~f0\" & rd \"%~dp0\" 2>nul\r\n");
+        text.Append("@(goto) 2>nul & del \"%~f0\" & rd \"%~dp0\" 2>nul & rd \"%~dp0..\" 2>nul\r\n");
 
         for (int index = 0; index < commands.Count; index++)
         {

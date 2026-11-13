@@ -1757,6 +1757,22 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.unreadable",
     message: "The sequence is not a document DDT can read. Every step needs an id and a kind this version of DDT knows.",
   }),
+  "sequence.updatesKb": msg({
+    context: "sequence.updatesKb",
+    message: "Enter a KB number, such as KB5031234.",
+  }),
+  "sequence.updatesKbRepeated": msg({
+    context: "sequence.updatesKbRepeated",
+    message: "This update is listed twice.",
+  }),
+  "sequence.updatesRestarts": msg({
+    context: "sequence.updatesRestarts",
+    message: "Allow 1 to {max} restarts.",
+  }),
+  "sequence.updatesTooManyKbs": msg({
+    context: "sequence.updatesTooManyKbs",
+    message: "A step leaves out at most {max} updates.",
+  }),
   "sequence.userDataFinalModulesWarning": msg({
     context: "sequence.userDataFinalModulesWarning",
     message: "{how, select, missing {The user-data sets cloud_final_modules, and the list names neither scripts_vendor nor scripts-vendor, so cloud-init runs no vendor scripts.} other {DDT could not read what the user-data sets cloud_final_modules to. If the list does not name scripts_vendor, cloud-init runs no vendor scripts.}} DDT's script, which installs the agent in the installed Linux, is a vendor script, and without it the steps there never run. Add scripts_vendor to the list.",

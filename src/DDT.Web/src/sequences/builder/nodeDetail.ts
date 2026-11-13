@@ -9,7 +9,7 @@ import { conditionSummary, legacyTree } from "@/conditions/conditions";
 import type { Subject } from "@/conditions/conditionSubjects";
 
 import { findingText, type Findings } from "../problems";
-import type { AccountReference, SequenceStep } from "../sequences";
+import type { AccountReference, SequenceStep, WindowsUpdateStep } from "../sequences";
 import { EMPTY_ID, inPhase, interpreterLabel } from "../steps";
 import type { StepCatalog } from "../useStepCatalog";
 
@@ -54,6 +54,27 @@ function applicationsDetail(count: number, variable: string | null): string {
         one: `# application or bundle, then those ${variable} names`,
         other: `# applications and bundles, then those ${variable} names`,
       });
+}
+
+// What a Windows Update step brings besides Windows' own updates, and how many it leaves out.
+function updatesDetail(node: WindowsUpdateStep): string {
+  const parts = [node.microsoftProducts ? t`Windows and Microsoft products` : t`Windows only`];
+
+  if (node.drivers) {
+    parts.push(t`drivers`);
+  }
+
+  if (node.optionalUpdates) {
+    parts.push(t`optional updates`);
+  }
+
+  const excluded = node.excludedKbs.length;
+
+  if (excluded > 0) {
+    parts.push(plural(excluded, { one: "# left out", other: "# left out" }));
+  }
+
+  return parts.join(", ");
 }
 
 export function nodeDetail(
@@ -127,6 +148,8 @@ export function nodeDetail(
       return plain(
         node.features.length === 0 ? t`No features chosen yet` : node.features.join(", "),
       );
+    case "windowsUpdate":
+      return plain(updatesDetail(node));
     case "if":
       return plain(conditionSummary(node.test, subjects));
     case "group":

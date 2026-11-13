@@ -48,12 +48,16 @@ const kindFields: Record<StepKind, readonly string[]> = {
   pause: ["message", "continueAfterMinutes"],
   installApplications: ["applications", "variable"],
   enableFeatures: ["features"],
+  windowsUpdate: ["drivers", "optionalUpdates", "microsoftProducts", "excludedKbs", "restartLimit"],
   group: [],
   if: [],
   repeat: ["maxTimes", "goOnAtLimit"],
 };
 
 const commonFields = ["name", "continueOnError", "rebootAfter"];
+
+// Lists whose field shows the findings of each entry too, such as excludedKbs[2].
+const entryFields = ["excludedKbs"];
 
 // One part of a finding's field, such as parts[1] in when.parts[1].value: a member, and its index if it's a list.
 export interface FieldSegment {
@@ -208,11 +212,13 @@ export function isShownField(step: SequenceStep, field: string | null): boolean 
     );
   }
 
-  return (
-    segments?.length === 1 &&
-    first.index === null &&
-    (commonFields.includes(first.name) || kindFields[step.kind].includes(first.name))
-  );
+  if (segments?.length !== 1) {
+    return false;
+  }
+
+  return first.index === null
+    ? commonFields.includes(first.name) || kindFields[step.kind].includes(first.name)
+    : entryFields.includes(first.name) && kindFields[step.kind].includes(first.name);
 }
 
 // Findings of the node that no field shows.

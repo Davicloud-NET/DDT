@@ -459,6 +459,10 @@ msgctxt "settings.ldapTest.found"
 msgid "{entry} was found, in {count, plural, one {# group} other {# groups}}."
 msgstr "{entry} was found, in {count, plural, one {# group} other {# groups}}."
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "{excluded, plural, one {# left out} other {# left out}}"
+msgstr "{excluded, plural, one {# left out} other {# left out}}"
+
 #: src/lib/serverMessages.ts
 msgctxt "resolution.cannotRun"
 msgid "{explanation} {count, plural, one {{sequence} has # problem, so it cannot run until it is fixed.} other {{sequence} has # problems, so it cannot run until they are fixed.}}"
@@ -1875,6 +1879,11 @@ msgid "A step is empty."
 msgstr "A step is empty."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.updatesTooManyKbs"
+msgid "A step leaves out at most {max} updates."
+msgstr "A step leaves out at most {max} updates."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.stepNameTooLong"
 msgid "A step name can have at most {max} characters."
 msgstr "A step name can have at most {max} characters."
@@ -2371,6 +2380,11 @@ msgstr "All machines"
 #: src/conditions/conditions.ts
 msgid "All of these hold"
 msgstr "All of these hold"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.updatesRestarts"
+msgid "Allow 1 to {max} restarts."
+msgstr "Allow 1 to {max} restarts."
 
 #: src/accounts/list/AccountRow.tsx
 msgid "Allowed"
@@ -4052,9 +4066,14 @@ msgstr "Driver packages"
 msgid "Driver packages matched to the model"
 msgstr "Driver packages matched to the model"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "drivers"
+msgstr "drivers"
+
 #: src/app/navigation.ts
 #: src/boot/LastBuild.tsx
 #: src/packages/PackagesPage.tsx
+#: src/sequences/steps/WindowsUpdateFields.tsx
 msgid "Drivers"
 msgstr "Drivers"
 
@@ -4242,6 +4261,11 @@ msgstr "Enter a computer name."
 msgctxt "deployment.enterComputerName"
 msgid "Enter a computer name. {use}"
 msgstr "Enter a computer name. {use}"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.updatesKb"
+msgid "Enter a KB number, such as KB5031234."
+msgstr "Enter a KB number, such as KB5031234."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.inputLabel"
@@ -4847,6 +4871,10 @@ msgstr "From 1 to 100."
 #: src/sequences/steps/PauseFields.tsx
 msgid "From 1 to 1440 minutes."
 msgstr "From 1 to 1440 minutes."
+
+#: src/sequences/steps/WindowsUpdateFields.tsx
+msgid "From 1 to 20."
+msgstr "From 1 to 20."
 
 #: src/sequences/steps/PartitionFields.tsx
 msgid "From 260 to 4096 MB."
@@ -5571,6 +5599,10 @@ msgstr "Join with"
 msgid "Jump to the newest"
 msgstr "Jump to the newest"
 
+#: src/sequences/steps/ExcludedKbsSetting.tsx
+msgid "KB numbers, separated by commas."
+msgstr "KB numbers, separated by commas."
+
 #: src/sequences/builder/variables/RenameField.tsx
 msgid "Keep {name}"
 msgstr "Keep {name}"
@@ -5722,6 +5754,10 @@ msgstr "LDAPS uses 636, StartTLS and unencrypted 389."
 #: src/accounts/drawer/PasswordActions.tsx
 msgid "Leave it unset"
 msgstr "Leave it unset"
+
+#: src/sequences/steps/ExcludedKbsSetting.tsx
+msgid "Leave out these updates"
+msgstr "Leave out these updates"
 
 #: src/uploads/LeaveUploadDialog.tsx
 msgid "Leave page"
@@ -7408,6 +7444,14 @@ msgstr "Option 66, boot server"
 msgid "Option 67, boot file"
 msgstr "Option 67, boot file"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "optional updates"
+msgstr "optional updates"
+
+#: src/sequences/steps/WindowsUpdateFields.tsx
+msgid "Optional updates and previews"
+msgstr "Optional updates and previews"
+
 #: src/packages/PackageDialog.tsx
 #: src/roles/drawer/RoleFields.tsx
 #: src/rules/drawer/RuleFields.tsx
@@ -8160,6 +8204,10 @@ msgstr "Restarted after step {number}, {name}; back after {took}"
 #: src/deployments/deployments.ts
 msgid "Restarting"
 msgstr "Restarting"
+
+#: src/sequences/steps/WindowsUpdateFields.tsx
+msgid "Restarts at most"
+msgstr "Restarts at most"
 
 #: src/machines/bootEnvironment.ts
 msgid "Restarts into"
@@ -11588,6 +11636,11 @@ msgid "This takes a few minutes for a large file."
 msgstr "This takes a few minutes for a large file."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.updatesKbRepeated"
+msgid "This update is listed twice."
+msgstr "This update is listed twice."
+
+#: src/lib/serverMessages.ts
 msgctxt "upload.beingChecked"
 msgid "This upload is being checked or written to. Ask again in a few seconds."
 msgstr "This upload is being checked or written to. Ask again in a few seconds."
@@ -11888,6 +11941,10 @@ msgstr "Unwrap"
 #: src/sequences/builder/inspector/NodeKeys.tsx
 msgid "Unwrap {name}"
 msgstr "Unwrap {name}"
+
+#: src/sequences/steps/WindowsUpdateFields.tsx
+msgid "Updates for other Microsoft products"
+msgstr "Updates for other Microsoft products"
 
 #: src/uploads/UploadPanel.tsx
 msgid "Upload"
@@ -12359,6 +12416,10 @@ msgstr "Windows ADK install started"
 msgid "Windows ADK with the Windows PE add-on {version}"
 msgstr "Windows ADK with the Windows PE add-on {version}"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "Windows and Microsoft products"
+msgstr "Windows and Microsoft products"
+
 #: src/settings/networkBoot/neighbours/PortOwners.tsx
 msgid "Windows Deployment Services ({process}, process {id})"
 msgstr "Windows Deployment Services ({process}, process {id})"
@@ -12374,6 +12435,10 @@ msgstr "Windows Deployment Services runs on this computer and holds UDP 69 and 4
 #: src/images/images.ts
 msgid "Windows image"
 msgstr "Windows image"
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "Windows only"
+msgstr "Windows only"
 
 #: src/machines/bootEnvironment.ts
 #: src/packages/PackageName.tsx
@@ -12419,6 +12484,10 @@ msgstr "Windows Subsystem for Linux"
 #: src/settings/networkBoot/BootFileField.tsx
 msgid "Windows UEFI CA 2023."
 msgstr "Windows UEFI CA 2023."
+
+#: src/sequences/steps.ts
+msgid "Windows Update"
+msgstr "Windows Update"
 
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "Windows, after the hand-over"

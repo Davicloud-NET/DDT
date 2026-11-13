@@ -19,6 +19,7 @@ export const workKinds: readonly StepKind[] = [
   "joinDomain",
   "installApplications",
   "enableFeatures",
+  "windowsUpdate",
   "runScript",
   "reboot",
   "writeRawImage",

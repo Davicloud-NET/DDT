@@ -227,6 +227,7 @@ export function requiredVersion(definition: {
 function minimumVersion(node: SequenceStep): number {
   switch (node.kind) {
     case "enableFeatures":
+    case "windowsUpdate":
       return 7;
     case "installApplications":
       return 6;

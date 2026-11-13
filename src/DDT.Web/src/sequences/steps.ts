@@ -30,6 +30,7 @@ const kindLabels: Record<StepKind, MessageDescriptor> = {
   pause: msg`Pause`,
   installApplications: msg`Install applications`,
   enableFeatures: msg`Enable roles and features`,
+  windowsUpdate: msg`Windows Update`,
   group: msg`Group`,
   if: msg`If`,
   repeat: msg`Repeat`,
@@ -285,6 +286,16 @@ export function newStep(
       return { ...common, kind, applications: [], variable: null };
     case "enableFeatures":
       return { ...common, kind, features: [] };
+    case "windowsUpdate":
+      return {
+        ...common,
+        kind,
+        drivers: false,
+        optionalUpdates: false,
+        microsoftProducts: true,
+        excludedKbs: [],
+        restartLimit: 8,
+      };
     case "group":
       return { ...common, kind, steps: [] };
     case "if":

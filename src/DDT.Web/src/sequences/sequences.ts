@@ -169,6 +169,16 @@ export interface EnableFeaturesStep extends StepBase {
   features: string[];
 }
 
+// Version 7. Installs updates from Microsoft Update until none is left, restarting as they ask. Never a feature upgrade.
+export interface WindowsUpdateStep extends StepBase {
+  kind: "windowsUpdate";
+  drivers: boolean;
+  optionalUpdates: boolean;
+  microsoftProducts: boolean;
+  excludedKbs: string[];
+  restartLimit: number;
+}
+
 // The kind values are stored in sequences and run snapshots, so they never change. A step is a node of the
 // sequence's tree: a leaf, or a container whose bodies hold more nodes.
 export type SequenceStep =
@@ -187,7 +197,8 @@ export type SequenceStep =
   | SetVariableStep
   | PauseStep
   | InstallApplicationsStep
-  | EnableFeaturesStep;
+  | EnableFeaturesStep
+  | WindowsUpdateStep;
 
 export type StepKind = SequenceStep["kind"];
 

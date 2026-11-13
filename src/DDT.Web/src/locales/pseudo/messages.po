@@ -459,6 +459,10 @@ msgctxt "settings.ldapTest.found"
 msgid "{entry} was found, in {count, plural, one {# group} other {# groups}}."
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "{excluded, plural, one {# left out} other {# left out}}"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "resolution.cannotRun"
 msgid "{explanation} {count, plural, one {{sequence} has # problem, so it cannot run until it is fixed.} other {{sequence} has # problems, so it cannot run until they are fixed.}}"
@@ -1875,6 +1879,11 @@ msgid "A step is empty."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.updatesTooManyKbs"
+msgid "A step leaves out at most {max} updates."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.stepNameTooLong"
 msgid "A step name can have at most {max} characters."
 msgstr ""
@@ -2370,6 +2379,11 @@ msgstr ""
 
 #: src/conditions/conditions.ts
 msgid "All of these hold"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.updatesRestarts"
+msgid "Allow 1 to {max} restarts."
 msgstr ""
 
 #: src/accounts/list/AccountRow.tsx
@@ -4052,9 +4066,14 @@ msgstr ""
 msgid "Driver packages matched to the model"
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "drivers"
+msgstr ""
+
 #: src/app/navigation.ts
 #: src/boot/LastBuild.tsx
 #: src/packages/PackagesPage.tsx
+#: src/sequences/steps/WindowsUpdateFields.tsx
 msgid "Drivers"
 msgstr ""
 
@@ -4241,6 +4260,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "deployment.enterComputerName"
 msgid "Enter a computer name. {use}"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.updatesKb"
+msgid "Enter a KB number, such as KB5031234."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -4846,6 +4870,10 @@ msgstr ""
 
 #: src/sequences/steps/PauseFields.tsx
 msgid "From 1 to 1440 minutes."
+msgstr ""
+
+#: src/sequences/steps/WindowsUpdateFields.tsx
+msgid "From 1 to 20."
 msgstr ""
 
 #: src/sequences/steps/PartitionFields.tsx
@@ -5571,6 +5599,10 @@ msgstr ""
 msgid "Jump to the newest"
 msgstr ""
 
+#: src/sequences/steps/ExcludedKbsSetting.tsx
+msgid "KB numbers, separated by commas."
+msgstr ""
+
 #: src/sequences/builder/variables/RenameField.tsx
 msgid "Keep {name}"
 msgstr ""
@@ -5721,6 +5753,10 @@ msgstr ""
 
 #: src/accounts/drawer/PasswordActions.tsx
 msgid "Leave it unset"
+msgstr ""
+
+#: src/sequences/steps/ExcludedKbsSetting.tsx
+msgid "Leave out these updates"
 msgstr ""
 
 #: src/uploads/LeaveUploadDialog.tsx
@@ -7408,6 +7444,14 @@ msgstr ""
 msgid "Option 67, boot file"
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "optional updates"
+msgstr ""
+
+#: src/sequences/steps/WindowsUpdateFields.tsx
+msgid "Optional updates and previews"
+msgstr ""
+
 #: src/packages/PackageDialog.tsx
 #: src/roles/drawer/RoleFields.tsx
 #: src/rules/drawer/RuleFields.tsx
@@ -8159,6 +8203,10 @@ msgstr ""
 
 #: src/deployments/deployments.ts
 msgid "Restarting"
+msgstr ""
+
+#: src/sequences/steps/WindowsUpdateFields.tsx
+msgid "Restarts at most"
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
@@ -11588,6 +11636,11 @@ msgid "This takes a few minutes for a large file."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.updatesKbRepeated"
+msgid "This update is listed twice."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "upload.beingChecked"
 msgid "This upload is being checked or written to. Ask again in a few seconds."
 msgstr ""
@@ -11887,6 +11940,10 @@ msgstr ""
 
 #: src/sequences/builder/inspector/NodeKeys.tsx
 msgid "Unwrap {name}"
+msgstr ""
+
+#: src/sequences/steps/WindowsUpdateFields.tsx
+msgid "Updates for other Microsoft products"
 msgstr ""
 
 #: src/uploads/UploadPanel.tsx
@@ -12359,6 +12416,10 @@ msgstr ""
 msgid "Windows ADK with the Windows PE add-on {version}"
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "Windows and Microsoft products"
+msgstr ""
+
 #: src/settings/networkBoot/neighbours/PortOwners.tsx
 msgid "Windows Deployment Services ({process}, process {id})"
 msgstr ""
@@ -12373,6 +12434,10 @@ msgstr ""
 
 #: src/images/images.ts
 msgid "Windows image"
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "Windows only"
 msgstr ""
 
 #: src/machines/bootEnvironment.ts
@@ -12418,6 +12483,10 @@ msgstr ""
 
 #: src/settings/networkBoot/BootFileField.tsx
 msgid "Windows UEFI CA 2023."
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Windows Update"
 msgstr ""
 
 #: src/sequences/steps/RunScriptFields.tsx

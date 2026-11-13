@@ -23,6 +23,7 @@ public sealed class DeploymentSettingsSection() : SettingsSectionDefinition<Depl
         new("Organization"),
         new("Owner"),
         new("ProductKey", SettingFieldKind.Secret),
+        new("WriteRecord"),
         new("LocalAdministrator:Name"),
         new("LocalAdministrator:Password", SettingFieldKind.Secret),
         new("Domain:Name"),

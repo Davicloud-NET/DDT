@@ -15,6 +15,8 @@ export interface DeploymentSettings {
   consoleKeyboardLayout?: string | null;
   organization?: string | null;
   owner?: string | null;
+  // Whether the agent leaves HKLM\SOFTWARE\Davicloud\DDT\Deployment in Windows.
+  writeRecord?: boolean;
   localAdministrator: { name: string };
   domain: {
     name: string | null;

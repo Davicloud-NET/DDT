@@ -5232,6 +5232,10 @@ msgctxt "valueTemplate.filterTakesNoCount"
 msgid "In {placeholder}, {filter} takes no number. Remove the colon and what follows it."
 msgstr "In {placeholder} nimmt {filter} keine Zahl. Entfernen Sie den Doppelpunkt und alles danach."
 
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "In HKLM\\SOFTWARE\\Davicloud\\DDT\\Deployment, for inventory tools."
+msgstr "In HKLM\\SOFTWARE\\Davicloud\\DDT\\Deployment, für Inventarisierungs-Tools."
+
 #: src/boot/WindowsPEDrivers.tsx
 msgid "In the image"
 msgstr "Im Image"
@@ -5768,6 +5772,10 @@ msgstr "LDAPS"
 #: src/settings/directory/PortField.tsx
 msgid "LDAPS uses 636, StartTLS and unencrypted 389."
 msgstr "LDAPS verwendet 636, StartTLS und unverschlüsselt 389."
+
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Leave a deployment record in Windows"
+msgstr "Bereitstellungseintrag in Windows hinterlassen"
 
 #: src/accounts/drawer/PasswordActions.tsx
 msgid "Leave it unset"

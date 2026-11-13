@@ -143,6 +143,8 @@ public sealed class InstalledPhaseLoop
 
         if (local is null || local.State.RunId != runId)
         {
+            _exit.RunEnded(run, next.Unsent?.State ?? DeploymentState.Failed);
+
             return await ReportLostStateAsync(contact, runId, next.Unsent, cancellationToken).ConfigureAwait(false);
         }
 
@@ -150,6 +152,8 @@ public sealed class InstalledPhaseLoop
 
         if (await FinalReportAsync(local, cancellationToken).ConfigureAwait(false) is { } final)
         {
+            _exit.RunEnded(run, final.State);
+
             return await SendFinalReportAsync(contact, runId, local, final, cancellationToken).ConfigureAwait(false);
         }
 
@@ -167,6 +171,11 @@ public sealed class InstalledPhaseLoop
             .ConfigureAwait(false);
         next.RunToken = contact.Tokens.RunToken ?? next.RunToken;
         next.Unsent = result.UnsentReport;
+
+        if (result.Outcome is RunOutcome.Finished or RunOutcome.Failed)
+        {
+            _exit.RunEnded(run, result.Outcome == RunOutcome.Finished ? DeploymentState.Done : DeploymentState.Failed);
+        }
 
         return await ExitCodeForAsync(result, cancellationToken).ConfigureAwait(false);
     }

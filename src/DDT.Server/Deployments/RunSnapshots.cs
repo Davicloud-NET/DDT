@@ -141,7 +141,9 @@ public static class RunSnapshots
             computerName,
             run.AllowSecureBootMismatch,
             RunValues.Effective(run),
-            pendingInputs is { Count: > 0 } ? pendingInputs : null);
+            pendingInputs is { Count: > 0 } ? pendingInputs : null,
+            run.TaskSequenceId,
+            run.SequenceRevision);
     }
 
     private static IEnumerable<DeploymentArtifact> StepArtifacts(Guid runId, SequenceStep step, SequenceReferences references, Machine machine) =>

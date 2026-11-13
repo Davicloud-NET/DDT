@@ -56,7 +56,7 @@ public sealed class InstalledPhaseLoopBuilder
             new InstalledPhaseCalls(Server, IdentityReader, console, options, Log, TimeProvider),
             Runner,
             new InstalledPhaseSetupWait(Profile, new RunHeartbeatFactory(Server, Log, TimeProvider, HeartbeatInterval), console, Log, TimeProvider),
-            new InstalledPhaseExit(Removal, restart, console, Profile, Log),
+            new InstalledPhaseExit(Removal, restart, console, Profile, new DeploymentRecordKeeper(Profile.DeploymentRecord, AgentVersion, Log, TimeProvider), Log),
             options,
             Log);
     }

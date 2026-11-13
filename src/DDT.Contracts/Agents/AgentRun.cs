@@ -29,4 +29,11 @@ public sealed record AgentRun(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, string>? Values = null,
     // Inputs the person at the machine may still answer. The run starts once every required input has an answer,
     // from the machine or from the web.
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<AgentInput>? PendingInputs = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<AgentInput>? PendingInputs = null,
+    // For the deployment record the agent leaves in Windows. ImageName is the image a step applied, once one has.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] Guid? SequenceId = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? SequenceRevision = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ImageName = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ServerName = null,
+    // Deployment:WriteRecord off. An older server never sends it, so its runs get the record.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool SkipDeploymentRecord = false);

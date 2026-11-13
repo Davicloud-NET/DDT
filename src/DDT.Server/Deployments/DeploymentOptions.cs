@@ -38,6 +38,9 @@ public sealed class DeploymentOptions
     [JsonIgnore]
     public string? ProductKey { get; set; }
 
+    // Whether the agent leaves HKLM\SOFTWARE\Davicloud\DDT\Deployment in Windows as a run ends there.
+    public bool WriteRecord { get; set; } = true;
+
     public LocalAdministratorOptions LocalAdministrator { get; set; } = new();
 
     public DomainOptions Domain { get; set; } = new();

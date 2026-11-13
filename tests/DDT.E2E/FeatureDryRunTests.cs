@@ -59,6 +59,7 @@ public sealed class FeatureDryRunTests(DryRunLab lab)
         Assert.Equal(1, agent.Output.Count($"Step {features.Name} restarts the machine after"));
         Assert.Equal(1, agent.Output.Count("Features: 2 enabled."));
         Assert.Equal(1, agent.Output.Count($"Step {features.Name} finished after"));
+        Assert.Equal(1, agent.Output.Count($"Dry run: in Windows, the deployment record would say Done for run {assigned.Id:D}"));
 
         lab.AssertClean([agent], [], ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
     }

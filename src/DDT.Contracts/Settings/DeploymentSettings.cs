@@ -17,4 +17,6 @@ public sealed record DeploymentSettings(
     string? ConsoleKeyboardLayout = null,
     // RegisteredOrganization and RegisteredOwner in the answer file. Null leaves them out.
     string? Organization = null,
-    string? Owner = null);
+    string? Owner = null,
+    // Whether the agent leaves its deployment record in Windows.
+    bool WriteRecord = true);

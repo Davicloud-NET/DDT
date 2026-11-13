@@ -164,6 +164,7 @@ administrator here stay the defaults (see "Accounts in M7" below).
 | Organization | up to 256 characters | unset: left out | | live | Admin |
 | Owner | up to 256 characters | unset: left out | | live | Admin |
 | ProductKey | XXXXX-XXXXX-XXXXX-XXXXX-XXXXX | unset: left out | yes, write-only | live | Admin |
+| WriteRecord | bool | true | | live, from the run's next answer | Admin |
 | LocalAdministrator:Name | 1 to 20 characters | Admin | | live | Admin |
 | LocalAdministrator:Password | text | unset: no account, Windows asks | yes | live | Admin |
 | Domain:Name | DNS name | unset: workgroup | | live | Admin |
@@ -176,8 +177,15 @@ Organization and Owner become RegisteredOrganization and RegisteredOwner in the 
 Write the answer file step can override each. ProductKey is read when the agent fetches the answer
 file, like the local administrator's password, and goes into `specialize` Shell-Setup `ProductKey`.
 A run value `ProductKey` overrides it, and is readable like every value. The configured key never
-goes into a log line, an audit text or the run's stored values, but it is in clear text in the answer file Windows keeps on the machine
-(`Windows\Panther\unattend.xml`).
+goes into a log line, an audit text or the run's stored values. It is in clear text in the answer
+file on the machine (`Windows\Panther\unattend.xml`) until SetupComplete.cmd deletes it at the
+end of Windows setup.
+
+WriteRecord decides whether the agent leaves `HKLM\SOFTWARE\Davicloud\DDT\Deployment` (64-bit
+view, every value a string) as a run ends in Windows, done or failed, before it removes itself: SequenceName,
+SequenceId, SequenceRevision, RunId, Result, DeployedUtc (ISO 8601, UTC), ImageName, DdtVersion and
+ServerName. Inventory tools read it there. A record that can't be written is a warning in the run's
+log, never a failed run.
 
 Domain:Controller is used only by the join account check on the page (POST
 /api/deployments/domain-check), which reads the section at every check, so the page can offer the

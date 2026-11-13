@@ -6,11 +6,12 @@ import { Trans } from "@lingui/react/macro";
 
 import { SettingSecret } from "../parts/SettingSecret";
 import { SettingsGroup } from "../parts/SettingsGroup";
+import { SettingSwitch } from "../parts/SettingSwitch";
 import { SettingText } from "../parts/SettingText";
 
 import type { DeploymentForm } from "./deploymentSettings";
 
-// The product key and the names Windows is registered to.
+// The product key, the names Windows is registered to, and the record DDT leaves in it.
 export function RegistrationGroup({
   form,
   canChange,
@@ -36,6 +37,13 @@ export function RegistrationGroup({
         />
         <SettingText form={form} field="owner" canChange={canChange} label={<Trans>Owner</Trans>} />
       </div>
+      <SettingSwitch
+        form={form}
+        field="writeRecord"
+        canChange={canChange}
+        label={<Trans>Leave a deployment record in Windows</Trans>}
+        hint={<Trans>In HKLM\SOFTWARE\Davicloud\DDT\Deployment, for inventory tools.</Trans>}
+      />
     </SettingsGroup>
   );
 }

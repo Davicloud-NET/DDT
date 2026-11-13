@@ -241,6 +241,24 @@ public static class Say
             : mac;
     }
 
+    // A coded step detail in the console's words. Anything else is shown as the agent wrote it.
+    public static string StepDetail(Localizer l, string detail)
+    {
+        ArgumentNullException.ThrowIfNull(l);
+
+        if (!StepDetails.TryRead(detail, out string key, out int? number) || number is not { } count)
+        {
+            return detail;
+        }
+
+        return key switch
+        {
+            StepDetails.DownloadingUpdates => count == 1 ? l.T("Downloading 1 update") : l.F("Downloading {count} updates", ("count", l.Number(count))),
+            StepDetails.InstallingUpdates => count == 1 ? l.T("Installing 1 update") : l.F("Installing {count} updates", ("count", l.Number(count))),
+            _ => detail,
+        };
+    }
+
     // The time of a log line as the text console shows it: by the machine's clock, in UTC.
     public static string Time(DateTimeOffset time) => time.UtcDateTime.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
 

@@ -251,6 +251,14 @@ msgstr "Disks"
 msgid "Done"
 msgstr "Done"
 
+#: Texts/Say.cs
+msgid "Downloading 1 update"
+msgstr "Downloading 1 update"
+
+#: Texts/Say.cs
+msgid "Downloading {count} updates"
+msgstr "Downloading {count} updates"
+
 #: ViewModels/MachineViewModel.cs
 msgid "Dry run"
 msgstr "Dry run"
@@ -360,6 +368,10 @@ msgid "Info"
 msgstr "Info"
 
 #: Texts/Say.cs
+msgid "Installing 1 update"
+msgstr "Installing 1 update"
+
+#: Texts/Say.cs
 msgid "Installing applications"
 msgstr "Installing applications"
 
@@ -370,6 +382,10 @@ msgstr "Installing Windows updates"
 #: ViewModels/MachineFacts.cs
 msgid "IP address"
 msgstr "IP address"
+
+#: Texts/Say.cs
+msgid "Installing {count} updates"
+msgstr "Installing {count} updates"
 
 #: ViewModels/LicencesViewModel.cs
 msgid "It is free software: you can redistribute it and modify it under the GNU General Public License, version 3 or later, with additional terms. This view holds the texts."

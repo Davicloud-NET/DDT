@@ -390,6 +390,14 @@ msgstr ""
 msgid "{count, plural, one {Added # image from {file}.} other {Added # images from {file}.}}"
 msgstr ""
 
+#: src/runs/panel/stepDetail.ts
+msgid "{count, plural, one {Downloading # update} other {Downloading # updates}}"
+msgstr ""
+
+#: src/runs/panel/stepDetail.ts
+msgid "{count, plural, one {Installing # update} other {Installing # updates}}"
+msgstr ""
+
 #: src/rules/RuleTestOutcome.tsx
 msgid "{count, plural, one {It has # problem and cannot run.} other {It has # problems and cannot run.}}"
 msgstr ""

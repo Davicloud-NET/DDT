@@ -35,7 +35,7 @@ public sealed class WindowsUpdateStepRunnerTests
 
         Assert.Equal(StepResult.Done(), result);
         Assert.Equal(["restart?", "busy?", "search", "download a,b", "install a,b", "restart?", "search"], _run.Updates.Calls);
-        Assert.Equal(["Downloading 2 updates", "Installing 2 updates"], _run.Details.Values);
+        Assert.Equal(["#downloadingUpdates 2", "#installingUpdates 2"], _run.Details.Values);
         Assert.Equal(100, _run.Progress.Values[^1]);
         Assert.Contains("To install: .NET Framework update (KB5070002).", _run.Log, StringComparison.Ordinal);
         Assert.Contains("Installed 2026-11 Cumulative Update (KB5070001).", _run.Log, StringComparison.Ordinal);

@@ -4,6 +4,7 @@
 
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
+using DDT.ConsoleProtocol;
 using DDT.Core.Sequences;
 
 namespace DDT.Agent.WindowsUpdates;
@@ -14,9 +15,9 @@ public sealed class UpdateJobs(IWindowsUpdate updates, TimeProvider timeProvider
 {
     public static readonly TimeSpan JobLimit = TimeSpan.FromHours(6);
 
-    public static string Downloading(int count) => count == 1 ? "Downloading 1 update" : $"Downloading {count} updates";
+    public static string Downloading(int count) => StepDetails.Coded(StepDetails.DownloadingUpdates, count);
 
-    public static string Installing(int count) => count == 1 ? "Installing 1 update" : $"Installing {count} updates";
+    public static string Installing(int count) => StepDetails.Coded(StepDetails.InstallingUpdates, count);
 
     public static string TooLong(string job) => $"Windows Update's {job} did not end within 6 hours.";
 

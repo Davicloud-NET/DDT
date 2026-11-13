@@ -258,6 +258,9 @@ export function newStep(
         hideOemRegistration: true,
         hideOnlineAccounts: true,
         hideWirelessSetup: true,
+        firstLogonCommands: [],
+        autoLogon: "None",
+        autoLogonCount: 1,
       };
     case "joinDomain":
       return { ...common, kind, organizationalUnit: null };

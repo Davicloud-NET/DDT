@@ -8,6 +8,8 @@ import { Trans } from "@lingui/react/macro";
 import { TemplateField } from "../builder/TemplateField";
 import { FlagSetting } from "../fields/FlagSetting";
 import type { WriteUnattendStep } from "../sequences";
+import { AutoLogonSetting } from "./AutoLogonSetting";
+import { FirstLogonCommandsSetting } from "./FirstLogonCommandsSetting";
 import { orNull, type KindFieldsProps } from "./kindFields";
 import { OobePagesSetting } from "./OobePagesSetting";
 import { RegisteredFields } from "./RegisteredFields";
@@ -86,6 +88,14 @@ export function WriteUnattendFields({
         value={step.localAdministrator}
         onChange={(localAdministrator) => {
           onChange({ localAdministrator });
+        }}
+      />
+      <AutoLogonSetting step={step} findings={findings} onChange={onChange} />
+      <FirstLogonCommandsSetting
+        findings={findings}
+        value={step.firstLogonCommands}
+        onChange={(firstLogonCommands) => {
+          onChange({ firstLogonCommands }, true);
         }}
       />
     </>

@@ -8,7 +8,7 @@ import { render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
-import { fill, press } from "@/test/aria";
+import { chooseOption, fill, nth, press } from "@/test/aria";
 
 import type { Findings } from "../problems";
 import type { WriteUnattendStep } from "../sequences";
@@ -85,5 +85,45 @@ describe("WriteUnattendFields", () => {
     fill(screen.getByRole("combobox", { name: "Owner" }), " ");
 
     expect(last).toMatchObject({ uiLanguage: "de-DE", organization: "Davicloud", owner: null });
+  });
+
+  it("signs in as the local administrator a number of times", async () => {
+    let last: WriteUnattendStep | null = null;
+    render(
+      <Fields
+        onStep={(step) => {
+          last = step;
+        }}
+      />,
+    );
+
+    expect(screen.queryByRole("textbox", { name: "How often" })).not.toBeInTheDocument();
+    await chooseOption(document.body, "Sign in automatically", "As the local administrator");
+
+    expect(last).toMatchObject({ autoLogon: "LocalAdministrator", autoLogonCount: 1 });
+    expect(screen.getByRole("textbox", { name: "How often" })).toHaveValue("1");
+  });
+
+  it("adds first-logon commands in order and removes one", () => {
+    let last: WriteUnattendStep | null = null;
+    render(
+      <Fields
+        onStep={(step) => {
+          last = step;
+        }}
+      />,
+    );
+    const field = screen.getByRole("textbox", { name: "Add a command" });
+
+    fill(field, "cmd /c echo one");
+    press(screen.getByRole("button", { name: "Add" }));
+    fill(field, " cmd /c echo two ");
+    press(screen.getByRole("button", { name: "Add" }));
+
+    expect(last).toMatchObject({ firstLogonCommands: ["cmd /c echo one", "cmd /c echo two"] });
+
+    press(nth(screen.getAllByRole("button", { name: /Remove/ }), 0));
+
+    expect(last).toMatchObject({ firstLogonCommands: ["cmd /c echo two"] });
   });
 });

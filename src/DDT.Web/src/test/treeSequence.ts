@@ -111,6 +111,9 @@ export const treeDefinition: SequenceDefinition = {
       hideOemRegistration: true,
       hideOnlineAccounts: true,
       hideWirelessSetup: true,
+      firstLogonCommands: [],
+      autoLogon: "None",
+      autoLogonCount: 1,
     },
     {
       ...common,

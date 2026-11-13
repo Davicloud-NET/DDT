@@ -91,6 +91,9 @@ export const flowSteps: SequenceStep[] = [
     hideOemRegistration: true,
     hideOnlineAccounts: true,
     hideWirelessSetup: true,
+    firstLogonCommands: [],
+    autoLogon: "None",
+    autoLogonCount: 1,
   },
   { ...base, id: "jd", name: "Join the domain", kind: "joinDomain", organizationalUnit: null },
   {

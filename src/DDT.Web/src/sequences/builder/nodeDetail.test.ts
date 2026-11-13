@@ -77,4 +77,11 @@ describe("the line under a Write the answer file step's name", () => {
     );
     expect(line({ ...answers, hideWirelessSetup: false })).toBe("shows some setup pages");
   });
+
+  it("says that Windows signs in by itself and counts the first-logon commands", () => {
+    expect(
+      line({ ...answers, autoLogon: "LocalAdministrator", firstLogonCommands: ["a", "b"] }),
+    ).toBe("signs in automatically, 2 commands at the first sign-in");
+    expect(line({ ...answers, firstLogonCommands: ["a"] })).toBe("1 command at the first sign-in");
+  });
 });

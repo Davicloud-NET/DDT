@@ -68,8 +68,11 @@ export interface InjectDriversStep extends StepBase {
   requireMatch: boolean;
 }
 
+export type AutoLogonKind = "None" | "LocalAdministrator" | "Account";
+
 // Null settings take the server's defaults. From version 3 they are templates. uiLanguage null is the image's
-// language. The hide flags are the out-of-box pages Windows skips.
+// language. The hide flags are the out-of-box pages Windows skips. The first-logon commands and the automatic logon
+// are version 7; autoLogonAccount is for Account.
 export interface WriteUnattendStep extends StepBase {
   kind: "writeUnattend";
   timeZone: string | null;
@@ -83,6 +86,10 @@ export interface WriteUnattendStep extends StepBase {
   hideOemRegistration: boolean;
   hideOnlineAccounts: boolean;
   hideWirelessSetup: boolean;
+  firstLogonCommands: string[];
+  autoLogon: AutoLogonKind;
+  autoLogonAccount?: AccountReference | null;
+  autoLogonCount: number;
 }
 
 // Null takes the configured default. From version 3, organizationalUnit is a template. account (version 3) is the

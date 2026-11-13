@@ -265,6 +265,10 @@ msgstr ""
 msgid "{category} is listed again below, whose level applies."
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "{commands, plural, one {# command at the first sign-in} other {# commands at the first sign-in}}"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "domain.checkError"
 msgid "{controller} answered the check with an error: {detail}"
@@ -1990,6 +1994,7 @@ msgstr ""
 
 #: src/account/ProfilePanel.tsx
 #: src/accounts/list/AccountsTable.tsx
+#: src/sequences/steps/AutoLogonSetting.tsx
 #: src/settings/directory/BindAccountGroup.tsx
 #: src/users/UsersTable.tsx
 msgid "Account"
@@ -2107,6 +2112,7 @@ msgstr ""
 
 #: src/sequences/builder/Palette.tsx
 #: src/sequences/steps/EnableFeaturesFields.tsx
+#: src/sequences/steps/FirstLogonCommandsSetting.tsx
 #: src/settings/directory/FoundGroup.tsx
 #: src/settings/networkBoot/AddInterfaceForm.tsx
 msgid "Add"
@@ -2131,6 +2137,10 @@ msgstr ""
 
 #: src/settings/signIn/ClaimRolesGroup.tsx
 msgid "Add a claim value"
+msgstr ""
+
+#: src/sequences/steps/FirstLogonCommandsSetting.tsx
+msgid "Add a command"
 msgstr ""
 
 #: src/conditions/builder/AddKeys.tsx
@@ -2284,6 +2294,11 @@ msgstr ""
 
 #: src/sequences/steps/WriteUnattendFields.tsx
 msgid "Add the local administrator"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.autoLogonNeedsAdministrator"
+msgid "Add the local administrator to sign in as it."
 msgstr ""
 
 #: src/sequences/builder/Palette.tsx
@@ -2773,6 +2788,14 @@ msgstr ""
 msgid "Architecture"
 msgstr ""
 
+#: src/sequences/steps/AutoLogonSetting.tsx
+msgid "As an account"
+msgstr ""
+
+#: src/sequences/steps/AutoLogonSetting.tsx
+msgid "As the local administrator"
+msgstr ""
+
 #: src/settings/networkBoot/BootServerFields.tsx
 msgid "ASCII, at most 63 characters. Left empty, its address."
 msgstr ""
@@ -2851,6 +2874,10 @@ msgstr ""
 
 #: src/machines/assign/AssignFields.tsx
 msgid "At most 15 characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first or last."
+msgstr ""
+
+#: src/sequences/steps/FirstLogonCommandsSetting.tsx
+msgid "At most 20 commands"
 msgstr ""
 
 #: src/sequences/builder/variables/MaxLengthSetting.tsx
@@ -3449,6 +3476,10 @@ msgstr ""
 
 #: src/applications/add/AddApplicationDialog.tsx
 msgid "Command only"
+msgstr ""
+
+#: src/sequences/steps/FirstLogonCommandsSetting.tsx
+msgid "Commands at the first sign-in"
 msgstr ""
 
 #: src/conditions/builder/TestRow.tsx
@@ -4266,6 +4297,11 @@ msgctxt "mac.enterPart"
 msgid "Enter 1 to 12 hex digits of a MAC address, such as 00:15:5D."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.firstLogonCommandEmpty"
+msgid "Enter a command."
+msgstr ""
+
 #: src/machines/assign/assignText.ts
 msgid "Enter a computer name."
 msgstr ""
@@ -4894,6 +4930,10 @@ msgstr ""
 msgid "From 1 to 20."
 msgstr ""
 
+#: src/sequences/steps/AutoLogonSetting.tsx
+msgid "From 1 to 99."
+msgstr ""
+
 #: src/sequences/steps/PartitionFields.tsx
 msgid "From 260 to 4096 MB."
 msgstr ""
@@ -5150,6 +5190,10 @@ msgstr ""
 
 #: src/sequences/builder/variables/AccountInputFields.tsx
 msgid "Host names separated by commas, such as fs01.corp.example."
+msgstr ""
+
+#: src/sequences/steps/AutoLogonSetting.tsx
+msgid "How often"
 msgstr ""
 
 #: src/conditions/builder/GroupRows.tsx
@@ -6635,6 +6679,7 @@ msgstr ""
 #: src/inputs/fields/YesNoField.tsx
 #: src/machines/facts.ts
 #: src/sequences/builder/variables/InputDefault.tsx
+#: src/sequences/steps/AutoLogonSetting.tsx
 msgid "No"
 msgstr ""
 
@@ -9086,6 +9131,10 @@ msgstr ""
 msgid "Sign in"
 msgstr ""
 
+#: src/sequences/steps/AutoLogonSetting.tsx
+msgid "Sign in automatically"
+msgstr ""
+
 #: src/auth/SignInPage.tsx
 msgid "Sign in with {name}"
 msgstr ""
@@ -9131,6 +9180,10 @@ msgstr ""
 
 #: src/auth/SignInPage.tsx
 msgid "Signing in"
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "signs in automatically"
 msgstr ""
 
 #: src/settings/signIn/SingleSignOnSettings.tsx
@@ -12127,12 +12180,22 @@ msgstr ""
 msgid "Uploads are off"
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.autoLogonCount"
+msgid "Use a number from 1 to {max}."
+msgstr ""
+
 #: src/auth/TwoFactorFields.tsx
 msgid "Use a recovery code"
 msgstr ""
 
 #: src/auth/TwoFactorFields.tsx
 msgid "Use an authenticator code"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.firstLogonCommandTooLong"
+msgid "Use at most {max} characters."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -12148,6 +12211,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "settings.pxe.kernelArgumentsLength"
 msgid "Use at most {max} characters."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.firstLogonCommandsTooMany"
+msgid "Use at most {max} commands."
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/WdsState.tsx

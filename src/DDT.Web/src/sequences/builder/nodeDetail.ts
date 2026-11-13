@@ -76,6 +76,21 @@ function unattendDetail(node: WriteUnattendStep): string {
     parts.push(t`shows some setup pages`);
   }
 
+  if (node.autoLogon !== "None") {
+    parts.push(t`signs in automatically`);
+  }
+
+  const commands = node.firstLogonCommands.length;
+
+  if (commands > 0) {
+    parts.push(
+      plural(commands, {
+        one: "# command at the first sign-in",
+        other: "# commands at the first sign-in",
+      }),
+    );
+  }
+
   return parts.length === 0 ? t`For Windows setup at its first start` : parts.join(", ");
 }
 

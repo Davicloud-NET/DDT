@@ -122,11 +122,11 @@ Then open *Library, OS images*:
    folder name and the package is matched to those machines from then on. A folder DDT cannot make
    sense of, like `WinPE x64`, comes over without a model; set one under *Library, Drivers*, or
    flag it for the boot image if that is what it was for.
-3. **Not imported yet.** DDT lists what it found and leaves behind, so nothing vanishes silently:
+3. **Applications and bundles.** Each comes along with a box of its own. One you disabled in MDT
+   is listed without a tick. The chapter on applications below says how.
+4. **Not imported yet.** DDT lists what it found and leaves behind, so nothing vanishes silently:
    task sequences and `CustomSettings.ini`. The next chapters say what to do about them.
-   Applications and bundles do come along, each with a box of its own; the chapter on
-   applications below says how.
-4. **Import** starts the copying. A full share takes a while, mostly for reading gigabytes of WIM.
+5. **Import** starts the copying. A full share takes a while, mostly for reading gigabytes of WIM.
 
 ## Task sequences
 

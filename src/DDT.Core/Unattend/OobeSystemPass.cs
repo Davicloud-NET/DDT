@@ -18,6 +18,9 @@ internal static class OobeSystemPass
     // Setup adds 1 to a LogonCount above 0, so one sign-in needs this first command. See Microsoft's LogonCount page.
     public const string OneLogonCommand = @"reg add ""HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"" /v AutoLogonCount /t REG_DWORD /d 0 /f";
 
+    // Setup starts a command line without a shell. /s keeps the quotes inside the command as they are.
+    public static string InShell(string command) => $"cmd.exe /d /s /c \"{command}\"";
+
     public static void Write(XmlWriter writer, UnattendSettings settings)
     {
         StartPass(writer, "oobeSystem");
@@ -31,7 +34,8 @@ internal static class OobeSystemPass
 
         StartComponent(writer, "Microsoft-Windows-Shell-Setup", settings.ProcessorArchitecture);
         WriteAutoLogon(writer, settings.AutoLogon);
-        WriteFirstLogonCommands(writer, settings.AutoLogon is { Count: 1 } ? [OneLogonCommand, .. settings.FirstLogonCommands] : settings.FirstLogonCommands);
+        string[] commands = [.. settings.FirstLogonCommands.Select(InShell)];
+        WriteFirstLogonCommands(writer, settings.AutoLogon is { Count: 1 } ? [OneLogonCommand, .. commands] : commands);
         WriteOobe(writer, settings.Oobe);
 
         if (settings.LocalAdministrator is { } administrator)

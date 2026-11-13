@@ -105,7 +105,7 @@ public sealed class FirstLogonSecretTests(DomainDeploymentApplication applicatio
         Assert.Equal("1", autoLogon.Element(s_unattend + "LogonCount")?.Value);
         Assert.Equal(Encoded(DomainDeploymentApplication.AdministratorPassword), autoLogon.Descendants(s_unattend + "Value").Single().Value);
         Assert.Equal(
-            ["cmd /c echo one", "cmd /c echo two"],
+            ["cmd.exe /d /s /c \"cmd /c echo one\"", "cmd.exe /d /s /c \"cmd /c echo two\""],
             answer.Descendants(s_unattend + "CommandLine").Select(command => command.Value));
         Assert.Equal(
             [$"The answer file of step Answer file ({unattend:D}) of {run.SequenceName}, with the local administrator Admin to sign in as."],

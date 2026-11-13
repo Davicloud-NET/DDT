@@ -208,7 +208,7 @@ Three parts, each a pull request that works by itself. The first two are built.
        `IPAddress`, DHCP.
      - A product key or an address Windows setup would refuse keeps the run from starting.
    - First-logon commands and automatic logon, on the Write the answer file step.
-     - Up to 20 commands of 1,024 characters, run in order at the first sign-in of an
+     - Up to 20 commands of 1,000 characters, run in order at the first sign-in of an
        administrator. A failing command does not stop the next.
      - Automatic logon as the local administrator of Deployment defaults or as an account
        (library or Account input), 1 to 99 times.

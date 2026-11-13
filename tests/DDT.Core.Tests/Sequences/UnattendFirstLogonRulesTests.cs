@@ -50,10 +50,10 @@ public sealed class UnattendFirstLogonRulesTests
     [Fact]
     public void RefusesACommandLongerThanSetupTakes()
     {
-        WriteUnattendStep step = Unattend() with { FirstLogonCommands = [new string('x', 1025)] };
+        WriteUnattendStep step = Unattend() with { FirstLogonCommands = [new string('x', 1001)] };
 
         AssertOnly(Validate(AfterImage(step)), step, "firstLogonCommands[0]", "sequence.firstLogonCommandTooLong");
-        Assert.Empty(Validate(AfterImage(Unattend() with { FirstLogonCommands = [new string('x', 1024)] })));
+        Assert.Empty(Validate(AfterImage(Unattend() with { FirstLogonCommands = [new string('x', 1000)] })));
     }
 
     [Theory]

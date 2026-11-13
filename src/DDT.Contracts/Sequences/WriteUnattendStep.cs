@@ -12,7 +12,8 @@ public sealed record WriteUnattendStep : SequenceStep
 {
     public const int MaxFirstLogonCommands = 20;
 
-    public const int MaxCommandLength = 1024;
+    // Setup takes a CommandLine of at most 1024 characters, and the answer file wraps each command in cmd.exe.
+    public const int MaxCommandLength = 1000;
 
     public const int MaxAutoLogonCount = 99;
 

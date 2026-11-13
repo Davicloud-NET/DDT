@@ -3,6 +3,8 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Text;
+using System.Xml.Linq;
+using DDT.Contracts.Sequences;
 using DDT.Core.Unattend;
 using Xunit;
 
@@ -65,7 +67,7 @@ public sealed class UnattendWriterFirstLogonTests
                           <RequiresUserInput>false</RequiresUserInput>
                         </SynchronousCommand>
                         <SynchronousCommand wcm:action="add">
-                          <CommandLine>cmd /c echo one</CommandLine>
+                          <CommandLine>cmd.exe /d /s /c "cmd /c echo one"</CommandLine>
                           <Order>2</Order>
                           <RequiresUserInput>false</RequiresUserInput>
                         </SynchronousCommand>
@@ -85,12 +87,12 @@ public sealed class UnattendWriterFirstLogonTests
             Lines("""
                       <FirstLogonCommands>
                         <SynchronousCommand wcm:action="add">
-                          <CommandLine>cmd /c echo "a &amp; b"</CommandLine>
+                          <CommandLine>cmd.exe /d /s /c "cmd /c echo "a &amp; b""</CommandLine>
                           <Order>1</Order>
                           <RequiresUserInput>false</RequiresUserInput>
                         </SynchronousCommand>
                         <SynchronousCommand wcm:action="add">
-                          <CommandLine>msiexec /i C:\x.msi /qn</CommandLine>
+                          <CommandLine>cmd.exe /d /s /c "msiexec /i C:\x.msi /qn"</CommandLine>
                           <Order>2</Order>
                           <RequiresUserInput>false</RequiresUserInput>
                         </SynchronousCommand>
@@ -99,6 +101,27 @@ public sealed class UnattendWriterFirstLogonTests
             xml,
             StringComparison.Ordinal);
         Assert.DoesNotContain("AutoLogon", xml, StringComparison.Ordinal);
+    }
+
+    // Setup has no shell of its own, so the operator's commands get cmd.exe's syntax, and the text stays as typed.
+    [Theory]
+    [InlineData("echo \"a b\" > \"C:\\x y.txt\"")]
+    [InlineData("mkdir C:\\Markers & (echo one)>>C:\\Markers\\log.txt")]
+    [InlineData("echo 50% done for %COMPUTERNAME%")]
+    public void RunsEachCommandInCmdAsTyped(string command)
+    {
+        string xml = UnattendWriter.Write(s_plain with { FirstLogonCommands = [command] });
+
+        string written = XDocument.Parse(xml).Descendants().Single(element => element.Name.LocalName == "CommandLine").Value;
+        Assert.Equal($"cmd.exe /d /s /c \"{command}\"", written);
+    }
+
+    [Fact]
+    public void TheLongestCommandStaysWithinWhatSetupTakes()
+    {
+        string xml = UnattendWriter.Write(s_plain with { FirstLogonCommands = [new string('x', WriteUnattendStep.MaxCommandLength)] });
+
+        Assert.True(XDocument.Parse(xml).Descendants().Single(element => element.Name.LocalName == "CommandLine").Value.Length <= 1024);
     }
 
     [Fact]

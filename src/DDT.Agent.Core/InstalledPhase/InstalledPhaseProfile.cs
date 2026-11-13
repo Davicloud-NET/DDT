@@ -24,6 +24,9 @@ public sealed record InstalledPhaseProfile
     // What deployed the machine, written as a run ends there. Null where the system keeps none.
     public IDeploymentRecord? DeploymentRecord { get; init; }
 
+    // Where the first-logon settings go as a run ends there. Null where the system takes none.
+    public IFirstLogon? FirstLogon { get; init; }
+
     // What the run reports while it waits for that setup.
     public required RunActivity WaitActivity { get; init; }
 

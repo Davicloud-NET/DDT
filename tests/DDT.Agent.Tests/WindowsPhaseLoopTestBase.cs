@@ -91,7 +91,7 @@ public abstract class WindowsPhaseLoopTestBase : IDisposable
             Server = server,
             IdentityReader = new DryRunMachineIdentityReader(1),
             Runner = runner,
-            Profile = WindowsPhaseProfile.With(_tools, options.AutomaticRepair, options.DeploymentRecord),
+            Profile = WindowsPhaseProfile.With(_tools, options.AutomaticRepair, options.DeploymentRecord, options.FirstLogon),
             Rebooter = _tools,
             RestartMarker = _tools,
             Removal = options.Removal ?? _tools,

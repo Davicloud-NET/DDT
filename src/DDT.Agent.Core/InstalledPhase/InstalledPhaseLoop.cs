@@ -154,7 +154,7 @@ public sealed class InstalledPhaseLoop
         {
             _exit.RunEnded(run, final.State);
 
-            return await SendFinalReportAsync(contact, runId, local, final, cancellationToken).ConfigureAwait(false);
+            return await SendFinalReportAsync(contact, run, local, final, cancellationToken).ConfigureAwait(false);
         }
 
         if (!await _setup.WaitAsync(contact, run, local, cancellationToken).ConfigureAwait(false))
@@ -164,7 +164,7 @@ public sealed class InstalledPhaseLoop
 
         RunResult result = await _runner
             .GoOnInInstalledSystemAsync(
-                new RunRequest(contact.MachineId, run, local, null, contact.Tokens, contact.Identity),
+                Request(contact, run, local),
                 _profile.Phase,
                 _exit.RecordRestart,
                 cancellationToken)
@@ -179,6 +179,13 @@ public sealed class InstalledPhaseLoop
 
         return await ExitCodeForAsync(result, cancellationToken).ConfigureAwait(false);
     }
+
+    // The first-logon settings are fetched before the Done report, while the server still has the run running.
+    private RunRequest Request(InstalledPhaseContact contact, AgentRun run, LocalRun local) =>
+        new(contact.MachineId, run, local, null, contact.Tokens, contact.Identity)
+        {
+            BeforeDone = call => _calls.FetchFirstLogonAsync(contact, run, call),
+        };
 
     // All the server can still learn about the run is why it ended here. Returns null when the report didn't get
     // through.
@@ -203,12 +210,17 @@ public sealed class InstalledPhaseLoop
     // through.
     private async Task<int?> SendFinalReportAsync(
         InstalledPhaseContact contact,
-        Guid runId,
+        AgentRun run,
         LocalRun local,
         AgentRunReport final,
         CancellationToken cancellationToken)
     {
-        if (!await _calls.ReportAsync(contact, runId, final, cancellationToken).ConfigureAwait(false))
+        if (final.State == DeploymentState.Done)
+        {
+            await _calls.FetchFirstLogonAsync(contact, run, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!await _calls.ReportAsync(contact, run.Id, final, cancellationToken).ConfigureAwait(false))
         {
             return null;
         }

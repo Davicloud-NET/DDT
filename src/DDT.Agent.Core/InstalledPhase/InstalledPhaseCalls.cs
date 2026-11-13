@@ -83,6 +83,44 @@ internal sealed class InstalledPhaseCalls(
         }
     }
 
+    // While the run still runs here, before its Done report. The settings hold a password, so they're kept in memory
+    // only. A failure leaves them out, but the run is still done.
+    public async Task FetchFirstLogonAsync(InstalledPhaseContact contact, AgentRun run, CancellationToken cancellationToken)
+    {
+        if (!run.SetsUpFirstLogon || console.KeepsFirstLogon)
+        {
+            return;
+        }
+
+        try
+        {
+            AgentFirstLogon read = await ServerCallRules.CallAsync(
+                call => server.GetRunFirstLogonAsync(contact.MachineId, contact.Tokens.Token, run.Id, call),
+                "the first-logon settings",
+                log,
+                timeProvider,
+                cancellationToken).ConfigureAwait(false);
+
+            if (read.IsEmpty)
+            {
+                log.Information("The answer file step that ran sets up nothing for the first sign-in.");
+
+                return;
+            }
+
+            console.KeepFirstLogon(read);
+            log.Information($"Once DDT's session is gone, the agent sets up {FirstLogonTexts.Summary(read)}.");
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The caller ends the run as stopped
+        }
+        catch (Exception exception) when (exception is DeploymentStepException or AgentTokenRejectedException)
+        {
+            log.Warning($"The first-logon commands and the automatic logon could not be fetched ({LogText.OneLine(exception)}). Windows starts without them.");
+        }
+    }
+
     // For an agent that is being stopped, which gets no later moment. The system's own log has every line, so a line
     // that does not get through is not said again.
     public async Task SendLastLinesAsync(InstalledPhaseContact contact)

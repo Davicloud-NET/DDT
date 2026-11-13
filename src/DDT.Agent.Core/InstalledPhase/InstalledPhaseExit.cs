@@ -53,6 +53,7 @@ internal sealed class InstalledPhaseExit(
     // finds the run over and ends what's left.
     public async Task<int> RemoveAsync(int exitCode, bool signOut, CancellationToken cancellationToken)
     {
+        console.DropFirstLogon();
         await EndRunAsync().ConfigureAwait(false);
 
         if (!await console.EndAsync(signOut, cancellationToken).ConfigureAwait(false))

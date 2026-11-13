@@ -88,7 +88,7 @@ public sealed class DryRunMachine(
                 Server = windowsServer,
                 IdentityReader = Identity(),
                 Runner = Runner(windowsServer, new DryRunDiskPartitioner(options.Root, log), tools, rebooter, SequencePhase.Windows),
-                Profile = WindowsPhaseProfile.With(new DryRunSetupProbe(log), new DryRunAutomaticRepair(log), new DryRunDeploymentRecord(log)),
+                Profile = WindowsPhaseProfile.With(new DryRunSetupProbe(log), new DryRunAutomaticRepair(log), new DryRunDeploymentRecord(log), new DryRunFirstLogon(log)),
                 Rebooter = rebooter,
                 RestartMarker = new DryRunRestartMarker(log),
                 Removal = new DryRunAgentRemoval(new AgentRemoval(Windows, tools, new DryRunRestartDeleter(log), log), options.Root, log),

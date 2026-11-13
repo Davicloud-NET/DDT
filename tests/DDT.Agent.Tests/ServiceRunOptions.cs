@@ -26,4 +26,6 @@ internal sealed record ServiceRunOptions
     public IAutomaticRepair? AutomaticRepair { get; init; }
 
     public IDeploymentRecord? DeploymentRecord { get; init; }
+
+    public IFirstLogon? FirstLogon { get; init; }
 }

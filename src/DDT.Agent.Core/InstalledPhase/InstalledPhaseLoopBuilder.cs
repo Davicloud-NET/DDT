@@ -49,7 +49,7 @@ public sealed class InstalledPhaseLoopBuilder
     public InstalledPhaseLoop Build()
     {
         InstalledPhaseOptions options = new(Profile, Root, AgentVersion, DryRun);
-        InstalledPhaseConsole console = new(Session, Status, Logo);
+        InstalledPhaseConsole console = new(Session, Status, Logo, Profile.FirstLogon, Log);
         InstalledPhaseRestart restart = new(Rebooter, RestartMarker, Profile.Texts, Log, TimeProvider, DryRun);
 
         return new InstalledPhaseLoop(

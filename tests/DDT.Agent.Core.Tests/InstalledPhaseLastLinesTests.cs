@@ -30,7 +30,7 @@ public sealed class InstalledPhaseLastLinesTests : IDisposable
     private InstalledPhaseCalls Calls(IAgentServer server, InstalledPhaseProfile profile) => new(
         server,
         new DryRunMachineIdentityReader(1),
-        new InstalledPhaseConsole(null, null, null),
+        new InstalledPhaseConsole(null, null, null, null, _log),
         new InstalledPhaseOptions(profile, Path.GetTempPath(), TestAgents.Version, DryRun: false),
         _log,
         _time);

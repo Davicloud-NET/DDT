@@ -45,16 +45,22 @@ public ref struct DhcpOptionWriter(Span<byte> destination)
         Write(code, scratch);
     }
 
-    public void WriteAscii(byte code, string value)
+    public void WriteAscii(byte code, string value, bool nulTerminated = false)
     {
         ArgumentNullException.ThrowIfNull(value);
 
         Span<byte> scratch = stackalloc byte[255];
+        int room = nulTerminated ? scratch.Length - 1 : scratch.Length;
 
-        if (Ascii.FromUtf16(value, scratch, out int length) != OperationStatus.Done)
+        if (Ascii.FromUtf16(value, scratch[..room], out int length) != OperationStatus.Done)
         {
             _overflowed = true;
             return;
+        }
+
+        if (nulTerminated)
+        {
+            scratch[length++] = 0;
         }
 
         Write(code, scratch[..length]);

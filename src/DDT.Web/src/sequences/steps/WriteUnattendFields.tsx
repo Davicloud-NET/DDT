@@ -9,6 +9,8 @@ import { TemplateField } from "../builder/TemplateField";
 import { FlagSetting } from "../fields/FlagSetting";
 import type { WriteUnattendStep } from "../sequences";
 import { orNull, type KindFieldsProps } from "./kindFields";
+import { OobePagesSetting } from "./OobePagesSetting";
+import { RegisteredFields } from "./RegisteredFields";
 
 export function WriteUnattendFields({
   step,
@@ -61,6 +63,20 @@ export function WriteUnattendFields({
           onChange({ keyboard: orNull(text) });
         }}
       />
+      <TemplateField
+        label={<Trans>Display language</Trans>}
+        field="uiLanguage"
+        findings={findings}
+        hint={<Trans>Such as de-DE. The image must have it.</Trans>}
+        placeholder={t`The image's`}
+        howTo={false}
+        value={step.uiLanguage ?? ""}
+        onChange={(text) => {
+          onChange({ uiLanguage: orNull(text) });
+        }}
+      />
+      <RegisteredFields step={step} findings={findings} onChange={onChange} />
+      <OobePagesSetting step={step} findings={findings} onChange={onChange} />
       <FlagSetting
         label={<Trans>Add the local administrator</Trans>}
         field="localAdministrator"

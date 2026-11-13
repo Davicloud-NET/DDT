@@ -251,6 +251,13 @@ export function newStep(
         locale: null,
         keyboard: null,
         localAdministrator: false,
+        uiLanguage: null,
+        organization: null,
+        owner: null,
+        hideEulaPage: true,
+        hideOemRegistration: true,
+        hideOnlineAccounts: true,
+        hideWirelessSetup: true,
       };
     case "joinDomain":
       return { ...common, kind, organizationalUnit: null };

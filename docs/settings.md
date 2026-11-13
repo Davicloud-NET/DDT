@@ -161,6 +161,9 @@ administrator here stay the defaults (see "Accounts in M7" below).
 | Keyboard | input locale | unset: the locale | | live | Admin |
 | ConsoleLanguage | en or de | unset: the language of Windows PE | | live, from the next registration | Admin |
 | ConsoleKeyboardLayout | a keymap of the Linux boot environment, such as de | unset: us | | live, from the next netboot | Admin |
+| Organization | up to 256 characters | unset: left out | | live | Admin |
+| Owner | up to 256 characters | unset: left out | | live | Admin |
+| ProductKey | XXXXX-XXXXX-XXXXX-XXXXX-XXXXX | unset: left out | yes, write-only | live | Admin |
 | LocalAdministrator:Name | 1 to 20 characters | Admin | | live | Admin |
 | LocalAdministrator:Password | text | unset: no account, Windows asks | yes | live | Admin |
 | Domain:Name | DNS name | unset: workgroup | | live | Admin |
@@ -168,6 +171,13 @@ administrator here stay the defaults (see "Accounts in M7" below).
 | Domain:UserName | DOMAIN\user or user@domain | unset | | live | Admin |
 | Domain:Password | text | unset | yes | live | Admin |
 | Domain:Controller | host name or address | unset: the domain's name | | live | Admin |
+
+Organization and Owner become RegisteredOrganization and RegisteredOwner in the answer file; a
+Write the answer file step can override each. ProductKey is read when the agent fetches the answer
+file, like the local administrator's password, and goes into `specialize` Shell-Setup `ProductKey`.
+A run value `ProductKey` overrides it, and is readable like every value. The configured key never
+goes into a log line, an audit text or the run's stored values, but it is in clear text in the answer file Windows keeps on the machine
+(`Windows\Panther\unattend.xml`).
 
 Domain:Controller is used only by the join account check on the page (POST
 /api/deployments/domain-check), which reads the section at every check, so the page can offer the
@@ -1275,8 +1285,8 @@ rules of 5.4: a Join the domain step without an account joins Domain:Name with t
 answer file step with "Add the local administrator" adds that account. A step may name a stored
 account or an Account input instead of the configured join account; its domain then comes from the
 account, and Domain:OrganizationalUnit applies only when that domain is Domain:Name. The deployment
-section also gives every run the values TimeZone, Locale, Keyboard, OrganizationalUnit and
-AdministratorName, below what inputs, the machine, rules, machine roles and the sequence set
+section also gives every run the values TimeZone, Locale, Keyboard, OrganizationalUnit,
+AdministratorName, Organization and Owner, below what inputs, the machine, rules, machine roles and the sequence set
 (src/DDT.Core/Values/ValueResolver.cs holds the order).
 
 ## 8. Open questions for the maintainer

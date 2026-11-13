@@ -43,7 +43,8 @@ public sealed class RunSecrets(
             return (null, "That step writes no answer file.");
         }
 
-        string? password = settings.Current.Deployment.LocalAdministrator.Password;
+        DeploymentOptions deployment = settings.Current.Deployment;
+        string? password = deployment.LocalAdministrator.Password;
 
         if (unattend.LocalAdministrator && string.IsNullOrEmpty(password))
         {
@@ -57,7 +58,14 @@ public sealed class RunSecrets(
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        (string? answerFile, string? problem) = renderer.Render(running.Inputs, unattend, language, password, TemplateValues(machine, running.Run));
+        UnattendSources sources = new(running.Inputs)
+        {
+            ImageLanguage = language,
+            Password = password,
+            ProductKey = deployment.ProductKey,
+            MacAddress = machine.PrimaryMac,
+        };
+        (string? answerFile, string? problem) = renderer.Render(sources, unattend, TemplateValues(machine, running.Run));
 
         if (problem is not null)
         {

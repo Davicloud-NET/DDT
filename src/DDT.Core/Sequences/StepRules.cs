@@ -287,9 +287,7 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goe
             problems.Add(null, ServerMessages.SequenceOneUnattend.With());
         }
 
-        names.CheckTemplate(unattend.TimeZone, "timeZone", problems.Add);
-        names.CheckTemplate(unattend.Locale, "locale", problems.Add);
-        names.CheckTemplate(unattend.Keyboard, "keyboard", problems.Add);
+        UnattendStepRules.Check(unattend, names, problems);
     }
 
     private void CheckJoin(JoinDomainStep join, StepPlace place, StepProblems problems)

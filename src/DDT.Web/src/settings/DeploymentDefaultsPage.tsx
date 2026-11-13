@@ -14,6 +14,7 @@ import { ConsoleLanguageGroup } from "./deploymentDefaults/ConsoleLanguageGroup"
 import type { DeploymentSettings } from "./deploymentDefaults/deploymentSettings";
 import { DomainGroup } from "./deploymentDefaults/DomainGroup";
 import { LocalAdministratorGroup } from "./deploymentDefaults/LocalAdministratorGroup";
+import { RegistrationGroup } from "./deploymentDefaults/RegistrationGroup";
 import { WindowsSetupGroup } from "./deploymentDefaults/WindowsSetupGroup";
 import { SettingsSection } from "./parts/SettingsSection";
 import { useSettingsForm } from "./useSettingsForm";
@@ -38,6 +39,7 @@ export function DeploymentDefaultsPage() {
           title={<Trans>Defaults for every run</Trans>}
         >
           <WindowsSetupGroup form={form} canChange={canChange} />
+          <RegistrationGroup form={form} canChange={canChange} />
           <ConsoleLanguageGroup form={form} canChange={canChange} />
           <LocalAdministratorGroup form={form} canChange={canChange} />
           <DomainGroup form={form} stored={form.view.values} canChange={canChange} />

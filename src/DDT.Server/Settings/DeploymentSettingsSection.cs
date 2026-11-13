@@ -20,6 +20,9 @@ public sealed class DeploymentSettingsSection() : SettingsSectionDefinition<Depl
         new("Keyboard"),
         new("ConsoleLanguage"),
         new("ConsoleKeyboardLayout"),
+        new("Organization"),
+        new("Owner"),
+        new("ProductKey", SettingFieldKind.Secret),
         new("LocalAdministrator:Name"),
         new("LocalAdministrator:Password", SettingFieldKind.Secret),
         new("Domain:Name"),
@@ -37,6 +40,9 @@ public sealed class DeploymentSettingsSection() : SettingsSectionDefinition<Depl
     {
         switch (field.Path)
         {
+            case "ProductKey":
+                options.ProductKey = value;
+                break;
             case "LocalAdministrator:Password":
                 options.LocalAdministrator.Password = value;
                 break;
@@ -51,6 +57,7 @@ public sealed class DeploymentSettingsSection() : SettingsSectionDefinition<Depl
 
     protected override string? GetSecret(DeploymentOptions options, SettingField field) => field.Path switch
     {
+        "ProductKey" => options.ProductKey,
         "LocalAdministrator:Password" => options.LocalAdministrator.Password,
         "Domain:Password" => options.Domain.Password,
         _ => base.GetSecret(options, field),

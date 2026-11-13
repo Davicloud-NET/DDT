@@ -64,7 +64,27 @@ public static class DeploymentOptionsValidation
             problems.AddRange(DomainProblems(options));
         }
 
+        problems.AddRange(AnswerFileProblems(options));
+
         return problems;
+    }
+
+    private static IEnumerable<SettingProblem> AnswerFileProblems(DeploymentOptions options)
+    {
+        if (!string.IsNullOrWhiteSpace(options.ProductKey) && !ProductKey.IsValid(options.ProductKey))
+        {
+            yield return new("ProductKey", ServerMessages.SettingsDeploymentProductKeyInvalid.With());
+        }
+
+        if (options.Organization?.Trim().Length > WindowsSetupValues.MaxRegisteredLength)
+        {
+            yield return new("Organization", ServerMessages.SettingsDeploymentRegisteredTooLong.With("max", WindowsSetupValues.MaxRegisteredLength));
+        }
+
+        if (options.Owner?.Trim().Length > WindowsSetupValues.MaxRegisteredLength)
+        {
+            yield return new("Owner", ServerMessages.SettingsDeploymentRegisteredTooLong.With("max", WindowsSetupValues.MaxRegisteredLength));
+        }
     }
 
     private static IEnumerable<SettingProblem> DomainProblems(DeploymentOptions options)

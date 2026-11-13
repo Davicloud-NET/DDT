@@ -9,7 +9,12 @@ import { conditionSummary, legacyTree } from "@/conditions/conditions";
 import type { Subject } from "@/conditions/conditionSubjects";
 
 import { findingText, type Findings } from "../problems";
-import type { AccountReference, SequenceStep, WindowsUpdateStep } from "../sequences";
+import type {
+  AccountReference,
+  SequenceStep,
+  WindowsUpdateStep,
+  WriteUnattendStep,
+} from "../sequences";
 import { EMPTY_ID, inPhase, interpreterLabel } from "../steps";
 import type { StepCatalog } from "../useStepCatalog";
 
@@ -54,6 +59,24 @@ function applicationsDetail(count: number, variable: string | null): string {
         one: `# application or bundle, then those ${variable} names`,
         other: `# applications and bundles, then those ${variable} names`,
       });
+}
+
+// The answer file's own choices, or what it is for when it takes every default.
+function unattendDetail(node: WriteUnattendStep): string {
+  const parts = [node.uiLanguage, node.organization].filter(
+    (part): part is string => part !== null && part !== "",
+  );
+
+  if (!(
+    node.hideEulaPage &&
+    node.hideOemRegistration &&
+    node.hideOnlineAccounts &&
+    node.hideWirelessSetup
+  )) {
+    parts.push(t`shows some setup pages`);
+  }
+
+  return parts.length === 0 ? t`For Windows setup at its first start` : parts.join(", ");
 }
 
 // What a Windows Update step brings besides Windows' own updates, and how many it leaves out.
@@ -115,7 +138,7 @@ export function nodeDetail(
     case "injectDrivers":
       return plain(t`Driver packages matched to the model`);
     case "writeUnattend":
-      return plain(t`For Windows setup at its first start`);
+      return plain(unattendDetail(node));
     case "joinDomain":
       return plain(
         node.account === null || node.account === undefined

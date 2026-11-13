@@ -118,6 +118,9 @@ public static class UnattendFile
         bool domain = document.Descendants(s_unattend + "JoinDomain").Any();
 
         string? computerName = Value("ComputerName");
+        string[] addresses = [.. document.Descendants(s_unattend + "UnicastIpAddresses").Elements().Select(element => element.Value.Trim())];
+        string extras = (document.Descendants(s_unattend + "ProductKey").Any() ? ", product key set" : "")
+            + (addresses.Length > 0 ? $", static address {string.Join(" ", addresses)}" : "");
 
         return $"computer name {(computerName is null or "*" ? "chosen by Windows" : computerName)}, " +
             $"time zone {Value("TimeZone") ?? "the default for the locale"}, " +
@@ -125,6 +128,6 @@ public static class UnattendFile
             $"locale {Value("UserLocale") ?? "the image's"}, " +
             $"keyboard {Value("InputLocale") ?? "the image's"}, " +
             $"local administrator {(localAdministrator ? "yes" : "no")}, " +
-            $"domain join {(domain ? "yes" : "no")}";
+            $"domain join {(domain ? "yes" : "no")}{extras}";
     }
 }

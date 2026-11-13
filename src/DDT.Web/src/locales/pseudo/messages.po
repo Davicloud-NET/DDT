@@ -112,6 +112,11 @@ msgid "''{value}'' is not a host name or an address. Name the domain controller 
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.uiLanguage"
+msgid "''{value}'' is not a language tag such as de-DE."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.deployment.consoleLanguageUnknown"
 msgid "''{value}'' is not a language the console at the machine speaks. Use en or de, or leave it empty for the language of Windows PE."
 msgstr ""
@@ -1671,6 +1676,15 @@ msgstr ""
 
 #: src/settings/networkBoot/neighbours/PortOwners.tsx
 msgid "a process that has ended"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.productKeyInvalid"
+msgid "A product key is five groups of five letters or digits: XXXXX-XXXXX-XXXXX-XXXXX-XXXXX."
+msgstr ""
+
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "A ProductKey value overrides it."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3970,6 +3984,10 @@ msgstr ""
 
 #: src/setup/SetupChecklist.tsx
 msgid "Dismiss"
+msgstr ""
+
+#: src/sequences/steps/WriteUnattendFields.tsx
+msgid "Display language"
 msgstr ""
 
 #: src/sequences/steps/knownFeatures.ts
@@ -7492,6 +7510,11 @@ msgstr ""
 msgid "or"
 msgstr ""
 
+#: src/sequences/steps/RegisteredFields.tsx
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Organization"
+msgstr ""
+
 #: src/sequences/steps/JoinDomainFields.tsx
 #: src/settings/deploymentDefaults/DomainGroup.tsx
 msgid "Organizational unit"
@@ -7524,6 +7547,11 @@ msgstr ""
 
 #: src/settings/server/ServerSettings.tsx
 msgid "Overview"
+msgstr ""
+
+#: src/sequences/steps/RegisteredFields.tsx
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Owner"
 msgstr ""
 
 #: src/packages/PackagesTable.tsx
@@ -7787,6 +7815,10 @@ msgstr ""
 msgid "Product code"
 msgstr ""
 
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Product key"
+msgstr ""
+
 #: src/settings/signIn/ProviderGroup.tsx
 #: src/settings/signIn/ProviderResult.tsx
 msgid "Provider"
@@ -7935,6 +7967,10 @@ msgstr ""
 
 #: src/machines/list/RunCell.tsx
 msgid "Registered {registered}"
+msgstr ""
+
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Registration"
 msgstr ""
 
 #: src/machines/actions/MachineMenu.tsx
@@ -8812,6 +8848,7 @@ msgstr ""
 msgid "Server address"
 msgstr ""
 
+#: src/sequences/steps/RegisteredFields.tsx
 #: src/sequences/steps/WriteUnattendFields.tsx
 msgid "Server default"
 msgstr ""
@@ -9033,6 +9070,10 @@ msgstr ""
 msgid "Shown only once."
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "shows some setup pages"
+msgstr ""
+
 #: src/auth/SignInPage.tsx
 msgid "Sign in"
 msgstr ""
@@ -9127,6 +9168,22 @@ msgstr ""
 #: src/settings/ConsolePanel.tsx
 #: src/settings/LinuxConsolePanel.tsx
 msgid "Size of its files"
+msgstr ""
+
+#: src/sequences/steps/OobePagesSetting.tsx
+msgid "Skip the licence page"
+msgstr ""
+
+#: src/sequences/steps/OobePagesSetting.tsx
+msgid "Skip the OEM registration page"
+msgstr ""
+
+#: src/sequences/steps/OobePagesSetting.tsx
+msgid "Skip the online account pages"
+msgstr ""
+
+#: src/sequences/steps/OobePagesSetting.tsx
+msgid "Skip the wireless page"
 msgstr ""
 
 #: src/runs/panel/railSteps.ts
@@ -9540,6 +9597,10 @@ msgstr ""
 
 #: src/sequences/steps/WriteUnattendFields.tsx
 msgid "Such as de-DE."
+msgstr ""
+
+#: src/sequences/steps/WriteUnattendFields.tsx
+msgid "Such as de-DE. The image must have it."
 msgstr ""
 
 #: src/sequences/steps/JoinDomainFields.tsx
@@ -10424,6 +10485,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "upload.noSpace"
 msgid "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
+msgstr ""
+
+#: src/sequences/steps/WriteUnattendFields.tsx
+msgid "The image's"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -12060,6 +12125,16 @@ msgstr ""
 
 #: src/auth/TwoFactorFields.tsx
 msgid "Use an authenticator code"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.registeredTooLong"
+msgid "Use at most {max} characters."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.registeredTooLong"
+msgid "Use at most {max} characters."
 msgstr ""
 
 #: src/lib/serverMessages.ts

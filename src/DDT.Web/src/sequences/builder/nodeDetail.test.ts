@@ -12,6 +12,7 @@ import type {
   ScriptInterpreter,
   SequencePhase,
   SequenceStep,
+  WriteUnattendStep,
 } from "../sequences";
 import { newStep } from "../steps";
 import { nodeDetail } from "./nodeDetail";
@@ -63,5 +64,17 @@ describe("the line under an Install applications step's name", () => {
       "2 applications and bundles, then those Extras names",
     );
     expect(line({ ...install, variable: "Extras" })).toBe("The applications Extras names");
+  });
+});
+
+describe("the line under a Write the answer file step's name", () => {
+  const answers = newStep("writeUnattend", "u") as WriteUnattendStep;
+
+  it("names its own language and organization, and pages it shows", () => {
+    expect(line(answers)).toBe("For Windows setup at its first start");
+    expect(line({ ...answers, uiLanguage: "de-DE", organization: "Davicloud" })).toBe(
+      "de-DE, Davicloud",
+    );
+    expect(line({ ...answers, hideWirelessSetup: false })).toBe("shows some setup pages");
   });
 });

@@ -10,7 +10,8 @@ using DDT.Server.Rules;
 namespace DDT.Server.Deployments;
 
 // The answer file of a Write answer file step. It holds the settings taken when the run started, the step's own
-// overrides, and the local administrator's current password from the settings, which the caller reads.
+// overrides, and the secrets from the settings, which the caller reads. Without a product key, an organization, an
+// owner, a static network and with the default switches, it's the answer file DDT always wrote.
 public sealed class UnattendRenderer
 {
     // Only x64 images can be deployed, so every component is the amd64 one.
@@ -20,33 +21,20 @@ public sealed class UnattendRenderer
     // Setup generates a name for "*".
     private const string GeneratedComputerName = "*";
 
-    public string Render(RunInputs inputs, WriteUnattendStep step, string? imageLanguage, string? password) =>
-        UnattendWriter.Write(Settings(inputs, step, imageLanguage, password));
-
     // The answer file as the agent fetches it. Values are the run's start values, the variables its steps set since and
     // the machine's facts, which the step's templates such as {{TimeZone}} read. Problem is why it cannot be written.
-    public (string? AnswerFile, string? Problem) Render(
-        RunInputs inputs,
-        WriteUnattendStep step,
-        string? imageLanguage,
-        string? password,
-        Func<string, string?> values)
+    public (string? AnswerFile, string? Problem) Render(UnattendSources sources, WriteUnattendStep step, Func<string, string?> values)
     {
-        (UnattendSettings? settings, string? problem) = Settings(inputs, step, imageLanguage, password, values);
+        (UnattendSettings? settings, string? problem) = Settings(sources, step, values);
 
         return settings is null ? (null, problem) : (UnattendWriter.Write(settings), null);
     }
 
     // The computer name and the settings the run started with are taken from the values too, so a step that changed one
     // counts. The result is checked like a sequence's settings, because a value can hold anything.
-    public (UnattendSettings? Settings, string? Problem) Settings(
-        RunInputs inputs,
-        WriteUnattendStep step,
-        string? imageLanguage,
-        string? password,
-        Func<string, string?> values)
+    public (UnattendSettings? Settings, string? Problem) Settings(UnattendSources sources, WriteUnattendStep step, Func<string, string?> values)
     {
-        ArgumentNullException.ThrowIfNull(inputs);
+        ArgumentNullException.ThrowIfNull(sources);
         ArgumentNullException.ThrowIfNull(step);
         ArgumentNullException.ThrowIfNull(values);
 
@@ -57,26 +45,39 @@ public sealed class UnattendRenderer
             return (null, problem);
         }
 
+        // The image's own language was never checked, so only a language the step names is.
+        if (worked.UiLanguage is { } language && !WindowsSetupValues.IsUiLanguage(language))
+        {
+            return (null, $"The answer file's display language, {language}, is not a language tag such as de-DE.");
+        }
+
+        RunInputs inputs = sources.Inputs;
         RunInputs current = inputs with
         {
             ComputerName = Value(values(MachineVariableNames.ComputerName)) ?? inputs.ComputerName,
             TimeZone = Value(values(MachineValues.TimeZone)) ?? inputs.TimeZone,
             Locale = Value(values(MachineValues.Locale)) ?? inputs.Locale,
             Keyboard = Value(values(MachineValues.Keyboard)) ?? inputs.Keyboard,
+            Organization = Value(values(MachineValues.Organization)) ?? inputs.Organization,
+            Owner = Value(values(MachineValues.Owner)) ?? inputs.Owner,
         };
-        UnattendSettings settings = Settings(current, worked, imageLanguage, password);
+        UnattendSettings plain = Settings(sources with { Inputs = current }, worked);
+        (UnattendSettings? settings, problem) = WithValues(plain, sources, values);
 
-        return Problem(settings) is { } refused ? (null, refused) : (settings, null);
+        return settings is null ? (null, problem)
+            : Problem(settings) is { } refused ? (null, refused)
+            : (settings, null);
     }
 
-    public UnattendSettings Settings(RunInputs inputs, WriteUnattendStep step, string? imageLanguage, string? password)
+    // The settings without values: the run's start values, the step and the secrets.
+    public UnattendSettings Settings(UnattendSources sources, WriteUnattendStep step)
     {
-        ArgumentNullException.ThrowIfNull(inputs);
+        ArgumentNullException.ThrowIfNull(sources);
         ArgumentNullException.ThrowIfNull(step);
 
-        string uiLanguage = Value(imageLanguage) ?? FallbackLanguage;
+        RunInputs inputs = sources.Inputs;
+        string uiLanguage = Value(step.UiLanguage) ?? Value(sources.ImageLanguage) ?? FallbackLanguage;
         string locale = Value(step.Locale) ?? Value(inputs.Locale) ?? uiLanguage;
-
         return new UnattendSettings(
             ProcessorArchitecture,
             Value(inputs.ComputerName) ?? GeneratedComputerName,
@@ -84,7 +85,31 @@ public sealed class UnattendRenderer
             uiLanguage,
             locale,
             Value(step.Keyboard) ?? Value(inputs.Keyboard) ?? locale,
-            step.LocalAdministrator && !string.IsNullOrEmpty(password) ? new LocalAdministrator(inputs.AdministratorName, password) : null);
+            step.LocalAdministrator && !string.IsNullOrEmpty(sources.Password) ? new LocalAdministrator(inputs.AdministratorName, sources.Password) : null)
+        {
+            RegisteredOrganization = Value(step.Organization) ?? Value(inputs.Organization),
+            RegisteredOwner = Value(step.Owner) ?? Value(inputs.Owner),
+            Oobe = new OobePages(step.HideEulaPage, step.HideOemRegistration, step.HideOnlineAccounts, step.HideWirelessSetup),
+        };
+    }
+
+    private static (UnattendSettings? Settings, string? Problem) WithValues(UnattendSettings settings, UnattendSources sources, Func<string, string?> values)
+    {
+        (ProductKey? key, string? keyProblem) = AnswerFileValues.ProductKeyOf(values, sources.ProductKey);
+
+        if (keyProblem is not null)
+        {
+            return (null, keyProblem);
+        }
+
+        if (sources.MacAddress is not { } mac)
+        {
+            return (settings with { ProductKey = key }, null);
+        }
+
+        (StaticNetwork? network, string? networkProblem) = AnswerFileValues.NetworkOf(values, mac);
+
+        return networkProblem is null ? (settings with { ProductKey = key, Network = network }, null) : (null, networkProblem);
     }
 
     // The step's settings worked out from the values, or the problem with the first one that can't be.
@@ -114,6 +139,9 @@ public sealed class UnattendRenderer
             TimeZone = Work(step.TimeZone, "time zone"),
             Locale = Work(step.Locale, "locale"),
             Keyboard = Work(step.Keyboard, "keyboard"),
+            UiLanguage = Work(step.UiLanguage, "display language"),
+            Organization = Work(step.Organization, "organization"),
+            Owner = Work(step.Owner, "owner"),
         };
 
         return problem is null ? (worked, null) : (null, problem);
@@ -129,6 +157,8 @@ public sealed class UnattendRenderer
             $"The answer file's locale, {locale}, is not a locale that names a region.",
         { Keyboard: var keyboard } when !WindowsSettings.IsKeyboard(keyboard) =>
             $"The answer file's keyboard, {keyboard}, is not a list of keyboards Windows knows.",
+        { RegisteredOrganization.Length: > WindowsSetupValues.MaxRegisteredLength } or { RegisteredOwner.Length: > WindowsSetupValues.MaxRegisteredLength } =>
+            $"The answer file's organization and owner may have at most {WindowsSetupValues.MaxRegisteredLength} characters each.",
         _ => null,
     };
 

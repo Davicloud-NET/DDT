@@ -13,4 +13,16 @@ public sealed record UnattendSettings(
     string UiLanguage,
     string Locale,
     string Keyboard,
-    LocalAdministrator? LocalAdministrator);
+    LocalAdministrator? LocalAdministrator)
+{
+    public ProductKey? ProductKey { get; init; }
+
+    public string? RegisteredOrganization { get; init; }
+
+    public string? RegisteredOwner { get; init; }
+
+    public OobePages Oobe { get; init; } = OobePages.AllHidden;
+
+    // Null is DHCP.
+    public StaticNetwork? Network { get; init; }
+}

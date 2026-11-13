@@ -68,13 +68,21 @@ export interface InjectDriversStep extends StepBase {
   requireMatch: boolean;
 }
 
-// Null settings take the server's defaults. From version 3 they are templates.
+// Null settings take the server's defaults. From version 3 they are templates. uiLanguage null is the image's
+// language. The hide flags are the out-of-box pages Windows skips.
 export interface WriteUnattendStep extends StepBase {
   kind: "writeUnattend";
   timeZone: string | null;
   locale: string | null;
   keyboard: string | null;
   localAdministrator: boolean;
+  uiLanguage: string | null;
+  organization: string | null;
+  owner: string | null;
+  hideEulaPage: boolean;
+  hideOemRegistration: boolean;
+  hideOnlineAccounts: boolean;
+  hideWirelessSetup: boolean;
 }
 
 // Null takes the configured default. From version 3, organizationalUnit is a template. account (version 3) is the

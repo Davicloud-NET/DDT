@@ -164,6 +164,21 @@ and it can set values such as `ComputerName`, `TimeZone` or `OrganizationalUnit`
 sections per model or per default gateway, each of them turns into a rule. A name like
 `PC-%SerialNumber%` becomes `PC-{{SerialNumber}}`.
 
+A few values go into the answer file as they are:
+
+| Value | Example | MDT |
+|---|---|---|
+| `ProductKey` | `XXXXX-XXXXX-XXXXX-XXXXX-XXXXX` | `ProductKey` |
+| `IPAddress` | `10.0.4.51/24`, several joined by `;` | `OSDAdapter0IPAddressList` with `OSDAdapter0SubnetMask` |
+| `Gateway` | `10.0.4.1` | `OSDAdapter0Gateways` |
+| `DnsServers` | `10.0.4.2;10.0.4.3` | `OSDAdapter0DNSServerList` |
+
+- `ProductKey` overrides the product key of the deployment defaults.
+- `IPAddress` gives the adapter the machine registered with a fixed IPv4 address. Without it the
+  machine keeps DHCP, and `Gateway` and `DnsServers` do nothing.
+- A run whose values Windows setup would refuse doesn't start. The message names the value, never
+  a product key.
+
 Values that always travel together, say everything that makes a PC a kiosk, can go into a machine
 role under *Deployment, Machine roles*, and a rule then hands out the role instead of five values.
 

@@ -25,6 +25,11 @@ public sealed record RunInputs(
 {
     public IReadOnlyDictionary<string, string>? Facts { get; init; }
 
+    // Null for a run that started before they were kept, or without them.
+    public string? Organization { get; init; }
+
+    public string? Owner { get; init; }
+
     public static RunInputs Capture(Machine machine, DeploymentOptions options, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -38,7 +43,11 @@ public sealed record RunInputs(
             options.LocalAdministrator.Name.Trim(),
             Value(options.Domain.Name),
             Value(options.Domain.OrganizationalUnit),
-            now);
+            now)
+        {
+            Organization = Value(options.Organization),
+            Owner = Value(options.Owner),
+        };
     }
 
     // Taken from the values the run started with, by the names MachineValues gives the deployment defaults. The domain
@@ -58,7 +67,11 @@ public sealed record RunInputs(
             Named(MachineValues.AdministratorName) ?? options.LocalAdministrator.Name.Trim(),
             Value(options.Domain.Name),
             Named(MachineValues.OrganizationalUnit),
-            now);
+            now)
+        {
+            Organization = Named(MachineValues.Organization),
+            Owner = Named(MachineValues.Owner),
+        };
     }
 
     // The machine's current facts by name, each as a template would insert it. Only the ones that stay the same during

@@ -84,6 +84,13 @@ export const flowSteps: SequenceStep[] = [
     locale: null,
     keyboard: null,
     localAdministrator: true,
+    uiLanguage: null,
+    organization: null,
+    owner: null,
+    hideEulaPage: true,
+    hideOemRegistration: true,
+    hideOnlineAccounts: true,
+    hideWirelessSetup: true,
   },
   { ...base, id: "jd", name: "Join the domain", kind: "joinDomain", organizationalUnit: null },
   {

@@ -112,6 +112,11 @@ msgid "''{value}'' is not a host name or an address. Name the domain controller 
 msgstr "''{value}'' is not a host name or an address. Name the domain controller alone, such as dc1.corp.example or 10.0.0.10, without a scheme or a port."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.uiLanguage"
+msgid "''{value}'' is not a language tag such as de-DE."
+msgstr "''{value}'' is not a language tag such as de-DE."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.deployment.consoleLanguageUnknown"
 msgid "''{value}'' is not a language the console at the machine speaks. Use en or de, or leave it empty for the language of Windows PE."
 msgstr "''{value}'' is not a language the console at the machine speaks. Use en or de, or leave it empty for the language of Windows PE."
@@ -1672,6 +1677,15 @@ msgstr "A PNG of at most 512 KB and 2048 by 2048 pixels."
 #: src/settings/networkBoot/neighbours/PortOwners.tsx
 msgid "a process that has ended"
 msgstr "a process that has ended"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.productKeyInvalid"
+msgid "A product key is five groups of five letters or digits: XXXXX-XXXXX-XXXXX-XXXXX-XXXXX."
+msgstr "A product key is five groups of five letters or digits: XXXXX-XXXXX-XXXXX-XXXXX-XXXXX."
+
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "A ProductKey value overrides it."
+msgstr "A ProductKey value overrides it."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.repeatTimes"
@@ -3971,6 +3985,10 @@ msgstr "Disks"
 #: src/setup/SetupChecklist.tsx
 msgid "Dismiss"
 msgstr "Dismiss"
+
+#: src/sequences/steps/WriteUnattendFields.tsx
+msgid "Display language"
+msgstr "Display language"
 
 #: src/sequences/steps/knownFeatures.ts
 msgid "DNS Server"
@@ -7492,6 +7510,11 @@ msgstr "Options 66 and 67 on this DHCP server"
 msgid "or"
 msgstr "or"
 
+#: src/sequences/steps/RegisteredFields.tsx
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Organization"
+msgstr "Organization"
+
 #: src/sequences/steps/JoinDomainFields.tsx
 #: src/settings/deploymentDefaults/DomainGroup.tsx
 msgid "Organizational unit"
@@ -7525,6 +7548,11 @@ msgstr "Output"
 #: src/settings/server/ServerSettings.tsx
 msgid "Overview"
 msgstr "Overview"
+
+#: src/sequences/steps/RegisteredFields.tsx
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Owner"
+msgstr "Owner"
 
 #: src/packages/PackagesTable.tsx
 msgid "Package"
@@ -7787,6 +7815,10 @@ msgstr "Processor cores"
 msgid "Product code"
 msgstr "Product code"
 
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Product key"
+msgstr "Product key"
+
 #: src/settings/signIn/ProviderGroup.tsx
 #: src/settings/signIn/ProviderResult.tsx
 msgid "Provider"
@@ -7936,6 +7968,10 @@ msgstr "Register this address at the provider."
 #: src/machines/list/RunCell.tsx
 msgid "Registered {registered}"
 msgstr "Registered {registered}"
+
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Registration"
+msgstr "Registration"
 
 #: src/machines/actions/MachineMenu.tsx
 msgid "Reject"
@@ -8812,6 +8848,7 @@ msgstr "Server {number}"
 msgid "Server address"
 msgstr "Server address"
 
+#: src/sequences/steps/RegisteredFields.tsx
 #: src/sequences/steps/WriteUnattendFields.tsx
 msgid "Server default"
 msgstr "Server default"
@@ -9033,6 +9070,10 @@ msgstr "Shown at most 32 pixels high and 200 wide on a dark header. Use a white 
 msgid "Shown only once."
 msgstr "Shown only once."
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "shows some setup pages"
+msgstr "shows some setup pages"
+
 #: src/auth/SignInPage.tsx
 msgid "Sign in"
 msgstr "Sign in"
@@ -9128,6 +9169,22 @@ msgstr "Size"
 #: src/settings/LinuxConsolePanel.tsx
 msgid "Size of its files"
 msgstr "Size of its files"
+
+#: src/sequences/steps/OobePagesSetting.tsx
+msgid "Skip the licence page"
+msgstr "Skip the licence page"
+
+#: src/sequences/steps/OobePagesSetting.tsx
+msgid "Skip the OEM registration page"
+msgstr "Skip the OEM registration page"
+
+#: src/sequences/steps/OobePagesSetting.tsx
+msgid "Skip the online account pages"
+msgstr "Skip the online account pages"
+
+#: src/sequences/steps/OobePagesSetting.tsx
+msgid "Skip the wireless page"
+msgstr "Skip the wireless page"
 
 #: src/runs/panel/railSteps.ts
 msgid "skipped"
@@ -9541,6 +9598,10 @@ msgstr "Such as console=ttyS0,115200. Only letters, digits and _ . : , = + / @ -
 #: src/sequences/steps/WriteUnattendFields.tsx
 msgid "Such as de-DE."
 msgstr "Such as de-DE."
+
+#: src/sequences/steps/WriteUnattendFields.tsx
+msgid "Such as de-DE. The image must have it."
+msgstr "Such as de-DE. The image must have it."
 
 #: src/sequences/steps/JoinDomainFields.tsx
 msgid "Such as OU=Workstations,DC=example,DC=com."
@@ -10425,6 +10486,10 @@ msgstr "The image store is full. Free space on the server's store volume, then c
 msgctxt "upload.noSpace"
 msgid "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 msgstr "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
+
+#: src/sequences/steps/WriteUnattendFields.tsx
+msgid "The image's"
+msgstr "The image's"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.accountInputNoRunAs"
@@ -12061,6 +12126,16 @@ msgstr "Use a recovery code"
 #: src/auth/TwoFactorFields.tsx
 msgid "Use an authenticator code"
 msgstr "Use an authenticator code"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.registeredTooLong"
+msgid "Use at most {max} characters."
+msgstr "Use at most {max} characters."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.registeredTooLong"
+msgid "Use at most {max} characters."
+msgstr "Use at most {max} characters."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.pxe.kernelArgumentsLength"

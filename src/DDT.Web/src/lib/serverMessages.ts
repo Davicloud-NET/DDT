@@ -1569,6 +1569,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.recoveryPartitionSize",
     message: "The recovery partition needs {min} to {max} MB.",
   }),
+  "sequence.registeredTooLong": msg({
+    context: "sequence.registeredTooLong",
+    message: "Use at most {max} characters.",
+  }),
   "sequence.repeatNeedsUntil": msg({
     context: "sequence.repeatNeedsUntil",
     message: "Enter the condition that ends the repeat.",
@@ -1740,6 +1744,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.tooManyVariables": msg({
     context: "sequence.tooManyVariables",
     message: "A sequence can have at most {max} variables.",
+  }),
+  "sequence.uiLanguage": msg({
+    context: "sequence.uiLanguage",
+    message: "''{value}'' is not a language tag such as de-DE.",
   }),
   "sequence.unattendBeforeImage": msg({
     context: "sequence.unattendBeforeImage",
@@ -2020,6 +2028,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "settings.deployment.localeUnknown": msg({
     context: "settings.deployment.localeUnknown",
     message: "''{value}'' is not a culture name. Use one such as de-DE or en-US, or leave it empty for the image's own language.",
+  }),
+  "settings.deployment.productKeyInvalid": msg({
+    context: "settings.deployment.productKeyInvalid",
+    message: "A product key is five groups of five letters or digits: XXXXX-XXXXX-XXXXX-XXXXX-XXXXX.",
+  }),
+  "settings.deployment.registeredTooLong": msg({
+    context: "settings.deployment.registeredTooLong",
+    message: "Use at most {max} characters.",
   }),
   "settings.deployment.requiredWithDomain": msg({
     context: "settings.deployment.requiredWithDomain",

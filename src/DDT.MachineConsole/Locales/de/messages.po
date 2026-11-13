@@ -363,6 +363,10 @@ msgstr "Info"
 msgid "Installing applications"
 msgstr "Anwendungen werden installiert"
 
+#: Texts/Say.cs
+msgid "Installing Windows updates"
+msgstr "Windows-Updates werden installiert"
+
 #: ViewModels/MachineFacts.cs
 msgid "IP address"
 msgstr "IP-Adresse"

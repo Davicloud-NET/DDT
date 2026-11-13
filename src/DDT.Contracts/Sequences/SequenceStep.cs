@@ -25,6 +25,7 @@ namespace DDT.Contracts.Sequences;
 [JsonDerivedType(typeof(PauseStep), "pause")]
 [JsonDerivedType(typeof(InstallApplicationsStep), "installApplications")]
 [JsonDerivedType(typeof(EnableFeaturesStep), "enableFeatures")]
+[JsonDerivedType(typeof(WindowsUpdateStep), "windowsUpdate")]
 public abstract record SequenceStep
 {
     // Stable across edits, because run state, reports and problems name a step by it.
@@ -76,7 +77,7 @@ public abstract record SequenceStep
     [JsonIgnore]
     public virtual bool Resumable => false;
 
-    // How often a step may restart the machine and go on. 0 lets it not ask at all.
+    // How often a step may restart the machine and go on. 0 lets it not ask at all. Fixed per kind, or a step setting.
     [JsonIgnore]
     public virtual int RestartLimit => 0;
 

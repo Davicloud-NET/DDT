@@ -84,6 +84,7 @@ public static class ConsoleValues
         PauseStep => "pause",
         InstallApplicationsStep => "installApplications",
         EnableFeaturesStep => "enableFeatures",
+        WindowsUpdateStep => "windowsUpdate",
         _ => "step",
     };
 }

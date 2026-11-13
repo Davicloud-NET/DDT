@@ -35,6 +35,11 @@ public sealed class AgentStepRunner(
 
     public const string FeaturesInLinux = "Roles and features are enabled in Windows, but this agent was asked to enable them in the installed Linux.";
 
+    public static string UpdatesInBoot(SequencePhase phase) =>
+        $"Windows updates install in Windows, after the hand-over, but this agent was asked to install them in {AgentEnvironments.OfBootPhase(phase)}.";
+
+    public const string UpdatesInLinux = "Windows updates install in Windows, but this agent was asked to install them in the installed Linux.";
+
     public async Task<StepResult> RunAsync(SequenceStep step, StepContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(step);
@@ -105,6 +110,7 @@ public sealed class AgentStepRunner(
         JoinDomainStep => SequenceKinds.IsBoot(phase) ? JoinDomainInBoot(phase) : JoinDomainInLinux,
         InstallApplicationsStep => SequenceKinds.IsBoot(phase) ? ApplicationsInBoot(phase) : ApplicationsInLinux,
         EnableFeaturesStep => SequenceKinds.IsBoot(phase) ? FeaturesInBoot(phase) : FeaturesInLinux,
+        WindowsUpdateStep => SequenceKinds.IsBoot(phase) ? UpdatesInBoot(phase) : UpdatesInLinux,
         _ => null,
     };
 

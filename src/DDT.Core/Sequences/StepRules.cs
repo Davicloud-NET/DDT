@@ -251,6 +251,9 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goe
             case EnableFeaturesStep features:
                 FeatureStepRules.Check(features, problems);
                 break;
+            case WindowsUpdateStep updates:
+                UpdateStepRules.Check(updates, problems);
+                break;
             default:
                 problems.Add("kind", ServerMessages.SequenceUnknownStep.With());
                 break;

@@ -110,6 +110,7 @@ public static class Say
         "pause" => l.T("Paused"),
         "installApplications" => l.T("Installing applications"),
         "enableFeatures" => l.T("Enabling roles and features"),
+        "windowsUpdate" => l.T("Installing Windows updates"),
         _ => null,
     };
 

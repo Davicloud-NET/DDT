@@ -311,6 +311,21 @@
           "conditions": [],
           "continueOnError": false,
           "rebootAfter": false
+        },
+        {
+          "kind": "windowsUpdate",
+          "drivers": true,
+          "optionalUpdates": false,
+          "microsoftProducts": true,
+          "excludedKbs": [
+            "KB5031234"
+          ],
+          "restartLimit": 6,
+          "id": "00000000-0000-4000-8000-000000000015",
+          "name": "Windows Update",
+          "conditions": [],
+          "continueOnError": false,
+          "rebootAfter": false
         }
       ],
       "id": "00000000-0000-4000-8000-000000000005",

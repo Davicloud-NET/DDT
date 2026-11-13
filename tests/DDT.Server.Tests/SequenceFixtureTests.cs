@@ -184,7 +184,7 @@ public sealed class SequenceFixtureTests
         Assert.Equal(Enum.GetValues<InputKind>(), inputKinds);
         Assert.Equal(Enum.GetValues<InputAsk>(), asks);
 
-        // Roles and features need version 7, and a sequence that installs Windows nothing of versions 4 and 5.
+        // Roles and features and Windows Update need version 7, and a sequence that installs Windows nothing of versions 4 and 5.
         Assert.Equal(7, definition.Version);
         Assert.Empty(SequenceValidator.Analyse(definition).Problems);
 
@@ -283,6 +283,7 @@ public sealed class SequenceFixtureTests
                     Variable = "Extras",
                 },
                 new EnableFeaturesStep { Id = StepId(13), Name = "Enable roles and features", Features = ["NetFx3", "TelnetClient"] },
+                new WindowsUpdateStep { Id = StepId(14), Name = "Windows Update", Drivers = true, ExcludedKbs = ["KB5031234"], AllowedRestarts = 6 },
             ],
         },
     ];

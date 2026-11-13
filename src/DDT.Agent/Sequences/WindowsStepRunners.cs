@@ -5,6 +5,7 @@
 using DDT.Agent.Applications;
 using DDT.Agent.Deployment;
 using DDT.Agent.WindowsFeatures;
+using DDT.Agent.WindowsUpdates;
 
 namespace DDT.Agent.Sequences;
 
@@ -47,8 +48,12 @@ public sealed class WindowsStepRunners : IStepRunners
             new PauseStepRunner(heartbeat, run.Console, Log, TimeProvider),
             new InstallApplicationsStepRunner(Server, session, heartbeat.ReportNowAsync, Applications(session, downloads), Log, TimeProvider),
             new EnableFeaturesStepRunner(Options.DryRun ? new DryRunWindowsFeatures(Log) : new DismWindowsFeatures(Tools, InjectDriversStepRunner.DismPath), Log),
+            new WindowsUpdateStepRunner(Updates(), Log, TimeProvider),
         ];
     }
+
+    private IWindowsUpdate Updates() =>
+        Options.DryRun ? new DryRunWindowsUpdate(Log, Path.Combine(Options.WorkDirectory, "dry-run-updates.txt")) : new UnbuiltWindowsUpdate();
 
     // A dry run finds no application installed, whatever this computer has.
     private ApplicationInstaller Applications(RunSession session, RunDownloads downloads) => new(

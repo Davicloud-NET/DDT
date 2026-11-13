@@ -4,6 +4,7 @@
 
 using DDT.Agent.Sequences;
 using DDT.Agent.WindowsFeatures;
+using DDT.Agent.WindowsUpdates;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Applications;
 using DDT.Contracts.Sequences;
@@ -91,6 +92,30 @@ public sealed class AgentStepRunnerTests
             [RecordingToolRunner.CommandLine(InjectDriversStepRunner.DismPath, "/Online", "/Enable-Feature", "/FeatureName:NetFx3", "/All", "/NoRestart", "/Quiet")],
             run.ToolRunner.Calls);
         Assert.Equal(DismWindowsFeatures.Timeout, Assert.Single(run.ToolRunner.Options).Timeout);
+    }
+
+    [Theory]
+    [InlineData(SequencePhase.WindowsPE, "Windows updates install in Windows, after the hand-over, but this agent was asked to install them in Windows PE.")]
+    [InlineData(SequencePhase.Linux, "Windows updates install in Windows, but this agent was asked to install them in the installed Linux.")]
+    public async Task WindowsUpdateFailsOutsideTheInstalledWindows(SequencePhase phase, string error)
+    {
+        WindowsUpdateStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000ae"), Name = "Updates" };
+        using WindowsStepRunnerFixture run = new([step]);
+
+        StepResult result = await run.Steps.RunAsync(step, run.Context(phase), TestContext.Current.CancellationToken);
+
+        Assert.Equal(StepResult.Failed(error), result);
+    }
+
+    [Fact]
+    public async Task WindowsUpdateFailsUntilItIsBuiltIn()
+    {
+        WindowsUpdateStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000af"), Name = "Updates" };
+        using WindowsStepRunnerFixture run = new([step]);
+
+        StepResult result = await run.Steps.RunAsync(step, run.Context(SequencePhase.Windows), TestContext.Current.CancellationToken);
+
+        Assert.Equal(StepResult.Failed(UnbuiltWindowsUpdate.NotBuilt), result);
     }
 
     [Fact]

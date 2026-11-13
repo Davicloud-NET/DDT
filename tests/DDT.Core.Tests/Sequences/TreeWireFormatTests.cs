@@ -61,6 +61,9 @@ public sealed class TreeWireFormatTests
         ["enableFeatures"] = (
             new EnableFeaturesStep { Id = s_id, Name = "Node", Features = ["NetFx3", "TelnetClient"] },
             $$"""{"kind":"enableFeatures","features":["NetFx3","TelnetClient"],{{Base}}}"""),
+        ["windowsUpdate"] = (
+            new WindowsUpdateStep { Id = s_id, Name = "Node", Drivers = true, MicrosoftProducts = false, ExcludedKbs = ["KB5031234"], AllowedRestarts = 4 },
+            $$"""{"kind":"windowsUpdate","drivers":true,"optionalUpdates":false,"microsoftProducts":false,"excludedKbs":["KB5031234"],"restartLimit":4,{{Base}}}"""),
         ["when and shares"] = (
             new RebootStep
             {

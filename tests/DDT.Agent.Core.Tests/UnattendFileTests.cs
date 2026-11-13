@@ -71,6 +71,21 @@ public sealed class UnattendFileTests : IDisposable
     }
 
     [Fact]
+    public void NamesTheAutomaticLogonAndCountsTheCommandsButNeverSaysThePassword()
+    {
+        string unattend = UnattendWriter.Write(new UnattendSettings("amd64", "PC-042", null, "en-US", "de-DE", "de-DE", null)
+        {
+            AutoLogon = new AutoLogonAccount("Admin", null, "Kiosk-Secret-1", 2),
+            FirstLogonCommands = ["cmd /c echo one", "cmd /c echo two"],
+        });
+
+        string summary = UnattendFile.Summarize(unattend);
+
+        Assert.EndsWith("domain join no, automatic logon as Admin, 2 first-logon commands", summary, StringComparison.Ordinal);
+        Assert.DoesNotContain("Kiosk-Secret-1", unattend, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void RefusesAnAnswerFileThatIsNotXml() =>
         Assert.Throws<DeploymentStepException>(() => UnattendFile.Summarize("<unattend>"));
 }

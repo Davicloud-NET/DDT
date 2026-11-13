@@ -119,8 +119,12 @@ public static class UnattendFile
 
         string? computerName = Value("ComputerName");
         string[] addresses = [.. document.Descendants(s_unattend + "UnicastIpAddresses").Elements().Select(element => element.Value.Trim())];
+        int commands = document.Descendants(s_unattend + "SynchronousCommand").Count();
+        string? autoLogon = document.Descendants(s_unattend + "AutoLogon").Elements(s_unattend + "Username").Select(element => element.Value.Trim()).FirstOrDefault();
         string extras = (document.Descendants(s_unattend + "ProductKey").Any() ? ", product key set" : "")
-            + (addresses.Length > 0 ? $", static address {string.Join(" ", addresses)}" : "");
+            + (addresses.Length > 0 ? $", static address {string.Join(" ", addresses)}" : "")
+            + (autoLogon is null ? "" : $", automatic logon as {autoLogon}")
+            + (commands > 0 ? $", {commands} first-logon command{(commands == 1 ? "" : "s")}" : "");
 
         return $"computer name {(computerName is null or "*" ? "chosen by Windows" : computerName)}, " +
             $"time zone {Value("TimeZone") ?? "the default for the locale"}, " +

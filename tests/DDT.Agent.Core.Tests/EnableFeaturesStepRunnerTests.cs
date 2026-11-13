@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.Deployment;
 using DDT.Agent.WindowsFeatures;
 using DDT.Contracts.Sequences;
 using DDT.Core.Sequences;
@@ -82,6 +83,46 @@ public sealed class EnableFeaturesStepRunnerTests
 
         Assert.Equal(StepResult.Done(), result);
         Assert.Equal(["TelnetClient"], _features.Asked);
+    }
+
+    // A feature can need the restart an earlier one asked for.
+    [Fact]
+    public async Task AFeatureThatFailsAfterOneThatNeedsARestartIsTriedAgainAfterTheRestart()
+    {
+        _features.Outcomes["NetFx3"] = FeatureOutcome.RestartNeeded;
+        _features.Failing.Add("TelnetClient");
+
+        StepResult first = await RunAsync();
+        _features.Failing.Clear();
+        StepResult after = await RunAsync(first.Progress);
+
+        Assert.Equal(StepResult.RestartAndContinue("NetFx3"), first);
+        Assert.Equal(StepResult.Done(), after);
+        Assert.Equal(["NetFx3", "TelnetClient", "TelnetClient"], _features.Asked);
+        Assert.Contains("DISM could not enable TelnetClient (exit code 0x800F0922). TelnetClient is tried again after the restart.", _console.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AFeatureThatFailsWithoutARestartPendingFailsTheStep()
+    {
+        _features.Failing.Add("NetFx3");
+
+        await Assert.ThrowsAsync<DeploymentStepException>(() => RunAsync());
+
+        Assert.Equal(["NetFx3"], _features.Asked);
+        Assert.Empty(_saves);
+    }
+
+    [Fact]
+    public async Task AFeatureThatFailsAgainAfterTheRestartFailsTheStep()
+    {
+        _features.Outcomes["NetFx3"] = FeatureOutcome.RestartNeeded;
+        _features.Failing.Add("TelnetClient");
+
+        StepResult first = await RunAsync();
+
+        await Assert.ThrowsAsync<DeploymentStepException>(() => RunAsync(first.Progress));
+        Assert.Equal(["NetFx3", "TelnetClient", "TelnetClient"], _features.Asked);
     }
 
     [Fact]

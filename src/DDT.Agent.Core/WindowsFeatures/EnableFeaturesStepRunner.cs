@@ -32,7 +32,12 @@ public sealed class EnableFeaturesStepRunner(IWindowsFeatures features, AgentLog
             context.Detail.Report(name);
             log.Information($"Enabling {name}.");
 
-            FeatureOutcome outcome = await features.EnableAsync(name, cancellationToken).ConfigureAwait(false);
+            FeatureOutcome? outcome = await EnableAsync(name, restart, cancellationToken).ConfigureAwait(false);
+
+            if (outcome is null)
+            {
+                continue;
+            }
 
             if (outcome == FeatureOutcome.Unknown)
             {
@@ -57,6 +62,21 @@ public sealed class EnableFeaturesStepRunner(IWindowsFeatures features, AgentLog
         log.Information($"Features: {names.Count} enabled.");
 
         return StepResult.Done();
+    }
+
+    // A feature can fail until the restart an earlier one asked for has happened. Null: it is tried again after it.
+    private async Task<FeatureOutcome?> EnableAsync(string name, bool restartPending, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await features.EnableAsync(name, cancellationToken).ConfigureAwait(false);
+        }
+        catch (DeploymentStepException exception) when (restartPending)
+        {
+            log.Warning($"{exception.Message} {name} is tried again after the restart.");
+
+            return null;
+        }
     }
 
     private static HashSet<string> Read(string? saved) =>

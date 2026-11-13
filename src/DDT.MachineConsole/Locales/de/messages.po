@@ -515,6 +515,18 @@ msgstr "Keine Auswahl passt."
 msgid "No disk DDT can install on."
 msgstr "Kein Datenträger, auf dem DDT installieren kann."
 
+#: ViewModels/RunViewModel.cs
+msgid "Stopping"
+msgstr "Wird beendet"
+
+#: ViewModels/RunViewModel.cs
+msgid "The run was stopped"
+msgstr "Die Ausführung wurde beendet"
+
+#: ViewModels/RunViewModel.cs
+msgid "Windows finishes installing updates first."
+msgstr "Windows schließt zuerst die Installation der Updates ab."
+
 #: Texts/Say.cs
 msgid "none of Microsoft's third-party UEFI CAs"
 msgstr "keine von Microsofts UEFI-CAs für Drittanbieter"

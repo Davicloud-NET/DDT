@@ -184,7 +184,8 @@ Three parts, each a pull request that works by itself. The first two are built.
      - Waits up to 30 minutes while Windows Update installs for someone else. A download or an
        installation that takes over 6 hours fails the step.
      - A stop ends a download at once. An installation cannot be stopped mid-way: the run stops
-       when it ends.
+       when it ends, and until then the console says the run was stopped and Windows finishes
+       installing first.
      - The COM calls were tried in a spike: as a user on the development PC, and as SYSTEM on a
        Hyper-V virtual machine with Windows 11 25H2. The step itself was not.
    - An Enable roles and features step, in the installed Windows. [Install Roles and Features]

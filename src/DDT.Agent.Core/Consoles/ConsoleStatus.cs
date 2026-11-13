@@ -215,6 +215,7 @@ public sealed class ConsoleStatus
                     Percent = stepId is null ? null : percent,
                     StepDetail = stepId is null ? null : detail,
                     Activity = ConsoleValues.ToConsole(activity),
+                    Stopping = heartbeat.Failure is not null,
                 },
             });
         }

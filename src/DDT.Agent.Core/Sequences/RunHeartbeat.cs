@@ -55,7 +55,7 @@ public sealed class RunHeartbeat(
     }
 
     // Why the heartbeat ended the run. It's an AgentTokenRejectedException, also for a step's own call, or a
-    // DeploymentStepException with the server's refusal. Null while it runs or when it was stopped.
+    // DeploymentStepException with the server's refusal. Null while it runs or when it was stopped. The console learns of it through Changed.
     public Exception? Failure { get; private set; }
 
     // Percent is null until the running step has said how far it is, Detail until it has said what it does.
@@ -132,6 +132,7 @@ public sealed class RunHeartbeat(
 
         Failure ??= exception;
         _run?.Cancel();
+        _position.Announce();
     }
 
     // Waits for a beat that is on its way, so nothing else reaches the server after it.
@@ -254,6 +255,7 @@ public sealed class RunHeartbeat(
             if (await BeatOnceAsync(Snapshot(DeploymentState.Running), warned, cancellationToken).ConfigureAwait(false) is not { } outage)
             {
                 await run.CancelAsync().ConfigureAwait(false);
+                _position.Announce();
 
                 return;
             }

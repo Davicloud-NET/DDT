@@ -80,6 +80,34 @@ public sealed class ConsoleStatusTests
         Assert.Equal((TestRuns.Partition.Id, "Disk 0"), (console.States[^1].Run!.CurrentStepId, console.States[^1].Run!.StepDetail));
     }
 
+    // A stop from the web refuses the agent's token. The console says so at once, while the running step still ends.
+    [Fact]
+    public void ShowsTheRunAsStoppingOnceTheServerEndsIt()
+    {
+        SequenceDefinition definition = new(SequenceDefinition.CurrentVersion, TestRuns.InstallWindows);
+        AgentRun run = TestRuns.Run(TestRuns.InstallWindows);
+        ImmediateTimeProvider time = new();
+        RunHeartbeat heartbeat = new(
+            new ScriptedAgentServer(),
+            new AgentLog(time, TextWriter.Null),
+            new RunSession(Guid.NewGuid(), run, new DeploymentTokens("session-0", "resume-0")),
+            _ => Task.CompletedTask,
+            Timeout.InfiniteTimeSpan,
+            time);
+        SequenceState state = SequenceStates.Start(run.Id, definition);
+        ScriptedMachineConsole console = new();
+        ConsoleStatus status = TestAgents.Status(console);
+        status.RunBegins(run, state);
+        heartbeat.Changed += () => status.RunChanged(heartbeat);
+        heartbeat.Update(state with { Steps = [new StepRunState(TestRuns.Partition.Id, StepState.Running, null)] });
+        bool before = console.States[^1].Run!.Stopping;
+
+        heartbeat.TokenRejected(new AgentTokenRejectedException("The server refused the token."));
+
+        Assert.False(before);
+        Assert.Equal((ConsoleStage.Running, true), (console.States[^1].Stage, console.States[^1].Run!.Stopping));
+    }
+
     // In a boot environment the agent waits for the run to be chosen again. In an installed system it removes itself.
     [Theory]
     [InlineData(AgentEnvironment.WindowsPE, ConsoleRemedy.RunAgain)]

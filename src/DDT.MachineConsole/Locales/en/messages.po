@@ -515,6 +515,18 @@ msgstr "No choice matches."
 msgid "No disk DDT can install on."
 msgstr "No disk DDT can install on."
 
+#: ViewModels/RunViewModel.cs
+msgid "Stopping"
+msgstr "Stopping"
+
+#: ViewModels/RunViewModel.cs
+msgid "The run was stopped"
+msgstr "The run was stopped"
+
+#: ViewModels/RunViewModel.cs
+msgid "Windows finishes installing updates first."
+msgstr "Windows finishes installing updates first."
+
 #: Texts/Say.cs
 msgid "none of Microsoft's third-party UEFI CAs"
 msgstr "none of Microsoft's third-party UEFI CAs"

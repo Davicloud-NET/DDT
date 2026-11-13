@@ -174,6 +174,9 @@ internal sealed class RunPosition
         }
     }
 
+    // For what else the console shows, such as the server ending the run.
+    public void Announce() => Changed?.Invoke();
+
     // Called before a beat takes its snapshot, so a change in between causes one more beat rather than none.
     public void RenewChange()
     {

@@ -131,8 +131,8 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
             await PendingInputsAsync(machine, run, definition, cancellationToken).ConfigureAwait(false));
     }
 
-    // The inputs the machine asks before an assigned run can start. None, unless a required input it asks has no
-    // answer. Then it's every input it asks without an answer, so they're asked together.
+    // The inputs the machine asks before an assigned run can start. None, unless a required input it asks or an input
+    // only it asks has no answer. Then it's every input it asks without an answer, so they're asked together.
     public async Task<IReadOnlyList<AgentInput>?> PendingInputsAsync(
         Machine machine,
         Deployment run,
@@ -151,7 +151,9 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
         SequenceDefinition asked = await ApplicationInputs.AskedAsync(database, definition, cancellationToken).ConfigureAwait(false);
         RunValueCheck check = await values.CheckAsync(machine, run, asked, settings.Current.Deployment, cancellationToken).ConfigureAwait(false);
 
-        return check.Missing.Any(input => input.AskAt is InputAsk.Machine or InputAsk.Both) ? check.AskedAtMachine : null;
+        return check.Missing.Any(input => input.AskAt is InputAsk.Machine or InputAsk.Both) || check.AsksMachine(run)
+            ? check.AskedAtMachine
+            : null;
     }
 
     // The step the machine's active run is running, anywhere in the run's tree, or why the step gets nothing.

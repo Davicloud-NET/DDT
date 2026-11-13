@@ -21,9 +21,9 @@ public sealed class WaitingRuns(
     DdtSettings settings,
     TimeProvider timeProvider)
 {
-    // Takes answers while an assigned run lacks a required one. The machine only answers what it asks, and the agent
-    // starts the run once none is missing. The caller saves over Before, so answers given elsewhere in the meantime
-    // win.
+    // Takes answers while an assigned run waits at its start. The machine only answers what it asks, and its answers
+    // start the run once no required input is missing. The caller saves over Before, so answers given elsewhere in the
+    // meantime win.
     public async Task<RunAnswering> AnswerAsync(Machine machine, Deployment run, AnswersGiven given, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -42,7 +42,7 @@ public sealed class WaitingRuns(
 
         RunValueCheck waiting = await values.CheckAsync(machine, run, definition, deployment, cancellationToken).ConfigureAwait(false);
 
-        if (waiting.Missing.Count == 0)
+        if (!waiting.Waits(run, machineAnswered: false))
         {
             return new RunAnswering(run.Answers, [], [], null, Refused: true);
         }
@@ -72,7 +72,7 @@ public sealed class WaitingRuns(
             return new RunAnswering(before, waiting.AskedAtMachine, problems, null, Refused: false);
         }
 
-        run.InputsPending = check.Missing.Count > 0 && (given.AtMachine || run.InputsPending);
+        run.InputsPending = check.Waits(run, given.AtMachine) && (given.AtMachine || run.InputsPending);
         run.UpdatedUtc = now;
         Actor answeredBy = given.Actor with { MachineId = given.AtMachine ? machine.Id : null };
 

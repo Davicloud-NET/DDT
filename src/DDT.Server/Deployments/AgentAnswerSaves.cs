@@ -67,7 +67,7 @@ internal sealed class AgentAnswerSaves(
             ? await starts.EnterLibraryAsync(cancellationToken).ConfigureAwait(false)
             : null;
         RunStart? start = check.Missing.Count == 0
-            ? await starts.StartAsync(machine, run, address, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false)
+            ? await starts.StartAsync(machine, run, new RunStartCause(address, timeProvider.GetUtcNow(), MachineAnswered: true), cancellationToken).ConfigureAwait(false)
             : null;
 
         if (!await RunAnswerSaves.SaveAsync(database, run, answering.Before, cancellationToken).ConfigureAwait(false))

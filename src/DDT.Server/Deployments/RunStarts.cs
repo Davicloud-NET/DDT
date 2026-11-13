@@ -24,13 +24,15 @@ public sealed class RunStarts(DdtDbContext database, RunQueries queries, RunValu
 
     // The values are worked out now, with one settings snapshot for the checks and the capture. So a save in between
     // can't start a run with values nobody checked. Anything that keeps the run from starting ends it before any disk
-    // is touched. The exception is a required input the machine asks: the run waits at its start until someone answers
-    // it.
-    public async Task<RunStart> StartAsync(Machine machine, Deployment run, string? address, DateTimeOffset now, CancellationToken cancellationToken)
+    // is touched. The exception is an input the machine asks that is required or only it asks: the run waits at its
+    // start until someone answers it.
+    public async Task<RunStart> StartAsync(Machine machine, Deployment run, RunStartCause cause, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(machine);
         ArgumentNullException.ThrowIfNull(run);
+        ArgumentNullException.ThrowIfNull(cause);
 
+        (string? address, DateTimeOffset now) = (cause.Address, cause.Now);
         SettingsSnapshot snapshot = settings.Current;
         SequenceDefinition definition = await queries.DefinitionAsync(run, cancellationToken).ConfigureAwait(false);
         string? problem = StartProblem(snapshot, definition);
@@ -41,7 +43,7 @@ public sealed class RunStarts(DdtDbContext database, RunQueries queries, RunValu
             RunValueCheck check = await values.CheckAsync(machine, run, asked, snapshot.Deployment, cancellationToken).ConfigureAwait(false);
             InputDeclaration[] webOnly = [.. check.Missing.Where(input => input.AskAt == InputAsk.Web)];
 
-            if (webOnly.Length == 0 && check.Missing.Count > 0)
+            if (webOnly.Length == 0 && check.Waits(run, cause.MachineAnswered))
             {
                 run.InputsPending = true;
 

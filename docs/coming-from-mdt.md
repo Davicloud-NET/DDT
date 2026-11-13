@@ -14,6 +14,9 @@ read. The pictures here show sample data; your server names will be nicer.
 |---|---|
 | The deployment share | The library: *Library* with *OS images*, *Drivers*, *Files* and *Applications* |
 | Applications and application bundles | *Library, Applications*, and the step **Install applications** |
+| Windows Update (Pre- and Post-Application Installation) | The step **Windows Update** |
+| Install Roles and Features | The step **Enable roles and features** |
+| The tattoo | The deployment record, in `HKLM\SOFTWARE\Davicloud\DDT\Deployment` |
 | `LiteTouchPE_x64.wim` | The boot image, under *Boot, Boot image* |
 | Update Deployment Share | The button **Build the boot image** |
 | A selection profile for WinPE drivers | **Add to the Windows PE boot image**, on a driver package |
@@ -154,8 +157,10 @@ tree, **Outline** at the top right shows the same sequence as a list.
 This is the part to redo by hand, because DDT splits what MDT kept in one file.
 
 **What is the same for every machine** goes into *Deployment, Deployment defaults*: language,
-keyboard and time zone, the local administrator, and the domain with its join account and
-organisational unit. That is your `[Default]` section.
+keyboard and time zone, the local administrator, the domain with its join account and
+organisational unit, and the product key with the organisation and owner Windows is registered
+to. That is your `[Default]` section. The wizard's pages for the product key and the organisation
+never come up: those three are set before the run.
 
 **What depends on the machine** becomes a rule, under *Deployment, Rules*. A rule has a condition
 on what the machine reports (its model, its serial number, its subnet or default gateway, whether
@@ -169,11 +174,16 @@ A few values go into the answer file as they are:
 | Value | Example | MDT |
 |---|---|---|
 | `ProductKey` | `XXXXX-XXXXX-XXXXX-XXXXX-XXXXX` | `ProductKey` |
+| `Organization` | `Contoso` | `OrgName` |
+| `Owner` | `IT` | `FullName` |
 | `IPAddress` | `10.0.4.51/24`, several joined by `;` | `OSDAdapter0IPAddressList` with `OSDAdapter0SubnetMask` |
 | `Gateway` | `10.0.4.1` | `OSDAdapter0Gateways` |
 | `DnsServers` | `10.0.4.2;10.0.4.3` | `OSDAdapter0DNSServerList` |
 
-- `ProductKey` overrides the product key of the deployment defaults.
+- `ProductKey`, `Organization` and `Owner` override the deployment defaults. A product key set
+  this way can be read on the machine's page like any value; the one in the deployment defaults
+  cannot. Either way the key is in clear text in the answer file on the machine until Windows
+  setup ends, as it was with MDT.
 - `IPAddress` gives the adapter the machine registered with a fixed IPv4 address. Without it the
   machine keeps DHCP, and `Gateway` and `DnsServers` do nothing.
 - A run whose values Windows setup would refuse doesn't start. The message names the value, never
@@ -217,6 +227,30 @@ The import dialog brings a share's applications and bundles over:
 
 The reader of `Applications.xml` was written from memory of the format and has not met a real
 share yet. Check the result before you count on it.
+
+## The rest of State Restore
+
+A few more of the steps you never took out of the Standard Client Task Sequence:
+
+- **Windows Update** is one step, run in the installed Windows. Put it before and after Install
+  applications if you liked MDT's pair. It goes to Microsoft Update and nowhere else: there is no
+  WSUS, so `WSUSServer` has no place to go yet. It never installs a feature upgrade, leaves
+  drivers and previews out unless you switch them on, skips any KB you list, and restarts the
+  machine as often as the updates ask, up to a limit you set.
+- **Install Roles and Features** is **Enable roles and features**, by DISM's names rather than
+  Server Manager's: `NetFx3`, not ".NET Framework 3.5 Features". The editor offers the common
+  ones and takes any other.
+- **First-logon commands and automatic logon** are on the Write the answer file step. The
+  commands run in order at the first sign-in of an administrator, and one that fails does not stop
+  the next. The automatic logon is the local administrator or an account from the library. If the
+  sequence has steps in the installed Windows, the agent sets both up as it leaves, so they start
+  with the next start of Windows and never get in the way of the run.
+- **There is no FinishAction.** A run ends with the machine starting its Windows, and the
+  first-logon commands are where whatever should happen then goes.
+- **The tattoo** is the deployment record: `HKLM\SOFTWARE\Davicloud\DDT\Deployment` with the
+  sequence, its revision, the run, the result, the date, the image, DDT's version and the server.
+  It is written when a run ends in the installed Windows, so a sequence that ends in Windows PE
+  leaves none. Deployment defaults can turn it off.
 
 ## At the machine
 
@@ -291,7 +325,11 @@ machine that will not come back from its installed Linux.
 Better you hear it here than find out on a Friday afternoon:
 
 - **Applications on a real machine.** Applications, winget packages included, have met only tests
-  and dry runs so far. Windows Update and BitLocker are the rest of milestone M9.
+  and dry runs so far.
+- **Windows Update, roles and features and the first logon on a real machine.** Those have met
+  only tests and dry runs too. Try them on a test machine first.
+- **WSUS.** The Windows Update step goes to Microsoft Update only.
+- **BitLocker and offline servicing.** The rest of milestone M9.
 - **Importing task sequences and `CustomSettings.ini`.** You rebuild them, as described above.
 - **Refresh and replace.** No USMT yet, so DDT erases the disk and installs. That comes with M10.
 - **Capturing a reference image.** Also M10. Until then, capture the way you do today and import

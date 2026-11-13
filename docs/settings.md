@@ -181,6 +181,10 @@ goes into a log line, an audit text or the run's stored values. It is in clear t
 file on the machine (`Windows\Panther\unattend.xml`) until SetupComplete.cmd deletes it at the
 end of Windows setup.
 
+LocalAdministrator:Password is also the automatic logon's password when a Write the answer file
+step signs in as the local administrator; the step must add that account. With a step in the
+installed Windows it is read when the agent fetches the first-logon settings as the run ends there.
+
 WriteRecord decides whether the agent leaves `HKLM\SOFTWARE\Davicloud\DDT\Deployment` (64-bit
 view, every value a string) as a run ends in Windows, done or failed, before it removes itself: SequenceName,
 SequenceId, SequenceRevision, RunId, Result, DeployedUtc (ISO 8601, UTC), ImageName, DdtVersion and

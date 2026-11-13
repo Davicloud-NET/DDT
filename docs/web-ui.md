@@ -154,6 +154,8 @@ it went from what the agent recorded when it decided, each test with whether it 
 "Took Then: Model contains Latitude holds for "Latitude 7450"", never from what the machine reports now. `RunSteps`
 lists the path's nodes with their place in the tree and that line. The canvas follows the node the run is at until
 any move it did not make itself, and "Follow the run" takes it up again while the run goes on.
+`runs/panel/CurrentStep.tsx` shows the running step with `stepDetail` from the run's summary when the agent sends
+one, such as the application it installs or "Downloading 5 updates", and the file it works on otherwise.
 `machines/RunWaiting.tsx` is the notice of a run that waits at a Pause or for answers, with its keys for operators,
 and `src/inputs` asks a sequence's inputs there, in the assign dialog and in the approval.
 

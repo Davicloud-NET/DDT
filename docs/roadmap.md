@@ -141,7 +141,7 @@ Decided for all three parts:
 
 ## M9 Applications and Windows configuration
 
-Three parts, each a pull request that works by itself. The first is built.
+Three parts, each a pull request that works by itself. The first two are built.
 
 1. **Applications.** [Applications]
    - The library, under Library > Applications: an entry holds files and a silent command, with
@@ -167,14 +167,66 @@ Three parts, each a pull request that works by itself. The first is built.
      - Windows 11 and Windows Server 2025, which bring winget.
    - Tried on a Hyper-V virtual machine with Windows 11 25H2. Not on Windows Server or a physical
      machine yet.
-2. **Windows in the run.**
-   - **Windows Update** during a run, from Microsoft Update or WSUS, before and after the
-     applications, restarting until nothing is left to install. [Windows Update steps]
-   - **Roles and features**, for Windows Server. [Install Roles and Features]
-   - **A fuller answer file**: product key, organization and owner, UI language, first-logon
-     commands, automatic logon, the out-of-box pages to skip, and a static network. [ZTIConfigure]
-   - **A deployment record** in the machine's registry: the sequence, its revision, the run and the
-     date. [Tattoo]
+2. **Windows in the run.** The two new steps, and first-logon commands or an automatic logon, make
+   a sequence version 7.
+   - A Windows Update step, in the installed Windows. [Windows Update steps]
+     - Microsoft Update only, through Windows Update's COM interface. WSUS is not built.
+     - Installs what Windows Update offers, except: never a feature upgrade; drivers, and optional
+       updates and previews, only with their switches (off); no software update that may ask for
+       input; no KB number on the step's list.
+     - Updates for other Microsoft products: a switch, on. It registers Microsoft Update, which
+       stays registered.
+     - Searches, downloads and installs until nothing is left, and restarts when an update or
+       Windows asks. At most 5 searches between two restarts.
+     - Restart limit: 1 to 20, default 8. Over it, the step fails and names the open updates.
+     - Each update's own result counts. A failed update is tried once more; a second failure fails
+       the step, with the update's name and HRESULT.
+     - Waits up to 30 minutes while Windows Update installs for someone else. A download or an
+       installation that takes over 6 hours fails the step.
+     - A stop ends a download at once. An installation cannot be stopped mid-way: the run stops
+       when it ends.
+     - The COM calls were tried in a spike: as a user on the development PC, and as SYSTEM on a
+       Hyper-V virtual machine with Windows 11 25H2. The step itself was not.
+   - An Enable roles and features step, in the installed Windows. [Install Roles and Features]
+     - Feature names as DISM lists them (`NetFx3`, `Microsoft-Hyper-V-All`). The web offers common
+       client and server names and takes any other.
+     - Enabled with their parent features. One that asks for a restart restarts the machine after
+       the last, and the step goes on after it, at most 3 times.
+     - A name DISM does not know fails the step and is named.
+   - The Write the answer file step writes more. [ZTIConfigure]
+     - Product key: a write-only secret on Deployment defaults. A `ProductKey` value from a rule,
+       a machine role or a variable overrides it, and can be read like every run value.
+     - The key is in clear text in `Windows\Panther\unattend.xml` on the machine until Windows
+       setup ends. It never goes into a log.
+     - Organization and owner: Deployment defaults, or `Organization` and `Owner` values,
+       overridden by the step.
+     - UI language: a step setting. Unset is the image's language.
+     - The licence, OEM registration, online account and wireless pages: a switch each, all
+       skipped by default.
+     - Static network from three values: `IPAddress` (IPv4 with prefix length, several joined by
+       `;`), `Gateway` and `DnsServers` (`;`). For the adapter the machine registered with. Without
+       `IPAddress`, DHCP.
+     - A product key or an address Windows setup would refuse keeps the run from starting.
+   - First-logon commands and automatic logon, on the Write the answer file step.
+     - Up to 20 commands of 1,024 characters, run in order at the first sign-in of an
+       administrator. A failing command does not stop the next.
+     - Automatic logon as the local administrator of Deployment defaults or as an account
+       (library or Account input), 1 to 99 times.
+     - A sequence without a step in the installed Windows: in the answer file, from the first
+       sign-in after Windows setup.
+     - A sequence with one: kept out of the answer file. As the run ends in Windows, the agent
+       writes one script to `%ProgramData%\DDT\FirstLogon` (SYSTEM and administrators only) and one
+       RunOnce value that starts it, and sets the automatic logon with the password as an LSA
+       secret. Both take effect from the next start of Windows, after the agent has removed itself.
+   - A deployment record. [Tattoo]
+     - `HKLM\SOFTWARE\Davicloud\DDT\Deployment`, strings: SequenceName, SequenceId,
+       SequenceRevision, RunId, Result, DeployedUtc, ImageName, DdtVersion, ServerName.
+     - Written as a run ends in the installed Windows, done or failed. A run that ends in Windows PE
+       leaves none.
+     - Leave a deployment record in Windows, on Deployment defaults: on by default.
+   - A detail line under the running step, on the console at the machine and on the run's page:
+     the application being installed, the feature being enabled, "Downloading 5 updates".
+   - Tried in unit tests and end-to-end dry runs only; not on a virtual or physical machine yet.
 3. **Servicing and security.**
    - **Offline servicing** in Windows PE: updates, language packs and features on demand added to
      the applied image. [Packages, Install Updates Offline, Install Language Packs]

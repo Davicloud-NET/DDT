@@ -25,7 +25,9 @@ public static class SettingsApi
                 new LocalAdministratorSettings(deployment.LocalAdministrator.Name),
                 new DomainSettings(deployment.Domain.Name, deployment.Domain.OrganizationalUnit, deployment.Domain.UserName, deployment.Domain.Controller),
                 deployment.ConsoleLanguage,
-                deployment.ConsoleKeyboardLayout)
+                deployment.ConsoleKeyboardLayout,
+                deployment.Organization,
+                deployment.Owner)
             : throw Unexpected(options),
         values => new DeploymentOptions
         {
@@ -34,6 +36,8 @@ public static class SettingsApi
             Keyboard = Optional(values.Keyboard),
             ConsoleLanguage = Optional(values.ConsoleLanguage),
             ConsoleKeyboardLayout = Optional(values.ConsoleKeyboardLayout),
+            Organization = Optional(values.Organization),
+            Owner = Optional(values.Owner),
             LocalAdministrator = new LocalAdministratorOptions { Name = values.LocalAdministrator?.Name?.Trim() ?? string.Empty },
             Domain = new DomainOptions
             {

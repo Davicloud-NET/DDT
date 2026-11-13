@@ -179,8 +179,8 @@ Three parts, each a pull request that works by itself. The first two are built.
      - Searches, downloads and installs until nothing is left, and restarts when an update or
        Windows asks. At most 5 searches between two restarts.
      - Restart limit: 1 to 20, default 8. Over it, the step fails and names the open updates.
-     - Each update's own result counts. A failed update is tried once more; a second failure fails
-       the step, with the update's name and HRESULT.
+     - Each update's own result counts. A failed update is tried once more after a restart; a second
+       failure fails the step, with the update's name and HRESULT.
      - Waits up to 30 minutes while Windows Update installs for someone else. A download or an
        installation that takes over 6 hours fails the step.
      - A stop ends a download at once. An installation cannot be stopped mid-way: the run stops

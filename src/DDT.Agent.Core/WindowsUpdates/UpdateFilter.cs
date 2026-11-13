@@ -22,7 +22,10 @@ public static class UpdateFilter
 
     public const string GaveUp = "it failed twice";
 
-    public static UpdateSelection Choose(IReadOnlyList<AvailableUpdate> found, WindowsUpdateStep step, UpdateCheckpoint checkpoint)
+    public const string AfterRestart = "it failed in this turn, so it is tried once more after a restart";
+
+    // Failed holds what failed in this turn.
+    public static UpdateSelection Choose(IReadOnlyList<AvailableUpdate> found, WindowsUpdateStep step, UpdateCheckpoint checkpoint, IReadOnlySet<string>? failed = null)
     {
         ArgumentNullException.ThrowIfNull(found);
         ArgumentNullException.ThrowIfNull(step);
@@ -34,7 +37,7 @@ public static class UpdateFilter
 
         foreach (AvailableUpdate update in found)
         {
-            if (Reason(update, step, excluded, checkpoint) is { } reason)
+            if ((Reason(update, step, excluded, checkpoint) ?? (failed?.Contains(update.Id) == true ? AfterRestart : null)) is { } reason)
             {
                 leftOut.Add(new LeftOutUpdate(update, reason));
             }

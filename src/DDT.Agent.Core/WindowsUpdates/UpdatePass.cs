@@ -68,7 +68,7 @@ public sealed class UpdatePass(IWindowsUpdate updates, UpdateJobs jobs, AgentLog
                     done.Failure(update.Id, name, outcome.HResult);
                     log.Warning(done.GaveUp(update.Id)
                         ? $"The {job} of {name} failed again ({UpdateNames.HResult(outcome.HResult)}). It is left out."
-                        : $"The {job} of {name} failed ({UpdateNames.HResult(outcome.HResult)}). It is tried once more.");
+                        : $"The {job} of {name} failed ({UpdateNames.HResult(outcome.HResult)}). It is tried once more after a restart.");
                     break;
                 case { Result: UpdateResult.Aborted } or null:
                     log.Information($"The {job} of {name} was aborted.");

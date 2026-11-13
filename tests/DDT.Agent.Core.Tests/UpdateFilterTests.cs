@@ -67,6 +67,17 @@ public sealed class UpdateFilterTests
     }
 
     [Fact]
+    public void AnUpdateThatFailedInThisTurnWaitsForTheRestart()
+    {
+        UpdateCheckpoint checkpoint = new();
+        checkpoint.Failure("cu", "CU", -1);
+
+        UpdateSelection selection = UpdateFilter.Choose([s_cumulative], Step(), checkpoint, new HashSet<string>(["cu"]));
+
+        Assert.Equal((s_cumulative, UpdateFilter.AfterRestart), (Assert.Single(selection.LeftOut).Update, selection.LeftOut[0].Reason));
+    }
+
+    [Fact]
     public void NamesAnUpdateWithTheKbNumbersItsTitleLacks()
     {
         Assert.Equal("2026-11 Cumulative Update (KB5070001)", UpdateNames.Of(s_cumulative));

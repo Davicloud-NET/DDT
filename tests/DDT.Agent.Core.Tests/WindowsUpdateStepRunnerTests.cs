@@ -24,6 +24,8 @@ public sealed class WindowsUpdateStepRunnerTests
         return change is null ? step : change(step);
     }
 
+    private List<string> Installs() => [.. _run.Updates.Calls.Where(call => call.StartsWith("install", StringComparison.Ordinal))];
+
     [Fact]
     public async Task InstallsWhatTheSearchFindsAndSearchesAgainUntilNothingIsLeft()
     {
@@ -104,18 +106,24 @@ public sealed class WindowsUpdateStepRunnerTests
         Assert.Contains("Accepting the licence terms of 2026-11 Cumulative Update (KB5070001).", _run.Log, StringComparison.Ordinal);
     }
 
-    // The second failure leaves it out, and the step fails at the end with the HRESULT.
+    // The restart may repair what made it fail. The second failure leaves it out, and the step fails at the end with the
+    // HRESULT.
     [Fact]
-    public async Task AFailedUpdateIsTriedOnceMoreThenLeftOutAndFailsTheStep()
+    public async Task AFailedUpdateIsTriedOnceMoreAfterARestartThenLeftOutAndFailsTheStep()
     {
-        _run.Updates.Found.AddRange([[s_cumulative, s_dotnet], [s_cumulative], [s_cumulative]]);
+        _run.Updates.Found.AddRange([[s_cumulative, s_dotnet], [s_cumulative], [s_cumulative], [s_cumulative]]);
         _run.Updates.Installs["a"] = new UpdateOutcome("a", UpdateResult.Failed, unchecked((int)0x80240022));
 
-        StepResult result = await _run.RunAsync(Step());
+        StepResult first = await _run.RunAsync(Step());
+        int installsBefore = Installs().Count;
+        StepResult result = await _run.RunAsync(Step(), first.Progress, restarts: 1);
 
+        Assert.Equal(StepOutcome.RestartAndContinue, first.Outcome);
+        Assert.Equal(1, installsBefore);
+        Assert.Contains(WindowsUpdateStepRunner.TriesAgain, _run.Log, StringComparison.Ordinal);
         Assert.Equal(StepResult.Failed("Windows Update could not install: 2026-11 Cumulative Update (KB5070001) (0x80240022)."), result);
-        Assert.Equal(["install a,b", "install a"], _run.Updates.Calls.Where(call => call.StartsWith("install", StringComparison.Ordinal)));
-        Assert.Contains("The installation of 2026-11 Cumulative Update (KB5070001) failed (0x80240022). It is tried once more.", _run.Log, StringComparison.Ordinal);
+        Assert.Equal(["install a,b", "install a"], Installs());
+        Assert.Contains("The installation of 2026-11 Cumulative Update (KB5070001) failed (0x80240022). It is tried once more after a restart.", _run.Log, StringComparison.Ordinal);
         Assert.Contains("The installation of 2026-11 Cumulative Update (KB5070001) failed again (0x80240022). It is left out.", _run.Log, StringComparison.Ordinal);
         Assert.Contains("Windows Update: 1 installed (.NET Framework update (KB5070002)).", _run.Log, StringComparison.Ordinal);
     }
@@ -130,7 +138,32 @@ public sealed class WindowsUpdateStepRunnerTests
 
         Assert.Equal(StepResult.Done(), result);
         Assert.Contains("install b", _run.Updates.Calls);
-        Assert.Contains("The download of 2026-11 Cumulative Update (KB5070001) failed (0x80244022). It is tried once more.", _run.Log, StringComparison.Ordinal);
+        Assert.Contains("The download of 2026-11 Cumulative Update (KB5070001) failed (0x80244022). It is tried once more after a restart.", _run.Log, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AFailedUpdateDoesNotHoldUpTheOthersInItsTurn()
+    {
+        AvailableUpdate defender = new("c", 1, "Defender platform update", ["4052623"]);
+        _run.Updates.Found.AddRange([[s_cumulative, s_dotnet], [s_cumulative, defender], [s_cumulative]]);
+        _run.Updates.Installs["a"] = new UpdateOutcome("a", UpdateResult.Failed, unchecked((int)0x80073712));
+
+        StepResult result = await _run.RunAsync(Step());
+
+        Assert.Equal(StepOutcome.RestartAndContinue, result.Outcome);
+        Assert.Equal(["install a,b", "install c"], Installs());
+        Assert.Contains($"Leaves out 2026-11 Cumulative Update (KB5070001): {UpdateFilter.AfterRestart}.", _run.Log, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AFailedUpdateAtTheRestartLimitFailsTheStepNamingIt()
+    {
+        _run.Updates.Found.AddRange([[s_cumulative], [s_cumulative]]);
+        _run.Updates.Installs["a"] = new UpdateOutcome("a", UpdateResult.Failed, unchecked((int)0x80240035));
+
+        StepResult result = await _run.RunAsync(Step(), restarts: WindowsUpdateStep.DefaultRestarts);
+
+        Assert.Equal(StepResult.Failed("The step reached its limit of 8 restarts with updates still open: 2026-11 Cumulative Update (KB5070001)."), result);
     }
 
     [Fact]

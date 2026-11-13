@@ -24,6 +24,8 @@ public sealed class WindowsUpdateStepRunner(Func<IWindowsUpdate> open, AgentLog 
 
     public const string GoesOn = "The machine restarts to finish the updates, then the step searches again.";
 
+    public const string TriesAgain = "The machine restarts, then the step tries the updates that failed once more.";
+
     public const string Waits = "Windows Update is busy with another installation. The step waits for it.";
 
     public const string StillBusy = "Windows Update was still busy with another installation after 30 minutes.";
@@ -73,22 +75,28 @@ public sealed class WindowsUpdateStepRunner(Func<IWindowsUpdate> open, AgentLog 
 
         UpdatePass pass = new(updates, new UpdateJobs(updates, timeProvider), log);
         HashSet<string> named = new(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> failed = new(StringComparer.OrdinalIgnoreCase);
         IReadOnlyList<AvailableUpdate> open = [];
 
         for (int count = 0; count < MaxPasses; count++)
         {
             IReadOnlyList<AvailableUpdate> found = await updates.SearchAsync(new WindowsUpdateSearch(step.MicrosoftProducts), cancellationToken).ConfigureAwait(false);
-            UpdateSelection selection = UpdateFilter.Choose(found, step, done);
+            UpdateSelection selection = UpdateFilter.Choose(found, step, done, failed);
             NameLeftOut(selection.LeftOut, named);
 
             if (selection.ToInstall.Count == 0)
             {
-                return Close(context, done, selection);
+                AvailableUpdate[] retries = [.. selection.LeftOut.Where(update => update.Reason == UpdateFilter.AfterRestart).Select(update => update.Update)];
+
+                return retries.Length > 0 ? Restart(step, context, done, retries, TriesAgain) : Close(context, done, selection);
             }
 
             open = selection.ToInstall;
+            Dictionary<string, int> tries = open.Select(update => update.Id).Distinct(StringComparer.OrdinalIgnoreCase).ToDictionary(id => id, id => Tries(done, id), StringComparer.OrdinalIgnoreCase);
+            bool restart = await pass.RunAsync(open, context, done, cancellationToken).ConfigureAwait(false);
+            failed.UnionWith(tries.Where(before => Tries(done, before.Key) > before.Value).Select(before => before.Key));
 
-            if (await pass.RunAsync(open, context, done, cancellationToken).ConfigureAwait(false))
+            if (restart)
             {
                 return Restart(step, context, done, open);
             }
@@ -131,14 +139,16 @@ public sealed class WindowsUpdateStepRunner(Func<IWindowsUpdate> open, AgentLog 
         }
     }
 
-    private StepResult Restart(WindowsUpdateStep step, StepContext context, UpdateCheckpoint done, IReadOnlyList<AvailableUpdate> open)
+    private static int Tries(UpdateCheckpoint done, string id) => done.Failed.TryGetValue(id, out FailedUpdate? failed) ? failed.Tries : 0;
+
+    private StepResult Restart(WindowsUpdateStep step, StepContext context, UpdateCheckpoint done, IReadOnlyList<AvailableUpdate> open, string goesOn = GoesOn)
     {
         if (context.Checkpoint.Restarts >= step.RestartLimit)
         {
             return StepResult.Failed(OverLimit(step.RestartLimit, open.Select(UpdateNames.Of)));
         }
 
-        log.Information(GoesOn);
+        log.Information(goesOn);
 
         return StepResult.RestartAndContinue(done.Write());
     }

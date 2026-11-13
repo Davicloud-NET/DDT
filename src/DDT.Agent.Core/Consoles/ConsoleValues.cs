@@ -83,6 +83,7 @@ public static class ConsoleValues
         SetVariableStep => "setVariable",
         PauseStep => "pause",
         InstallApplicationsStep => "installApplications",
+        EnableFeaturesStep => "enableFeatures",
         _ => "step",
     };
 }

@@ -5,6 +5,7 @@
 using DDT.Agent.Applications;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
+using DDT.Agent.WindowsFeatures;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
 
@@ -44,11 +45,14 @@ internal sealed class WindowsStepRunnerFixture(
         Log,
         Time);
 
+    // DISM through ToolRunner.
+    public EnableFeaturesStepRunner EnableFeatures => new(new DismWindowsFeatures(ToolRunner, InjectDriversStepRunner.DismPath), Log);
+
     // Stands in for signing accounts in and connecting shares.
     public FakeAccountTools Accounts { get; } = new();
 
     public StepAccounts StepAccounts => new(Server, Session, ReportRunningAsync, Accounts.Tools, Log, Time);
 
     public AgentStepRunner Steps =>
-        new([Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, InstallApplications], StepAccounts, TokenRejections.Add, Log, Time);
+        new([Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, InstallApplications, EnableFeatures], StepAccounts, TokenRejections.Add, Log, Time);
 }

@@ -123,6 +123,10 @@ export function nodeDetail(
       );
     case "installApplications":
       return plain(applicationsDetail(node.applications.length, node.variable));
+    case "enableFeatures":
+      return plain(
+        node.features.length === 0 ? t`No features chosen yet` : node.features.join(", "),
+      );
     case "if":
       return plain(conditionSummary(node.test, subjects));
     case "group":

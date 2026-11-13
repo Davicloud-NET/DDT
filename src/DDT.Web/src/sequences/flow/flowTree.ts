@@ -226,6 +226,8 @@ export function requiredVersion(definition: {
 
 function minimumVersion(node: SequenceStep): number {
   switch (node.kind) {
+    case "enableFeatures":
+      return 7;
     case "installApplications":
       return 6;
     case "writeRawImage":

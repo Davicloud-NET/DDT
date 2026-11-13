@@ -142,7 +142,7 @@ describe("the sequence mirror", () => {
     expect(Object.keys(everyStep).sort()).toEqual(["steps", "version"]);
     expect(Object.keys(everyNode).sort()).toEqual(["inputs", "steps", "variables", "version"]);
     // The server stores a sequence with the lowest version it needs: 1 for Windows alone, 3 for a tree, 4 with a raw
-    // disk image, 5 with a step in the installed Linux and 6 with applications.
+    // disk image, 5 with a step in the installed Linux, 6 with applications and 7 with roles and features.
     expect(fixture.definition.version).toBe(1);
     expect(everyStep.version).toBe(5);
     expect(everyNode.version).toBe(SEQUENCE_VERSION);
@@ -158,7 +158,7 @@ describe("the sequence mirror", () => {
         steps: [],
         inputs: (everyNode.inputs ?? []).filter((input) => input.kind === "Applications"),
       }),
-    ).toBe(SEQUENCE_VERSION);
+    ).toBe(6);
   });
 
   it("knows exactly the server's kinds of step", () => {

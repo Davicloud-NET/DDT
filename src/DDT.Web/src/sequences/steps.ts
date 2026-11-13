@@ -29,6 +29,7 @@ const kindLabels: Record<StepKind, MessageDescriptor> = {
   setVariable: msg`Set variable`,
   pause: msg`Pause`,
   installApplications: msg`Install applications`,
+  enableFeatures: msg`Enable roles and features`,
   group: msg`Group`,
   if: msg`If`,
   repeat: msg`Repeat`,
@@ -282,6 +283,8 @@ export function newStep(
       return { ...common, kind, message: "", continueAfterMinutes: null };
     case "installApplications":
       return { ...common, kind, applications: [], variable: null };
+    case "enableFeatures":
+      return { ...common, kind, features: [] };
     case "group":
       return { ...common, kind, steps: [] };
     case "if":

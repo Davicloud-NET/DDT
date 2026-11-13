@@ -13,8 +13,8 @@ public sealed record SequenceDefinition(int Version, IReadOnlyList<SequenceStep>
 {
     // 2: raw disk image and seed. 3: the tree (group, if, repeat), Set variable, Pause, When, Shares, RunAs, a join's
     // Account, Variables, Inputs, the operators after Contains. 4: raw images and seeds in LinuxBoot, shell scripts.
-    // 5: the Linux phase. 6: Install applications and the Applications input.
-    public const int CurrentVersion = 6;
+    // 5: the Linux phase. 6: Install applications and the Applications input. 7: Enable roles and features.
+    public const int CurrentVersion = 7;
 
     // Null is none. Left out of the JSON while unset, so a document without them reads and writes as before.
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

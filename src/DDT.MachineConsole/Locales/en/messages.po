@@ -259,6 +259,10 @@ msgstr "Dry run"
 msgid "Empty"
 msgstr "Empty"
 
+#: Texts/Say.cs
+msgid "Enabling roles and features"
+msgstr "Enabling roles and features"
+
 #: ViewModels/EndRunViewModel.cs
 msgid "End the run"
 msgstr "End the run"

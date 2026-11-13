@@ -58,6 +58,9 @@ public sealed class TreeWireFormatTests
                 Variable = "Extras",
             },
             $$"""{"kind":"installApplications","applications":[{"id":"{{Other}}","kind":"Bundle"},{"id":"{{Inner}}","kind":"Application"}],"variable":"Extras",{{Base}}}"""),
+        ["enableFeatures"] = (
+            new EnableFeaturesStep { Id = s_id, Name = "Node", Features = ["NetFx3", "TelnetClient"] },
+            $$"""{"kind":"enableFeatures","features":["NetFx3","TelnetClient"],{{Base}}}"""),
         ["when and shares"] = (
             new RebootStep
             {

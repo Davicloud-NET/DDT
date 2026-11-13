@@ -1341,6 +1341,22 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.exitCodeMeansBoth",
     message: "An exit code cannot mean both success and a restart: {codes}.",
   }),
+  "sequence.featureName": msg({
+    context: "sequence.featureName",
+    message: "A feature name has up to {max} letters, digits, dots, dashes and underscores, as DISM lists it.",
+  }),
+  "sequence.featureRepeated": msg({
+    context: "sequence.featureRepeated",
+    message: "This feature is listed twice.",
+  }),
+  "sequence.featuresChoose": msg({
+    context: "sequence.featuresChoose",
+    message: "Add a feature.",
+  }),
+  "sequence.featuresTooMany": msg({
+    context: "sequence.featuresTooMany",
+    message: "A step enables at most {max} features.",
+  }),
   "sequence.ifNeedsTest": msg({
     context: "sequence.ifNeedsTest",
     message: "Enter the condition the IF tests.",

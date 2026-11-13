@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "steps": [
     {
       "kind": "partition",
@@ -296,6 +296,18 @@
           "variable": "Extras",
           "id": "00000000-0000-4000-8000-000000000013",
           "name": "Install applications",
+          "conditions": [],
+          "continueOnError": false,
+          "rebootAfter": false
+        },
+        {
+          "kind": "enableFeatures",
+          "features": [
+            "NetFx3",
+            "TelnetClient"
+          ],
+          "id": "00000000-0000-4000-8000-000000000014",
+          "name": "Enable roles and features",
           "conditions": [],
           "continueOnError": false,
           "rebootAfter": false

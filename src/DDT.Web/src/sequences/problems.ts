@@ -47,6 +47,7 @@ const kindFields: Record<StepKind, readonly string[]> = {
   setVariable: ["variable", "value"],
   pause: ["message", "continueAfterMinutes"],
   installApplications: ["applications", "variable"],
+  enableFeatures: ["features"],
   group: [],
   if: [],
   repeat: ["maxTimes", "goOnAtLimit"],

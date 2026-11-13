@@ -248,6 +248,9 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goe
             case InstallApplicationsStep install:
                 ApplicationStepRules.Check(install, names, problems);
                 break;
+            case EnableFeaturesStep features:
+                FeatureStepRules.Check(features, problems);
+                break;
             default:
                 problems.Add("kind", ServerMessages.SequenceUnknownStep.With());
                 break;

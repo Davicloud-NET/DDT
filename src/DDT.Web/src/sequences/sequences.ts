@@ -163,6 +163,12 @@ export interface InstallApplicationsStep extends StepBase {
   variable: string | null;
 }
 
+// Version 7. Turns on Windows roles and features with DISM, by the names DISM lists, such as NetFx3.
+export interface EnableFeaturesStep extends StepBase {
+  kind: "enableFeatures";
+  features: string[];
+}
+
 // The kind values are stored in sequences and run snapshots, so they never change. A step is a node of the
 // sequence's tree: a leaf, or a container whose bodies hold more nodes.
 export type SequenceStep =
@@ -180,7 +186,8 @@ export type SequenceStep =
   | RepeatStep
   | SetVariableStep
   | PauseStep
-  | InstallApplicationsStep;
+  | InstallApplicationsStep
+  | EnableFeaturesStep;
 
 export type StepKind = SequenceStep["kind"];
 
@@ -253,7 +260,7 @@ export interface SequenceSummary {
 
 // SequenceDefinition.CurrentVersion: the highest version this page knows, and the one it writes. The server stores
 // each sequence with the lowest version it needs.
-export const SEQUENCE_VERSION = 6;
+export const SEQUENCE_VERSION = 7;
 
 // Every problem keeps the sequence from running. Warnings don't.
 export interface SequenceProblem {

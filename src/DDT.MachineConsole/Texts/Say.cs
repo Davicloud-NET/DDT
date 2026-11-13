@@ -109,6 +109,7 @@ public static class Say
         "setVariable" => l.T("Setting a variable"),
         "pause" => l.T("Paused"),
         "installApplications" => l.T("Installing applications"),
+        "enableFeatures" => l.T("Enabling roles and features"),
         _ => null,
     };
 

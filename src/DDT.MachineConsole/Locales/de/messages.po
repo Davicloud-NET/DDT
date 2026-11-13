@@ -259,6 +259,10 @@ msgstr "Probelauf"
 msgid "Empty"
 msgstr "Leer"
 
+#: Texts/Say.cs
+msgid "Enabling roles and features"
+msgstr "Rollen und Features werden aktiviert"
+
 #: ViewModels/EndRunViewModel.cs
 msgid "End the run"
 msgstr "Ausführung beenden"

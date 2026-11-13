@@ -7,6 +7,10 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
+#: src/sequences/steps/knownFeatures.ts
+msgid ".NET Framework 3.5"
+msgstr ".NET Framework 3.5"
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.pxe.bootDirectoryHoldsStore"
 msgid "''{directory}'' holds DDT:StorePath, {store}, which would serve the database and the key ring. Use a directory of its own, such as {suggested}."
@@ -1581,6 +1585,11 @@ msgid "a fact of the machine"
 msgstr "a fact of the machine"
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.featureName"
+msgid "A feature name has up to {max} letters, digits, dots, dashes and underscores, as DISM lists it."
+msgstr "A feature name has up to {max} letters, digits, dots, dashes and underscores, as DISM lists it."
+
+#: src/lib/serverMessages.ts
 msgctxt "package.filesHaveNoTargets"
 msgid "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets."
 msgstr "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets."
@@ -1831,6 +1840,11 @@ msgid "A step can have at most {max} conditions."
 msgstr "A step can have at most {max} conditions."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.featuresTooMany"
+msgid "A step enables at most {max} features."
+msgstr "A step enables at most {max} features."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.linuxNeedsSeed"
 msgid "A step in the installed Linux needs an earlier step that writes the cloud-init seed, without conditions and without going on when it fails. The seed takes DDT's agent into the installed Linux."
 msgstr "A step in the installed Linux needs an earlier step that writes the cloud-init seed, without conditions and without going on when it fails. The seed takes DDT's agent into the installed Linux."
@@ -2064,7 +2078,12 @@ msgstr "Actions for {name}"
 msgid "Active"
 msgstr "Active"
 
+#: src/sequences/steps/knownFeatures.ts
+msgid "Active Directory Domain Services"
+msgstr "Active Directory Domain Services"
+
 #: src/sequences/builder/Palette.tsx
+#: src/sequences/steps/EnableFeaturesFields.tsx
 #: src/settings/directory/FoundGroup.tsx
 #: src/settings/networkBoot/AddInterfaceForm.tsx
 msgid "Add"
@@ -2098,6 +2117,15 @@ msgstr "Add a condition"
 #: src/applications/ApplicationDrawer.tsx
 msgid "Add a dependency"
 msgstr "Add a dependency"
+
+#: src/sequences/steps/EnableFeaturesFields.tsx
+msgid "Add a feature"
+msgstr "Add a feature"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.featuresChoose"
+msgid "Add a feature."
+msgstr "Add a feature."
 
 #: src/conditions/builder/AddKeys.tsx
 msgid "Add a group"
@@ -3836,6 +3864,10 @@ msgstr "DHCP options 66 and 67 set"
 msgid "DHCP server"
 msgstr "DHCP server"
 
+#: src/sequences/steps/knownFeatures.ts
+msgid "DHCP Server"
+msgstr "DHCP Server"
+
 #: src/machines/bootEnvironment.ts
 msgid "Did not start the Linux boot environment after restarting"
 msgstr "Did not start the Linux boot environment after restarting"
@@ -3925,6 +3957,10 @@ msgstr "Disks"
 #: src/setup/SetupChecklist.tsx
 msgid "Dismiss"
 msgstr "Dismiss"
+
+#: src/sequences/steps/knownFeatures.ts
+msgid "DNS Server"
+msgstr "DNS Server"
 
 #: src/machines/facts.ts
 msgid "DNS suffix"
@@ -4150,6 +4186,10 @@ msgstr "Empty sequence"
 #: src/users/UserActionsMenu.tsx
 msgid "Enable"
 msgstr "Enable"
+
+#: src/sequences/steps.ts
+msgid "Enable roles and features"
+msgstr "Enable roles and features"
 
 #: src/settings/directory/ServerGroup.tsx
 msgid "Encryption"
@@ -4563,6 +4603,10 @@ msgstr "Failed"
 #: src/machines/machineView.ts
 msgid "Failed at step {number} of {count}"
 msgstr "Failed at step {number} of {count}"
+
+#: src/sequences/steps/knownFeatures.ts
+msgid "Failover Clustering"
+msgstr "Failover Clustering"
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldap.nestedGroupsOff"
@@ -5074,6 +5118,14 @@ msgstr "HTTP boot port"
 msgid "Hungarian"
 msgstr "Hungarian"
 
+#: src/sequences/steps/knownFeatures.ts
+msgid "Hyper-V"
+msgstr "Hyper-V"
+
+#: src/sequences/steps/knownFeatures.ts
+msgid "Hyper-V on Windows Server"
+msgstr "Hyper-V on Windows Server"
+
 #: src/account/RecoveryCodesDialog.tsx
 msgid "I have saved them"
 msgstr "I have saved them"
@@ -5300,6 +5352,10 @@ msgstr "Interfaces"
 #: src/settings/networkBoot/HostInterfaces.tsx
 msgid "Interfaces on {name}"
 msgstr "Interfaces on {name}"
+
+#: src/sequences/steps/knownFeatures.ts
+msgid "Internet Information Services"
+msgstr "Internet Information Services"
 
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "Interpreter"
@@ -6649,6 +6705,10 @@ msgstr "No entry under {baseDn} matches {name} with the user filter."
 msgctxt "account.noExternalSignIn"
 msgid "No external sign in is in progress."
 msgstr "No external sign in is in progress."
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "No features chosen yet"
+msgstr "No features chosen yet"
 
 #: src/settings/certificate/PfxFields.tsx
 msgid "No file chosen"
@@ -8195,6 +8255,10 @@ msgstr "Role of a new account"
 msgid "Role that {key} gives"
 msgstr "Role that {key} gives"
 
+#: src/sequences/steps/EnableFeaturesFields.tsx
+msgid "Roles and features"
+msgstr "Roles and features"
+
 #: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "root"
 msgstr "root"
@@ -9491,6 +9555,10 @@ msgstr "Task sequences"
 msgid "Task sequences: {sequences}. Build them again from a template."
 msgstr "Task sequences: {sequences}. Build them again from a template."
 
+#: src/sequences/steps/knownFeatures.ts
+msgid "Telnet client"
+msgstr "Telnet client"
+
 #: src/sequences/builder/variables/RenameField.tsx
 msgid "Templates use it as {placeholder}."
 msgstr "Templates use it as {placeholder}."
@@ -9522,6 +9590,10 @@ msgstr "text"
 #: src/sequences/builder/variables/InputKindSetting.tsx
 msgid "Text"
 msgstr "Text"
+
+#: src/sequences/steps/knownFeatures.ts
+msgid "TFTP client"
+msgstr "TFTP client"
 
 #: src/settings/networkBoot/TransfersGroup.tsx
 msgid "TFTP transfers at once"
@@ -11316,6 +11388,11 @@ msgid "This deployment has no steps to show."
 msgstr "This deployment has no steps to show."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.featureRepeated"
+msgid "This feature is listed twice."
+msgstr "This feature is listed twice."
+
+#: src/lib/serverMessages.ts
 msgctxt "upload.noXz"
 msgid "This file is compressed with xz, which is not installed on the server. Install xz there and complete the upload again, or unpack the file with xz -d and upload the disk image it holds."
 msgstr "This file is compressed with xz, which is not installed on the server. Install xz there and complete the upload again, or unpack the file with xz -d and upload the disk image it holds."
@@ -12123,6 +12200,10 @@ msgstr "Viewer"
 msgid "Virtual machine"
 msgstr "Virtual machine"
 
+#: src/sequences/steps/knownFeatures.ts
+msgid "Virtual Machine Platform"
+msgstr "Virtual Machine Platform"
+
 #: src/machines/machineView.ts
 msgid "Waiting"
 msgstr "Waiting"
@@ -12319,6 +12400,10 @@ msgstr "Windows PE or Linux"
 msgid "Windows PE, before the hand-over"
 msgstr "Windows PE, before the hand-over"
 
+#: src/sequences/steps/knownFeatures.ts
+msgid "Windows Sandbox"
+msgstr "Windows Sandbox"
+
 #: src/settings/deploymentDefaults/WindowsSetupGroup.tsx
 msgid "Windows setup"
 msgstr "Windows setup"
@@ -12326,6 +12411,10 @@ msgstr "Windows setup"
 #: src/machines/actions/StopConfirm.tsx
 msgid "Windows stays as it is, with the steps done so far."
 msgstr "Windows stays as it is, with the steps done so far."
+
+#: src/sequences/steps/knownFeatures.ts
+msgid "Windows Subsystem for Linux"
+msgstr "Windows Subsystem for Linux"
 
 #: src/settings/networkBoot/BootFileField.tsx
 msgid "Windows UEFI CA 2023."

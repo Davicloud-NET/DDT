@@ -184,8 +184,8 @@ public sealed class SequenceFixtureTests
         Assert.Equal(Enum.GetValues<InputKind>(), inputKinds);
         Assert.Equal(Enum.GetValues<InputAsk>(), asks);
 
-        // Installing applications needs version 6, and a sequence that installs Windows nothing of versions 4 and 5.
-        Assert.Equal(6, definition.Version);
+        // Roles and features need version 7, and a sequence that installs Windows nothing of versions 4 and 5.
+        Assert.Equal(7, definition.Version);
         Assert.Empty(SequenceValidator.Analyse(definition).Problems);
 
         await MatchFixtureAsync("every-node.sequence.json", definition, "the nodes built here");
@@ -282,6 +282,7 @@ public sealed class SequenceFixtureTests
                     Applications = [new ApplicationReference(s_bundleId, ApplicationReferenceKind.Bundle), new ApplicationReference(s_applicationId, ApplicationReferenceKind.Application)],
                     Variable = "Extras",
                 },
+                new EnableFeaturesStep { Id = StepId(13), Name = "Enable roles and features", Features = ["NetFx3", "TelnetClient"] },
             ],
         },
     ];

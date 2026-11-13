@@ -118,7 +118,7 @@ public sealed class LinuxBootDryRunTests : IDisposable
 
         Assert.Equal(AgentExitCodes.Deployed, exitCode);
         Assert.Equal(AgentEnvironment.LinuxBoot, Assert.Single(server.Registrations).Environment);
-        Assert.Equal(6, server.Registrations[0].SequenceVersion);
+        Assert.Equal(7, server.Registrations[0].SequenceVersion);
         Assert.All(server.RunReports, report => Assert.Equal(SequencePhase.LinuxBoot, report.Phase));
         Assert.Equal(DeploymentState.Done, server.RunReports[^1].State);
         Assert.Equal(Enumerable.Repeat(StepState.Done, 3), server.RunReports[^1].Steps.Select(step => step.State));
@@ -178,7 +178,7 @@ public sealed class LinuxBootDryRunTests : IDisposable
         int exitCode = await Machine(server).RunAsync(server.Stop.Token);
 
         Assert.Equal(AgentExitCodes.Restarting, exitCode);
-        Assert.Equal(6, Assert.Single(server.Registrations).SequenceVersion);
+        Assert.Equal(7, Assert.Single(server.Registrations).SequenceVersion);
         AgentRunReport last = server.RunReports[^1];
         Assert.Equal((DeploymentState.Running, SequencePhase.Linux, RunActivity.Restarting), (last.State, last.Phase, last.Activity));
         Assert.Equal([StepState.Done, StepState.Done], last.Steps.Select(step => step.State));

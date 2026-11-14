@@ -10,6 +10,7 @@ using DDT.Contracts.Import;
 using DDT.Contracts.Packages;
 using DDT.Server.Images;
 using DDT.Server.Import;
+using DDT.Server.Packages;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using static DDT.Server.Tests.AccountRequests;
@@ -117,12 +118,16 @@ public sealed class WindowsPackageUploadTests(DdtApplication application) : ICla
         HttpResponseMessage tooSmall = await administrator.PutAsync(
             $"{PackageRequests.Packages}/{windows.Id}",
             new UpdatePackageRequest(windows.Name, null, [], Builds: [26]));
+        HttpResponseMessage tooMany = await administrator.PutAsync(
+            $"{PackageRequests.Packages}/{windows.Id}",
+            new UpdatePackageRequest(windows.Name, null, [], Builds: [.. Enumerable.Range(26100, PackageLimits.MaxBuilds + 1)]));
         HttpResponseMessage notWindows = await administrator.PutAsync(
             $"{PackageRequests.Packages}/{files.Id}",
             new UpdatePackageRequest(files.Name, null, [], Builds: [26100]));
 
         Assert.Equal(HttpStatusCode.BadRequest, tooSmall.StatusCode);
-        Assert.Contains("package.builds", await tooSmall.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Contains("\"package.build\"", await tooSmall.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Contains("\"package.builds\"", await tooMany.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
         Assert.Contains("package.buildsWindowsOnly", await notWindows.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 

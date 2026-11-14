@@ -126,7 +126,7 @@ public sealed class EnableBitLockerStepRunner(
 
         checkpoint.ProtectorId = key.ProtectorId;
         await context.Checkpoint.SaveAsync(checkpoint.Write()).ConfigureAwait(false);
-        log.Information($"Added recovery password protector {key.ProtectorId:B} to {volume}. Handing its password to the server.");
+        log.Information($"Added recovery password protector {ManageBdeBitLocker.KeyId(key.ProtectorId)} to {volume}. Handing its password to the server.");
 
         await ServerCallRules.CallAsync(
             async call =>
@@ -143,7 +143,7 @@ public sealed class EnableBitLockerStepRunner(
 
         checkpoint.Confirmed = true;
         await context.Checkpoint.SaveAsync(checkpoint.Write()).ConfigureAwait(false);
-        log.Information($"The server has the recovery password of protector {key.ProtectorId:B}.");
+        log.Information($"The server has the recovery password of protector {ManageBdeBitLocker.KeyId(key.ProtectorId)}.");
 
         return true;
     }

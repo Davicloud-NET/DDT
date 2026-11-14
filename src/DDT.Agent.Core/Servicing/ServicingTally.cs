@@ -37,11 +37,12 @@ public sealed class ServicingTally
         }
 
         bool added = answer.Outcome == ServicingOutcome.Added;
-        (added ? _added : _leftOut).Add(call.Names);
+        string[] names = [.. call.Packages.Select(package => package.Package.Name)];
+        AddNew(added ? _added : _leftOut, names);
 
         if (added && call.IsUpdate)
         {
-            _updates.Add(call.Names);
+            AddNew(_updates, names);
         }
     }
 
@@ -73,6 +74,18 @@ public sealed class ServicingTally
         else
         {
             log.Information($"Windows is at build {Build(after)} now, was {Build(before)}.");
+        }
+    }
+
+    // A package can take several DISM calls, as a language package does: its name is said once.
+    private static void AddNew(List<string> list, IEnumerable<string> names)
+    {
+        foreach (string name in names)
+        {
+            if (!list.Contains(name, StringComparer.Ordinal))
+            {
+                list.Add(name);
+            }
         }
     }
 }

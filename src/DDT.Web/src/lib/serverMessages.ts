@@ -783,7 +783,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "import.notAnIso": msg({
     context: "import.notAnIso",
-    message: "{path} is no ISO in one of this server's import folders.",
+    message: "{path} is not an ISO in one of this server's import folders.",
   }),
   "import.nothing": msg({
     context: "import.nothing",
@@ -977,9 +977,13 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "package.bootImageDriversOnly",
     message: "Only a driver package can go into the Windows PE boot image.",
   }),
+  "package.build": msg({
+    context: "package.build",
+    message: "A Windows build is a number such as 26100.",
+  }),
   "package.builds": msg({
     context: "package.builds",
-    message: "Enter up to {max} Windows builds, numbers such as 26100.",
+    message: "Enter up to {max} Windows builds.",
   }),
   "package.buildsWindowsOnly": msg({
     context: "package.buildsWindowsOnly",
@@ -1099,7 +1103,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "package.windowsFile": msg({
     context: "package.windowsFile",
-    message: "{entry} is no .msu or .cab file. A Windows package holds nothing else.",
+    message: "{entry} is not a .msu or .cab file. A Windows package holds nothing else.",
   }),
   "package.windowsFolder": msg({
     context: "package.windowsFolder",
@@ -1339,7 +1343,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.bitLockerAfterImage": msg({
     context: "sequence.bitLockerAfterImage",
-    message: "BitLocker is pre-provisioned before the image is applied.",
+    message: "BitLocker can be pre-provisioned only before the image is applied.",
   }),
   "sequence.bitLockerBeforePartition": msg({
     context: "sequence.bitLockerBeforePartition",
@@ -1767,7 +1771,7 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   }),
   "sequence.servicingNotWindows": msg({
     context: "sequence.servicingNotWindows",
-    message: "{package} is no Windows package.",
+    message: "{package} is not a Windows package.",
   }),
   "sequence.servicingPackageGone": msg({
     context: "sequence.servicingPackageGone",

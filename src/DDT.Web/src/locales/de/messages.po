@@ -481,7 +481,7 @@ msgstr "{entry} hat kein {attribute}, daher wird eine Anmeldung abgelehnt."
 
 #: src/lib/serverMessages.ts
 msgctxt "package.windowsFile"
-msgid "{entry} is no .msu or .cab file. A Windows package holds nothing else."
+msgid "{entry} is not a .msu or .cab file. A Windows package holds nothing else."
 msgstr "{entry} ist keine .msu- oder .cab-Datei. Ein Windows-Paket enthält nichts anderes."
 
 #: src/lib/serverMessages.ts
@@ -1085,7 +1085,7 @@ msgstr "{package} ist ein Treiberpaket. Ein Skript läuft mit einem Dateipaket."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.servicingNotWindows"
-msgid "{package} is no Windows package."
+msgid "{package} is not a Windows package."
 msgstr "{package} ist kein Windows-Paket."
 
 #: src/runs/panel/railSteps.ts
@@ -1095,11 +1095,6 @@ msgstr "{passes} Durchläufe"
 #: src/runs/flow/nodeDetail.ts
 msgid "{passes} passes, the last took {took}"
 msgstr "{passes} Durchläufe, der letzte dauerte {took}"
-
-#: src/lib/serverMessages.ts
-msgctxt "import.notAnIso"
-msgid "{path} is no ISO in one of this server's import folders."
-msgstr "{path} ist keine ISO-Datei in einem der Importordner dieses Servers."
 
 #: src/lib/serverMessages.ts
 msgctxt "import.noSuchFile"
@@ -1115,6 +1110,11 @@ msgstr "{path} ist keine MDT-Bereitstellungsfreigabe in einem der Importordner d
 msgctxt "import.notAllowed"
 msgid "{path} is no WIM, ESD or ISO in one of this server's import folders."
 msgstr "{path} ist keine WIM-, ESD- oder ISO-Datei in einem der Importordner dieses Servers."
+
+#: src/lib/serverMessages.ts
+msgctxt "import.notAnIso"
+msgid "{path} is not an ISO in one of this server's import folders."
+msgstr "{path} ist keine ISO-Datei in einem der Importordner dieses Servers."
 
 #: src/uploads/UploadProgress.tsx
 msgid "{percent}% of {total} at {speed}/s, {took} so far"
@@ -2034,6 +2034,11 @@ msgstr "Eine WIM-, ESD- oder ISO-Datei, die auf dem Server nach <0>{own}</0> kop
 #: src/images/ImageUploadPanel.tsx
 msgid "a WIM, ESD, ISO or disk image file"
 msgstr "eine WIM-, ESD-, ISO- oder Datenträgerimage-Datei"
+
+#: src/lib/serverMessages.ts
+msgctxt "package.build"
+msgid "A Windows build is a number such as 26100."
+msgstr "Ein Windows-Build ist eine Zahl wie 26100."
 
 #: src/settings/AgentPanel.tsx
 msgid "A Windows executable of at most 128 MB."
@@ -3106,8 +3111,8 @@ msgstr "BitLocker kann erst nach einem Schritt vorbereitet werden, der den Daten
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.bitLockerAfterImage"
-msgid "BitLocker is pre-provisioned before the image is applied."
-msgstr "BitLocker wird vorbereitet, bevor das Image angewendet wird."
+msgid "BitLocker can be pre-provisioned only before the image is applied."
+msgstr "BitLocker kann nur vorbereitet werden, bevor das Image angewendet wird."
 
 #: src/app/navigation.ts
 msgid "Boot"
@@ -4464,7 +4469,7 @@ msgid "Enable roles and features"
 msgstr "Rollen und Features aktivieren"
 
 #: src/runs/panel/stepDetail.ts
-msgid "Encrypting the disk ({count} %)"
+msgid "Encrypting the disk ({count}%)"
 msgstr "Datenträger wird verschlüsselt ({count} %)"
 
 #: src/settings/directory/ServerGroup.tsx
@@ -4741,8 +4746,8 @@ msgstr "Geben Sie true oder false ein."
 
 #: src/lib/serverMessages.ts
 msgctxt "package.builds"
-msgid "Enter up to {max} Windows builds, numbers such as 26100."
-msgstr "Geben Sie bis zu {max} Windows-Builds ein, Zahlen wie 26100."
+msgid "Enter up to {max} Windows builds."
+msgstr "Geben Sie bis zu {max} Windows-Builds ein."
 
 #: src/sequences/fields/CodesSetting.tsx
 msgid "Enter whole numbers from -2147483648 to 2147483647, separated by commas."

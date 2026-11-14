@@ -270,7 +270,7 @@ public static class Say
         {
             StepDetails.DownloadingUpdates => count == 1 ? l.T("Downloading 1 update") : l.F("Downloading {count} updates", ("count", l.Number(count))),
             StepDetails.InstallingUpdates => count == 1 ? l.T("Installing 1 update") : l.F("Installing {count} updates", ("count", l.Number(count))),
-            StepDetails.Encrypting => l.F("Encrypting the disk ({percent} %)", ("percent", l.Number(count))),
+            StepDetails.Encrypting => l.F("Encrypting the disk ({percent}%)", ("percent", l.Number(count))),
             _ => detail,
         };
     }

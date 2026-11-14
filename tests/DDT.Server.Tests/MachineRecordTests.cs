@@ -67,7 +67,7 @@ public sealed class MachineRecordTests(DdtApplication application) : IClassFixtu
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.True(response.Headers.CacheControl?.NoStore);
         Assert.Equal(Password, (await response.Content.ReadFromJsonAsync<RecoveryKeyReveal>(TestJson.Options, Cancellation))!.Password);
-        Assert.Equal([(AuditActions.RecoveryKeyRevealed, $"Key ID {key.ProtectorId:D} of C:.")], await AuditAsync(machineId));
+        Assert.Equal([(AuditActions.RecoveryKeyRevealed, $"Key ID {key.ProtectorId.ToString("D").ToUpperInvariant()} of C:.")], await AuditAsync(machineId));
     }
 
     [Theory]
@@ -108,7 +108,7 @@ public sealed class MachineRecordTests(DdtApplication application) : IClassFixtu
 
         Assert.Equal(HttpStatusCode.NoContent, (await administrator.DeleteAsync($"/api/machines/{machineId}/recovery-keys/{replaced.Id}")).StatusCode);
         Assert.Equal([current.Id], (await KeysAsync(application, machineId)).Select(k => k.Id));
-        Assert.Equal([(AuditActions.RecoveryKeyDeleted, $"Key ID {replaced.ProtectorId:D} of C:.")], await AuditAsync(machineId));
+        Assert.Equal([(AuditActions.RecoveryKeyDeleted, $"Key ID {replaced.ProtectorId.ToString("D").ToUpperInvariant()} of C:.")], await AuditAsync(machineId));
     }
 
     [Fact]

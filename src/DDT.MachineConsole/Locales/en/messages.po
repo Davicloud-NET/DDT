@@ -288,8 +288,8 @@ msgid "Enabling roles and features"
 msgstr "Enabling roles and features"
 
 #: Texts/Say.cs
-msgid "Encrypting the disk ({percent} %)"
-msgstr "Encrypting the disk ({percent} %)"
+msgid "Encrypting the disk ({percent}%)"
+msgstr "Encrypting the disk ({percent}%)"
 
 #: ViewModels/EndRunViewModel.cs
 msgid "End the run"

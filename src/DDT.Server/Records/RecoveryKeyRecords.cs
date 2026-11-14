@@ -89,7 +89,7 @@ public sealed class RecoveryKeyRecords(
             machineId.ToString("D"),
             actor,
             now,
-            $"Key ID {key.ProtectorId:D} of {volume}, from run {runId:D}."));
+            $"Key ID {RecoveryKeyIds.Shown(key.ProtectorId)} of {volume}, from run {runId:D}."));
     }
 
     private static string? Problem(AgentRecoveryKey key)
@@ -113,7 +113,7 @@ public sealed class RecoveryKeyRecords(
         known.Volume == volume && protector.Unprotect(known.MachineId, known.ProtectorId, known.ProtectedPassword) == key.Password;
 
     private static RecordRefusal Conflict(Guid protectorId) =>
-        new(StatusCodes.Status409Conflict, $"The server holds another recovery password or volume for key ID {protectorId:D}.");
+        new(StatusCodes.Status409Conflict, $"The server holds another recovery password or volume for key ID {RecoveryKeyIds.Shown(protectorId)}.");
 
     private Task<RecoveryKey?> KnownAsync(Guid machineId, Guid protectorId, CancellationToken cancellationToken) =>
         database.RecoveryKeys

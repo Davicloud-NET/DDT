@@ -14,7 +14,7 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate PackageWindowsFile = Define(
         "package.windowsFile",
-        "{entry} is no .msu or .cab file. A Windows package holds nothing else.");
+        "{entry} is not a .msu or .cab file. A Windows package holds nothing else.");
 
     public static readonly MessageTemplate PackageWindowsFolder = Define(
         "package.windowsFolder",
@@ -24,9 +24,9 @@ public static partial class ServerMessages
         "package.windowsNoTargets",
         "A Windows package goes to the machines whose sequence names it, not by their model, so it has no targets.");
 
-    public static readonly MessageTemplate PackageBuilds = Define(
-        "package.builds",
-        "Enter up to {max} Windows builds, numbers such as 26100.");
+    public static readonly MessageTemplate PackageBuilds = Define("package.builds", "Enter up to {max} Windows builds.");
+
+    public static readonly MessageTemplate PackageBuild = Define("package.build", "A Windows build is a number such as 26100.");
 
     public static readonly MessageTemplate PackageBuildsWindowsOnly = Define("package.buildsWindowsOnly", "Only a Windows package has builds.");
 
@@ -38,7 +38,7 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate ImportNotAnIso = Define(
         "import.notAnIso",
-        "{path} is no ISO in one of this server's import folders.");
+        "{path} is not an ISO in one of this server's import folders.");
 
     public static readonly MessageTemplate ImportSuffix = Define(
         "import.suffix",

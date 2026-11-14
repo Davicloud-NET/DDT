@@ -288,7 +288,7 @@ msgid "Enabling roles and features"
 msgstr "Rollen und Features werden aktiviert"
 
 #: Texts/Say.cs
-msgid "Encrypting the disk ({percent} %)"
+msgid "Encrypting the disk ({percent}%)"
 msgstr "Datenträger wird verschlüsselt ({percent} %)"
 
 #: ViewModels/EndRunViewModel.cs

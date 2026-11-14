@@ -481,7 +481,7 @@ msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "package.windowsFile"
-msgid "{entry} is no .msu or .cab file. A Windows package holds nothing else."
+msgid "{entry} is not a .msu or .cab file. A Windows package holds nothing else."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1085,7 +1085,7 @@ msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.servicingNotWindows"
-msgid "{package} is no Windows package."
+msgid "{package} is not a Windows package."
 msgstr ""
 
 #: src/runs/panel/railSteps.ts
@@ -1094,11 +1094,6 @@ msgstr ""
 
 #: src/runs/flow/nodeDetail.ts
 msgid "{passes} passes, the last took {took}"
-msgstr ""
-
-#: src/lib/serverMessages.ts
-msgctxt "import.notAnIso"
-msgid "{path} is no ISO in one of this server's import folders."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1114,6 +1109,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "import.notAllowed"
 msgid "{path} is no WIM, ESD or ISO in one of this server's import folders."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "import.notAnIso"
+msgid "{path} is not an ISO in one of this server's import folders."
 msgstr ""
 
 #: src/uploads/UploadProgress.tsx
@@ -2033,6 +2033,11 @@ msgstr ""
 
 #: src/images/ImageUploadPanel.tsx
 msgid "a WIM, ESD, ISO or disk image file"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "package.build"
+msgid "A Windows build is a number such as 26100."
 msgstr ""
 
 #: src/settings/AgentPanel.tsx
@@ -3106,7 +3111,7 @@ msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.bitLockerAfterImage"
-msgid "BitLocker is pre-provisioned before the image is applied."
+msgid "BitLocker can be pre-provisioned only before the image is applied."
 msgstr ""
 
 #: src/app/navigation.ts
@@ -4464,7 +4469,7 @@ msgid "Enable roles and features"
 msgstr ""
 
 #: src/runs/panel/stepDetail.ts
-msgid "Encrypting the disk ({count} %)"
+msgid "Encrypting the disk ({count}%)"
 msgstr ""
 
 #: src/settings/directory/ServerGroup.tsx
@@ -4741,7 +4746,7 @@ msgstr ""
 
 #: src/lib/serverMessages.ts
 msgctxt "package.builds"
-msgid "Enter up to {max} Windows builds, numbers such as 26100."
+msgid "Enter up to {max} Windows builds."
 msgstr ""
 
 #: src/sequences/fields/CodesSetting.tsx

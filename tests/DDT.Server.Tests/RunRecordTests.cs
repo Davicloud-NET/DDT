@@ -83,10 +83,10 @@ public sealed class RunRecordTests(DdtApplication application) : IClassFixture<D
             .Where(e => e.SubjectId == subject && e.Action == AuditActions.RecoveryKeyRecorded)
             .Select(e => e.Detail)
             .ToListAsync(Cancellation));
-        Assert.Equal([$"Key ID {protectorId:D} of C:, from run {run.Id:D}."], recorded);
+        Assert.Equal([$"Key ID {protectorId.ToString("D").ToUpperInvariant()} of C:, from run {run.Id:D}."], recorded);
 
         Assert.Equal(
-            $"The server holds another recovery password or volume for key ID {protectorId:D}.",
+            $"The server holds another recovery password or volume for key ID {protectorId.ToString("D").ToUpperInvariant()}.",
             await RefusedAsync(await SendAsync(machine, run.Id, Key(protectorId, OtherPassword)), HttpStatusCode.Conflict));
     }
 

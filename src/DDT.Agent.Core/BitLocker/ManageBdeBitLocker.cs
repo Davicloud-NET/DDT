@@ -38,13 +38,13 @@ public sealed class ManageBdeBitLocker(IToolRunner tools, string manageBdePath, 
 
     public static IReadOnlyList<string> RecoveryPasswordsArguments(string volume) => ["-protectors", "-get", volume, "-type", "RecoveryPassword"];
 
-    public static IReadOnlyList<string> DeleteArguments(string volume, Guid id) => ["-protectors", "-delete", volume, "-id", Braced(id)];
+    public static IReadOnlyList<string> DeleteArguments(string volume, Guid id) => ["-protectors", "-delete", volume, "-id", KeyId(id)];
 
     public static IReadOnlyList<string> AddTpmArguments(string volume) => ["-protectors", "-add", volume, "-tpm"];
 
     public static IReadOnlyList<string> AddRecoveryPasswordArguments(string volume) => ["-protectors", "-add", volume, "-recoverypassword"];
 
-    public static IReadOnlyList<string> BackupArguments(string volume, Guid id) => ["-protectors", "-adbackup", volume, "-id", Braced(id)];
+    public static IReadOnlyList<string> BackupArguments(string volume, Guid id) => ["-protectors", "-adbackup", volume, "-id", KeyId(id)];
 
     // Without -skiphardwaretest, encryption waits for a restart.
     public static IReadOnlyList<string> TurnOnArguments(string volume) => ["-on", volume, "-used", "-skiphardwaretest"];
@@ -110,7 +110,7 @@ public sealed class ManageBdeBitLocker(IToolRunner tools, string manageBdePath, 
     }
 
     public async Task DeleteProtectorAsync(string volume, Guid protectorId, CancellationToken cancellationToken) =>
-        Check(await RunAsync(DeleteArguments(volume, protectorId), cancellationToken).ConfigureAwait(false), $"could not delete protector {Braced(protectorId)}", volume);
+        Check(await RunAsync(DeleteArguments(volume, protectorId), cancellationToken).ConfigureAwait(false), $"could not delete protector {KeyId(protectorId)}", volume);
 
     public async Task<bool> AddTpmProtectorAsync(string volume, CancellationToken cancellationToken)
     {
@@ -191,7 +191,8 @@ public sealed class ManageBdeBitLocker(IToolRunner tools, string manageBdePath, 
                 : null;
     }
 
-    private static string Braced(Guid id) => id.ToString("B").ToUpperInvariant();
+    // As manage-bde and BitLocker's recovery screen write it.
+    public static string KeyId(Guid id) => id.ToString("B").ToUpperInvariant();
 
     // Lines that look like a password never reach the log.
     private Task<int> RunAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken) =>

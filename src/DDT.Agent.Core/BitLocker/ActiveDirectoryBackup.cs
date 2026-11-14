@@ -46,7 +46,7 @@ internal sealed class ActiveDirectoryBackup(BitLockerTools tools, AgentLog log)
 
         try
         {
-            log.Information($"Backing up the recovery password of protector {protectorId:B} to Active Directory.");
+            log.Information($"Backing up the recovery password of protector {ManageBdeBitLocker.KeyId(protectorId)} to Active Directory.");
             await tools.BitLocker.BackupToActiveDirectoryAsync(volume, protectorId, cancellationToken).ConfigureAwait(false);
         }
         finally

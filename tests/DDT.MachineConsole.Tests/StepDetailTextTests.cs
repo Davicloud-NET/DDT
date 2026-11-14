@@ -20,7 +20,7 @@ public sealed class StepDetailTextTests
     [InlineData(UiLanguage.German, "#addingPackage 2026-11 update", "2026-11 update wird hinzugefügt")]
     [InlineData(UiLanguage.German, "#cleaningUp", "Das Image wird bereinigt")]
     [InlineData(UiLanguage.English, "#cleaningUp now", "#cleaningUp now")]
-    [InlineData(UiLanguage.English, "#encrypting 74", "Encrypting the disk (74 %)")]
+    [InlineData(UiLanguage.English, "#encrypting 74", "Encrypting the disk (74%)")]
     [InlineData(UiLanguage.German, "#encrypting 100", "Datenträger wird verschlüsselt (100 %)")]
     [InlineData(UiLanguage.German, "7-Zip 24.08", "7-Zip 24.08")]
     [InlineData(UiLanguage.German, "#somethingNew 2", "#somethingNew 2")]

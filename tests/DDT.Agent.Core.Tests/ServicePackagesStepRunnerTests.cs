@@ -80,7 +80,7 @@ public sealed class ServicePackagesStepRunnerTests : IDisposable
         Assert.False(System.IO.Directory.Exists(Path.Combine(Directory, "scratch")));
         Assert.Empty(System.IO.Directory.EnumerateFiles(Directory, "dism-*.log"));
         List<string> messages = await MessagesAsync();
-        Assert.Contains("Added de-DE language pack; de-DE language pack; 2026-07 update; 2026-11 update.", messages);
+        Assert.Contains("Added de-DE language pack; 2026-07 update; 2026-11 update.", messages);
         Assert.DoesNotContain(messages, message => message.Contains("build", StringComparison.Ordinal));
     }
 
@@ -93,7 +93,7 @@ public sealed class ServicePackagesStepRunnerTests : IDisposable
         await RunAsync(s_step);
 
         List<string> messages = await MessagesAsync();
-        Assert.Contains("Added de-DE language pack; de-DE language pack; 2026-07 update; 2026-11 update.", messages);
+        Assert.Contains("Added de-DE language pack; 2026-07 update; 2026-11 update.", messages);
         Assert.Contains("Windows is at build 26200.9974 now, was 26200.6584.", messages);
     }
 
@@ -107,7 +107,7 @@ public sealed class ServicePackagesStepRunnerTests : IDisposable
 
         Assert.Equal(StepResult.Done(), result);
         List<string> messages = await MessagesAsync();
-        Assert.Contains("Added de-DE language pack; de-DE language pack.", messages);
+        Assert.Contains("Added de-DE language pack.", messages);
         Assert.Contains(
             "Windows stays at build 26100.33650: 2026-07 update; 2026-11 update changed nothing. It is older than this Windows or made for another.",
             messages);

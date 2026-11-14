@@ -30,7 +30,7 @@ export function stepDetailText(detail: string): string {
     case "addingPackage":
       return text === null ? detail : t`Adding ${text}`;
     case "encrypting":
-      return count === null ? detail : t`Encrypting the disk (${count} %)`;
+      return count === null ? detail : t`Encrypting the disk (${count}%)`;
     case "cleaningUp":
       return text === null ? t`Cleaning up the image` : detail;
     default:

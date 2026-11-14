@@ -30,5 +30,5 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate SequenceServicingNotWindows = Define(
         "sequence.servicingNotWindows",
-        "{package} is no Windows package.");
+        "{package} is not a Windows package.");
 }

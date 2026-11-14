@@ -21,7 +21,7 @@ describe("stepDetailText", () => {
   });
 
   it("says how far BitLocker has encrypted the disk", () => {
-    expect(stepDetailText("#encrypting 74")).toBe("Encrypting the disk (74 %)");
+    expect(stepDetailText("#encrypting 74")).toBe("Encrypting the disk (74%)");
     expect(stepDetailText("#encrypting")).toBe("#encrypting");
   });
 

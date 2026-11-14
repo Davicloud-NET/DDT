@@ -24,9 +24,12 @@ public static class WindowsBuilds
             return ServerMessages.PackageBuildsWindowsOnly.With();
         }
 
-        return builds.Count > PackageLimits.MaxBuilds || builds.Any(build => build is < PackageLimits.MinBuild or > PackageLimits.MaxBuild)
-            ? ServerMessages.PackageBuilds.With("max", PackageLimits.MaxBuilds)
-            : null;
+        if (builds.Any(build => build is < PackageLimits.MinBuild or > PackageLimits.MaxBuild))
+        {
+            return ServerMessages.PackageBuild.With();
+        }
+
+        return builds.Count > PackageLimits.MaxBuilds ? ServerMessages.PackageBuilds.With("max", PackageLimits.MaxBuilds) : null;
     }
 
     public static IReadOnlyList<int> Clean(IReadOnlyList<int> builds)

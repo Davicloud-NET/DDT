@@ -61,6 +61,18 @@ public sealed class EnableBitLockerStepRunnerTests
         Assert.True(BitLockerCheckpoint.Read(run.Saves[^1]) is { Confirmed: true } confirmed && confirmed.ProtectorId == FakeBitLocker.ProtectorId);
     }
 
+    // As manage-bde and the recovery screen show it.
+    [Fact]
+    public async Task NamesTheKeyIdInUpperCase()
+    {
+        using BitLockerRunFixture run = new();
+        run.ServerTakesTheKey();
+
+        await run.EnableAsync();
+
+        Assert.Contains("The server has the recovery password of protector {748DC9C3-3024-4646-9069-B9EFBEED68E4}.", await run.EverythingLoggedAsync(), StringComparison.Ordinal);
+    }
+
     // The server refused or never answered: the step fails, protection stays off, and the failure names no password.
     [Fact]
     public async Task AKeyTheServerRefusesFailsTheStepWithProtectionOff()

@@ -67,5 +67,5 @@ public sealed class RecoveryKeyActions(
             key.MachineId.ToString("D"),
             actor,
             timeProvider.GetUtcNow(),
-            $"Key ID {key.ProtectorId:D} of {key.Volume}."));
+            $"Key ID {RecoveryKeyIds.Shown(key.ProtectorId)} of {key.Volume}."));
 }

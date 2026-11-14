@@ -14,7 +14,7 @@ public static partial class ServerMessages
 
     public static readonly MessageTemplate SequenceBitLockerAfterImage = Define(
         "sequence.bitLockerAfterImage",
-        "BitLocker is pre-provisioned before the image is applied.");
+        "BitLocker can be pre-provisioned only before the image is applied.");
 
     public static readonly MessageTemplate SequenceOneBitLockerPreprovision = Define(
         "sequence.oneBitLockerPreprovision",

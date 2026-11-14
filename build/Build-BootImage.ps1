@@ -60,8 +60,8 @@ adds the drivers in it. DISM refuses an unsigned driver, which Windows PE couldn
 Boot on anyway.
 
 Boot/ddt-boot-image.json says when the image was built, which DDT driver packages it holds, and the
-versions of the ADK, the boot managers and the agent. DDT reads it to tell whether the boot image
-still has the flagged drivers. It holds no secrets, because anyone who can netboot can read it, like
+versions of the ADK, the boot managers and the agent, and whether it has manage-bde. DDT reads it to
+tell whether the boot image still has the flagged drivers and can pre-provision BitLocker. It holds no secrets, because anyone who can netboot can read it, like
 everything in the boot directory.
 
 DISM and bcdedit both require elevation, even to read.

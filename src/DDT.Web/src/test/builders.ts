@@ -336,6 +336,7 @@ export function bootImageView(overrides: Partial<BootImageView> = {}): BootImage
       rootSha256: "A".repeat(64),
       keyboardLayout: "0407:00000407",
       powerShell: true,
+      bitLocker: true,
     },
     stale: false,
     staleReasons: [],

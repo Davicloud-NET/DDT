@@ -85,3 +85,12 @@ function Get-PowerShellComponentPackage {
 
     return $packages
 }
+
+# Whether the packages bring manage-bde: ddt-boot-image.json records it for the Boot image page.
+function Test-BitLockerPackage {
+    param([string[]] $Package)
+
+    $names = @($Package | ForEach-Object { Split-Path -Leaf $_ })
+
+    return ($names -contains 'WinPE-SecureStartup.cab') -and ($names -contains 'WinPE-EnhancedStorage.cab')
+}

@@ -41,5 +41,12 @@ export function StaleReasonText({ reason, view }: { reason: StaleReason; view: B
           It came from the Windows ADK {builtWith}, and the server now has {installed}.
         </Trans>
       );
+    case "bitLocker":
+      return (
+        <Trans>
+          A sequence pre-provisions BitLocker, which this boot image cannot do. Build it again with
+          PowerShell.
+        </Trans>
+      );
   }
 }

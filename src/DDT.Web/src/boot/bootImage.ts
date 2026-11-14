@@ -17,7 +17,7 @@ export interface BootImageDriver {
 }
 
 // What ddt-boot-image.json says the served build put into boot.wim, and what it was built for. A build script that
-// recorded none of the last four leaves them null.
+// recorded none of the last five leaves them null. bitLocker says it has manage-bde.
 export interface BootImageBuild {
   builtUtc: string;
   driverSetHash: string | null;
@@ -29,10 +29,11 @@ export interface BootImageBuild {
   rootSha256: string | null;
   keyboardLayout: string | null;
   powerShell: boolean | null;
+  bitLocker: boolean | null;
 }
 
 // Why the boot image has to be built again.
-export type StaleReason = "drivers" | "serverAddress" | "root" | "adk";
+export type StaleReason = "drivers" | "serverAddress" | "root" | "adk" | "bitLocker";
 
 // The Windows ADK on the server. supported is false for one older than the boot image needs.
 export interface BootImageAdk {

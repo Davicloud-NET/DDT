@@ -196,6 +196,7 @@ public sealed class BootImageCatalog(IOptions<DdtOptions> options, IConfiguratio
             manifest.ServerUrl,
             manifest.RootSha256,
             manifest.KeyboardLayout,
-            manifest.PowerShell);
+            manifest.PowerShell,
+            manifest.BitLocker);
     }
 }

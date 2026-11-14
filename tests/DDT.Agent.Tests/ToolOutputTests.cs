@@ -54,6 +54,10 @@ public sealed class ToolOutputTests
     }
 
     [Fact]
+    public void ManageBdesTextIsReadInTheOemCodePage() =>
+        Assert.Equal<ToolOutputDecoder>(AnsiCodePage.DecodeOem, WindowsToolDecoders.All["manage-bde.exe"]);
+
+    [Fact]
     public void PlainAsciiReadsTheSameEitherWay()
     {
         Assert.Equal("C:.", ToolOutput.Decode("C:."u8, AnsiCodePage.Decode));

@@ -75,11 +75,13 @@ public sealed class ImportFolders(IOptions<DdtOptions> options)
         return shares;
     }
 
-    // The WIM, ESD and ISO files in the import folders. A share's own files are left to the share's import.
+    // The WIM, ESD and ISO files in the import folders. A share's own files are left to the share's import. A file in
+    // a folder that lies in another import folder is listed once.
     public IReadOnlyList<ImportFile> Files()
     {
         IReadOnlyList<string> shares = Shares();
         List<ImportFile> files = [];
+        HashSet<string> seen = new(StringComparer.FromComparison(s_names));
 
         foreach (ImportFolder folder in Folders().Where(folder => Directory.Exists(folder.Path)))
         {
@@ -87,7 +89,7 @@ public sealed class ImportFolders(IOptions<DdtOptions> options)
             {
                 files.AddRange(new DirectoryInfo(folder.Path)
                     .EnumerateFiles("*", Options(MaxDepth))
-                    .Where(file => IsImage(file.Name) && !shares.Any(share => Within(share, file.FullName)))
+                    .Where(file => IsImage(file.Name) && !shares.Any(share => Within(share, file.FullName)) && seen.Add(file.FullName))
                     .Take(MaxFiles - files.Count)
                     .Select(file => new ImportFile(file.FullName, file.Name, file.Length, file.LastWriteTimeUtc)));
             }

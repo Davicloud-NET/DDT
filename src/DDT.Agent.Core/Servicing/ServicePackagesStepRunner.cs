@@ -116,7 +116,9 @@ public sealed class ServicePackagesStepRunner(IOfflineServicing dism, RunDownloa
                 Unpacked + (index * (Added - Unpacked) / calls.Count),
                 Unpacked + ((index + 1) * (Added - Unpacked) / calls.Count));
 
-            if (await AddAsync(calls[index], tally, image(), context, progress, cancellationToken).ConfigureAwait(false) is { } error)
+            context.Detail.Report(StepDetails.Coded(StepDetails.AddingPackage, calls[index].Names));
+
+            if (await AddAsync(calls[index], tally, image(), progress, cancellationToken).ConfigureAwait(false) is { } error)
             {
                 return error;
             }
@@ -130,12 +132,9 @@ public sealed class ServicePackagesStepRunner(IOfflineServicing dism, RunDownloa
         ServicingCall call,
         ServicingTally tally,
         OfflineImage image,
-        StepContext context,
         IProgress<int> progress,
         CancellationToken cancellationToken)
     {
-        context.Detail.Report(StepDetails.Coded(StepDetails.AddingPackage, call.Names));
-
         if (call.IsUpdate && SpaceProblem(call, image) is { } space)
         {
             return space;

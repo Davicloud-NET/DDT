@@ -20,6 +20,7 @@ const kindLabels: Record<StepKind, MessageDescriptor> = {
   partition: msg`Partition the disk`,
   applyImage: msg`Apply image`,
   injectDrivers: msg`Inject drivers`,
+  servicePackages: msg`Service packages`,
   writeUnattend: msg`Write the answer file`,
   joinDomain: msg`Join the domain`,
   runScript: msg`Run script`,
@@ -243,6 +244,8 @@ export function newStep(
       return { ...common, kind, imageId: EMPTY_ID };
     case "injectDrivers":
       return { ...common, kind, requireMatch: false };
+    case "servicePackages":
+      return { ...common, kind, packages: [], matchingUpdates: false, cleanup: true };
     case "writeUnattend":
       return {
         ...common,

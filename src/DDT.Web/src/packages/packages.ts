@@ -132,8 +132,8 @@ export function matchingMachines(
 }
 
 // The sequences that give the package to machines. A Files package needs a Run script step that names it.
-// Drivers need any Inject drivers step, which adds every driver package whose targets match the machine. No step
-// names a Windows package yet.
+// Drivers need any Inject drivers step, which adds every driver package whose targets match the machine. A Windows
+// package needs a Service packages step that lists it.
 export function sequencesUsing(
   item: PackageSummary,
   sequences: readonly SequenceView[],
@@ -145,6 +145,8 @@ export function sequencesUsing(
           return step.kind === "runScript" && step.packageId === item.id;
         case "Drivers":
           return step.kind === "injectDrivers";
+        case "WindowsPackage":
+          return step.kind === "servicePackages" && step.packages.includes(item.id);
         default:
           return false;
       }

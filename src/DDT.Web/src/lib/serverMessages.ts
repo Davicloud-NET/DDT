@@ -1701,6 +1701,30 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.sendJson",
     message: "Send the sequence as JSON.",
   }),
+  "sequence.servicingBeforeImage": msg({
+    context: "sequence.servicingBeforeImage",
+    message: "Windows packages can be added only after the image is applied.",
+  }),
+  "sequence.servicingChoose": msg({
+    context: "sequence.servicingChoose",
+    message: "Add a Windows package, or turn on the matching updates.",
+  }),
+  "sequence.servicingNotWindows": msg({
+    context: "sequence.servicingNotWindows",
+    message: "{package} is no Windows package.",
+  }),
+  "sequence.servicingPackageGone": msg({
+    context: "sequence.servicingPackageGone",
+    message: "The package is no longer in the library. Take it out of the list.",
+  }),
+  "sequence.servicingRepeated": msg({
+    context: "sequence.servicingRepeated",
+    message: "This package is listed twice.",
+  }),
+  "sequence.servicingTooMany": msg({
+    context: "sequence.servicingTooMany",
+    message: "A step adds at most {max} Windows packages.",
+  }),
   "sequence.setVariableChoose": msg({
     context: "sequence.setVariableChoose",
     message: "Choose the variable to set.",

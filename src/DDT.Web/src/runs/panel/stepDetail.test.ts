@@ -12,6 +12,14 @@ describe("stepDetailText", () => {
     expect(stepDetailText("#installingUpdates 1")).toBe("Installing 1 update");
   });
 
+  it("names the Windows package DISM adds and the cleanup", () => {
+    expect(stepDetailText("#addingPackage de-DE language pack (26100)")).toBe(
+      "Adding de-DE language pack (26100)",
+    );
+    expect(stepDetailText("#cleaningUp")).toBe("Cleaning up the image");
+    expect(stepDetailText("#addingPackage")).toBe("#addingPackage");
+  });
+
   it("shows anything else as the agent wrote it", () => {
     expect(stepDetailText("7-Zip 24.08")).toBe("7-Zip 24.08");
     expect(stepDetailText("#somethingNew 3")).toBe("#somethingNew 3");

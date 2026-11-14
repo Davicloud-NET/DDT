@@ -4,6 +4,7 @@
 
 using DDT.Agent.Applications;
 using DDT.Agent.Deployment;
+using DDT.Agent.Servicing;
 using DDT.Agent.WindowsFeatures;
 using DDT.Agent.WindowsUpdates;
 
@@ -42,6 +43,7 @@ public sealed class WindowsStepRunners : IStepRunners
             new PartitionStepRunner(Partitioner, session, store, Log, Options.DryRun),
             new ApplyImageStepRunner(Applier, downloads, session, Log),
             new InjectDriversStepRunner(Tools, downloads, session, Log),
+            new ServicePackagesStepRunner(Options.DryRun ? new DryRunOfflineServicing(Log) : new DismOfflineServicing(Tools, InjectDriversStepRunner.DismPath, Log), downloads, session, Log),
             new WriteUnattendStepRunner(Server, session, heartbeat.ReportNowAsync, Log, TimeProvider),
             new JoinDomainStepRunner(Joiner, Server, session, heartbeat.ReportNowAsync, Log, TimeProvider),
             new RunScriptStepRunner(Tools, new WindowsScriptLauncher(), downloads, session, Log, Options.WorkDirectory),

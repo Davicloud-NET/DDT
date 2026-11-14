@@ -358,6 +358,10 @@ msgstr ""
 msgid "{count, plural, one {# group} other {# groups}}"
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "{count, plural, one {# package} other {# packages}}"
+msgstr ""
+
 #: src/machines/approval.ts
 #: src/machines/assign/assignText.ts
 #: src/rules/drawer/SequenceChoice.tsx
@@ -733,6 +737,10 @@ msgctxt "sequence.conditionNumber"
 msgid "{list, select, yes {Enter numbers separated by semicolons, such as 8192;16384.} other {Enter a number, such as 8192.}}"
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "{listed} and the matching updates"
+msgstr ""
+
 #: src/log/LogFilters.tsx
 msgid "{loaded, plural, one {Search the # loaded line} other {Search the # loaded lines}}"
 msgstr ""
@@ -1064,6 +1072,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.packageIsDrivers"
 msgid "{package} is a driver package. A script runs with a files package."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.servicingNotWindows"
+msgid "{package} is no Windows package."
 msgstr ""
 
 #: src/runs/panel/railSteps.ts
@@ -1883,6 +1896,11 @@ msgid "A sign-in at the machine then only records who is there. Zero touch is of
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.servicingTooMany"
+msgid "A step adds at most {max} Windows packages."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.tooManyShares"
 msgid "A step can connect at most {max} shares."
 msgstr ""
@@ -2276,6 +2294,15 @@ msgstr ""
 msgid "Add a variable"
 msgstr ""
 
+#: src/sequences/steps/ServicePackagesFields.tsx
+msgid "Add a Windows package"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.servicingChoose"
+msgid "Add a Windows package, or turn on the matching updates."
+msgstr ""
+
 #: src/accounts/AccountsPage.tsx
 #: src/users/AddUserDialog.tsx
 #: src/users/UserAdministration.tsx
@@ -2337,6 +2364,10 @@ msgctxt "sequence.autoLogonNeedsAdministrator"
 msgid "Add the local administrator to sign in as it."
 msgstr ""
 
+#: src/sequences/steps/ServicePackagesFields.tsx
+msgid "Add the updates marked for the image's build"
+msgstr ""
+
 #: src/sequences/builder/Palette.tsx
 msgid "Add to the flow"
 msgstr ""
@@ -2355,6 +2386,10 @@ msgstr ""
 
 #: src/packages/packageView.ts
 msgid "Added {name} from {file}."
+msgstr ""
+
+#: src/runs/panel/stepDetail.ts
+msgid "Adding {text}"
 msgstr ""
 
 #: src/conditions/conditionSubjects.ts
@@ -3466,6 +3501,14 @@ msgstr ""
 
 #: src/settings/signIn/ClaimRolesGroup.tsx
 msgid "Claim with the groups"
+msgstr ""
+
+#: src/sequences/steps/ServicePackagesFields.tsx
+msgid "Clean up after the updates"
+msgstr ""
+
+#: src/runs/panel/stepDetail.ts
+msgid "Cleaning up the image"
 msgstr ""
 
 #: src/accounts/drawer/PasswordActions.tsx
@@ -7027,6 +7070,10 @@ msgstr ""
 msgid "No package matches"
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "No packages chosen yet"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.apply.proxiesClosed"
 msgid "No proxy is trusted on this host while the section has problems: {problems}"
@@ -9038,6 +9085,10 @@ msgstr ""
 msgid "Servers"
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "Service packages"
+msgstr ""
+
 #: src/settings/networkBoot/HostInterfaces.tsx
 msgid "Serving"
 msgstr ""
@@ -10954,6 +11005,11 @@ msgid "The package is no longer in the library. Choose another package, or none.
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.servicingPackageGone"
+msgid "The package is no longer in the library. Take it out of the list."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "package.fileMissing"
 msgid "The package's file is missing from the server's library. Upload it again."
 msgstr ""
@@ -11409,6 +11465,10 @@ msgstr ""
 msgid "The tokens could not be loaded."
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "The updates marked for the image's build"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "upload.failed"
 msgid "The upload could not be added to the library. Look at the server log, then complete the upload again."
@@ -11789,6 +11849,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.operatorDoesNotFit"
 msgid "This operator does not fit {name}, which holds {type, select, Number {a number} YesNo {yes or no} IPv4 {an IPv4 address} Mac {a MAC address} other {plain text}}."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.servicingRepeated"
+msgid "This package is listed twice."
 msgstr ""
 
 #: src/settings/certificate/CertificateFacts.tsx
@@ -12747,7 +12812,13 @@ msgstr ""
 
 #: src/app/navigation.ts
 #: src/packages/packageKindTexts.ts
+#: src/sequences/steps/ServicePackagesFields.tsx
 msgid "Windows packages"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.servicingBeforeImage"
+msgid "Windows packages can be added only after the image is applied."
 msgstr ""
 
 #: src/machines/bootEnvironment.ts

@@ -51,6 +51,17 @@ public sealed class StepDefaultsTests
         Assert.Equal((true, 8), (step.MicrosoftProducts, step.AllowedRestarts));
     }
 
+    [Theory]
+    [MemberData(nameof(Contexts))]
+    public void AServicePackagesStepWithoutTheSwitchCleansUp(string context)
+    {
+        string json = """{"version":8,"steps":[{"kind":"servicePackages","id":"0193a4b2-0000-7000-8000-000009600005","name":"P","packages":[]}]}""";
+
+        ServicePackagesStep step = Assert.IsType<ServicePackagesStep>(JsonSerializer.Deserialize(json, Context(context))?.Steps[0]);
+
+        Assert.Equal((true, false), (step.Cleanup, step.MatchingUpdates));
+    }
+
     [Fact]
     public void WrittenFieldsStillWin()
     {

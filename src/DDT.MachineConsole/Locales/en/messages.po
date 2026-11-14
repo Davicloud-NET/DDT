@@ -32,8 +32,16 @@ msgid "A step asked for a restart."
 msgstr "A step asked for a restart."
 
 #: Texts/Say.cs
+msgid "Adding Windows packages"
+msgstr "Adding Windows packages"
+
+#: Texts/Say.cs
 msgid "Adding drivers"
 msgstr "Adding drivers"
+
+#: Texts/Say.cs
+msgid "Adding {package}"
+msgstr "Adding {package}"
 
 #: ViewModels/MachineViewModel.cs
 msgid "Agent"
@@ -150,6 +158,10 @@ msgstr "Choosing"
 #: Texts/Say.cs
 msgid "Choosing a task sequence"
 msgstr "Choosing a task sequence"
+
+#: Texts/Say.cs
+msgid "Cleaning up the image"
+msgstr "Cleaning up the image"
 
 #: ViewModels/EndViewModel.cs
 msgid "Close the console"

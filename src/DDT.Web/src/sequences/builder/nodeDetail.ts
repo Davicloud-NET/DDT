@@ -115,6 +115,17 @@ function updatesDetail(node: WindowsUpdateStep): string {
   return parts.join(", ");
 }
 
+// How many packages a Service packages step lists, and whether it adds the matching updates.
+function servicingDetail(count: number, matching: boolean): string {
+  if (count === 0) {
+    return matching ? t`The updates marked for the image's build` : t`No packages chosen yet`;
+  }
+
+  const listed = plural(count, { one: "# package", other: "# packages" });
+
+  return matching ? t`${listed} and the matching updates` : listed;
+}
+
 export function nodeDetail(
   node: SequenceStep,
   {
@@ -188,6 +199,8 @@ export function nodeDetail(
       );
     case "windowsUpdate":
       return plain(updatesDetail(node));
+    case "servicePackages":
+      return plain(servicingDetail(node.packages.length, node.matchingUpdates));
     case "if":
       return plain(conditionSummary(node.test, subjects));
     case "group":

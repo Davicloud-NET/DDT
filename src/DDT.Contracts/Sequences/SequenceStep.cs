@@ -26,6 +26,7 @@ namespace DDT.Contracts.Sequences;
 [JsonDerivedType(typeof(InstallApplicationsStep), "installApplications")]
 [JsonDerivedType(typeof(EnableFeaturesStep), "enableFeatures")]
 [JsonDerivedType(typeof(WindowsUpdateStep), "windowsUpdate")]
+[JsonDerivedType(typeof(ServicePackagesStep), "servicePackages")]
 public abstract record SequenceStep
 {
     // Stable across edits, because run state, reports and problems name a step by it.

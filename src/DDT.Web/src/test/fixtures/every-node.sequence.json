@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 8,
   "steps": [
     {
       "kind": "partition",
@@ -50,6 +50,19 @@
           }
         ]
       }
+    },
+    {
+      "kind": "servicePackages",
+      "packages": [
+        "0193a4b2-0000-7000-8000-0000000000e1"
+      ],
+      "matchingUpdates": true,
+      "cleanup": true,
+      "id": "00000000-0000-4000-8000-000000000016",
+      "name": "Service packages",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
     },
     {
       "kind": "writeUnattend",

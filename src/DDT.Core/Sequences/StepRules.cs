@@ -157,7 +157,7 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goe
     // Steps a run does only once, which a repeat would do again.
     private static bool RunsOnce(SequenceStep step) =>
         step is PartitionStep or WriteRawImageStep or ApplyImageStep or InjectDriversStep or WriteUnattendStep or JoinDomainStep
-            or WriteCloudInitSeedStep;
+            or WriteCloudInitSeedStep or ServicePackagesStep;
 
     private static string? PhaseField(SequenceStep step) => step is RunScriptStep ? "phase" : null;
 
@@ -253,6 +253,9 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goe
                 break;
             case WindowsUpdateStep updates:
                 UpdateStepRules.Check(updates, problems);
+                break;
+            case ServicePackagesStep servicing:
+                ServicingStepRules.Check(servicing, place, problems);
                 break;
             default:
                 problems.Add("kind", ServerMessages.SequenceUnknownStep.With());

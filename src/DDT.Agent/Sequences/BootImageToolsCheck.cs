@@ -11,6 +11,10 @@ namespace DDT.Agent.Sequences;
 // where WinPE keeps both.
 public sealed class BootImageToolsCheck(string systemDirectory) : IPreflightCheck
 {
+    public const string NoDismForPackagesMessage =
+        "This boot image has no DISM, which a Service packages step of this sequence needs. Build the boot image again with " +
+        "build\\Build-BootImage.ps1.";
+
     public bool AfterDiskChoice => false;
 
     public void Check(IReadOnlyList<SequenceStep> steps)
@@ -20,6 +24,11 @@ public sealed class BootImageToolsCheck(string systemDirectory) : IPreflightChec
         if (steps.OfType<InjectDriversStep>().Any() && !File.Exists(InjectDriversStepRunner.DismIn(systemDirectory)))
         {
             throw new DeploymentStepException(InjectDriversStepRunner.NoDismMessage);
+        }
+
+        if (steps.OfType<ServicePackagesStep>().Any() && !File.Exists(InjectDriversStepRunner.DismIn(systemDirectory)))
+        {
+            throw new DeploymentStepException(NoDismForPackagesMessage);
         }
 
         if (steps.OfType<RunScriptStep>().Any(step => step is { Interpreter: ScriptInterpreter.PowerShell, Phase: SequencePhase.WindowsPE })

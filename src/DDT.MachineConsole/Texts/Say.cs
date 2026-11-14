@@ -111,6 +111,7 @@ public static class Say
         "installApplications" => l.T("Installing applications"),
         "enableFeatures" => l.T("Enabling roles and features"),
         "windowsUpdate" => l.T("Installing Windows updates"),
+        "servicePackages" => l.T("Adding Windows packages"),
         _ => null,
     };
 
@@ -245,6 +246,17 @@ public static class Say
     public static string StepDetail(Localizer l, string detail)
     {
         ArgumentNullException.ThrowIfNull(l);
+
+        if (StepDetails.TryReadText(detail, out string named, out string? text))
+        {
+            switch (named)
+            {
+                case StepDetails.AddingPackage when text is not null:
+                    return l.F("Adding {package}", ("package", text));
+                case StepDetails.CleaningUp when text is null:
+                    return l.T("Cleaning up the image");
+            }
+        }
 
         if (!StepDetails.TryRead(detail, out string key, out int? number) || number is not { } count)
         {

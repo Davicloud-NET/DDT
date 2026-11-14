@@ -55,16 +55,12 @@ public sealed class RunAnswerFiles(
             return (null, signInRefusal);
         }
 
-        string? language = await database.DeploymentArtifacts
-            .AsNoTracking()
-            .Where(a => a.DeploymentId == runId && a.Kind == ArtifactKind.Image)
-            .Select(a => a.Language)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
+        (string? language, string? edition) = await AppliedImageAsync(runId, cancellationToken).ConfigureAwait(false);
 
         UnattendSources sources = new(running.Inputs)
         {
             ImageLanguage = language,
+            ImageEdition = edition,
             Password = password,
             ProductKey = deployment.ProductKey,
             MacAddress = machine.PrimaryMac,
@@ -86,6 +82,39 @@ public sealed class RunAnswerFiles(
             $"The answer file of step {unattend.Name} ({stepId:D}) of {running.Run.Title}{with}."));
 
         return (answerFile, null);
+    }
+
+    // The image of the step that applied one, or of the first image step before any did. Of several branches, only one
+    // ran. The edition comes from the library, which keeps an image while a run uses it.
+    private async Task<(string? Language, string? Edition)> AppliedImageAsync(Guid runId, CancellationToken cancellationToken)
+    {
+        List<DeploymentArtifact> images = await database.DeploymentArtifacts
+            .AsNoTracking()
+            .Where(a => a.DeploymentId == runId && a.Kind == ArtifactKind.Image)
+            .OrderBy(a => a.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        HashSet<Guid> steps = [.. images.Select(a => a.StepId)];
+        List<Guid> done = await database.DeploymentSteps
+            .AsNoTracking()
+            .Where(step => step.DeploymentId == runId && step.State == StepState.Done && steps.Contains(step.StepId))
+            .Select(step => step.StepId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if ((images.FirstOrDefault(a => done.Contains(a.StepId)) ?? images.FirstOrDefault()) is not { } applied)
+        {
+            return (null, null);
+        }
+
+        string? edition = await database.Images
+            .AsNoTracking()
+            .Where(image => image.Id == applied.SourceId)
+            .Select(image => image.Edition)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (applied.Language, edition);
     }
 
     // Only a sequence without a Windows step has them in its answer file.

@@ -10,6 +10,9 @@ public sealed record UnattendSources(RunInputs Inputs)
 {
     public string? ImageLanguage { get; init; }
 
+    // EDITIONID of the applied image, such as ServerStandard. Null when it is not known.
+    public string? ImageEdition { get; init; }
+
     public string? Password { get; init; }
 
     public string? ProductKey { get; init; }
@@ -20,5 +23,5 @@ public sealed record UnattendSources(RunInputs Inputs)
     public FirstLogon? FirstLogon { get; init; }
 
     // A record prints every property by default, and the secrets must never reach a log.
-    public override string ToString() => $"UnattendSources {{ ImageLanguage = {ImageLanguage} }}";
+    public override string ToString() => $"UnattendSources {{ ImageLanguage = {ImageLanguage}, ImageEdition = {ImageEdition} }}";
 }

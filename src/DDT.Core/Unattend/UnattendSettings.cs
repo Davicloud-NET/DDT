@@ -29,4 +29,7 @@ public sealed record UnattendSettings(
     public IReadOnlyList<string> FirstLogonCommands { get; init; } = [];
 
     public AutoLogonAccount? AutoLogon { get; init; }
+
+    // A Windows Server image, whose built-in Administrator gets the local administrator's password.
+    public bool ServerEdition { get; init; }
 }

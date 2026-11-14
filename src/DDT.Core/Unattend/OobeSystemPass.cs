@@ -15,6 +15,11 @@ internal static class OobeSystemPass
     // suffix.
     private const string PasswordSuffix = "Password";
 
+    // The suffix of AdministratorPassword, as in Microsoft's example on its AdministratorPassword page.
+    private const string AdministratorPasswordSuffix = "AdministratorPassword";
+
+    private const string BuiltInAdministrator = "Administrator";
+
     // Setup adds 1 to a LogonCount above 0, so one sign-in needs this first command. See Microsoft's LogonCount page.
     public const string OneLogonCommand = @"reg add ""HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"" /v AutoLogonCount /t REG_DWORD /d 0 /f";
 
@@ -40,7 +45,29 @@ internal static class OobeSystemPass
 
         if (settings.LocalAdministrator is { } administrator)
         {
-            StartElement(writer, "UserAccounts");
+            WriteUserAccounts(writer, administrator, settings.ServerEdition);
+        }
+
+        writer.WriteEndElement();
+        writer.WriteEndElement();
+    }
+
+    // Server's Setup asks for the built-in Administrator's password unless the file sets it. An account named
+    // Administrator is that built-in one there.
+    private static void WriteUserAccounts(XmlWriter writer, LocalAdministrator administrator, bool server)
+    {
+        StartElement(writer, "UserAccounts");
+
+        if (server)
+        {
+            StartElement(writer, "AdministratorPassword");
+            WriteElement(writer, "Value", EncodePassword(administrator.Password, AdministratorPasswordSuffix));
+            WriteElement(writer, "PlainText", Flag(false));
+            writer.WriteEndElement();
+        }
+
+        if (!server || !string.Equals(administrator.Name, BuiltInAdministrator, StringComparison.OrdinalIgnoreCase))
+        {
             StartElement(writer, "LocalAccounts");
             StartAdded(writer, "LocalAccount");
             WriteElement(writer, "Name", administrator.Name);
@@ -53,10 +80,8 @@ internal static class OobeSystemPass
             writer.WriteEndElement();
             writer.WriteEndElement();
             writer.WriteEndElement();
-            writer.WriteEndElement();
         }
 
-        writer.WriteEndElement();
         writer.WriteEndElement();
     }
 
@@ -121,6 +146,6 @@ internal static class OobeSystemPass
         }
     }
 
-    private static string EncodePassword(string password) =>
-        Convert.ToBase64String(Encoding.Unicode.GetBytes(password + PasswordSuffix));
+    private static string EncodePassword(string password, string suffix = PasswordSuffix) =>
+        Convert.ToBase64String(Encoding.Unicode.GetBytes(password + suffix));
 }

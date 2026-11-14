@@ -92,6 +92,7 @@ public sealed class UnattendRenderer
             Oobe = new OobePages(step.HideEulaPage, step.HideOemRegistration, step.HideOnlineAccounts, step.HideWirelessSetup),
             FirstLogonCommands = sources.FirstLogon?.Commands ?? [],
             AutoLogon = sources.FirstLogon?.AutoLogon,
+            ServerEdition = IsServer(sources.ImageEdition),
         };
     }
 
@@ -163,6 +164,9 @@ public sealed class UnattendRenderer
             $"The answer file's organization and owner may have at most {WindowsSetupValues.MaxRegisteredLength} characters each.",
         _ => null,
     };
+
+    // Every Windows Server EDITIONID starts so: ServerStandard, ServerDatacenterEval, ServerAzureEdition.
+    public static bool IsServer(string? edition) => edition?.StartsWith("Server", StringComparison.OrdinalIgnoreCase) == true;
 
     private static string? Value(string? setting) => string.IsNullOrWhiteSpace(setting) ? null : setting.Trim();
 }

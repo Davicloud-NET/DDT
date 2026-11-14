@@ -32,6 +32,7 @@ import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
 import { DriversPage } from "@/packages/DriversPage";
 import { FilesPage } from "@/packages/FilesPage";
+import { WindowsPackagesPage } from "@/packages/WindowsPackagesPage";
 import { MachineRolesPage } from "@/roles/MachineRolesPage";
 import { rulesSearch } from "@/rules/rules";
 import { RulesPage } from "@/rules/RulesPage";
@@ -114,6 +115,7 @@ function testRouter(path: string, hub: TestHub | null, palette: boolean) {
         page("/library/images", ImagesPage),
         page("/library/drivers", DriversPage),
         page("/library/files", FilesPage),
+        page("/library/windows-packages", WindowsPackagesPage),
         page("/library/applications", ApplicationsPage),
         page("/boot/image", BootImagePage),
         page("/account", AccountPage),

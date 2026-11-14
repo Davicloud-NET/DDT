@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Trans } from "@lingui/react/macro";
 
 import { formatBytes } from "@/lib/format";
 import { Uploaded } from "@/library/Uploaded";
@@ -12,13 +12,15 @@ import { DriverTargets } from "./DriverTargets";
 import { FileUsers } from "./FileUsers";
 import { PackageMenu } from "./PackageMenu";
 import { PackageName } from "./PackageName";
-import type { PackageSummary } from "./packages";
+import { packageKindTexts } from "./packageKindTexts";
+import type { PackageKind, PackageSummary } from "./packages";
 import { packageContents } from "./packageView";
 import type { PackageLibrary } from "./usePackageLibrary";
+import { WindowsContent } from "./WindowsContent";
 
 interface PackagesTableProps {
   items: PackageSummary[];
-  drivers: boolean;
+  kind: PackageKind;
   library: PackageLibrary;
   now: number;
   canEdit: boolean;
@@ -29,19 +31,17 @@ interface PackagesTableProps {
 }
 
 export function PackagesTable(props: PackagesTableProps) {
-  const { items, drivers, library, now, canEdit, mark, onEdit, onDelete } = props;
-  const { t: translate } = useLingui();
+  const { items, kind, library, now, canEdit, mark, onEdit, onDelete } = props;
 
   return (
-    <Table
-      aria-label={drivers ? translate`Driver packages` : translate`File packages`}
-      className="min-w-[860px] table-fixed"
-    >
+    <Table aria-label={packageKindTexts(kind).table} className="min-w-[860px] table-fixed">
       <TableHeader>
         <TableColumn id="name" isRowHeader className="w-[32%] pl-4">
           <Trans>Package</Trans>
         </TableColumn>
-        <TableColumn id="use">{drivers ? <Trans>For</Trans> : <Trans>Used by</Trans>}</TableColumn>
+        <TableColumn id="use">
+          <UseHeader kind={kind} />
+        </TableColumn>
         <TableColumn id="size" className="w-36">
           <Trans>Size</Trans>
         </TableColumn>
@@ -61,8 +61,10 @@ export function PackagesTable(props: PackagesTableProps) {
               <PackageName item={item} />
             </TableCell>
             <TableCell className="type-small">
-              {drivers ? (
+              {kind === "Drivers" ? (
                 <DriverTargets item={item} matches={library.matchesOf(item)} />
+              ) : kind === "WindowsPackage" ? (
+                <WindowsContent item={item} />
               ) : (
                 <FileUsers users={library.usersOf(item)} />
               )}
@@ -94,4 +96,15 @@ export function PackagesTable(props: PackagesTableProps) {
       </TableBody>
     </Table>
   );
+}
+
+function UseHeader({ kind }: { kind: PackageKind }) {
+  switch (kind) {
+    case "Drivers":
+      return <Trans>For</Trans>;
+    case "WindowsPackage":
+      return <Trans>Content</Trans>;
+    default:
+      return <Trans>Used by</Trans>;
+  }
 }

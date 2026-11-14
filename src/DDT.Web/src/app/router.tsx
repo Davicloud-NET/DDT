@@ -25,6 +25,7 @@ import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
 import { DriversPage } from "@/packages/DriversPage";
 import { FilesPage } from "@/packages/FilesPage";
+import { WindowsPackagesPage } from "@/packages/WindowsPackagesPage";
 import { MachineRolesPage } from "@/roles/MachineRolesPage";
 import { rulesSearch } from "@/rules/rules";
 import { RulesPage } from "@/rules/RulesPage";
@@ -181,6 +182,11 @@ const filesRoute = createRoute({
   path: "/library/files",
   component: FilesPage,
 });
+const windowsPackagesRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/library/windows-packages",
+  component: WindowsPackagesPage,
+});
 const applicationsRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/library/applications",
@@ -253,6 +259,7 @@ const routeTree = rootRoute.addChildren([
     imagesRoute,
     driversRoute,
     filesRoute,
+    windowsPackagesRoute,
     applicationsRoute,
     bootImageRoute,
     networkBootRoute,

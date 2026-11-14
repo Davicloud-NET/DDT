@@ -513,6 +513,10 @@ msgctxt "application.msixUnreadable"
 msgid "{file} is no MSIX or Appx package that can be read."
 msgstr ""
 
+#: src/packages/packageUploadResult.ts
+msgid "{file} is on the server. Choose its languages."
+msgstr ""
+
 #: src/images/imageView.ts
 msgid "{file}, index {index}"
 msgstr ""
@@ -1526,6 +1530,10 @@ msgstr ""
 
 #: src/settings/networkBoot.ts
 msgid "64-bit UEFI PCs, over TFTP"
+msgstr ""
+
+#: src/packages/PackageUploadPanel.tsx
+msgid "a .msu, .cab, zip or ISO file"
 msgstr ""
 
 #: src/sequences/steps/WriteCloudInitSeedFields.tsx
@@ -3115,6 +3123,7 @@ msgstr ""
 #: src/images/import/MdtShareDialog.tsx
 #: src/inputs/InputsDialog.tsx
 #: src/machines/AssignDialog.tsx
+#: src/packages/languages/LanguageIsoDialog.tsx
 #: src/packages/PackageDialog.tsx
 #: src/rules/DrawerFooter.tsx
 #: src/sequences/NewSequenceDialog.tsx
@@ -3338,6 +3347,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.scriptInterpreter"
 msgid "Choose cmd, PowerShell or the shell."
+msgstr ""
+
+#: src/packages/languages/LanguageIsoPanel.tsx
+msgid "Choose languages"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3573,6 +3586,10 @@ msgstr ""
 #: src/runs/runs.ts
 #: src/sequences/steps.ts
 msgid "contains"
+msgstr ""
+
+#: src/packages/PackagesTable.tsx
+msgid "Content"
 msgstr ""
 
 #: src/machines/RunWaiting.tsx
@@ -4130,7 +4147,7 @@ msgstr ""
 msgid "Driver groups, each as a driver package"
 msgstr ""
 
-#: src/packages/PackagesTable.tsx
+#: src/packages/packageKindTexts.ts
 msgid "Driver packages"
 msgstr ""
 
@@ -4144,7 +4161,7 @@ msgstr ""
 
 #: src/app/navigation.ts
 #: src/boot/LastBuild.tsx
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 #: src/sequences/steps/WindowsUpdateFields.tsx
 msgid "Drivers"
 msgstr ""
@@ -4288,6 +4305,10 @@ msgstr ""
 
 #: src/packages/HardwareModelsField.tsx
 msgid "End a model with * to match every model that starts with it. Leave the manufacturer empty for any."
+msgstr ""
+
+#: src/packages/languages/LanguageIsoDialog.tsx
+msgid "End of the names"
 msgstr ""
 
 #: src/runs/runs.ts
@@ -4714,19 +4735,23 @@ msgctxt "settings.ldap.nestedGroupsOff"
 msgid "false reads no groups, so every directory user would be refused. Turn it on, or empty GroupRoleMap."
 msgstr ""
 
+#: src/packages/windowsPackageView.ts
+msgid "Features on demand"
+msgstr ""
+
 #: src/applications/applicationView.ts
 #: src/images/ImageFacts.tsx
 msgid "File"
 msgstr ""
 
-#: src/packages/PackagesTable.tsx
+#: src/packages/packageKindTexts.ts
 msgid "File packages"
 msgstr ""
 
 #: src/app/navigation.ts
 #: src/applications/drawer/FilesField.tsx
 #: src/applications/list/ApplicationsTable.tsx
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 msgid "Files"
 msgstr ""
 
@@ -4782,7 +4807,7 @@ msgstr ""
 msgid "Find a directory group"
 msgstr ""
 
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 msgid "Find a driver package"
 msgstr ""
 
@@ -4790,12 +4815,16 @@ msgstr ""
 msgid "Find a fact or a variable"
 msgstr ""
 
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 msgid "Find a file package"
 msgstr ""
 
 #: src/users/DirectoryGroupSearch.tsx
 msgid "Find a group"
+msgstr ""
+
+#: src/packages/languages/LanguageIsoDialog.tsx
+msgid "Find a language"
 msgstr ""
 
 #: src/machines/list/MachineListHeader.tsx
@@ -4816,6 +4845,10 @@ msgstr ""
 
 #: src/tokens/AllTokens.tsx
 msgid "Find a token"
+msgstr ""
+
+#: src/packages/packageKindTexts.ts
+msgid "Find a Windows package"
 msgstr ""
 
 #: src/users/UserAdministration.tsx
@@ -4878,6 +4911,10 @@ msgstr ""
 
 #: src/settings/networkBoot/TransfersGroup.tsx
 msgid "For a stateful firewall that drops replies from a fresh port."
+msgstr ""
+
+#: src/packages/languages/LanguageIsoDialog.tsx
+msgid "For example {example}."
 msgstr ""
 
 #: src/packages/PackageDialog.tsx
@@ -5274,6 +5311,7 @@ msgstr ""
 
 #: src/images/import/ImportPanel.tsx
 #: src/images/import/MdtShareDialog.tsx
+#: src/packages/languages/LanguageIsoDialog.tsx
 msgid "Import"
 msgstr ""
 
@@ -5287,6 +5325,10 @@ msgstr ""
 
 #: src/audit/auditView.ts
 msgid "Import from the server started"
+msgstr ""
+
+#: src/packages/languages/LanguageIsoDialog.tsx
+msgid "Import languages"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -5773,6 +5815,7 @@ msgstr ""
 
 #: src/app/UserMenu.tsx
 #: src/images/ImageFacts.tsx
+#: src/packages/windowsPackageView.ts
 #: src/settings/deploymentDefaults/ConsoleLanguageGroup.tsx
 msgid "Language"
 msgstr ""
@@ -5780,6 +5823,10 @@ msgstr ""
 #: src/sequences/steps/WriteUnattendFields.tsx
 #: src/settings/deploymentDefaults/WindowsSetupGroup.tsx
 msgid "Language and region"
+msgstr ""
+
+#: src/packages/languages/LanguageIsoPanel.tsx
+msgid "Languages from the ISO"
 msgstr ""
 
 #: src/conditions/conditionSubjects.ts
@@ -6044,6 +6091,7 @@ msgid "Logo on the console"
 msgstr ""
 
 #: src/images/import/ImportPanel.tsx
+#: src/packages/languages/LanguageIsoPanel.tsx
 msgid "Look again"
 msgstr ""
 
@@ -6529,19 +6577,27 @@ msgstr ""
 msgid "Name or description"
 msgstr ""
 
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 msgid "Name or file"
+msgstr ""
+
+#: src/packages/languages/LanguageIsoDialog.tsx
+msgid "Name or tag"
 msgstr ""
 
 #: src/images/ImagesPage.tsx
 msgid "Name, edition, version, language or file"
 msgstr ""
 
+#: src/packages/packageKindTexts.ts
+msgid "Name, language or KB"
+msgstr ""
+
 #: src/machines/list/MachineListHeader.tsx
 msgid "Name, MAC, serial or address"
 msgstr ""
 
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 msgid "Name, model or file"
 msgstr ""
 
@@ -6809,7 +6865,7 @@ msgstr ""
 msgid "No driver package is in the library yet."
 msgstr ""
 
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 msgid "No driver packages yet"
 msgstr ""
 
@@ -6844,7 +6900,7 @@ msgstr ""
 msgid "No file chosen"
 msgstr ""
 
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 msgid "No file packages yet"
 msgstr ""
 
@@ -6883,6 +6939,10 @@ msgstr ""
 
 #: src/settings/networkBoot/InterfacesGroup.tsx
 msgid "No interface is listed, so DDT answers no machine that netboots."
+msgstr ""
+
+#: src/packages/languages/LanguageChoices.tsx
+msgid "No language matches."
 msgstr ""
 
 #: src/log/LogLines.tsx
@@ -7062,6 +7122,10 @@ msgstr ""
 
 #: src/sequences/steps/SetVariableFields.tsx
 msgid "No variable of this sequence may be set by steps yet. Declare one on the Variables tab."
+msgstr ""
+
+#: src/packages/packageKindTexts.ts
+msgid "No Windows packages yet"
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/PortOwners.tsx
@@ -12106,8 +12170,20 @@ msgstr ""
 msgid "Unwrap {name}"
 msgstr ""
 
+#: src/packages/windowsPackageView.ts
+msgid "Update"
+msgstr ""
+
+#: src/packages/windowsPackageView.ts
+msgid "Updates and features"
+msgstr ""
+
 #: src/sequences/steps/WindowsUpdateFields.tsx
 msgid "Updates for other Microsoft products"
+msgstr ""
+
+#: src/packages/PackageUploadPanel.tsx
+msgid "Updates from the Microsoft Update Catalog, cabinets, or the Languages and Optional Features ISO."
 msgstr ""
 
 #: src/uploads/UploadPanel.tsx
@@ -12172,6 +12248,10 @@ msgstr ""
 
 #: src/settings/LinuxConsolePanel.tsx
 msgid "Upload the console for Linux"
+msgstr ""
+
+#: src/packages/languages/LanguageIsoPanel.tsx
+msgid "Upload the Languages and Optional Features ISO above, or copy it into <0>{own}</0> on the server."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -12632,6 +12712,11 @@ msgstr ""
 
 #: src/sequences/builder/nodeDetail.ts
 msgid "Windows only"
+msgstr ""
+
+#: src/app/navigation.ts
+#: src/packages/packageKindTexts.ts
+msgid "Windows packages"
 msgstr ""
 
 #: src/machines/bootEnvironment.ts

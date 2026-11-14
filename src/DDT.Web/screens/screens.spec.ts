@@ -27,6 +27,7 @@ import { treeMachine, treeMachineId, treeRunId, treeRunView } from "@/test/treeR
 import { node } from "@/test/treeSequence";
 
 import { applications, bundles } from "./applications";
+import { windowsPackageAnswers } from "./windowsPackages";
 import {
   accounts,
   roles,
@@ -451,6 +452,14 @@ for (const scheme of ["light", "dark"] as const) {
     });
   });
 }
+
+// Updates and languages, with the Languages and Optional Features ISO waiting in the import folder.
+test("windows packages", async ({ page }) => {
+  await show(page, "/library/windows-packages", windowsPackageAnswers);
+  await expect(page.getByRole("grid", { name: "Windows packages" })).toBeVisible();
+
+  await expect(page).toHaveScreenshot("windows-packages-light.png");
+});
 
 test("the console's logo", async ({ page }) => {
   await show(page, "/deployment/defaults", deploymentDefaults);

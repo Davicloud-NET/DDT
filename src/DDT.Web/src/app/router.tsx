@@ -30,6 +30,7 @@ import { MachineRolesPage } from "@/roles/MachineRolesPage";
 import { rulesSearch } from "@/rules/rules";
 import { RulesPage } from "@/rules/RulesPage";
 import { ApprovalPage } from "@/settings/ApprovalPage";
+import { AutopilotPage } from "@/settings/AutopilotPage";
 import { DeploymentDefaultsPage } from "@/settings/DeploymentDefaultsPage";
 import { NetworkBootPage } from "@/settings/NetworkBootPage";
 import { ServerPage } from "@/settings/ServerPage";
@@ -123,6 +124,11 @@ const approvalRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/machines/approval",
   component: ApprovalPage,
+});
+const autopilotRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/machines/autopilot",
+  component: AutopilotPage,
 });
 const machineRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -249,6 +255,7 @@ const routeTree = rootRoute.addChildren([
     machinesRoute,
     runHistoryRoute,
     approvalRoute,
+    autopilotRoute,
     machineRoute,
     sequencesRoute,
     sequenceRoute,

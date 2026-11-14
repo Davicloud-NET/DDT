@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { MachineRecordsView, RecoveryKeyView } from "@/machines/records/machineRecords";
 import { nth, press } from "@/test/aria";
-import { administrator, viewer } from "@/test/builders";
+import { administrator, operator, viewer } from "@/test/builders";
 import type { Routes } from "@/test/server";
 
 import { answers, machine, machineId, open } from "./MachinePage.fixtures";
@@ -130,5 +130,39 @@ describe("MachinePage", () => {
     expect(screen.getByText("Kiosk")).toBeInTheDocument();
     expect(screen.getByText("Failed: ZtdDeviceAlreadyAssigned")).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: "Recovery keys" })).not.toBeInTheDocument();
+  });
+
+  describe("Autopilot", () => {
+    const failed = records({
+      recoveryKeys: [],
+      hardwareHash: {
+        serialNumber: "SN-4711",
+        groupTag: null,
+        collectedUtc: "2026-09-16T10:04:00Z",
+        uploadState: "Failed",
+        uploadMessage: "ZtdDeviceAlreadyAssigned",
+      },
+    });
+
+    it("lets an operator upload a failed hash again, and shows it waiting", async () => {
+      const upload = `POST /api/machines/${machineId}/autopilot/upload`;
+      const { server } = await open(routes({ [upload]: { status: 204 } }, failed), {
+        user: operator,
+      });
+
+      press(await screen.findByRole("button", { name: "Upload to Autopilot" }));
+
+      expect(await screen.findByText("Waiting")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Upload to Autopilot" })).not.toBeInTheDocument();
+      expect(server.count(upload)).toBe(1);
+    });
+
+    it("shows a viewer the hash without buttons", async () => {
+      await open(routes({}, failed), { user: viewer });
+
+      expect(await screen.findByText("SN-4711")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Download CSV" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Upload to Autopilot" })).not.toBeInTheDocument();
+    });
   });
 });

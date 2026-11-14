@@ -21,7 +21,7 @@ export function MachineRecordPanels({ machineId, now }: { machineId: string; now
   return (
     <div className="grid items-start gap-4 xl:grid-cols-2">
       {keys.length > 0 ? <RecoveryKeysPanel machineId={machineId} keys={keys} now={now} /> : null}
-      {hash !== null ? <AutopilotPanel hash={hash} now={now} /> : null}
+      {hash !== null ? <AutopilotPanel machineId={machineId} hash={hash} now={now} /> : null}
     </div>
   );
 }

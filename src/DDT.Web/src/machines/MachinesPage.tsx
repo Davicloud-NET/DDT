@@ -23,6 +23,7 @@ import { straysOffer } from "./list/strays";
 import { useMachineFilters } from "./list/useMachineFilters";
 import { MachineActionErrors } from "./MachineActionErrors";
 import { MachinePanel } from "./MachinePanel";
+import { AutopilotCsvButton } from "./records/AutopilotCsvButton";
 import { useRecoveryKeyMatches } from "./records/useRecoveryKeyMatches";
 import { byAttention, inFilter, machineTag, matchesSearch } from "./machineView";
 import { useCanDecide } from "./useCanDecide";
@@ -58,7 +59,15 @@ export function MachinesPage() {
 
   return (
     <Page>
-      <MachineListHeader filter={filter} query={query} matching={matching} onChange={setSearch} />
+      <MachineListHeader
+        filter={filter}
+        query={query}
+        matching={matching}
+        onChange={setSearch}
+        actions={
+          canDecide ? <AutopilotCsvButton machineIds={shown.map((machine) => machine.id)} /> : null
+        }
+      />
       <SetupChecklist dismissible />
 
       {machines.isError ? (

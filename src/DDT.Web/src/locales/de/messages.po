@@ -2598,6 +2598,10 @@ msgctxt "stepAccount.apiToken"
 msgid "An API token cannot change the accounts that steps use. Sign in on the web to do this."
 msgstr "Ein API-Token kann die Konten, die Schritte verwenden, nicht ändern. Melden Sie sich dazu im Web an."
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "An app registration with the Microsoft Graph application permission DeviceManagementServiceConfig.ReadWrite.All. Without it, download the CSV on a machine's page."
+msgstr "Eine App-Registrierung mit der Microsoft-Graph-Anwendungsberechtigung DeviceManagementServiceConfig.ReadWrite.All. Ohne sie die CSV auf der Seite eines Computers herunterladen."
+
 #: src/lib/serverMessages.ts
 msgctxt "application.tooManyDependencies"
 msgid "An application can depend on at most {max} others."
@@ -2777,6 +2781,10 @@ msgstr "API-Token widerrufen"
 #: src/tokens/TokensPage.tsx
 msgid "API tokens"
 msgstr "API-Token"
+
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "App registration"
+msgstr "App-Registrierung"
 
 #: src/app/UserMenu.tsx
 msgid "Appearance"
@@ -3024,9 +3032,16 @@ msgstr "Geräte autorisieren"
 msgid "Automatic: Windows PE once a boot image is built, Linux until then"
 msgstr "Automatisch: Windows PE, sobald ein Startimage erstellt ist, bis dahin Linux"
 
+#: src/app/navigation.ts
 #: src/machines/records/AutopilotPanel.tsx
+#: src/settings/AutopilotPage.tsx
+#: src/settings/server/SectionLink.tsx
 msgid "Autopilot"
 msgstr "Autopilot"
+
+#: src/machines/records/AutopilotCsvButton.tsx
+msgid "Autopilot CSV"
+msgstr "Autopilot-CSV"
 
 #: src/lib/serverMessages.ts
 msgctxt "autopilot.notSetUp"
@@ -3553,10 +3568,12 @@ msgstr "Leeren"
 msgid "Cleared on save"
 msgstr "Wird beim Speichern geleert"
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
 #: src/settings/signIn/ProviderGroup.tsx
 msgid "Client ID"
 msgstr "Client-ID"
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
 #: src/settings/signIn/ProviderGroup.tsx
 msgid "Client secret"
 msgstr "Geheimer Clientschlüssel"
@@ -3915,6 +3932,7 @@ msgid "Default gateway"
 msgstr "Standardgateway"
 
 #: src/sequences/builder/nodeDetail.ts
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
 msgid "Default group tag"
 msgstr "Standard-Gruppentag"
 
@@ -4232,6 +4250,10 @@ msgstr "Fertig"
 #: src/runs/decisions.ts
 msgid "Done after {times} of at most {most} times"
 msgstr "Fertig nach {times} von höchstens {most} Malen"
+
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Download CSV"
+msgstr "CSV herunterladen"
 
 #: src/boot/BuilderPanel.tsx
 msgid "Download the builder"
@@ -5040,6 +5062,10 @@ msgstr "Für Netzwerk- und Speichertreiber, die ein Gerät braucht, bevor der Ag
 #: src/images/import/MdtShareChoices.tsx
 msgid "For no model yet."
 msgstr "Noch für kein Modell."
+
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "For steps that set none."
+msgstr "Für Schritte, die keinen setzen."
 
 #: src/boot/BuildCommand.tsx
 msgid "For the flagged drivers, put an administrator's API token into DDT_API_TOKEN."
@@ -7670,6 +7696,10 @@ msgstr "Nur Administratoren sehen und ändern die Einstellungen des Servers."
 msgid "Only administrators see every token."
 msgstr "Nur Administratoren sehen alle Token."
 
+#: src/settings/AutopilotPage.tsx
+msgid "Only administrators set up Autopilot uploads."
+msgstr "Nur Administratoren richten Autopilot-Uploads ein."
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.inputOfferedOnlyApplications"
 msgid "Only an Applications input offers applications."
@@ -10021,6 +10051,14 @@ msgstr "Telnet-Client"
 msgid "Templates use it as {placeholder}."
 msgstr "Vorlagen verwenden sie als {placeholder}."
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "Tenant"
+msgstr "Mandant"
+
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "Tenant ID or domain. After a change, enter the client secret again."
+msgstr "Mandanten-ID oder Domäne. Nach einer Änderung den geheimen Clientschlüssel erneut eingeben."
+
 #: src/settings/directory/DirectorySettings.tsx
 msgid "Test"
 msgstr "Test"
@@ -11770,6 +11808,7 @@ msgctxt "application.dependencyCycle"
 msgid "These applications depend on each other in a circle: {path}."
 msgstr "Diese Anwendungen hängen im Kreis voneinander ab: {path}."
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
 #: src/settings/certificate/ServerNames.tsx
 #: src/settings/LoggingPanel.tsx
 #: src/settings/parts/SettingsSection.tsx
@@ -12479,6 +12518,11 @@ msgstr "Laden Sie die ISO „Languages and Optional Features“ oben hoch, oder 
 msgctxt "application.filesRequired"
 msgid "Upload the MSIX package."
 msgstr "Laden Sie das MSIX-Paket hoch."
+
+#: src/machines/records/AutopilotPanel.tsx
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "Upload to Autopilot"
+msgstr "Zu Autopilot hochladen"
 
 #: src/images/ImagesTable.tsx
 #: src/packages/PackagesTable.tsx

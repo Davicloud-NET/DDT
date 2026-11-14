@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 import { Trans, useLingui } from "@lingui/react/macro";
+import type { ReactNode } from "react";
 
 import type { MachineSummary } from "@/machines/machines";
 import { inFilter, machineFilters, type MachineFilter } from "@/machines/machineView";
@@ -18,10 +19,18 @@ interface MachineListHeaderProps {
   // The machines that match the search. Each filter shows how many of them it contains.
   matching: readonly MachineSummary[];
   onChange: (next: MachinesSearchChange) => void;
+  // Actions on the machines shown, after the search.
+  actions?: ReactNode;
 }
 
 // The list's title with the filters by state and the search.
-export function MachineListHeader({ filter, query, matching, onChange }: MachineListHeaderProps) {
+export function MachineListHeader({
+  filter,
+  query,
+  matching,
+  onChange,
+  actions,
+}: MachineListHeaderProps) {
   const { i18n, t: translate } = useLingui();
 
   return (
@@ -48,6 +57,7 @@ export function MachineListHeader({ filter, query, matching, onChange }: Machine
           onChange({ q });
         }}
       />
+      {actions}
     </PageHeader>
   );
 }

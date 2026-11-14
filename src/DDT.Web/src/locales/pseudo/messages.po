@@ -2598,6 +2598,10 @@ msgctxt "stepAccount.apiToken"
 msgid "An API token cannot change the accounts that steps use. Sign in on the web to do this."
 msgstr ""
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "An app registration with the Microsoft Graph application permission DeviceManagementServiceConfig.ReadWrite.All. Without it, download the CSV on a machine's page."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "application.tooManyDependencies"
 msgid "An application can depend on at most {max} others."
@@ -2776,6 +2780,10 @@ msgstr ""
 #: src/tokens/OwnTokensPanel.tsx
 #: src/tokens/TokensPage.tsx
 msgid "API tokens"
+msgstr ""
+
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "App registration"
 msgstr ""
 
 #: src/app/UserMenu.tsx
@@ -3024,8 +3032,15 @@ msgstr ""
 msgid "Automatic: Windows PE once a boot image is built, Linux until then"
 msgstr ""
 
+#: src/app/navigation.ts
 #: src/machines/records/AutopilotPanel.tsx
+#: src/settings/AutopilotPage.tsx
+#: src/settings/server/SectionLink.tsx
 msgid "Autopilot"
+msgstr ""
+
+#: src/machines/records/AutopilotCsvButton.tsx
+msgid "Autopilot CSV"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3553,10 +3568,12 @@ msgstr ""
 msgid "Cleared on save"
 msgstr ""
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
 #: src/settings/signIn/ProviderGroup.tsx
 msgid "Client ID"
 msgstr ""
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
 #: src/settings/signIn/ProviderGroup.tsx
 msgid "Client secret"
 msgstr ""
@@ -3915,6 +3932,7 @@ msgid "Default gateway"
 msgstr ""
 
 #: src/sequences/builder/nodeDetail.ts
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
 msgid "Default group tag"
 msgstr ""
 
@@ -4231,6 +4249,10 @@ msgstr ""
 
 #: src/runs/decisions.ts
 msgid "Done after {times} of at most {most} times"
+msgstr ""
+
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Download CSV"
 msgstr ""
 
 #: src/boot/BuilderPanel.tsx
@@ -5039,6 +5061,10 @@ msgstr ""
 
 #: src/images/import/MdtShareChoices.tsx
 msgid "For no model yet."
+msgstr ""
+
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "For steps that set none."
 msgstr ""
 
 #: src/boot/BuildCommand.tsx
@@ -7670,6 +7696,10 @@ msgstr ""
 msgid "Only administrators see every token."
 msgstr ""
 
+#: src/settings/AutopilotPage.tsx
+msgid "Only administrators set up Autopilot uploads."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.inputOfferedOnlyApplications"
 msgid "Only an Applications input offers applications."
@@ -10021,6 +10051,14 @@ msgstr ""
 msgid "Templates use it as {placeholder}."
 msgstr ""
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "Tenant"
+msgstr ""
+
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "Tenant ID or domain. After a change, enter the client secret again."
+msgstr ""
+
 #: src/settings/directory/DirectorySettings.tsx
 msgid "Test"
 msgstr ""
@@ -11770,6 +11808,7 @@ msgctxt "application.dependencyCycle"
 msgid "These applications depend on each other in a circle: {path}."
 msgstr ""
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
 #: src/settings/certificate/ServerNames.tsx
 #: src/settings/LoggingPanel.tsx
 #: src/settings/parts/SettingsSection.tsx
@@ -12478,6 +12517,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "application.filesRequired"
 msgid "Upload the MSIX package."
+msgstr ""
+
+#: src/machines/records/AutopilotPanel.tsx
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "Upload to Autopilot"
 msgstr ""
 
 #: src/images/ImagesTable.tsx

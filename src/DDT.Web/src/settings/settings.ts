@@ -11,7 +11,15 @@ import { serverText, type ServerMessage } from "@/lib/serverText";
 // rebuilding a subsystem inside the running server.
 
 export type SettingsSectionName =
-  "deployment" | "machines" | "ldap" | "oidc" | "proxies" | "pxe" | "logging" | "certificate";
+  | "deployment"
+  | "machines"
+  | "autopilot"
+  | "ldap"
+  | "oidc"
+  | "proxies"
+  | "pxe"
+  | "logging"
+  | "certificate";
 
 // A secret is never sent back. The page only learns whether it's set, and whether the key ring can still read it.
 export interface SecretState {

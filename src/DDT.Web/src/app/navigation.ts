@@ -26,6 +26,7 @@ export const categories: NavigationCategory[] = [
       { to: "/machines", label: msg`All machines` },
       { to: "/machines/runs", label: msg`Run history` },
       { to: "/machines/approval", label: msg`Approval and zero touch` },
+      { to: "/machines/autopilot", label: msg`Autopilot` },
     ],
   },
   {

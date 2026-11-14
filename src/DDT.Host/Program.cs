@@ -20,6 +20,7 @@ using DDT.Server.Endpoints;
 using DDT.Server.Images;
 using DDT.Server.Live;
 using DDT.Server.Machines;
+using DDT.Server.Records;
 using DDT.Server.Security;
 using DDT.Server.Sequences;
 using DDT.Server.Settings;
@@ -153,6 +154,7 @@ builder.Services.AddDdtImages();
 builder.Services.AddDdtDeployments();
 builder.Services.AddDdtSequences();
 builder.Services.AddDdtApplications();
+builder.Services.AddDdtRecords();
 
 string version = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
 builder.Services.AddSingleton(AboutCatalog.Load(version, Path.Combine(AppContext.BaseDirectory, "legal")));
@@ -209,7 +211,7 @@ RouteGroupBuilder api = app.MapGroup("/api")
 api.MapGroup("/auth").MapAuthEndpoints();
 api.MapGroup("/auth/2fa").MapTwoFactorEndpoints();
 api.MapGroup("/auth/external").MapExternalLoginEndpoints();
-api.MapGroup("/machines").MapMachineEndpoints();
+api.MapGroup("/machines").MapMachineEndpoints().MapMachineRecordEndpoints();
 api.MapGroup("/images").MapImageEndpoints();
 api.MapGroup("/images/import").MapImageImportEndpoints();
 api.MapGroup("/deployments").MapDeploymentEndpoints();
@@ -230,7 +232,7 @@ api.MapGroup("/boot-image").MapBootImageEndpoints();
 api.MapGroup("/netboot").MapNetbootEndpoints();
 api.MapGroup("/settings").MapSettingsEndpoints();
 
-app.MapGroup("/api/agents").MapAgentEndpoints().MapAgentDeploymentEndpoints().MapAgentEnvironmentEndpoints();
+app.MapGroup("/api/agents").MapAgentEndpoints().MapAgentDeploymentEndpoints().MapAgentEnvironmentEndpoints().MapAgentRecordEndpoints();
 app.MapBootImageUpload();
 
 app.MapHub<LiveHub>("/hubs/live")

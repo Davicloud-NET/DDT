@@ -13,6 +13,11 @@ public static class AuditActions
     public const string MachineRejected = "machine.rejected";
     public const string MachineRemoved = "machine.removed";
 
+    // Name the key ID, never the password.
+    public const string RecoveryKeyRecorded = "recovery-key.recorded";
+    public const string RecoveryKeyRevealed = "recovery-key.revealed";
+    public const string RecoveryKeyDeleted = "recovery-key.deleted";
+
     // A machine said that it restarts into the other boot environment.
     public const string MachineEnvironmentRequested = "machine.environment-requested";
     public const string ImageUploaded = "image.uploaded";

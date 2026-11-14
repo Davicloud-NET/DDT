@@ -186,13 +186,15 @@ public static class MachineEndpoints
         CancellationToken cancellationToken) =>
         Answer(await saves.ContinueAsync(id, request, Actor.Of(context), cancellationToken).ConfigureAwait(false));
 
+    // recoveryKeys confirms how many keys go with the machine, as the refusal without it said.
     private static async Task<Results<NoContent, NotFound, ProblemHttpResult>> RemoveAsync(
         Guid id,
+        int? recoveryKeys,
         HttpContext context,
         MachineRemovals removals,
         CancellationToken cancellationToken)
     {
-        (bool found, ServerMessage? refusal) = await removals.RemoveAsync(id, Actor.Of(context), cancellationToken).ConfigureAwait(false);
+        (bool found, ServerMessage? refusal) = await removals.RemoveAsync(id, recoveryKeys, Actor.Of(context), cancellationToken).ConfigureAwait(false);
 
         if (!found)
         {

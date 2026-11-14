@@ -12,6 +12,10 @@ public static class LiveEvents
     // machines' runs are gone with them, so the run history drops those too.
     public const string MachinesRemoved = "machinesRemoved";
 
+    // Carries a MachineRecordsView, the same as GET /api/machines/{id}/records returns, when a key or hash arrived or
+    // a key was deleted. It holds key IDs, never a password.
+    public const string MachineRecordsChanged = "machineRecordsChanged";
+
     // Carries a RunHistoryItem whenever a run or its machine changes. The run history upserts it by run ID.
     public const string RunChanged = "runChanged";
 

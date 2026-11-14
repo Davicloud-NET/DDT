@@ -244,6 +244,17 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
     public Task<AgentStepApplications> GetRunStepApplicationsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken) =>
         GetAsync(AgentRoutes.RunStepApplications(machineId, runId, stepId), token, AgentJsonContext.Default.AgentStepApplications, cancellationToken);
 
+    public async Task SendRunRecordAsync(Guid machineId, string token, Guid runId, AgentRecord record, CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = Request(HttpMethod.Post, AgentRoutes.RunRecords(machineId, runId), token);
+        request.Content = JsonContent.Create(record, AgentJsonContext.Default.AgentRecord);
+
+        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+    }
+
+    public Task<AgentHardwareHashStatus> GetRunHardwareHashStatusAsync(Guid machineId, string token, Guid runId, CancellationToken cancellationToken) =>
+        GetAsync(AgentRoutes.RunHardwareHash(machineId, runId), token, AgentJsonContext.Default.AgentHardwareHashStatus, cancellationToken);
+
     public void Dispose() => _client.Dispose();
 
     private HttpClient NewClient()

@@ -9,6 +9,7 @@ using DDT.Server.Deployments;
 using DDT.Server.Images;
 using DDT.Server.Machines;
 using DDT.Server.Packages;
+using DDT.Server.Records;
 using DDT.Server.Rules;
 using DDT.Server.Sequences;
 using DDT.Server.Tokens;
@@ -60,6 +61,10 @@ public abstract class DdtDbContext(DbContextOptions options)
 
     public DbSet<RunCredential> RunCredentials => Set<RunCredential>();
 
+    public DbSet<RecoveryKey> RecoveryKeys => Set<RecoveryKey>();
+
+    public DbSet<MachineHardwareHash> MachineHardwareHashes => Set<MachineHardwareHash>();
+
     public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
 
     public DbSet<SettingsSection> SettingsSections => Set<SettingsSection>();
@@ -82,6 +87,8 @@ public abstract class DdtDbContext(DbContextOptions options)
         builder.ApplyConfiguration(new DeploymentSnapshotConfiguration());
         builder.ApplyConfiguration(new DeploymentStepConfiguration());
         builder.ApplyConfiguration(new RunCredentialConfiguration());
+        builder.ApplyConfiguration(new RecoveryKeyConfiguration());
+        builder.ApplyConfiguration(new MachineHardwareHashConfiguration());
         builder.ApplyConfiguration(new DeploymentArtifactConfiguration());
         builder.ApplyConfiguration(new DeploymentApplicationPlanConfiguration());
         builder.ApplyConfiguration(new PackageConfiguration());

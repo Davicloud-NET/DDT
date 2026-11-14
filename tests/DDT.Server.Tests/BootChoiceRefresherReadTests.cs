@@ -36,7 +36,8 @@ public sealed class BootChoiceRefresherReadTests
 
         string[] commands = [.. application.Log.Entries.Skip(before).Select(entry => entry.Message).Where(message => message.Contains(Executed, StringComparison.Ordinal))];
         string runs = Assert.Single(commands, command => command.Contains("FROM \"Deployments\"", StringComparison.Ordinal) && command.Contains("EXISTS", StringComparison.Ordinal));
-        string machines = Assert.Single(commands, command => command.Contains("FROM \"Machines\"", StringComparison.Ordinal) && !command.Contains("FROM \"Deployments\"", StringComparison.Ordinal));
+        // The sweepers' first passes at the host's start read the machines too, and may land in between.
+        string machines = Assert.Single(commands, command => command.Contains("FROM \"Machines\"", StringComparison.Ordinal) && command.Contains("\"SmbiosUuid\"", StringComparison.Ordinal));
 
         Assert.Contains("\"BootEnvironment\"", runs, StringComparison.Ordinal);
         Assert.All(new[] { "Answers", "Values", "Variables", "Inputs", "Title", "Error" }, column => Assert.DoesNotContain($"\"{column}\"", runs, StringComparison.Ordinal));

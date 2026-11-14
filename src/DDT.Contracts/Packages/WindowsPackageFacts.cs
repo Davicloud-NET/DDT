@@ -4,9 +4,11 @@
 
 namespace DDT.Contracts.Packages;
 
-// Read from the file names only. Architecture is null unless every file names the same one.
+// Read from the file names only, but Builds, which the operator marks. Architecture is null unless every file names the
+// same one.
 public sealed record WindowsPackageFacts(
     WindowsPackageContent Content,
     IReadOnlyList<string> Languages,
     string? Architecture,
-    IReadOnlyList<int> KbNumbers);
+    IReadOnlyList<int> KbNumbers,
+    IReadOnlyList<int> Builds);

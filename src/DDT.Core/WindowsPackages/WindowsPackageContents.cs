@@ -34,6 +34,7 @@ public static class WindowsPackageContents
             content,
             [.. files.Select(file => file.Language).OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.Ordinal)],
             architectures is [{ } architecture] ? architecture : null,
-            [.. files.Select(file => file.Kb).OfType<int>().Distinct().OrderDescending()]);
+            [.. files.Select(file => file.Kb).OfType<int>().Distinct().OrderDescending()],
+            []);
     }
 }

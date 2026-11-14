@@ -100,7 +100,8 @@ public sealed partial class LibraryImports(
             UpdatePackageRequest request = new(
                 LibraryEntries.Bounded(item.Name, PackageLimits.MaxNameLength),
                 item.Description,
-                item.Target is null ? [] : [item.Target]);
+                item.Target is null ? [] : [item.Target],
+                Builds: item.Builds);
             await scope.ServiceProvider.GetRequiredService<PackageLibrary>().UpdateAsync(package.Id, request, actor, cancellationToken).ConfigureAwait(false);
         }
     }

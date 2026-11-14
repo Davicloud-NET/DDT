@@ -166,7 +166,8 @@ public static class ImageImportEndpoints
                     read.Iso,
                     [],
                     Description: $"From {Path.GetFileName(read.Iso)}.",
-                    IsoFiles: LanguageIsos.FilesOf(read.Names, language))),
+                    IsoFiles: LanguageIsos.FilesOf(read.Names, language),
+                    Builds: LanguageIsos.Build(read.Iso) is { } build ? [build] : null)),
         ];
         ImportStart start = new(items, null, $"{items.Count} languages of {read.Iso}.");
 

@@ -957,6 +957,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "package.bootImageDriversOnly",
     message: "Only a driver package can go into the Windows PE boot image.",
   }),
+  "package.builds": msg({
+    context: "package.builds",
+    message: "Enter up to {max} Windows builds, numbers such as 26100.",
+  }),
+  "package.buildsWindowsOnly": msg({
+    context: "package.buildsWindowsOnly",
+    message: "Only a Windows package has builds.",
+  }),
   "package.entryAtRoot": msg({
     context: "package.entryAtRoot",
     message: "The entry {entry} starts at the root of a drive.",

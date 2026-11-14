@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Globalization;
 using System.IO.Compression;
 using DDT.Core.WindowsPackages;
 using DDT.Server.Images;
@@ -78,14 +79,17 @@ public static class LanguageIsos
     }
 
     // "(26100)" for the name Microsoft gives the ISO, such as 26100.1.240331-1435.ge_release_amd64fre_CLIENT_LOF_PACKAGES_OEM.iso.
-    public static string Suffix(string iso)
+    public static string Suffix(string iso) => Build(iso) is { } build ? string.Create(CultureInfo.InvariantCulture, $"({build})") : "";
+
+    // The Windows build the ISO's name starts with, or null.
+    public static int? Build(string iso)
     {
         ArgumentNullException.ThrowIfNull(iso);
 
         string name = Path.GetFileName(iso);
         int dot = name.IndexOf('.', StringComparison.Ordinal);
 
-        return dot == 5 && name[..dot].All(char.IsAsciiDigit) ? $"({name[..dot]})" : "";
+        return dot == 5 && name[..dot].All(char.IsAsciiDigit) ? int.Parse(name[..dot], CultureInfo.InvariantCulture) : null;
     }
 
     // Writes the named cabinets into a zip without compression, reporting the bytes done and their total.

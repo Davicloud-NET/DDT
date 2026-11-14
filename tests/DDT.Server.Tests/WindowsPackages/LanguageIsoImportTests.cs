@@ -55,6 +55,7 @@ public sealed class LanguageIsoImportTests : IDisposable
         Assert.Equal(("ja-JP language pack (26100)", PackageKind.WindowsPackage, $"From {IsoName}."), (package.Name, package.Kind, package.Description));
         Assert.Equal((WindowsPackageContent.Language, "x64"), (package.Windows?.Content, package.Windows?.Architecture));
         Assert.Equal(["ja-JP"], package.Windows?.Languages);
+        Assert.Equal([26100], package.Windows?.Builds);
 
         using (ZipArchive zip = ZipFile.OpenRead(_application.Services.GetRequiredService<ImageStore>().ObjectPath(package.Sha256)))
         {

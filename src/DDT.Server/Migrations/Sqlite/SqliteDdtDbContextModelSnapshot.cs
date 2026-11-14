@@ -1180,6 +1180,10 @@ namespace DDT.Server.Migrations.Sqlite
                     b.Property<bool>("BootImage")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Builds")
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Content")
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");

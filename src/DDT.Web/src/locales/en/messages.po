@@ -3070,6 +3070,10 @@ msgstr "Building it again"
 msgid "Building the boot image"
 msgstr "Building the boot image"
 
+#: src/packages/windowsPackageView.ts
+msgid "builds {builds}"
+msgstr "builds {builds}"
+
 #: src/boot/StoredBuilds.tsx
 msgid "Builds on the server"
 msgstr "Builds on the server"
@@ -4449,6 +4453,10 @@ msgctxt "settings.secretForNewServer"
 msgid "Enter it again for the new server: a stored secret goes only to the server it was entered for."
 msgstr "Enter it again for the new server: a stored secret goes only to the server it was entered for."
 
+#: src/packages/usePackageForm.ts
+msgid "Enter numbers such as 26100."
+msgstr "Enter numbers such as 26100."
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.reauthenticate.codeNeeded"
 msgid "Enter the code of your authenticator as well."
@@ -4571,6 +4579,11 @@ msgstr "Enter the winget ID, such as Mozilla.Firefox, in at most {max} character
 msgctxt "sequence.conditionYesNo"
 msgid "Enter true or false."
 msgstr "Enter true or false."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.builds"
+msgid "Enter up to {max} Windows builds, numbers such as 26100."
+msgstr "Enter up to {max} Windows builds, numbers such as 26100."
 
 #: src/sequences/fields/CodesSetting.tsx
 msgid "Enter whole numbers from -2147483648 to 2147483647, separated by commas."
@@ -7469,6 +7482,11 @@ msgid "Only a step connects shares, for as long as it runs. Give them to the ste
 msgstr "Only a step connects shares, for as long as it runs. Give them to the steps inside that need them."
 
 #: src/lib/serverMessages.ts
+msgctxt "package.buildsWindowsOnly"
+msgid "Only a Windows package has builds."
+msgstr "Only a Windows package has builds."
+
+#: src/lib/serverMessages.ts
 msgctxt "application.wingetNotUsed"
 msgid "Only a winget package has a winget ID and version. Leave them empty."
 msgstr "Only a winget package has a winget ID and version. Leave them empty."
@@ -9743,6 +9761,10 @@ msgstr "Subject"
 #: src/machines/facts.ts
 msgid "Subnet"
 msgstr "Subnet"
+
+#: src/packages/PackageDialog.tsx
+msgid "Such as 26100, 26200. Matching updates go to images of these builds."
+msgstr "Such as 26100, 26200. Matching updates go to images of these builds."
 
 #: src/settings/networkBoot/BootEnvironmentGroup.tsx
 msgid "Such as console=ttyS0,115200. Only letters, digits and _ . : , = + / @ - are taken."
@@ -12698,6 +12720,10 @@ msgstr "Windows ADK with the Windows PE add-on {version}"
 #: src/sequences/builder/nodeDetail.ts
 msgid "Windows and Microsoft products"
 msgstr "Windows and Microsoft products"
+
+#: src/packages/PackageDialog.tsx
+msgid "Windows builds"
+msgstr "Windows builds"
 
 #: src/settings/networkBoot/neighbours/PortOwners.tsx
 msgid "Windows Deployment Services ({process}, process {id})"

@@ -18,7 +18,8 @@ public static class WindowsPackageColumns
         package.Content = facts.Content;
         package.Languages = Joined(facts.Languages, PackageLimits.MaxLanguagesLength);
         package.Architecture = facts.Architecture;
-        package.KbNumbers = Joined(facts.KbNumbers.Select(kb => kb.ToString(CultureInfo.InvariantCulture)), PackageLimits.MaxKbNumbersLength);
+        package.KbNumbers = Joined(facts.KbNumbers.Select(Text), PackageLimits.MaxKbNumbersLength);
+        package.Builds = Joined(facts.Builds.Select(Text), PackageLimits.MaxBuildsLength);
     }
 
     public static WindowsPackageFacts? Read(Package package)
@@ -30,12 +31,11 @@ public static class WindowsPackageColumns
             return null;
         }
 
-        return new WindowsPackageFacts(
-            content,
-            Split(package.Languages),
-            package.Architecture,
-            [.. Split(package.KbNumbers).Select(kb => int.Parse(kb, NumberStyles.None, CultureInfo.InvariantCulture))]);
+        return new WindowsPackageFacts(content, Split(package.Languages), package.Architecture, Numbers(package.KbNumbers), Numbers(package.Builds));
     }
+
+    public static IReadOnlyList<int> Numbers(string? values) =>
+        [.. Split(values).Select(value => int.Parse(value, NumberStyles.None, CultureInfo.InvariantCulture))];
 
     // As many values as fit, whole. Null for none.
     private static string? Joined(IEnumerable<string> values, int maxLength)
@@ -56,6 +56,8 @@ public static class WindowsPackageColumns
 
         return kept.Count == 0 ? null : string.Join(',', kept);
     }
+
+    private static string Text(int number) => number.ToString(CultureInfo.InvariantCulture);
 
     private static string[] Split(string? values) => values?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? [];
 }

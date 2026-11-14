@@ -1190,6 +1190,10 @@ namespace DDT.Server.Migrations.PostgreSql
                     b.Property<bool>("BootImage")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Builds")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<string>("Content")
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");

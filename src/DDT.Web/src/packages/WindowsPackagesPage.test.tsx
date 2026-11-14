@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ImportFile, ImportSources, LanguageIsoView } from "@/images/import/imports";
 import type { PackageSummary } from "@/packages/packages";
-import { fill, nth, press } from "@/test/aria";
+import { chooseMenuItem, fill, nth, press } from "@/test/aria";
 import { expectNoAxeViolations } from "@/test/axe";
 import { administrator, packageSummary, viewer } from "@/test/builders";
 import { renderPage } from "@/test/renderPage";
@@ -20,7 +20,13 @@ const german = packageSummary({
   targets: [],
   fileCount: 6,
   originalFileName: "de-DE language pack (26100).zip",
-  windows: { content: "Language", languages: ["de-DE"], architecture: "x64", kbNumbers: [] },
+  windows: {
+    content: "Language",
+    languages: ["de-DE"],
+    architecture: "x64",
+    kbNumbers: [],
+    builds: [26100],
+  },
 });
 
 const update = packageSummary({
@@ -29,7 +35,13 @@ const update = packageSummary({
   kind: "WindowsPackage",
   targets: [],
   fileCount: 2,
-  windows: { content: "Update", languages: [], architecture: "x64", kbNumbers: [5132061, 5043080] },
+  windows: {
+    content: "Update",
+    languages: [],
+    architecture: "x64",
+    kbNumbers: [5132061, 5043080],
+    builds: [],
+  },
 });
 
 const ISO_PATH = "D:\\var\\lib\\ddt\\import\\26100.1_CLIENT_LOF_PACKAGES_OEM.iso";
@@ -90,7 +102,7 @@ describe("WindowsPackagesPage", () => {
 
     const language = await screen.findByRole("row", { name: /^de-DE language pack/ });
     expect(within(language).getByText("Language")).toBeInTheDocument();
-    expect(within(language).getByText("de-DE · x64")).toBeInTheDocument();
+    expect(within(language).getByText("de-DE · x64 · builds 26100")).toBeInTheDocument();
     const cumulative = screen.getByRole("row", { name: /^2026-11 cumulative update/ });
     expect(within(cumulative).getByText("KB5132061, KB5043080 · x64")).toBeInTheDocument();
     expect(screen.queryByRole("row", { name: /^Latitude drivers/ })).not.toBeInTheDocument();
@@ -103,6 +115,40 @@ describe("WindowsPackagesPage", () => {
 
     expect(screen.getByRole("row", { name: /^2026-11 cumulative update/ })).toBeInTheDocument();
     expect(screen.queryByRole("row", { name: /^de-DE language pack/ })).not.toBeInTheDocument();
+  });
+
+  it("marks an update for Windows builds", async () => {
+    const saved = { ...update, windows: { ...update.windows, builds: [26100, 26200] } };
+    const { server } = await open([update], {
+      [`PUT /api/packages/${update.id}`]: { body: saved },
+    });
+
+    const row = await screen.findByRole("row", { name: /^2026-11 cumulative update/ });
+    await chooseMenuItem(
+      within(row).getByRole("button", { name: `Actions for ${update.name}` }),
+      "Change",
+    );
+    const dialog = await screen.findByRole("dialog", { name: "Change the package" });
+    const builds = within(dialog).getByRole("textbox", { name: "Windows builds" });
+    fill(builds, "26100 x");
+    expect(within(dialog).getByRole("button", { name: "Save package" })).toBeDisabled();
+    fill(builds, "26200, 26100");
+    press(within(dialog).getByRole("button", { name: "Save package" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(server.changes().map((request) => request.body)).toEqual([
+      {
+        name: update.name,
+        description: null,
+        targets: [],
+        builds: [26200, 26100],
+      },
+    ]);
+    expect(
+      await within(row).findByText("KB5132061, KB5043080 · x64 · builds 26100, 26200"),
+    ).toBeInTheDocument();
   });
 
   it("shows viewers the list without the upload or the ISO", async () => {

@@ -16,4 +16,5 @@ public sealed record ImportItem(
     IReadOnlyList<string> Folders,
     HardwareModel? Target = null,
     string? Description = null,
-    IReadOnlyList<string>? IsoFiles = null);
+    IReadOnlyList<string>? IsoFiles = null,
+    IReadOnlyList<int>? Builds = null);

@@ -26,6 +26,7 @@ const windowsPackages = [
       languages: [],
       architecture: "x64",
       kbNumbers: [5132061, 5043080],
+      builds: [26200],
     },
   }),
   packageSummary({
@@ -38,7 +39,13 @@ const windowsPackages = [
     fileCount: 6,
     description: "From 26100.1.240331-1435.ge_release_amd64fre_CLIENT_LOF_PACKAGES_OEM.iso.",
     uploadedUtc: "2026-11-14T04:40:00Z",
-    windows: { content: "Language", languages: ["de-DE"], architecture: "x64", kbNumbers: [] },
+    windows: {
+      content: "Language",
+      languages: ["de-DE"],
+      architecture: "x64",
+      kbNumbers: [],
+      builds: [26100],
+    },
   }),
   packageSummary({
     id: "0193a4b2-0000-7000-8000-0000000000d3",
@@ -50,7 +57,13 @@ const windowsPackages = [
     fileCount: 7,
     description: "From 26100.1.240331-1435.ge_release_amd64fre_CLIENT_LOF_PACKAGES_OEM.iso.",
     uploadedUtc: "2026-11-14T04:41:00Z",
-    windows: { content: "Language", languages: ["ja-JP"], architecture: "x64", kbNumbers: [] },
+    windows: {
+      content: "Language",
+      languages: ["ja-JP"],
+      architecture: "x64",
+      kbNumbers: [],
+      builds: [26100],
+    },
   }),
   packageSummary({
     id: "0193a4b2-0000-7000-8000-0000000000d4",
@@ -62,7 +75,13 @@ const windowsPackages = [
     fileCount: 2,
     originalFileName: "wmic.zip",
     uploadedUtc: "2026-11-10T15:02:00Z",
-    windows: { content: "Features", languages: ["en-US"], architecture: "x64", kbNumbers: [] },
+    windows: {
+      content: "Features",
+      languages: ["en-US"],
+      architecture: "x64",
+      kbNumbers: [],
+      builds: [],
+    },
   }),
 ];
 

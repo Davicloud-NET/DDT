@@ -46,8 +46,11 @@ export function PackageUploadPanel({
           list === undefined ? list : [...list.filter((item) => item.id !== added.id), added],
         );
 
-        // A new driver package has no models yet, so its dialog opens at once to pick them.
-        if (added.kind === "Drivers" && added.targets.length === 0) {
+        // A new driver package has no models yet, and a new update no builds, so the dialog opens at once to set them.
+        if (
+          (added.kind === "Drivers" && added.targets.length === 0) ||
+          (added.windows?.content === "Update" && added.windows.builds.length === 0)
+        ) {
           onEdit(added);
         }
       }}

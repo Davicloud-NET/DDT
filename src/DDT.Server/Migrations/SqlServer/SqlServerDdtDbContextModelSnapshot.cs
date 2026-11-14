@@ -1297,6 +1297,11 @@ namespace DDT.Server.Migrations.SqlServer
                     b.Property<bool>("BootImage")
                         .HasColumnType("bit");
 
+                    b.Property<string>("Builds")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
                     b.Property<string>("Content")
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");

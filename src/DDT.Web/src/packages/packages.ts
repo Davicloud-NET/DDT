@@ -18,12 +18,14 @@ export type PackageKind = "Drivers" | "Files" | "Application" | "WindowsPackage"
 
 export type WindowsPackageContent = "Update" | "Language" | "Features" | "Mixed";
 
-// Read from the file names. architecture is null unless every file names the same one.
+// Read from the file names, but builds, which an administrator marks. architecture is null unless every file names the
+// same one.
 export interface WindowsPackageFacts {
   content: WindowsPackageContent;
   languages: string[];
   architecture: string | null;
   kbNumbers: number[];
+  builds: number[];
 }
 
 // expandedBytes is the size of the files once unpacked.
@@ -53,6 +55,8 @@ export interface UpdatePackageRequest {
   targets: HardwareModel[];
   // Null leaves it as it is. Only drivers may go into the boot image.
   bootImage?: boolean | null;
+  // Null leaves them as they are. Only a Windows package has builds.
+  builds?: number[] | null;
 }
 
 export interface PackagesRemoved {

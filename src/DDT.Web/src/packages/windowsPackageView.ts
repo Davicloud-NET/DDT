@@ -19,12 +19,15 @@ export function windowsContentLabel(content: WindowsPackageContent): string {
   }
 }
 
-// "de-DE · KB5132061, KB5043080 · x64", leaving out what the package has none of.
+// "de-DE · KB5132061, KB5043080 · x64 · builds 26100, 26200", leaving out what the package has none of.
 export function windowsDetails(facts: WindowsPackageFacts): string {
+  const builds = facts.builds.join(", ");
+
   return [
     facts.languages.join(", "),
     facts.kbNumbers.map((kb) => `KB${String(kb)}`).join(", "),
     facts.architecture ?? "",
+    builds === "" ? "" : t`builds ${builds}`,
   ]
     .filter((part) => part !== "")
     .join(" · ");
@@ -40,5 +43,13 @@ export function windowsSearchTerms(item: PackageSummary): string[] {
         windowsContentLabel(facts.content),
         ...facts.languages,
         ...facts.kbNumbers.map((kb) => `KB${String(kb)}`),
+        ...facts.builds.map(String),
       ];
+}
+
+// "26100, 26200 22631" as the builds 26100, 26200 and 22631. Null when a part is no number.
+export function parseBuilds(text: string): number[] | null {
+  const parts = text.split(/[\s,;]+/).filter((part) => part !== "");
+
+  return parts.every((part) => /^\d{1,6}$/.test(part)) ? parts.map(Number) : null;
 }

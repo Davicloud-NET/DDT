@@ -52,4 +52,7 @@ public sealed class Package
     public string? Architecture { get; set; }
 
     public string? KbNumbers { get; set; }
+
+    // The Windows builds the operator marked it for, such as 26100,26200. Null for none.
+    public string? Builds { get; set; }
 }

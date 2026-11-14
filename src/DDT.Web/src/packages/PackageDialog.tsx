@@ -16,7 +16,8 @@ import { HardwareModelsField } from "./HardwareModelsField";
 import type { PackageSummary } from "./packages";
 import { usePackageForm } from "./usePackageForm";
 
-// Changes a package's name and description, and for drivers the hardware models they are for.
+// Changes a package's name and description, for drivers the hardware models they are for, and for a Windows package
+// the builds it is for.
 export function PackageDialog({
   item,
   models,
@@ -51,7 +52,7 @@ export function PackageDialog({
             type="submit"
             form={formId}
             variant="primary"
-            isDisabled={save.isPending || form.name.trim() === ""}
+            isDisabled={save.isPending || !form.canSave}
           >
             <Trans>Save package</Trans>
           </Button>
@@ -100,6 +101,19 @@ export function PackageDialog({
 
         {drivers ? (
           <BootImageSwitch isSelected={form.bootImage} onChange={form.setBootImage} />
+        ) : null}
+
+        {item.kind === "WindowsPackage" ? (
+          <TextField
+            label={<Trans>Windows builds</Trans>}
+            hint={
+              <Trans>Such as 26100, 26200. Matching updates go to images of these builds.</Trans>
+            }
+            value={form.buildsText}
+            onChange={form.setBuildsText}
+            isInvalid={form.fieldError("builds") !== ""}
+            errorMessage={form.fieldError("builds")}
+          />
         ) : null}
 
         {form.unplacedError !== null ? <Notice tone="fail">{form.unplacedError}</Notice> : null}

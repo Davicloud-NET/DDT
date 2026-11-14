@@ -23,6 +23,7 @@ internal sealed class PackageConfiguration : IEntityTypeConfiguration<Package>
         builder.Property(p => p.Languages).HasMaxLength(PackageLimits.MaxLanguagesLength);
         builder.Property(p => p.Architecture).HasMaxLength(16);
         builder.Property(p => p.KbNumbers).HasMaxLength(PackageLimits.MaxKbNumbersLength);
+        builder.Property(p => p.Builds).HasMaxLength(PackageLimits.MaxBuildsLength);
         builder.HasIndex(p => p.Sha256);
         builder.HasOne<DdtUser>().WithMany().HasForeignKey(p => p.UploadedByUserId).OnDelete(DeleteBehavior.SetNull);
     }

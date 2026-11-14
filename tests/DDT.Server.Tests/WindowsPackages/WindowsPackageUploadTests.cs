@@ -87,6 +87,45 @@ public sealed class WindowsPackageUploadTests(DdtApplication application) : ICla
         Assert.Contains("package.windowsNoTargets", await refused.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task AWindowsPackageIsMarkedForBuilds()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        PackageSummary package = await administrator.UploadedPackageAsync(TestZip.Create(Update, Checkpoint), UploadKind.WindowsPackage, "marked.zip");
+        string path = $"{PackageRequests.Packages}/{package.Id}";
+
+        PackageSummary marked = await RegisteredMachine.ReadAsync<PackageSummary>(
+            await administrator.PutAsync(path, new UpdatePackageRequest(package.Name, null, [], Builds: [26200, 26100, 26200])));
+        PackageSummary kept = await RegisteredMachine.ReadAsync<PackageSummary>(
+            await administrator.PutAsync(path, new UpdatePackageRequest("Renamed", null, [])));
+        PackageSummary cleared = await RegisteredMachine.ReadAsync<PackageSummary>(
+            await administrator.PutAsync(path, new UpdatePackageRequest("Renamed", null, [], Builds: [])));
+
+        Assert.Equal([26100, 26200], marked.Windows?.Builds);
+        Assert.Equal([5132061, 5043080], marked.Windows?.KbNumbers);
+        Assert.Equal([26100, 26200], kept.Windows?.Builds);
+        Assert.Equal([], cleared.Windows?.Builds);
+    }
+
+    [Fact]
+    public async Task BuildsAreNumbersAndOnlyForWindowsPackages()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        PackageSummary windows = await administrator.UploadedPackageAsync(TestZip.Create(Update), UploadKind.WindowsPackage, "builds.zip");
+        PackageSummary files = await administrator.UploadedPackageAsync(TestZip.Create("setup.cmd"), UploadKind.Files, "files.zip");
+
+        HttpResponseMessage tooSmall = await administrator.PutAsync(
+            $"{PackageRequests.Packages}/{windows.Id}",
+            new UpdatePackageRequest(windows.Name, null, [], Builds: [26]));
+        HttpResponseMessage notWindows = await administrator.PutAsync(
+            $"{PackageRequests.Packages}/{files.Id}",
+            new UpdatePackageRequest(files.Name, null, [], Builds: [26100]));
+
+        Assert.Equal(HttpStatusCode.BadRequest, tooSmall.StatusCode);
+        Assert.Contains("package.builds", await tooSmall.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Contains("package.buildsWindowsOnly", await notWindows.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("readme.txt", "package.windowsFile")]
     [InlineData("updates/update.msu", "package.windowsFolder")]

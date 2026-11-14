@@ -24,6 +24,12 @@ public static partial class ServerMessages
         "package.windowsNoTargets",
         "A Windows package goes to the machines whose sequence names it, not by their model, so it has no targets.");
 
+    public static readonly MessageTemplate PackageBuilds = Define(
+        "package.builds",
+        "Enter up to {max} Windows builds, numbers such as 26100.");
+
+    public static readonly MessageTemplate PackageBuildsWindowsOnly = Define("package.buildsWindowsOnly", "Only a Windows package has builds.");
+
     public static readonly MessageTemplate PackageWindowsEmpty = Define("package.windowsEmpty", "The zip holds no .msu or .cab file.");
 
     public static readonly MessageTemplate IsoNoLanguages = Define(

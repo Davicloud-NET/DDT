@@ -63,7 +63,9 @@ export function PackagesPage({ kind, onLanguageIso, children }: PackagesPageProp
     items: (list) => list.filter((item) => item.kind === kind),
     id: (item) => item.id,
     signature: (item) =>
-      [item.name, item.description, item.bootImage, item.targets.length].join("|"),
+      [item.name, item.description, item.bootImage, item.targets.length, item.windows?.builds].join(
+        "|",
+      ),
     tone: () => "idle",
   });
 

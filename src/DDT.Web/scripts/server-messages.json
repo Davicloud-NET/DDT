@@ -236,6 +236,8 @@
   "organizationalUnit.notDistinguished": "''{value}'' is not a distinguished name. Write it like OU=Workstations,DC=example,DC=com.",
   "organizationalUnit.withPrefix": "Must be a distinguished name without the LDAP:// prefix, such as OU=Workstations,DC=example,DC=com.",
   "package.bootImageDriversOnly": "Only a driver package can go into the Windows PE boot image.",
+  "package.builds": "Enter up to {max} Windows builds, numbers such as 26100.",
+  "package.buildsWindowsOnly": "Only a Windows package has builds.",
   "package.entryAtRoot": "The entry {entry} starts at the root of a drive.",
   "package.entryChecksum": "The entry {entry} does not unpack to the bytes the zip says it holds. Create the zip again.",
   "package.entryCompression": "The entry {entry} is compressed in a way DDT cannot unpack. Create the zip with Deflate.",

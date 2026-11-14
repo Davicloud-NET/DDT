@@ -3070,6 +3070,10 @@ msgstr ""
 msgid "Building the boot image"
 msgstr ""
 
+#: src/packages/windowsPackageView.ts
+msgid "builds {builds}"
+msgstr ""
+
 #: src/boot/StoredBuilds.tsx
 msgid "Builds on the server"
 msgstr ""
@@ -4449,6 +4453,10 @@ msgctxt "settings.secretForNewServer"
 msgid "Enter it again for the new server: a stored secret goes only to the server it was entered for."
 msgstr ""
 
+#: src/packages/usePackageForm.ts
+msgid "Enter numbers such as 26100."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.reauthenticate.codeNeeded"
 msgid "Enter the code of your authenticator as well."
@@ -4570,6 +4578,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.conditionYesNo"
 msgid "Enter true or false."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "package.builds"
+msgid "Enter up to {max} Windows builds, numbers such as 26100."
 msgstr ""
 
 #: src/sequences/fields/CodesSetting.tsx
@@ -7469,6 +7482,11 @@ msgid "Only a step connects shares, for as long as it runs. Give them to the ste
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "package.buildsWindowsOnly"
+msgid "Only a Windows package has builds."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "application.wingetNotUsed"
 msgid "Only a winget package has a winget ID and version. Leave them empty."
 msgstr ""
@@ -9742,6 +9760,10 @@ msgstr ""
 
 #: src/machines/facts.ts
 msgid "Subnet"
+msgstr ""
+
+#: src/packages/PackageDialog.tsx
+msgid "Such as 26100, 26200. Matching updates go to images of these builds."
 msgstr ""
 
 #: src/settings/networkBoot/BootEnvironmentGroup.tsx
@@ -12697,6 +12719,10 @@ msgstr ""
 
 #: src/sequences/builder/nodeDetail.ts
 msgid "Windows and Microsoft products"
+msgstr ""
+
+#: src/packages/PackageDialog.tsx
+msgid "Windows builds"
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/PortOwners.tsx

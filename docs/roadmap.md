@@ -222,8 +222,8 @@ Three parts, each a pull request that works by itself. The first two are built.
    - A deployment record. [Tattoo]
      - `HKLM\SOFTWARE\Davicloud\DDT\Deployment`, strings: SequenceName, SequenceId,
        SequenceRevision, RunId, Result, DeployedUtc, ImageName, DdtVersion, ServerName.
-     - Written as a run ends in the installed Windows, done or failed. A run that ends in Windows PE
-       leaves none.
+     - Written as a run ends in the installed Windows: Result Done, Failed or Stopped (stopped from
+       the web). A run that ends in Windows PE leaves none.
      - Leave a deployment record in Windows, on Deployment defaults: on by default.
    - A detail line under the running step, on the console at the machine and on the run's page:
      the application being installed, the feature being enabled, "Downloading 5 updates".

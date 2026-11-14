@@ -186,9 +186,9 @@ step signs in as the local administrator; the step must add that account. With a
 installed Windows it is read when the agent fetches the first-logon settings as the run ends there.
 
 WriteRecord decides whether the agent leaves `HKLM\SOFTWARE\Davicloud\DDT\Deployment` (64-bit
-view, every value a string) as a run ends in Windows, done or failed, before it removes itself: SequenceName,
-SequenceId, SequenceRevision, RunId, Result, DeployedUtc (ISO 8601, UTC), ImageName, DdtVersion and
-ServerName. Inventory tools read it there. A record that can't be written is a warning in the run's
+view, every value a string) as a run ends in Windows, before it removes itself: SequenceName,
+SequenceId, SequenceRevision, RunId, Result (Done, Failed or Stopped), DeployedUtc (ISO 8601, UTC), ImageName,
+DdtVersion and ServerName. Inventory tools read it there. A record that can't be written is a warning in the run's
 log, never a failed run.
 
 Domain:Controller is used only by the join account check on the page (POST

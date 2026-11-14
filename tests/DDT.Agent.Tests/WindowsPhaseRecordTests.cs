@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Net;
 using DDT.Agent.InstalledPhase;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
@@ -78,6 +79,31 @@ public sealed class WindowsPhaseRecordTests : WindowsPhaseLoopTestBase
 
         Assert.Equal(AgentExitCodes.Deployed, exitCode);
         Assert.Contains("remove", _tools.Calls);
+    }
+
+    // Stopped on the web: the token is refused, and the next registration finds no run to continue.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ARunStoppedFromTheWebLeavesAStoppedRecordBeforeTheAgentLeaves(bool writeRecord)
+    {
+        AgentRun run = RecordedRun() with { SkipDeploymentRecord = !writeRecord };
+        await HandOverAsync(run);
+        ScriptedAgentServer server = new ScriptedAgentServer()
+            .OnRegister(_ => Continued())
+            .OnNext(_ => Next("session-1", run))
+            .OnRegister(_ => throw new AgentRequestException(
+                "The server answered 409.",
+                "This machine has no run for the DDT service to continue. The service removes itself.",
+                HttpStatusCode.Conflict));
+        server.AnswerRunReports = (_, _) => throw new AgentTokenRejectedException();
+        FakeDeploymentRecord record = new(_tools);
+
+        await RunAsync(server, new() { DeploymentRecord = record });
+
+        Assert.Equal(writeRecord ? ["Stopped"] : [], record.Entries.Select(entry => entry.Result));
+        Assert.Equal(writeRecord ? run.SequenceName : null, record.Entries.SingleOrDefault()?.SequenceName);
+        Assert.Equal("remove", _tools.Calls[^1]);
     }
 
     [Fact]

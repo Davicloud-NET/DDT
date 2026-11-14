@@ -43,6 +43,9 @@ internal sealed class InstalledPhaseExit(
     // How the run ended here, for the deployment record the removal writes first.
     public void RunEnded(AgentRun run, DeploymentState state) => record.Ended(run, state);
 
+    // The server ended a run that went on here.
+    public void RunStopped(AgentRun run) => record.Stopped(run);
+
     // Called after the server has the run's last report.
     public Task<int> EndAsync(AgentRunReport report, CancellationToken cancellationToken) =>
         report.State == DeploymentState.Done

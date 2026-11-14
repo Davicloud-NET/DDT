@@ -9,16 +9,40 @@ using DDT.Contracts.Deployments;
 namespace DDT.Agent.InstalledPhase;
 
 // Notes how a run ended in the installed system, and writes the record before the agent removes itself. A run the
-// server ended some other way, or a system without a record, gets none.
+// server stopped is Stopped. A system without a record gets none.
 internal sealed class DeploymentRecordKeeper(IDeploymentRecord? record, string agentVersion, AgentLog log, TimeProvider timeProvider)
 {
+    public const string StoppedResult = "Stopped";
+
     private DeploymentRecordEntry? _entry;
+    private bool _noted;
 
     public void Ended(AgentRun run, DeploymentState state)
     {
         ArgumentNullException.ThrowIfNull(run);
 
-        if (record is null || state is not (DeploymentState.Done or DeploymentState.Failed))
+        if (state is DeploymentState.Done or DeploymentState.Failed)
+        {
+            Note(run, state.ToString());
+        }
+    }
+
+    // Only when the run did not end here first.
+    public void Stopped(AgentRun run)
+    {
+        ArgumentNullException.ThrowIfNull(run);
+
+        if (!_noted)
+        {
+            Note(run, StoppedResult);
+        }
+    }
+
+    private void Note(AgentRun run, string result)
+    {
+        _noted = true;
+
+        if (record is null)
         {
             return;
         }
@@ -35,7 +59,7 @@ internal sealed class DeploymentRecordKeeper(IDeploymentRecord? record, string a
             run.SequenceId,
             run.SequenceRevision,
             run.Id,
-            state.ToString(),
+            result,
             timeProvider.GetUtcNow(),
             run.ImageName,
             agentVersion,

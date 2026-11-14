@@ -26,6 +26,9 @@ public sealed class InstalledPhaseLoop
     private readonly AgentLog _log;
     private InstalledPhaseContact? _contact;
 
+    // The run this service went on with, for the record of a stop. A start after a restart knows none.
+    private AgentRun? _continued;
+
     // Internal, like its parts. InstalledPhaseLoopBuilder puts it together.
     internal InstalledPhaseLoop(
         InstalledPhaseCalls calls,
@@ -157,6 +160,8 @@ public sealed class InstalledPhaseLoop
             return await SendFinalReportAsync(contact, run, local, final, cancellationToken).ConfigureAwait(false);
         }
 
+        _continued = run;
+
         if (await GoOnAwakeAsync(contact, run, local, cancellationToken).ConfigureAwait(false) is not { } result)
         {
             return null;
@@ -266,6 +271,11 @@ public sealed class InstalledPhaseLoop
     private async Task<int> RunIsOverAsync(Guid runId, CancellationToken cancellationToken)
     {
         _log.Information($"The server no longer runs run {runId} on this machine.");
+
+        if (_continued is { } continued && continued.Id == runId)
+        {
+            _exit.RunStopped(continued);
+        }
 
         if (await LocalRun.LoadAsync(_options.Root, _log, cancellationToken).ConfigureAwait(false) is { } local)
         {

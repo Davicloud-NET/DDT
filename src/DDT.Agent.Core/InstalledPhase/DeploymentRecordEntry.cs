@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace DDT.Agent.InstalledPhase;
 
-// One deployment record. Result is Done or Failed. A server before these facts leaves SequenceId, SequenceRevision,
+// One deployment record. Result is Done, Failed or Stopped. A server before these facts leaves SequenceId, SequenceRevision,
 // ImageName and ServerName out.
 public sealed record DeploymentRecordEntry(
     string SequenceName,

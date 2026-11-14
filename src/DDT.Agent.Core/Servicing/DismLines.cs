@@ -10,6 +10,8 @@ namespace DDT.Agent.Servicing;
 // Reads one DISM call's output for the log: the image's version it prints first, and the percent of its progress bar.
 public sealed partial class DismLines(IProgress<int>? percent)
 {
+    private int _highest = -1;
+
     public Version? ImageVersion { get; private set; }
 
     public static Version? VersionIn(IEnumerable<string> lines)
@@ -19,7 +21,8 @@ public sealed partial class DismLines(IProgress<int>? percent)
         return lines.Select(VersionOf).FirstOrDefault(version => version is not null);
     }
 
-    // DISM draws its progress bar on one line again and again. The bar only gives the percent, and the log gets the rest.
+    // DISM draws its progress bar on one line again and again, and starts it over within a call. The bar only gives
+    // the percent, which never falls, and the log gets the rest.
     public string? Read(string line)
     {
         ArgumentNullException.ThrowIfNull(line);
@@ -31,7 +34,13 @@ public sealed partial class DismLines(IProgress<int>? percent)
             return line;
         }
 
-        percent?.Report((int)double.Parse(bar.Groups["percent"].Value, CultureInfo.InvariantCulture));
+        int value = (int)double.Parse(bar.Groups["percent"].Value, CultureInfo.InvariantCulture);
+
+        if (value > _highest)
+        {
+            _highest = value;
+            percent?.Report(value);
+        }
 
         return null;
     }

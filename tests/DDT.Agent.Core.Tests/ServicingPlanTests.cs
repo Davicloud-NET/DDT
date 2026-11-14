@@ -58,6 +58,24 @@ public sealed class ServicingPlanTests : IDisposable
         Assert.Equal([45], percent.Values);
     }
 
+    [Fact]
+    public async Task TheProgressOfOneCallNeverFallsWhenDismsBarStartsOver()
+    {
+        RecordingToolRunner tools = new();
+        RecordingProgress percent = new();
+        DismOfflineServicing dism = new(tools, "dism.exe", new AgentLog(new ImmediateTimeProvider(), TextWriter.Null));
+
+        await dism.AddAsync(new OfflineImage(@"W:\", @"W:\DDT\scratch", @"W:\DDT\dism-1.log"), [@"W:\a.msu"], percent, TestContext.Current.CancellationToken);
+        Func<string, string?> lines = Assert.Single(tools.Options).Lines ?? throw new InvalidOperationException("No line filter.");
+
+        foreach (string bar in new[] { "[=== 95.0% ===]", "[=== 88.0% ===]", "[=== 96.0% ===]" })
+        {
+            lines(bar);
+        }
+
+        Assert.Equal([95, 96], percent.Values);
+    }
+
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
     private UnpackedPackage Unpacked(string name, params string[] files)

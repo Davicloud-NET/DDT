@@ -21,4 +21,7 @@ public sealed record ConsoleHost(
 
     // A head that types by its own tables takes the layout the agent names. False for a layout it doesn't know.
     public Func<string?, bool> UseKeyboardLayout { get; init; } = _ => true;
+
+    // Keeps the screen on while DDT's session shows a run. Null where nothing does.
+    public IDisplayPower? Display { get; init; }
 }

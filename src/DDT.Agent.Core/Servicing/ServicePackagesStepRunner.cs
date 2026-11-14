@@ -50,18 +50,19 @@ public sealed class ServicePackagesStepRunner(IOfflineServicing dism, RunDownloa
         try
         {
             IReadOnlyList<UnpackedPackage> folders = await UnpackAsync(packages, directory, unpacked, context, cancellationToken).ConfigureAwait(false);
+            ServicingTally tally = new();
 
-            if (await AddAllAsync(ServicingPlan.Of(folders), () => Image(volumes, scratch, directory, logs), context, cancellationToken)
+            if (await AddAllAsync(ServicingPlan.Of(folders), tally, () => Image(volumes, scratch, directory, logs), context, cancellationToken)
                 .ConfigureAwait(false) is { } error)
             {
                 return StepResult.Failed(error);
             }
 
-            if (step.Cleanup)
-            {
-                await CleanupAsync(Image(volumes, scratch, directory, logs), context, cancellationToken).ConfigureAwait(false);
-            }
+            Version? after = step.Cleanup
+                ? await CleanupAsync(Image(volumes, scratch, directory, logs), context, cancellationToken).ConfigureAwait(false)
+                : tally.Before is null ? null : await dism.VersionAsync(Image(volumes, scratch, directory, logs), cancellationToken).ConfigureAwait(false);
 
+            tally.Report(log, after);
             context.Progress.Report(100);
 
             return StepResult.Done();
@@ -77,7 +78,6 @@ public sealed class ServicePackagesStepRunner(IOfflineServicing dism, RunDownloa
             }
         }
     }
-
 
     private async Task<IReadOnlyList<UnpackedPackage>> UnpackAsync(
         AgentRunPackage[] packages,
@@ -104,13 +104,11 @@ public sealed class ServicePackagesStepRunner(IOfflineServicing dism, RunDownloa
     // The step's error, or null once each call added its files or left out a matched update. Each call gets its own log.
     private async Task<string?> AddAllAsync(
         IReadOnlyList<ServicingCall> calls,
+        ServicingTally tally,
         Func<OfflineImage> image,
         StepContext context,
         CancellationToken cancellationToken)
     {
-        List<string> added = [];
-        List<string> leftOut = [];
-
         for (int index = 0; index < calls.Count; index++)
         {
             IProgress<int> progress = new ScaledProgress(
@@ -118,24 +116,19 @@ public sealed class ServicePackagesStepRunner(IOfflineServicing dism, RunDownloa
                 Unpacked + (index * (Added - Unpacked) / calls.Count),
                 Unpacked + ((index + 1) * (Added - Unpacked) / calls.Count));
 
-            (string? error, bool fits) = await AddAsync(calls[index], image(), context, progress, cancellationToken).ConfigureAwait(false);
-
-            if (error is not null)
+            if (await AddAsync(calls[index], tally, image(), context, progress, cancellationToken).ConfigureAwait(false) is { } error)
             {
                 return error;
             }
-
-            (fits ? added : leftOut).Add(calls[index].Names);
         }
-
-        Report(added, leftOut);
 
         return null;
     }
 
-    // An error for the step, or whether DISM added the call's files rather than leaving out a matched update.
-    private async Task<(string? Error, bool Fits)> AddAsync(
+    // An error for the step, or null once DISM added the call's files or left out a matched update.
+    private async Task<string?> AddAsync(
         ServicingCall call,
+        ServicingTally tally,
         OfflineImage image,
         StepContext context,
         IProgress<int> progress,
@@ -145,23 +138,23 @@ public sealed class ServicePackagesStepRunner(IOfflineServicing dism, RunDownloa
 
         if (call.IsUpdate && SpaceProblem(call, image) is { } space)
         {
-            return (space, false);
+            return space;
         }
 
-        bool fits = true;
-
         log.Information($"Adding {call.Names}: {string.Join(", ", call.Files.Select(Path.GetFileName))}.");
+        ServicingAnswer answer = await dism.AddAsync(image, call.Files, progress, cancellationToken).ConfigureAwait(false);
 
-        if (await dism.AddAsync(image, call.Files, progress, cancellationToken).ConfigureAwait(false) == ServicingOutcome.NotApplicable)
+        if (answer.Outcome == ServicingOutcome.NotApplicable)
         {
             if (!call.Packages.All(package => package.Package.Matched))
             {
-                return (DoesNotFit(call.Names), false);
+                return DoesNotFit(call.Names);
             }
 
-            fits = false;
             log.Warning($"{DoesNotFit(call.Names)} It was matched by its build, so it is left out.");
         }
+
+        tally.Count(call, answer);
 
         // An update's files are many gigabytes, which the next update may need.
         if (call.IsUpdate)
@@ -169,7 +162,7 @@ public sealed class ServicePackagesStepRunner(IOfflineServicing dism, RunDownloa
             Leftovers.Delete(call.Packages[0].Folder, log);
         }
 
-        return (null, fits);
+        return null;
     }
 
     private string? SpaceProblem(ServicingCall call, OfflineImage image)
@@ -185,29 +178,21 @@ public sealed class ServicePackagesStepRunner(IOfflineServicing dism, RunDownloa
                 $"Adding {call.Names} needs {ByteSize.Format(needed)} free on the Windows partition, {UpdateSpaceFactor} times its {ByteSize.Format(size)}, but it has {ByteSize.Format(free)}.");
     }
 
-    // The packages are in by now, so a failed cleanup only leaves the image larger.
-    private async Task CleanupAsync(OfflineImage image, StepContext context, CancellationToken cancellationToken)
+    // The packages are in by now, so a failed cleanup only leaves the image larger. Returns the image's version.
+    private async Task<Version?> CleanupAsync(OfflineImage image, StepContext context, CancellationToken cancellationToken)
     {
         context.Detail.Report(StepDetails.Coded(StepDetails.CleaningUp));
         log.Information("Cleaning up the image's component store.");
 
         try
         {
-            await dism.CleanupAsync(image, cancellationToken).ConfigureAwait(false);
+            return await dism.CleanupAsync(image, cancellationToken).ConfigureAwait(false);
         }
         catch (DeploymentStepException exception)
         {
             log.Warning($"{exception.Message} The packages are added; the image keeps the components they replaced.");
-        }
-    }
 
-    private void Report(List<string> added, List<string> leftOut)
-    {
-        log.Information(added.Count == 0 ? "No Windows package was added." : $"Added {string.Join("; ", added)}.");
-
-        if (leftOut.Count > 0)
-        {
-            log.Warning($"Left out, as they don't fit this Windows: {string.Join("; ", leftOut)}.");
+            return null;
         }
     }
 

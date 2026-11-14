@@ -2,15 +2,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-using System.Globalization;
-using System.Text.RegularExpressions;
 using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Servicing;
 
 // Windows PE's DISM, which services the applied Windows with that Windows' own servicing stack. It logs at level 2:
 // at the default level one cumulative update wrote a log of 542 MB.
-public sealed partial class DismOfflineServicing(IToolRunner tools, string dismPath, AgentLog log) : IOfflineServicing
+public sealed class DismOfflineServicing(IToolRunner tools, string dismPath, AgentLog log) : IOfflineServicing
 {
     // ERROR_SUCCESS_REBOOT_REQUIRED.
     public const int RestartNeeded = 3010;
@@ -23,56 +21,67 @@ public sealed partial class DismOfflineServicing(IToolRunner tools, string dismP
     // A cumulative update took 8.7 minutes on a test VM.
     public static readonly TimeSpan Timeout = TimeSpan.FromHours(2);
 
-    public async Task<ServicingOutcome> AddAsync(OfflineImage image, IReadOnlyList<string> packages, IProgress<int> percent, CancellationToken cancellationToken)
+    public static readonly TimeSpan VersionTimeout = TimeSpan.FromMinutes(15);
+
+    public async Task<ServicingAnswer> AddAsync(OfflineImage image, IReadOnlyList<string> packages, IProgress<int> percent, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(image);
         ArgumentNullException.ThrowIfNull(packages);
         ArgumentNullException.ThrowIfNull(percent);
 
+        DismLines lines = new(percent);
         int exitCode = await tools.RunForExitCodeAsync(
             dismPath,
             [$"/Image:{image.Windows}", "/Add-Package", .. packages.Select(package => $"/PackagePath:{package}"), .. Common(image)],
-            new ToolRunOptions(Timeout: Timeout, Lines: line => Progress(line, percent)),
+            new ToolRunOptions(Timeout: Timeout, Lines: lines.Read),
             cancellationToken).ConfigureAwait(false);
 
         return exitCode switch
         {
-            0 or RestartNeeded => ServicingOutcome.Added,
-            NotApplicable => ServicingOutcome.NotApplicable,
+            0 or RestartNeeded => new ServicingAnswer(ServicingOutcome.Added, lines.ImageVersion),
+            NotApplicable => new ServicingAnswer(ServicingOutcome.NotApplicable, lines.ImageVersion),
             _ => throw Failed("could not add the packages", exitCode, image.Log),
         };
     }
 
-    public async Task CleanupAsync(OfflineImage image, CancellationToken cancellationToken)
+    public async Task<Version?> CleanupAsync(OfflineImage image, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(image);
 
+        DismLines lines = new(null);
         int exitCode = await tools.RunForExitCodeAsync(
             dismPath,
             [$"/Image:{image.Windows}", "/Cleanup-Image", "/StartComponentCleanup", .. Common(image)],
-            new ToolRunOptions(Timeout: Timeout, Lines: line => Progress(line, null)),
+            new ToolRunOptions(Timeout: Timeout, Lines: lines.Read),
             cancellationToken).ConfigureAwait(false);
 
-        if (exitCode is not (0 or RestartNeeded))
+        return exitCode is 0 or RestartNeeded ? lines.ImageVersion : throw Failed("could not clean up the image", exitCode, image.Log);
+    }
+
+    // The package list is long and says nothing new, so it stays out of the log.
+    public async Task<Version?> VersionAsync(OfflineImage image, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+
+        PrivateOutput output = new();
+
+        try
         {
-            throw Failed("could not clean up the image", exitCode, image.Log);
+            int exitCode = await tools.RunForExitCodeAsync(
+                dismPath,
+                [$"/Image:{image.Windows}", "/Get-Packages", .. Common(image)],
+                new ToolRunOptions(Timeout: VersionTimeout, Private: output),
+                cancellationToken).ConfigureAwait(false);
+
+            return exitCode == 0 ? DismLines.VersionIn(output.Lines) : null;
+        }
+        catch (DeploymentStepException)
+        {
+            return null;
         }
     }
 
     private static string[] Common(OfflineImage image) => [$"/ScratchDir:{image.Scratch}", $"/LogPath:{image.Log}", "/LogLevel:2", "/English"];
-
-    // DISM draws its progress bar on one line again and again. The bar only gives the percent, and the log gets the rest.
-    private static string? Progress(string line, IProgress<int>? percent)
-    {
-        if (Bar().Match(line) is not { Success: true } bar)
-        {
-            return line;
-        }
-
-        percent?.Report((int)double.Parse(bar.Groups["percent"].Value, CultureInfo.InvariantCulture));
-
-        return null;
-    }
 
     // The log's last lines go into the step's log, because the log itself is deleted with the step.
     private DeploymentStepException Failed(string what, int exitCode, string logPath)
@@ -111,7 +120,4 @@ public sealed partial class DismOfflineServicing(IToolRunner tools, string dismP
 
         return lines;
     }
-
-    [GeneratedRegex(@"^\[[=\s]*(?<percent>\d{1,3}\.\d)%[=\s]*\]$", RegexOptions.CultureInvariant)]
-    private static partial Regex Bar();
 }

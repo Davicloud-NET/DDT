@@ -6,10 +6,11 @@ using DDT.Agent.Deployment;
 
 namespace DDT.Agent.Servicing;
 
-// Adds nothing, and takes every package as added, so a dry run goes through the whole step.
+// Adds nothing, and takes every package as added, so a dry run goes through the whole step. It reads no version, so
+// the step says nothing about the build.
 public sealed class DryRunOfflineServicing(AgentLog log) : IOfflineServicing
 {
-    public Task<ServicingOutcome> AddAsync(OfflineImage image, IReadOnlyList<string> packages, IProgress<int> percent, CancellationToken cancellationToken)
+    public Task<ServicingAnswer> AddAsync(OfflineImage image, IReadOnlyList<string> packages, IProgress<int> percent, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(packages);
         ArgumentNullException.ThrowIfNull(percent);
@@ -17,13 +18,15 @@ public sealed class DryRunOfflineServicing(AgentLog log) : IOfflineServicing
         log.Information($"Dry run: {string.Join(", ", packages.Select(Path.GetFileName))} not added, and taken as added.");
         percent.Report(100);
 
-        return Task.FromResult(ServicingOutcome.Added);
+        return Task.FromResult(new ServicingAnswer(ServicingOutcome.Added, null));
     }
 
-    public Task CleanupAsync(OfflineImage image, CancellationToken cancellationToken)
+    public Task<Version?> CleanupAsync(OfflineImage image, CancellationToken cancellationToken)
     {
         log.Information("Dry run: the image is not cleaned up.");
 
-        return Task.CompletedTask;
+        return Task.FromResult<Version?>(null);
     }
+
+    public Task<Version?> VersionAsync(OfflineImage image, CancellationToken cancellationToken) => Task.FromResult<Version?>(null);
 }

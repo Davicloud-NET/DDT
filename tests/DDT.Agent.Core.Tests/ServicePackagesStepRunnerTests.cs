@@ -79,7 +79,71 @@ public sealed class ServicePackagesStepRunnerTests : IDisposable
         Assert.False(System.IO.Directory.Exists(Path.Combine(Directory, "packages", s_step.Id.ToString("D"))));
         Assert.False(System.IO.Directory.Exists(Path.Combine(Directory, "scratch")));
         Assert.Empty(System.IO.Directory.EnumerateFiles(Directory, "dism-*.log"));
-        Assert.Contains("Added de-DE language pack; de-DE language pack; 2026-07 update; 2026-11 update.", await MessagesAsync());
+        List<string> messages = await MessagesAsync();
+        Assert.Contains("Added de-DE language pack; de-DE language pack; 2026-07 update; 2026-11 update.", messages);
+        Assert.DoesNotContain(messages, message => message.Contains("build", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task SaysTheBuildBeforeTheFirstUpdateAndAfterTheCleanup()
+    {
+        _run.Partitioned();
+        Versions("10.0.26200.6584", "10.0.26200.9974");
+
+        await RunAsync(s_step);
+
+        List<string> messages = await MessagesAsync();
+        Assert.Contains("Added de-DE language pack; de-DE language pack; 2026-07 update; 2026-11 update.", messages);
+        Assert.Contains("Windows is at build 26200.9974 now, was 26200.6584.", messages);
+    }
+
+    [Fact]
+    public async Task UpdatesThatLeaveTheBuildAsItWasAreNotAdded()
+    {
+        _run.Partitioned();
+        Versions("10.0.26100.33650", "10.0.26100.33650");
+
+        StepResult result = await RunAsync(s_step);
+
+        Assert.Equal(StepResult.Done(), result);
+        List<string> messages = await MessagesAsync();
+        Assert.Contains("Added de-DE language pack; de-DE language pack.", messages);
+        Assert.Contains(
+            "Windows stays at build 26100.33650: 2026-07 update; 2026-11 update changed nothing. It is older than this Windows or made for another.",
+            messages);
+    }
+
+    [Fact]
+    public async Task WithoutCleanupAnExtraCallReadsTheBuildAndKeepsItsOutputOutOfTheLog()
+    {
+        TargetVolumes volumes = _run.Partitioned();
+        Versions("10.0.26200.6584", "10.0.26200.9974");
+
+        await RunAsync(s_step with { Cleanup = false });
+
+        Assert.Equal(RecordingToolRunner.CommandLine(Dism, [$"/Image:{volumes.Windows}", "/Get-Packages", .. Common(5)]), _run.ToolRunner.Calls[^1]);
+        Assert.NotNull(_run.ToolRunner.Options[^1].Private);
+        Assert.Contains("Windows is at build 26200.9974 now, was 26200.6584.", await MessagesAsync());
+    }
+
+    [Fact]
+    public async Task WithoutAnUpdateNoBuildIsRead()
+    {
+        using StepRunnerFixture run = new([s_step], packages: [new AgentRunPackage(s_step.Id, "de-DE language pack", _german.Sha256, _german.Content.Length)]);
+        run.Server.ServeFile(_german.Sha256, _german.Content);
+        run.Partitioned();
+        run.ToolRunner.AnswerExitCode = (_, _, options) =>
+        {
+            options.Lines?.Invoke("Image Version: 10.0.26200.6584");
+
+            return 0;
+        };
+
+        await new ServicePackagesStepRunner(new DismOfflineServicing(run.ToolRunner, Dism, run.Log), run.Downloads, run.Session, run.Log)
+            .RunAsync(s_step with { Cleanup = false }, run.Context(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, run.ToolRunner.Calls.Count);
+        Assert.DoesNotContain(await run.SentLinesAsync(), line => line.Message.Contains("build", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -180,6 +244,17 @@ public sealed class ServicePackagesStepRunnerTests : IDisposable
     }
 
     public void Dispose() => _run.Dispose();
+
+    // DISM prints the image's version first in every call; before is the adding calls', after the others'.
+    private void Versions(string before, string after) =>
+        _run.ToolRunner.AnswerExitCode = (_, arguments, options) =>
+        {
+            string line = $"Image Version: {(arguments.Contains("/Add-Package") ? before : after)}";
+            options.Lines?.Invoke(line);
+            options.Private?.Add(line);
+
+            return 0;
+        };
 
     private static int NotApplicableFor(IReadOnlyList<string> arguments, string file) =>
         arguments.Any(argument => argument.EndsWith(file, StringComparison.Ordinal)) ? DismOfflineServicing.NotApplicable : 0;

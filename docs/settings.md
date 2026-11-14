@@ -225,6 +225,34 @@ draws it, and the server takes only a whole PNG.
 
 Machines that are already approved are not re-evaluated.
 
+### Autopilot (section `autopilot`, keys under DDT:Autopilot)
+
+The app registration through which the server uploads hardware hashes to Autopilot (M9). Stored in
+the database like the other sections (5.1), the secret encrypted with the key ring (5.4). Edited on
+Machines > Autopilot, which only administrators open.
+
+| Key | Type | Default | Secret | Applies | Who |
+|---|---|---|---|---|---|
+| TenantId | tenant GUID or domain, such as contoso.onmicrosoft.com | empty: no upload | | live | Admin |
+| ClientId | GUID | empty: no upload | | live | Admin |
+| ClientSecret | text | empty: no upload | yes, write-only | live | Admin |
+| DefaultGroupTag | at most 128 printable ASCII characters, no comma or quotation mark | empty: no group tag | | live, for hashes collected after the save | Admin |
+
+- TenantId and ClientId are set together or not at all. The tenant goes into the token endpoint's
+  path, so only a GUID or a DNS name with a dot is taken (AutopilotSettingsSection.cs).
+- ClientSecret is never shown or pushed. A save that changes TenantId or ClientId and keeps the
+  stored secret is refused on the secret's field: enter it again, as for Oidc:ClientSecret.
+- The app registration needs the Microsoft Graph application permission
+  `DeviceManagementServiceConfig.ReadWrite.All`, with admin consent (GraphAutopilotDirectory.cs).
+- With all three set, a hash a Register with Autopilot step hands over is Pending, and the uploader
+  (AutopilotUploader.cs) sends it every 30 seconds through the client credentials grant and
+  `importedWindowsAutopilotDeviceIdentities`, then follows the import until Autopilot says complete
+  or error, at most 30 minutes. A 403 names the permission in the machine's upload message.
+- Without them a hash stays "Not uploaded", for Intune's CSV. Completing the section later uploads
+  nothing by itself: Upload to Autopilot on the machine's page puts a hash in line.
+- DefaultGroupTag is taken when the hash arrives, for a step without a group tag.
+- The upload was tested against a stand-in for Microsoft Graph only, never a real tenant.
+
 ### Network boot (section `pxe`, keys under DDT:Pxe)
 
 Every key here applies through a subsystem restart of the PXE listeners. That ends any TFTP transfer
@@ -508,7 +536,7 @@ holds one row per section.
 
 | Column | Contents |
 |---|---|
-| Section varchar(32), primary key | deployment, machines, ldap, oidc, proxies, pxe, logging, certificate (the server names only), and the reserved row keyring (5.4). |
+| Section varchar(32), primary key | deployment, machines, autopilot, ldap, oidc, proxies, pxe, logging, certificate (the server names only), and the reserved row keyring (5.4). |
 | SchemaVersion int | The shape of Values. Each bump comes with a C# upgrade step that runs on load, so renames happen in code. |
 | Values text | JSON of the fields that have been written. An absent field was never written (5.7). Unknown members are skipped, so an older build still starts. |
 | Secrets text | A JSON object mapping each field path to its Data Protection ciphertext. |
@@ -847,6 +875,9 @@ stated requirement.
   to be entered again, and machines register again.
 - Keep key ring backups apart from database backups, and protect them like the volume. The key ring
   can also mint an administrator cookie (README "Security model").
+- Since M9 the key ring also protects BitLocker recovery keys (RecoveryKeyProtector.cs, purpose
+  "DDT.RecoveryKeys" with the machine and protector IDs). A lost or moved ring loses every key, so
+  Active Directory is their first copy.
 
 ### 5.5 Audit and live push
 
@@ -1050,7 +1081,7 @@ ring, so it also works for the streamed agent upload.
 |---|---|
 | POST /api/settings/reauthenticate | Body `{ password, code }`, checked like a sign-in under the SignIn rate limiter (RateLimitingExtensions.cs:25-32). Returns a token that is valid for 5 minutes and bound to the user and their security stamp. |
 | GET /api/settings | SettingsOverview. |
-| GET /api/settings/{section} | The section view. The section is deployment, machines, ldap, oidc, proxies, pxe or logging. |
+| GET /api/settings/{section} | The section view. The section is deployment, machines, autopilot, ldap, oidc, proxies, pxe or logging. |
 | PUT /api/settings/{section} | 200 with the view, including apply. 400 is a ValidationProblem keyed by field, and nothing is saved; an unaccepted warning is reported under the field "confirm". 409 answers "Someone saved {section} since you loaded it. Load it again." when the version is stale, as MachineEndpoints.cs:365-369 does. A failed apply is not an error response: it shows in apply (5.2). |
 | POST /api/settings/ldap/test | Body: candidate values and secrets, and optionally a user name and password. Returns the bind result, whether the user was found, the groups, the mapped roles, and a message. Stored secrets are used only against the stored destination. The user part goes through the lockout checks of directory sign-in (DirectorySignInService.cs:62-81) without issuing a cookie, under the SignIn rate limiter. |
 | POST /api/settings/oidc/test | Fetches the candidate Authority's discovery document. Returns the issuer and the redirect URI to register. |

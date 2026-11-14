@@ -625,12 +625,18 @@ Done, the helper and the button:
   as one more build to serve. After a build the server keeps it and the one served before it, and
   removes the rest.
 - `POST /api/boot-image/build`, `/adk` and `/current` are an administrator's, and each is audited.
-  `GET /api/boot-image` names why a build is due (`drivers`, `serverAddress`, `root`, `adk`), the
+  `GET /api/boot-image` names why a build is due (`drivers`, `serverAddress`, `root`, `adk`,
+  `bitLocker`), the
   ADK, the builds and the job; `GET /api/boot-image/job` has the job's output, and the hub pushes
   it as `bootImageJobOutput`. The job is kept in memory, so a restart of the server forgets its
   output, and the build it left says the rest.
 - The page offers the keyboard layout and PowerShell, starting from what the served build has. The
   TFTP window is in the API alone.
+- Since M9, PowerShell also brings WinPE-EnhancedStorage and WinPE-SecureStartup, with manage-bde,
+  and `ddt-boot-image.json` says `bitLocker`. Only Pre-provision BitLocker needs them. While a
+  sequence has that step and the served build lacks them, the page asks for a build with PowerShell
+  (`bitLocker`); an older image skips the step with a warning, or fails the run before the disk if
+  the step is set to fail.
 
 Left: the page does not say that a release changed Windows PE, since no release says so yet. The
 keyboard layout is chosen at each build and not a setting, so it has nothing to differ from.
@@ -1478,6 +1484,11 @@ Done:
   success code. A missing dependency or one that closes a circle is left out and named; a name the
   library has is linked to, not imported again. The reader was written from memory of
   `Applications.xml` and has not met a real share.
+
+- **The Languages and Optional Features ISO** (M9), on Library > Windows packages: from an import
+  folder, or uploaded there through the browser. An ISO without `LanguagesAndOptionalFeatures` is
+  refused. Each ticked language becomes a Windows package, built by the same import job
+  (src/DDT.Server/WindowsPackages/LanguageIsos.cs).
 
 Left: an import folder is named in configuration and not on a page, so an MDT shop edits `ddt.ini`
 once. A command at an elevated prompt would spare that, as `settings netboot-interface` does for

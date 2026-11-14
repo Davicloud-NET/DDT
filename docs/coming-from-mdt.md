@@ -16,6 +16,8 @@ read. The pictures here show sample data; your server names will be nicer.
 | Applications and application bundles | *Library, Applications*, and the step **Install applications** |
 | Windows Update (Pre- and Post-Application Installation) | The step **Windows Update** |
 | Install Roles and Features | The step **Enable roles and features** |
+| Packages, Install Updates Offline, Install Language Packs Offline | *Library, Windows packages*, and the step **Service packages** |
+| Pre-provision BitLocker, Enable BitLocker | The steps **Pre-provision BitLocker** and **Enable BitLocker** |
 | The tattoo | The deployment record, in `HKLM\SOFTWARE\Davicloud\DDT\Deployment` |
 | `LiteTouchPE_x64.wim` | The boot image, under *Boot, Boot image* |
 | Update Deployment Share | The button **Build the boot image** |
@@ -74,8 +76,12 @@ A few things work differently from LiteTouch:
 - **There is no `Bootstrap.ini`.** The image carries the server's address and DDT's root
   certificate, and the agent in it trusts that server and no other.
 - **The page tells you when to build again.** New WinPE drivers, a new server name or port, a new
-  root certificate, another ADK: it shows a notice and says which it was. A newer agent is not
-  among them, because the agent updates itself when it starts.
+  root certificate, another ADK, a sequence with Pre-provision BitLocker in an image without it: it
+  shows a notice and says which it was. A newer agent is not among them, because the agent updates
+  itself when it starts.
+- **BitLocker in Windows PE needs a rebuild once.** Images built since M9 carry WinPE-EnhancedStorage
+  and WinPE-SecureStartup, for manage-bde, along with the PowerShell components. Only Pre-provision
+  BitLocker needs them; Enable BitLocker runs in the installed Windows.
 - **WinPE drivers are a switch, not a selection profile.** Under *Library, Drivers*, a driver
   package has **Add to the Windows PE boot image**. Flick it for the storage and network drivers a
   machine needs before it can see its disk or the network, and build again.
@@ -252,6 +258,58 @@ A few more of the steps you never took out of the Standard Client Task Sequence:
   It is written when a run ends in the installed Windows, so a sequence that ends in Windows PE
   leaves none. Deployment defaults can turn it off.
 
+## Packages, BitLocker and Autopilot
+
+**Packages** are *Library, Windows packages*, and **Service packages** is Install Updates Offline and
+Install Language Packs Offline in one step, after Apply image:
+
+- **Updates.** Upload the `.msu` files from the Microsoft Update Catalog, one file or a zip. A
+  cumulative update and its checkpoints go into one package; DISM takes the newest and finds the
+  rest beside it.
+- **Language packs.** Upload the Languages and Optional Features ISO, or copy it into an import
+  folder, and tick languages. Each becomes a package with its language pack, language features and
+  fonts. Other features on demand: upload the `.cab`.
+- **Selection profiles** become Windows builds on a package (26100, 26200) and the step's switch
+  **Add the updates marked for the image's build**: a new cumulative update, marked, goes to every
+  sequence with that switch on, and no sequence needs an edit.
+- **Order** is DDT's: language packs, features, then updates, lowest KB first.
+- A package that does not fit the image fails the step; a matched update that does not is left out.
+
+**BitLocker** is two steps, as in the Standard Client Task Sequence:
+
+| MDT | DDT |
+|---|---|
+| Pre-provision BitLocker | **Pre-provision BitLocker**, between Partition and Apply image |
+| Enable BitLocker | **Enable BitLocker**, in the installed Windows |
+| `BDEInstall=TPM` | Always TPM plus a recovery password; no PIN, no startup key |
+| `BDERecoveryKey=AD` | **Back up the recovery password to Active Directory**, on a joined machine |
+| `BDEWaitForEncryption` | **Wait until the disk is encrypted** |
+| `SkipBitLocker` | Nothing: the sequence decides, not the technician |
+
+- **The recovery key goes to DDT always**, before protection is turned on, and to Active Directory
+  too where that switch is on.
+- **On the machine's page** under *Recovery keys*: key ID, volume and date. Everyone sees them;
+  administrators reveal a password or delete a key that was replaced. Each reveal is in the audit,
+  with the key ID and never the password.
+- **The key ID from the recovery screen** goes into the Machines page's search: the whole ID or its
+  first 8 digits.
+- **Treat Active Directory as the first copy.** DDT encrypts the keys with its key ring in
+  `<store>\keys`. A lost key ring loses every key, and on Windows the ring is bound to the server,
+  so a store moved to another server or a reinstalled Windows loses them too. Back up the keys
+  folder with the database.
+- **No TPM** fails Enable BitLocker, unless it is set to skip. Pre-provision skips by default.
+
+**Autopilot** was never in MDT, but Microsoft sends MDT users there. **Register with Autopilot**
+reads the hardware hash in the installed Windows, a client edition only, and hands it to the server:
+
+- **Uploaded by the server** through Microsoft Graph, once an app registration is set under
+  *Machines, Autopilot*: tenant, client ID and secret, with the application permission
+  `DeviceManagementServiceConfig.ReadWrite.All`. The upload has met only a stand-in, never a real
+  tenant.
+- **Or by hand.** Without the app registration the hash waits on the server, and the machine's page
+  or the Machines page gives Intune's CSV to import.
+- **Group tag** per step, or a default under *Machines, Autopilot*.
+
 ## At the machine
 
 The Deployment Wizard is now a console that starts in Windows PE:
@@ -329,7 +387,9 @@ Better you hear it here than find out on a Friday afternoon:
 - **Windows Update, roles and features and the first logon on a real machine.** Those have met
   only tests and dry runs too. Try them on a test machine first.
 - **WSUS.** The Windows Update step goes to Microsoft Update only.
-- **BitLocker and offline servicing.** The rest of milestone M9.
+- **Autopilot against a real tenant.** The upload has met only a stand-in. The CSV is the safe way
+  for now.
+- **BitLocker with a PIN or a startup key.** TPM and a recovery password only.
 - **Importing task sequences and `CustomSettings.ini`.** You rebuild them, as described above.
 - **Refresh and replace.** No USMT yet, so DDT erases the disk and installs. That comes with M10.
 - **Capturing a reference image.** Also M10. Until then, capture the way you do today and import

@@ -104,6 +104,9 @@ Two things that save an afternoon:
   machine's model, memory, TPM or network. Rules pick the sequence for a machine and fill in values
   such as its name or time zone, a sequence can ask its questions on the web or at the machine, and
   a step can use an account whose password its script never sees.
+- **Services and secures Windows.** Updates and language packs added to the image offline, BitLocker
+  turned on with its recovery key in Active Directory and in DDT, and the hardware hash handed to
+  Autopilot.
 - **Does Linux, too.** Raw disk images (raw, gzip, zstd, xz or qcow2) with a cloud-init seed,
   written from a Linux boot environment that comes with every release: Debian's kernel and DDT's
   agent for Linux, about 36 MB, with no ADK and nothing to build. The server names each machine the
@@ -173,7 +176,7 @@ preview.
 | M6.6 | Installing DDT with one command, on Windows Server and on Linux | ✅ Done |
 | M7 | A node-based flow builder for task sequences | ✅ Done |
 | M8 | Linux: a boot environment of its own, runs that carry on inside the installed Linux, the graphical console | ✅ Done |
-| M9 | Applications and Windows configuration | 🔜 Part 2 of 3 |
+| M9 | Applications and Windows configuration | ✅ Done |
 | M10 | Golden images and the machine lifecycle | Planned |
 | M11 | Beyond netboot and beyond a single site | Planned |
 | M12 | Documentation, the proper kind | Planned |

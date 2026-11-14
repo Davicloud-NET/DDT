@@ -43,7 +43,9 @@ public static class PackageTargets
 
         if (targets.Count > 0 && kind != PackageKind.Drivers)
         {
-            return ServerMessages.PackageFilesHaveNoTargets.With();
+            return kind == PackageKind.WindowsPackage
+                ? ServerMessages.PackageWindowsNoTargets.With()
+                : ServerMessages.PackageFilesHaveNoTargets.With();
         }
 
         if (targets.Count > PackageLimits.MaxTargets)

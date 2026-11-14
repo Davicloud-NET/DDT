@@ -266,6 +266,7 @@
   "package.windowsEmpty": "The zip holds no .msu or .cab file.",
   "package.windowsFile": "{entry} is no .msu or .cab file. A Windows package holds nothing else.",
   "package.windowsFolder": "{entry} lies in a folder. Put the .msu and .cab files at the top of the zip.",
+  "package.windowsNoTargets": "A Windows package goes to the machines whose sequence names it, not by their model, so it has no targets.",
   "person.someOperator": "An operator",
   "resolution.assignedOnWeb": "{by} assigned {sequence} on the web, which comes before every rule.",
   "resolution.cannotRun": "{explanation} {count, plural, one {{sequence} has # problem, so it cannot run until it is fixed.} other {{sequence} has # problems, so it cannot run until they are fixed.}}",

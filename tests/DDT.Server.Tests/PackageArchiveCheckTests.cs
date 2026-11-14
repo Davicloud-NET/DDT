@@ -35,7 +35,10 @@ public sealed class PackageArchiveCheckTests
             ("Audio/Realtek/hdx.sys", RandomNumberGenerator.GetBytes(3000)),
             ("readme.txt", new byte[24]));
 
-        Assert.Equal(new PackageInspection(3, 4024, null), Inspect(zip));
+        PackageInspection inspection = Inspect(zip);
+
+        Assert.Equal((3, 4024L, null), (inspection.FileCount, inspection.ExpandedBytes, inspection.Refusal));
+        Assert.Equal(["Audio/Realtek/HDXRT.INF", "Audio/Realtek/hdx.sys", "readme.txt"], inspection.FileNames);
     }
 
     [Fact]

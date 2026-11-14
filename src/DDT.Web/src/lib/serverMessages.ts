@@ -1077,6 +1077,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "package.windowsFolder",
     message: "{entry} lies in a folder. Put the .msu and .cab files at the top of the zip.",
   }),
+  "package.windowsNoTargets": msg({
+    context: "package.windowsNoTargets",
+    message: "A Windows package goes to the machines whose sequence names it, not by their model, so it has no targets.",
+  }),
   "person.someOperator": msg({
     context: "person.someOperator",
     message: "An operator",

@@ -72,6 +72,21 @@ public sealed class WindowsPackageUploadTests(DdtApplication application) : ICla
         Assert.Equal(["de-DE"], package.Windows?.Languages);
     }
 
+    [Fact]
+    public async Task AWindowsPackageHasNoTargets()
+    {
+        SignedInClient administrator = await application.AdministratorAsync();
+        PackageSummary package = await administrator.UploadedPackageAsync(TestZip.Create(Update), UploadKind.WindowsPackage, "update.zip");
+
+        HttpResponseMessage refused = await administrator.SendJsonAsync(
+            HttpMethod.Put,
+            $"{PackageRequests.Packages}/{package.Id}",
+            """{"name":"Update","description":null,"targets":[{"manufacturer":null,"model":"Latitude*"}]}""");
+
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Contains("package.windowsNoTargets", await refused.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("readme.txt", "package.windowsFile")]
     [InlineData("updates/update.msu", "package.windowsFolder")]

@@ -1984,6 +1984,11 @@ msgstr "eine WIM-, ESD-, ISO- oder Datenträgerimage-Datei"
 msgid "A Windows executable of at most 128 MB."
 msgstr "Eine ausführbare Windows-Datei von höchstens 128 MB."
 
+#: src/lib/serverMessages.ts
+msgctxt "package.windowsNoTargets"
+msgid "A Windows package goes to the machines whose sequence names it, not by their model, so it has no targets."
+msgstr "Ein Windows-Paket geht an die Geräte, deren Tasksequenz es nennt, nicht nach ihrem Modell, daher hat es keine Ziele."
+
 #: src/sequences/steps/WriteUnattendFields.tsx
 msgid "A Windows time zone id as tzutil /l lists it, such as W. Europe Standard Time."
 msgstr "Eine Windows-Zeitzonen-ID, wie tzutil /l sie auflistet, etwa W. Europe Standard Time."

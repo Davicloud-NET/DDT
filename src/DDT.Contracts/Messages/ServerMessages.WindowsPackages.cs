@@ -20,6 +20,10 @@ public static partial class ServerMessages
         "package.windowsFolder",
         "{entry} lies in a folder. Put the .msu and .cab files at the top of the zip.");
 
+    public static readonly MessageTemplate PackageWindowsNoTargets = Define(
+        "package.windowsNoTargets",
+        "A Windows package goes to the machines whose sequence names it, not by their model, so it has no targets.");
+
     public static readonly MessageTemplate PackageWindowsEmpty = Define("package.windowsEmpty", "The zip holds no .msu or .cab file.");
 
     public static readonly MessageTemplate IsoNoLanguages = Define(

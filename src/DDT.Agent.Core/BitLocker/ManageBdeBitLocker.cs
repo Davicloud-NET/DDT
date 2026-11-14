@@ -9,7 +9,7 @@ namespace DDT.Agent.BitLocker;
 
 // BitLocker through manage-bde, and its state through one PowerShell line. Output that holds a password stays out of
 // the logs; every other line goes to the log unless it looks like a password. Every command line is here.
-public sealed class ManageBdeBitLocker(IToolRunner tools, string manageBdePath, string powerShellPath) : IBitLocker
+public sealed class ManageBdeBitLocker(IToolRunner tools, string manageBdePath, string powerShellPath, AgentLog log, TimeProvider timeProvider) : IBitLocker
 {
     // TBS_E_TPM_NOT_FOUND from -add -recoverypassword, and the error -add -tpm ends with when there is no TPM.
     public const int NoTpm = unchecked((int)0x8028400F);
@@ -17,6 +17,14 @@ public sealed class ManageBdeBitLocker(IToolRunner tools, string manageBdePath, 
 
     // What manage-bde -get ends with when the volume has no such protector.
     public const int NoProtector = -1;
+
+    // WBEM_E_INVALID_NAMESPACE: right after the restart that adds the BitLocker feature, its WMI namespace comes seconds
+    // after the agent.
+    public const int NotReady = unchecked((int)0x8004100E);
+
+    public static readonly TimeSpan NotReadyPoll = TimeSpan.FromSeconds(5);
+
+    public static readonly TimeSpan NotReadyWait = TimeSpan.FromMinutes(3);
 
     public static readonly TimeSpan Timeout = TimeSpan.FromMinutes(10);
 
@@ -89,8 +97,7 @@ public sealed class ManageBdeBitLocker(IToolRunner tools, string manageBdePath, 
     public async Task<IReadOnlyList<Guid>> RecoveryPasswordIdsAsync(string volume, CancellationToken cancellationToken)
     {
         PrivateOutput output = new();
-        int exitCode = await tools.RunForExitCodeAsync(manageBdePath, RecoveryPasswordsArguments(volume), new ToolRunOptions(Timeout: Timeout, Private: output), cancellationToken)
-            .ConfigureAwait(false);
+        int exitCode = await ManageBdeAsync(RecoveryPasswordsArguments(volume), new ToolRunOptions(Timeout: Timeout, Private: output), cancellationToken).ConfigureAwait(false);
 
         if (exitCode == NoProtector)
         {
@@ -123,8 +130,7 @@ public sealed class ManageBdeBitLocker(IToolRunner tools, string manageBdePath, 
     public async Task<RecoveryPassword?> AddRecoveryPasswordAsync(string volume, CancellationToken cancellationToken)
     {
         PrivateOutput output = new();
-        int exitCode = await tools.RunForExitCodeAsync(manageBdePath, AddRecoveryPasswordArguments(volume), new ToolRunOptions(Timeout: Timeout, Private: output), cancellationToken)
-            .ConfigureAwait(false);
+        int exitCode = await ManageBdeAsync(AddRecoveryPasswordArguments(volume), new ToolRunOptions(Timeout: Timeout, Private: output), cancellationToken).ConfigureAwait(false);
 
         if (exitCode is NoTpm or NoCompatibleTpm)
         {
@@ -186,7 +192,26 @@ public sealed class ManageBdeBitLocker(IToolRunner tools, string manageBdePath, 
 
     // Lines that look like a password never reach the log.
     private Task<int> RunAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken) =>
-        tools.RunForExitCodeAsync(manageBdePath, arguments, new ToolRunOptions(Timeout: Timeout, Lines: RecoveryPasswords.Redacted), cancellationToken);
+        ManageBdeAsync(arguments, new ToolRunOptions(Timeout: Timeout, Lines: RecoveryPasswords.Redacted), cancellationToken);
+
+    private async Task<int> ManageBdeAsync(IReadOnlyList<string> arguments, ToolRunOptions options, CancellationToken cancellationToken)
+    {
+        int exitCode = await tools.RunForExitCodeAsync(manageBdePath, arguments, options, cancellationToken).ConfigureAwait(false);
+
+        for (TimeSpan waited = TimeSpan.Zero; exitCode == NotReady && waited < NotReadyWait; waited += NotReadyPoll)
+        {
+            if (waited == TimeSpan.Zero)
+            {
+                log.Information("BitLocker is not ready yet. Waiting.");
+            }
+
+            await Task.Delay(NotReadyPoll, timeProvider, cancellationToken).ConfigureAwait(false);
+            options.Private?.Clear();
+            exitCode = await tools.RunForExitCodeAsync(manageBdePath, arguments, options, cancellationToken).ConfigureAwait(false);
+        }
+
+        return exitCode;
+    }
 
     private static void Check(int exitCode, string what, string volume, bool logged = true)
     {

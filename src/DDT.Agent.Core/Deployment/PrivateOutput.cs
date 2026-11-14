@@ -17,4 +17,10 @@ public sealed class PrivateOutput
     internal void Add(string line) => _lines.Add(line);
 
     internal void AddError(string line) => _errors.Add(line);
+
+    internal void Clear()
+    {
+        _lines.Clear();
+        _errors.Clear();
+    }
 }

@@ -80,7 +80,7 @@ public sealed class ManageBdePasswordLogTests : IDisposable
         string script = Path.Combine(_directory, "manage-bde.cmd");
         File.WriteAllLines(script, ["@echo off", .. lines.Select(line => $"echo {line}"), $"exit /b {exitCode}"]);
 
-        return new ManageBdeBitLocker(new ToolRunner(_log, TimeProvider.System, AnsiCodePage.Decode), script, "powershell.exe");
+        return new ManageBdeBitLocker(new ToolRunner(_log, TimeProvider.System, AnsiCodePage.Decode), script, "powershell.exe", _log, TimeProvider.System);
     }
 
     private async Task<List<AgentLogLine>> AssertNotLoggedAsync()

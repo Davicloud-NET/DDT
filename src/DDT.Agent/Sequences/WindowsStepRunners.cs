@@ -62,7 +62,7 @@ public sealed class WindowsStepRunners : IStepRunners
     private IBitLocker ManageBde() =>
         Options.DryRun
             ? new DryRunBitLocker(Log)
-            : new ManageBdeBitLocker(Tools, ManageBdeBitLocker.In(Environment.SystemDirectory), AppInstallerRegistration.PowerShellPath);
+            : new ManageBdeBitLocker(Tools, ManageBdeBitLocker.In(Environment.SystemDirectory), AppInstallerRegistration.PowerShellPath, Log, TimeProvider);
 
     private ITpm Tpm() => Options.DryRun ? new DryRunTpm() : new TbsTpm();
 

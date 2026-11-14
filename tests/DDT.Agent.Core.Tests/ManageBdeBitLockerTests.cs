@@ -50,8 +50,10 @@ public sealed class ManageBdeBitLockerTests
     ];
 
     private readonly RecordingToolRunner _tools = new();
+    private readonly ImmediateTimeProvider _time = new();
+    private readonly StringWriter _console = new();
 
-    private ManageBdeBitLocker BitLocker => new(_tools, ManageBde, PowerShell);
+    private ManageBdeBitLocker BitLocker => new(_tools, ManageBde, PowerShell, new AgentLog(_time, _console), _time);
 
     public static TheoryData<string> Languages => ["English", "German"];
 
@@ -181,6 +183,38 @@ public sealed class ManageBdeBitLockerTests
         Assert.Equal(
             "manage-bde could not back up the recovery password to Active Directory on C: (exit code 0x8031006A). Its output is in the machine log.",
             failure.Message);
+    }
+
+    [Fact]
+    public async Task WaitsForTheWmiNamespaceAfterTheFeaturesRestart()
+    {
+        int calls = 0;
+        _tools.AnswerExitCode = (_, _, options) =>
+        {
+            calls++;
+            options.Private?.Add(calls < 3 ? "ERROR: An error occurred (code 0x8004100e):" : $"      ID: {Id}");
+
+            return calls < 3 ? ManageBdeBitLocker.NotReady : 0;
+        };
+
+        IReadOnlyList<Guid> ids = await BitLocker.RecoveryPasswordIdsAsync("C:", TestContext.Current.CancellationToken);
+
+        Assert.Equal([Guid.Parse(Id)], ids);
+        Assert.Equal(3, _tools.Calls.Count);
+        Assert.Equal([ManageBdeBitLocker.NotReadyPoll, ManageBdeBitLocker.NotReadyPoll], _time.Delays);
+        Assert.Single(_console.ToString().Split(Environment.NewLine), line => line.EndsWith("BitLocker is not ready yet. Waiting.", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task GivesUpOnTheWmiNamespaceAfterThreeMinutes()
+    {
+        Answer(ManageBdeBitLocker.NotReady);
+
+        DeploymentStepException failure = await Assert.ThrowsAsync<DeploymentStepException>(() => BitLocker.TurnOnAsync("C:", TestContext.Current.CancellationToken));
+
+        Assert.Equal("manage-bde could not turn BitLocker on on C: (exit code 0x8004100E). Its output is in the machine log.", failure.Message);
+        Assert.Equal(37, _tools.Calls.Count);
+        Assert.Equal(ManageBdeBitLocker.NotReadyWait, _time.Delays.Aggregate(TimeSpan.Zero, (sum, delay) => sum + delay));
     }
 
     [Fact]

@@ -225,6 +225,7 @@ public sealed class ManageBdeBitLockerTests
         VolumeStatus status = await BitLocker.StatusAsync("C:", TestContext.Current.CancellationToken);
 
         Assert.Equal(new VolumeStatus(2, 74, false), status);
+        Assert.True(Assert.Single(_tools.Options).Quiet);
         Assert.StartsWith($"{PowerShell} -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command", Assert.Single(_tools.Calls), StringComparison.Ordinal);
         Assert.Contains("DriveLetter='C:'", ManageBdeBitLocker.StatusArguments("C:")[^1], StringComparison.Ordinal);
     }

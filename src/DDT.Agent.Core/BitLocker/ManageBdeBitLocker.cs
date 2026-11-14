@@ -156,10 +156,13 @@ public sealed class ManageBdeBitLocker(IToolRunner tools, string manageBdePath, 
 
     public async Task<VolumeStatus> StatusAsync(string volume, CancellationToken cancellationToken)
     {
-        // Private only to keep a long wait's polls out of the log.
+        // A long wait polls hundreds of times, and only a failed poll goes to the log.
         PrivateOutput output = new();
-        int exitCode = await tools.RunForExitCodeAsync(powerShellPath, StatusArguments(volume), new ToolRunOptions(Timeout: Timeout, Private: output), cancellationToken)
-            .ConfigureAwait(false);
+        int exitCode = await tools.RunForExitCodeAsync(
+            powerShellPath,
+            StatusArguments(volume),
+            new ToolRunOptions(Timeout: Timeout, Private: output, Quiet: true),
+            cancellationToken).ConfigureAwait(false);
 
         if (exitCode != 0)
         {

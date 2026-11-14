@@ -61,6 +61,41 @@ public sealed class ToolRunnerPrivateOutputTests
         Assert.DoesNotContain(Secret, console.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task AQuietToolThatSucceedsLeavesNoLine()
+    {
+        AgentLog log = new(new ImmediateTimeProvider(), TextWriter.Null);
+        ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode);
+
+        int exitCode = await tools.RunForExitCodeAsync(
+            s_cmd,
+            ["/d", "/c", "echo status:2 74 0"],
+            new ToolRunOptions(Private: new PrivateOutput(), Quiet: true),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(await SentAsync(log));
+    }
+
+    [Fact]
+    public async Task AQuietToolThatFailsIsLoggedAsAnyOther()
+    {
+        AgentLog log = new(new ImmediateTimeProvider(), TextWriter.Null);
+        ToolRunner tools = new(log, TimeProvider.System, AnsiCodePage.Decode);
+
+        int exitCode = await tools.RunForExitCodeAsync(
+            s_cmd,
+            ["/d", "/c", "exit /b 1"],
+            new ToolRunOptions(Private: new PrivateOutput(), Quiet: true),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, exitCode);
+        List<AgentLogLine> sent = await SentAsync(log);
+        Assert.Equal(2, sent.Count);
+        Assert.StartsWith($"Running {s_cmd}", sent[0].Message, StringComparison.Ordinal);
+        Assert.StartsWith("cmd.exe ended with exit code 1 after", sent[1].Message, StringComparison.Ordinal);
+    }
+
     private static async Task<List<AgentLogLine>> SentAsync(AgentLog log)
     {
         ScriptedAgentServer server = new();

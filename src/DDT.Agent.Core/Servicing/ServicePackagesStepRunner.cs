@@ -171,11 +171,16 @@ public sealed class ServicePackagesStepRunner(IOfflineServicing dism, RunDownloa
         long needed = (long)(size * UpdateSpaceFactor);
         long free = downloads.AvailableBytes(image.Windows);
 
-        return free >= needed
-            ? null
-            : string.Create(
-                CultureInfo.InvariantCulture,
-                $"Adding {call.Names} needs {ByteSize.Format(needed)} free on the Windows partition, {UpdateSpaceFactor} times its {ByteSize.Format(size)}, but it has {ByteSize.Format(free)}.");
+        if (free >= needed)
+        {
+            log.Information($"The Windows partition has {ByteSize.Format(free)} free, and adding {call.Names} needs {ByteSize.Format(needed)}.");
+
+            return null;
+        }
+
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"Adding {call.Names} needs {ByteSize.Format(needed)} free on the Windows partition, {UpdateSpaceFactor} times its {ByteSize.Format(size)}, but it has {ByteSize.Format(free)}.");
     }
 
     // The packages are in by now, so a failed cleanup only leaves the image larger. Returns the image's version.

@@ -196,6 +196,18 @@ public sealed class ServicePackagesStepRunnerTests : IDisposable
     }
 
     [Fact]
+    public async Task SaysWhatIsFreeAndWhatAnUpdateNeeds()
+    {
+        _run.Partitioned();
+        _space.Available = 56;
+
+        StepResult result = await RunAsync(s_step);
+
+        Assert.Equal(StepResult.Done(), result);
+        Assert.Contains("The Windows partition has 56 bytes free, and adding 2026-11 update needs 56 bytes.", await MessagesAsync());
+    }
+
+    [Fact]
     public async Task AnyOtherExitCodeFailsWithTheEndOfDismsLog()
     {
         _run.Partitioned();

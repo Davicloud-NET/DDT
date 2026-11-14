@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Agent.Applications;
+using DDT.Agent.Autopilot;
 using DDT.Agent.Deployment;
 using DDT.Agent.Servicing;
 using DDT.Agent.WindowsFeatures;
@@ -51,8 +52,12 @@ public sealed class WindowsStepRunners : IStepRunners
             new InstallApplicationsStepRunner(Server, session, heartbeat.ReportNowAsync, Applications(session, downloads), Log, TimeProvider),
             new EnableFeaturesStepRunner(Options.DryRun ? new DryRunWindowsFeatures(Log) : new DismWindowsFeatures(Tools, InjectDriversStepRunner.DismPath), Log),
             new WindowsUpdateStepRunner(Updates, Log, TimeProvider),
+            new RegisterAutopilotStepRunner(Server, session, heartbeat.ReportNowAsync, HashReader(), Log, TimeProvider),
         ];
     }
+
+    private IHardwareHashReader HashReader() =>
+        Options.DryRun ? new DryRunHardwareHashReader(Log) : new PowerShellHardwareHashReader(Tools, AppInstallerRegistration.PowerShellPath);
 
     private IWindowsUpdate Updates() =>
         Options.DryRun ? new DryRunWindowsUpdate(Log, Path.Combine(Options.WorkDirectory, "dry-run-updates.txt")) : new ComWindowsUpdate();

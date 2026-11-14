@@ -107,6 +107,19 @@ public sealed class AgentStepRunnerTests
         Assert.Equal(StepResult.Failed(error), result);
     }
 
+    [Theory]
+    [InlineData(SequencePhase.WindowsPE, "The Autopilot hardware hash is read in Windows, after the hand-over, but this agent was asked to read it in Windows PE.")]
+    [InlineData(SequencePhase.Linux, "The Autopilot hardware hash is read in Windows, but this agent was asked to read it in the installed Linux.")]
+    public async Task AutopilotFailsOutsideTheInstalledWindows(SequencePhase phase, string error)
+    {
+        RegisterAutopilotStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000b0"), Name = "Autopilot" };
+        using WindowsStepRunnerFixture run = new([step]);
+
+        StepResult result = await run.Steps.RunAsync(step, run.Context(phase), TestContext.Current.CancellationToken);
+
+        Assert.Equal(StepResult.Failed(error), result);
+    }
+
     [Fact]
     public async Task WindowsUpdateRunsInTheInstalledWindows()
     {

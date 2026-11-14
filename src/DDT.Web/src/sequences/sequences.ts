@@ -10,7 +10,12 @@ import type { ImageBootCapability } from "@/images/images";
 
 import type { ApplicationReference, InputDeclaration, VariableDeclaration } from "./declarations";
 import type { ConditionNode, StepCondition } from "./sequenceConditions";
-import type { EnableFeaturesStep, ServicePackagesStep, WindowsUpdateStep } from "./windowsSteps";
+import type {
+  EnableFeaturesStep,
+  RegisterAutopilotStep,
+  ServicePackagesStep,
+  WindowsUpdateStep,
+} from "./windowsSteps";
 
 // LinuxBoot (version 4) is the netbooted Linux that writes a Linux sequence's disk. Linux (version 5) is the installed
 // Linux, where such a sequence goes on.
@@ -199,7 +204,8 @@ export type SequenceStep =
   | InstallApplicationsStep
   | EnableFeaturesStep
   | WindowsUpdateStep
-  | ServicePackagesStep;
+  | ServicePackagesStep
+  | RegisterAutopilotStep;
 
 export type StepKind = SequenceStep["kind"];
 
@@ -217,7 +223,7 @@ export type {
   VariableDeclaration,
 } from "./declarations";
 
-export type { EnableFeaturesStep, ServicePackagesStep, WindowsUpdateStep };
+export type { EnableFeaturesStep, RegisterAutopilotStep, ServicePackagesStep, WindowsUpdateStep };
 
 // version is the schema version. It goes up with each step kind or member that older agents would ignore. The server
 // stores the lowest version a sequence needs, and leaves out variables and inputs while there are none.

@@ -362,6 +362,17 @@
       ],
       "continueOnError": true,
       "rebootAfter": false
+    },
+    {
+      "kind": "registerAutopilot",
+      "groupTag": "Sales",
+      "waitForImport": true,
+      "waitMinutes": 20,
+      "id": "00000000-0000-4000-8000-000000000017",
+      "name": "Register with Autopilot",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
     }
   ],
   "variables": [

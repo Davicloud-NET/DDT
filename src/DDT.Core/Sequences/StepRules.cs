@@ -245,20 +245,12 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goe
             case PauseStep pause:
                 CheckPause(pause, place, problems);
                 break;
-            case InstallApplicationsStep install:
-                ApplicationStepRules.Check(install, names, problems);
-                break;
-            case EnableFeaturesStep features:
-                FeatureStepRules.Check(features, problems);
-                break;
-            case WindowsUpdateStep updates:
-                UpdateStepRules.Check(updates, problems);
-                break;
-            case ServicePackagesStep servicing:
-                ServicingStepRules.Check(servicing, place, problems);
-                break;
             default:
-                problems.Add("kind", ServerMessages.SequenceUnknownStep.With());
+                if (!WindowsStepRules.Check(step, place, names, problems))
+                {
+                    problems.Add("kind", ServerMessages.SequenceUnknownStep.With());
+                }
+
                 break;
         }
     }

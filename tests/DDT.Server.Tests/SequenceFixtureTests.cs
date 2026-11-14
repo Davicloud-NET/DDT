@@ -288,6 +288,7 @@ public sealed class SequenceFixtureTests
                 new WindowsUpdateStep { Id = StepId(14), Name = "Windows Update", Drivers = true, ExcludedKbs = ["KB5031234"], AllowedRestarts = 6 },
             ],
         },
+        new RegisterAutopilotStep { Id = StepId(16), Name = "Register with Autopilot", GroupTag = "Sales", WaitForImport = true, WaitMinutes = 20 },
     ];
 
     private static IReadOnlyList<InputDeclaration> EveryInput() =>

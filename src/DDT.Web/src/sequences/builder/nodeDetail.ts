@@ -115,6 +115,13 @@ function updatesDetail(node: WindowsUpdateStep): string {
   return parts.join(", ");
 }
 
+// The group tag a Register with Autopilot step sets, and whether it waits for the import.
+function autopilotDetail(groupTag: string | null, wait: boolean): string {
+  const tag = groupTag === null || groupTag.trim() === "" ? t`Default group tag` : groupTag;
+
+  return wait ? t`${tag}, waits for the import` : tag;
+}
+
 // How many packages a Service packages step lists, and whether it adds the matching updates.
 function servicingDetail(count: number, matching: boolean): string {
   if (count === 0) {
@@ -201,6 +208,8 @@ export function nodeDetail(
       return plain(updatesDetail(node));
     case "servicePackages":
       return plain(servicingDetail(node.packages.length, node.matchingUpdates));
+    case "registerAutopilot":
+      return plain(autopilotDetail(node.groupTag, node.waitForImport));
     case "if":
       return plain(conditionSummary(node.test, subjects));
     case "group":

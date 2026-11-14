@@ -1304,6 +1304,10 @@ msgctxt "sequence.stepApplicationGone"
 msgid "{step} names an application or bundle that is no longer in the library."
 msgstr "{step} nennt eine Anwendung oder ein Bündel, die nicht mehr in der Bibliothek ist."
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "{tag}, waits for the import"
+msgstr "{tag}, wartet auf den Import"
+
 #: src/runs/decisions.ts
 msgid "{test} does not hold for \"{actual}\""
 msgstr "{test} trifft nicht zu für „{actual}“"
@@ -1663,6 +1667,11 @@ msgstr "Ein Dateipaket wird für die Schritte „Skript ausführen“ entpackt, 
 #: src/settings/signIn/ClaimRolesGroup.tsx
 msgid "A group as the provider sends it in the claim above."
 msgstr "Eine Gruppe, wie der Anbieter sie im Claim oben sendet."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.autopilotGroupTag"
+msgid "A group tag has at most {max} characters, without commas or quotation marks."
+msgstr "Ein Gruppentag hat höchstens {max} Zeichen, ohne Kommas und Anführungszeichen."
 
 #: src/lib/serverMessages.ts
 msgctxt "machine.changedWhileRemoving"
@@ -3895,6 +3904,10 @@ msgstr "Standardwert"
 msgid "Default gateway"
 msgstr "Standardgateway"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "Default group tag"
+msgstr "Standard-Gruppentag"
+
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Defaults for every run"
 msgstr "Standardwerte für jede Ausführung"
@@ -4369,6 +4382,10 @@ msgstr "Leer für keine Begrenzung."
 #: src/sequences/list/TemplateSelect.tsx
 msgid "Empty sequence"
 msgstr "Leere Tasksequenz"
+
+#: src/sequences/steps/RegisterAutopilotFields.tsx
+msgid "Empty takes the default from the Autopilot settings."
+msgstr "Leer nimmt den Standard aus den Autopilot-Einstellungen."
 
 #: src/users/UserActionsMenu.tsx
 msgid "Enable"
@@ -5071,6 +5088,10 @@ msgstr "aus {source}"
 msgid "From 1 to 100."
 msgstr "Von 1 bis 100."
 
+#: src/sequences/steps/RegisterAutopilotFields.tsx
+msgid "From 1 to 120."
+msgstr "Von 1 bis 120."
+
 #: src/sequences/steps/PauseFields.tsx
 msgid "From 1 to 1440 minutes."
 msgstr "Von 1 bis 1440 Minuten."
@@ -5254,6 +5275,7 @@ msgid "Group name"
 msgstr "Gruppenname"
 
 #: src/machines/records/AutopilotPanel.tsx
+#: src/sequences/steps/RegisterAutopilotFields.tsx
 msgid "Group tag"
 msgstr "Gruppentag"
 
@@ -8227,6 +8249,10 @@ msgstr "Abgelehnt"
 #: src/settings/signIn/ProviderGroup.tsx
 msgid "Register this address at the provider."
 msgstr "Registrieren Sie diese Adresse beim Anbieter."
+
+#: src/sequences/steps.ts
+msgid "Register with Autopilot"
+msgstr "Bei Autopilot registrieren"
 
 #: src/machines/list/RunCell.tsx
 msgid "Registered {registered}"
@@ -12699,6 +12725,19 @@ msgstr "Virtuelle Maschine"
 #: src/sequences/steps/knownFeatures.ts
 msgid "Virtual Machine Platform"
 msgstr "VM-Plattform"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.autopilotWaitMinutes"
+msgid "Wait 1 to {max} minutes."
+msgstr "1 bis {max} Minuten warten."
+
+#: src/sequences/steps/RegisterAutopilotFields.tsx
+msgid "Wait at most (minutes)"
+msgstr "Höchstens warten (Minuten)"
+
+#: src/sequences/steps/RegisterAutopilotFields.tsx
+msgid "Wait until Autopilot has imported the hash"
+msgstr "Warten, bis Autopilot den Hash importiert hat"
 
 #: src/machines/machineView.ts
 #: src/machines/records/AutopilotPanel.tsx

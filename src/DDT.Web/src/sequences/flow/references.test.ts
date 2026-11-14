@@ -82,7 +82,11 @@ describe("referencesTo", () => {
 
     expect(referencesTo(renamed, "Model")).toEqual([]);
     expect(referencesTo(renamed, "Hardware")).toHaveLength(10);
-    expect(renameReferences(draft, "JoinAccount", "Joiner").steps.at(-2)).toMatchObject({
+    expect(
+      renameReferences(draft, "JoinAccount", "Joiner").steps.find(
+        (step) => step.kind === "joinDomain",
+      ),
+    ).toMatchObject({
       account: { accountId: null, input: "Joiner" },
     });
     expect(referencesTo(renameReferences(draft, "Extras", "More"), "More")).toEqual([

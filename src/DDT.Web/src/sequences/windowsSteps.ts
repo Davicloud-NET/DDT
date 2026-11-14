@@ -30,3 +30,12 @@ export interface ServicePackagesStep extends StepBase {
   matchingUpdates: boolean;
   cleanup: boolean;
 }
+
+// Version 8. Reads the hardware hash in Windows and hands it to the server, which uploads it to Autopilot. A null group
+// tag takes the Autopilot settings' default. waitForImport waits for Autopilot, at most waitMinutes.
+export interface RegisterAutopilotStep extends StepBase {
+  kind: "registerAutopilot";
+  groupTag: string | null;
+  waitForImport: boolean;
+  waitMinutes: number;
+}

@@ -1304,6 +1304,10 @@ msgctxt "sequence.stepApplicationGone"
 msgid "{step} names an application or bundle that is no longer in the library."
 msgstr "{step} names an application or bundle that is no longer in the library."
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "{tag}, waits for the import"
+msgstr "{tag}, waits for the import"
+
 #: src/runs/decisions.ts
 msgid "{test} does not hold for \"{actual}\""
 msgstr "{test} does not hold for \"{actual}\""
@@ -1663,6 +1667,11 @@ msgstr "A Files package is unpacked for the Run script steps that name it, not b
 #: src/settings/signIn/ClaimRolesGroup.tsx
 msgid "A group as the provider sends it in the claim above."
 msgstr "A group as the provider sends it in the claim above."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.autopilotGroupTag"
+msgid "A group tag has at most {max} characters, without commas or quotation marks."
+msgstr "A group tag has at most {max} characters, without commas or quotation marks."
 
 #: src/lib/serverMessages.ts
 msgctxt "machine.changedWhileRemoving"
@@ -3895,6 +3904,10 @@ msgstr "Default"
 msgid "Default gateway"
 msgstr "Default gateway"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "Default group tag"
+msgstr "Default group tag"
+
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Defaults for every run"
 msgstr "Defaults for every run"
@@ -4369,6 +4382,10 @@ msgstr "Empty for no limit."
 #: src/sequences/list/TemplateSelect.tsx
 msgid "Empty sequence"
 msgstr "Empty sequence"
+
+#: src/sequences/steps/RegisterAutopilotFields.tsx
+msgid "Empty takes the default from the Autopilot settings."
+msgstr "Empty takes the default from the Autopilot settings."
 
 #: src/users/UserActionsMenu.tsx
 msgid "Enable"
@@ -5071,6 +5088,10 @@ msgstr "from {source}"
 msgid "From 1 to 100."
 msgstr "From 1 to 100."
 
+#: src/sequences/steps/RegisterAutopilotFields.tsx
+msgid "From 1 to 120."
+msgstr "From 1 to 120."
+
 #: src/sequences/steps/PauseFields.tsx
 msgid "From 1 to 1440 minutes."
 msgstr "From 1 to 1440 minutes."
@@ -5254,6 +5275,7 @@ msgid "Group name"
 msgstr "Group name"
 
 #: src/machines/records/AutopilotPanel.tsx
+#: src/sequences/steps/RegisterAutopilotFields.tsx
 msgid "Group tag"
 msgstr "Group tag"
 
@@ -8227,6 +8249,10 @@ msgstr "Refused"
 #: src/settings/signIn/ProviderGroup.tsx
 msgid "Register this address at the provider."
 msgstr "Register this address at the provider."
+
+#: src/sequences/steps.ts
+msgid "Register with Autopilot"
+msgstr "Register with Autopilot"
 
 #: src/machines/list/RunCell.tsx
 msgid "Registered {registered}"
@@ -12699,6 +12725,19 @@ msgstr "Virtual machine"
 #: src/sequences/steps/knownFeatures.ts
 msgid "Virtual Machine Platform"
 msgstr "Virtual Machine Platform"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.autopilotWaitMinutes"
+msgid "Wait 1 to {max} minutes."
+msgstr "Wait 1 to {max} minutes."
+
+#: src/sequences/steps/RegisterAutopilotFields.tsx
+msgid "Wait at most (minutes)"
+msgstr "Wait at most (minutes)"
+
+#: src/sequences/steps/RegisterAutopilotFields.tsx
+msgid "Wait until Autopilot has imported the hash"
+msgstr "Wait until Autopilot has imported the hash"
 
 #: src/machines/machineView.ts
 #: src/machines/records/AutopilotPanel.tsx

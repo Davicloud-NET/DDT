@@ -196,7 +196,7 @@ export function sameSlot(a: Slot, b: Slot): boolean {
 // The server's SequenceTree.RequiredVersion: the lowest agent version that runs the definition as written. It's 3 for
 // tree parts (containers, Set variable, Pause, when, shares, runAs, a join's account, variables, inputs, operators after
 // Contains) and for condition names an older agent reads as false, 4 for Linux, 5 for the installed Linux, 6 for
-// installing applications, 7 for roles, features and Windows Update and 8 for Windows packages.
+// installing applications, 7 for roles, features and Windows Update and 8 for Windows packages and Autopilot.
 export function requiredVersion(definition: {
   steps: readonly SequenceStep[];
   variables?: readonly VariableDeclaration[] | null;
@@ -227,6 +227,7 @@ export function requiredVersion(definition: {
 function minimumVersion(node: SequenceStep): number {
   switch (node.kind) {
     case "servicePackages":
+    case "registerAutopilot":
       return 8;
     case "enableFeatures":
     case "windowsUpdate":

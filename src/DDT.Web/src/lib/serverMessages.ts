@@ -1313,6 +1313,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.autoLogonNeedsAdministrator",
     message: "Add the local administrator to sign in as it.",
   }),
+  "sequence.autopilotGroupTag": msg({
+    context: "sequence.autopilotGroupTag",
+    message: "A group tag has at most {max} characters, without commas or quotation marks.",
+  }),
+  "sequence.autopilotWaitMinutes": msg({
+    context: "sequence.autopilotWaitMinutes",
+    message: "Wait 1 to {max} minutes.",
+  }),
   "sequence.cannotGoOn": msg({
     context: "sequence.cannotGoOn",
     message: "The sequence cannot go on when {activity, select, partition {partitioning the disk} image {applying the image} other {writing the raw disk image}} fails.",

@@ -112,6 +112,7 @@ public static class Say
         "enableFeatures" => l.T("Enabling roles and features"),
         "windowsUpdate" => l.T("Installing Windows updates"),
         "servicePackages" => l.T("Adding Windows packages"),
+        "registerAutopilot" => l.T("Registering with Autopilot"),
         _ => null,
     };
 

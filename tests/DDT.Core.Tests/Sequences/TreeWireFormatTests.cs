@@ -64,6 +64,9 @@ public sealed class TreeWireFormatTests
         ["windowsUpdate"] = (
             new WindowsUpdateStep { Id = s_id, Name = "Node", Drivers = true, MicrosoftProducts = false, ExcludedKbs = ["KB5031234"], AllowedRestarts = 4 },
             $$"""{"kind":"windowsUpdate","drivers":true,"optionalUpdates":false,"microsoftProducts":false,"excludedKbs":["KB5031234"],"restartLimit":4,{{Base}}}"""),
+        ["registerAutopilot"] = (
+            new RegisterAutopilotStep { Id = s_id, Name = "Node", GroupTag = "Sales", WaitForImport = true, WaitMinutes = 20 },
+            $$"""{"kind":"registerAutopilot","groupTag":"Sales","waitForImport":true,"waitMinutes":20,{{Base}}}"""),
         ["when and shares"] = (
             new RebootStep
             {

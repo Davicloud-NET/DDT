@@ -32,6 +32,7 @@ const kindLabels: Record<StepKind, MessageDescriptor> = {
   installApplications: msg`Install applications`,
   enableFeatures: msg`Enable roles and features`,
   windowsUpdate: msg`Windows Update`,
+  registerAutopilot: msg`Register with Autopilot`,
   group: msg`Group`,
   if: msg`If`,
   repeat: msg`Repeat`,
@@ -309,6 +310,8 @@ export function newStep(
         excludedKbs: [],
         restartLimit: 8,
       };
+    case "registerAutopilot":
+      return { ...common, kind, groupTag: null, waitForImport: false, waitMinutes: 30 };
     case "group":
       return { ...common, kind, steps: [] };
     case "if":

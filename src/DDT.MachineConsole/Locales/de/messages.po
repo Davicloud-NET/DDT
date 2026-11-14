@@ -624,6 +624,10 @@ msgid "Paused"
 msgstr "Angehalten"
 
 #: Texts/Say.cs
+msgid "Registering with Autopilot"
+msgstr "Registrierung bei Autopilot"
+
+#: Texts/Say.cs
 msgid "Removing the agent"
 msgstr "Agent wird entfernt"
 

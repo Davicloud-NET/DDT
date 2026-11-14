@@ -86,6 +86,7 @@ public static class ConsoleValues
         EnableFeaturesStep => "enableFeatures",
         WindowsUpdateStep => "windowsUpdate",
         ServicePackagesStep => "servicePackages",
+        RegisterAutopilotStep => StepKindNames.RegisterAutopilot,
         _ => "step",
     };
 }

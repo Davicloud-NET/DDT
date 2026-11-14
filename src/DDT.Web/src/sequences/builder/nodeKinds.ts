@@ -21,6 +21,7 @@ export const workKinds: readonly StepKind[] = [
   "installApplications",
   "enableFeatures",
   "windowsUpdate",
+  "registerAutopilot",
   "runScript",
   "reboot",
   "writeRawImage",

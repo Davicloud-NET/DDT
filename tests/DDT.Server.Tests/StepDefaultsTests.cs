@@ -62,6 +62,17 @@ public sealed class StepDefaultsTests
         Assert.Equal((true, false), (step.Cleanup, step.MatchingUpdates));
     }
 
+    [Theory]
+    [MemberData(nameof(Contexts))]
+    public void ARegisterAutopilotStepWithoutALimitWaitsHalfAnHour(string context)
+    {
+        string json = """{"version":8,"steps":[{"kind":"registerAutopilot","id":"0193a4b2-0000-7000-8000-000009600006","name":"A"}]}""";
+
+        RegisterAutopilotStep step = Assert.IsType<RegisterAutopilotStep>(JsonSerializer.Deserialize(json, Context(context))?.Steps[0]);
+
+        Assert.Equal((RegisterAutopilotStep.DefaultWaitMinutes, false, (string?)null), (step.WaitMinutes, step.WaitForImport, step.GroupTag));
+    }
+
     [Fact]
     public void WrittenFieldsStillWin()
     {

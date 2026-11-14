@@ -9,6 +9,8 @@ import { machineLabel, type MachineSummary } from "@/machines/machines";
 import type { MachineActionState } from "@/machines/useMachineActions";
 import { ConfirmDialog } from "@/ui/ConfirmDialog";
 
+import { recoveryKeysToConfirm } from "./removalKeys";
+
 // Asks before a machine goes with its recovery keys, naming how many the server said it has.
 export function RemoveKeysConfirm({
   machine,
@@ -34,6 +36,11 @@ export function RemoveKeysConfirm({
       confirmLabel={<Trans>Remove</Trans>}
       danger
       isBusy={actions.remove.isPending}
+      error={
+        actions.remove.isError && recoveryKeysToConfirm(actions.remove.error) === null
+          ? actions.remove.error.message
+          : undefined
+      }
       onConfirm={() => {
         actions.remove.mutate({ id: machine.id, recoveryKeys: count });
       }}

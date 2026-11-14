@@ -56,6 +56,13 @@ internal sealed class MachineRemovals(DdtDbContext database, LiveNotifier live, 
         return await RemoveStraysAsync(machines, actor, 0, cancellationToken).ConfigureAwait(false);
     }
 
+    private static string KeysDeleted(int keys) => keys switch
+    {
+        0 => string.Empty,
+        1 => " Its recovery key was deleted with it.",
+        _ => $" Its {keys} recovery keys were deleted with it.",
+    };
+
     // A waiting machine with an assigned run waits on purpose, for a sign-in or a zero touch netboot.
     private static bool IsStray(Machine machine) =>
         machine.State == MachineState.Pending && machine.FirstApprovedUtc is null && machine.ActiveDeploymentId is null;
@@ -75,7 +82,7 @@ internal sealed class MachineRemovals(DdtDbContext database, LiveNotifier live, 
                 (machine.State == MachineState.Rejected
                     ? $"Rejected, first seen {machine.FirstSeenUtc:u} from {machine.FirstSeenAddress}."
                     : $"Waiting since {machine.FirstSeenUtc:u} from {machine.FirstSeenAddress}.")
-                + (keys > 0 ? $" Its {keys} recovery keys were deleted with it." : string.Empty)));
+                + KeysDeleted(keys)));
         }
 
         database.Machines.RemoveRange(machines);

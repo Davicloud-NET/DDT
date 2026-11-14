@@ -349,7 +349,7 @@ public sealed class RunStepAccountTests(DomainDeploymentApplication application)
             new ShareConnection(@"\\files.corp.example\drivers", new AccountReference(null, "ShareAccount")),
             new ShareConnection(@"\\{{Backup}}\drivers", new AccountReference(null, "shareaccount")));
         (DeployingMachine machine, AgentRun run, SequenceView sequence) = await AssignedAsync(
-            [AccountInput("ShareAccount", hosts: ["files.corp.example", "backup.corp.example"])],
+            [AccountInput("ShareAccount", hosts: ["files.corp.example", "backup.corp.example"]) with { AskAt = InputAsk.Both }],
             script);
         using DeployingMachine held = machine;
 

@@ -606,6 +606,9 @@ namespace DDT.Server.Migrations.SqlServer
                         .HasColumnType("nvarchar(max)")
                         .UseCollation("Latin1_General_100_BIN2");
 
+                    b.Property<bool>("InputsAsked")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("InputsPending")
                         .HasColumnType("bit");
 

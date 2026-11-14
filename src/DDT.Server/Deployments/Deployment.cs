@@ -99,8 +99,11 @@ public sealed class Deployment
     // The sequence's variables as the agent last reported them, as a name-to-value map written by DdtJsonContext.
     public string? Variables { get; set; }
 
-    // The run waits at its start for answers to required inputs.
+    // The run waits at its start for answers to its inputs. See RunValueCheck.Waits.
     public bool InputsPending { get; set; }
+
+    // The run's inputs were answered once, at the machine or on its page, with nothing required left missing.
+    public bool InputsAsked { get; set; }
 
     // The Pause step the run waits at, its pass, and the message the agent worked out for it. Null while the run isn't
     // paused.

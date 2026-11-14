@@ -234,7 +234,8 @@ public sealed class RunValues(DdtDbContext database, MachineValues machineValues
                 .. inputs
                     .Where(input => input.AskAt is InputAsk.Machine or InputAsk.Both && !Answered(input))
                     .Select(input => Asked(input, resolution)),
-            ]);
+            ],
+            inputs.Any(input => input.AskAt == InputAsk.Machine && !Answered(input)));
     }
 
     // A value from an answer that can't be used, such as a computer name Windows refuses, is reported on that answer.

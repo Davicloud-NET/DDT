@@ -1412,6 +1412,9 @@ namespace DDT.Server.Migrations.SqlServer
                         .HasColumnType("nvarchar(1024)")
                         .UseCollation("Latin1_General_100_BIN2");
 
+                    b.Property<DateTimeOffset?>("UploadStartedUtc")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("UploadState")
                         .IsRequired()
                         .HasMaxLength(16)

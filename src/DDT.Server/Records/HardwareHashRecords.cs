@@ -5,7 +5,9 @@
 using DDT.Contracts.Agents;
 using DDT.Contracts.Machines;
 using DDT.Server.Data;
+using DDT.Server.Autopilot;
 using DDT.Server.Machines;
+using DDT.Server.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,7 +15,11 @@ namespace DDT.Server.Records;
 
 // Keeps the machine's latest hardware hash. The same hash again changes nothing. Another one is a new collection and
 // starts its upload over.
-public sealed class HardwareHashRecords(DdtDbContext database, MachineRecordsPublisher publisher, TimeProvider timeProvider)
+public sealed class HardwareHashRecords(
+    DdtDbContext database,
+    MachineRecordsPublisher publisher,
+    DdtSettings settings,
+    TimeProvider timeProvider)
 {
     public async Task<RecordRefusal?> SaveAsync(Machine machine, AgentHardwareHash hash, CancellationToken cancellationToken)
     {
@@ -25,8 +31,9 @@ public sealed class HardwareHashRecords(DdtDbContext database, MachineRecordsPub
             return new RecordRefusal(StatusCodes.Status400BadRequest, problem);
         }
 
+        AutopilotOptions autopilot = settings.Current.Autopilot;
         string serialNumber = hash.SerialNumber.Trim();
-        string? groupTag = string.IsNullOrWhiteSpace(hash.GroupTag) ? null : hash.GroupTag.Trim();
+        string? groupTag = Tag(hash.GroupTag) ?? Tag(autopilot.DefaultGroupTag);
         MachineHardwareHash? row = await database.MachineHardwareHashes
             .FirstOrDefaultAsync(h => h.MachineId == machine.Id, cancellationToken)
             .ConfigureAwait(false);
@@ -46,9 +53,10 @@ public sealed class HardwareHashRecords(DdtDbContext database, MachineRecordsPub
         row.Hash = hash.Hash;
         row.GroupTag = groupTag;
         row.CollectedUtc = timeProvider.GetUtcNow();
-        row.UploadState = HardwareHashUploadState.None;
+        row.UploadState = autopilot.CanUpload() ? HardwareHashUploadState.Pending : HardwareHashUploadState.None;
         row.UploadMessage = null;
         row.ImportId = null;
+        row.UploadStartedUtc = null;
 
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await publisher.ChangedAsync(machine.Id, cancellationToken).ConfigureAwait(false);
@@ -83,6 +91,8 @@ public sealed class HardwareHashRecords(DdtDbContext database, MachineRecordsPub
             ? $"The group tag is longer than {RecordLimits.MaxGroupTagLength} characters."
             : null;
     }
+
+    private static string? Tag(string? tag) => string.IsNullOrWhiteSpace(tag) ? null : tag.Trim();
 
     private static bool IsBase64(string text) => System.Buffers.Text.Base64.IsValid(text);
 }

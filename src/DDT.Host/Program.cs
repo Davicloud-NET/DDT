@@ -12,6 +12,7 @@ using DDT.Pxe;
 using DDT.Server.About;
 using DDT.Server.Applications;
 using DDT.Server.Authentication;
+using DDT.Server.Autopilot;
 using DDT.Server.Certificates;
 using DDT.Server.Configuration;
 using DDT.Server.Data;
@@ -155,6 +156,7 @@ builder.Services.AddDdtDeployments();
 builder.Services.AddDdtSequences();
 builder.Services.AddDdtApplications();
 builder.Services.AddDdtRecords();
+builder.Services.AddDdtAutopilot();
 
 string version = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
 builder.Services.AddSingleton(AboutCatalog.Load(version, Path.Combine(AppContext.BaseDirectory, "legal")));
@@ -211,7 +213,7 @@ RouteGroupBuilder api = app.MapGroup("/api")
 api.MapGroup("/auth").MapAuthEndpoints();
 api.MapGroup("/auth/2fa").MapTwoFactorEndpoints();
 api.MapGroup("/auth/external").MapExternalLoginEndpoints();
-api.MapGroup("/machines").MapMachineEndpoints().MapMachineRecordEndpoints();
+api.MapGroup("/machines").MapMachineEndpoints().MapMachineRecordEndpoints().MapAutopilotEndpoints();
 api.MapGroup("/images").MapImageEndpoints();
 api.MapGroup("/images/import").MapImageImportEndpoints();
 api.MapGroup("/deployments").MapDeploymentEndpoints();

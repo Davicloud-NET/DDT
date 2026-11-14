@@ -175,7 +175,7 @@ public sealed class SettingsApiTests(DdtApplication application) : IClassFixture
         SettingsOverview overview = await RegisteredMachine.ReadAsync<SettingsOverview>(await administrator.GetAsync("/api/settings"));
 
         Assert.Equal(
-            ["deployment", "machines", "ldap", "oidc", "proxies", "pxe", "logging", "certificate"],
+            ["deployment", "machines", "autopilot", "ldap", "oidc", "proxies", "pxe", "logging", "certificate"],
             overview.Sections.Select(section => section.Section));
         Assert.Equal(SettingsSectionKind.Restart, overview.Sections.Single(section => section.Section == "pxe").Kind);
         Assert.True(overview.KeyRingReadable);

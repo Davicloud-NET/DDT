@@ -1281,6 +1281,9 @@ namespace DDT.Server.Migrations.Sqlite
                         .HasMaxLength(1024)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTimeOffset?>("UploadStartedUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("UploadState")
                         .IsRequired()
                         .HasMaxLength(16)

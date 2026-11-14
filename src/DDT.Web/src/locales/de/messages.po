@@ -1674,6 +1674,11 @@ msgid "A group tag has at most {max} characters, without commas or quotation mar
 msgstr "Ein Gruppentag hat höchstens {max} Zeichen, ohne Kommas und Anführungszeichen."
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.autopilot.groupTag"
+msgid "A group tag has at most {max} characters, without commas or quotation marks."
+msgstr "Ein Gruppentag hat höchstens {max} Zeichen, ohne Kommas und Anführungszeichen."
+
+#: src/lib/serverMessages.ts
 msgctxt "machine.changedWhileRemoving"
 msgid "A machine changed while it was being removed. Look at it again before removing it."
 msgstr "Ein Gerät hat sich geändert, während es entfernt wurde. Sehen Sie es sich erneut an, bevor Sie es entfernen."
@@ -3022,6 +3027,11 @@ msgstr "Automatisch: Windows PE, sobald ein Startimage erstellt ist, bis dahin L
 #: src/machines/records/AutopilotPanel.tsx
 msgid "Autopilot"
 msgstr "Autopilot"
+
+#: src/lib/serverMessages.ts
+msgctxt "autopilot.notSetUp"
+msgid "Autopilot uploads are not set up. Enter the tenant, the client ID and the client secret in the Autopilot settings."
+msgstr "Autopilot-Uploads sind nicht eingerichtet. Tragen Sie Mandant, Client-ID und geheimen Clientschlüssel in den Autopilot-Einstellungen ein."
 
 #: src/about/AboutPage.tsx
 msgid "Back to DDT"
@@ -5640,6 +5650,11 @@ msgid "Interpreter"
 msgstr "Interpreter"
 
 #: src/lib/serverMessages.ts
+msgctxt "autopilot.tooMany"
+msgid "Intune imports at most {max} devices from one file."
+msgstr "Intune importiert höchstens {max} Geräte aus einer Datei."
+
+#: src/lib/serverMessages.ts
 msgctxt "identity.invalidToken"
 msgid "Invalid token."
 msgstr "Ungültiges Token."
@@ -7040,6 +7055,11 @@ msgstr "Keine Gruppe ist Administrator zugeordnet, daher verliert jedes Verzeich
 msgid "No group matches."
 msgstr "Keine Gruppe passt."
 
+#: src/lib/serverMessages.ts
+msgctxt "autopilot.noHash"
+msgid "No hardware hash was collected from this machine yet."
+msgstr "Von diesem Computer wurde noch kein Hardwarehash gesammelt."
+
 #: src/settings/networkBoot/ReportedInterfaces.tsx
 msgid "No host that runs network boot has reported its interfaces yet."
 msgstr "Noch kein Host, der den Netzwerkboot ausführt, hat seine Schnittstellen gemeldet."
@@ -7288,6 +7308,11 @@ msgstr "Keine seiner Anwendungen ist in der Bibliothek."
 #: src/conditions/conditions.ts
 msgid "None of these hold"
 msgstr "Keine dieser Bedingungen gilt"
+
+#: src/lib/serverMessages.ts
+msgctxt "autopilot.noHashes"
+msgid "None of these machines has a hardware hash."
+msgstr "Keiner dieser Computer hat einen Hardwarehash."
 
 #: src/settings/directory/RoleAtSignIn.tsx
 msgid "None, so the sign-in is refused"
@@ -9251,6 +9276,11 @@ msgstr "Auf diesem Gerät festgelegt"
 #: src/settings/networkBoot/neighbours/DhcpHere.tsx
 msgid "Set option 60 on this DHCP server"
 msgstr "Option 60 auf diesem DHCP-Server setzen"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.autopilot.both"
+msgid "Set the tenant and the client ID together, or neither."
+msgstr "Mandant und Client-ID nur zusammen setzen, oder keines von beiden."
 
 #: src/settings/networkBoot/neighbours/DhcpOptions.tsx
 msgid "Set them on this DHCP server"
@@ -12552,9 +12582,19 @@ msgstr "Verwenden Sie das nur in einem Testnetzwerk."
 msgid "Use TFTP"
 msgstr "TFTP verwenden"
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.autopilot.clientId"
+msgid "Use the application (client) ID of the app registration, a GUID."
+msgstr "Die Anwendungs-ID (Client-ID) der App-Registrierung angeben, eine GUID."
+
 #: src/settings/logging/LevelActions.tsx
 msgid "Use the defaults"
 msgstr "Standardwerte verwenden"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.autopilot.tenantId"
+msgid "Use the tenant ID, a GUID, or the tenant's domain, such as contoso.onmicrosoft.com."
+msgstr "Die Mandanten-ID angeben, eine GUID, oder die Domäne des Mandanten, etwa contoso.onmicrosoft.com."
 
 #: src/rules/SavedMeanwhile.tsx
 #: src/sequences/SequenceConflict.tsx

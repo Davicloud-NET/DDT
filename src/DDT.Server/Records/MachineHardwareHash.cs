@@ -25,4 +25,7 @@ public sealed class MachineHardwareHash
 
     // The import's id in Autopilot, while it is followed.
     public string? ImportId { get; set; }
+
+    // When the import was sent. The uploader gives up on it a while later.
+    public DateTimeOffset? UploadStartedUtc { get; set; }
 }

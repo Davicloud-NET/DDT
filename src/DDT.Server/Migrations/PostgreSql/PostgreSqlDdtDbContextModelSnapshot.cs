@@ -1291,6 +1291,9 @@ namespace DDT.Server.Migrations.PostgreSql
                         .HasMaxLength(1024)
                         .HasColumnType("character varying(1024)");
 
+                    b.Property<DateTimeOffset?>("UploadStartedUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("UploadState")
                         .IsRequired()
                         .HasMaxLength(16)

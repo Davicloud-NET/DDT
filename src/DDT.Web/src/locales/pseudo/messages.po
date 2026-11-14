@@ -1674,6 +1674,11 @@ msgid "A group tag has at most {max} characters, without commas or quotation mar
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "settings.autopilot.groupTag"
+msgid "A group tag has at most {max} characters, without commas or quotation marks."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "machine.changedWhileRemoving"
 msgid "A machine changed while it was being removed. Look at it again before removing it."
 msgstr ""
@@ -3021,6 +3026,11 @@ msgstr ""
 
 #: src/machines/records/AutopilotPanel.tsx
 msgid "Autopilot"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "autopilot.notSetUp"
+msgid "Autopilot uploads are not set up. Enter the tenant, the client ID and the client secret in the Autopilot settings."
 msgstr ""
 
 #: src/about/AboutPage.tsx
@@ -5640,6 +5650,11 @@ msgid "Interpreter"
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "autopilot.tooMany"
+msgid "Intune imports at most {max} devices from one file."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "identity.invalidToken"
 msgid "Invalid token."
 msgstr ""
@@ -7040,6 +7055,11 @@ msgstr ""
 msgid "No group matches."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "autopilot.noHash"
+msgid "No hardware hash was collected from this machine yet."
+msgstr ""
+
 #: src/settings/networkBoot/ReportedInterfaces.tsx
 msgid "No host that runs network boot has reported its interfaces yet."
 msgstr ""
@@ -7287,6 +7307,11 @@ msgstr ""
 
 #: src/conditions/conditions.ts
 msgid "None of these hold"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "autopilot.noHashes"
+msgid "None of these machines has a hardware hash."
 msgstr ""
 
 #: src/settings/directory/RoleAtSignIn.tsx
@@ -9250,6 +9275,11 @@ msgstr ""
 
 #: src/settings/networkBoot/neighbours/DhcpHere.tsx
 msgid "Set option 60 on this DHCP server"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.autopilot.both"
+msgid "Set the tenant and the client ID together, or neither."
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/DhcpOptions.tsx
@@ -12552,8 +12582,18 @@ msgstr ""
 msgid "Use TFTP"
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.autopilot.clientId"
+msgid "Use the application (client) ID of the app registration, a GUID."
+msgstr ""
+
 #: src/settings/logging/LevelActions.tsx
 msgid "Use the defaults"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.autopilot.tenantId"
+msgid "Use the tenant ID, a GUID, or the tenant's domain, such as contoso.onmicrosoft.com."
 msgstr ""
 
 #: src/rules/SavedMeanwhile.tsx

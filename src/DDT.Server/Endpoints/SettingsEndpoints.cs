@@ -36,6 +36,7 @@ public static class SettingsEndpoints
 
         MapSection(group, SettingsApi.Deployment);
         MapSection(group, SettingsApi.Machines);
+        MapSection(group, SettingsApi.Autopilot);
         MapSection(group, SettingsApi.Ldap);
         MapSection(group, SettingsApi.Oidc);
         MapSection(group, SettingsApi.Proxies);

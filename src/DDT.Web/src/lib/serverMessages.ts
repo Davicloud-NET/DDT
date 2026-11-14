@@ -181,6 +181,22 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "audit.rangeEnd",
     message: "The end of the range must come after its start.",
   }),
+  "autopilot.noHash": msg({
+    context: "autopilot.noHash",
+    message: "No hardware hash was collected from this machine yet.",
+  }),
+  "autopilot.noHashes": msg({
+    context: "autopilot.noHashes",
+    message: "None of these machines has a hardware hash.",
+  }),
+  "autopilot.notSetUp": msg({
+    context: "autopilot.notSetUp",
+    message: "Autopilot uploads are not set up. Enter the tenant, the client ID and the client secret in the Autopilot settings.",
+  }),
+  "autopilot.tooMany": msg({
+    context: "autopilot.tooMany",
+    message: "Intune imports at most {max} devices from one file.",
+  }),
   "bootImage.busy": msg({
     context: "bootImage.busy",
     message: "A build or an install of the ADK is running already. Wait for it to end.",
@@ -1996,6 +2012,22 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "settings.atLeastOne": msg({
     context: "settings.atLeastOne",
     message: "Must be at least 1.",
+  }),
+  "settings.autopilot.both": msg({
+    context: "settings.autopilot.both",
+    message: "Set the tenant and the client ID together, or neither.",
+  }),
+  "settings.autopilot.clientId": msg({
+    context: "settings.autopilot.clientId",
+    message: "Use the application (client) ID of the app registration, a GUID.",
+  }),
+  "settings.autopilot.groupTag": msg({
+    context: "settings.autopilot.groupTag",
+    message: "A group tag has at most {max} characters, without commas or quotation marks.",
+  }),
+  "settings.autopilot.tenantId": msg({
+    context: "settings.autopilot.tenantId",
+    message: "Use the tenant ID, a GUID, or the tenant's domain, such as contoso.onmicrosoft.com.",
   }),
   "settings.certificate.addHostFirst": msg({
     context: "settings.certificate.addHostFirst",

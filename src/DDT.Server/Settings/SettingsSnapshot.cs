@@ -5,6 +5,7 @@
 using DDT.Core.Configuration;
 using DDT.Pxe;
 using DDT.Server.Authentication;
+using DDT.Server.Autopilot;
 using DDT.Server.Deployments;
 using DDT.Server.Ldap;
 using Microsoft.AspNetCore.Builder;
@@ -36,6 +37,9 @@ public sealed class SettingsSnapshot
     public IReadOnlyList<SettingProblem> DeploymentProblems => this[SettingsSectionNames.Deployment].Problems;
 
     public MachinePolicy Machines => _inForce.Machines;
+
+    // Empty while the section has problems, so nothing is uploaded.
+    public AutopilotOptions Autopilot => _inForce.Autopilot;
 
     // Off while the section has problems.
     public LdapOptions Ldap => _inForce.Ldap;

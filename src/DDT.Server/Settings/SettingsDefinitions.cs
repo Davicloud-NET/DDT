@@ -11,6 +11,8 @@ public static class SettingsDefinitions
 
     public static MachineSettingsSection Machines { get; } = new();
 
+    public static AutopilotSettingsSection Autopilot { get; } = new();
+
     public static LdapSettingsSection Ldap { get; } = new();
 
     public static OidcSettingsSection Oidc { get; } = new();
@@ -23,7 +25,7 @@ public static class SettingsDefinitions
 
     public static CertificateSettingsSection Certificate { get; } = new();
 
-    public static IReadOnlyList<SettingsSectionDefinition> All { get; } = [Deployment, Machines, Ldap, Oidc, Proxies, Pxe, Logging, Certificate];
+    public static IReadOnlyList<SettingsSectionDefinition> All { get; } = [Deployment, Machines, Autopilot, Ldap, Oidc, Proxies, Pxe, Logging, Certificate];
 
     public static SettingsSectionDefinition? Find(string name) =>
         All.FirstOrDefault(definition => string.Equals(definition.Name, name, StringComparison.Ordinal));

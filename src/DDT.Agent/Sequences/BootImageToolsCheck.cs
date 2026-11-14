@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using DDT.Agent.BitLocker;
 using DDT.Agent.Deployment;
 using DDT.Contracts.Sequences;
 
@@ -29,6 +30,13 @@ public sealed class BootImageToolsCheck(string systemDirectory) : IPreflightChec
         if (steps.OfType<ServicePackagesStep>().Any() && !File.Exists(InjectDriversStepRunner.DismIn(systemDirectory)))
         {
             throw new DeploymentStepException(NoDismForPackagesMessage);
+        }
+
+        // Set to Skip, the step skips with a warning instead.
+        if (steps.OfType<PreprovisionBitLockerStep>().Any(step => step.IfUnavailable == BitLockerUnavailable.Fail)
+            && !File.Exists(ManageBdeBitLocker.In(systemDirectory)))
+        {
+            throw new DeploymentStepException(PreprovisionBitLockerStepRunner.NoManageBde);
         }
 
         if (steps.OfType<RunScriptStep>().Any(step => step is { Interpreter: ScriptInterpreter.PowerShell, Phase: SequencePhase.WindowsPE })

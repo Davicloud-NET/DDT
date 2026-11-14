@@ -19,6 +19,9 @@ public static class StepDetails
 
     public const string CleaningUp = "cleaningUp";
 
+    // With the percent of the Windows volume BitLocker has encrypted.
+    public const string Encrypting = "encrypting";
+
     public static string Coded(string key, int? number = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(key);

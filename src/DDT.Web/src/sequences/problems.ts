@@ -63,6 +63,8 @@ const kindFields: Record<StepKind, readonly string[]> = {
   windowsUpdate: ["drivers", "optionalUpdates", "microsoftProducts", "excludedKbs", "restartLimit"],
   servicePackages: ["packages", "matchingUpdates", "cleanup"],
   registerAutopilot: ["groupTag", "waitForImport", "waitMinutes"],
+  preprovisionBitLocker: ["ifUnavailable"],
+  enableBitLocker: ["ifNoTpm", "backupToActiveDirectory", "waitForEncryption", "waitMinutes"],
   group: [],
   if: [],
   repeat: ["maxTimes", "goOnAtLimit"],

@@ -29,6 +29,12 @@ internal static class WindowsStepRules
             case RegisterAutopilotStep autopilot:
                 AutopilotStepRules.Check(autopilot, problems);
                 return true;
+            case PreprovisionBitLockerStep preprovision:
+                BitLockerStepRules.Check(preprovision, place, problems);
+                return true;
+            case EnableBitLockerStep enable:
+                BitLockerStepRules.Check(enable, place, problems);
+                return true;
             default:
                 return false;
         }

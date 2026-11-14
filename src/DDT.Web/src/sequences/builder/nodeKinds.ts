@@ -13,6 +13,7 @@ export const flowKinds: readonly StepKind[] = ["if", "repeat", "group", "setVari
 
 export const workKinds: readonly StepKind[] = [
   "partition",
+  "preprovisionBitLocker",
   "applyImage",
   "injectDrivers",
   "servicePackages",
@@ -22,6 +23,7 @@ export const workKinds: readonly StepKind[] = [
   "enableFeatures",
   "windowsUpdate",
   "registerAutopilot",
+  "enableBitLocker",
   "runScript",
   "reboot",
   "writeRawImage",

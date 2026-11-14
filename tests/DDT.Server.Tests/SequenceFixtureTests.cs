@@ -242,6 +242,7 @@ public sealed class SequenceFixtureTests
     private static List<SequenceStep> EveryNode(RepeatStep repeat) =>
     [
         new PartitionStep { Id = StepId(0), Name = "Partition" },
+        new PreprovisionBitLockerStep { Id = StepId(17), Name = "Pre-provision BitLocker", IfUnavailable = BitLockerUnavailable.Fail },
         new ApplyImageStep { Id = StepId(1), Name = "Apply", ImageId = s_imageId },
         new InjectDriversStep
         {
@@ -289,6 +290,7 @@ public sealed class SequenceFixtureTests
             ],
         },
         new RegisterAutopilotStep { Id = StepId(16), Name = "Register with Autopilot", GroupTag = "Sales", WaitForImport = true, WaitMinutes = 20 },
+        new EnableBitLockerStep { Id = StepId(18), Name = "Enable BitLocker", IfNoTpm = BitLockerUnavailable.Skip, BackupToActiveDirectory = false, WaitForEncryption = true, WaitMinutes = 60 },
     ];
 
     private static IReadOnlyList<InputDeclaration> EveryInput() =>

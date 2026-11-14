@@ -45,6 +45,11 @@ public sealed class AgentStepRunner(
 
     public const string AutopilotInLinux = "The Autopilot hardware hash is read in Windows, but this agent was asked to read it in the installed Linux.";
 
+    public static string BitLockerInBoot(SequencePhase phase) =>
+        $"BitLocker is enabled in Windows, after the hand-over, but this agent was asked to enable it in {AgentEnvironments.OfBootPhase(phase)}.";
+
+    public const string BitLockerInLinux = "BitLocker is enabled in Windows, but this agent was asked to enable it in the installed Linux.";
+
     public async Task<StepResult> RunAsync(SequenceStep step, StepContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(step);
@@ -117,6 +122,7 @@ public sealed class AgentStepRunner(
         EnableFeaturesStep => SequenceKinds.IsBoot(phase) ? FeaturesInBoot(phase) : FeaturesInLinux,
         WindowsUpdateStep => SequenceKinds.IsBoot(phase) ? UpdatesInBoot(phase) : UpdatesInLinux,
         RegisterAutopilotStep => SequenceKinds.IsBoot(phase) ? AutopilotInBoot(phase) : AutopilotInLinux,
+        EnableBitLockerStep => SequenceKinds.IsBoot(phase) ? BitLockerInBoot(phase) : BitLockerInLinux,
         _ => null,
     };
 

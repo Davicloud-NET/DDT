@@ -39,3 +39,24 @@ export interface RegisterAutopilotStep extends StepBase {
   waitForImport: boolean;
   waitMinutes: number;
 }
+
+// What a BitLocker step does on a machine without a TPM, or in a boot image without manage-bde.
+export type BitLockerUnavailable = "Skip" | "Fail";
+
+// Version 8. Starts encrypting the empty Windows partition in Windows PE, between Partition and Apply image.
+export interface PreprovisionBitLockerStep extends StepBase {
+  kind: "preprovisionBitLocker";
+  ifUnavailable: BitLockerUnavailable;
+}
+
+// Version 8. Adds the TPM protector and a recovery password in Windows, hands the password to the server, backs it up
+// to Active Directory on a joined machine, then turns protection on. waitForEncryption waits, at most waitMinutes.
+export interface EnableBitLockerStep extends StepBase {
+  kind: "enableBitLocker";
+  ifNoTpm: BitLockerUnavailable;
+  backupToActiveDirectory: boolean;
+  waitForEncryption: boolean;
+  waitMinutes: number;
+}
+
+export type BitLockerStep = PreprovisionBitLockerStep | EnableBitLockerStep;

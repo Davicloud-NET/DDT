@@ -18,6 +18,7 @@ import type {
 
 const kindLabels: Record<StepKind, MessageDescriptor> = {
   partition: msg`Partition the disk`,
+  preprovisionBitLocker: msg`Pre-provision BitLocker`,
   applyImage: msg`Apply image`,
   injectDrivers: msg`Inject drivers`,
   servicePackages: msg`Service packages`,
@@ -33,6 +34,7 @@ const kindLabels: Record<StepKind, MessageDescriptor> = {
   enableFeatures: msg`Enable roles and features`,
   windowsUpdate: msg`Windows Update`,
   registerAutopilot: msg`Register with Autopilot`,
+  enableBitLocker: msg`Enable BitLocker`,
   group: msg`Group`,
   if: msg`If`,
   repeat: msg`Repeat`,
@@ -241,6 +243,8 @@ export function newStep(
         systemPartitionMegabytes: 300,
         recoveryPartitionMegabytes: 1024,
       };
+    case "preprovisionBitLocker":
+      return { ...common, kind, ifUnavailable: "Skip" };
     case "applyImage":
       return { ...common, kind, imageId: EMPTY_ID };
     case "injectDrivers":
@@ -312,6 +316,15 @@ export function newStep(
       };
     case "registerAutopilot":
       return { ...common, kind, groupTag: null, waitForImport: false, waitMinutes: 30 };
+    case "enableBitLocker":
+      return {
+        ...common,
+        kind,
+        ifNoTpm: "Fail",
+        backupToActiveDirectory: true,
+        waitForEncryption: false,
+        waitMinutes: 120,
+      };
     case "group":
       return { ...common, kind, steps: [] };
     case "if":

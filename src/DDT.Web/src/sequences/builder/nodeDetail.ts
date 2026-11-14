@@ -17,6 +17,7 @@ import type {
 } from "../sequences";
 import { EMPTY_ID, inPhase, interpreterLabel } from "../steps";
 import type { StepCatalog } from "../useStepCatalog";
+import type { BitLockerStep } from "../windowsSteps";
 
 // The line a node's card shows under its name. That's its first problem if it has one. Otherwise it's when the node
 // runs and what it does, such as the image it applies or the value it sets. code marks a value such as a template.
@@ -133,6 +134,25 @@ function servicingDetail(count: number, matching: boolean): string {
   return matching ? t`${listed} and the matching updates` : listed;
 }
 
+// What a BitLocker step does without a TPM, and what Enable BitLocker does besides.
+function bitLockerDetail(node: BitLockerStep): string {
+  if (node.kind === "preprovisionBitLocker") {
+    return node.ifUnavailable === "Fail" ? t`Fails without a TPM` : t`Skipped without a TPM`;
+  }
+
+  const parts = [t`TPM and a recovery password`];
+
+  if (node.backupToActiveDirectory) {
+    parts.push(t`backed up to Active Directory`);
+  }
+
+  if (node.waitForEncryption) {
+    parts.push(t`waits for the encryption`);
+  }
+
+  return parts.join(", ");
+}
+
 export function nodeDetail(
   node: SequenceStep,
   {
@@ -210,6 +230,9 @@ export function nodeDetail(
       return plain(servicingDetail(node.packages.length, node.matchingUpdates));
     case "registerAutopilot":
       return plain(autopilotDetail(node.groupTag, node.waitForImport));
+    case "preprovisionBitLocker":
+    case "enableBitLocker":
+      return plain(bitLockerDetail(node));
     case "if":
       return plain(conditionSummary(node.test, subjects));
     case "group":

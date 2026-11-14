@@ -11,6 +11,7 @@ import type { ImageBootCapability } from "@/images/images";
 import type { ApplicationReference, InputDeclaration, VariableDeclaration } from "./declarations";
 import type { ConditionNode, StepCondition } from "./sequenceConditions";
 import type {
+  BitLockerStep,
   EnableFeaturesStep,
   RegisterAutopilotStep,
   ServicePackagesStep,
@@ -205,7 +206,8 @@ export type SequenceStep =
   | EnableFeaturesStep
   | WindowsUpdateStep
   | ServicePackagesStep
-  | RegisterAutopilotStep;
+  | RegisterAutopilotStep
+  | BitLockerStep;
 
 export type StepKind = SequenceStep["kind"];
 

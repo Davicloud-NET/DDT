@@ -73,6 +73,19 @@ public sealed class StepDefaultsTests
         Assert.Equal((RegisterAutopilotStep.DefaultWaitMinutes, false, (string?)null), (step.WaitMinutes, step.WaitForImport, step.GroupTag));
     }
 
+    [Theory]
+    [MemberData(nameof(Contexts))]
+    public void AnEnableBitLockerStepWithoutItsFieldsFailsWithoutATpmAndBacksUp(string context)
+    {
+        string json = """{"version":8,"steps":[{"kind":"enableBitLocker","id":"0193a4b2-0000-7000-8000-000009600007","name":"B"}]}""";
+
+        EnableBitLockerStep step = Assert.IsType<EnableBitLockerStep>(JsonSerializer.Deserialize(json, Context(context))?.Steps[0]);
+
+        Assert.Equal(
+            (BitLockerUnavailable.Fail, true, false, EnableBitLockerStep.DefaultWaitMinutes),
+            (step.IfNoTpm, step.BackupToActiveDirectory, step.WaitForEncryption, step.WaitMinutes));
+    }
+
     [Fact]
     public void WrittenFieldsStillWin()
     {

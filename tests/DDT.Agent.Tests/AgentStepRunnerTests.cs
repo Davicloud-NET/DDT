@@ -120,6 +120,19 @@ public sealed class AgentStepRunnerTests
         Assert.Equal(StepResult.Failed(error), result);
     }
 
+    [Theory]
+    [InlineData(SequencePhase.WindowsPE, "BitLocker is enabled in Windows, after the hand-over, but this agent was asked to enable it in Windows PE.")]
+    [InlineData(SequencePhase.Linux, "BitLocker is enabled in Windows, but this agent was asked to enable it in the installed Linux.")]
+    public async Task EnableBitLockerFailsOutsideTheInstalledWindows(SequencePhase phase, string error)
+    {
+        EnableBitLockerStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000b1"), Name = "BitLocker" };
+        using WindowsStepRunnerFixture run = new([step]);
+
+        StepResult result = await run.Steps.RunAsync(step, run.Context(phase), TestContext.Current.CancellationToken);
+
+        Assert.Equal(StepResult.Failed(error), result);
+    }
+
     [Fact]
     public async Task WindowsUpdateRunsInTheInstalledWindows()
     {

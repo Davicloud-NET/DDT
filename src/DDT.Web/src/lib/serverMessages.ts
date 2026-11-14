@@ -1337,6 +1337,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.autopilotWaitMinutes",
     message: "Wait 1 to {max} minutes.",
   }),
+  "sequence.bitLockerAfterImage": msg({
+    context: "sequence.bitLockerAfterImage",
+    message: "BitLocker is pre-provisioned before the image is applied.",
+  }),
+  "sequence.bitLockerBeforePartition": msg({
+    context: "sequence.bitLockerBeforePartition",
+    message: "BitLocker can be pre-provisioned only after a step that partitions the disk.",
+  }),
+  "sequence.bitLockerWaitMinutes": msg({
+    context: "sequence.bitLockerWaitMinutes",
+    message: "Wait 1 to {max} minutes.",
+  }),
   "sequence.cannotGoOn": msg({
     context: "sequence.cannotGoOn",
     message: "The sequence cannot go on when {activity, select, partition {partitioning the disk} image {applying the image} other {writing the raw disk image}} fails.",
@@ -1584,6 +1596,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.onceInRepeat": msg({
     context: "sequence.onceInRepeat",
     message: "This step can run only once in a run, so it cannot be inside a repeat.",
+  }),
+  "sequence.oneBitLocker": msg({
+    context: "sequence.oneBitLocker",
+    message: "A sequence can enable BitLocker only once.",
+  }),
+  "sequence.oneBitLockerPreprovision": msg({
+    context: "sequence.oneBitLockerPreprovision",
+    message: "A sequence can pre-provision BitLocker only once.",
   }),
   "sequence.oneDomainJoin": msg({
     context: "sequence.oneDomainJoin",

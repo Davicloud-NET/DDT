@@ -20,6 +20,11 @@ describe("stepDetailText", () => {
     expect(stepDetailText("#addingPackage")).toBe("#addingPackage");
   });
 
+  it("says how far BitLocker has encrypted the disk", () => {
+    expect(stepDetailText("#encrypting 74")).toBe("Encrypting the disk (74 %)");
+    expect(stepDetailText("#encrypting")).toBe("#encrypting");
+  });
+
   it("shows anything else as the agent wrote it", () => {
     expect(stepDetailText("7-Zip 24.08")).toBe("7-Zip 24.08");
     expect(stepDetailText("#somethingNew 3")).toBe("#somethingNew 3");

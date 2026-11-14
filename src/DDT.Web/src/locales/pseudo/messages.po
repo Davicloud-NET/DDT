@@ -1843,6 +1843,11 @@ msgid "A sequence can ask at most {max} inputs."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.oneBitLocker"
+msgid "A sequence can enable BitLocker only once."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.nodeCount"
 msgid "A sequence can have at most {max} steps, groups, IFs and repeats together."
 msgstr ""
@@ -1860,6 +1865,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.onePartition"
 msgid "A sequence can partition the disk only once."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.oneBitLockerPreprovision"
+msgid "A sequence can pre-provision BitLocker only once."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1885,6 +1895,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.stepCount"
 msgid "A sequence needs 1 to {max} steps."
+msgstr ""
+
+#: src/boot/StaleReasonText.tsx
+msgid "A sequence pre-provisions BitLocker, which this boot image cannot do. Build it again with PowerShell."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -3052,6 +3066,14 @@ msgstr ""
 msgid "Back to DDT"
 msgstr ""
 
+#: src/sequences/steps/EnableBitLockerFields.tsx
+msgid "Back up the recovery password to Active Directory"
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "backed up to Active Directory"
+msgstr ""
+
 #: src/machines/facts.ts
 msgid "Baseboard"
 msgstr ""
@@ -3075,6 +3097,16 @@ msgstr ""
 
 #: src/machines/facts.ts
 msgid "BIOS version"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.bitLockerBeforePartition"
+msgid "BitLocker can be pre-provisioned only after a step that partitions the disk."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.bitLockerAfterImage"
+msgid "BitLocker is pre-provisioned before the image is applied."
 msgstr ""
 
 #: src/app/navigation.ts
@@ -4424,7 +4456,15 @@ msgid "Enable"
 msgstr ""
 
 #: src/sequences/steps.ts
+msgid "Enable BitLocker"
+msgstr ""
+
+#: src/sequences/steps.ts
 msgid "Enable roles and features"
+msgstr ""
+
+#: src/runs/panel/stepDetail.ts
+msgid "Encrypting the disk ({count} %)"
 msgstr ""
 
 #: src/settings/directory/ServerGroup.tsx
@@ -4841,6 +4881,14 @@ msgstr ""
 msgid "Fail when no driver package matches the model"
 msgstr ""
 
+#: src/sequences/steps/EnableBitLockerFields.tsx
+msgid "Fail without a TPM"
+msgstr ""
+
+#: src/sequences/steps/PreprovisionBitLockerFields.tsx
+msgid "Fail without a TPM or a boot image with BitLocker"
+msgstr ""
+
 #: src/boot/JobPanel.tsx
 #: src/machines/list/runDetail.ts
 #: src/machines/MachinePanel.tsx
@@ -4866,6 +4914,10 @@ msgstr ""
 
 #: src/sequences/steps/knownFeatures.ts
 msgid "Failover Clustering"
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "Fails without a TPM"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -5130,6 +5182,10 @@ msgstr ""
 
 #: src/sequences/steps/PauseFields.tsx
 msgid "From 1 to 1440 minutes."
+msgstr ""
+
+#: src/sequences/steps/EnableBitLockerFields.tsx
+msgid "From 1 to 1440."
 msgstr ""
 
 #: src/sequences/steps/WindowsUpdateFields.tsx
@@ -7539,6 +7595,11 @@ msgstr ""
 msgid "Off"
 msgstr ""
 
+#: src/sequences/steps/EnableBitLockerFields.tsx
+#: src/sequences/steps/PreprovisionBitLockerFields.tsx
+msgid "Off: the step is skipped with a warning."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.inputOffered"
 msgid "Offer 1 to {max} applications and bundles."
@@ -7564,6 +7625,10 @@ msgstr ""
 
 #: src/settings/networkBoot/HostInterfaces.tsx
 msgid "On {name}"
+msgstr ""
+
+#: src/sequences/steps/EnableBitLockerFields.tsx
+msgid "On a machine joined to a domain. DDT keeps the password either way."
 msgstr ""
 
 #: src/sequences/builder/template/TemplateDescription.tsx
@@ -8105,6 +8170,10 @@ msgstr ""
 
 #: src/boot/LastBuild.tsx
 msgid "PowerShell"
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Pre-provision BitLocker"
 msgstr ""
 
 #: src/deployments/deployments.ts
@@ -9572,6 +9641,10 @@ msgstr ""
 
 #: src/runs/flow/detailsText.ts
 msgid "Skipped at {at} {where}."
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "Skipped without a TPM"
 msgstr ""
 
 #: src/runs/decisions.ts
@@ -12258,6 +12331,10 @@ msgstr ""
 msgid "Took Then: {reasons}"
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "TPM and a recovery password"
+msgstr ""
+
 #: src/machines/facts.ts
 msgid "TPM present"
 msgstr ""
@@ -12815,12 +12892,22 @@ msgctxt "sequence.autopilotWaitMinutes"
 msgid "Wait 1 to {max} minutes."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.bitLockerWaitMinutes"
+msgid "Wait 1 to {max} minutes."
+msgstr ""
+
+#: src/sequences/steps/EnableBitLockerFields.tsx
 #: src/sequences/steps/RegisterAutopilotFields.tsx
 msgid "Wait at most (minutes)"
 msgstr ""
 
 #: src/sequences/steps/RegisterAutopilotFields.tsx
 msgid "Wait until Autopilot has imported the hash"
+msgstr ""
+
+#: src/sequences/steps/EnableBitLockerFields.tsx
+msgid "Wait until the disk is encrypted"
 msgstr ""
 
 #: src/machines/machineView.ts
@@ -12859,6 +12946,10 @@ msgstr ""
 
 #: src/machines/MachinePanel.tsx
 msgid "Waiting to start"
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "waits for the encryption"
 msgstr ""
 
 #: src/sequences/builder/nodeDetail.ts

@@ -280,8 +280,16 @@ msgid "Empty"
 msgstr "Leer"
 
 #: Texts/Say.cs
+msgid "Enabling BitLocker"
+msgstr "BitLocker wird aktiviert"
+
+#: Texts/Say.cs
 msgid "Enabling roles and features"
 msgstr "Rollen und Features werden aktiviert"
+
+#: Texts/Say.cs
+msgid "Encrypting the disk ({percent} %)"
+msgstr "Datenträger wird verschlüsselt ({percent} %)"
 
 #: ViewModels/EndRunViewModel.cs
 msgid "End the run"
@@ -622,6 +630,10 @@ msgstr "Pause, Schritt {number} von {count} auf diesem Pfad, in Windows PE"
 #: Texts/Say.cs
 msgid "Paused"
 msgstr "Angehalten"
+
+#: Texts/Say.cs
+msgid "Pre-provisioning BitLocker"
+msgstr "BitLocker wird vorbereitet"
 
 #: Texts/Say.cs
 msgid "Registering with Autopilot"

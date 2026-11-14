@@ -4,6 +4,7 @@
 
 using DDT.Agent.Applications;
 using DDT.Agent.Autopilot;
+using DDT.Agent.BitLocker;
 using DDT.Agent.Deployment;
 using DDT.Agent.Servicing;
 using DDT.Agent.WindowsFeatures;
@@ -53,8 +54,22 @@ public sealed class WindowsStepRunners : IStepRunners
             new EnableFeaturesStepRunner(Options.DryRun ? new DryRunWindowsFeatures(Log) : new DismWindowsFeatures(Tools, InjectDriversStepRunner.DismPath), Log),
             new WindowsUpdateStepRunner(Updates, Log, TimeProvider),
             new RegisterAutopilotStepRunner(Server, session, heartbeat.ReportNowAsync, HashReader(), Log, TimeProvider),
+            new PreprovisionBitLockerStepRunner(ManageBde(), Tpm(), session, Log),
+            new EnableBitLockerStepRunner(Server, session, heartbeat.ReportNowAsync, BitLockerParts(), Log, TimeProvider),
         ];
     }
+
+    private IBitLocker ManageBde() =>
+        Options.DryRun
+            ? new DryRunBitLocker(Log)
+            : new ManageBdeBitLocker(Tools, ManageBdeBitLocker.In(Environment.SystemDirectory), AppInstallerRegistration.PowerShellPath);
+
+    private ITpm Tpm() => Options.DryRun ? new DryRunTpm() : new TbsTpm();
+
+    private BitLockerTools BitLockerParts() =>
+        Options.DryRun
+            ? new(ManageBde(), Tpm(), new DryRunWindowsFeatures(Log), new DryRunDomainMembership(Log), new DryRunBitLockerPolicy(Log))
+            : new(ManageBde(), Tpm(), new DismWindowsFeatures(Tools, InjectDriversStepRunner.DismPath), new WindowsDomainMembership(), new RegistryBitLockerPolicy());
 
     private IHardwareHashReader HashReader() =>
         Options.DryRun ? new DryRunHardwareHashReader(Log) : new PowerShellHardwareHashReader(Tools, AppInstallerRegistration.PowerShellPath);

@@ -97,7 +97,7 @@ describe("referencesTo", () => {
 
 describe("condition trees", () => {
   it("lists the tests with their paths and names the paths as problems do", () => {
-    const tree = everyNode.steps[2]?.when ?? null;
+    const tree = everyNode.steps.find((step) => step.kind === "injectDrivers")?.when ?? null;
 
     expect(testsOf(tree).map((placed) => conditionPath("when", placed.path))).toEqual([
       "when.parts[0]",

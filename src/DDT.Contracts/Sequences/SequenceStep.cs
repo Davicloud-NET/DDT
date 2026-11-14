@@ -28,6 +28,8 @@ namespace DDT.Contracts.Sequences;
 [JsonDerivedType(typeof(WindowsUpdateStep), "windowsUpdate")]
 [JsonDerivedType(typeof(ServicePackagesStep), "servicePackages")]
 [JsonDerivedType(typeof(RegisterAutopilotStep), StepKindNames.RegisterAutopilot)]
+[JsonDerivedType(typeof(PreprovisionBitLockerStep), "preprovisionBitLocker")]
+[JsonDerivedType(typeof(EnableBitLockerStep), StepKindNames.EnableBitLocker)]
 public abstract record SequenceStep
 {
     // Stable across edits, because run state, reports and problems name a step by it.

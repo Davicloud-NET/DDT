@@ -15,12 +15,14 @@ import {
   IconFingerprint,
   IconLayoutColumns,
   IconLayoutGrid,
+  IconLock,
   IconPackageImport,
   IconPackages,
   IconPlayerPause,
   IconPuzzle,
   IconRepeat,
   IconRotateClockwise,
+  IconShieldLock,
   IconTerminal2,
   type Icon,
 } from "@tabler/icons-react";
@@ -31,6 +33,7 @@ import { cx } from "./cx";
 
 const glyphs: Record<StepKind, Icon> = {
   partition: IconLayoutColumns,
+  preprovisionBitLocker: IconLock,
   applyImage: IconDownload,
   injectDrivers: IconCpu,
   servicePackages: IconPackageImport,
@@ -46,6 +49,7 @@ const glyphs: Record<StepKind, Icon> = {
   enableFeatures: IconPuzzle,
   windowsUpdate: IconCloudDownload,
   registerAutopilot: IconFingerprint,
+  enableBitLocker: IconShieldLock,
   group: IconLayoutGrid,
   if: IconArrowsSplit2,
   repeat: IconRepeat,

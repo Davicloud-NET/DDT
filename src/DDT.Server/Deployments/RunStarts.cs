@@ -51,6 +51,7 @@ public sealed class RunStarts(DdtDbContext database, RunQueries queries, RunValu
             RunInputs inputs = RunInputs.From(check.Resolution.Effective, snapshot.Deployment, now) with { Facts = RunInputs.FactsOf(machine) };
             problem = ValuesProblem(check, webOnly)
                 ?? SettingsProblem(definition, inputs)
+                ?? AnswerFileStartChecks.Problem(definition, check.Resolution.Effective, snapshot.Deployment, machine.PrimaryMac)
                 ?? await applications.AddAsync(run, definition, check.Resolution, cancellationToken).ConfigureAwait(false);
 
             if (problem is null)

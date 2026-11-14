@@ -29,6 +29,8 @@ const kindLabels: Record<StepKind, MessageDescriptor> = {
   setVariable: msg`Set variable`,
   pause: msg`Pause`,
   installApplications: msg`Install applications`,
+  enableFeatures: msg`Enable roles and features`,
+  windowsUpdate: msg`Windows Update`,
   group: msg`Group`,
   if: msg`If`,
   repeat: msg`Repeat`,
@@ -249,6 +251,16 @@ export function newStep(
         locale: null,
         keyboard: null,
         localAdministrator: false,
+        uiLanguage: null,
+        organization: null,
+        owner: null,
+        hideEulaPage: true,
+        hideOemRegistration: true,
+        hideOnlineAccounts: true,
+        hideWirelessSetup: true,
+        firstLogonCommands: [],
+        autoLogon: "None",
+        autoLogonCount: 1,
       };
     case "joinDomain":
       return { ...common, kind, organizationalUnit: null };
@@ -282,6 +294,18 @@ export function newStep(
       return { ...common, kind, message: "", continueAfterMinutes: null };
     case "installApplications":
       return { ...common, kind, applications: [], variable: null };
+    case "enableFeatures":
+      return { ...common, kind, features: [] };
+    case "windowsUpdate":
+      return {
+        ...common,
+        kind,
+        drivers: false,
+        optionalUpdates: false,
+        microsoftProducts: true,
+        excludedKbs: [],
+        restartLimit: 8,
+      };
     case "group":
       return { ...common, kind, steps: [] };
     case "if":

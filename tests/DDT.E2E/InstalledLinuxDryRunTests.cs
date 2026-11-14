@@ -121,7 +121,7 @@ public sealed class InstalledLinuxDryRunTests(DryRunLab lab)
 
         lab.AssertClean(
             [agent],
-            ["The server no longer accepts this machine's token", $"Step {packaged.Name} was stopped."],
+            ["The server no longer accepts this machine's token", $"Step {packaged.Name} was stopped"],
             ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
     }
 

@@ -24,4 +24,10 @@ internal sealed record ServiceRunOptions
     public ConsoleStatus? Status { get; init; }
 
     public IAutomaticRepair? AutomaticRepair { get; init; }
+
+    public IDeploymentRecord? DeploymentRecord { get; init; }
+
+    public IFirstLogon? FirstLogon { get; init; }
+
+    public IKeepAwake? KeepAwake { get; init; }
 }

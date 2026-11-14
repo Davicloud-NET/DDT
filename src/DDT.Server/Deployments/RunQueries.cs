@@ -6,6 +6,7 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Deployments;
 using DDT.Contracts.Sequences;
 using DDT.Server.Applications;
+using DDT.Server.Certificates;
 using DDT.Server.Data;
 using DDT.Server.Machines;
 using DDT.Server.Sequences;
@@ -123,12 +124,40 @@ public sealed class RunQueries(DdtDbContext database, RunValues values, DdtSetti
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return RunSnapshots.ForAgent(
+        AgentRun handed = RunSnapshots.ForAgent(
             run,
             definition,
             artifacts,
             machine.AssignedName,
             await PendingInputsAsync(machine, run, definition, cancellationToken).ConfigureAwait(false));
+
+        return handed with
+        {
+            ImageName = run.State == DeploymentState.Running ? await AppliedImageAsync(run.Id, artifacts, cancellationToken).ConfigureAwait(false) : null,
+            ServerName = ServerNames.DnsName(),
+            SkipDeploymentRecord = !settings.Current.Deployment.WriteRecord,
+            SetsUpFirstLogon = FirstLogonSecrets.AtRunEnd(definition),
+        };
+    }
+
+    // The image of the step that applied one. Of several branches, only one ran.
+    private async Task<string?> AppliedImageAsync(Guid runId, List<DeploymentArtifact> artifacts, CancellationToken cancellationToken)
+    {
+        HashSet<Guid> imageSteps = [.. artifacts.Where(a => a.Kind == ArtifactKind.Image).Select(a => a.StepId)];
+
+        if (imageSteps.Count == 0)
+        {
+            return null;
+        }
+
+        List<Guid> done = await database.DeploymentSteps
+            .AsNoTracking()
+            .Where(step => step.DeploymentId == runId && step.State == StepState.Done && imageSteps.Contains(step.StepId))
+            .Select(step => step.StepId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return artifacts.FirstOrDefault(a => a.Kind == ArtifactKind.Image && done.Contains(a.StepId))?.Name;
     }
 
     // The inputs the machine asks before an assigned run can start. None, unless a required input it asks or an input

@@ -4,6 +4,7 @@
 
 using System.Text;
 using DDT.Agent.Deployment;
+using DDT.Core.Unattend;
 using Xunit;
 
 namespace DDT.Agent.Tests;
@@ -52,6 +53,36 @@ public sealed class UnattendFileTests : IDisposable
             "local administrator yes, domain join no",
             summary);
         Assert.DoesNotContain("c2VjcmV0", summary, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NamesAStaticAddressAndThatAKeyIsSetButNeverTheKey()
+    {
+        string unattend = UnattendWriter.Write(new UnattendSettings("amd64", "PC-042", null, "en-US", "de-DE", "de-DE", null)
+        {
+            ProductKey = new ProductKey("NPPR9-FWDCX-D2C8J-H872K-2YT43"),
+            Network = new StaticNetwork("00-15-5D-01-02-03", ["10.0.4.51/24"], "10.0.4.1", []),
+        });
+
+        string summary = UnattendFile.Summarize(unattend);
+
+        Assert.EndsWith("domain join no, product key set, static address 10.0.4.51/24", summary, StringComparison.Ordinal);
+        Assert.DoesNotContain("NPPR9", summary, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NamesTheAutomaticLogonAndCountsTheCommandsButNeverSaysThePassword()
+    {
+        string unattend = UnattendWriter.Write(new UnattendSettings("amd64", "PC-042", null, "en-US", "de-DE", "de-DE", null)
+        {
+            AutoLogon = new AutoLogonAccount("Admin", null, "Kiosk-Secret-1", 2),
+            FirstLogonCommands = ["cmd /c echo one", "cmd /c echo two"],
+        });
+
+        string summary = UnattendFile.Summarize(unattend);
+
+        Assert.EndsWith("domain join no, automatic logon as Admin, 2 first-logon commands", summary, StringComparison.Ordinal);
+        Assert.DoesNotContain("Kiosk-Secret-1", unattend, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -350,6 +350,9 @@ const deploymentDefaults = {
       locale: "de-DE",
       keyboard: "0407:00000407",
       consoleLanguage: "de",
+      organization: "Davicloud",
+      owner: null,
+      writeRecord: true,
       localAdministrator: { name: "Admin" },
       domain: {
         name: "corp.example",
@@ -359,6 +362,7 @@ const deploymentDefaults = {
       },
     },
     secrets: {
+      productKey: { isSet: true, unreadable: false, updatedUtc: "2026-09-15T16:20:00Z" },
       "localAdministrator.password": {
         isSet: true,
         unreadable: false,

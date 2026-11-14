@@ -21,7 +21,10 @@ public static partial class Program
             new WindowsPEPower(),
             new CommandPrompt(),
             SessionSignOut.SignOut,
-            WindowsSessionAgent.OwnedBySystem);
+            WindowsSessionAgent.OwnedBySystem)
+        {
+            Display = new ThreadDisplayPower(),
+        };
 
         if (ConsoleProgram.Prepare(args, host) is { } exit)
         {

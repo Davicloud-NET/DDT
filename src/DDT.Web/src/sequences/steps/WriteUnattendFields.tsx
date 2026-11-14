@@ -8,7 +8,11 @@ import { Trans } from "@lingui/react/macro";
 import { TemplateField } from "../builder/TemplateField";
 import { FlagSetting } from "../fields/FlagSetting";
 import type { WriteUnattendStep } from "../sequences";
+import { AutoLogonSetting } from "./AutoLogonSetting";
+import { FirstLogonCommandsSetting } from "./FirstLogonCommandsSetting";
 import { orNull, type KindFieldsProps } from "./kindFields";
+import { OobePagesSetting } from "./OobePagesSetting";
+import { RegisteredFields } from "./RegisteredFields";
 
 export function WriteUnattendFields({
   step,
@@ -61,6 +65,20 @@ export function WriteUnattendFields({
           onChange({ keyboard: orNull(text) });
         }}
       />
+      <TemplateField
+        label={<Trans>Display language</Trans>}
+        field="uiLanguage"
+        findings={findings}
+        hint={<Trans>Such as de-DE. The image must have it.</Trans>}
+        placeholder={t`The image's`}
+        howTo={false}
+        value={step.uiLanguage ?? ""}
+        onChange={(text) => {
+          onChange({ uiLanguage: orNull(text) });
+        }}
+      />
+      <RegisteredFields step={step} findings={findings} onChange={onChange} />
+      <OobePagesSetting step={step} findings={findings} onChange={onChange} />
       <FlagSetting
         label={<Trans>Add the local administrator</Trans>}
         field="localAdministrator"
@@ -70,6 +88,14 @@ export function WriteUnattendFields({
         value={step.localAdministrator}
         onChange={(localAdministrator) => {
           onChange({ localAdministrator });
+        }}
+      />
+      <AutoLogonSetting step={step} findings={findings} onChange={onChange} />
+      <FirstLogonCommandsSetting
+        findings={findings}
+        value={step.firstLogonCommands}
+        onChange={(firstLogonCommands) => {
+          onChange({ firstLogonCommands }, true);
         }}
       />
     </>

@@ -36,6 +36,8 @@ public static class DeploymentServiceCollectionExtensions
         services.AddScoped<RunValues>();
         services.AddScoped<StepAccountLookup>();
         services.AddScoped<RunSecrets>();
+        services.AddScoped<FirstLogonSecrets>();
+        services.AddScoped<RunAnswerFiles>();
         services.AddScoped<StepAccounts>();
         services.AddScoped<MachineChangePublisher>();
         services.AddScoped<MachineRuns>();

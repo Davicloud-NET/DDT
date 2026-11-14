@@ -5,6 +5,8 @@
 using DDT.Agent.Applications;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
+using DDT.Agent.WindowsFeatures;
+using DDT.Agent.WindowsUpdates;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
 
@@ -44,11 +46,17 @@ internal sealed class WindowsStepRunnerFixture(
         Log,
         Time);
 
+    // DISM through ToolRunner.
+    public EnableFeaturesStepRunner EnableFeatures => new(new DismWindowsFeatures(ToolRunner, InjectDriversStepRunner.DismPath), Log);
+
+    // Windows Update that finds nothing.
+    public WindowsUpdateStepRunner WindowsUpdate => new(() => new FakeWindowsUpdate(), Log, Time);
+
     // Stands in for signing accounts in and connecting shares.
     public FakeAccountTools Accounts { get; } = new();
 
     public StepAccounts StepAccounts => new(Server, Session, ReportRunningAsync, Accounts.Tools, Log, Time);
 
     public AgentStepRunner Steps =>
-        new([Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, InstallApplications], StepAccounts, TokenRejections.Add, Log, Time);
+        new([Partition, ApplyImage, InjectDrivers, WriteUnattend, JoinDomain, RunScript, InstallApplications, EnableFeatures, WindowsUpdate], StepAccounts, TokenRejections.Add, Log, Time);
 }

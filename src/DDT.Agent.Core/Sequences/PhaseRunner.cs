@@ -27,7 +27,7 @@ internal sealed class PhaseRunner(
     public async Task<RunResult> RunAsync(SequenceRun run, CancellationToken cancellationToken)
     {
         RunHeartbeat heartbeat = run.Heartbeat;
-        SequenceEngine engine = new(steps(run), run.Store, heartbeat);
+        SequenceEngine engine = new(steps(run), run.Store, heartbeat, heartbeat);
         SequenceOutcome outcome = SequenceOutcome.Failed;
         string? error = null;
 

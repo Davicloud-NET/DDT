@@ -13,4 +13,23 @@ public sealed record UnattendSettings(
     string UiLanguage,
     string Locale,
     string Keyboard,
-    LocalAdministrator? LocalAdministrator);
+    LocalAdministrator? LocalAdministrator)
+{
+    public ProductKey? ProductKey { get; init; }
+
+    public string? RegisteredOrganization { get; init; }
+
+    public string? RegisteredOwner { get; init; }
+
+    public OobePages Oobe { get; init; } = OobePages.AllHidden;
+
+    // Null is DHCP.
+    public StaticNetwork? Network { get; init; }
+
+    public IReadOnlyList<string> FirstLogonCommands { get; init; } = [];
+
+    public AutoLogonAccount? AutoLogon { get; init; }
+
+    // A Windows Server image, whose built-in Administrator gets the local administrator's password.
+    public bool ServerEdition { get; init; }
+}

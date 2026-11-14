@@ -1257,6 +1257,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.applicationsVariableSetBySteps",
     message: "Steps set {name}, but applications are chosen when the run starts.",
   }),
+  "sequence.autoLogonCount": msg({
+    context: "sequence.autoLogonCount",
+    message: "Use a number from 1 to {max}.",
+  }),
+  "sequence.autoLogonNeedsAdministrator": msg({
+    context: "sequence.autoLogonNeedsAdministrator",
+    message: "Add the local administrator to sign in as it.",
+  }),
   "sequence.cannotGoOn": msg({
     context: "sequence.cannotGoOn",
     message: "The sequence cannot go on when {activity, select, partition {partitioning the disk} image {applying the image} other {writing the raw disk image}} fails.",
@@ -1340,6 +1348,34 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.exitCodeMeansBoth": msg({
     context: "sequence.exitCodeMeansBoth",
     message: "An exit code cannot mean both success and a restart: {codes}.",
+  }),
+  "sequence.featureName": msg({
+    context: "sequence.featureName",
+    message: "A feature name has up to {max} letters, digits, dots, dashes and underscores, as DISM lists it.",
+  }),
+  "sequence.featureRepeated": msg({
+    context: "sequence.featureRepeated",
+    message: "This feature is listed twice.",
+  }),
+  "sequence.featuresChoose": msg({
+    context: "sequence.featuresChoose",
+    message: "Add a feature.",
+  }),
+  "sequence.featuresTooMany": msg({
+    context: "sequence.featuresTooMany",
+    message: "A step enables at most {max} features.",
+  }),
+  "sequence.firstLogonCommandEmpty": msg({
+    context: "sequence.firstLogonCommandEmpty",
+    message: "Enter a command.",
+  }),
+  "sequence.firstLogonCommandTooLong": msg({
+    context: "sequence.firstLogonCommandTooLong",
+    message: "Use at most {max} characters.",
+  }),
+  "sequence.firstLogonCommandsTooMany": msg({
+    context: "sequence.firstLogonCommandsTooMany",
+    message: "Use at most {max} commands.",
   }),
   "sequence.ifNeedsTest": msg({
     context: "sequence.ifNeedsTest",
@@ -1553,6 +1589,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.recoveryPartitionSize",
     message: "The recovery partition needs {min} to {max} MB.",
   }),
+  "sequence.registeredTooLong": msg({
+    context: "sequence.registeredTooLong",
+    message: "Use at most {max} characters.",
+  }),
   "sequence.repeatNeedsUntil": msg({
     context: "sequence.repeatNeedsUntil",
     message: "Enter the condition that ends the repeat.",
@@ -1725,6 +1765,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.tooManyVariables",
     message: "A sequence can have at most {max} variables.",
   }),
+  "sequence.uiLanguage": msg({
+    context: "sequence.uiLanguage",
+    message: "''{value}'' is not a language tag such as de-DE.",
+  }),
   "sequence.unattendBeforeImage": msg({
     context: "sequence.unattendBeforeImage",
     message: "The answer file can be written only after the image is applied.",
@@ -1740,6 +1784,22 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.unreadable": msg({
     context: "sequence.unreadable",
     message: "The sequence is not a document DDT can read. Every step needs an id and a kind this version of DDT knows.",
+  }),
+  "sequence.updatesKb": msg({
+    context: "sequence.updatesKb",
+    message: "Enter a KB number, such as KB5031234.",
+  }),
+  "sequence.updatesKbRepeated": msg({
+    context: "sequence.updatesKbRepeated",
+    message: "This update is listed twice.",
+  }),
+  "sequence.updatesRestarts": msg({
+    context: "sequence.updatesRestarts",
+    message: "Allow 1 to {max} restarts.",
+  }),
+  "sequence.updatesTooManyKbs": msg({
+    context: "sequence.updatesTooManyKbs",
+    message: "A step leaves out at most {max} updates.",
   }),
   "sequence.userDataFinalModulesWarning": msg({
     context: "sequence.userDataFinalModulesWarning",
@@ -1988,6 +2048,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "settings.deployment.localeUnknown": msg({
     context: "settings.deployment.localeUnknown",
     message: "''{value}'' is not a culture name. Use one such as de-DE or en-US, or leave it empty for the image's own language.",
+  }),
+  "settings.deployment.productKeyInvalid": msg({
+    context: "settings.deployment.productKeyInvalid",
+    message: "A product key is five groups of five letters or digits: XXXXX-XXXXX-XXXXX-XXXXX-XXXXX.",
+  }),
+  "settings.deployment.registeredTooLong": msg({
+    context: "settings.deployment.registeredTooLong",
+    message: "Use at most {max} characters.",
   }),
   "settings.deployment.requiredWithDomain": msg({
     context: "settings.deployment.requiredWithDomain",

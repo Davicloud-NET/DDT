@@ -14,4 +14,7 @@ public enum AccountPurpose
 
     // DDT connects a share with it while the step runs.
     Share,
+
+    // Windows signs in as it after the deployment.
+    AutoLogon,
 }

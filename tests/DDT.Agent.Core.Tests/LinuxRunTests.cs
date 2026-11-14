@@ -209,7 +209,7 @@ public sealed class LinuxRunTests : IDisposable
         Assert.StartsWith("Install Linux cannot run: The Linux boot environment has no partition to unpack a package on", packageServer.RunReports[^1].Error, StringComparison.Ordinal);
     }
 
-    // The agent says version 6, so the server hands it such a run, and the boot environment asks for the hand-over at
+    // The agent says version 7, so the server hands it such a run, and the boot environment asks for the hand-over at
     // the first step in the installed Linux.
     [Fact]
     public async Task TakesARunWithStepsInTheInstalledLinuxAndHandsItOverAfterTheSeed()
@@ -218,14 +218,14 @@ public sealed class LinuxRunTests : IDisposable
 
         (RunResult result, ScriptedAgentServer server, _) = await RunAsync(Run(steps: [s_write, s_seed, installed]));
 
-        Assert.Equal(6, SupportedSequences.Version);
+        Assert.Equal(7, SupportedSequences.Version);
         Assert.Equal(RunOutcome.Restarting, result.Outcome);
         Assert.Equal(["list", "clean 0", "hand over", "reboot"], _tools.Calls);
         Assert.Empty(_toolRunner.Calls);
         Assert.Equal((DeploymentState.Running, RunActivity.Restarting), (server.RunReports[^1].State, server.RunReports[^1].Activity));
     }
 
-    // The agent for Linux says version 6 too, but installing applications belongs to a Windows sequence.
+    // The agent for Linux says version 7 too, but installing applications belongs to a Windows sequence.
     [Fact]
     public async Task RefusesASequenceThatInstallsApplicationsBeforeTheDiskIsTouched()
     {

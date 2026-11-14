@@ -27,4 +27,6 @@ public sealed record AgentRunReport(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? PauseMessage = null,
     // How often the boot environment has started again since it handed the run over. Only the report of such a start
     // says it.
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? BootReturns = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? BootReturns = null,
+    // What the current step is doing now, such as the application it installs.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? StepDetail = null);

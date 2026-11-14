@@ -18,6 +18,7 @@ import { bootPhase, kindOfNodes } from "@/sequences/sequenceKinds";
 import type { RunPath } from "../runPath";
 import { CurrentStep } from "./CurrentStep";
 import { LinuxHandOverWait } from "./LinuxHandOverWait";
+import { stepDetailText } from "./stepDetail";
 
 interface RunActivityProps {
   run: DeploymentSummary;
@@ -67,6 +68,7 @@ export function RunActivity({
         isTree={path?.isTree === true}
         boot={bootPhase(kindOfNodes((path?.nodes ?? []).map((node) => node.node)))}
         artifact={artifact}
+        detail={run.stepDetail == null ? null : stepDetailText(run.stepDetail)}
         now={now}
       />
     );

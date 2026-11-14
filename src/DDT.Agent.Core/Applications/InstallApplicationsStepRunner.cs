@@ -113,6 +113,7 @@ public sealed class InstallApplicationsStepRunner(
             return new ApplicationOutcome(ApplicationState.Skipped, $"Skipped {application.Name}, because it depends on {dependency.Name}, which {why}.");
         }
 
+        install.Context.Detail.Report(application.Name);
         int decided = Decided(applications, progress);
         // Unpacking fills half of the application's share, as in Inject drivers. The rest comes once it is decided.
         int start = Percent(decided, applications.Count);

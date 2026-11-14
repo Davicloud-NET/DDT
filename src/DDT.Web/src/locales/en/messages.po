@@ -7,6 +7,10 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
+#: src/sequences/steps/knownFeatures.ts
+msgid ".NET Framework 3.5"
+msgstr ".NET Framework 3.5"
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.pxe.bootDirectoryHoldsStore"
 msgid "''{directory}'' holds DDT:StorePath, {store}, which would serve the database and the key ring. Use a directory of its own, such as {suggested}."
@@ -106,6 +110,11 @@ msgstr "''{value}'' is not a domain name. Enter one such as corp.example, or lea
 msgctxt "settings.deployment.controllerInvalid"
 msgid "''{value}'' is not a host name or an address. Name the domain controller alone, such as dc1.corp.example or 10.0.0.10, without a scheme or a port."
 msgstr "''{value}'' is not a host name or an address. Name the domain controller alone, such as dc1.corp.example or 10.0.0.10, without a scheme or a port."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.uiLanguage"
+msgid "''{value}'' is not a language tag such as de-DE."
+msgstr "''{value}'' is not a language tag such as de-DE."
 
 #: src/lib/serverMessages.ts
 msgctxt "settings.deployment.consoleLanguageUnknown"
@@ -256,6 +265,10 @@ msgstr "{cas, select, ca2011 {Microsoft's third-party UEFI CA 2011} ca2023 {Micr
 msgid "{category} is listed again below, whose level applies."
 msgstr "{category} is listed again below, whose level applies."
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "{commands, plural, one {# command at the first sign-in} other {# commands at the first sign-in}}"
+msgstr "{commands, plural, one {# command at the first sign-in} other {# commands at the first sign-in}}"
+
 #: src/lib/serverMessages.ts
 msgctxt "domain.checkError"
 msgid "{controller} answered the check with an error: {detail}"
@@ -377,6 +390,14 @@ msgstr "{count, plural, one {A rule gives this machine role. Take it out of the 
 msgid "{count, plural, one {Added # image from {file}.} other {Added # images from {file}.}}"
 msgstr "{count, plural, one {Added # image from {file}.} other {Added # images from {file}.}}"
 
+#: src/runs/panel/stepDetail.ts
+msgid "{count, plural, one {Downloading # update} other {Downloading # updates}}"
+msgstr "{count, plural, one {Downloading # update} other {Downloading # updates}}"
+
+#: src/runs/panel/stepDetail.ts
+msgid "{count, plural, one {Installing # update} other {Installing # updates}}"
+msgstr "{count, plural, one {Installing # update} other {Installing # updates}}"
+
 #: src/rules/RuleTestOutcome.tsx
 msgid "{count, plural, one {It has # problem and cannot run.} other {It has # problems and cannot run.}}"
 msgstr "{count, plural, one {It has # problem and cannot run.} other {It has # problems and cannot run.}}"
@@ -454,6 +475,10 @@ msgstr "{entry} was found, but the directory refused the password."
 msgctxt "settings.ldapTest.found"
 msgid "{entry} was found, in {count, plural, one {# group} other {# groups}}."
 msgstr "{entry} was found, in {count, plural, one {# group} other {# groups}}."
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "{excluded, plural, one {# left out} other {# left out}}"
+msgstr "{excluded, plural, one {# left out} other {# left out}}"
 
 #: src/lib/serverMessages.ts
 msgctxt "resolution.cannotRun"
@@ -635,6 +660,10 @@ msgstr "{kind}, {phase}, started {started}, running for {took}"
 #: src/sequences/builder/inspector/NodeSummary.tsx
 msgid "{kind}, {where}."
 msgstr "{kind}, {where}."
+
+#: src/runs/panel/CurrentStep.tsx
+msgid "{kind}: {detail}"
+msgstr "{kind}: {detail}"
 
 #: src/runs/panel/CurrentStep.tsx
 msgid "{kind}: {file}, {size}"
@@ -1577,6 +1606,11 @@ msgid "a fact of the machine"
 msgstr "a fact of the machine"
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.featureName"
+msgid "A feature name has up to {max} letters, digits, dots, dashes and underscores, as DISM lists it."
+msgstr "A feature name has up to {max} letters, digits, dots, dashes and underscores, as DISM lists it."
+
+#: src/lib/serverMessages.ts
 msgctxt "package.filesHaveNoTargets"
 msgid "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets."
 msgstr "A Files package is unpacked for the Run script steps that name it, not by the machine's model, so it has no targets."
@@ -1655,6 +1689,15 @@ msgstr "A PNG of at most 512 KB and 2048 by 2048 pixels."
 #: src/settings/networkBoot/neighbours/PortOwners.tsx
 msgid "a process that has ended"
 msgstr "a process that has ended"
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.productKeyInvalid"
+msgid "A product key is five groups of five letters or digits: XXXXX-XXXXX-XXXXX-XXXXX-XXXXX."
+msgstr "A product key is five groups of five letters or digits: XXXXX-XXXXX-XXXXX-XXXXX-XXXXX."
+
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "A ProductKey value overrides it."
+msgstr "A ProductKey value overrides it."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.repeatTimes"
@@ -1827,6 +1870,11 @@ msgid "A step can have at most {max} conditions."
 msgstr "A step can have at most {max} conditions."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.featuresTooMany"
+msgid "A step enables at most {max} features."
+msgstr "A step enables at most {max} features."
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.linuxNeedsSeed"
 msgid "A step in the installed Linux needs an earlier step that writes the cloud-init seed, without conditions and without going on when it fails. The seed takes DDT's agent into the installed Linux."
 msgstr "A step in the installed Linux needs an earlier step that writes the cloud-init seed, without conditions and without going on when it fails. The seed takes DDT's agent into the installed Linux."
@@ -1855,6 +1903,11 @@ msgstr "A step installs at most {max} applications and bundles."
 msgctxt "sequence.stepEmpty"
 msgid "A step is empty."
 msgstr "A step is empty."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.updatesTooManyKbs"
+msgid "A step leaves out at most {max} updates."
+msgstr "A step leaves out at most {max} updates."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.stepNameTooLong"
@@ -1949,6 +2002,7 @@ msgstr "Accepted"
 
 #: src/account/ProfilePanel.tsx
 #: src/accounts/list/AccountsTable.tsx
+#: src/sequences/steps/AutoLogonSetting.tsx
 #: src/settings/directory/BindAccountGroup.tsx
 #: src/users/UsersTable.tsx
 msgid "Account"
@@ -2060,7 +2114,13 @@ msgstr "Actions for {name}"
 msgid "Active"
 msgstr "Active"
 
+#: src/sequences/steps/knownFeatures.ts
+msgid "Active Directory Domain Services"
+msgstr "Active Directory Domain Services"
+
 #: src/sequences/builder/Palette.tsx
+#: src/sequences/steps/EnableFeaturesFields.tsx
+#: src/sequences/steps/FirstLogonCommandsSetting.tsx
 #: src/settings/directory/FoundGroup.tsx
 #: src/settings/networkBoot/AddInterfaceForm.tsx
 msgid "Add"
@@ -2087,6 +2147,10 @@ msgstr "Add a choice"
 msgid "Add a claim value"
 msgstr "Add a claim value"
 
+#: src/sequences/steps/FirstLogonCommandsSetting.tsx
+msgid "Add a command"
+msgstr "Add a command"
+
 #: src/conditions/builder/AddKeys.tsx
 msgid "Add a condition"
 msgstr "Add a condition"
@@ -2094,6 +2158,15 @@ msgstr "Add a condition"
 #: src/applications/ApplicationDrawer.tsx
 msgid "Add a dependency"
 msgstr "Add a dependency"
+
+#: src/sequences/steps/EnableFeaturesFields.tsx
+msgid "Add a feature"
+msgstr "Add a feature"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.featuresChoose"
+msgid "Add a feature."
+msgstr "Add a feature."
 
 #: src/conditions/builder/AddKeys.tsx
 msgid "Add a group"
@@ -2231,6 +2304,11 @@ msgstr "Add the first step"
 msgid "Add the local administrator"
 msgstr "Add the local administrator"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.autoLogonNeedsAdministrator"
+msgid "Add the local administrator to sign in as it."
+msgstr "Add the local administrator to sign in as it."
+
 #: src/sequences/builder/Palette.tsx
 msgid "Add to the flow"
 msgstr "Add to the flow"
@@ -2339,6 +2417,11 @@ msgstr "All machines"
 #: src/conditions/conditions.ts
 msgid "All of these hold"
 msgstr "All of these hold"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.updatesRestarts"
+msgid "Allow 1 to {max} restarts."
+msgstr "Allow 1 to {max} restarts."
 
 #: src/accounts/list/AccountRow.tsx
 msgid "Allowed"
@@ -2713,6 +2796,14 @@ msgstr "Approving {label} also runs {name} on it, which {ruleInside} chose."
 msgid "Architecture"
 msgstr "Architecture"
 
+#: src/sequences/steps/AutoLogonSetting.tsx
+msgid "As an account"
+msgstr "As an account"
+
+#: src/sequences/steps/AutoLogonSetting.tsx
+msgid "As the local administrator"
+msgstr "As the local administrator"
+
 #: src/settings/networkBoot/BootServerFields.tsx
 msgid "ASCII, at most 63 characters. Left empty, its address."
 msgstr "ASCII, at most 63 characters. Left empty, its address."
@@ -2792,6 +2883,10 @@ msgstr "At least one of these holds"
 #: src/machines/assign/AssignFields.tsx
 msgid "At most 15 characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first or last."
 msgstr "At most 15 characters: the letters A to Z, digits and hyphens. Not only digits, and no hyphen first or last."
+
+#: src/sequences/steps/FirstLogonCommandsSetting.tsx
+msgid "At most 20 commands"
+msgstr "At most 20 commands"
 
 #: src/sequences/builder/variables/MaxLengthSetting.tsx
 msgid "At most this many characters"
@@ -3391,6 +3486,10 @@ msgstr "Command"
 msgid "Command only"
 msgstr "Command only"
 
+#: src/sequences/steps/FirstLogonCommandsSetting.tsx
+msgid "Commands at the first sign-in"
+msgstr "Commands at the first sign-in"
+
 #: src/conditions/builder/TestRow.tsx
 msgid "Comparison of condition {number}"
 msgstr "Comparison of condition {number}"
@@ -3832,6 +3931,10 @@ msgstr "DHCP options 66 and 67 set"
 msgid "DHCP server"
 msgstr "DHCP server"
 
+#: src/sequences/steps/knownFeatures.ts
+msgid "DHCP Server"
+msgstr "DHCP Server"
+
 #: src/machines/bootEnvironment.ts
 msgid "Did not start the Linux boot environment after restarting"
 msgstr "Did not start the Linux boot environment after restarting"
@@ -3921,6 +4024,14 @@ msgstr "Disks"
 #: src/setup/SetupChecklist.tsx
 msgid "Dismiss"
 msgstr "Dismiss"
+
+#: src/sequences/steps/WriteUnattendFields.tsx
+msgid "Display language"
+msgstr "Display language"
+
+#: src/sequences/steps/knownFeatures.ts
+msgid "DNS Server"
+msgstr "DNS Server"
 
 #: src/machines/facts.ts
 msgid "DNS suffix"
@@ -4012,9 +4123,14 @@ msgstr "Driver packages"
 msgid "Driver packages matched to the model"
 msgstr "Driver packages matched to the model"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "drivers"
+msgstr "drivers"
+
 #: src/app/navigation.ts
 #: src/boot/LastBuild.tsx
 #: src/packages/PackagesPage.tsx
+#: src/sequences/steps/WindowsUpdateFields.tsx
 msgid "Drivers"
 msgstr "Drivers"
 
@@ -4147,6 +4263,10 @@ msgstr "Empty sequence"
 msgid "Enable"
 msgstr "Enable"
 
+#: src/sequences/steps.ts
+msgid "Enable roles and features"
+msgstr "Enable roles and features"
+
 #: src/settings/directory/ServerGroup.tsx
 msgid "Encryption"
 msgstr "Encryption"
@@ -4185,6 +4305,11 @@ msgctxt "mac.enterPart"
 msgid "Enter 1 to 12 hex digits of a MAC address, such as 00:15:5D."
 msgstr "Enter 1 to 12 hex digits of a MAC address, such as 00:15:5D."
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.firstLogonCommandEmpty"
+msgid "Enter a command."
+msgstr "Enter a command."
+
 #: src/machines/assign/assignText.ts
 msgid "Enter a computer name."
 msgstr "Enter a computer name."
@@ -4198,6 +4323,11 @@ msgstr "Enter a computer name."
 msgctxt "deployment.enterComputerName"
 msgid "Enter a computer name. {use}"
 msgstr "Enter a computer name. {use}"
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.updatesKb"
+msgid "Enter a KB number, such as KB5031234."
+msgstr "Enter a KB number, such as KB5031234."
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.inputLabel"
@@ -4560,6 +4690,10 @@ msgstr "Failed"
 msgid "Failed at step {number} of {count}"
 msgstr "Failed at step {number} of {count}"
 
+#: src/sequences/steps/knownFeatures.ts
+msgid "Failover Clustering"
+msgstr "Failover Clustering"
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldap.nestedGroupsOff"
 msgid "false reads no groups, so every directory user would be refused. Turn it on, or empty GroupRoleMap."
@@ -4799,6 +4933,14 @@ msgstr "From 1 to 100."
 #: src/sequences/steps/PauseFields.tsx
 msgid "From 1 to 1440 minutes."
 msgstr "From 1 to 1440 minutes."
+
+#: src/sequences/steps/WindowsUpdateFields.tsx
+msgid "From 1 to 20."
+msgstr "From 1 to 20."
+
+#: src/sequences/steps/AutoLogonSetting.tsx
+msgid "From 1 to 99."
+msgstr "From 1 to 99."
 
 #: src/sequences/steps/PartitionFields.tsx
 msgid "From 260 to 4096 MB."
@@ -5058,6 +5200,10 @@ msgstr "Holds no certificate with its private key."
 msgid "Host names separated by commas, such as fs01.corp.example."
 msgstr "Host names separated by commas, such as fs01.corp.example."
 
+#: src/sequences/steps/AutoLogonSetting.tsx
+msgid "How often"
+msgstr "How often"
+
 #: src/conditions/builder/GroupRows.tsx
 msgid "How the conditions combine"
 msgstr "How the conditions combine"
@@ -5069,6 +5215,14 @@ msgstr "HTTP boot port"
 #: src/boot/keyboardLayouts.ts
 msgid "Hungarian"
 msgstr "Hungarian"
+
+#: src/sequences/steps/knownFeatures.ts
+msgid "Hyper-V"
+msgstr "Hyper-V"
+
+#: src/sequences/steps/knownFeatures.ts
+msgid "Hyper-V on Windows Server"
+msgstr "Hyper-V on Windows Server"
 
 #: src/account/RecoveryCodesDialog.tsx
 msgid "I have saved them"
@@ -5129,6 +5283,10 @@ msgstr "In {placeholder}, {filter} needs a number of characters from 1 to {max},
 msgctxt "valueTemplate.filterTakesNoCount"
 msgid "In {placeholder}, {filter} takes no number. Remove the colon and what follows it."
 msgstr "In {placeholder}, {filter} takes no number. Remove the colon and what follows it."
+
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "In HKLM\\SOFTWARE\\Davicloud\\DDT\\Deployment, for inventory tools."
+msgstr "In HKLM\\SOFTWARE\\Davicloud\\DDT\\Deployment, for inventory tools."
 
 #: src/boot/WindowsPEDrivers.tsx
 msgid "In the image"
@@ -5296,6 +5454,10 @@ msgstr "Interfaces"
 #: src/settings/networkBoot/HostInterfaces.tsx
 msgid "Interfaces on {name}"
 msgstr "Interfaces on {name}"
+
+#: src/sequences/steps/knownFeatures.ts
+msgid "Internet Information Services"
+msgstr "Internet Information Services"
 
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "Interpreter"
@@ -5511,6 +5673,10 @@ msgstr "Join with"
 msgid "Jump to the newest"
 msgstr "Jump to the newest"
 
+#: src/sequences/steps/ExcludedKbsSetting.tsx
+msgid "KB numbers, separated by commas."
+msgstr "KB numbers, separated by commas."
+
 #: src/sequences/builder/variables/RenameField.tsx
 msgid "Keep {name}"
 msgstr "Keep {name}"
@@ -5659,9 +5825,17 @@ msgstr "LDAPS"
 msgid "LDAPS uses 636, StartTLS and unencrypted 389."
 msgstr "LDAPS uses 636, StartTLS and unencrypted 389."
 
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Leave a deployment record in Windows"
+msgstr "Leave a deployment record in Windows"
+
 #: src/accounts/drawer/PasswordActions.tsx
 msgid "Leave it unset"
 msgstr "Leave it unset"
+
+#: src/sequences/steps/ExcludedKbsSetting.tsx
+msgid "Leave out these updates"
+msgstr "Leave out these updates"
 
 #: src/uploads/LeaveUploadDialog.tsx
 msgid "Leave page"
@@ -6513,6 +6687,7 @@ msgstr "no"
 #: src/inputs/fields/YesNoField.tsx
 #: src/machines/facts.ts
 #: src/sequences/builder/variables/InputDefault.tsx
+#: src/sequences/steps/AutoLogonSetting.tsx
 msgid "No"
 msgstr "No"
 
@@ -6645,6 +6820,10 @@ msgstr "No entry under {baseDn} matches {name} with the user filter."
 msgctxt "account.noExternalSignIn"
 msgid "No external sign in is in progress."
 msgstr "No external sign in is in progress."
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "No features chosen yet"
+msgstr "No features chosen yet"
 
 #: src/settings/certificate/PfxFields.tsx
 msgid "No file chosen"
@@ -7344,6 +7523,14 @@ msgstr "Option 66, boot server"
 msgid "Option 67, boot file"
 msgstr "Option 67, boot file"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "optional updates"
+msgstr "optional updates"
+
+#: src/sequences/steps/WindowsUpdateFields.tsx
+msgid "Optional updates and previews"
+msgstr "Optional updates and previews"
+
 #: src/packages/PackageDialog.tsx
 #: src/roles/drawer/RoleFields.tsx
 #: src/rules/drawer/RuleFields.tsx
@@ -7384,6 +7571,11 @@ msgstr "Options 66 and 67 on this DHCP server"
 msgid "or"
 msgstr "or"
 
+#: src/sequences/steps/RegisteredFields.tsx
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Organization"
+msgstr "Organization"
+
 #: src/sequences/steps/JoinDomainFields.tsx
 #: src/settings/deploymentDefaults/DomainGroup.tsx
 msgid "Organizational unit"
@@ -7417,6 +7609,11 @@ msgstr "Output"
 #: src/settings/server/ServerSettings.tsx
 msgid "Overview"
 msgstr "Overview"
+
+#: src/sequences/steps/RegisteredFields.tsx
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Owner"
+msgstr "Owner"
 
 #: src/packages/PackagesTable.tsx
 msgid "Package"
@@ -7679,6 +7876,10 @@ msgstr "Processor cores"
 msgid "Product code"
 msgstr "Product code"
 
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Product key"
+msgstr "Product key"
+
 #: src/settings/signIn/ProviderGroup.tsx
 #: src/settings/signIn/ProviderResult.tsx
 msgid "Provider"
@@ -7828,6 +8029,10 @@ msgstr "Register this address at the provider."
 #: src/machines/list/RunCell.tsx
 msgid "Registered {registered}"
 msgstr "Registered {registered}"
+
+#: src/settings/deploymentDefaults/RegistrationGroup.tsx
+msgid "Registration"
+msgstr "Registration"
 
 #: src/machines/actions/MachineMenu.tsx
 msgid "Reject"
@@ -8097,6 +8302,10 @@ msgstr "Restarted after step {number}, {name}; back after {took}"
 msgid "Restarting"
 msgstr "Restarting"
 
+#: src/sequences/steps/WindowsUpdateFields.tsx
+msgid "Restarts at most"
+msgstr "Restarts at most"
+
 #: src/machines/bootEnvironment.ts
 msgid "Restarts into"
 msgstr "Restarts into"
@@ -8190,6 +8399,10 @@ msgstr "Role of a new account"
 #: src/settings/roleMap/RoleMapEntry.tsx
 msgid "Role that {key} gives"
 msgstr "Role that {key} gives"
+
+#: src/sequences/steps/EnableFeaturesFields.tsx
+msgid "Roles and features"
+msgstr "Roles and features"
 
 #: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "root"
@@ -8696,6 +8909,7 @@ msgstr "Server {number}"
 msgid "Server address"
 msgstr "Server address"
 
+#: src/sequences/steps/RegisteredFields.tsx
 #: src/sequences/steps/WriteUnattendFields.tsx
 msgid "Server default"
 msgstr "Server default"
@@ -8917,9 +9131,17 @@ msgstr "Shown at most 32 pixels high and 200 wide on a dark header. Use a white 
 msgid "Shown only once."
 msgstr "Shown only once."
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "shows some setup pages"
+msgstr "shows some setup pages"
+
 #: src/auth/SignInPage.tsx
 msgid "Sign in"
 msgstr "Sign in"
+
+#: src/sequences/steps/AutoLogonSetting.tsx
+msgid "Sign in automatically"
+msgstr "Sign in automatically"
 
 #: src/auth/SignInPage.tsx
 msgid "Sign in with {name}"
@@ -8968,6 +9190,10 @@ msgstr "Signed in to {controller} as {user} over {connection}."
 msgid "Signing in"
 msgstr "Signing in"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "signs in automatically"
+msgstr "signs in automatically"
+
 #: src/settings/signIn/SingleSignOnSettings.tsx
 msgid "Single sign-on"
 msgstr "Single sign-on"
@@ -9012,6 +9238,22 @@ msgstr "Size"
 #: src/settings/LinuxConsolePanel.tsx
 msgid "Size of its files"
 msgstr "Size of its files"
+
+#: src/sequences/steps/OobePagesSetting.tsx
+msgid "Skip the licence page"
+msgstr "Skip the licence page"
+
+#: src/sequences/steps/OobePagesSetting.tsx
+msgid "Skip the OEM registration page"
+msgstr "Skip the OEM registration page"
+
+#: src/sequences/steps/OobePagesSetting.tsx
+msgid "Skip the online account pages"
+msgstr "Skip the online account pages"
+
+#: src/sequences/steps/OobePagesSetting.tsx
+msgid "Skip the wireless page"
+msgstr "Skip the wireless page"
 
 #: src/runs/panel/railSteps.ts
 msgid "skipped"
@@ -9426,6 +9668,10 @@ msgstr "Such as console=ttyS0,115200. Only letters, digits and _ . : , = + / @ -
 msgid "Such as de-DE."
 msgstr "Such as de-DE."
 
+#: src/sequences/steps/WriteUnattendFields.tsx
+msgid "Such as de-DE. The image must have it."
+msgstr "Such as de-DE. The image must have it."
+
 #: src/sequences/steps/JoinDomainFields.tsx
 msgid "Such as OU=Workstations,DC=example,DC=com."
 msgstr "Such as OU=Workstations,DC=example,DC=com."
@@ -9487,6 +9733,10 @@ msgstr "Task sequences"
 msgid "Task sequences: {sequences}. Build them again from a template."
 msgstr "Task sequences: {sequences}. Build them again from a template."
 
+#: src/sequences/steps/knownFeatures.ts
+msgid "Telnet client"
+msgstr "Telnet client"
+
 #: src/sequences/builder/variables/RenameField.tsx
 msgid "Templates use it as {placeholder}."
 msgstr "Templates use it as {placeholder}."
@@ -9518,6 +9768,10 @@ msgstr "text"
 #: src/sequences/builder/variables/InputKindSetting.tsx
 msgid "Text"
 msgstr "Text"
+
+#: src/sequences/steps/knownFeatures.ts
+msgid "TFTP client"
+msgstr "TFTP client"
 
 #: src/settings/networkBoot/TransfersGroup.tsx
 msgid "TFTP transfers at once"
@@ -10301,6 +10555,10 @@ msgstr "The image store is full. Free space on the server's store volume, then c
 msgctxt "upload.noSpace"
 msgid "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
 msgstr "The image store needs {required} free for this upload but has {available}. Free space on the server's store volume or discard unfinished uploads, then try again."
+
+#: src/sequences/steps/WriteUnattendFields.tsx
+msgid "The image's"
+msgstr "The image's"
 
 #: src/lib/serverMessages.ts
 msgctxt "sequence.accountInputNoRunAs"
@@ -11312,6 +11570,11 @@ msgid "This deployment has no steps to show."
 msgstr "This deployment has no steps to show."
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.featureRepeated"
+msgid "This feature is listed twice."
+msgstr "This feature is listed twice."
+
+#: src/lib/serverMessages.ts
 msgctxt "upload.noXz"
 msgid "This file is compressed with xz, which is not installed on the server. Install xz there and complete the upload again, or unpack the file with xz -d and upload the disk image it holds."
 msgstr "This file is compressed with xz, which is not installed on the server. Install xz there and complete the upload again, or unpack the file with xz -d and upload the disk image it holds."
@@ -11505,6 +11768,11 @@ msgstr "This step can run only once in a run, so it cannot be inside a repeat."
 #: src/images/ImageUploadPanel.tsx
 msgid "This takes a few minutes for a large file."
 msgstr "This takes a few minutes for a large file."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.updatesKbRepeated"
+msgid "This update is listed twice."
+msgstr "This update is listed twice."
 
 #: src/lib/serverMessages.ts
 msgctxt "upload.beingChecked"
@@ -11808,6 +12076,10 @@ msgstr "Unwrap"
 msgid "Unwrap {name}"
 msgstr "Unwrap {name}"
 
+#: src/sequences/steps/WindowsUpdateFields.tsx
+msgid "Updates for other Microsoft products"
+msgstr "Updates for other Microsoft products"
+
 #: src/uploads/UploadPanel.tsx
 msgid "Upload"
 msgstr "Upload"
@@ -11916,6 +12188,11 @@ msgstr "Uploading {name}"
 msgid "Uploads are off"
 msgstr "Uploads are off"
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.autoLogonCount"
+msgid "Use a number from 1 to {max}."
+msgstr "Use a number from 1 to {max}."
+
 #: src/auth/TwoFactorFields.tsx
 msgid "Use a recovery code"
 msgstr "Use a recovery code"
@@ -11925,9 +12202,29 @@ msgid "Use an authenticator code"
 msgstr "Use an authenticator code"
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.firstLogonCommandTooLong"
+msgid "Use at most {max} characters."
+msgstr "Use at most {max} characters."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.registeredTooLong"
+msgid "Use at most {max} characters."
+msgstr "Use at most {max} characters."
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.deployment.registeredTooLong"
+msgid "Use at most {max} characters."
+msgstr "Use at most {max} characters."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.pxe.kernelArgumentsLength"
 msgid "Use at most {max} characters."
 msgstr "Use at most {max} characters."
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.firstLogonCommandsTooMany"
+msgid "Use at most {max} commands."
+msgstr "Use at most {max} commands."
 
 #: src/settings/networkBoot/neighbours/WdsState.tsx
 msgid "Use DDT in place of WDS"
@@ -12119,6 +12416,10 @@ msgstr "Viewer"
 msgid "Virtual machine"
 msgstr "Virtual machine"
 
+#: src/sequences/steps/knownFeatures.ts
+msgid "Virtual Machine Platform"
+msgstr "Virtual Machine Platform"
+
 #: src/machines/machineView.ts
 msgid "Waiting"
 msgstr "Waiting"
@@ -12274,6 +12575,10 @@ msgstr "Windows ADK install started"
 msgid "Windows ADK with the Windows PE add-on {version}"
 msgstr "Windows ADK with the Windows PE add-on {version}"
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "Windows and Microsoft products"
+msgstr "Windows and Microsoft products"
+
 #: src/settings/networkBoot/neighbours/PortOwners.tsx
 msgid "Windows Deployment Services ({process}, process {id})"
 msgstr "Windows Deployment Services ({process}, process {id})"
@@ -12289,6 +12594,10 @@ msgstr "Windows Deployment Services runs on this computer and holds UDP 69 and 4
 #: src/images/images.ts
 msgid "Windows image"
 msgstr "Windows image"
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "Windows only"
+msgstr "Windows only"
 
 #: src/machines/bootEnvironment.ts
 #: src/packages/PackageName.tsx
@@ -12315,6 +12624,10 @@ msgstr "Windows PE or Linux"
 msgid "Windows PE, before the hand-over"
 msgstr "Windows PE, before the hand-over"
 
+#: src/sequences/steps/knownFeatures.ts
+msgid "Windows Sandbox"
+msgstr "Windows Sandbox"
+
 #: src/settings/deploymentDefaults/WindowsSetupGroup.tsx
 msgid "Windows setup"
 msgstr "Windows setup"
@@ -12323,9 +12636,17 @@ msgstr "Windows setup"
 msgid "Windows stays as it is, with the steps done so far."
 msgstr "Windows stays as it is, with the steps done so far."
 
+#: src/sequences/steps/knownFeatures.ts
+msgid "Windows Subsystem for Linux"
+msgstr "Windows Subsystem for Linux"
+
 #: src/settings/networkBoot/BootFileField.tsx
 msgid "Windows UEFI CA 2023."
 msgstr "Windows UEFI CA 2023."
+
+#: src/sequences/steps.ts
+msgid "Windows Update"
+msgstr "Windows Update"
 
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "Windows, after the hand-over"

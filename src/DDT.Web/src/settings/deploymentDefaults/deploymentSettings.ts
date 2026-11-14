@@ -4,7 +4,8 @@
 
 import type { SettingsForm } from "../useSettingsForm";
 
-// The deployment section. The passwords of the local administrator and the join account are secrets.
+// The deployment section. The product key and the passwords of the local administrator and the join account are
+// secrets.
 export interface DeploymentSettings {
   timeZone: string | null;
   locale: string | null;
@@ -12,6 +13,10 @@ export interface DeploymentSettings {
   consoleLanguage: string | null;
   // The keyboard layout of the console in the Linux boot environment, by its keymap's name. Null is us.
   consoleKeyboardLayout?: string | null;
+  organization?: string | null;
+  owner?: string | null;
+  // Whether the agent leaves HKLM\SOFTWARE\Davicloud\DDT\Deployment in Windows.
+  writeRecord?: boolean;
   localAdministrator: { name: string };
   domain: {
     name: string | null;

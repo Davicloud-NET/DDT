@@ -20,11 +20,21 @@ interface CurrentStepProps {
   // The phase the run starts in, for a step the server names no phase of.
   boot: SequencePhase;
   artifact: DeploymentView["artifacts"][number] | null;
+  // What the step does now, as the agent said, such as the application it installs.
+  detail: string | null;
   now: number;
 }
 
-// The step that runs now, with its percentage in large type and the file it works on.
-export function CurrentStep({ step, count, isTree, boot, artifact, now }: CurrentStepProps) {
+// The step that runs now, with its percentage in large type and what it does or the file it works on.
+export function CurrentStep({
+  step,
+  count,
+  isTree,
+  boot,
+  artifact,
+  detail,
+  now,
+}: CurrentStepProps) {
   const reported = step.step;
   const number = step.entry.number ?? (reported?.index ?? 0) + 1;
   const phase = phaseLabel(reported?.phase ?? boot);
@@ -52,7 +62,11 @@ export function CurrentStep({ step, count, isTree, boot, artifact, now }: Curren
         </span>
         <span className="type-heading">{name}</span>
         <span className="type-small text-ink-2">
-          {file === null ? kind : t`${kind}: ${file}, ${size}`}
+          {detail !== null
+            ? t`${kind}: ${detail}`
+            : file === null
+              ? kind
+              : t`${kind}: ${file}, ${size}`}
         </span>
       </span>
       <span className="flex-1" />

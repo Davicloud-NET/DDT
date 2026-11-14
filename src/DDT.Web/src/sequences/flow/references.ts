@@ -20,7 +20,7 @@ import { bodiesOf, walk } from "./flowTree";
 // The text fields of each kind that are templates. A script's text isn't one, because scripts get the values in
 // their environment.
 export const templateFields: Partial<Record<StepKind, readonly string[]>> = {
-  writeUnattend: ["timeZone", "locale", "keyboard"],
+  writeUnattend: ["timeZone", "locale", "keyboard", "uiLanguage", "organization", "owner"],
   joinDomain: ["organizationalUnit"],
   writeCloudInitSeed: ["metaData", "userData", "networkConfig"],
   setVariable: ["value"],

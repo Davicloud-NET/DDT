@@ -33,6 +33,36 @@ public sealed class DeploymentOptionsValidationTests
     }
 
     [Fact]
+    public void AcceptsAProductKeyOrganizationAndOwner()
+    {
+        Assert.Empty(DeploymentOptionsValidation.FindProblems(new DeploymentOptions
+        {
+            ProductKey = "NPPR9-FWDCX-D2C8J-H872K-2YT43",
+            Organization = "Davicloud",
+            Owner = "IT",
+        }));
+    }
+
+    [Fact]
+    public void RefusesAProductKeyWithoutQuotingIt()
+    {
+        SettingProblem problem = Assert.Single(DeploymentOptionsValidation.FindProblems(new DeploymentOptions { ProductKey = "SECRET-12345" }));
+
+        Assert.Equal("ProductKey", problem.Field);
+        Assert.DoesNotContain("SECRET", problem.Text.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RefusesAnOrganizationAndOwnerSetupCannotTake()
+    {
+        string text = new('A', 257);
+
+        Assert.Equal(
+            ["Organization", "Owner"],
+            DeploymentOptionsValidation.FindProblems(new DeploymentOptions { Organization = text, Owner = text }).Select(problem => problem.Field));
+    }
+
+    [Fact]
     public void AcceptsACompleteDomainJoin()
     {
         Assert.Empty(DeploymentOptionsValidation.FindProblems(Domain(organizationalUnit: "OU=Workstations,DC=corp,DC=example")));

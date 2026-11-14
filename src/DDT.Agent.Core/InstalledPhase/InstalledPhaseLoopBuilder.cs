@@ -49,14 +49,14 @@ public sealed class InstalledPhaseLoopBuilder
     public InstalledPhaseLoop Build()
     {
         InstalledPhaseOptions options = new(Profile, Root, AgentVersion, DryRun);
-        InstalledPhaseConsole console = new(Session, Status, Logo);
+        InstalledPhaseConsole console = new(Session, Status, Logo, Profile.FirstLogon, Log);
         InstalledPhaseRestart restart = new(Rebooter, RestartMarker, Profile.Texts, Log, TimeProvider, DryRun);
 
         return new InstalledPhaseLoop(
             new InstalledPhaseCalls(Server, IdentityReader, console, options, Log, TimeProvider),
             Runner,
             new InstalledPhaseSetupWait(Profile, new RunHeartbeatFactory(Server, Log, TimeProvider, HeartbeatInterval), console, Log, TimeProvider),
-            new InstalledPhaseExit(Removal, restart, console, Profile, Log),
+            new InstalledPhaseExit(Removal, restart, console, Profile, new DeploymentRecordKeeper(Profile.DeploymentRecord, AgentVersion, Log, TimeProvider), Log),
             options,
             Log);
     }

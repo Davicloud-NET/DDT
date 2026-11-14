@@ -9,7 +9,12 @@ import { conditionSummary, legacyTree } from "@/conditions/conditions";
 import type { Subject } from "@/conditions/conditionSubjects";
 
 import { findingText, type Findings } from "../problems";
-import type { AccountReference, SequenceStep } from "../sequences";
+import type {
+  AccountReference,
+  SequenceStep,
+  WindowsUpdateStep,
+  WriteUnattendStep,
+} from "../sequences";
 import { EMPTY_ID, inPhase, interpreterLabel } from "../steps";
 import type { StepCatalog } from "../useStepCatalog";
 
@@ -56,6 +61,60 @@ function applicationsDetail(count: number, variable: string | null): string {
       });
 }
 
+// The answer file's own choices, or what it is for when it takes every default.
+function unattendDetail(node: WriteUnattendStep): string {
+  const parts = [node.uiLanguage, node.organization].filter(
+    (part): part is string => part !== null && part !== "",
+  );
+
+  if (!(
+    node.hideEulaPage &&
+    node.hideOemRegistration &&
+    node.hideOnlineAccounts &&
+    node.hideWirelessSetup
+  )) {
+    parts.push(t`shows some setup pages`);
+  }
+
+  if (node.autoLogon !== "None") {
+    parts.push(t`signs in automatically`);
+  }
+
+  const commands = node.firstLogonCommands.length;
+
+  if (commands > 0) {
+    parts.push(
+      plural(commands, {
+        one: "# command at the first sign-in",
+        other: "# commands at the first sign-in",
+      }),
+    );
+  }
+
+  return parts.length === 0 ? t`For Windows setup at its first start` : parts.join(", ");
+}
+
+// What a Windows Update step brings besides Windows' own updates, and how many it leaves out.
+function updatesDetail(node: WindowsUpdateStep): string {
+  const parts = [node.microsoftProducts ? t`Windows and Microsoft products` : t`Windows only`];
+
+  if (node.drivers) {
+    parts.push(t`drivers`);
+  }
+
+  if (node.optionalUpdates) {
+    parts.push(t`optional updates`);
+  }
+
+  const excluded = node.excludedKbs.length;
+
+  if (excluded > 0) {
+    parts.push(plural(excluded, { one: "# left out", other: "# left out" }));
+  }
+
+  return parts.join(", ");
+}
+
 export function nodeDetail(
   node: SequenceStep,
   {
@@ -94,7 +153,7 @@ export function nodeDetail(
     case "injectDrivers":
       return plain(t`Driver packages matched to the model`);
     case "writeUnattend":
-      return plain(t`For Windows setup at its first start`);
+      return plain(unattendDetail(node));
     case "joinDomain":
       return plain(
         node.account === null || node.account === undefined
@@ -123,6 +182,12 @@ export function nodeDetail(
       );
     case "installApplications":
       return plain(applicationsDetail(node.applications.length, node.variable));
+    case "enableFeatures":
+      return plain(
+        node.features.length === 0 ? t`No features chosen yet` : node.features.join(", "),
+      );
+    case "windowsUpdate":
+      return plain(updatesDetail(node));
     case "if":
       return plain(conditionSummary(node.test, subjects));
     case "group":

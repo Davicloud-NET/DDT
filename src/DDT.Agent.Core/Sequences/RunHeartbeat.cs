@@ -20,7 +20,7 @@ public sealed class RunHeartbeat(
     RunSession session,
     Func<CancellationToken, Task> saveRunToken,
     TimeSpan interval,
-    TimeProvider timeProvider) : IProgress<StepPercent>
+    TimeProvider timeProvider) : IProgress<StepPercent>, IProgress<StepDetail>
 {
     public static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(10);
 
@@ -35,6 +35,9 @@ public sealed class RunHeartbeat(
 
     public const int MaxReportedValueLength = 1024;
 
+    // The server keeps as much of a step's detail as of its name.
+    public const int MaxDetailLength = 128;
+
     private readonly SemaphoreSlim _sender = new(1, 1);
     private readonly RunPosition _position = new();
     private readonly RunAnswers _answers = new();
@@ -42,7 +45,8 @@ public sealed class RunHeartbeat(
     private CancellationTokenSource? _run;
     private Task? _loop;
 
-    // Raised after every change of the state, the running step's percent or the activity, on the thread that made it.
+    // Raised after every change of the state, the running step's percent or detail, or the activity, on the thread that
+    // made it.
     // It's for the console at the machine, which reads Position then.
     public event Action? Changed
     {
@@ -51,11 +55,11 @@ public sealed class RunHeartbeat(
     }
 
     // Why the heartbeat ended the run. It's an AgentTokenRejectedException, also for a step's own call, or a
-    // DeploymentStepException with the server's refusal. Null while it runs or when it was stopped.
+    // DeploymentStepException with the server's refusal. Null while it runs or when it was stopped. The console learns of it through Changed.
     public Exception? Failure { get; private set; }
 
-    // Percent is null until the running step has said how far it is.
-    public (SequenceState? State, Guid? StepId, int? Percent, RunActivity Activity) Position => _position.Current;
+    // Percent is null until the running step has said how far it is, Detail until it has said what it does.
+    public (SequenceState? State, Guid? StepId, int? Percent, string? Detail, RunActivity Activity) Position => _position.Current;
 
     public RunActivity Activity
     {
@@ -76,6 +80,13 @@ public sealed class RunHeartbeat(
     }
 
     public void Report(StepPercent value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        _position.Report(value);
+    }
+
+    public void Report(StepDetail value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
@@ -121,6 +132,7 @@ public sealed class RunHeartbeat(
 
         Failure ??= exception;
         _run?.Cancel();
+        _position.Announce();
     }
 
     // Waits for a beat that is on its way, so nothing else reaches the server after it.
@@ -243,6 +255,7 @@ public sealed class RunHeartbeat(
             if (await BeatOnceAsync(Snapshot(DeploymentState.Running), warned, cancellationToken).ConfigureAwait(false) is not { } outage)
             {
                 await run.CancelAsync().ConfigureAwait(false);
+                _position.Announce();
 
                 return;
             }

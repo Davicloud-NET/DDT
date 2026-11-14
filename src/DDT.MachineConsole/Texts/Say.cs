@@ -109,6 +109,8 @@ public static class Say
         "setVariable" => l.T("Setting a variable"),
         "pause" => l.T("Paused"),
         "installApplications" => l.T("Installing applications"),
+        "enableFeatures" => l.T("Enabling roles and features"),
+        "windowsUpdate" => l.T("Installing Windows updates"),
         _ => null,
     };
 
@@ -237,6 +239,24 @@ public static class Say
         return mac.Length == 12 && !mac.Contains(':', StringComparison.Ordinal)
             ? string.Join(':', Enumerable.Range(0, 6).Select(index => mac.Substring(index * 2, 2)))
             : mac;
+    }
+
+    // A coded step detail in the console's words. Anything else is shown as the agent wrote it.
+    public static string StepDetail(Localizer l, string detail)
+    {
+        ArgumentNullException.ThrowIfNull(l);
+
+        if (!StepDetails.TryRead(detail, out string key, out int? number) || number is not { } count)
+        {
+            return detail;
+        }
+
+        return key switch
+        {
+            StepDetails.DownloadingUpdates => count == 1 ? l.T("Downloading 1 update") : l.F("Downloading {count} updates", ("count", l.Number(count))),
+            StepDetails.InstallingUpdates => count == 1 ? l.T("Installing 1 update") : l.F("Installing {count} updates", ("count", l.Number(count))),
+            _ => detail,
+        };
     }
 
     // The time of a log line as the text console shows it: by the machine's clock, in UTC.

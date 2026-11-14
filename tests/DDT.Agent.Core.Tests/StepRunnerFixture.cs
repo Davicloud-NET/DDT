@@ -65,6 +65,8 @@ internal class StepRunnerFixture : IDisposable
 
     public RecordingProgress Progress { get; } = new();
 
+    public RecordingDetails Details { get; } = new();
+
     public AgentLog Log { get; }
 
     public RunSession Session { get; }
@@ -98,7 +100,10 @@ internal class StepRunnerFixture : IDisposable
                 Variables = values,
             },
             variables ?? new Dictionary<string, string>(),
-            Progress);
+            Progress)
+        {
+            Detail = Details,
+        };
 
     // The disk as Partition leaves it: the three volumes and the run's directory.
     public TargetVolumes Partitioned()

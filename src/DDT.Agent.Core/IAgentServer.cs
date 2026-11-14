@@ -60,6 +60,10 @@ public interface IAgentServer
     // while the step is running, and only to the agent in the installed Windows. It holds the account's password.
     Task<AgentJoinDomainCredentials> GetRunJoinCredentialsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken);
 
+    // The first-logon commands and the automatic logon, as a run in Windows ends. The server only answers while the run
+    // still runs there. It holds a password, which stays in memory.
+    Task<AgentFirstLogon> GetRunFirstLogonAsync(Guid machineId, string token, Guid runId, CancellationToken cancellationToken);
+
     // The account a step runs as and the shares it connects. The server only hands them out while the step is running,
     // and the account only to the agent in the installed Windows. It holds passwords, which stay in memory.
     Task<AgentStepAccounts> GetRunStepAccountsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken);

@@ -22,8 +22,11 @@ public sealed class MachineValues(SequenceResolver resolver)
     public const string Keyboard = "Keyboard";
     public const string OrganizationalUnit = "OrganizationalUnit";
     public const string AdministratorName = "AdministratorName";
+    public const string Organization = "Organization";
+    public const string Owner = "Owner";
 
-    public static IReadOnlyList<string> DeploymentDefaultNames { get; } = [TimeZone, Locale, Keyboard, OrganizationalUnit, AdministratorName];
+    public static IReadOnlyList<string> DeploymentDefaultNames { get; } =
+        [TimeZone, Locale, Keyboard, OrganizationalUnit, AdministratorName, Organization, Owner];
 
     public async Task<ValueResolution> ResolveAsync(
         Machine machine,
@@ -95,6 +98,8 @@ public sealed class MachineValues(SequenceResolver resolver)
             (Keyboard, deployment.Keyboard),
             (OrganizationalUnit, deployment.Domain.OrganizationalUnit),
             (AdministratorName, deployment.LocalAdministrator.Name),
+            (Organization, deployment.Organization),
+            (Owner, deployment.Owner),
         ];
 
         return [.. settings.Where(setting => !string.IsNullOrWhiteSpace(setting.Value)).Select(setting => new NamedValue(setting.Name, setting.Value!.Trim()))];

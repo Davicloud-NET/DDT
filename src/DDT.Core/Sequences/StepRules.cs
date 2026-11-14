@@ -248,6 +248,12 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goe
             case InstallApplicationsStep install:
                 ApplicationStepRules.Check(install, names, problems);
                 break;
+            case EnableFeaturesStep features:
+                FeatureStepRules.Check(features, problems);
+                break;
+            case WindowsUpdateStep updates:
+                UpdateStepRules.Check(updates, problems);
+                break;
             default:
                 problems.Add("kind", ServerMessages.SequenceUnknownStep.With());
                 break;
@@ -281,9 +287,7 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goe
             problems.Add(null, ServerMessages.SequenceOneUnattend.With());
         }
 
-        names.CheckTemplate(unattend.TimeZone, "timeZone", problems.Add);
-        names.CheckTemplate(unattend.Locale, "locale", problems.Add);
-        names.CheckTemplate(unattend.Keyboard, "keyboard", problems.Add);
+        UnattendStepRules.Check(unattend, names, problems);
     }
 
     private void CheckJoin(JoinDomainStep join, StepPlace place, StepProblems problems)

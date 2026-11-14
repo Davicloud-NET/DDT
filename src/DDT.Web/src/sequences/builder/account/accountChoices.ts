@@ -6,9 +6,10 @@ import type { AccountView } from "@/accounts/accounts";
 
 import type { AccountReference, InputDeclaration } from "../../sequences";
 
-// What an account is for: running a script as it, joining the domain with it, or connecting a share with it. Only
-// accounts and Account inputs bound to that use are offered. The server checks the rest when the step runs.
-export type AccountUse = "runAs" | "join" | "share";
+// What an account is for: running a script as it, joining the domain with it, connecting a share with it, or signing
+// in as it after the deployment. Only accounts and Account inputs bound to that use are offered. The server checks
+// the rest when the step runs.
+export type AccountUse = "runAs" | "join" | "share" | "autoLogon";
 
 export const NONE = "none";
 

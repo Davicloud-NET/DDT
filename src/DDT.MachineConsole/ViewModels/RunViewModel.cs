@@ -24,6 +24,7 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
 
     public Tag Tag => Stage switch
     {
+        ConsoleStage.Running when IsStopping => Tag.Of(T("Stopping"), TagTone.Attention),
         ConsoleStage.Running when Run?.Activity == ConsoleActivity.Paused => Tag.Of(T("Paused"), TagTone.Attention),
         ConsoleStage.Running when Run?.Activity == ConsoleActivity.WaitingForInput => Tag.Of(T("Waiting"), TagTone.Attention),
         ConsoleStage.Running => Tag.Of(Say.Stage(L, Stage), TagTone.Run),
@@ -32,6 +33,11 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
         ConsoleStage.Failed => Tag.Of(Say.Stage(L, Stage), TagTone.Fail),
         _ => Tag.Of(Say.Stage(L, Stage), TagTone.Fail),
     };
+
+    // The server ended the run, and the agent waits for the running step, which may be an installation of updates.
+    private bool IsStopping => Run?.Stopping == true;
+
+    private bool InstallsUpdates => StepDetails.TryRead(Run?.StepDetail, out string key, out _) && key == StepDetails.InstallingUpdates;
 
     // The steps on the run's path. The rail shows them and the position counts them.
     private IReadOnlyList<ConsoleStep> PathSteps => Run is { } run ? RunPath.Steps(run) : [];
@@ -46,6 +52,7 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
 
     public string Heading => Stage switch
     {
+        ConsoleStage.Running when IsStopping => T("The run was stopped"),
         ConsoleStage.Running when CurrentStep is { } step => Say.StepAction(L, step.Kind) ?? step.Name,
         ConsoleStage.Running => Run is { } run ? Say.Activity(L, run.Activity, RunPath.IsLinux(run)) : T("Running"),
         ConsoleStage.Restarting => _state?.Restart is { } restart ? Say.RestartTarget(L, restart.Into) : T("Restarting"),
@@ -57,12 +64,18 @@ public sealed class RunViewModel(Localizer localizer) : StageViewModel(localizer
     // The step's name under the heading, when the heading describes what the step's kind does.
     public string? Detail => Stage switch
     {
+        ConsoleStage.Running when IsStopping => InstallsUpdates ? T("Windows finishes installing updates first.") : null,
         ConsoleStage.Running when CurrentStep is { } step => Say.StepAction(L, step.Kind) is null ? null : step.Name,
         ConsoleStage.Restarting => _state?.Restart is { } restart ? Say.RestartReason(L, restart.Reason, Run is { } run && RunPath.IsLinux(run)) : null,
         _ => null,
     };
 
     public bool HasDetail => !string.IsNullOrEmpty(Detail);
+
+    // What the running step does now, such as the application it installs.
+    public string? StepDetail => Stage == ConsoleStage.Running && !IsStopping && CurrentStep is not null && Run?.StepDetail is { } detail ? Say.StepDetail(L, detail) : null;
+
+    public bool HasStepDetail => !string.IsNullOrEmpty(StepDetail);
 
     public string? Position
     {

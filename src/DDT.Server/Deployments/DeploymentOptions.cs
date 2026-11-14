@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
+using System.Text.Json.Serialization;
+
 namespace DDT.Server.Deployments;
 
 // What every deployed machine's answer file carries. It's the deployment section of the settings page, which
@@ -26,6 +28,18 @@ public sealed class DeploymentOptions
     // The keyboard layout of the console in the Linux boot environment, by the name of its keymap, such as de. If
     // unset, it's us. Windows PE has its layout from the boot image's build.
     public string? ConsoleKeyboardLayout { get; set; }
+
+    // RegisteredOrganization and RegisteredOwner in the answer file. Unset leaves them out.
+    public string? Organization { get; set; }
+
+    public string? Owner { get; set; }
+
+    // A secret, write-only on the page. A run value named ProductKey overrides it. Unset leaves the key out.
+    [JsonIgnore]
+    public string? ProductKey { get; set; }
+
+    // Whether the agent leaves HKLM\SOFTWARE\Davicloud\DDT\Deployment in Windows as a run ends there.
+    public bool WriteRecord { get; set; } = true;
 
     public LocalAdministratorOptions LocalAdministrator { get; set; } = new();
 

@@ -21,6 +21,15 @@ public sealed record InstalledPhaseProfile
     // Windows' Automatic Repair. Null where the system has none to turn off.
     public IAutomaticRepair? AutomaticRepair { get; init; }
 
+    // What deployed the machine, written as a run ends there. Null where the system keeps none.
+    public IDeploymentRecord? DeploymentRecord { get; init; }
+
+    // Where the first-logon settings go as a run ends there. Null where the system takes none.
+    public IFirstLogon? FirstLogon { get; init; }
+
+    // Keeps the machine awake while the run goes on. Null where nothing does.
+    public IKeepAwake? KeepAwake { get; init; }
+
     // What the run reports while it waits for that setup.
     public required RunActivity WaitActivity { get; init; }
 

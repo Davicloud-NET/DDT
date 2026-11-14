@@ -204,6 +204,37 @@ public sealed class MainViewModelTests
         Assert.Null(console.Model.Question);
     }
 
+    // What the running step does now is a line of its own, and only while the step runs.
+    [Fact]
+    public void ShowsTheRunningStepsDetailUnderItsName()
+    {
+        TestConsole console = new TestConsole().Show(Scenarios.Running with { Run = Scenarios.Running.Run! with { StepDetail = "7-Zip 24.08" } });
+        RunViewModel run = Assert.IsType<RunViewModel>(console.Model.Screen);
+
+        Assert.Equal(("Apply image", "7-Zip 24.08", true), (run.Detail, run.StepDetail, run.HasStepDetail));
+
+        console.Show(Scenarios.Restarting with { Run = Scenarios.Restarting.Run! with { StepDetail = "7-Zip 24.08" } });
+        RunViewModel restarting = Assert.IsType<RunViewModel>(console.Model.Screen);
+
+        Assert.Equal(((string?)null, false), (restarting.StepDetail, restarting.HasStepDetail));
+    }
+
+    // Stopped on the web while Windows still installs updates, which it cannot abort.
+    [Fact]
+    public void SaysTheRunWasStoppedWhileWindowsFinishesInstalling()
+    {
+        TestConsole console = new TestConsole(UiLanguage.German).Show(Scenarios.Running with
+        {
+            Run = Scenarios.Running.Run! with { StepDetail = "#installingUpdates 2", Stopping = true },
+        });
+        RunViewModel run = Assert.IsType<RunViewModel>(console.Model.Screen);
+
+        Assert.Equal(
+            ("WIRD BEENDET", "Die Ausführung wurde beendet", "Windows schließt zuerst die Installation der Updates ab.", (string?)null),
+            (run.Tag.Text, run.Heading, run.Detail, run.StepDetail));
+        Assert.StartsWith("Lassen Sie dieses Gerät eingeschaltet.", run.Note, StringComparison.Ordinal);
+    }
+
     // Continued on the web. The agent withdraws the question, and the run screen shows the run as waiting until the
     // next state says it continues.
     [Fact]

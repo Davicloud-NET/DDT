@@ -17,4 +17,7 @@ public sealed record StepContext(
     IProgress<int> Progress)
 {
     public StepCheckpoint Checkpoint { get; init; } = StepCheckpoint.Unsaved();
+
+    // A short text for the console and the web, such as the application being installed. Cleared when the step ends.
+    public IProgress<string?> Detail { get; init; } = StepDetailProgress.None;
 }

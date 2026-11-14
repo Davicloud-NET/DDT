@@ -136,7 +136,7 @@ public sealed class ToolRunner(
         int exitCode = process.ExitCode;
         log.Information(string.Create(
             CultureInfo.InvariantCulture,
-            $"{tool} ended with exit code {exitCode} after {elapsed.TotalSeconds:0.0} s."));
+            $"{tool} ended with exit code {(exitCode < 0 ? ExitCodeText(exitCode) : exitCode.ToString(CultureInfo.InvariantCulture))} after {elapsed.TotalSeconds:0.0} s."));
 
         return exitCode;
     }

@@ -50,6 +50,8 @@ internal static class RunProgress
             current.Percent = percent;
         }
 
+        run.CurrentStepDetail = current is { State: StepState.Running } ? StoredText.Bound(report.StepDetail, DeploymentLimits.MaxStepDetailLength) : null;
+
         // The steps a list counts are those of the path, which grows and shrinks as IFs decide.
         IReadOnlyList<Guid> path = RunPaths.Leaves(received.Tree, received.Steps);
         run.StepCount = path.Count;

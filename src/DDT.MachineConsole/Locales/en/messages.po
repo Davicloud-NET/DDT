@@ -251,6 +251,14 @@ msgstr "Disks"
 msgid "Done"
 msgstr "Done"
 
+#: Texts/Say.cs
+msgid "Downloading 1 update"
+msgstr "Downloading 1 update"
+
+#: Texts/Say.cs
+msgid "Downloading {count} updates"
+msgstr "Downloading {count} updates"
+
 #: ViewModels/MachineViewModel.cs
 msgid "Dry run"
 msgstr "Dry run"
@@ -258,6 +266,10 @@ msgstr "Dry run"
 #: Texts/Say.cs
 msgid "Empty"
 msgstr "Empty"
+
+#: Texts/Say.cs
+msgid "Enabling roles and features"
+msgstr "Enabling roles and features"
 
 #: ViewModels/EndRunViewModel.cs
 msgid "End the run"
@@ -356,12 +368,24 @@ msgid "Info"
 msgstr "Info"
 
 #: Texts/Say.cs
+msgid "Installing 1 update"
+msgstr "Installing 1 update"
+
+#: Texts/Say.cs
 msgid "Installing applications"
 msgstr "Installing applications"
+
+#: Texts/Say.cs
+msgid "Installing Windows updates"
+msgstr "Installing Windows updates"
 
 #: ViewModels/MachineFacts.cs
 msgid "IP address"
 msgstr "IP address"
+
+#: Texts/Say.cs
+msgid "Installing {count} updates"
+msgstr "Installing {count} updates"
 
 #: ViewModels/LicencesViewModel.cs
 msgid "It is free software: you can redistribute it and modify it under the GNU General Public License, version 3 or later, with additional terms. This view holds the texts."
@@ -490,6 +514,18 @@ msgstr "No choice matches."
 #: ViewModels/MachineViewModel.cs
 msgid "No disk DDT can install on."
 msgstr "No disk DDT can install on."
+
+#: ViewModels/RunViewModel.cs
+msgid "Stopping"
+msgstr "Stopping"
+
+#: ViewModels/RunViewModel.cs
+msgid "The run was stopped"
+msgstr "The run was stopped"
+
+#: ViewModels/RunViewModel.cs
+msgid "Windows finishes installing updates first."
+msgstr "Windows finishes installing updates first."
 
 #: Texts/Say.cs
 msgid "none of Microsoft's third-party UEFI CAs"

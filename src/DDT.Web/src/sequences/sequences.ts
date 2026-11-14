@@ -68,13 +68,28 @@ export interface InjectDriversStep extends StepBase {
   requireMatch: boolean;
 }
 
-// Null settings take the server's defaults. From version 3 they are templates.
+export type AutoLogonKind = "None" | "LocalAdministrator" | "Account";
+
+// Null settings take the server's defaults. From version 3 they are templates. uiLanguage null is the image's
+// language. The hide flags are the out-of-box pages Windows skips. The first-logon commands and the automatic logon
+// are version 7; autoLogonAccount is for Account.
 export interface WriteUnattendStep extends StepBase {
   kind: "writeUnattend";
   timeZone: string | null;
   locale: string | null;
   keyboard: string | null;
   localAdministrator: boolean;
+  uiLanguage: string | null;
+  organization: string | null;
+  owner: string | null;
+  hideEulaPage: boolean;
+  hideOemRegistration: boolean;
+  hideOnlineAccounts: boolean;
+  hideWirelessSetup: boolean;
+  firstLogonCommands: string[];
+  autoLogon: AutoLogonKind;
+  autoLogonAccount?: AccountReference | null;
+  autoLogonCount: number;
 }
 
 // Null takes the configured default. From version 3, organizationalUnit is a template. account (version 3) is the
@@ -163,6 +178,22 @@ export interface InstallApplicationsStep extends StepBase {
   variable: string | null;
 }
 
+// Version 7. Turns on Windows roles and features with DISM, by the names DISM lists, such as NetFx3.
+export interface EnableFeaturesStep extends StepBase {
+  kind: "enableFeatures";
+  features: string[];
+}
+
+// Version 7. Installs updates from Microsoft Update until none is left, restarting as they ask. Never a feature upgrade.
+export interface WindowsUpdateStep extends StepBase {
+  kind: "windowsUpdate";
+  drivers: boolean;
+  optionalUpdates: boolean;
+  microsoftProducts: boolean;
+  excludedKbs: string[];
+  restartLimit: number;
+}
+
 // The kind values are stored in sequences and run snapshots, so they never change. A step is a node of the
 // sequence's tree: a leaf, or a container whose bodies hold more nodes.
 export type SequenceStep =
@@ -180,7 +211,9 @@ export type SequenceStep =
   | RepeatStep
   | SetVariableStep
   | PauseStep
-  | InstallApplicationsStep;
+  | InstallApplicationsStep
+  | EnableFeaturesStep
+  | WindowsUpdateStep;
 
 export type StepKind = SequenceStep["kind"];
 
@@ -253,7 +286,7 @@ export interface SequenceSummary {
 
 // SequenceDefinition.CurrentVersion: the highest version this page knows, and the one it writes. The server stores
 // each sequence with the lowest version it needs.
-export const SEQUENCE_VERSION = 6;
+export const SEQUENCE_VERSION = 7;
 
 // Every problem keeps the sequence from running. Warnings don't.
 export interface SequenceProblem {

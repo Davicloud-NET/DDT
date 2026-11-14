@@ -3,6 +3,8 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Agent.Sequences;
+using DDT.Agent.WindowsFeatures;
+using DDT.Agent.WindowsUpdates;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Applications;
 using DDT.Contracts.Sequences;
@@ -59,6 +61,61 @@ public sealed class AgentStepRunnerTests
 
         Assert.Equal(StepResult.Failed(error), result);
         Assert.Empty(run.Server.Calls);
+    }
+
+    [Theory]
+    [InlineData(SequencePhase.WindowsPE, "Roles and features are enabled in Windows, after the hand-over, but this agent was asked to enable them in Windows PE.")]
+    [InlineData(SequencePhase.Linux, "Roles and features are enabled in Windows, but this agent was asked to enable them in the installed Linux.")]
+    public async Task EnablingFeaturesFailsOutsideTheInstalledWindowsWithoutRunningDism(SequencePhase phase, string error)
+    {
+        EnableFeaturesStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000ac"), Name = "Features", Features = ["NetFx3"] };
+        using WindowsStepRunnerFixture run = new([step]);
+
+        StepResult result = await run.Steps.RunAsync(step, run.Context(phase), TestContext.Current.CancellationToken);
+
+        Assert.Equal(StepResult.Failed(error), result);
+        Assert.Empty(run.ToolRunner.Calls);
+    }
+
+    // DISM's 3010 restarts the machine, and the step goes on after it.
+    [Fact]
+    public async Task EnablingAFeatureThatNeedsARestartRunsDismOnTheRunningWindows()
+    {
+        EnableFeaturesStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000ad"), Name = "Features", Features = ["NetFx3"] };
+        using WindowsStepRunnerFixture run = new([step]);
+        run.ToolRunner.AnswerExitCode = (_, _, _) => DismWindowsFeatures.RestartNeeded;
+
+        StepResult result = await run.Steps.RunAsync(step, run.Context(SequencePhase.Windows), TestContext.Current.CancellationToken);
+
+        Assert.Equal(StepResult.RestartAndContinue("NetFx3"), result);
+        Assert.Equal(
+            [RecordingToolRunner.CommandLine(InjectDriversStepRunner.DismPath, "/Online", "/Enable-Feature", "/FeatureName:NetFx3", "/All", "/NoRestart", "/Quiet")],
+            run.ToolRunner.Calls);
+        Assert.Equal(DismWindowsFeatures.Timeout, Assert.Single(run.ToolRunner.Options).Timeout);
+    }
+
+    [Theory]
+    [InlineData(SequencePhase.WindowsPE, "Windows updates install in Windows, after the hand-over, but this agent was asked to install them in Windows PE.")]
+    [InlineData(SequencePhase.Linux, "Windows updates install in Windows, but this agent was asked to install them in the installed Linux.")]
+    public async Task WindowsUpdateFailsOutsideTheInstalledWindows(SequencePhase phase, string error)
+    {
+        WindowsUpdateStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000ae"), Name = "Updates" };
+        using WindowsStepRunnerFixture run = new([step]);
+
+        StepResult result = await run.Steps.RunAsync(step, run.Context(phase), TestContext.Current.CancellationToken);
+
+        Assert.Equal(StepResult.Failed(error), result);
+    }
+
+    [Fact]
+    public async Task WindowsUpdateRunsInTheInstalledWindows()
+    {
+        WindowsUpdateStep step = new() { Id = Guid.Parse("0193a4b2-0000-7000-8000-0000000000af"), Name = "Updates" };
+        using WindowsStepRunnerFixture run = new([step]);
+
+        StepResult result = await run.Steps.RunAsync(step, run.Context(SequencePhase.Windows), TestContext.Current.CancellationToken);
+
+        Assert.Equal(StepResult.Done(), result);
     }
 
     [Fact]

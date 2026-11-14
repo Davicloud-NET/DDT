@@ -21,8 +21,10 @@ public sealed class UnattendRendererTests
             options,
             DateTimeOffset.UtcNow);
 
-        return new UnattendRenderer().Settings(inputs, step ?? s_step, imageLanguage, options.LocalAdministrator.Password);
+        return new UnattendRenderer().Settings(new UnattendSources(inputs) { ImageLanguage = imageLanguage, Password = options.LocalAdministrator.Password }, step ?? s_step);
     }
+
+    private static UnattendSources Sources(RunInputs inputs) => new(inputs) { ImageLanguage = "en-US" };
 
     [Fact]
     public void WithoutSettingsFollowsTheImageAndLetsWindowsChooseTheRest()
@@ -106,7 +108,7 @@ public sealed class UnattendRendererTests
             ["Locale"] = "fr-FR",
         };
 
-        (UnattendSettings? settings, string? problem) = new UnattendRenderer().Settings(inputs, step, "en-US", null, name => values.GetValueOrDefault(name));
+        (UnattendSettings? settings, string? problem) = new UnattendRenderer().Settings(Sources(inputs), step, name => values.GetValueOrDefault(name));
 
         Assert.Null(problem);
         Assert.Equal(
@@ -114,7 +116,7 @@ public sealed class UnattendRendererTests
             (settings!.ComputerName, settings.TimeZone, settings.Locale, settings.Keyboard));
 
         // Without values, the run's own settings stand, like for a run that started before runs had values.
-        (UnattendSettings? plain, _) = new UnattendRenderer().Settings(inputs, step with { TimeZone = null, Keyboard = null }, "en-US", null, _ => null);
+        (UnattendSettings? plain, _) = new UnattendRenderer().Settings(Sources(inputs), step with { TimeZone = null, Keyboard = null }, _ => null);
         Assert.Equal(("PC-0001", "UTC", "de-AT"), (plain!.ComputerName, plain.TimeZone, plain.Locale));
     }
 
@@ -128,7 +130,7 @@ public sealed class UnattendRendererTests
         WriteUnattendStep step = new() { Id = Guid.NewGuid(), Name = "Answer file", TimeZone = timeZone };
         Dictionary<string, string?> values = new(StringComparer.OrdinalIgnoreCase) { ["Zone"] = "Mars Standard Time", ["ComputerName"] = computerName };
 
-        (string? answerFile, string? problem) = new UnattendRenderer().Render(inputs, step, "en-US", null, name => values.GetValueOrDefault(name));
+        (string? answerFile, string? problem) = new UnattendRenderer().Render(Sources(inputs), step, name => values.GetValueOrDefault(name));
 
         Assert.Null(answerFile);
         Assert.StartsWith(expected, problem, StringComparison.Ordinal);

@@ -70,6 +70,11 @@ internal sealed class RunEnding(
             Leftovers.Delete(directory, log);
         }
 
+        if (run.InInstalledSystem && run.Request.BeforeDone is { } beforeDone)
+        {
+            await beforeDone(cancellationToken).ConfigureAwait(false);
+        }
+
         if (await SendDoneAsync(run, done, cancellationToken).ConfigureAwait(false) is { } instead)
         {
             return instead;

@@ -9,9 +9,9 @@ using DDT.Core.Sequences;
 
 namespace DDT.Agent.Sequences;
 
-// Where a run stands, which the heartbeat reports and the console shows: its state, the running step and its percent,
-// what the run is doing, and a pause's message. A change of state or activity completes NextChange, which a beat waits
-// for. A new percent waits for the next beat.
+// Where a run stands, which the heartbeat reports and the console shows: its state, the running step with its percent
+// and detail, what the run is doing, and a pause's message. A change of state or activity completes NextChange, which a
+// beat waits for. A new percent or detail waits for the next beat.
 internal sealed class RunPosition
 {
     private readonly Lock _lock = new();
@@ -22,6 +22,7 @@ internal sealed class RunPosition
     private Guid? _stepId;
     private int _percent;
     private bool _percentKnown;
+    private string? _detail;
     private RunActivity _activity = RunActivity.Preparing;
     private string? _pauseMessage;
     private IReadOnlyDictionary<string, string>? _reportedVariables;
@@ -29,13 +30,13 @@ internal sealed class RunPosition
     // After every change, on the thread that made it.
     public event Action? Changed;
 
-    public (SequenceState? State, Guid? StepId, int? Percent, RunActivity Activity) Current
+    public (SequenceState? State, Guid? StepId, int? Percent, string? Detail, RunActivity Activity) Current
     {
         get
         {
             lock (_lock)
             {
-                return (_state, _stepId, _percentKnown ? _percent : null, _activity);
+                return (_state, _stepId, _percentKnown ? _percent : null, _detail, _activity);
             }
         }
     }
@@ -97,6 +98,7 @@ internal sealed class RunPosition
                 _stepId = running;
                 _percent = 0;
                 _percentKnown = false;
+                _detail = null;
             }
 
             _state = state;
@@ -131,6 +133,27 @@ internal sealed class RunPosition
         }
     }
 
+    public void Report(StepDetail value)
+    {
+        bool changed = false;
+
+        lock (_lock)
+        {
+            string? detail = string.IsNullOrWhiteSpace(value.Text) ? null : Cut(value.Text.Trim());
+
+            if (value.StepId == _stepId && !string.Equals(detail, _detail, StringComparison.Ordinal))
+            {
+                _detail = detail;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            Changed?.Invoke();
+        }
+    }
+
     public void Pause(string message)
     {
         lock (_lock)
@@ -150,6 +173,9 @@ internal sealed class RunPosition
             _pauseMessage = null;
         }
     }
+
+    // For what else the console shows, such as the server ending the run.
+    public void Announce() => Changed?.Invoke();
 
     // Called before a beat takes its snapshot, so a change in between causes one more beat rather than none.
     public void RenewChange()
@@ -179,6 +205,7 @@ internal sealed class RunPosition
             {
                 Variables = Same(variables, _reportedVariables ?? new Dictionary<string, string>()) ? null : variables,
                 PauseMessage = _activity == RunActivity.Paused ? _pauseMessage : null,
+                StepDetail = _stepId is null ? null : _detail,
             };
         }
     }
@@ -208,6 +235,8 @@ internal sealed class RunPosition
 
         return variables;
     }
+
+    private static string Cut(string text) => text.Length > RunHeartbeat.MaxDetailLength ? text[..RunHeartbeat.MaxDetailLength] : text;
 
     private static bool Same(IReadOnlyDictionary<string, string> first, IReadOnlyDictionary<string, string> second) =>
         first.Count == second.Count

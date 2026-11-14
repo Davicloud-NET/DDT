@@ -26,6 +26,9 @@ public sealed class InstalledPhaseLoop
     private readonly AgentLog _log;
     private InstalledPhaseContact? _contact;
 
+    // The run this service went on with, for the record of a stop. A start after a restart knows none.
+    private AgentRun? _continued;
+
     // Internal, like its parts. InstalledPhaseLoopBuilder puts it together.
     internal InstalledPhaseLoop(
         InstalledPhaseCalls calls,
@@ -143,6 +146,8 @@ public sealed class InstalledPhaseLoop
 
         if (local is null || local.State.RunId != runId)
         {
+            _exit.RunEnded(run, next.Unsent?.State ?? DeploymentState.Failed);
+
             return await ReportLostStateAsync(contact, runId, next.Unsent, cancellationToken).ConfigureAwait(false);
         }
 
@@ -150,26 +155,50 @@ public sealed class InstalledPhaseLoop
 
         if (await FinalReportAsync(local, cancellationToken).ConfigureAwait(false) is { } final)
         {
-            return await SendFinalReportAsync(contact, runId, local, final, cancellationToken).ConfigureAwait(false);
+            _exit.RunEnded(run, final.State);
+
+            return await SendFinalReportAsync(contact, run, local, final, cancellationToken).ConfigureAwait(false);
         }
+
+        _continued = run;
+
+        if (await GoOnAwakeAsync(contact, run, local, cancellationToken).ConfigureAwait(false) is not { } result)
+        {
+            return null;
+        }
+
+        next.RunToken = contact.Tokens.RunToken ?? next.RunToken;
+        next.Unsent = result.UnsentReport;
+
+        if (result.Outcome is RunOutcome.Finished or RunOutcome.Failed)
+        {
+            _exit.RunEnded(run, result.Outcome == RunOutcome.Finished ? DeploymentState.Done : DeploymentState.Failed);
+        }
+
+        return await ExitCodeForAsync(result, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Null when the next registration decides. The machine stays awake until the runner returns.
+    private async Task<RunResult?> GoOnAwakeAsync(InstalledPhaseContact contact, AgentRun run, LocalRun local, CancellationToken cancellationToken)
+    {
+        using IDisposable? awake = _profile.KeepAwake?.Hold();
 
         if (!await _setup.WaitAsync(contact, run, local, cancellationToken).ConfigureAwait(false))
         {
             return null;
         }
 
-        RunResult result = await _runner
-            .GoOnInInstalledSystemAsync(
-                new RunRequest(contact.MachineId, run, local, null, contact.Tokens, contact.Identity),
-                _profile.Phase,
-                _exit.RecordRestart,
-                cancellationToken)
+        return await _runner
+            .GoOnInInstalledSystemAsync(Request(contact, run, local), _profile.Phase, _exit.RecordRestart, cancellationToken)
             .ConfigureAwait(false);
-        next.RunToken = contact.Tokens.RunToken ?? next.RunToken;
-        next.Unsent = result.UnsentReport;
-
-        return await ExitCodeForAsync(result, cancellationToken).ConfigureAwait(false);
     }
+
+    // The first-logon settings are fetched before the Done report, while the server still has the run running.
+    private RunRequest Request(InstalledPhaseContact contact, AgentRun run, LocalRun local) =>
+        new(contact.MachineId, run, local, null, contact.Tokens, contact.Identity)
+        {
+            BeforeDone = call => _calls.FetchFirstLogonAsync(contact, run, call),
+        };
 
     // All the server can still learn about the run is why it ended here. Returns null when the report didn't get
     // through.
@@ -194,12 +223,17 @@ public sealed class InstalledPhaseLoop
     // through.
     private async Task<int?> SendFinalReportAsync(
         InstalledPhaseContact contact,
-        Guid runId,
+        AgentRun run,
         LocalRun local,
         AgentRunReport final,
         CancellationToken cancellationToken)
     {
-        if (!await _calls.ReportAsync(contact, runId, final, cancellationToken).ConfigureAwait(false))
+        if (final.State == DeploymentState.Done)
+        {
+            await _calls.FetchFirstLogonAsync(contact, run, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!await _calls.ReportAsync(contact, run.Id, final, cancellationToken).ConfigureAwait(false))
         {
             return null;
         }
@@ -237,6 +271,11 @@ public sealed class InstalledPhaseLoop
     private async Task<int> RunIsOverAsync(Guid runId, CancellationToken cancellationToken)
     {
         _log.Information($"The server no longer runs run {runId} on this machine.");
+
+        if (_continued is { } continued && continued.Id == runId)
+        {
+            _exit.RunStopped(continued);
+        }
 
         if (await LocalRun.LoadAsync(_options.Root, _log, cancellationToken).ConfigureAwait(false) is { } local)
         {

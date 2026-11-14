@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using DDT.MachineConsole.Agent;
+using DDT.MachineConsole.Machine;
 using DDT.MachineConsole.Texts;
 using DDT.MachineConsole.ViewModels;
 using DDT.MachineConsole.Views;
@@ -129,7 +130,21 @@ public sealed class ConsoleStartup
 
         _ = Task.Run(() => link.ServeAsync(model, stop.Token));
         lifetime.Exit += (_, _) => stop.Cancel();
+        KeepDisplayOn(host, model, lifetime);
 
         return model;
+    }
+
+    // Only in DDT's session, where the run goes on in the installed Windows. WinPE is left as it is.
+    private static void KeepDisplayOn(ConsoleHost host, MainViewModel model, IControlledApplicationLifetime lifetime)
+    {
+        if (host.Display is not { } display)
+        {
+            return;
+        }
+
+        RunDisplay screen = new(display);
+        model.PropertyChanged += (_, _) => screen.Follow(model.State, model.End.IsEnded);
+        lifetime.Exit += (_, _) => screen.Dispose();
     }
 }

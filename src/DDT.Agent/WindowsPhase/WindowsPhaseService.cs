@@ -79,7 +79,7 @@ public static class WindowsPhaseService
                 (sid, pipeName) => console.Start(() => SessionPipe.Create(pipeName, sid)));
 
             SequenceRunner runner = Runner(parts, staged, status, new WindowsDeployAccount(session, accounts, log));
-            InstalledPhaseLoop loop = Loop(parts, runner, session, status);
+            InstalledPhaseLoop loop = Loop(parts, runner, session, status, new WindowsFirstLogon(Registry.LocalMachine, accounts, FirstLogonScript.Folder, FirstLogonFolder.Create));
 
             // The control manager only needs to know whether the service failed.
             return await loop.RunAsync(cancellationToken).ConfigureAwait(false) switch
@@ -131,13 +131,18 @@ public static class WindowsPhaseService
         }.Build();
     }
 
-    private static InstalledPhaseLoop Loop(ServiceParts parts, SequenceRunner runner, DeploySession session, ConsoleStatus status) =>
+    private static InstalledPhaseLoop Loop(ServiceParts parts, SequenceRunner runner, DeploySession session, ConsoleStatus status, IFirstLogon firstLogon) =>
         new InstalledPhaseLoopBuilder
         {
             Server = parts.Server,
             IdentityReader = new HardwareMachineIdentityReader(new FirmwareTables(), new SystemHardware(), new UefiVariables(), new WindowsSecureBoot()),
             Runner = runner,
-            Profile = WindowsPhaseProfile.With(new RegistrySetupProbe(), new AutomaticRepair(parts.WindowsRoot, parts.Tools, parts.Log)),
+            Profile = WindowsPhaseProfile.With(
+                new RegistrySetupProbe(),
+                new AutomaticRepair(parts.WindowsRoot, parts.Tools, parts.Log),
+                new RegistryDeploymentRecord(parts.Log),
+                firstLogon,
+                new PowerRequestKeepAwake(parts.Log)),
             Rebooter = parts.Rebooter,
             RestartMarker = new VolatileRestartMarker(parts.Log),
             Removal = new AgentRemoval(parts.WindowsRoot, parts.Tools, new MoveFileRestartDeleter(parts.Log), parts.Log),

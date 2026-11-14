@@ -15,4 +15,9 @@ public sealed record RunRequest(
     LocalRun? Resumed,
     LocalDisk? ConfirmedDisk,
     DeploymentTokens Tokens,
-    MachineIdentity Identity);
+    MachineIdentity Identity)
+{
+    // In the installed system: runs once the run is done there and its last report is on disk, before the server has
+    // it.
+    public Func<CancellationToken, Task>? BeforeDone { get; init; }
+}

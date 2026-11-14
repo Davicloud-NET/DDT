@@ -4,6 +4,7 @@
 
 import type { SequenceStep } from "../sequences";
 import { ApplyImageFields } from "./ApplyImageFields";
+import { EnableFeaturesFields } from "./EnableFeaturesFields";
 import { InjectDriversFields } from "./InjectDriversFields";
 import { InstallApplicationsFields } from "./InstallApplicationsFields";
 import { JoinDomainFields } from "./JoinDomainFields";
@@ -13,6 +14,7 @@ import { PauseFields } from "./PauseFields";
 import { RebootFields } from "./RebootFields";
 import { RunScriptFields } from "./RunScriptFields";
 import { SetVariableFields } from "./SetVariableFields";
+import { WindowsUpdateFields } from "./WindowsUpdateFields";
 import { WriteCloudInitSeedFields } from "./WriteCloudInitSeedFields";
 import { WriteRawImageFields } from "./WriteRawImageFields";
 import { WriteUnattendFields } from "./WriteUnattendFields";
@@ -44,6 +46,10 @@ export function StepFields({ step, ...rest }: KindFieldsProps<SequenceStep>) {
       return <PauseFields step={step} {...rest} />;
     case "installApplications":
       return <InstallApplicationsFields step={step} {...rest} />;
+    case "enableFeatures":
+      return <EnableFeaturesFields step={step} {...rest} />;
+    case "windowsUpdate":
+      return <WindowsUpdateFields step={step} {...rest} />;
     // The inspector shows a container's own fields.
     case "group":
     case "if":

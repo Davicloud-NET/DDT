@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "steps": [
     {
       "kind": "partition",
@@ -57,6 +57,16 @@
       "locale": null,
       "keyboard": null,
       "localAdministrator": false,
+      "uiLanguage": null,
+      "organization": null,
+      "owner": null,
+      "hideEulaPage": true,
+      "hideOemRegistration": true,
+      "hideOnlineAccounts": true,
+      "hideWirelessSetup": true,
+      "firstLogonCommands": [],
+      "autoLogon": "None",
+      "autoLogonCount": 1,
       "id": "00000000-0000-4000-8000-000000000004",
       "name": "Answer file",
       "conditions": [],
@@ -296,6 +306,33 @@
           "variable": "Extras",
           "id": "00000000-0000-4000-8000-000000000013",
           "name": "Install applications",
+          "conditions": [],
+          "continueOnError": false,
+          "rebootAfter": false
+        },
+        {
+          "kind": "enableFeatures",
+          "features": [
+            "NetFx3",
+            "TelnetClient"
+          ],
+          "id": "00000000-0000-4000-8000-000000000014",
+          "name": "Enable roles and features",
+          "conditions": [],
+          "continueOnError": false,
+          "rebootAfter": false
+        },
+        {
+          "kind": "windowsUpdate",
+          "drivers": true,
+          "optionalUpdates": false,
+          "microsoftProducts": true,
+          "excludedKbs": [
+            "KB5031234"
+          ],
+          "restartLimit": 6,
+          "id": "00000000-0000-4000-8000-000000000015",
+          "name": "Windows Update",
           "conditions": [],
           "continueOnError": false,
           "rebootAfter": false

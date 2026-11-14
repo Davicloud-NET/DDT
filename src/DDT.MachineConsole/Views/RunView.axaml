@@ -29,6 +29,8 @@
           <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Bottom">
             <TextBlock Name="Heading" Classes="headline" MaxLines="2" TextTrimming="WordEllipsis" Text="{Binding Heading}" />
             <TextBlock Classes="lead ink2" Text="{Binding Detail}" IsVisible="{Binding HasDetail}" />
+            <TextBlock Name="StepDetail" Classes="lead" Text="{Binding StepDetail}" IsVisible="{Binding HasStepDetail}"
+                       TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
             <TextBlock Classes="lead muted" Text="{Binding Position}" IsVisible="{Binding HasPosition}" />
           </StackPanel>
         </Grid>

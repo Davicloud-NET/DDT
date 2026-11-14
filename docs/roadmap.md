@@ -186,8 +186,6 @@ Three parts, each a pull request that works by itself. The first two are built.
      - A stop ends a download at once. An installation cannot be stopped mid-way: the run stops
        when it ends, and until then the console says the run was stopped and Windows finishes
        installing first.
-     - The COM calls were tried in a spike: as a user on the development PC, and as SYSTEM on a
-       Hyper-V virtual machine with Windows 11 25H2. The step itself was not.
    - An Enable roles and features step, in the installed Windows. [Install Roles and Features]
      - Feature names as DISM lists them (`NetFx3`, `Microsoft-Hyper-V-All`). The web offers common
        client and server names and takes any other.
@@ -208,6 +206,8 @@ Three parts, each a pull request that works by itself. The first two are built.
        `;`), `Gateway` and `DnsServers` (`;`). For the adapter the machine registered with. Without
        `IPAddress`, DHCP.
      - A product key or an address Windows setup would refuse keeps the run from starting.
+     - Windows Server: with the local administrator ticked, the built-in Administrator gets the
+       same password, so Windows setup does not stop to ask for one.
    - First-logon commands and automatic logon, on the Write the answer file step.
      - Up to 20 commands of 1,000 characters, run in order at the first sign-in of an
        administrator. A failing command does not stop the next.
@@ -227,7 +227,10 @@ Three parts, each a pull request that works by itself. The first two are built.
      - Leave a deployment record in Windows, on Deployment defaults: on by default.
    - A detail line under the running step, on the console at the machine and on the run's page:
      the application being installed, the feature being enabled, "Downloading 5 updates".
-   - Tried in unit tests and end-to-end dry runs only; not on a virtual or physical machine yet.
+   - While a run goes on in the installed Windows, the machine does not go to sleep and the
+     console keeps the display on.
+   - Tried on a Hyper-V virtual machine with Windows 11 25H2 and Windows Server 2025. Not on a
+     physical PC, and automatic logon not with a domain account.
 3. **Servicing and security.**
    - **Offline servicing** in Windows PE: updates, language packs and features on demand added to
      the applied image. [Packages, Install Updates Offline, Install Language Packs]

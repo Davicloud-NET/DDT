@@ -21,4 +21,9 @@ public static class PackageLimits
     public const int MaxEntryNameLength = 240;
 
     public const int MaxDepth = 32;
+
+    // A Windows package's languages and KB numbers as stored: comma separated, as many as fit.
+    public const int MaxLanguagesLength = 1024;
+
+    public const int MaxKbNumbersLength = 256;
 }

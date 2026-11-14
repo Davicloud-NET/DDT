@@ -8,4 +8,10 @@ namespace DDT.Server.Packages;
 
 // Refusal is the sentence that says why the zip can't be a package. RefusalMessage carries the same reason with its
 // message code. The counts are zero then.
-public sealed record PackageInspection(int FileCount, long ExpandedBytes, string? Refusal, ServerMessage? RefusalMessage = null);
+// FileNames are the paths of the zip's files.
+public sealed record PackageInspection(
+    int FileCount,
+    long ExpandedBytes,
+    string? Refusal,
+    ServerMessage? RefusalMessage = null,
+    IReadOnlyList<string>? FileNames = null);

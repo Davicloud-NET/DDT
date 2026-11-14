@@ -7,6 +7,13 @@ using DDT.Contracts.Machines;
 
 namespace DDT.Server.Import;
 
-// One thing an import adds: an image file, or the folders of a driver group that become one driver package. Target is
-// the model the package is for, where the group's name gave one.
-public sealed record ImportItem(UploadKind Kind, string Name, string? File, IReadOnlyList<string> Folders, HardwareModel? Target = null, string? Description = null);
+// One thing an import adds: an image file, the folders of a driver group that become one driver package, or the files of
+// an ISO that become one package. Target is the model the package is for, where the group's name gave one.
+public sealed record ImportItem(
+    UploadKind Kind,
+    string Name,
+    string? File,
+    IReadOnlyList<string> Folders,
+    HardwareModel? Target = null,
+    string? Description = null,
+    IReadOnlyList<string>? IsoFiles = null);

@@ -9,8 +9,10 @@ using DDT.Contracts.Messages;
 using DDT.Server.Applications;
 using DDT.Server.Authentication;
 using DDT.Server.Data;
+using DDT.Server.Images;
 using DDT.Server.Import;
 using DDT.Server.Machines;
+using DDT.Server.WindowsPackages;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -18,7 +20,8 @@ using Microsoft.AspNetCore.Routing;
 
 namespace DDT.Server.Endpoints;
 
-// Imports from the server's own disks: a WIM, ESD or ISO, and an MDT deployment share's images, drivers and applications.
+// Imports from the server's own disks: a WIM, ESD or ISO, an MDT deployment share's images, drivers and applications, and
+// the languages of the Languages and Optional Features ISO.
 // A browser upload of five gigabytes is the slowest part of a first deployment, and an MDT shop has the files there already.
 public static class ImageImportEndpoints
 {
@@ -30,6 +33,8 @@ public static class ImageImportEndpoints
         group.MapPost("/", ImportFilesAsync).RequireAuthorization(DdtPolicies.Administrator);
         group.MapPost("/mdt/inspect", InspectShareAsync).RequireAuthorization(DdtPolicies.Administrator);
         group.MapPost("/mdt", ImportShareAsync).RequireAuthorization(DdtPolicies.Administrator);
+        group.MapPost("/languages/inspect", InspectLanguagesAsync).RequireAuthorization(DdtPolicies.Administrator);
+        group.MapPost("/languages", ImportLanguagesAsync).RequireAuthorization(DdtPolicies.Administrator);
 
         return group;
     }
@@ -119,6 +124,74 @@ public static class ImageImportEndpoints
         return await StartAsync(new ImportStart(items, choice, detail), services, context, cancellationToken).ConfigureAwait(false);
     }
 
+    private static async Task<Results<Ok<LanguageIsoView>, ProblemHttpResult>> InspectLanguagesAsync(
+        InspectLanguageIsoRequest request,
+        ImportFolders folders,
+        CancellationToken cancellationToken)
+    {
+        LanguageIsoRead read = await ReadLanguageIsoAsync(request.Path, folders, cancellationToken).ConfigureAwait(false);
+
+        return read.Problem is { } problem
+            ? problem
+            : TypedResults.Ok(new LanguageIsoView(read.Iso, LanguageIsos.Languages(read.Names), LanguageIsos.Suffix(read.Iso)));
+    }
+
+    // One Windows package per language the ISO has. Languages it does not have are left out.
+    private static async Task<Results<Accepted, ProblemHttpResult>> ImportLanguagesAsync(
+        ImportLanguagesRequest request,
+        [AsParameters] ImageImportServices services,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        LanguageIsoRead read = await ReadLanguageIsoAsync(request.Path, services.Folders, cancellationToken).ConfigureAwait(false);
+        string suffix = request.Suffix?.Trim() ?? "";
+
+        if (read.Problem is { } problem)
+        {
+            return problem;
+        }
+
+        if (suffix.Length > LanguageIsos.MaxSuffixLength || suffix.Any(char.IsControl))
+        {
+            return ServerProblems.Problem(ServerMessages.ImportSuffix.With("max", LanguageIsos.MaxSuffixLength), StatusCodes.Status400BadRequest);
+        }
+
+        List<ImportItem> items =
+        [
+            .. LanguageIsos.Languages(read.Names)
+                .Where(language => (request.Languages ?? []).Contains(language, StringComparer.OrdinalIgnoreCase))
+                .Select(language => new ImportItem(
+                    UploadKind.WindowsPackage,
+                    suffix.Length == 0 ? $"{language} language pack" : $"{language} language pack {suffix}",
+                    read.Iso,
+                    [],
+                    Description: $"From {Path.GetFileName(read.Iso)}.",
+                    IsoFiles: LanguageIsos.FilesOf(read.Names, language))),
+        ];
+        ImportStart start = new(items, null, $"{items.Count} languages of {read.Iso}.");
+
+        return await StartAsync(start, services, context, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<LanguageIsoRead> ReadLanguageIsoAsync(string? path, ImportFolders folders, CancellationToken cancellationToken)
+    {
+        if (folders.Allowed(path) is not { } iso || !File.Exists(iso) || !await IsoImages.IsIsoAsync(iso, cancellationToken).ConfigureAwait(false))
+        {
+            return LanguageIsoRead.Refused(ServerMessages.ImportNotAnIso.With("path", path ?? string.Empty), StatusCodes.Status400BadRequest);
+        }
+
+        try
+        {
+            return await LanguageIsos.ListAsync(iso, cancellationToken).ConfigureAwait(false) is { } names
+                ? new LanguageIsoRead(iso, names, null)
+                : LanguageIsoRead.Refused(ServerMessages.IsoNoLanguages.With(), StatusCodes.Status422UnprocessableEntity);
+        }
+        catch (Exception exception) when (exception is IOException or InvalidDataException)
+        {
+            return LanguageIsoRead.Refused(ServerMessages.ImportUnreadable.With("reason", exception.Message), StatusCodes.Status422UnprocessableEntity);
+        }
+    }
+
     private static async Task<Results<Accepted, ProblemHttpResult>> StartAsync(
         ImportStart start,
         ImageImportServices services,
@@ -156,4 +229,10 @@ public static class ImageImportEndpoints
     }
 
     private sealed record ImportStart(List<ImportItem> Items, MdtApplicationChoice? Choice, string Detail);
+
+    // The ISO's full path and the names of its cabinets, or the problem that says why there are none.
+    private sealed record LanguageIsoRead(string Iso, IReadOnlyList<string> Names, ProblemHttpResult? Problem)
+    {
+        public static LanguageIsoRead Refused(ServerMessage message, int statusCode) => new("", [], ServerProblems.Problem(message, statusCode));
+    }
 }

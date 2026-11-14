@@ -467,6 +467,16 @@ msgid "{entry} has no {attribute}, so a sign-in is refused."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "package.windowsFile"
+msgid "{entry} is no .msu or .cab file. A Windows package holds nothing else."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "package.windowsFolder"
+msgid "{entry} lies in a folder. Put the .msu and .cab files at the top of the zip."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.passwordRefused"
 msgid "{entry} was found, but the directory refused the password."
 msgstr ""
@@ -1058,6 +1068,11 @@ msgstr ""
 
 #: src/runs/flow/nodeDetail.ts
 msgid "{passes} passes, the last took {took}"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "import.notAnIso"
+msgid "{path} is no ISO in one of this server's import folders."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -10300,6 +10315,11 @@ msgid "The drivers flagged for Windows PE have changed since it was built."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "import.suffix"
+msgid "The end of the names has at most {max} characters and no control characters."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "audit.rangeEnd"
 msgid "The end of the range must come after its start."
 msgstr ""
@@ -11424,6 +11444,11 @@ msgctxt "package.tooManyEntries"
 msgid "The zip holds {count} entries. A package can hold at most {max}."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "package.windowsEmpty"
+msgid "The zip holds no .msu or .cab file."
+msgstr ""
+
 #: src/sequences/SequenceConflict.tsx
 msgid "Their changes to {list} are lost."
 msgstr ""
@@ -11620,6 +11645,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "upload.noQemuImg"
 msgid "This is a qcow2 image, and qemu-img is not installed on the server. Install qemu-img there and complete the upload again, or convert the file with qemu-img convert -O raw <file> disk.raw and upload disk.raw."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "iso.noLanguages"
+msgid "This ISO has no LanguagesAndOptionalFeatures folder, so it is not the Languages and Optional Features ISO."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -12098,6 +12128,11 @@ msgstr ""
 
 #: src/settings/ConsolePanel.tsx
 msgid "Upload {name} as the console?"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.windowsPackageFile"
+msgid "Upload a .msu or .cab file, a zip of them, or the Languages and Optional Features ISO."
 msgstr ""
 
 #: src/settings/certificate/UploadDialog.tsx

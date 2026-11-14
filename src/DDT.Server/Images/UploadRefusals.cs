@@ -9,24 +9,42 @@ using Microsoft.Extensions.Logging;
 
 namespace DDT.Server.Images;
 
-// A refused upload loses its session, so the reason is kept here for a retry that can't find the session any more. It
-// logs under ImageUploadCompleter's category, because the logging settings may name that category.
+// A refused upload loses its session, so the reason is kept here for a retry that can't find the session any more. The
+// same goes for an upload that ends without a library entry. It logs under ImageUploadCompleter's category, because the
+// logging settings may name that category.
 public sealed partial class UploadRefusals(ImageStore store, TimeProvider timeProvider, ILogger<ImageUploadCompleter> logger)
 {
-    private readonly ConcurrentDictionary<Guid, (ServerMessage Reason, DateTimeOffset RefusedUtc)> _refusals = new();
+    private readonly ConcurrentDictionary<Guid, (UploadCompletion Completion, DateTimeOffset EndedUtc)> _ended = new();
 
     public UploadCompletion Missing(Guid uploadId) =>
-        _refusals.TryGetValue(uploadId, out (ServerMessage Reason, DateTimeOffset RefusedUtc) refusal)
-            ? new UploadCompletion(UploadCompletionStatus.Refused, [], Refusal: refusal.Reason)
+        _ended.TryGetValue(uploadId, out (UploadCompletion Completion, DateTimeOffset EndedUtc) ended)
+            ? ended.Completion
             : new UploadCompletion(UploadCompletionStatus.NotFound, []);
 
     public async Task<UploadCompletion> RefuseAsync(DdtDbContext database, ImageUpload upload, ServerMessage refusal, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(database);
         ArgumentNullException.ThrowIfNull(upload);
         ArgumentNullException.ThrowIfNull(refusal);
 
-        Remember(upload.Id, refusal);
+        UploadCompletion refused = await EndAsync(
+            database,
+            upload,
+            new UploadCompletion(UploadCompletionStatus.Refused, [], Refusal: refusal),
+            cancellationToken).ConfigureAwait(false);
+
+        LogUploadRefused(upload.Id, upload.FileName, refusal.Text);
+
+        return refused;
+    }
+
+    // Removes the session and what is left of its files, and keeps the completion for a retry.
+    public async Task<UploadCompletion> EndAsync(DdtDbContext database, ImageUpload upload, UploadCompletion completion, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(database);
+        ArgumentNullException.ThrowIfNull(upload);
+        ArgumentNullException.ThrowIfNull(completion);
+
+        Remember(upload.Id, completion);
         database.ImageUploads.Remove(upload);
         await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
@@ -35,26 +53,24 @@ public sealed partial class UploadRefusals(ImageStore store, TimeProvider timePr
             File.Delete(file);
         }
 
-        LogUploadRefused(upload.Id, upload.FileName, refusal.Text);
-
-        return new UploadCompletion(UploadCompletionStatus.Refused, [], Refusal: refusal);
+        return completion;
     }
 
-    // Record the reason before the session is removed, so a retry that can't find the session finds the reason instead.
+    // Record the completion before the session is removed, so a retry that can't find the session finds it instead.
     // It's kept as long as the session could have lived.
-    private void Remember(Guid uploadId, ServerMessage reason)
+    private void Remember(Guid uploadId, UploadCompletion completion)
     {
         DateTimeOffset now = timeProvider.GetUtcNow();
 
-        foreach (KeyValuePair<Guid, (ServerMessage Reason, DateTimeOffset RefusedUtc)> refusal in _refusals)
+        foreach (KeyValuePair<Guid, (UploadCompletion Completion, DateTimeOffset EndedUtc)> ended in _ended)
         {
-            if (now - refusal.Value.RefusedUtc >= ImageUploadLimits.SessionLifetime)
+            if (now - ended.Value.EndedUtc >= ImageUploadLimits.SessionLifetime)
             {
-                _refusals.TryRemove(refusal);
+                _ended.TryRemove(ended);
             }
         }
 
-        _refusals[uploadId] = (reason, now);
+        _ended[uploadId] = (completion, now);
     }
 
     [LoggerMessage(EventId = 902, Level = LogLevel.Information, Message = "Refused upload {UploadId} ({FileName}): {Reason}")]

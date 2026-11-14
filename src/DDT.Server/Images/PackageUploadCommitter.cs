@@ -3,12 +3,15 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using DDT.Contracts.Applications;
+using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
+using DDT.Core.WindowsPackages;
 using DDT.Server.Applications;
 using DDT.Server.Data;
 using DDT.Server.Live;
 using DDT.Server.Machines;
 using DDT.Server.Packages;
+using DDT.Server.WindowsPackages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -19,6 +22,7 @@ namespace DDT.Server.Images;
 public sealed partial class PackageUploadCommitter(
     ImageStore store,
     UploadRefusals refusals,
+    LanguageIsoUploads languageIsos,
     LiveNotifier live,
     TimeProvider timeProvider,
     ILogger<ImageUploadCompleter> logger)
@@ -31,9 +35,17 @@ public sealed partial class PackageUploadCommitter(
 
         PackageKind kind = LibraryEntries.PackageKindOf(upload.Kind);
         bool isApplication = kind == PackageKind.Application;
-        string source = isApplication
-            ? await ApplicationUploads.SourceAsync(store, upload, cancellationToken).ConfigureAwait(false)
-            : store.PartPath(upload.Id);
+
+        if (kind == PackageKind.WindowsPackage && await IsoImages.IsIsoAsync(store.PartPath(upload.Id), cancellationToken).ConfigureAwait(false))
+        {
+            return await languageIsos.PlaceAsync(database, upload, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (await SourceAsync(upload, kind, cancellationToken).ConfigureAwait(false) is not { } source)
+        {
+            return await refusals.RefuseAsync(database, upload, ServerMessages.UploadWindowsPackageFile.With(), cancellationToken).ConfigureAwait(false);
+        }
+
         (PackageInspection inspection, string sha256) = await InspectAsync(source, kind, cancellationToken).ConfigureAwait(false);
 
         if (inspection.RefusalMessage is { } refusal)
@@ -52,17 +64,7 @@ public sealed partial class PackageUploadCommitter(
             .FirstOrDefaultAsync(p => p.Sha256 == sha256 && p.Kind == kind, CancellationToken.None)
             .ConfigureAwait(false);
         Package package = existing ?? NewPackage(upload, sha256, inspection, now, actor);
-
-        if (existing is null)
-        {
-            package.SizeBytes = new FileInfo(source).Length;
-            database.Packages.Add(package);
-        }
-        else if (isApplication)
-        {
-            // Files no application names are swept a day after their upload. Uploading them again starts that day anew.
-            existing.UploadedUtc = now;
-        }
+        Track(database, package, existing is null, source, now);
 
         // An upload that adds nothing is still recorded, under the package that already has its file.
         database.AuditEvents.Add(AuditEvents.Create(
@@ -81,6 +83,28 @@ public sealed partial class PackageUploadCommitter(
 
         return Completed(package, existing is null, upload, suggestion);
     }
+
+    // Files no application names are swept a day after their upload. Uploading them again starts that day anew.
+    private static void Track(DdtDbContext database, Package package, bool added, string source, DateTimeOffset now)
+    {
+        if (added)
+        {
+            package.SizeBytes = new FileInfo(source).Length;
+            database.Packages.Add(package);
+        }
+        else if (package.Kind == PackageKind.Application)
+        {
+            package.UploadedUtc = now;
+        }
+    }
+
+    // Null for a file a Windows package can't be.
+    private async Task<string?> SourceAsync(ImageUpload upload, PackageKind kind, CancellationToken cancellationToken) => kind switch
+    {
+        PackageKind.Application => await ApplicationUploads.SourceAsync(store, upload, cancellationToken).ConfigureAwait(false),
+        PackageKind.WindowsPackage => await WindowsPackageUploads.SourceAsync(store, upload, cancellationToken).ConfigureAwait(false),
+        _ => store.PartPath(upload.Id),
+    };
 
     // An application's files are never pushed: the Packages page does not show them.
     private UploadCompletion Completed(Package package, bool added, ImageUpload upload, ApplicationSuggestion? suggestion)
@@ -134,22 +158,32 @@ public sealed partial class PackageUploadCommitter(
         return (inspection, sha256);
     }
 
-    private static Package NewPackage(ImageUpload upload, string sha256, PackageInspection inspection, DateTimeOffset now, Actor actor) => new()
+    private static Package NewPackage(ImageUpload upload, string sha256, PackageInspection inspection, DateTimeOffset now, Actor actor)
     {
-        Id = Guid.CreateVersion7(now),
-        Name = LibraryEntries.Bounded(
-            Path.GetFileNameWithoutExtension(upload.FileName) is { Length: > 0 } name ? name : upload.FileName,
-            PackageLimits.MaxNameLength),
-        Kind = LibraryEntries.PackageKindOf(upload.Kind),
-        Sha256 = sha256,
-        SizeBytes = upload.Length,
-        ExpandedBytes = inspection.ExpandedBytes,
-        FileCount = inspection.FileCount,
-        OriginalFileName = upload.FileName,
-        UploadedUtc = now,
-        UploadedByUserId = actor.UserId,
-        UploadedByName = LibraryEntries.Bounded(actor.Name, 256),
-    };
+        Package package = new()
+        {
+            Id = Guid.CreateVersion7(now),
+            Name = LibraryEntries.Bounded(
+                Path.GetFileNameWithoutExtension(upload.FileName) is { Length: > 0 } name ? name : upload.FileName,
+                PackageLimits.MaxNameLength),
+            Kind = LibraryEntries.PackageKindOf(upload.Kind),
+            Sha256 = sha256,
+            SizeBytes = upload.Length,
+            ExpandedBytes = inspection.ExpandedBytes,
+            FileCount = inspection.FileCount,
+            OriginalFileName = upload.FileName,
+            UploadedUtc = now,
+            UploadedByUserId = actor.UserId,
+            UploadedByName = LibraryEntries.Bounded(actor.Name, 256),
+        };
+
+        if (package.Kind == PackageKind.WindowsPackage)
+        {
+            WindowsPackageColumns.Write(package, WindowsPackageContents.Of(inspection.FileNames ?? []));
+        }
+
+        return package;
+    }
 
     [LoggerMessage(
         EventId = 912,

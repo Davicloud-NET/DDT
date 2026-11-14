@@ -765,9 +765,17 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "import.notAllowed",
     message: "{path} is no WIM, ESD or ISO in one of this server's import folders.",
   }),
+  "import.notAnIso": msg({
+    context: "import.notAnIso",
+    message: "{path} is no ISO in one of this server's import folders.",
+  }),
   "import.nothing": msg({
     context: "import.nothing",
     message: "Nothing was chosen to import.",
+  }),
+  "import.suffix": msg({
+    context: "import.suffix",
+    message: "The end of the names has at most {max} characters and no control characters.",
   }),
   "import.unreadable": msg({
     context: "import.unreadable",
@@ -776,6 +784,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "import.workingDirectory": msg({
     context: "import.workingDirectory",
     message: "MDT ran it in {folder}. DDT runs it in the folder of its files.",
+  }),
+  "iso.noLanguages": msg({
+    context: "iso.noLanguages",
+    message: "This ISO has no LanguagesAndOptionalFeatures folder, so it is not the Languages and Optional Features ISO.",
   }),
   "iso.noWindowsImage": msg({
     context: "iso.noWindowsImage",
@@ -1052,6 +1064,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "package.tooManyTargets": msg({
     context: "package.tooManyTargets",
     message: "A package can have at most {max} targets.",
+  }),
+  "package.windowsEmpty": msg({
+    context: "package.windowsEmpty",
+    message: "The zip holds no .msu or .cab file.",
+  }),
+  "package.windowsFile": msg({
+    context: "package.windowsFile",
+    message: "{entry} is no .msu or .cab file. A Windows package holds nothing else.",
+  }),
+  "package.windowsFolder": msg({
+    context: "package.windowsFolder",
+    message: "{entry} lies in a folder. Put the .msu and .cab files at the top of the zip.",
   }),
   "person.someOperator": msg({
     context: "person.someOperator",
@@ -2660,6 +2684,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "upload.unreadableFormat": msg({
     context: "upload.unreadableFormat",
     message: "This is a {format} disk image, which DDT does not read. Convert it with qemu-img convert -O raw <file> disk.raw and upload disk.raw, or upload the distribution's raw or qcow2 image.",
+  }),
+  "upload.windowsPackageFile": msg({
+    context: "upload.windowsPackageFile",
+    message: "Upload a .msu or .cab file, a zip of them, or the Languages and Optional Features ISO.",
   }),
   "user.changedWhileSaving": msg({
     context: "user.changedWhileSaving",

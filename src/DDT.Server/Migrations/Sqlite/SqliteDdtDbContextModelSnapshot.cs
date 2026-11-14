@@ -1173,8 +1173,16 @@ namespace DDT.Server.Migrations.Sqlite
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Architecture")
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("BootImage")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Content")
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1024)
@@ -1186,9 +1194,17 @@ namespace DDT.Server.Migrations.Sqlite
                     b.Property<int>("FileCount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("KbNumbers")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Languages")
+                        .HasMaxLength(1024)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")

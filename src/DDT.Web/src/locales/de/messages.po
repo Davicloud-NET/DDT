@@ -467,6 +467,16 @@ msgid "{entry} has no {attribute}, so a sign-in is refused."
 msgstr "{entry} hat kein {attribute}, daher wird eine Anmeldung abgelehnt."
 
 #: src/lib/serverMessages.ts
+msgctxt "package.windowsFile"
+msgid "{entry} is no .msu or .cab file. A Windows package holds nothing else."
+msgstr "{entry} ist keine .msu- oder .cab-Datei. Ein Windows-Paket enthält nichts anderes."
+
+#: src/lib/serverMessages.ts
+msgctxt "package.windowsFolder"
+msgid "{entry} lies in a folder. Put the .msu and .cab files at the top of the zip."
+msgstr "{entry} liegt in einem Ordner. Legen Sie die .msu- und .cab-Dateien auf die oberste Ebene der ZIP-Datei."
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.passwordRefused"
 msgid "{entry} was found, but the directory refused the password."
 msgstr "{entry} wurde gefunden, aber das Verzeichnis hat das Kennwort abgelehnt."
@@ -1059,6 +1069,11 @@ msgstr "{passes} Durchläufe"
 #: src/runs/flow/nodeDetail.ts
 msgid "{passes} passes, the last took {took}"
 msgstr "{passes} Durchläufe, der letzte dauerte {took}"
+
+#: src/lib/serverMessages.ts
+msgctxt "import.notAnIso"
+msgid "{path} is no ISO in one of this server's import folders."
+msgstr "{path} ist keine ISO-Datei in einem der Importordner dieses Servers."
 
 #: src/lib/serverMessages.ts
 msgctxt "import.noSuchFile"
@@ -10300,6 +10315,11 @@ msgid "The drivers flagged for Windows PE have changed since it was built."
 msgstr "Die für Windows PE markierten Treiber haben sich geändert, seit es erstellt wurde."
 
 #: src/lib/serverMessages.ts
+msgctxt "import.suffix"
+msgid "The end of the names has at most {max} characters and no control characters."
+msgstr "Das Namensende hat höchstens {max} Zeichen und keine Steuerzeichen."
+
+#: src/lib/serverMessages.ts
 msgctxt "audit.rangeEnd"
 msgid "The end of the range must come after its start."
 msgstr "Das Ende des Zeitraums muss nach seinem Beginn liegen."
@@ -11424,6 +11444,11 @@ msgctxt "package.tooManyEntries"
 msgid "The zip holds {count} entries. A package can hold at most {max}."
 msgstr "Die ZIP-Datei enthält {count} Einträge. Ein Paket darf höchstens {max} enthalten."
 
+#: src/lib/serverMessages.ts
+msgctxt "package.windowsEmpty"
+msgid "The zip holds no .msu or .cab file."
+msgstr "Die ZIP-Datei enthält keine .msu- oder .cab-Datei."
+
 #: src/sequences/SequenceConflict.tsx
 msgid "Their changes to {list} are lost."
 msgstr "Die dortigen Änderungen gehen verloren: {list}."
@@ -11621,6 +11646,11 @@ msgstr "Dies ist ein {format}-Datenträgerimage, das DDT nicht liest. Wandeln Si
 msgctxt "upload.noQemuImg"
 msgid "This is a qcow2 image, and qemu-img is not installed on the server. Install qemu-img there and complete the upload again, or convert the file with qemu-img convert -O raw <file> disk.raw and upload disk.raw."
 msgstr "Dies ist ein qcow2-Image, und qemu-img ist auf dem Server nicht installiert. Installieren Sie qemu-img dort und schließen Sie den Upload erneut ab, oder wandeln Sie die Datei mit qemu-img convert -O raw <file> disk.raw um und laden Sie disk.raw hoch."
+
+#: src/lib/serverMessages.ts
+msgctxt "iso.noLanguages"
+msgid "This ISO has no LanguagesAndOptionalFeatures folder, so it is not the Languages and Optional Features ISO."
+msgstr "Diese ISO-Datei hat keinen Ordner LanguagesAndOptionalFeatures, sie ist also nicht die ISO „Languages and Optional Features“."
 
 #: src/lib/serverMessages.ts
 msgctxt "iso.noWindowsImage"
@@ -12099,6 +12129,11 @@ msgstr "{name} als Konsole für Linux hochladen?"
 #: src/settings/ConsolePanel.tsx
 msgid "Upload {name} as the console?"
 msgstr "{name} als Konsole hochladen?"
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.windowsPackageFile"
+msgid "Upload a .msu or .cab file, a zip of them, or the Languages and Optional Features ISO."
+msgstr "Laden Sie eine .msu- oder .cab-Datei hoch, eine ZIP-Datei davon oder die ISO „Languages and Optional Features“."
 
 #: src/settings/certificate/UploadDialog.tsx
 msgid "Upload a certificate"

@@ -1289,8 +1289,17 @@ namespace DDT.Server.Migrations.SqlServer
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Architecture")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
                     b.Property<bool>("BootImage")
                         .HasColumnType("bit");
+
+                    b.Property<string>("Content")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1024)
@@ -1303,10 +1312,20 @@ namespace DDT.Server.Migrations.SqlServer
                     b.Property<int>("FileCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("KbNumbers")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("Languages")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)")
+                        .UseCollation("Latin1_General_100_BIN2");
 
                     b.Property<string>("Name")
                         .IsRequired()

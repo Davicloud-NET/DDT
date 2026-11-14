@@ -7,6 +7,7 @@ using DDT.Contracts.Images;
 using DDT.Contracts.Messages;
 using DDT.Server.Data;
 using DDT.Server.Images;
+using DDT.Server.WindowsPackages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -94,6 +95,13 @@ public sealed partial class LibraryFileImport(
             return null;
         }
 
+        if (item.IsoFiles is { } isoFiles)
+        {
+            await LanguageIsos.ZipAsync(item.File, isoFiles, copy, state.Progress, cancellationToken).ConfigureAwait(false);
+
+            return null;
+        }
+
         if (await IsoImages.IsIsoAsync(item.File, cancellationToken).ConfigureAwait(false))
         {
             return await IsoImages.ExtractInstallImageAsync(item.File, copy, state.Progress, cancellationToken).ConfigureAwait(false)
@@ -165,11 +173,12 @@ public sealed partial class LibraryFileImport(
             long length = new FileInfo(copy).Length;
             DateTimeOffset now = timeProvider.GetUtcNow();
             string zipName = string.Join('_', item.Name.Split(s_unsafe)) + ".zip";
+            string fileName = item.File is null || item.IsoFiles is not null ? zipName : Path.GetFileName(item.File);
 
             database.ImageUploads.Add(new ImageUpload
             {
                 Id = id,
-                FileName = LibraryEntries.Bounded(item.File is null ? zipName : Path.GetFileName(item.File), ImageUploadLimits.MaxFileNameLength),
+                FileName = LibraryEntries.Bounded(fileName, ImageUploadLimits.MaxFileNameLength),
                 Length = length,
                 Offset = length,
                 Kind = item.Kind,

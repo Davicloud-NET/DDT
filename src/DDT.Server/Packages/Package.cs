@@ -42,4 +42,14 @@ public sealed class Package
     public bool BootImage { get; set; }
 
     public string? UploadedByName { get; set; }
+
+    // A Windows package's facts, read from its file names when it was added. Null for every other kind. The lists are
+    // comma separated, so the Packages page reads them without a join.
+    public WindowsPackageContent? Content { get; set; }
+
+    public string? Languages { get; set; }
+
+    public string? Architecture { get; set; }
+
+    public string? KbNumbers { get; set; }
 }

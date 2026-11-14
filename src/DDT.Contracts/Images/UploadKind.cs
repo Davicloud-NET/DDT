@@ -13,4 +13,7 @@ public enum UploadKind
 
     // A zip, or any single file the server zips, for an application.
     Application,
+
+    // A .msu or .cab, which the server zips, a zip of them, or the Languages and Optional Features ISO.
+    WindowsPackage,
 }

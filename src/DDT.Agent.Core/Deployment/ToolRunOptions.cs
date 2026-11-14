@@ -6,10 +6,11 @@ namespace DDT.Agent.Deployment;
 
 // Environment adds to the agent's variables, or to the account's when Account is set. A null option means the agent's
 // working directory, no time limit, and running as the agent. Lines rewrites each output line before the log gets it,
-// and drops it with null.
+// and drops it with null. Private takes every line instead of the log, and Lines then goes unused.
 public sealed record ToolRunOptions(
     string? WorkingDirectory = null,
     IReadOnlyDictionary<string, string>? Environment = null,
     TimeSpan? Timeout = null,
     IAccountSession? Account = null,
-    Func<string, string?>? Lines = null);
+    Func<string, string?>? Lines = null,
+    PrivateOutput? Private = null);

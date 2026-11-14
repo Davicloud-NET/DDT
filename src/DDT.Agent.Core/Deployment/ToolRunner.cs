@@ -106,8 +106,8 @@ public sealed class ToolRunner(
         using IToolProcess process = StartFor(fileName, arguments, options, tool);
 
         ToolOutputDecoder toolDecoder = DecoderOf(tool);
-        Task output = ToolOutput.ForwardAsync(process.StandardOutput, toolDecoder, Filtered(options.Lines, log.Information));
-        Task errors = ToolOutput.ForwardAsync(process.StandardError, toolDecoder, Filtered(options.Lines, log.Warning));
+        Task output = ToolOutput.ForwardAsync(process.StandardOutput, toolDecoder, options.Private is { } kept ? kept.Add : Filtered(options.Lines, log.Information));
+        Task errors = ToolOutput.ForwardAsync(process.StandardError, toolDecoder, options.Private is { } keptErrors ? keptErrors.AddError : Filtered(options.Lines, log.Warning));
 
         try
         {
@@ -136,7 +136,7 @@ public sealed class ToolRunner(
         int exitCode = process.ExitCode;
         log.Information(string.Create(
             CultureInfo.InvariantCulture,
-            $"{tool} ended with exit code {(exitCode < 0 ? ExitCodeText(exitCode) : exitCode.ToString(CultureInfo.InvariantCulture))} after {elapsed.TotalSeconds:0.0} s."));
+            $"{tool} ended with exit code {(exitCode < 0 ? ExitCodeText(exitCode) : exitCode.ToString(CultureInfo.InvariantCulture))} after {elapsed.TotalSeconds:0.0} s.{(options.Private is null ? string.Empty : " Its output is not logged.")}"));
 
         return exitCode;
     }

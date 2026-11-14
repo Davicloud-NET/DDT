@@ -7,16 +7,16 @@ using System;
 using DDT.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace DDT.Server.Migrations.SqlServer
+namespace DDT.Server.Migrations.PostgreSql
 {
-    [DbContext(typeof(SqlServerDdtDbContext))]
-    [Migration("20261113065324_StepDetail")]
+    [DbContext(typeof(PostgreSqlDdtDbContext))]
+    [Migration("20261114022150_StepDetail")]
     partial class StepDetail
     {
         /// <inheritdoc />
@@ -26,71 +26,64 @@ namespace DDT.Server.Migrations.SqlServer
             modelBuilder
                 .HasDefaultSchema("ddt")
                 .HasAnnotation("ProductVersion", "10.0.12")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("DDT.Server.Accounts.Account", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Domain")
                         .HasMaxLength(253)
-                        .HasColumnType("nvarchar(253)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(253)");
 
                     b.Property<string>("Hosts")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("NormalizedName")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<DateTimeOffset?>("PasswordUpdatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ProtectedPassword")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<long>("Revision")
                         .IsConcurrencyToken()
                         .HasColumnType("bigint");
 
                     b.Property<bool>("RunAs")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("UpdatedByName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<Guid?>("UpdatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("UpdatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UserName")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
 
@@ -106,62 +99,54 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Command")
                         .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(4000)");
 
                     b.Property<bool>("ContinueOnFailure")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<DateTimeOffset>("CreatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DependsOn")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("Detection")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("NormalizedName")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid?>("PackageId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Publisher")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("RestartExitCodes")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<long>("Revision")
                         .IsConcurrencyToken()
@@ -169,37 +154,32 @@ namespace DDT.Server.Migrations.SqlServer
 
                     b.Property<string>("SuccessExitCodes")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<int>("TimeoutMinutes")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("UpdatedByName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<Guid?>("UpdatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("UpdatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Version")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("WingetId")
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("WingetVersion")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
 
@@ -217,32 +197,28 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("Members")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("NormalizedName")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<long>("Revision")
                         .IsConcurrencyToken()
@@ -250,14 +226,13 @@ namespace DDT.Server.Migrations.SqlServer
 
                     b.Property<string>("UpdatedByName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<Guid?>("UpdatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("UpdatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -275,45 +250,40 @@ namespace DDT.Server.Migrations.SqlServer
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Action")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<Guid?>("ActorMachineId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ActorName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<Guid?>("ActorTokenId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("ActorUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Detail")
                         .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(2048)");
 
                     b.Property<DateTimeOffset>("OccurredUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SourceAddress")
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("SubjectId")
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.HasKey("Id");
 
@@ -328,29 +298,25 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("NormalizedName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedName")
                         .IsUnique()
-                        .HasDatabaseName("RoleNameIndex")
-                        .HasFilter("[NormalizedName] IS NOT NULL");
+                        .HasDatabaseName("RoleNameIndex");
 
                     b.ToTable("AspNetRoles", "ddt");
                 });
@@ -359,101 +325,89 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("AccessFailedCount")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<DateTimeOffset>("CreatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DirectoryObjectId")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("DisplayName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsDisabled")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<DateTimeOffset?>("LastSignInUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("NormalizedUserName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("PhoneNumber")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("SecurityStamp")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("Source")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("DirectoryObjectId")
-                        .IsUnique()
-                        .HasFilter("[DirectoryObjectId] IS NOT NULL");
+                        .IsUnique();
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
-                        .HasDatabaseName("UserNameIndex")
-                        .HasFilter("[NormalizedUserName] IS NOT NULL");
+                        .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", "ddt");
                 });
@@ -462,33 +416,29 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<string>("Host")
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("Section")
                         .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(32)");
 
                     b.Property<long>("AppliedVersion")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Detail")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("Message")
                         .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(2048)");
 
                     b.Property<string>("State")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<DateTimeOffset>("UpdatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Host", "Section");
 
@@ -499,32 +449,28 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<string>("Section")
                         .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(32)");
 
                     b.Property<int>("SchemaVersion")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Secrets")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("UpdatedByName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<Guid?>("UpdatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset?>("UpdatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Values")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
@@ -541,112 +487,107 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Activity")
                         .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                        .HasColumnType("character varying(32)");
 
                     b.Property<bool>("AllowSecureBootMismatch")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Answers")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("BootEnvironment")
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<int>("BootReturns")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int?>("ContinuePass")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<Guid?>("ContinueStepId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ContinuedByName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<DateTimeOffset>("CreatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CurrentPhase")
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("CurrentStepDetail")
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<int?>("CurrentStepIndex")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("CurrentStepName")
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<Guid?>("DetourStart")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Detours")
                         .IsConcurrencyToken()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int?>("DiskNumber")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Error")
                         .HasMaxLength(1024)
-                        .HasColumnType("nvarchar(1024)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(1024)");
 
                     b.Property<DateTimeOffset?>("FinishedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Inputs")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
+
+                    b.Property<bool>("InputsAsked")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("InputsPending")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<Guid>("MachineId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("PauseMessage")
                         .HasMaxLength(1024)
-                        .HasColumnType("nvarchar(1024)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(1024)");
 
                     b.Property<int?>("PausePass")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<Guid?>("PauseStepId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Percent")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("RequestedByName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<Guid?>("RequestedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("RestartsOrdered")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<Guid?>("RuleId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<long?>("SequenceRevision")
                         .HasColumnType("bigint");
@@ -654,39 +595,36 @@ namespace DDT.Server.Migrations.SqlServer
                     b.Property<string>("Source")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<DateTimeOffset?>("StartedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("State")
                         .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<int>("StepCount")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<Guid?>("TaskSequenceId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<DateTimeOffset>("UpdatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Values")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("Variables")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -702,15 +640,14 @@ namespace DDT.Server.Migrations.SqlServer
             modelBuilder.Entity("DDT.Server.Deployments.DeploymentApplicationPlan", b =>
                 {
                     b.Property<Guid>("DeploymentId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("StepId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Applications")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.HasKey("DeploymentId", "StepId");
 
@@ -723,14 +660,14 @@ namespace DDT.Server.Migrations.SqlServer
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("BootCapability")
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<Guid>("DeploymentId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<long>("ExpandedBytes")
                         .HasColumnType("bigint");
@@ -738,40 +675,37 @@ namespace DDT.Server.Migrations.SqlServer
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("Language")
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("Sha256")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("SignedUnder")
                         .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                        .HasColumnType("character varying(32)");
 
                     b.Property<long>("SizeBytes")
                         .HasColumnType("bigint");
 
                     b.Property<Guid>("SourceId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("StepId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int?>("WimIndex")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -787,12 +721,11 @@ namespace DDT.Server.Migrations.SqlServer
             modelBuilder.Entity("DDT.Server.Deployments.DeploymentSnapshot", b =>
                 {
                     b.Property<Guid>("DeploymentId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Definition")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.HasKey("DeploymentId");
 
@@ -802,73 +735,69 @@ namespace DDT.Server.Migrations.SqlServer
             modelBuilder.Entity("DDT.Server.Deployments.DeploymentStep", b =>
                 {
                     b.Property<Guid>("DeploymentId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("StepId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Branch")
                         .HasMaxLength(8)
-                        .HasColumnType("nvarchar(8)");
+                        .HasColumnType("character varying(8)");
 
                     b.Property<int>("Depth")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Error")
                         .HasMaxLength(1024)
-                        .HasColumnType("nvarchar(1024)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(1024)");
 
                     b.Property<string>("Evaluation")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<DateTimeOffset?>("FinishedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Index")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Iteration")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(32)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<Guid?>("ParentId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Pass")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Percent")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Phase")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<int>("Restarts")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTimeOffset?>("StartedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("State")
                         .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.HasKey("DeploymentId", "StepId");
 
@@ -878,50 +807,44 @@ namespace DDT.Server.Migrations.SqlServer
             modelBuilder.Entity("DDT.Server.Deployments.RunCredential", b =>
                 {
                     b.Property<Guid>("DeploymentId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("InputName")
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<DateTimeOffset>("CreatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Domain")
                         .HasMaxLength(253)
-                        .HasColumnType("nvarchar(253)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(253)");
 
                     b.Property<string>("Hosts")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("ProtectedPassword")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<bool>("ProvidedAtMachine")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("ProvidedByName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<Guid?>("ProvidedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("RunAs")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("UserName")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.HasKey("DeploymentId", "InputName");
 
@@ -934,26 +857,23 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Architecture")
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("BootCapability")
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("BootDetail")
                         .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(512)");
 
                     b.Property<string>("Edition")
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<long>("InstalledBytes")
                         .HasColumnType("bigint");
@@ -961,60 +881,53 @@ namespace DDT.Server.Migrations.SqlServer
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("Language")
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("OriginalFileName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("Sha256")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("SignedUnder")
                         .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                        .HasColumnType("character varying(32)");
 
                     b.Property<long>("SizeBytes")
                         .HasColumnType("bigint");
 
                     b.Property<string>("SourceSha256")
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("UploadedByName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<Guid?>("UploadedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("UploadedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Version")
                         .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(32)");
 
                     b.Property<int>("WimIndex")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -1031,30 +944,28 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("CompletedSha256")
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("Kind")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)")
+                        .HasColumnType("character varying(16)")
                         .HasDefaultValue("Image");
 
                     b.Property<long>("LastModified")
@@ -1067,7 +978,7 @@ namespace DDT.Server.Migrations.SqlServer
                         .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset>("UpdatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -1082,145 +993,132 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("ActiveDeploymentId")
                         .IsConcurrencyToken()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("AgentEnvironment")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)")
+                        .HasColumnType("character varying(16)")
                         .HasDefaultValue("WindowsPE");
 
                     b.Property<string>("AgentVersion")
                         .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(32)");
 
                     b.Property<Guid?>("ApprovedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset?>("ApprovedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("AssignedName")
                         .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(15)");
 
                     b.Property<int?>("ChassisType")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Disks")
                         .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(512)");
 
                     b.Property<int?>("EligibleDiskCount")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Facts")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<DateTimeOffset?>("FirstApprovedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("FirstSeenAddress")
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<DateTimeOffset>("FirstSeenUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("LastDeploymentId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("LastSeenAddress")
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<DateTimeOffset>("LastSeenUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("MacAddresses")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("Manufacturer")
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("Model")
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("NextEnvironment")
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<DateTimeOffset?>("NextEnvironmentUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("PendingSequenceId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("PrimaryMac")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(32)");
 
                     b.Property<bool?>("SecureBootEnabled")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<int>("SequenceVersion")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("SerialNumber")
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<Guid?>("SignedInByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("SignedInUserName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<DateTimeOffset?>("SignedInUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SmbiosUuid")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("State")
                         .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<int>("TokenGeneration")
                         .IsConcurrencyToken()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("TrustedUefiCas")
                         .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                        .HasColumnType("character varying(32)");
 
                     b.HasKey("Id");
 
@@ -1243,36 +1141,35 @@ namespace DDT.Server.Migrations.SqlServer
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTimeOffset>("AgentTimestampUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("DeploymentId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Level")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<Guid>("MachineId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(4000)");
 
                     b.Property<DateTimeOffset>("ReceivedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("StepId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("TimestampUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -1287,62 +1184,56 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("BootImage")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1024)
-                        .HasColumnType("nvarchar(1024)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(1024)");
 
                     b.Property<long>("ExpandedBytes")
                         .HasColumnType("bigint");
 
                     b.Property<int>("FileCount")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("OriginalFileName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("Sha256")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<long>("SizeBytes")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Targets")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("UploadedByName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<Guid?>("UploadedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("UploadedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -1357,27 +1248,24 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1024)
-                        .HasColumnType("nvarchar(1024)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(1024)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("NormalizedName")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<long>("Revision")
                         .IsConcurrencyToken()
@@ -1385,19 +1273,17 @@ namespace DDT.Server.Migrations.SqlServer
 
                     b.Property<string>("UpdatedByName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<Guid?>("UpdatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("UpdatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Values")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -1413,27 +1299,25 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1024)
-                        .HasColumnType("nvarchar(1024)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(1024)");
 
                     b.Property<bool>("Enabled")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(300)");
 
                     b.Property<int>("Position")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<long>("Revision")
                         .IsConcurrencyToken()
@@ -1441,31 +1325,27 @@ namespace DDT.Server.Migrations.SqlServer
 
                     b.Property<string>("RoleIds")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("TaskSequenceId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("UpdatedByName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<Guid?>("UpdatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("UpdatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Values")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("When")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -1483,32 +1363,28 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Definition")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1024)
-                        .HasColumnType("nvarchar(1024)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(1024)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("NormalizedName")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<long>("Revision")
                         .IsConcurrencyToken()
@@ -1516,14 +1392,13 @@ namespace DDT.Server.Migrations.SqlServer
 
                     b.Property<string>("UpdatedByName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<Guid?>("UpdatedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("UpdatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -1539,59 +1414,53 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("ExpiresUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Hint")
                         .IsRequired()
                         .HasMaxLength(4)
-                        .HasColumnType("nvarchar(4)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(4)");
 
                     b.Property<string>("LastUsedAddress")
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<DateTimeOffset?>("LastUsedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("RevokedByName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<Guid?>("RevokedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset?>("RevokedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("SecretHash")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -1609,20 +1478,18 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ClaimType")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("ClaimValue")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<Guid>("RoleId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -1635,20 +1502,18 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ClaimType")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<string>("ClaimValue")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -1661,20 +1526,17 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<string>("LoginProvider")
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("ProviderKey")
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("ProviderDisplayName")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.HasKey("LoginProvider", "ProviderKey");
 
@@ -1687,10 +1549,10 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.Property<byte[]>("CredentialId")
                         .HasMaxLength(1024)
-                        .HasColumnType("varbinary(1024)");
+                        .HasColumnType("bytea");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.HasKey("CredentialId");
 
@@ -1702,10 +1564,10 @@ namespace DDT.Server.Migrations.SqlServer
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
                 {
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("RoleId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.HasKey("UserId", "RoleId");
 
@@ -1717,21 +1579,18 @@ namespace DDT.Server.Migrations.SqlServer
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
                 {
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("LoginProvider")
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("Name")
                         .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("Value")
-                        .HasColumnType("nvarchar(max)")
-                        .UseCollation("Latin1_General_100_BIN2");
+                        .HasColumnType("text");
 
                     b.HasKey("UserId", "LoginProvider", "Name");
 
@@ -1742,7 +1601,8 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("UpdatedByUserId");
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("DDT.Server.Applications.Application", b =>
@@ -1754,21 +1614,24 @@ namespace DDT.Server.Migrations.SqlServer
 
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("UpdatedByUserId");
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("DDT.Server.Applications.ApplicationBundle", b =>
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("UpdatedByUserId");
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("DDT.Server.Data.SettingsSection", b =>
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("UpdatedByUserId");
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("DDT.Server.Deployments.Deployment", b =>
@@ -1781,7 +1644,8 @@ namespace DDT.Server.Migrations.SqlServer
 
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("RequestedByUserId");
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("DDT.Server.Sequences.TaskSequence", null)
                         .WithMany()
@@ -1835,32 +1699,37 @@ namespace DDT.Server.Migrations.SqlServer
 
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("ProvidedByUserId");
+                        .HasForeignKey("ProvidedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("DDT.Server.Images.Image", b =>
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("UploadedByUserId");
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("DDT.Server.Images.ImageUpload", b =>
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("CreatedByUserId");
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("DDT.Server.Machines.Machine", b =>
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", "ApprovedBy")
                         .WithMany()
-                        .HasForeignKey("ApprovedByUserId");
+                        .HasForeignKey("ApprovedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("SignedInByUserId");
+                        .HasForeignKey("SignedInByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("ApprovedBy");
                 });
@@ -1878,14 +1747,16 @@ namespace DDT.Server.Migrations.SqlServer
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("UploadedByUserId");
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("DDT.Server.Rules.MachineRole", b =>
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("UpdatedByUserId");
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("DDT.Server.Rules.Rule", b =>
@@ -1897,21 +1768,24 @@ namespace DDT.Server.Migrations.SqlServer
 
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("UpdatedByUserId");
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("DDT.Server.Sequences.TaskSequence", b =>
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("UpdatedByUserId");
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("DDT.Server.Tokens.ApiToken", b =>
                 {
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
-                        .HasForeignKey("RevokedByUserId");
+                        .HasForeignKey("RevokedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
@@ -1973,8 +1847,7 @@ namespace DDT.Server.Migrations.SqlServer
 
                             b1.Property<bool>("IsUserVerified");
 
-                            b1.Property<string>("Name")
-                                .UseCollation("Latin1_General_100_BIN2");
+                            b1.Property<string>("Name");
 
                             b1.Property<byte[]>("PublicKey")
                                 .IsRequired();
@@ -1989,7 +1862,7 @@ namespace DDT.Server.Migrations.SqlServer
 
                             b1
                                 .ToJson("Data")
-                                .HasColumnType("nvarchar(max)");
+                                .HasColumnType("jsonb");
 
                             b1.WithOwner()
                                 .HasForeignKey("IdentityUserPasskeyCredentialId");

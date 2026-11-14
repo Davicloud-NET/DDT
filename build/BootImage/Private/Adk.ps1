@@ -50,7 +50,7 @@ function Get-AdkVersion {
     return $null
 }
 
-# The packages of the Windows PE optional components that PowerShell needs. A running Windows PE can't add them.
+# The packages of the Windows PE optional components that PowerShell and BitLocker need. A running Windows PE can't add them.
 function Get-PowerShellComponentPackage {
     param([Parameter(Mandatory)][string] $ComponentDirectory)
 
@@ -64,6 +64,9 @@ function Get-PowerShellComponentPackage {
         [pscustomobject]@{ Name = 'WinPE-DismCmdlets'; HasLanguagePackage = $true }
         [pscustomobject]@{ Name = 'WinPE-StorageWMI'; HasLanguagePackage = $true }
         [pscustomobject]@{ Name = 'WinPE-SecureBootCmdlets'; HasLanguagePackage = $false }
+        # BitLocker: manage-bde and the TPM's WMI provider. Both need WinPE-WMI.
+        [pscustomobject]@{ Name = 'WinPE-EnhancedStorage'; HasLanguagePackage = $true }
+        [pscustomobject]@{ Name = 'WinPE-SecureStartup'; HasLanguagePackage = $true }
     )
 
     # A language package has to match the image's language, and copype's image is en-us.

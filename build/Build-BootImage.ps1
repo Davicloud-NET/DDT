@@ -18,8 +18,9 @@ sees Microsoft's binaries.
 It also adds the Windows PE optional components that PowerShell needs, with their en-us language
 packages: WinPE-WMI, WinPE-NetFx, WinPE-Scripting, WinPE-PowerShell, WinPE-DismCmdlets,
 WinPE-StorageWMI and WinPE-SecureBootCmdlets. That way task sequences can run PowerShell scripts in
-Windows PE. Components can't be added to a running Windows PE, so they have to be in the image.
--SkipPowerShell leaves them out.
+Windows PE. WinPE-EnhancedStorage and WinPE-SecureStartup bring manage-bde, which the Pre-provision
+BitLocker step needs. Components can't be added to a running Windows PE, so they have to be in the
+image. -SkipPowerShell leaves them all out.
 
 Then it removes what DDT's Windows PE never uses, following the list in boot-image-trim.txt next to
 this script. The list says for each group why it can go. A PXE netboot fetches boot.wim over TFTP, so

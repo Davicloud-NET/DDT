@@ -17,6 +17,7 @@ import {
 } from "@/machines/machines";
 
 import type { StopRequest } from "./actions/machineRequests";
+import { recoveryKeysToConfirm, type RemoveKeysRequest } from "./actions/removalKeys";
 import { useApprovalActions } from "./actions/useApprovalActions";
 
 // The actions an operator takes on machines, shared by every page that shows them. One set serves every machine
@@ -26,6 +27,7 @@ export function useMachineActions() {
 
   const [assignTo, setAssignTo] = useState<string | null>(null);
   const [stopOn, setStopOn] = useState<StopRequest | null>(null);
+  const [removeKeysOn, setRemoveKeysOn] = useState<RemoveKeysRequest | null>(null);
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: machinesQuery.queryKey });
@@ -37,11 +39,14 @@ export function useMachineActions() {
   );
 
   // The server answers a removal with no body, so the list drops the machines itself. The hub's machinesRemoved
-  // does the same for everyone else watching.
+  // does the same for everyone else watching. A machine with recovery keys is removed once their count is confirmed.
   const remove = useMutation({
-    mutationFn: (target: { id: string } | { address: string }) =>
-      "id" in target ? removeMachine(target.id) : removeWaitingFrom(target.address),
+    mutationFn: (target: { id: string; recoveryKeys?: number } | { address: string }) =>
+      "id" in target
+        ? removeMachine(target.id, target.recoveryKeys)
+        : removeWaitingFrom(target.address),
     onSuccess: (_, target) => {
+      setRemoveKeysOn(null);
       const machines = queryClient.getQueryData<MachineSummary[]>(machinesQuery.queryKey) ?? [];
 
       removeMachines(
@@ -53,7 +58,15 @@ export function useMachineActions() {
               .map((machine) => machine.id),
       );
     },
-    onError: refresh,
+    onError: (error, target) => {
+      const count = recoveryKeysToConfirm(error);
+
+      if (count !== null && "id" in target) {
+        setRemoveKeysOn({ machineId: target.id, count });
+      } else {
+        refresh();
+      }
+    },
   });
 
   const cancel = useMutation({
@@ -91,6 +104,8 @@ export function useMachineActions() {
     setAssignTo,
     stopOn,
     setStopOn,
+    removeKeysOn,
+    setRemoveKeysOn,
     approveOn,
     setApproveOn,
   };

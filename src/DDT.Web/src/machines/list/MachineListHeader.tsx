@@ -42,7 +42,7 @@ export function MachineListHeader({ filter, query, matching, onChange }: Machine
       <div className="hidden flex-1 sm:block" />
       <SearchField
         label={translate`Find a machine`}
-        placeholder={translate`Name, MAC, serial or address`}
+        placeholder={translate`Name, MAC, serial, address or key ID`}
         value={query}
         onChange={(q) => {
           onChange({ q });

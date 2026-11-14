@@ -25,6 +25,7 @@ import { MachineActionErrors } from "./MachineActionErrors";
 import { LinuxBootNotice } from "./page/LinuxBootNotice";
 import { MachineHeader } from "./page/MachineHeader";
 import { RestartsFailedNotice } from "./page/RestartsFailedNotice";
+import { MachineRecordPanels } from "./records/MachineRecordPanels";
 import { RunDetails } from "./page/RunDetails";
 import { useStepLog } from "./page/useStepLog";
 import { RunWaiting } from "./RunWaiting";
@@ -120,6 +121,8 @@ export function MachinePage() {
           onShowLogFromFlow={showLogFromFlow}
         />
       ) : null}
+
+      {!removed ? <MachineRecordPanels machineId={machineId} now={now} /> : null}
 
       {!removed ? (
         <div id={logId} className="flex flex-col">

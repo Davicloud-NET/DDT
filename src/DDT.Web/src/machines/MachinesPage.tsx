@@ -23,6 +23,7 @@ import { straysOffer } from "./list/strays";
 import { useMachineFilters } from "./list/useMachineFilters";
 import { MachineActionErrors } from "./MachineActionErrors";
 import { MachinePanel } from "./MachinePanel";
+import { useRecoveryKeyMatches } from "./records/useRecoveryKeyMatches";
 import { byAttention, inFilter, machineTag, matchesSearch } from "./machineView";
 import { useCanDecide } from "./useCanDecide";
 
@@ -46,8 +47,11 @@ export function MachinesPage() {
     tone: (machine) => machineTag(machine).tone,
   });
 
+  const keyMatches = useRecoveryKeyMatches(query);
   const all = machines.data ?? [];
-  const matching = all.filter((machine) => matchesSearch(machine, query));
+  const matching = all.filter(
+    (machine) => matchesSearch(machine, query) || keyMatches.includes(machine.id),
+  );
   const shown = matching.filter((machine) => inFilter(machine, filter)).sort(byAttention);
   const selected = all.find((machine) => machine.id === selectedId) ?? null;
   const strays = straysOffer(all);

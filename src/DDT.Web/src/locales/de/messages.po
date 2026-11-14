@@ -394,6 +394,10 @@ msgstr "{count, plural, one {Eine Regel gibt diese Geräterolle. Nehmen Sie sie 
 msgid "{count, plural, one {Added # image from {file}.} other {Added # images from {file}.}}"
 msgstr "{count, plural, one {# Image aus {file} hinzugefügt.} other {# Images aus {file} hinzugefügt.}}"
 
+#: src/machines/actions/RemoveKeysConfirm.tsx
+msgid "{count, plural, one {DDT holds # recovery key of this machine. It goes with the machine and cannot be revealed again.} other {DDT holds # recovery keys of this machine. They go with the machine and cannot be revealed again.}}"
+msgstr "{count, plural, one {DDT hat # Wiederherstellungsschlüssel dieses Computers. Er wird mit dem Computer entfernt und kann nicht mehr angezeigt werden.} other {DDT hat # Wiederherstellungsschlüssel dieses Computers. Sie werden mit dem Computer entfernt und können nicht mehr angezeigt werden.}}"
+
 #: src/runs/panel/stepDetail.ts
 msgid "{count, plural, one {Downloading # update} other {Downloading # updates}}"
 msgstr "{count, plural, one {# Update wird heruntergeladen} other {# Updates werden heruntergeladen}}"
@@ -417,6 +421,11 @@ msgstr "{count, plural, one {# Schritt eingefügt.} other {# Schritte eingefügt
 #: src/images/imageView.ts
 msgid "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
 msgstr "{count, plural, one {Die Bibliothek enthält jetzt # Image aus {file}.} other {Die Bibliothek enthält jetzt # Images aus {file}.}}"
+
+#: src/lib/serverMessages.ts
+msgctxt "machine.removeRecoveryKeys"
+msgid "{count, plural, one {The machine has a recovery key, which is deleted with it.} other {The machine has # recovery keys, which are deleted with it.}} Confirm to remove it."
+msgstr "{count, plural, one {Der Computer hat einen Wiederherstellungsschlüssel, der mit ihm gelöscht wird.} other {Der Computer hat # Wiederherstellungsschlüssel, die mit ihm gelöscht werden.}} Bestätigen Sie das Entfernen."
 
 #: src/runs/panel/LinuxDetours.tsx
 msgid "{count, plural, one {The machine started from the network once and was sent back to its disk. At {max} such starts in a row, the run ends.} other {The machine started from the network # times in a row and was sent back to its disk. At {max} such starts in a row, the run ends.}}"
@@ -3001,6 +3010,10 @@ msgstr "Geräte autorisieren"
 msgid "Automatic: Windows PE once a boot image is built, Linux until then"
 msgstr "Automatisch: Windows PE, sobald ein Startimage erstellt ist, bis dahin Linux"
 
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Autopilot"
+msgstr "Autopilot"
+
 #: src/about/AboutPage.tsx
 msgid "Back to DDT"
 msgstr "Zurück zu DDT"
@@ -3557,6 +3570,10 @@ msgstr "Code aus der Authenticator-App"
 msgid "Collapse"
 msgstr "Zuklappen"
 
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Collected"
+msgstr "Erfasst"
+
 #: src/applications/applicationView.ts
 #: src/applications/drawer/InstallFields.tsx
 msgid "Command"
@@ -3789,6 +3806,10 @@ msgstr "DDT ist freie Software: Sie dürfen sie unter den Bedingungen der GNU Ge
 msgid "DDT issues a certificate for localhost, this computer's name and addresses, and the server names, and serves it on trial until you keep it."
 msgstr "DDT stellt ein Zertifikat für localhost, den Namen und die Adressen dieses Computers und die Servernamen aus und liefert es auf Probe aus, bis Sie es behalten."
 
+#: src/machines/records/RecoveryKeysPanel.tsx
+msgid "DDT no longer holds this replaced key. This cannot be undone."
+msgstr "DDT löscht diesen ersetzten Schlüssel. Das kann nicht rückgängig gemacht werden."
+
 #: src/settings/certificate/CertificateFacts.tsx
 msgid "DDT renews it {renews}."
 msgstr "DDT erneuert es {renews}."
@@ -3881,6 +3902,8 @@ msgstr "Standardwerte für jede Ausführung"
 #: src/accounts/list/AccountMenu.tsx
 #: src/applications/list/EntryMenu.tsx
 #: src/images/ImageMenu.tsx
+#: src/machines/records/RecoveryKeyRow.tsx
+#: src/machines/records/RecoveryKeysPanel.tsx
 #: src/packages/PackageMenu.tsx
 #: src/roles/list/RoleMenu.tsx
 #: src/rules/list/RuleMenu.tsx
@@ -3939,6 +3962,10 @@ msgstr "Regel löschen"
 #: src/sequences/DeleteSequenceDialog.tsx
 msgid "Delete sequence"
 msgstr "Tasksequenz löschen"
+
+#: src/machines/records/RecoveryKeysPanel.tsx
+msgid "Delete the key {deletingId}?"
+msgstr "Schlüssel {deletingId} löschen?"
 
 #: src/applications/ApplicationDrawer.tsx
 msgid "Depends on"
@@ -4769,6 +4796,7 @@ msgstr "Fehlschlagen, wenn kein Treiberpaket zum Modell passt"
 #: src/machines/list/runDetail.ts
 #: src/machines/MachinePanel.tsx
 #: src/machines/machineView.ts
+#: src/machines/records/AutopilotPanel.tsx
 #: src/runs/flow/nodeDetail.ts
 #: src/runs/runHistory.ts
 #: src/runs/runView.ts
@@ -5225,6 +5253,10 @@ msgstr "Gruppe"
 msgid "Group name"
 msgstr "Gruppenname"
 
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Group tag"
+msgstr "Gruppentag"
+
 #: src/sequences/flow/flowLabels.ts
 #: src/ui/FlowNode.tsx
 msgid "Group: {name}"
@@ -5391,6 +5423,10 @@ msgstr "Import vom Server gestartet"
 #: src/packages/languages/LanguageIsoDialog.tsx
 msgid "Import languages"
 msgstr "Sprachen importieren"
+
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Imported"
+msgstr "Importiert"
 
 #: src/lib/serverMessages.ts
 msgctxt "valueTemplate.filterNeedsCount"
@@ -6655,8 +6691,8 @@ msgid "Name, language or KB"
 msgstr "Name, Sprache oder KB"
 
 #: src/machines/list/MachineListHeader.tsx
-msgid "Name, MAC, serial or address"
-msgstr "Name, MAC, Seriennummer oder Adresse"
+msgid "Name, MAC, serial, address or key ID"
+msgstr "Name, MAC, Seriennummer, Adresse oder Schlüssel-ID"
 
 #: src/packages/packageKindTexts.ts
 msgid "Name, model or file"
@@ -7357,6 +7393,10 @@ msgstr "Nicht angegeben"
 msgid "Not taken"
 msgstr "Nicht genommen"
 
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Not uploaded"
+msgstr "Nicht hochgeladen"
+
 #: src/applications/list/UsedBy.tsx
 msgid "Not used"
 msgstr "Nicht verwendet"
@@ -7518,6 +7558,11 @@ msgstr "Nur ein Treiberpaket kann in das Windows-PE-Startimage."
 msgctxt "machine.cannotBeRemoved"
 msgid "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
 msgstr "Nur ein abgelehntes Gerät oder ein wartendes Gerät, das nie freigegeben wurde und keine zugewiesene Ausführung hat, kann entfernt werden."
+
+#: src/lib/serverMessages.ts
+msgctxt "recoveryKey.current"
+msgid "Only a replaced key can be deleted. This one is the volume's current key."
+msgstr "Nur ein ersetzter Schlüssel kann gelöscht werden. Dieser ist der aktuelle Schlüssel des Volumes."
 
 #: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Only a script in Windows runs as an account."
@@ -8150,9 +8195,17 @@ msgctxt "identity.recoveryCodeRedemptionFailed"
 msgid "Recovery code redemption failed."
 msgstr "Der Wiederherstellungscode konnte nicht eingelöst werden."
 
+#: src/machines/records/RecoveryKeysPanel.tsx
+msgid "Recovery keys"
+msgstr "Wiederherstellungsschlüssel"
+
 #: src/sequences/steps/PartitionFields.tsx
 msgid "Recovery partition in MB"
 msgstr "Wiederherstellungspartition in MB"
+
+#: src/machines/records/RecoveryKeyRow.tsx
+msgid "Recovery password for {keyId}"
+msgstr "Wiederherstellungskennwort für {keyId}"
 
 #: src/settings/signIn/ProviderGroup.tsx
 #: src/settings/signIn/ProviderResult.tsx
@@ -8198,6 +8251,7 @@ msgstr "Abgelehnt"
 
 #: src/applications/drawer/FilesField.tsx
 #: src/machines/actions/MachineMenu.tsx
+#: src/machines/actions/RemoveKeysConfirm.tsx
 #: src/sequences/builder/canvas/NodeMenu.tsx
 #: src/sequences/builder/inspector/NodeKeys.tsx
 #: src/sequences/builder/variables/DeclarationRow.tsx
@@ -8218,6 +8272,10 @@ msgstr "{entry} entfernen"
 #: src/settings/roleMap/RoleMapEntry.tsx
 msgid "Remove {key}"
 msgstr "{key} entfernen"
+
+#: src/machines/actions/RemoveKeysConfirm.tsx
+msgid "Remove {label} and its recovery keys?"
+msgstr "{label} mit seinen Wiederherstellungsschlüsseln entfernen?"
 
 #: src/sequences/builder/inspector/NodeKeys.tsx
 #: src/sequences/builder/variables/DeclarationRow.tsx
@@ -8376,6 +8434,10 @@ msgstr "Wiederholen: {name}"
 msgid "Replace"
 msgstr "Ersetzen"
 
+#: src/machines/records/RecoveryKeyRow.tsx
+msgid "Replaced"
+msgstr "Ersetzt"
+
 #: src/values/values.ts
 msgid "Reported by the machine"
 msgstr "Vom Gerät gemeldet"
@@ -8483,6 +8545,10 @@ msgstr "Ausgemustert"
 msgctxt "machineState.retired"
 msgid "Retired"
 msgstr "Ausgemustert"
+
+#: src/machines/records/RecoveryKeyRow.tsx
+msgid "Reveal"
+msgstr "Anzeigen"
 
 #: src/settings/ProxiesPanel.tsx
 msgid "Reverse proxies"
@@ -9011,6 +9077,7 @@ msgid "Serial {serial}"
 msgstr "Seriennummer {serial}"
 
 #: src/machines/facts.ts
+#: src/machines/records/AutopilotPanel.tsx
 #: src/sequences/steps.ts
 msgid "Serial number"
 msgstr "Seriennummer"
@@ -11315,6 +11382,11 @@ msgstr "Standardwert der Tasksequenz"
 msgid "The server answered with status {status}."
 msgstr "Der Server hat mit Status {status} geantwortet."
 
+#: src/lib/serverMessages.ts
+msgctxt "recoveryKey.unreadable"
+msgid "The server can't decrypt this key. Its key ring is not the one that saved it."
+msgstr "Der Server kann diesen Schlüssel nicht entschlüsseln. Sein Schlüsselbund ist nicht der, mit dem er gespeichert wurde."
+
 #: src/settings/CertificatePanel.tsx
 msgid "The server certificate could not be read."
 msgstr "Das Serverzertifikat konnte nicht gelesen werden."
@@ -12278,6 +12350,7 @@ msgstr "Updates für andere Microsoft-Produkte"
 msgid "Updates from the Microsoft Update Catalog, cabinets, or the Languages and Optional Features ISO."
 msgstr "Updates aus dem Microsoft Update-Katalog, CAB-Dateien oder die ISO „Languages and Optional Features“."
 
+#: src/machines/records/AutopilotPanel.tsx
 #: src/uploads/UploadPanel.tsx
 msgid "Upload"
 msgstr "Upload"
@@ -12628,6 +12701,7 @@ msgid "Virtual Machine Platform"
 msgstr "VM-Plattform"
 
 #: src/machines/machineView.ts
+#: src/machines/records/AutopilotPanel.tsx
 msgid "Waiting"
 msgstr "Wartet"
 

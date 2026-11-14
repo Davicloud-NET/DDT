@@ -43,6 +43,7 @@ import {
   type MachinesRemoved,
   type MachineSummary,
 } from "@/machines/machines";
+import { putMachineRecords, type MachineRecordsView } from "@/machines/records/machineRecords";
 import {
   packagesQuery,
   removePackages,
@@ -185,6 +186,9 @@ function libraryEvents(queryClient: QueryClient) {
     },
     // An account carries no password, only whether one is set. It's pushed again when a sequence starts or stops
     // naming it.
+    machineRecordsChanged: (records: MachineRecordsView) => {
+      putMachineRecords(queryClient, records);
+    },
     accountChanged: (account: AccountView) => {
       putAccount(queryClient, account);
     },

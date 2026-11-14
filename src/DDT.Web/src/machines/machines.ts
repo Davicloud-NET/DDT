@@ -186,8 +186,11 @@ export function isRemovable(machine: MachineSummary): boolean {
   return isStray(machine) || machine.state === "Rejected";
 }
 
-export function removeMachine(id: string): Promise<void> {
-  return apiDelete(`/api/machines/${id}`);
+// recoveryKeys confirms how many keys go with the machine, as the server asked.
+export function removeMachine(id: string, recoveryKeys?: number): Promise<void> {
+  return apiDelete(
+    `/api/machines/${id}${recoveryKeys === undefined ? "" : `?recoveryKeys=${String(recoveryKeys)}`}`,
+  );
 }
 
 export function removeWaitingFrom(address: string): Promise<void> {

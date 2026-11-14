@@ -837,6 +837,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "machine.nobodySignedIn",
     message: "Nobody has signed in at this machine yet.",
   }),
+  "machine.removeRecoveryKeys": msg({
+    context: "machine.removeRecoveryKeys",
+    message: "{count, plural, one {The machine has a recovery key, which is deleted with it.} other {The machine has # recovery keys, which are deleted with it.}} Confirm to remove it.",
+  }),
   "machine.runChangedWhileStopping": msg({
     context: "machine.runChangedWhileStopping",
     message: "The run changed while it was being stopped. Look at the machine again.",
@@ -1092,6 +1096,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "person.someOperator": msg({
     context: "person.someOperator",
     message: "An operator",
+  }),
+  "recoveryKey.current": msg({
+    context: "recoveryKey.current",
+    message: "Only a replaced key can be deleted. This one is the volume's current key.",
+  }),
+  "recoveryKey.unreadable": msg({
+    context: "recoveryKey.unreadable",
+    message: "The server can't decrypt this key. Its key ring is not the one that saved it.",
   }),
   "resolution.assignedOnWeb": msg({
     context: "resolution.assignedOnWeb",

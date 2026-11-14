@@ -394,6 +394,10 @@ msgstr ""
 msgid "{count, plural, one {Added # image from {file}.} other {Added # images from {file}.}}"
 msgstr ""
 
+#: src/machines/actions/RemoveKeysConfirm.tsx
+msgid "{count, plural, one {DDT holds # recovery key of this machine. It goes with the machine and cannot be revealed again.} other {DDT holds # recovery keys of this machine. They go with the machine and cannot be revealed again.}}"
+msgstr ""
+
 #: src/runs/panel/stepDetail.ts
 msgid "{count, plural, one {Downloading # update} other {Downloading # updates}}"
 msgstr ""
@@ -416,6 +420,11 @@ msgstr ""
 
 #: src/images/imageView.ts
 msgid "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "machine.removeRecoveryKeys"
+msgid "{count, plural, one {The machine has a recovery key, which is deleted with it.} other {The machine has # recovery keys, which are deleted with it.}} Confirm to remove it."
 msgstr ""
 
 #: src/runs/panel/LinuxDetours.tsx
@@ -3001,6 +3010,10 @@ msgstr ""
 msgid "Automatic: Windows PE once a boot image is built, Linux until then"
 msgstr ""
 
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Autopilot"
+msgstr ""
+
 #: src/about/AboutPage.tsx
 msgid "Back to DDT"
 msgstr ""
@@ -3557,6 +3570,10 @@ msgstr ""
 msgid "Collapse"
 msgstr ""
 
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Collected"
+msgstr ""
+
 #: src/applications/applicationView.ts
 #: src/applications/drawer/InstallFields.tsx
 msgid "Command"
@@ -3789,6 +3806,10 @@ msgstr ""
 msgid "DDT issues a certificate for localhost, this computer's name and addresses, and the server names, and serves it on trial until you keep it."
 msgstr ""
 
+#: src/machines/records/RecoveryKeysPanel.tsx
+msgid "DDT no longer holds this replaced key. This cannot be undone."
+msgstr ""
+
 #: src/settings/certificate/CertificateFacts.tsx
 msgid "DDT renews it {renews}."
 msgstr ""
@@ -3881,6 +3902,8 @@ msgstr ""
 #: src/accounts/list/AccountMenu.tsx
 #: src/applications/list/EntryMenu.tsx
 #: src/images/ImageMenu.tsx
+#: src/machines/records/RecoveryKeyRow.tsx
+#: src/machines/records/RecoveryKeysPanel.tsx
 #: src/packages/PackageMenu.tsx
 #: src/roles/list/RoleMenu.tsx
 #: src/rules/list/RuleMenu.tsx
@@ -3938,6 +3961,10 @@ msgstr ""
 
 #: src/sequences/DeleteSequenceDialog.tsx
 msgid "Delete sequence"
+msgstr ""
+
+#: src/machines/records/RecoveryKeysPanel.tsx
+msgid "Delete the key {deletingId}?"
 msgstr ""
 
 #: src/applications/ApplicationDrawer.tsx
@@ -4769,6 +4796,7 @@ msgstr ""
 #: src/machines/list/runDetail.ts
 #: src/machines/MachinePanel.tsx
 #: src/machines/machineView.ts
+#: src/machines/records/AutopilotPanel.tsx
 #: src/runs/flow/nodeDetail.ts
 #: src/runs/runHistory.ts
 #: src/runs/runView.ts
@@ -5225,6 +5253,10 @@ msgstr ""
 msgid "Group name"
 msgstr ""
 
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Group tag"
+msgstr ""
+
 #: src/sequences/flow/flowLabels.ts
 #: src/ui/FlowNode.tsx
 msgid "Group: {name}"
@@ -5390,6 +5422,10 @@ msgstr ""
 
 #: src/packages/languages/LanguageIsoDialog.tsx
 msgid "Import languages"
+msgstr ""
+
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Imported"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -6655,7 +6691,7 @@ msgid "Name, language or KB"
 msgstr ""
 
 #: src/machines/list/MachineListHeader.tsx
-msgid "Name, MAC, serial or address"
+msgid "Name, MAC, serial, address or key ID"
 msgstr ""
 
 #: src/packages/packageKindTexts.ts
@@ -7357,6 +7393,10 @@ msgstr ""
 msgid "Not taken"
 msgstr ""
 
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Not uploaded"
+msgstr ""
+
 #: src/applications/list/UsedBy.tsx
 msgid "Not used"
 msgstr ""
@@ -7517,6 +7557,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "machine.cannotBeRemoved"
 msgid "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "recoveryKey.current"
+msgid "Only a replaced key can be deleted. This one is the volume's current key."
 msgstr ""
 
 #: src/sequences/steps/ScriptRunAsSetting.tsx
@@ -8150,8 +8195,16 @@ msgctxt "identity.recoveryCodeRedemptionFailed"
 msgid "Recovery code redemption failed."
 msgstr ""
 
+#: src/machines/records/RecoveryKeysPanel.tsx
+msgid "Recovery keys"
+msgstr ""
+
 #: src/sequences/steps/PartitionFields.tsx
 msgid "Recovery partition in MB"
+msgstr ""
+
+#: src/machines/records/RecoveryKeyRow.tsx
+msgid "Recovery password for {keyId}"
 msgstr ""
 
 #: src/settings/signIn/ProviderGroup.tsx
@@ -8198,6 +8251,7 @@ msgstr ""
 
 #: src/applications/drawer/FilesField.tsx
 #: src/machines/actions/MachineMenu.tsx
+#: src/machines/actions/RemoveKeysConfirm.tsx
 #: src/sequences/builder/canvas/NodeMenu.tsx
 #: src/sequences/builder/inspector/NodeKeys.tsx
 #: src/sequences/builder/variables/DeclarationRow.tsx
@@ -8217,6 +8271,10 @@ msgstr ""
 
 #: src/settings/roleMap/RoleMapEntry.tsx
 msgid "Remove {key}"
+msgstr ""
+
+#: src/machines/actions/RemoveKeysConfirm.tsx
+msgid "Remove {label} and its recovery keys?"
 msgstr ""
 
 #: src/sequences/builder/inspector/NodeKeys.tsx
@@ -8376,6 +8434,10 @@ msgstr ""
 msgid "Replace"
 msgstr ""
 
+#: src/machines/records/RecoveryKeyRow.tsx
+msgid "Replaced"
+msgstr ""
+
 #: src/values/values.ts
 msgid "Reported by the machine"
 msgstr ""
@@ -8482,6 +8544,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "machineState.retired"
 msgid "Retired"
+msgstr ""
+
+#: src/machines/records/RecoveryKeyRow.tsx
+msgid "Reveal"
 msgstr ""
 
 #: src/settings/ProxiesPanel.tsx
@@ -9011,6 +9077,7 @@ msgid "Serial {serial}"
 msgstr ""
 
 #: src/machines/facts.ts
+#: src/machines/records/AutopilotPanel.tsx
 #: src/sequences/steps.ts
 msgid "Serial number"
 msgstr ""
@@ -11315,6 +11382,11 @@ msgstr ""
 msgid "The server answered with status {status}."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "recoveryKey.unreadable"
+msgid "The server can't decrypt this key. Its key ring is not the one that saved it."
+msgstr ""
+
 #: src/settings/CertificatePanel.tsx
 msgid "The server certificate could not be read."
 msgstr ""
@@ -12278,6 +12350,7 @@ msgstr ""
 msgid "Updates from the Microsoft Update Catalog, cabinets, or the Languages and Optional Features ISO."
 msgstr ""
 
+#: src/machines/records/AutopilotPanel.tsx
 #: src/uploads/UploadPanel.tsx
 msgid "Upload"
 msgstr ""
@@ -12628,6 +12701,7 @@ msgid "Virtual Machine Platform"
 msgstr ""
 
 #: src/machines/machineView.ts
+#: src/machines/records/AutopilotPanel.tsx
 msgid "Waiting"
 msgstr ""
 

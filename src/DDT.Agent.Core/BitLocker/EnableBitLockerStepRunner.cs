@@ -109,7 +109,7 @@ public sealed class EnableBitLockerStepRunner(
         // Leftovers of an attempt that was cut off before the server had the password. A fresh Windows has none.
         foreach (Guid leftover in await tools.BitLocker.RecoveryPasswordIdsAsync(volume, cancellationToken).ConfigureAwait(false))
         {
-            log.Information($"Deleting recovery password protector {leftover:B}, which the server never confirmed.");
+            log.Information($"Deleting recovery password protector {ManageBdeBitLocker.KeyId(leftover)}, which the server never confirmed.");
             await tools.BitLocker.DeleteProtectorAsync(volume, leftover, cancellationToken).ConfigureAwait(false);
         }
 

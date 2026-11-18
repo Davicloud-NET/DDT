@@ -126,7 +126,7 @@ Two things that save an afternoon:
   sign-in, roles and API tokens.
 - **Builds its own boot image.** On the server, with the server's address, its certificate and the
   drivers you flagged, and it tells you when the image has gone stale. It stays lean, too: about
-  305 MB, roughly a third smaller than a typical MDT LiteTouchPE.
+  308 MB, roughly a third smaller than a typical MDT LiteTouchPE.
 - **Installs with one command.** An MSI and a Windows service on Windows Server, one container on
   Linux. The database is a SQLite file until you point DDT at PostgreSQL or SQL Server.
 - **Gets along with what MDT left behind.** It sits in the WDS boot menu next to LiteTouch, keeps

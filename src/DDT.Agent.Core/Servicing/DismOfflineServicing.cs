@@ -29,7 +29,7 @@ public sealed class DismOfflineServicing(IToolRunner tools, string dismPath, Age
         ArgumentNullException.ThrowIfNull(packages);
         ArgumentNullException.ThrowIfNull(percent);
 
-        DismLines lines = new(percent);
+        DismLines lines = new(percent, startsOver: packages.Any(package => package.EndsWith(".msu", StringComparison.OrdinalIgnoreCase)));
         int exitCode = await tools.RunForExitCodeAsync(
             dismPath,
             [$"/Image:{image.Windows}", "/Add-Package", .. packages.Select(package => $"/PackagePath:{package}"), .. Common(image)],

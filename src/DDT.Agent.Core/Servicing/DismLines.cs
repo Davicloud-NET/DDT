@@ -8,9 +8,11 @@ using System.Text.RegularExpressions;
 namespace DDT.Agent.Servicing;
 
 // Reads one DISM call's output for the log: the image's version it prints first, and the percent of its progress bar.
-public sealed partial class DismLines(IProgress<int>? percent)
+public sealed partial class DismLines(IProgress<int>? percent, bool startsOver = false)
 {
     private int _highest = -1;
+    private int _last = -1;
+    private int _runs;
 
     public Version? ImageVersion { get; private set; }
 
@@ -21,8 +23,8 @@ public sealed partial class DismLines(IProgress<int>? percent)
         return lines.Select(VersionOf).FirstOrDefault(version => version is not null);
     }
 
-    // DISM draws its progress bar on one line again and again, and starts it over within a call. The bar only gives
-    // the percent, which never falls, and the log gets the rest.
+    // DISM draws its progress bar on one line again and again. The bar only gives the percent, which never falls, and
+    // the log gets the rest.
     public string? Read(string line)
     {
         ArgumentNullException.ThrowIfNull(line);
@@ -36,6 +38,11 @@ public sealed partial class DismLines(IProgress<int>? percent)
 
         int value = (int)double.Parse(bar.Groups["percent"].Value, CultureInfo.InvariantCulture);
 
+        if (startsOver)
+        {
+            value = OfAllRuns(value);
+        }
+
         if (value > _highest)
         {
             _highest = value;
@@ -43,6 +50,20 @@ public sealed partial class DismLines(IProgress<int>? percent)
         }
 
         return null;
+    }
+
+    // An update's bar runs several times in one call, and how often isn't known: each run gets half of what is left.
+    private int OfAllRuns(int value)
+    {
+        if (value < _last)
+        {
+            _runs++;
+        }
+
+        _last = value;
+        double left = 100 * Math.Pow(0.5, _runs);
+
+        return (int)(100 - left + (value * left / 200));
     }
 
     private static Version? VersionOf(string line) =>

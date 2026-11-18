@@ -59,7 +59,7 @@ public sealed class ServicingPlanTests : IDisposable
     }
 
     [Fact]
-    public async Task TheProgressOfOneCallNeverFallsWhenDismsBarStartsOver()
+    public async Task AnUpdatesBarThatStartsOverGetsHalfOfWhatIsLeft()
     {
         RecordingToolRunner tools = new();
         RecordingProgress percent = new();
@@ -73,7 +73,7 @@ public sealed class ServicingPlanTests : IDisposable
             lines(bar);
         }
 
-        Assert.Equal([95, 96], percent.Values);
+        Assert.Equal([47, 72, 74], percent.Values);
     }
 
     public void Dispose() => Directory.Delete(_root, recursive: true);

@@ -72,7 +72,7 @@ public sealed class ServicingDryRunTests(DryRunLab lab)
         Assert.Equal(1, agent.Output.Count($"Dry run: {Update} not added, and taken as added."));
         Assert.Equal(0, agent.Output.Count($"Dry run: {Checkpoint}"));
         Assert.Equal(1, agent.Output.Count("Dry run: the image is not cleaned up."));
-        Assert.Equal(1, agent.Output.Count($"Added {language.Name}; {language.Name}; {update.Name}."));
+        Assert.Equal(1, agent.Output.Count($"Added {language.Name}; {update.Name}."));
 
         lab.AssertClean([agent], [], ("The run's detail", JsonSerializer.Serialize(run, DdtJsonContext.Default.DeploymentView)));
     }

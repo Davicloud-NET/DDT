@@ -36,13 +36,13 @@ public sealed class ManageBdeBitLocker(IToolRunner tools, string manageBdePath, 
 
     public static IReadOnlyList<string> TpmProtectorArguments(string volume) => ["-protectors", "-get", volume, "-type", "TPM"];
 
-    public static IReadOnlyList<string> RecoveryPasswordsArguments(string volume) => ["-protectors", "-get", volume, "-type", "RecoveryPassword"];
+    public static IReadOnlyList<string> RecoveryProtectorsArguments(string volume) => ["-protectors", "-get", volume, "-type", "RecoveryPassword"];
 
     public static IReadOnlyList<string> DeleteArguments(string volume, Guid id) => ["-protectors", "-delete", volume, "-id", KeyId(id)];
 
     public static IReadOnlyList<string> AddTpmArguments(string volume) => ["-protectors", "-add", volume, "-tpm"];
 
-    public static IReadOnlyList<string> AddRecoveryPasswordArguments(string volume) => ["-protectors", "-add", volume, "-recoverypassword"];
+    public static IReadOnlyList<string> AddRecoveryProtectorArguments(string volume) => ["-protectors", "-add", volume, "-recoverypassword"];
 
     public static IReadOnlyList<string> BackupArguments(string volume, Guid id) => ["-protectors", "-adbackup", volume, "-id", KeyId(id)];
 
@@ -97,7 +97,7 @@ public sealed class ManageBdeBitLocker(IToolRunner tools, string manageBdePath, 
     public async Task<IReadOnlyList<Guid>> RecoveryPasswordIdsAsync(string volume, CancellationToken cancellationToken)
     {
         PrivateOutput output = new();
-        int exitCode = await ManageBdeAsync(RecoveryPasswordsArguments(volume), new ToolRunOptions(Timeout: Timeout, Private: output), cancellationToken).ConfigureAwait(false);
+        int exitCode = await ManageBdeAsync(RecoveryProtectorsArguments(volume), new ToolRunOptions(Timeout: Timeout, Private: output), cancellationToken).ConfigureAwait(false);
 
         if (exitCode == NoProtector)
         {
@@ -130,7 +130,7 @@ public sealed class ManageBdeBitLocker(IToolRunner tools, string manageBdePath, 
     public async Task<RecoveryPassword?> AddRecoveryPasswordAsync(string volume, CancellationToken cancellationToken)
     {
         PrivateOutput output = new();
-        int exitCode = await ManageBdeAsync(AddRecoveryPasswordArguments(volume), new ToolRunOptions(Timeout: Timeout, Private: output), cancellationToken).ConfigureAwait(false);
+        int exitCode = await ManageBdeAsync(AddRecoveryProtectorArguments(volume), new ToolRunOptions(Timeout: Timeout, Private: output), cancellationToken).ConfigureAwait(false);
 
         if (exitCode is NoTpm or NoCompatibleTpm)
         {

@@ -58,6 +58,7 @@ public sealed class ServicePackagesStepRunner(IOfflineServicing dism, RunDownloa
                 return StepResult.Failed(error);
             }
 
+            context.Progress.Report(Added);
             Version? after = step.Cleanup
                 ? await CleanupAsync(Image(volumes, scratch, directory, logs), context, cancellationToken).ConfigureAwait(false)
                 : tally.Before is null ? null : await dism.VersionAsync(Image(volumes, scratch, directory, logs), cancellationToken).ConfigureAwait(false);

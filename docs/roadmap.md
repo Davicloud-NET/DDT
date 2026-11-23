@@ -219,6 +219,9 @@ Three parts, each a pull request that works by itself. All three are built.
        writes one script to `%ProgramData%\DDT\FirstLogon` (SYSTEM and administrators only) and one
        RunOnce value that starts it, and sets the automatic logon with the password as an LSA
        secret. Both take effect from the next start of Windows, after the agent has removed itself.
+     - Known leftovers: the LSA secret stays after the last automatic logon, readable by SYSTEM
+       and administrators only. An automatic logon as an account that is no administrator never
+       runs the commands, and their script and RunOnce value stay.
    - A deployment record. [Tattoo]
      - `HKLM\SOFTWARE\Davicloud\DDT\Deployment`, strings: SequenceName, SequenceId,
        SequenceRevision, RunId, Result, DeployedUtc, ImageName, DdtVersion, ServerName.
@@ -229,8 +232,8 @@ Three parts, each a pull request that works by itself. All three are built.
      the application being installed, the feature being enabled, "Downloading 5 updates".
    - While a run goes on in the installed Windows, the machine does not go to sleep and the
      console keeps the display on.
-   - Tried on a Hyper-V virtual machine with Windows 11 25H2 and Windows Server 2025. Not on a
-     physical PC, and automatic logon not with a domain account.
+   - Tried on a Hyper-V virtual machine with Windows 11 25H2 and Windows Server 2025, automatic
+     logon also as a domain account. Not on a physical PC.
 3. **Servicing and security.** The four new steps make a sequence version 8.
    - Windows packages, under Library > Windows packages. [Packages]
      - A `.msu` or `.cab` file, or a zip of them at its top. Anything else in the zip is refused.
@@ -297,6 +300,9 @@ Three parts, each a pull request that works by itself. All three are built.
      PowerShell components. Only Pre-provision BitLocker needs them: the Boot image page asks for a
      rebuild while a sequence has that step and the served image lacks them.
    - Detail lines: the package being added, the cleanup, the percent encrypted.
+   - Tried on a Hyper-V virtual machine with Windows 11 25H2 and Windows Server 2025, the backup
+     against a Windows Server 2025 domain controller. Not on a physical PC, and the Autopilot
+     upload not against a real tenant.
 
 ## M10 Golden images and the machine lifecycle
 

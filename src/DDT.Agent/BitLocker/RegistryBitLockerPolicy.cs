@@ -33,11 +33,27 @@ public sealed class RegistryBitLockerPolicy(RegistryKey machine) : IBitLockerPol
     {
         ArgumentNullException.ThrowIfNull(names);
 
-        using RegistryKey? key = machine.OpenSubKey(ActiveDirectoryBackupPolicy.KeyPath, writable: true);
+        bool empty;
 
-        foreach (string name in names)
+        using (RegistryKey? key = machine.OpenSubKey(ActiveDirectoryBackupPolicy.KeyPath, writable: true))
         {
-            key?.DeleteValue(name, throwOnMissingValue: false);
+            if (key is null)
+            {
+                return;
+            }
+
+            foreach (string name in names)
+            {
+                key.DeleteValue(name, throwOnMissingValue: false);
+            }
+
+            empty = key.ValueCount == 0 && key.SubKeyCount == 0;
+        }
+
+        // Set may have made the key, and an empty policy key says nothing.
+        if (empty)
+        {
+            machine.DeleteSubKey(ActiveDirectoryBackupPolicy.KeyPath, throwOnMissingSubKey: false);
         }
     }
 }

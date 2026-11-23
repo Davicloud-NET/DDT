@@ -89,7 +89,7 @@ public sealed class ManageBdeBitLockerTests
 
         DeploymentStepException failure = await Assert.ThrowsAsync<DeploymentStepException>(() => BitLocker.AddRecoveryPasswordAsync("C:", TestContext.Current.CancellationToken));
 
-        Assert.Equal("manage-bde could not add a recovery password on C: (exit code 0x00000005).", failure.Message);
+        Assert.Equal($"manage-bde could not add a recovery password on C: (exit code {ToolRunner.ExitCodeText(5)}).", failure.Message);
     }
 
     [Fact]
@@ -181,7 +181,7 @@ public sealed class ManageBdeBitLockerTests
             () => BitLocker.BackupToActiveDirectoryAsync("C:", Guid.Parse(Id), TestContext.Current.CancellationToken));
 
         Assert.Equal(
-            "manage-bde could not back up the recovery password to Active Directory on C: (exit code 0x8031006A). Its output is in the machine log.",
+            $"manage-bde could not back up the recovery password to Active Directory on C: (exit code {ToolRunner.ExitCodeText(unchecked((int)0x8031006A))}). Its output is in the machine log.",
             failure.Message);
     }
 
@@ -212,7 +212,7 @@ public sealed class ManageBdeBitLockerTests
 
         DeploymentStepException failure = await Assert.ThrowsAsync<DeploymentStepException>(() => BitLocker.TurnOnAsync("C:", TestContext.Current.CancellationToken));
 
-        Assert.Equal("manage-bde could not turn BitLocker on on C: (exit code 0x8004100E). Its output is in the machine log.", failure.Message);
+        Assert.Equal($"manage-bde could not turn BitLocker on on C: (exit code {ToolRunner.ExitCodeText(ManageBdeBitLocker.NotReady)}). Its output is in the machine log.", failure.Message);
         Assert.Equal(37, _tools.Calls.Count);
         Assert.Equal(ManageBdeBitLocker.NotReadyWait, _time.Delays.Aggregate(TimeSpan.Zero, (sum, delay) => sum + delay));
     }

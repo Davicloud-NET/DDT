@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using DDT.Agent.Deployment;
+using DDT.Agent.Sequences;
 using DDT.Agent.Servicing;
 using DDT.Contracts.Agents;
 using DDT.Contracts.Sequences;
@@ -53,7 +54,7 @@ public sealed class ServicePackagesStepRunnerTests : IDisposable
 
     private ServicePackagesStepRunner Runner => new(new DismOfflineServicing(_run.ToolRunner, Dism, _run.Log), _run.Downloads, _run.Session, _run.Log);
 
-    private string Directory => Path.Combine(_run.Tools.Volumes.Windows, "DDT");
+    private string Directory => RunFiles.DirectoryIn(_run.Tools.Volumes.Windows);
 
     [Fact]
     public async Task AddsLanguagePacksThenFeaturesThenUpdatesLowestKbFirstAndCleansUp()
@@ -221,7 +222,7 @@ public sealed class ServicePackagesStepRunnerTests : IDisposable
 
         DeploymentStepException exception = await Assert.ThrowsAsync<DeploymentStepException>(() => RunAsync(s_step));
 
-        Assert.Equal("DISM could not add the packages (exit code 0x80070070). The last lines of its log are in the machine log.", exception.Message);
+        Assert.Equal($"DISM could not add the packages (exit code {ToolRunner.ExitCodeText(unchecked((int)0x80070070))}). The last lines of its log are in the machine log.", exception.Message);
         List<string> messages = await MessagesAsync();
         Assert.Contains("dism.log: line 50", messages);
         Assert.Contains("dism.log: line 11", messages);
@@ -239,7 +240,7 @@ public sealed class ServicePackagesStepRunnerTests : IDisposable
 
         Assert.Equal(StepResult.Done(), result);
         Assert.Contains(
-            "DISM could not clean up the image (exit code 0x00000005). The last lines of its log are in the machine log. The packages are added; the image keeps the components they replaced.",
+            $"DISM could not clean up the image (exit code {ToolRunner.ExitCodeText(5)}). The last lines of its log are in the machine log. The packages are added; the image keeps the components they replaced.",
             await MessagesAsync());
     }
 

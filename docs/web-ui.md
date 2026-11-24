@@ -174,6 +174,21 @@ Linux's next call. The machine's summary also carries `sequenceVersion`, the new
 and a sequence's summary its `version`, from which `startNotice` in `machines/bootEnvironment.ts` tells in the assign
 dialog and the approval that a run will wait for a newer agent.
 
+## Windows packages, recovery keys and Autopilot
+
+| Where | What |
+|---|---|
+| `packages/WindowsPackagesPage.tsx` | Library > Windows packages: `PackagesPage` with the kind `WindowsPackage`. The Content column (`WindowsContent.tsx`, `windowsPackageView.ts`) shows Update, Language, Features on demand or Updates and features, with languages, KB numbers, architecture and builds. `PackageDialog` edits the builds; the search finds them too. |
+| `packages/languages` | `LanguageIsoPanel` lists the ISO files in the import folders, `LanguageIsoDialog` asks the languages (searchable above 8) and the end of the names, and the import's progress shows in the panel. An ISO uploaded on the page goes to the import folder and opens the dialog. |
+| `settings/AutopilotPage.tsx` | Machines > Autopilot, administrators only: the `autopilot` settings section, with the client secret as a `SettingSecret`. |
+| `machines/records` | `MachineRecordPanels` on the machine's page, shown once a run handed something over: `RecoveryKeysPanel` with a `RecoveryKeyRow` per key (Reveal and Delete for administrators, the password in a `SecretValue` until the page is left) and `AutopilotPanel` (serial number, group tag, collected, upload state; Download CSV and Upload to Autopilot for operators). `AutopilotCsvButton` is the Machines page's CSV of the machines shown. `useRecoveryKeyMatches` adds the machines a key ID finds to the list's search. |
+| `machines/actions/RemoveKeysConfirm.tsx` | Removing a machine whose keys the server counted: the server refuses until the request names that count. |
+| `sequences/steps` | `ServicePackagesFields` (package picker of Windows packages, matching updates, cleanup), `PreprovisionBitLockerFields`, `EnableBitLockerFields`, `RegisterAutopilotFields`; their types are in `sequences/windowsSteps.ts`. |
+
+- The records come from `GET /api/machines/{id}/records`, and `machineRecordsChanged` patches them. A revealed
+  password stays in `useRecoveryKeyActions`' state, never in the query cache.
+- `boot/StaleReasonText.tsx` says `bitLocker`: a sequence pre-provisions BitLocker and the served boot image cannot.
+
 ## Motion
 
 What moves, and how, is in `src/DDT.Design/README.md`; the values are the `motion` tokens, which the theme carries

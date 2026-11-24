@@ -21,4 +21,6 @@ public sealed record PackageSummary(
     DateTimeOffset UploadedUtc,
     string? UploadedBy,
     // Set on a driver package that goes into the Windows PE boot image.
-    bool BootImage = false);
+    bool BootImage = false,
+    // Set on a Windows package.
+    WindowsPackageFacts? Windows = null);

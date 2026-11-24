@@ -12,8 +12,21 @@ import type { HardwareModel, HardwareModelCount } from "@/machines/machines";
 import type { SequenceView } from "@/sequences/sequences";
 
 // Drivers go to machines whose model a target names. Files are unpacked for a Run script step naming them. An
-// application's files only show with their application; the server does not list them here.
-export type PackageKind = "Drivers" | "Files" | "Application";
+// application's files only show with their application; the server does not list them here. A Windows package holds
+// .msu and .cab files that DISM adds to an applied Windows.
+export type PackageKind = "Drivers" | "Files" | "Application" | "WindowsPackage";
+
+export type WindowsPackageContent = "Update" | "Language" | "Features" | "Mixed";
+
+// Read from the file names, but builds, which an administrator marks. architecture is null unless every file names the
+// same one.
+export interface WindowsPackageFacts {
+  content: WindowsPackageContent;
+  languages: string[];
+  architecture: string | null;
+  kbNumbers: number[];
+  builds: number[];
+}
 
 // expandedBytes is the size of the files once unpacked.
 export interface PackageSummary {
@@ -31,6 +44,8 @@ export interface PackageSummary {
   uploadedBy: string | null;
   // Drivers only: added to the Windows PE boot image at its next build.
   bootImage: boolean;
+  // Windows packages only.
+  windows?: WindowsPackageFacts | null;
 }
 
 // The last save wins, because the server keeps no revision of a package.
@@ -40,6 +55,8 @@ export interface UpdatePackageRequest {
   targets: HardwareModel[];
   // Null leaves it as it is. Only drivers may go into the boot image.
   bootImage?: boolean | null;
+  // Null leaves them as they are. Only a Windows package has builds.
+  builds?: number[] | null;
 }
 
 export interface PackagesRemoved {
@@ -115,17 +132,25 @@ export function matchingMachines(
 }
 
 // The sequences that give the package to machines. A Files package needs a Run script step that names it.
-// Drivers need any Inject drivers step, which adds every driver package whose targets match the machine.
+// Drivers need any Inject drivers step, which adds every driver package whose targets match the machine. A Windows
+// package needs a Service packages step that lists it.
 export function sequencesUsing(
   item: PackageSummary,
   sequences: readonly SequenceView[],
 ): SequenceView[] {
   return sequences.filter((sequence) =>
-    sequence.definition.steps.some((step) =>
-      item.kind === "Files"
-        ? step.kind === "runScript" && step.packageId === item.id
-        : step.kind === "injectDrivers",
-    ),
+    sequence.definition.steps.some((step) => {
+      switch (item.kind) {
+        case "Files":
+          return step.kind === "runScript" && step.packageId === item.id;
+        case "Drivers":
+          return step.kind === "injectDrivers";
+        case "WindowsPackage":
+          return step.kind === "servicePackages" && step.packages.includes(item.id);
+        default:
+          return false;
+      }
+    }),
   );
 }
 
@@ -145,11 +170,13 @@ export function deletionConsequence(
   const size = formatBytes(item.sizeBytes);
   const sentences = [t`${name} (${size}) is deleted from the library.`];
 
-  if (item.kind === "Files" && users === null) {
+  const named = item.kind !== "Drivers";
+
+  if (named && users === null) {
     sentences.push(t`Sequences that name it show a problem until another package is chosen.`);
-  } else if (item.kind === "Files" && count === 0) {
+  } else if (named && count === 0) {
     sentences.push(t`No sequence names it.`);
-  } else if (item.kind === "Files") {
+  } else if (named) {
     sentences.push(
       plural(count, {
         one: `The sequence ${names} shows a problem until another package is chosen.`,

@@ -87,6 +87,7 @@ public sealed class SettingsSecretChanges(SettingsProtector protector)
         {
             (SettingsSectionNames.Ldap, "BindPassword") => LdapSettingsSection.Destination,
             (SettingsSectionNames.Oidc, "ClientSecret") => OidcSettingsSection.Destination,
+            (SettingsSectionNames.Autopilot, "ClientSecret") => AutopilotSettingsSection.Destination,
             _ => [],
         };
 

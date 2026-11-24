@@ -223,7 +223,7 @@ describe("BootImagePage", () => {
   it("says each reason the image has to be built again, and goes back to the build before", async () => {
     const stale = bootImageView({
       stale: true,
-      staleReasons: ["serverAddress", "root", "adk"],
+      staleReasons: ["serverAddress", "root", "adk", "bitLocker"],
       builder: {
         available: true,
         serverUrl: "https://deploy02.contoso.local:8443",
@@ -248,6 +248,7 @@ describe("BootImagePage", () => {
     expect(notice).toHaveTextContent("It names the server https://deploy01.contoso.local:8443");
     expect(notice).toHaveTextContent("It trusts another root certificate");
     expect(notice).toHaveTextContent("10.1.26100.9457, and the server now has 10.1.26100.9999");
+    expect(notice).toHaveTextContent("A sequence pre-provisions BitLocker");
 
     const builds = rowOf(screen.getByRole("heading", { name: "Builds on the server" }), "section");
     const rows = within(builds).getAllByRole("listitem");

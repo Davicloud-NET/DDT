@@ -18,5 +18,7 @@ internal enum Happened
     RawImageWritten = 32,
     SeedWritten = 64,
     SeedEveryTime = 128,
-    All = 255,
+    BitLockerPreprovisioned = 256,
+    BitLockerEnabled = 512,
+    All = 1023,
 }

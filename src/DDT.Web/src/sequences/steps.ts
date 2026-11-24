@@ -18,8 +18,10 @@ import type {
 
 const kindLabels: Record<StepKind, MessageDescriptor> = {
   partition: msg`Partition the disk`,
+  preprovisionBitLocker: msg`Pre-provision BitLocker`,
   applyImage: msg`Apply image`,
   injectDrivers: msg`Inject drivers`,
+  servicePackages: msg`Service packages`,
   writeUnattend: msg`Write the answer file`,
   joinDomain: msg`Join the domain`,
   runScript: msg`Run script`,
@@ -31,6 +33,8 @@ const kindLabels: Record<StepKind, MessageDescriptor> = {
   installApplications: msg`Install applications`,
   enableFeatures: msg`Enable roles and features`,
   windowsUpdate: msg`Windows Update`,
+  registerAutopilot: msg`Register with Autopilot`,
+  enableBitLocker: msg`Enable BitLocker`,
   group: msg`Group`,
   if: msg`If`,
   repeat: msg`Repeat`,
@@ -239,10 +243,14 @@ export function newStep(
         systemPartitionMegabytes: 300,
         recoveryPartitionMegabytes: 1024,
       };
+    case "preprovisionBitLocker":
+      return { ...common, kind, ifUnavailable: "Skip" };
     case "applyImage":
       return { ...common, kind, imageId: EMPTY_ID };
     case "injectDrivers":
       return { ...common, kind, requireMatch: false };
+    case "servicePackages":
+      return { ...common, kind, packages: [], matchingUpdates: false, cleanup: true };
     case "writeUnattend":
       return {
         ...common,
@@ -305,6 +313,17 @@ export function newStep(
         microsoftProducts: true,
         excludedKbs: [],
         restartLimit: 8,
+      };
+    case "registerAutopilot":
+      return { ...common, kind, groupTag: null, waitForImport: false, waitMinutes: 30 };
+    case "enableBitLocker":
+      return {
+        ...common,
+        kind,
+        ifNoTpm: "Fail",
+        backupToActiveDirectory: true,
+        waitForEncryption: false,
+        waitMinutes: 120,
       };
     case "group":
       return { ...common, kind, steps: [] };

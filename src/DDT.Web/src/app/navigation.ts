@@ -26,6 +26,7 @@ export const categories: NavigationCategory[] = [
       { to: "/machines", label: msg`All machines` },
       { to: "/machines/runs", label: msg`Run history` },
       { to: "/machines/approval", label: msg`Approval and zero touch` },
+      { to: "/machines/autopilot", label: msg`Autopilot` },
     ],
   },
   {
@@ -46,6 +47,7 @@ export const categories: NavigationCategory[] = [
       { to: "/library/images", label: msg`OS images` },
       { to: "/library/drivers", label: msg`Drivers` },
       { to: "/library/files", label: msg`Files` },
+      { to: "/library/windows-packages", label: msg`Windows packages` },
       { to: "/library/applications", label: msg`Applications` },
     ],
   },

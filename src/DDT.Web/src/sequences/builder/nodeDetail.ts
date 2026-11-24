@@ -17,6 +17,7 @@ import type {
 } from "../sequences";
 import { EMPTY_ID, inPhase, interpreterLabel } from "../steps";
 import type { StepCatalog } from "../useStepCatalog";
+import type { BitLockerStep } from "../windowsSteps";
 
 // The line a node's card shows under its name. That's its first problem if it has one. Otherwise it's when the node
 // runs and what it does, such as the image it applies or the value it sets. code marks a value such as a template.
@@ -115,6 +116,43 @@ function updatesDetail(node: WindowsUpdateStep): string {
   return parts.join(", ");
 }
 
+// The group tag a Register with Autopilot step sets, and whether it waits for the import.
+function autopilotDetail(groupTag: string | null, wait: boolean): string {
+  const tag = groupTag === null || groupTag.trim() === "" ? t`Default group tag` : groupTag;
+
+  return wait ? t`${tag}, waits for the import` : tag;
+}
+
+// How many packages a Service packages step lists, and whether it adds the matching updates.
+function servicingDetail(count: number, matching: boolean): string {
+  if (count === 0) {
+    return matching ? t`The updates marked for the image's build` : t`No packages chosen yet`;
+  }
+
+  const listed = plural(count, { one: "# package", other: "# packages" });
+
+  return matching ? t`${listed} and the matching updates` : listed;
+}
+
+// What a BitLocker step does without a TPM, and what Enable BitLocker does besides.
+function bitLockerDetail(node: BitLockerStep): string {
+  if (node.kind === "preprovisionBitLocker") {
+    return node.ifUnavailable === "Fail" ? t`Fails without a TPM` : t`Skipped without a TPM`;
+  }
+
+  const parts = [t`TPM and a recovery password`];
+
+  if (node.backupToActiveDirectory) {
+    parts.push(t`backed up to Active Directory`);
+  }
+
+  if (node.waitForEncryption) {
+    parts.push(t`waits for the encryption`);
+  }
+
+  return parts.join(", ");
+}
+
 export function nodeDetail(
   node: SequenceStep,
   {
@@ -188,6 +226,13 @@ export function nodeDetail(
       );
     case "windowsUpdate":
       return plain(updatesDetail(node));
+    case "servicePackages":
+      return plain(servicingDetail(node.packages.length, node.matchingUpdates));
+    case "registerAutopilot":
+      return plain(autopilotDetail(node.groupTag, node.waitForImport));
+    case "preprovisionBitLocker":
+    case "enableBitLocker":
+      return plain(bitLockerDetail(node));
     case "if":
       return plain(conditionSummary(node.test, subjects));
     case "group":

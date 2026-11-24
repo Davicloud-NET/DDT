@@ -81,7 +81,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
 
     public async Task SendLogAsync(Guid machineId, string token, AgentLogBatch batch, CancellationToken cancellationToken)
     {
-        using HttpRequestMessage request = Request(HttpMethod.Post, AgentRoutes.Log(machineId), token);
+        using HttpRequestMessage request = AgentHttpRequests.Create(HttpMethod.Post, AgentRoutes.Log(machineId), token);
         request.Content = JsonContent.Create(batch, AgentJsonContext.Default.AgentLogBatch);
 
         using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -135,7 +135,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
 
     public async Task RequestEnvironmentAsync(Guid machineId, string token, AgentEnvironmentRequest request, CancellationToken cancellationToken)
     {
-        using HttpRequestMessage message = Request(HttpMethod.Post, AgentRoutes.Environment(machineId), token);
+        using HttpRequestMessage message = AgentHttpRequests.Create(HttpMethod.Post, AgentRoutes.Environment(machineId), token);
         message.Content = JsonContent.Create(request, AgentJsonContext.Default.AgentEnvironmentRequest);
 
         using HttpResponseMessage response = await SendAsync(message, cancellationToken).ConfigureAwait(false);
@@ -166,7 +166,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
     // server's reason. Only the headers are read, in case a server ignores the range and sends the whole file.
     public async Task<long?> HeadRunFileAsync(Guid machineId, string token, Guid runId, string sha256, CancellationToken cancellationToken)
     {
-        using HttpRequestMessage request = Request(HttpMethod.Get, AgentRoutes.RunFile(machineId, runId, sha256), token);
+        using HttpRequestMessage request = AgentHttpRequests.Create(HttpMethod.Get, AgentRoutes.RunFile(machineId, runId, sha256), token);
         request.Headers.Range = new RangeHeaderValue(0, 0);
 
         using HttpResponseMessage response = await SendAsync(request, HttpCompletionOption.ResponseHeadersRead, _requestTimeout, cancellationToken)
@@ -183,7 +183,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
         ArgumentNullException.ThrowIfNull(file);
         ArgumentOutOfRangeException.ThrowIfNegative(file.Offset);
 
-        using HttpRequestMessage request = Request(HttpMethod.Get, AgentRoutes.RunFile(machineId, file.RunId, file.Sha256), token);
+        using HttpRequestMessage request = AgentHttpRequests.Create(HttpMethod.Get, AgentRoutes.RunFile(machineId, file.RunId, file.Sha256), token);
 
         if (file.Offset > 0)
         {
@@ -221,7 +221,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
 
     public async Task<string> GetRunUnattendAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken)
     {
-        using HttpRequestMessage request = Request(HttpMethod.Get, AgentRoutes.RunStepUnattend(machineId, runId, stepId), token);
+        using HttpRequestMessage request = AgentHttpRequests.Create(HttpMethod.Get, AgentRoutes.RunStepUnattend(machineId, runId, stepId), token);
         using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
 
         return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
@@ -243,6 +243,17 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
 
     public Task<AgentStepApplications> GetRunStepApplicationsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken) =>
         GetAsync(AgentRoutes.RunStepApplications(machineId, runId, stepId), token, AgentJsonContext.Default.AgentStepApplications, cancellationToken);
+
+    public async Task SendRunRecordAsync(Guid machineId, string token, Guid runId, AgentRecord record, CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = AgentHttpRequests.Create(HttpMethod.Post, AgentRoutes.RunRecords(machineId, runId), token);
+        request.Content = JsonContent.Create(record, AgentJsonContext.Default.AgentRecord);
+
+        using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+    }
+
+    public Task<AgentHardwareHashStatus> GetRunHardwareHashStatusAsync(Guid machineId, string token, Guid runId, CancellationToken cancellationToken) =>
+        GetAsync(AgentRoutes.RunHardwareHash(machineId, runId), token, AgentJsonContext.Default.AgentHardwareHashStatus, cancellationToken);
 
     public void Dispose() => _client.Dispose();
 
@@ -267,23 +278,23 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
 
     private async Task<T> GetAsync<T>(string route, string token, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken)
     {
-        using HttpRequestMessage request = Request(HttpMethod.Get, route, token);
+        using HttpRequestMessage request = AgentHttpRequests.Create(HttpMethod.Get, route, token);
         using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
 
-        return await ReadAsync(response, typeInfo, cancellationToken).ConfigureAwait(false);
+        return await AgentHttpRequests.ReadAsync(response, typeInfo, cancellationToken).ConfigureAwait(false);
     }
 
     // Returns null when the server answers 404, which it does when it offers no such release.
     private async Task<T?> GetUnlessMissingAsync<T>(string route, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken)
         where T : class
     {
-        using HttpRequestMessage request = Request(HttpMethod.Get, route, token: null);
+        using HttpRequestMessage request = AgentHttpRequests.Create(HttpMethod.Get, route, token: null);
 
         try
         {
             using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
 
-            return await ReadAsync(response, typeInfo, cancellationToken).ConfigureAwait(false);
+            return await AgentHttpRequests.ReadAsync(response, typeInfo, cancellationToken).ConfigureAwait(false);
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
         {
@@ -293,12 +304,12 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
 
     private async Task<T> PostAsync<T>(string route, string? token, HttpContent content, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken)
     {
-        using HttpRequestMessage request = Request(HttpMethod.Post, route, token);
+        using HttpRequestMessage request = AgentHttpRequests.Create(HttpMethod.Post, route, token);
         request.Content = content;
 
         using HttpResponseMessage response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
 
-        return await ReadAsync(response, typeInfo, cancellationToken).ConfigureAwait(false);
+        return await AgentHttpRequests.ReadAsync(response, typeInfo, cancellationToken).ConfigureAwait(false);
     }
 
     // A download can wait in the server's queue behind a whole lab for longer than a request may take. So only the
@@ -310,7 +321,7 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
 
         try
         {
-            using HttpRequestMessage request = Request(HttpMethod.Get, route, token: null);
+            using HttpRequestMessage request = AgentHttpRequests.Create(HttpMethod.Get, route, token: null);
             using HttpResponseMessage response = await SendAsync(
                 request,
                 HttpCompletionOption.ResponseHeadersRead,
@@ -326,18 +337,6 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
                 $"the download did not finish within {Durations.Describe(_downloadTimeout)}",
                 exception);
         }
-    }
-
-    private static HttpRequestMessage Request(HttpMethod method, string route, string? token)
-    {
-        HttpRequestMessage request = new(method, route);
-
-        if (token is not null)
-        {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        }
-
-        return request;
     }
 
     private Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
@@ -400,8 +399,4 @@ public sealed class HttpAgentServer : IAgentServer, IDisposable
             throw new HttpRequestException(exception.HttpRequestError, cause, exception);
         }
     }
-
-    private static async Task<T> ReadAsync<T>(HttpResponseMessage response, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken) =>
-        await response.Content.ReadFromJsonAsync(typeInfo, cancellationToken).ConfigureAwait(false)
-        ?? throw new HttpRequestException($"The server sent an empty answer for {response.RequestMessage?.RequestUri}.");
 }

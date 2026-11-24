@@ -6,13 +6,21 @@ using System.Globalization;
 
 namespace DDT.ConsoleProtocol;
 
-// A step detail the console and the web put in their own words, written "#key" or "#key 5". Other text, such as an
-// application's name, is shown as it is.
+// A step detail the console and the web put in their own words, written "#key", "#key 5" or "#key some name". Other
+// text, such as an application's name, is shown as it is.
 public static class StepDetails
 {
     public const string DownloadingUpdates = "downloadingUpdates";
 
     public const string InstallingUpdates = "installingUpdates";
+
+    // With the name of the Windows package DISM adds.
+    public const string AddingPackage = "addingPackage";
+
+    public const string CleaningUp = "cleaningUp";
+
+    // With the percent of the Windows volume BitLocker has encrypted.
+    public const string Encrypting = "encrypting";
 
     public static string Coded(string key, int? number = null)
     {
@@ -21,10 +29,43 @@ public static class StepDetails
         return number is { } value ? $"#{key} {value.ToString(CultureInfo.InvariantCulture)}" : $"#{key}";
     }
 
+    public static string Coded(string key, string text)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+
+        return $"#{key} {text}";
+    }
+
     public static bool TryRead(string? detail, out string key, out int? number)
     {
-        key = "";
         number = null;
+
+        if (!TryReadText(detail, out key, out string? text))
+        {
+            return false;
+        }
+
+        if (text is not null)
+        {
+            if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out int value))
+            {
+                key = "";
+
+                return false;
+            }
+
+            number = value;
+        }
+
+        return true;
+    }
+
+    // The text after the key, or null when there is none.
+    public static bool TryReadText(string? detail, out string key, out string? text)
+    {
+        key = "";
+        text = null;
 
         if (detail is not ['#', .. string rest])
         {
@@ -34,22 +75,13 @@ public static class StepDetails
         int space = rest.IndexOf(' ', StringComparison.Ordinal);
         string name = space < 0 ? rest : rest[..space];
 
-        if (name.Length == 0 || !name.All(char.IsAsciiLetterOrDigit))
+        if (name.Length == 0 || !name.All(char.IsAsciiLetterOrDigit) || (space >= 0 && space == rest.Length - 1))
         {
             return false;
         }
 
-        if (space >= 0)
-        {
-            if (!int.TryParse(rest[(space + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out int value))
-            {
-                return false;
-            }
-
-            number = value;
-        }
-
         key = name;
+        text = space < 0 ? null : rest[(space + 1)..];
 
         return true;
     }

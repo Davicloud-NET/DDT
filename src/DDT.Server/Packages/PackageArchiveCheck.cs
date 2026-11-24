@@ -7,6 +7,7 @@ using System.IO.Compression;
 using DDT.Contracts.Messages;
 using DDT.Contracts.Packages;
 using DDT.Core;
+using DDT.Core.WindowsPackages;
 
 namespace DDT.Server.Packages;
 
@@ -89,6 +90,11 @@ public static class PackageArchiveCheck
         if (kind == PackageKind.Drivers && !files.Any(f => f.FullName.EndsWith(".inf", StringComparison.OrdinalIgnoreCase)))
         {
             return Refused(ServerMessages.PackageNoInf.With());
+        }
+
+        if (kind == PackageKind.WindowsPackage && WindowsFilesProblem(entries) is { } windowsProblem)
+        {
+            return Refused(windowsProblem);
         }
 
         return Inflate(files, declared, cancellationToken);
@@ -186,7 +192,7 @@ public static class PackageArchiveCheck
             ArrayPool<byte>.Shared.Return(buffer);
         }
 
-        return new PackageInspection(files.Count, declared, null);
+        return new PackageInspection(files.Count, declared, null, FileNames: [.. files.Select(file => PathOf(file.FullName))]);
     }
 
     // Each part of the name has to be a name Windows can create, and the path has to stay inside the folder the
@@ -241,6 +247,27 @@ public static class PackageArchiveCheck
         }
 
         return null;
+    }
+
+    // DISM finds an update's checkpoints in the folder of the update it adds, so the files lie side by side at the root.
+    private static ServerMessage? WindowsFilesProblem(IReadOnlyList<ZipArchiveEntry> entries)
+    {
+        foreach (ZipArchiveEntry entry in entries)
+        {
+            string path = PathOf(entry.FullName);
+
+            if (path.Contains('/', StringComparison.Ordinal))
+            {
+                return ServerMessages.PackageWindowsFolder.With("entry", Shown(path));
+            }
+
+            if (!IsFolder(entry.FullName) && !WindowsPackageNames.IsPackageFile(path))
+            {
+                return ServerMessages.PackageWindowsFile.With("entry", Shown(path));
+            }
+        }
+
+        return entries.Any(entry => !IsFolder(entry.FullName)) ? null : ServerMessages.PackageWindowsEmpty.With();
     }
 
     private static bool IsFolder(string name) => name.EndsWith('/') || name.EndsWith('\\');

@@ -8,6 +8,7 @@ import { formatBytes } from "@/lib/format";
 import type { UploadOutcome } from "@/uploads/resumableUpload";
 
 import { describeTarget, type PackageSummary } from "./packages";
+import { windowsSearchTerms } from "./windowsPackageView";
 
 export function describeResult(file: string, outcome: UploadOutcome, item: PackageSummary): string {
   const name = item.name;
@@ -35,5 +36,6 @@ export function matchesPackage(item: PackageSummary, needle: string): boolean {
     item.originalFileName,
     item.uploadedBy,
     ...item.targets.map(describeTarget),
+    ...windowsSearchTerms(item),
   ].some((value) => value?.toLowerCase().includes(needle) === true);
 }

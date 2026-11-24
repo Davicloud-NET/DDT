@@ -157,7 +157,7 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goe
     // Steps a run does only once, which a repeat would do again.
     private static bool RunsOnce(SequenceStep step) =>
         step is PartitionStep or WriteRawImageStep or ApplyImageStep or InjectDriversStep or WriteUnattendStep or JoinDomainStep
-            or WriteCloudInitSeedStep;
+            or WriteCloudInitSeedStep or ServicePackagesStep or PreprovisionBitLockerStep or EnableBitLockerStep;
 
     private static string? PhaseField(SequenceStep step) => step is RunScriptStep ? "phase" : null;
 
@@ -245,17 +245,12 @@ internal sealed class StepRules(SequenceNames names, SequenceKind kind, bool goe
             case PauseStep pause:
                 CheckPause(pause, place, problems);
                 break;
-            case InstallApplicationsStep install:
-                ApplicationStepRules.Check(install, names, problems);
-                break;
-            case EnableFeaturesStep features:
-                FeatureStepRules.Check(features, problems);
-                break;
-            case WindowsUpdateStep updates:
-                UpdateStepRules.Check(updates, problems);
-                break;
             default:
-                problems.Add("kind", ServerMessages.SequenceUnknownStep.With());
+                if (!WindowsStepRules.Check(step, place, names, problems))
+                {
+                    problems.Add("kind", ServerMessages.SequenceUnknownStep.With());
+                }
+
                 break;
         }
     }

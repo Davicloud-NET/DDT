@@ -1289,8 +1289,22 @@ namespace DDT.Server.Migrations.SqlServer
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Architecture")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
                     b.Property<bool>("BootImage")
                         .HasColumnType("bit");
+
+                    b.Property<string>("Builds")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("Content")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1024)
@@ -1303,10 +1317,20 @@ namespace DDT.Server.Migrations.SqlServer
                     b.Property<int>("FileCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("KbNumbers")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("Languages")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)")
+                        .UseCollation("Latin1_General_100_BIN2");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1351,6 +1375,94 @@ namespace DDT.Server.Migrations.SqlServer
                     b.HasIndex("UploadedByUserId");
 
                     b.ToTable("Packages", "ddt");
+                });
+
+            modelBuilder.Entity("DDT.Server.Records.MachineHardwareHash", b =>
+                {
+                    b.Property<Guid>("MachineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CollectedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("GroupTag")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("Hash")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("ImportId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("SerialNumber")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("UploadMessage")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<DateTimeOffset?>("UploadStartedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("UploadState")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.HasKey("MachineId");
+
+                    b.ToTable("MachineHardwareHashes", "ddt");
+                });
+
+            modelBuilder.Entity("DDT.Server.Records.RecoveryKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("MachineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ProtectedPassword")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<Guid>("ProtectorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("ReplacedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("RunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Volume")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MachineId", "ProtectorId")
+                        .IsUnique();
+
+                    b.ToTable("RecoveryKeys", "ddt");
                 });
 
             modelBuilder.Entity("DDT.Server.Rules.MachineRole", b =>
@@ -1879,6 +1991,24 @@ namespace DDT.Server.Migrations.SqlServer
                     b.HasOne("DDT.Server.Data.DdtUser", null)
                         .WithMany()
                         .HasForeignKey("UploadedByUserId");
+                });
+
+            modelBuilder.Entity("DDT.Server.Records.MachineHardwareHash", b =>
+                {
+                    b.HasOne("DDT.Server.Machines.Machine", null)
+                        .WithMany()
+                        .HasForeignKey("MachineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DDT.Server.Records.RecoveryKey", b =>
+                {
+                    b.HasOne("DDT.Server.Machines.Machine", null)
+                        .WithMany()
+                        .HasForeignKey("MachineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DDT.Server.Rules.MachineRole", b =>

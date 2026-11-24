@@ -358,6 +358,10 @@ msgstr ""
 msgid "{count, plural, one {# group} other {# groups}}"
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "{count, plural, one {# package} other {# packages}}"
+msgstr ""
+
 #: src/machines/approval.ts
 #: src/machines/assign/assignText.ts
 #: src/rules/drawer/SequenceChoice.tsx
@@ -390,6 +394,10 @@ msgstr ""
 msgid "{count, plural, one {Added # image from {file}.} other {Added # images from {file}.}}"
 msgstr ""
 
+#: src/machines/actions/RemoveKeysConfirm.tsx
+msgid "{count, plural, one {DDT holds # recovery key of this machine. It goes with the machine and cannot be revealed again.} other {DDT holds # recovery keys of this machine. They go with the machine and cannot be revealed again.}}"
+msgstr ""
+
 #: src/runs/panel/stepDetail.ts
 msgid "{count, plural, one {Downloading # update} other {Downloading # updates}}"
 msgstr ""
@@ -412,6 +420,11 @@ msgstr ""
 
 #: src/images/imageView.ts
 msgid "{count, plural, one {The library now holds # image from {file}.} other {The library now holds # images from {file}.}}"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "machine.removeRecoveryKeys"
+msgid "{count, plural, one {The machine has a recovery key, which is deleted with it.} other {The machine has # recovery keys, which are deleted with it.}} Confirm to remove it."
 msgstr ""
 
 #: src/runs/panel/LinuxDetours.tsx
@@ -467,6 +480,16 @@ msgid "{entry} has no {attribute}, so a sign-in is refused."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "package.windowsFile"
+msgid "{entry} is not a .msu or .cab file. A Windows package holds nothing else."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "package.windowsFolder"
+msgid "{entry} lies in a folder. Put the .msu and .cab files at the top of the zip."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "settings.ldapTest.passwordRefused"
 msgid "{entry} was found, but the directory refused the password."
 msgstr ""
@@ -501,6 +524,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "application.msixUnreadable"
 msgid "{file} is no MSIX or Appx package that can be read."
+msgstr ""
+
+#: src/packages/packageUploadResult.ts
+msgid "{file} is on the server. Choose its languages."
 msgstr ""
 
 #: src/images/imageView.ts
@@ -717,6 +744,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.conditionNumber"
 msgid "{list, select, yes {Enter numbers separated by semicolons, such as 8192;16384.} other {Enter a number, such as 8192.}}"
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "{listed} and the matching updates"
 msgstr ""
 
 #: src/log/LogFilters.tsx
@@ -1052,6 +1083,11 @@ msgctxt "sequence.packageIsDrivers"
 msgid "{package} is a driver package. A script runs with a files package."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.servicingNotWindows"
+msgid "{package} is not a Windows package."
+msgstr ""
+
 #: src/runs/panel/railSteps.ts
 msgid "{passes} passes"
 msgstr ""
@@ -1073,6 +1109,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "import.notAllowed"
 msgid "{path} is no WIM, ESD or ISO in one of this server's import folders."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "import.notAnIso"
+msgid "{path} is not an ISO in one of this server's import folders."
 msgstr ""
 
 #: src/uploads/UploadProgress.tsx
@@ -1261,6 +1302,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.stepApplicationGone"
 msgid "{step} names an application or bundle that is no longer in the library."
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "{tag}, waits for the import"
 msgstr ""
 
 #: src/runs/decisions.ts
@@ -1513,6 +1558,10 @@ msgstr ""
 msgid "64-bit UEFI PCs, over TFTP"
 msgstr ""
 
+#: src/packages/PackageUploadPanel.tsx
+msgid "a .msu, .cab, zip or ISO file"
+msgstr ""
+
 #: src/sequences/steps/WriteCloudInitSeedFields.tsx
 msgid "A #cloud-config document, or a script that starts with #!."
 msgstr ""
@@ -1617,6 +1666,16 @@ msgstr ""
 
 #: src/settings/signIn/ClaimRolesGroup.tsx
 msgid "A group as the provider sends it in the claim above."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.autopilotGroupTag"
+msgid "A group tag has at most {max} characters, without commas or quotation marks."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.autopilot.groupTag"
+msgid "A group tag has at most {max} characters, without commas or quotation marks."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1784,6 +1843,11 @@ msgid "A sequence can ask at most {max} inputs."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.oneBitLocker"
+msgid "A sequence can enable BitLocker only once."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "sequence.nodeCount"
 msgid "A sequence can have at most {max} steps, groups, IFs and repeats together."
 msgstr ""
@@ -1801,6 +1865,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.onePartition"
 msgid "A sequence can partition the disk only once."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.oneBitLockerPreprovision"
+msgid "A sequence can pre-provision BitLocker only once."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1826,6 +1895,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.stepCount"
 msgid "A sequence needs 1 to {max} steps."
+msgstr ""
+
+#: src/boot/StaleReasonText.tsx
+msgid "A sequence pre-provisions BitLocker, which this boot image cannot do. Build it again with PowerShell."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1857,6 +1930,11 @@ msgstr ""
 
 #: src/settings/ApprovalPage.tsx
 msgid "A sign-in at the machine then only records who is there. Zero touch is off while this is on."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.servicingTooMany"
+msgid "A step adds at most {max} Windows packages."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -1957,8 +2035,18 @@ msgstr ""
 msgid "a WIM, ESD, ISO or disk image file"
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "package.build"
+msgid "A Windows build is a number such as 26100."
+msgstr ""
+
 #: src/settings/AgentPanel.tsx
 msgid "A Windows executable of at most 128 MB."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "package.windowsNoTargets"
+msgid "A Windows package goes to the machines whose sequence names it, not by their model, so it has no targets."
 msgstr ""
 
 #: src/sequences/steps/WriteUnattendFields.tsx
@@ -2248,6 +2336,15 @@ msgstr ""
 msgid "Add a variable"
 msgstr ""
 
+#: src/sequences/steps/ServicePackagesFields.tsx
+msgid "Add a Windows package"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.servicingChoose"
+msgid "Add a Windows package, or turn on the matching updates."
+msgstr ""
+
 #: src/accounts/AccountsPage.tsx
 #: src/users/AddUserDialog.tsx
 #: src/users/UserAdministration.tsx
@@ -2309,6 +2406,10 @@ msgctxt "sequence.autoLogonNeedsAdministrator"
 msgid "Add the local administrator to sign in as it."
 msgstr ""
 
+#: src/sequences/steps/ServicePackagesFields.tsx
+msgid "Add the updates marked for the image's build"
+msgstr ""
+
 #: src/sequences/builder/Palette.tsx
 msgid "Add to the flow"
 msgstr ""
@@ -2327,6 +2428,10 @@ msgstr ""
 
 #: src/packages/packageView.ts
 msgid "Added {name} from {file}."
+msgstr ""
+
+#: src/runs/panel/stepDetail.ts
+msgid "Adding {text}"
 msgstr ""
 
 #: src/conditions/conditionSubjects.ts
@@ -2512,6 +2617,10 @@ msgctxt "stepAccount.apiToken"
 msgid "An API token cannot change the accounts that steps use. Sign in on the web to do this."
 msgstr ""
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "An app registration with the Microsoft Graph application permission DeviceManagementServiceConfig.ReadWrite.All. Without it, download the CSV on a machine's page."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "application.tooManyDependencies"
 msgid "An application can depend on at most {max} others."
@@ -2690,6 +2799,10 @@ msgstr ""
 #: src/tokens/OwnTokensPanel.tsx
 #: src/tokens/TokensPage.tsx
 msgid "API tokens"
+msgstr ""
+
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "App registration"
 msgstr ""
 
 #: src/app/UserMenu.tsx
@@ -2938,8 +3051,32 @@ msgstr ""
 msgid "Automatic: Windows PE once a boot image is built, Linux until then"
 msgstr ""
 
+#: src/app/navigation.ts
+#: src/machines/records/AutopilotPanel.tsx
+#: src/settings/AutopilotPage.tsx
+#: src/settings/server/SectionLink.tsx
+msgid "Autopilot"
+msgstr ""
+
+#: src/machines/records/AutopilotCsvButton.tsx
+msgid "Autopilot CSV"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "autopilot.notSetUp"
+msgid "Autopilot uploads are not set up. Enter the tenant, the client ID and the client secret in the Autopilot settings."
+msgstr ""
+
 #: src/about/AboutPage.tsx
 msgid "Back to DDT"
+msgstr ""
+
+#: src/sequences/steps/EnableBitLockerFields.tsx
+msgid "Back up the recovery password to Active Directory"
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "backed up to Active Directory"
 msgstr ""
 
 #: src/machines/facts.ts
@@ -2965,6 +3102,16 @@ msgstr ""
 
 #: src/machines/facts.ts
 msgid "BIOS version"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.bitLockerBeforePartition"
+msgid "BitLocker can be pre-provisioned only after a step that partitions the disk."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.bitLockerAfterImage"
+msgid "BitLocker can be pre-provisioned only before the image is applied."
 msgstr ""
 
 #: src/app/navigation.ts
@@ -3042,6 +3189,10 @@ msgstr ""
 msgid "Building the boot image"
 msgstr ""
 
+#: src/packages/windowsPackageView.ts
+msgid "builds {builds}"
+msgstr ""
+
 #: src/boot/StoredBuilds.tsx
 msgid "Builds on the server"
 msgstr ""
@@ -3100,6 +3251,7 @@ msgstr ""
 #: src/images/import/MdtShareDialog.tsx
 #: src/inputs/InputsDialog.tsx
 #: src/machines/AssignDialog.tsx
+#: src/packages/languages/LanguageIsoDialog.tsx
 #: src/packages/PackageDialog.tsx
 #: src/rules/DrawerFooter.tsx
 #: src/sequences/NewSequenceDialog.tsx
@@ -3325,6 +3477,10 @@ msgctxt "sequence.scriptInterpreter"
 msgid "Choose cmd, PowerShell or the shell."
 msgstr ""
 
+#: src/packages/languages/LanguageIsoPanel.tsx
+msgid "Choose languages"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.conditionVariable"
 msgid "Choose one of the variables {variables}."
@@ -3431,6 +3587,14 @@ msgstr ""
 msgid "Claim with the groups"
 msgstr ""
 
+#: src/sequences/steps/ServicePackagesFields.tsx
+msgid "Clean up after the updates"
+msgstr ""
+
+#: src/runs/panel/stepDetail.ts
+msgid "Cleaning up the image"
+msgstr ""
+
 #: src/accounts/drawer/PasswordActions.tsx
 #: src/settings/parts/SettingSecret.tsx
 msgid "Clear"
@@ -3441,10 +3605,12 @@ msgstr ""
 msgid "Cleared on save"
 msgstr ""
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
 #: src/settings/signIn/ProviderGroup.tsx
 msgid "Client ID"
 msgstr ""
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
 #: src/settings/signIn/ProviderGroup.tsx
 msgid "Client secret"
 msgstr ""
@@ -3475,6 +3641,10 @@ msgstr ""
 
 #: src/sequences/builder/canvas/NodeMenu.tsx
 msgid "Collapse"
+msgstr ""
+
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Collected"
 msgstr ""
 
 #: src/applications/applicationView.ts
@@ -3558,6 +3728,10 @@ msgstr ""
 #: src/runs/runs.ts
 #: src/sequences/steps.ts
 msgid "contains"
+msgstr ""
+
+#: src/packages/PackagesTable.tsx
+msgid "Content"
 msgstr ""
 
 #: src/machines/RunWaiting.tsx
@@ -3705,6 +3879,10 @@ msgstr ""
 msgid "DDT issues a certificate for localhost, this computer's name and addresses, and the server names, and serves it on trial until you keep it."
 msgstr ""
 
+#: src/machines/records/RecoveryKeysPanel.tsx
+msgid "DDT no longer holds this replaced key. This cannot be undone."
+msgstr ""
+
 #: src/settings/certificate/CertificateFacts.tsx
 msgid "DDT renews it {renews}."
 msgstr ""
@@ -3790,6 +3968,11 @@ msgstr ""
 msgid "Default gateway"
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "Default group tag"
+msgstr ""
+
 #: src/settings/DeploymentDefaultsPage.tsx
 msgid "Defaults for every run"
 msgstr ""
@@ -3797,6 +3980,8 @@ msgstr ""
 #: src/accounts/list/AccountMenu.tsx
 #: src/applications/list/EntryMenu.tsx
 #: src/images/ImageMenu.tsx
+#: src/machines/records/RecoveryKeyRow.tsx
+#: src/machines/records/RecoveryKeysPanel.tsx
 #: src/packages/PackageMenu.tsx
 #: src/roles/list/RoleMenu.tsx
 #: src/rules/list/RuleMenu.tsx
@@ -3854,6 +4039,10 @@ msgstr ""
 
 #: src/sequences/DeleteSequenceDialog.tsx
 msgid "Delete sequence"
+msgstr ""
+
+#: src/machines/records/RecoveryKeysPanel.tsx
+msgid "Delete the key {deletingId}?"
 msgstr ""
 
 #: src/applications/ApplicationDrawer.tsx
@@ -4099,6 +4288,10 @@ msgstr ""
 msgid "Done after {times} of at most {most} times"
 msgstr ""
 
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Download CSV"
+msgstr ""
+
 #: src/boot/BuilderPanel.tsx
 msgid "Download the builder"
 msgstr ""
@@ -4115,7 +4308,7 @@ msgstr ""
 msgid "Driver groups, each as a driver package"
 msgstr ""
 
-#: src/packages/PackagesTable.tsx
+#: src/packages/packageKindTexts.ts
 msgid "Driver packages"
 msgstr ""
 
@@ -4129,7 +4322,7 @@ msgstr ""
 
 #: src/app/navigation.ts
 #: src/boot/LastBuild.tsx
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 #: src/sequences/steps/WindowsUpdateFields.tsx
 msgid "Drivers"
 msgstr ""
@@ -4259,12 +4452,24 @@ msgstr ""
 msgid "Empty sequence"
 msgstr ""
 
+#: src/sequences/steps/RegisterAutopilotFields.tsx
+msgid "Empty takes the default from the Autopilot settings."
+msgstr ""
+
 #: src/users/UserActionsMenu.tsx
 msgid "Enable"
 msgstr ""
 
 #: src/sequences/steps.ts
+msgid "Enable BitLocker"
+msgstr ""
+
+#: src/sequences/steps.ts
 msgid "Enable roles and features"
+msgstr ""
+
+#: src/runs/panel/stepDetail.ts
+msgid "Encrypting the disk ({count}%)"
 msgstr ""
 
 #: src/settings/directory/ServerGroup.tsx
@@ -4273,6 +4478,10 @@ msgstr ""
 
 #: src/packages/HardwareModelsField.tsx
 msgid "End a model with * to match every model that starts with it. Leave the manufacturer empty for any."
+msgstr ""
+
+#: src/packages/languages/LanguageIsoDialog.tsx
+msgid "End of the names"
 msgstr ""
 
 #: src/runs/runs.ts
@@ -4408,6 +4617,10 @@ msgctxt "settings.secretForNewServer"
 msgid "Enter it again for the new server: a stored secret goes only to the server it was entered for."
 msgstr ""
 
+#: src/packages/usePackageForm.ts
+msgid "Enter numbers such as 26100."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.reauthenticate.codeNeeded"
 msgid "Enter the code of your authenticator as well."
@@ -4529,6 +4742,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.conditionYesNo"
 msgid "Enter true or false."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "package.builds"
+msgid "Enter up to {max} Windows builds."
 msgstr ""
 
 #: src/sequences/fields/CodesSetting.tsx
@@ -4668,10 +4886,19 @@ msgstr ""
 msgid "Fail when no driver package matches the model"
 msgstr ""
 
+#: src/sequences/steps/EnableBitLockerFields.tsx
+msgid "Fail without a TPM"
+msgstr ""
+
+#: src/sequences/steps/PreprovisionBitLockerFields.tsx
+msgid "Fail without a TPM or a boot image with BitLocker"
+msgstr ""
+
 #: src/boot/JobPanel.tsx
 #: src/machines/list/runDetail.ts
 #: src/machines/MachinePanel.tsx
 #: src/machines/machineView.ts
+#: src/machines/records/AutopilotPanel.tsx
 #: src/runs/flow/nodeDetail.ts
 #: src/runs/runHistory.ts
 #: src/runs/runView.ts
@@ -4694,9 +4921,17 @@ msgstr ""
 msgid "Failover Clustering"
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "Fails without a TPM"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "settings.ldap.nestedGroupsOff"
 msgid "false reads no groups, so every directory user would be refused. Turn it on, or empty GroupRoleMap."
+msgstr ""
+
+#: src/packages/windowsPackageView.ts
+msgid "Features on demand"
 msgstr ""
 
 #: src/applications/applicationView.ts
@@ -4704,14 +4939,14 @@ msgstr ""
 msgid "File"
 msgstr ""
 
-#: src/packages/PackagesTable.tsx
+#: src/packages/packageKindTexts.ts
 msgid "File packages"
 msgstr ""
 
 #: src/app/navigation.ts
 #: src/applications/drawer/FilesField.tsx
 #: src/applications/list/ApplicationsTable.tsx
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 msgid "Files"
 msgstr ""
 
@@ -4767,7 +5002,7 @@ msgstr ""
 msgid "Find a directory group"
 msgstr ""
 
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 msgid "Find a driver package"
 msgstr ""
 
@@ -4775,12 +5010,16 @@ msgstr ""
 msgid "Find a fact or a variable"
 msgstr ""
 
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 msgid "Find a file package"
 msgstr ""
 
 #: src/users/DirectoryGroupSearch.tsx
 msgid "Find a group"
+msgstr ""
+
+#: src/packages/languages/LanguageIsoDialog.tsx
+msgid "Find a language"
 msgstr ""
 
 #: src/machines/list/MachineListHeader.tsx
@@ -4801,6 +5040,10 @@ msgstr ""
 
 #: src/tokens/AllTokens.tsx
 msgid "Find a token"
+msgstr ""
+
+#: src/packages/packageKindTexts.ts
+msgid "Find a Windows package"
 msgstr ""
 
 #: src/users/UserAdministration.tsx
@@ -4865,12 +5108,20 @@ msgstr ""
 msgid "For a stateful firewall that drops replies from a fresh port."
 msgstr ""
 
+#: src/packages/languages/LanguageIsoDialog.tsx
+msgid "For example {example}."
+msgstr ""
+
 #: src/packages/PackageDialog.tsx
 msgid "For network and storage drivers a machine needs before the agent runs. They reach machines with the next boot image build."
 msgstr ""
 
 #: src/images/import/MdtShareChoices.tsx
 msgid "For no model yet."
+msgstr ""
+
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "For steps that set none."
 msgstr ""
 
 #: src/boot/BuildCommand.tsx
@@ -4930,8 +5181,16 @@ msgstr ""
 msgid "From 1 to 100."
 msgstr ""
 
+#: src/sequences/steps/RegisterAutopilotFields.tsx
+msgid "From 1 to 120."
+msgstr ""
+
 #: src/sequences/steps/PauseFields.tsx
 msgid "From 1 to 1440 minutes."
+msgstr ""
+
+#: src/sequences/steps/EnableBitLockerFields.tsx
+msgid "From 1 to 1440."
 msgstr ""
 
 #: src/sequences/steps/WindowsUpdateFields.tsx
@@ -5112,6 +5371,11 @@ msgstr ""
 msgid "Group name"
 msgstr ""
 
+#: src/machines/records/AutopilotPanel.tsx
+#: src/sequences/steps/RegisterAutopilotFields.tsx
+msgid "Group tag"
+msgstr ""
+
 #: src/sequences/flow/flowLabels.ts
 #: src/ui/FlowNode.tsx
 msgid "Group: {name}"
@@ -5259,6 +5523,7 @@ msgstr ""
 
 #: src/images/import/ImportPanel.tsx
 #: src/images/import/MdtShareDialog.tsx
+#: src/packages/languages/LanguageIsoDialog.tsx
 msgid "Import"
 msgstr ""
 
@@ -5272,6 +5537,14 @@ msgstr ""
 
 #: src/audit/auditView.ts
 msgid "Import from the server started"
+msgstr ""
+
+#: src/packages/languages/LanguageIsoDialog.tsx
+msgid "Import languages"
+msgstr ""
+
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Imported"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -5461,6 +5734,11 @@ msgstr ""
 
 #: src/sequences/steps/RunScriptFields.tsx
 msgid "Interpreter"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "autopilot.tooMany"
+msgid "Intune imports at most {max} devices from one file."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -5758,6 +6036,7 @@ msgstr ""
 
 #: src/app/UserMenu.tsx
 #: src/images/ImageFacts.tsx
+#: src/packages/windowsPackageView.ts
 #: src/settings/deploymentDefaults/ConsoleLanguageGroup.tsx
 msgid "Language"
 msgstr ""
@@ -5765,6 +6044,10 @@ msgstr ""
 #: src/sequences/steps/WriteUnattendFields.tsx
 #: src/settings/deploymentDefaults/WindowsSetupGroup.tsx
 msgid "Language and region"
+msgstr ""
+
+#: src/packages/languages/LanguageIsoPanel.tsx
+msgid "Languages from the ISO"
 msgstr ""
 
 #: src/conditions/conditionSubjects.ts
@@ -6029,6 +6312,7 @@ msgid "Logo on the console"
 msgstr ""
 
 #: src/images/import/ImportPanel.tsx
+#: src/packages/languages/LanguageIsoPanel.tsx
 msgid "Look again"
 msgstr ""
 
@@ -6514,19 +6798,27 @@ msgstr ""
 msgid "Name or description"
 msgstr ""
 
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 msgid "Name or file"
+msgstr ""
+
+#: src/packages/languages/LanguageIsoDialog.tsx
+msgid "Name or tag"
 msgstr ""
 
 #: src/images/ImagesPage.tsx
 msgid "Name, edition, version, language or file"
 msgstr ""
 
-#: src/machines/list/MachineListHeader.tsx
-msgid "Name, MAC, serial or address"
+#: src/packages/packageKindTexts.ts
+msgid "Name, language or KB"
 msgstr ""
 
-#: src/packages/PackagesPage.tsx
+#: src/machines/list/MachineListHeader.tsx
+msgid "Name, MAC, serial, address or key ID"
+msgstr ""
+
+#: src/packages/packageKindTexts.ts
 msgid "Name, model or file"
 msgstr ""
 
@@ -6794,7 +7086,7 @@ msgstr ""
 msgid "No driver package is in the library yet."
 msgstr ""
 
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 msgid "No driver packages yet"
 msgstr ""
 
@@ -6829,7 +7121,7 @@ msgstr ""
 msgid "No file chosen"
 msgstr ""
 
-#: src/packages/PackagesPage.tsx
+#: src/packages/packageKindTexts.ts
 msgid "No file packages yet"
 msgstr ""
 
@@ -6850,6 +7142,11 @@ msgstr ""
 msgid "No group matches."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "autopilot.noHash"
+msgid "No hardware hash was collected from this machine yet."
+msgstr ""
+
 #: src/settings/networkBoot/ReportedInterfaces.tsx
 msgid "No host that runs network boot has reported its interfaces yet."
 msgstr ""
@@ -6868,6 +7165,10 @@ msgstr ""
 
 #: src/settings/networkBoot/InterfacesGroup.tsx
 msgid "No interface is listed, so DDT answers no machine that netboots."
+msgstr ""
+
+#: src/packages/languages/LanguageChoices.tsx
+msgid "No language matches."
 msgstr ""
 
 #: src/log/LogLines.tsx
@@ -6932,6 +7233,10 @@ msgstr ""
 
 #: src/packages/PackagesPage.tsx
 msgid "No package matches"
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "No packages chosen yet"
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -7049,6 +7354,10 @@ msgstr ""
 msgid "No variable of this sequence may be set by steps yet. Declare one on the Variables tab."
 msgstr ""
 
+#: src/packages/packageKindTexts.ts
+msgid "No Windows packages yet"
+msgstr ""
+
 #: src/settings/networkBoot/neighbours/PortOwners.tsx
 msgid "Nobody"
 msgstr ""
@@ -7085,6 +7394,11 @@ msgstr ""
 
 #: src/conditions/conditions.ts
 msgid "None of these hold"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "autopilot.noHashes"
+msgid "None of these machines has a hardware hash."
 msgstr ""
 
 #: src/settings/directory/RoleAtSignIn.tsx
@@ -7213,6 +7527,10 @@ msgstr ""
 msgid "Not taken"
 msgstr ""
 
+#: src/machines/records/AutopilotPanel.tsx
+msgid "Not uploaded"
+msgstr ""
+
 #: src/applications/list/UsedBy.tsx
 msgid "Not used"
 msgstr ""
@@ -7282,6 +7600,11 @@ msgstr ""
 msgid "Off"
 msgstr ""
 
+#: src/sequences/steps/EnableBitLockerFields.tsx
+#: src/sequences/steps/PreprovisionBitLockerFields.tsx
+msgid "Off: the step is skipped with a warning."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "sequence.inputOffered"
 msgid "Offer 1 to {max} applications and bundles."
@@ -7307,6 +7630,10 @@ msgstr ""
 
 #: src/settings/networkBoot/HostInterfaces.tsx
 msgid "On {name}"
+msgstr ""
+
+#: src/sequences/steps/EnableBitLockerFields.tsx
+msgid "On a machine joined to a domain. DDT keeps the password either way."
 msgstr ""
 
 #: src/sequences/builder/template/TemplateDescription.tsx
@@ -7375,6 +7702,11 @@ msgctxt "machine.cannotBeRemoved"
 msgid "Only a rejected machine, or a waiting machine that was never approved and has no assigned run, can be removed."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "recoveryKey.current"
+msgid "Only a replaced key can be deleted. This one is the volume's current key."
+msgstr ""
+
 #: src/sequences/steps/ScriptRunAsSetting.tsx
 msgid "Only a script in Windows runs as an account."
 msgstr ""
@@ -7382,6 +7714,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.sharesOnlyOnSteps"
 msgid "Only a step connects shares, for as long as it runs. Give them to the steps inside that need them."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "package.buildsWindowsOnly"
+msgid "Only a Windows package has builds."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -7427,6 +7764,10 @@ msgstr ""
 
 #: src/tokens/TokensPage.tsx
 msgid "Only administrators see every token."
+msgstr ""
+
+#: src/settings/AutopilotPage.tsx
+msgid "Only administrators set up Autopilot uploads."
 msgstr ""
 
 #: src/lib/serverMessages.ts
@@ -7836,6 +8177,10 @@ msgstr ""
 msgid "PowerShell"
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "Pre-provision BitLocker"
+msgstr ""
+
 #: src/deployments/deployments.ts
 msgid "Preparing"
 msgstr ""
@@ -8001,8 +8346,16 @@ msgctxt "identity.recoveryCodeRedemptionFailed"
 msgid "Recovery code redemption failed."
 msgstr ""
 
+#: src/machines/records/RecoveryKeysPanel.tsx
+msgid "Recovery keys"
+msgstr ""
+
 #: src/sequences/steps/PartitionFields.tsx
 msgid "Recovery partition in MB"
+msgstr ""
+
+#: src/machines/records/RecoveryKeyRow.tsx
+msgid "Recovery password for {keyId}"
 msgstr ""
 
 #: src/settings/signIn/ProviderGroup.tsx
@@ -8024,6 +8377,10 @@ msgstr ""
 
 #: src/settings/signIn/ProviderGroup.tsx
 msgid "Register this address at the provider."
+msgstr ""
+
+#: src/sequences/steps.ts
+msgid "Register with Autopilot"
 msgstr ""
 
 #: src/machines/list/RunCell.tsx
@@ -8049,6 +8406,7 @@ msgstr ""
 
 #: src/applications/drawer/FilesField.tsx
 #: src/machines/actions/MachineMenu.tsx
+#: src/machines/actions/RemoveKeysConfirm.tsx
 #: src/sequences/builder/canvas/NodeMenu.tsx
 #: src/sequences/builder/inspector/NodeKeys.tsx
 #: src/sequences/builder/variables/DeclarationRow.tsx
@@ -8068,6 +8426,10 @@ msgstr ""
 
 #: src/settings/roleMap/RoleMapEntry.tsx
 msgid "Remove {key}"
+msgstr ""
+
+#: src/machines/actions/RemoveKeysConfirm.tsx
+msgid "Remove {label} and its recovery keys?"
 msgstr ""
 
 #: src/sequences/builder/inspector/NodeKeys.tsx
@@ -8227,6 +8589,10 @@ msgstr ""
 msgid "Replace"
 msgstr ""
 
+#: src/machines/records/RecoveryKeyRow.tsx
+msgid "Replaced"
+msgstr ""
+
 #: src/values/values.ts
 msgid "Reported by the machine"
 msgstr ""
@@ -8333,6 +8699,10 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "machineState.retired"
 msgid "Retired"
+msgstr ""
+
+#: src/machines/records/RecoveryKeyRow.tsx
+msgid "Reveal"
 msgstr ""
 
 #: src/settings/ProxiesPanel.tsx
@@ -8862,6 +9232,7 @@ msgid "Serial {serial}"
 msgstr ""
 
 #: src/machines/facts.ts
+#: src/machines/records/AutopilotPanel.tsx
 #: src/sequences/steps.ts
 msgid "Serial number"
 msgstr ""
@@ -8936,6 +9307,10 @@ msgstr ""
 msgid "Servers"
 msgstr ""
 
+#: src/sequences/steps.ts
+msgid "Service packages"
+msgstr ""
+
 #: src/settings/networkBoot/HostInterfaces.tsx
 msgid "Serving"
 msgstr ""
@@ -9004,6 +9379,11 @@ msgstr ""
 
 #: src/settings/networkBoot/neighbours/DhcpHere.tsx
 msgid "Set option 60 on this DHCP server"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.autopilot.both"
+msgid "Set the tenant and the client ID together, or neither."
 msgstr ""
 
 #: src/settings/networkBoot/neighbours/DhcpOptions.tsx
@@ -9266,6 +9646,10 @@ msgstr ""
 
 #: src/runs/flow/detailsText.ts
 msgid "Skipped at {at} {where}."
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "Skipped without a TPM"
 msgstr ""
 
 #: src/runs/decisions.ts
@@ -9660,6 +10044,10 @@ msgstr ""
 msgid "Subnet"
 msgstr ""
 
+#: src/packages/PackageDialog.tsx
+msgid "Such as 26100, 26200. Matching updates go to images of these builds."
+msgstr ""
+
 #: src/settings/networkBoot/BootEnvironmentGroup.tsx
 msgid "Such as console=ttyS0,115200. Only letters, digits and _ . : , = + / @ - are taken."
 msgstr ""
@@ -9739,6 +10127,14 @@ msgstr ""
 
 #: src/sequences/builder/variables/RenameField.tsx
 msgid "Templates use it as {placeholder}."
+msgstr ""
+
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "Tenant"
+msgstr ""
+
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "Tenant ID or domain. After a change, enter the client secret again."
 msgstr ""
 
 #: src/settings/directory/DirectorySettings.tsx
@@ -10300,6 +10696,11 @@ msgid "The drivers flagged for Windows PE have changed since it was built."
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "import.suffix"
+msgid "The end of the names has at most {max} characters and no control characters."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "audit.rangeEnd"
 msgid "The end of the range must come after its start."
 msgstr ""
@@ -10843,6 +11244,11 @@ msgid "The package is no longer in the library. Choose another package, or none.
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "sequence.servicingPackageGone"
+msgid "The package is no longer in the library. Take it out of the list."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "package.fileMissing"
 msgid "The package's file is missing from the server's library. Upload it again."
 msgstr ""
@@ -11148,6 +11554,11 @@ msgstr ""
 msgid "The server answered with status {status}."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "recoveryKey.unreadable"
+msgid "The server can't decrypt this key. Its key ring is not the one that saved it."
+msgstr ""
+
 #: src/settings/CertificatePanel.tsx
 msgid "The server certificate could not be read."
 msgstr ""
@@ -11298,6 +11709,10 @@ msgstr ""
 msgid "The tokens could not be loaded."
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "The updates marked for the image's build"
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "upload.failed"
 msgid "The upload could not be added to the library. Look at the server log, then complete the upload again."
@@ -11424,6 +11839,11 @@ msgctxt "package.tooManyEntries"
 msgid "The zip holds {count} entries. A package can hold at most {max}."
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "package.windowsEmpty"
+msgid "The zip holds no .msu or .cab file."
+msgstr ""
+
 #: src/sequences/SequenceConflict.tsx
 msgid "Their changes to {list} are lost."
 msgstr ""
@@ -11466,6 +11886,7 @@ msgctxt "application.dependencyCycle"
 msgid "These applications depend on each other in a circle: {path}."
 msgstr ""
 
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
 #: src/settings/certificate/ServerNames.tsx
 #: src/settings/LoggingPanel.tsx
 #: src/settings/parts/SettingsSection.tsx
@@ -11623,6 +12044,11 @@ msgid "This is a qcow2 image, and qemu-img is not installed on the server. Insta
 msgstr ""
 
 #: src/lib/serverMessages.ts
+msgctxt "iso.noLanguages"
+msgid "This ISO has no LanguagesAndOptionalFeatures folder, so it is not the Languages and Optional Features ISO."
+msgstr ""
+
+#: src/lib/serverMessages.ts
 msgctxt "iso.noWindowsImage"
 msgid "This ISO holds no sources\\install.wim or install.esd, so it is no Windows installation medium."
 msgstr ""
@@ -11668,6 +12094,11 @@ msgstr ""
 #: src/lib/serverMessages.ts
 msgctxt "sequence.operatorDoesNotFit"
 msgid "This operator does not fit {name}, which holds {type, select, Number {a number} YesNo {yes or no} IPv4 {an IPv4 address} Mac {a MAC address} other {plain text}}."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.servicingRepeated"
+msgid "This package is listed twice."
 msgstr ""
 
 #: src/settings/certificate/CertificateFacts.tsx
@@ -11905,6 +12336,10 @@ msgstr ""
 msgid "Took Then: {reasons}"
 msgstr ""
 
+#: src/sequences/builder/nodeDetail.ts
+msgid "TPM and a recovery password"
+msgstr ""
+
 #: src/machines/facts.ts
 msgid "TPM present"
 msgstr ""
@@ -12076,10 +12511,23 @@ msgstr ""
 msgid "Unwrap {name}"
 msgstr ""
 
+#: src/packages/windowsPackageView.ts
+msgid "Update"
+msgstr ""
+
+#: src/packages/windowsPackageView.ts
+msgid "Updates and features"
+msgstr ""
+
 #: src/sequences/steps/WindowsUpdateFields.tsx
 msgid "Updates for other Microsoft products"
 msgstr ""
 
+#: src/packages/PackageUploadPanel.tsx
+msgid "Updates from the Microsoft Update Catalog, cabinets, or the Languages and Optional Features ISO."
+msgstr ""
+
+#: src/machines/records/AutopilotPanel.tsx
 #: src/uploads/UploadPanel.tsx
 msgid "Upload"
 msgstr ""
@@ -12098,6 +12546,11 @@ msgstr ""
 
 #: src/settings/ConsolePanel.tsx
 msgid "Upload {name} as the console?"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "upload.windowsPackageFile"
+msgid "Upload a .msu or .cab file, a zip of them, or the Languages and Optional Features ISO."
 msgstr ""
 
 #: src/settings/certificate/UploadDialog.tsx
@@ -12139,9 +12592,18 @@ msgstr ""
 msgid "Upload the console for Linux"
 msgstr ""
 
+#: src/packages/languages/LanguageIsoPanel.tsx
+msgid "Upload the Languages and Optional Features ISO above, or copy it into <0>{own}</0> on the server."
+msgstr ""
+
 #: src/lib/serverMessages.ts
 msgctxt "application.filesRequired"
 msgid "Upload the MSIX package."
+msgstr ""
+
+#: src/machines/records/AutopilotPanel.tsx
+#: src/settings/autopilot/AutopilotSettingsForm.tsx
+msgid "Upload to Autopilot"
 msgstr ""
 
 #: src/images/ImagesTable.tsx
@@ -12246,8 +12708,18 @@ msgstr ""
 msgid "Use TFTP"
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "settings.autopilot.clientId"
+msgid "Use the application (client) ID of the app registration, a GUID."
+msgstr ""
+
 #: src/settings/logging/LevelActions.tsx
 msgid "Use the defaults"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "settings.autopilot.tenantId"
+msgid "Use the tenant ID, a GUID, or the tenant's domain, such as contoso.onmicrosoft.com."
 msgstr ""
 
 #: src/rules/SavedMeanwhile.tsx
@@ -12420,7 +12892,31 @@ msgstr ""
 msgid "Virtual Machine Platform"
 msgstr ""
 
+#: src/lib/serverMessages.ts
+msgctxt "sequence.autopilotWaitMinutes"
+msgid "Wait 1 to {max} minutes."
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.bitLockerWaitMinutes"
+msgid "Wait 1 to {max} minutes."
+msgstr ""
+
+#: src/sequences/steps/EnableBitLockerFields.tsx
+#: src/sequences/steps/RegisterAutopilotFields.tsx
+msgid "Wait at most (minutes)"
+msgstr ""
+
+#: src/sequences/steps/RegisterAutopilotFields.tsx
+msgid "Wait until Autopilot has imported the hash"
+msgstr ""
+
+#: src/sequences/steps/EnableBitLockerFields.tsx
+msgid "Wait until the disk is encrypted"
+msgstr ""
+
 #: src/machines/machineView.ts
+#: src/machines/records/AutopilotPanel.tsx
 msgid "Waiting"
 msgstr ""
 
@@ -12455,6 +12951,10 @@ msgstr ""
 
 #: src/machines/MachinePanel.tsx
 msgid "Waiting to start"
+msgstr ""
+
+#: src/sequences/builder/nodeDetail.ts
+msgid "waits for the encryption"
 msgstr ""
 
 #: src/sequences/builder/nodeDetail.ts
@@ -12579,6 +13079,10 @@ msgstr ""
 msgid "Windows and Microsoft products"
 msgstr ""
 
+#: src/packages/PackageDialog.tsx
+msgid "Windows builds"
+msgstr ""
+
 #: src/settings/networkBoot/neighbours/PortOwners.tsx
 msgid "Windows Deployment Services ({process}, process {id})"
 msgstr ""
@@ -12597,6 +13101,17 @@ msgstr ""
 
 #: src/sequences/builder/nodeDetail.ts
 msgid "Windows only"
+msgstr ""
+
+#: src/app/navigation.ts
+#: src/packages/packageKindTexts.ts
+#: src/sequences/steps/ServicePackagesFields.tsx
+msgid "Windows packages"
+msgstr ""
+
+#: src/lib/serverMessages.ts
+msgctxt "sequence.servicingBeforeImage"
+msgid "Windows packages can be added only after the image is applied."
 msgstr ""
 
 #: src/machines/bootEnvironment.ts

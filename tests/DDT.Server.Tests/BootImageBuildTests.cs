@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Channels;
 using DDT.Contracts.BootImage;
+using DDT.Contracts.Sequences;
 using DDT.Pxe;
 using DDT.Server.Authentication;
 using DDT.Server.BootImage;
@@ -174,13 +175,36 @@ public sealed class BootImageBuildTests : IDisposable
         Assert.Equal([BootImageViews.ServerAddressChanged, BootImageViews.RootChanged, BootImageViews.AdkChanged], due.StaleReasons);
     }
 
+    // The page hears it when a saved sequence starts to pre-provision BitLocker.
+    [Fact]
+    public async Task ASequenceThatPreprovisionsBitLockerAsksForABuildWithManageBde()
+    {
+        SignedInClient administrator = await _application.AdministratorAsync();
+        WriteBuild("20261001-100000", "2026-10-01T10:00:00Z", current: true);
+        await using LiveListener live = await LiveListener.StartAsync(_application, administrator);
+        ChannelReader<BootImageView> pushed = live.Listen<BootImageView>(LiveEvents.BootImageChanged);
+
+        await administrator.CreatedSequenceAsync(SequenceRequests.Definition(
+            new PartitionStep { Id = Guid.NewGuid(), Name = "Partition" },
+            new PreprovisionBitLockerStep { Id = Guid.NewGuid(), Name = "Pre-provision BitLocker" }));
+
+        Assert.Equal([BootImageViews.BitLockerMissing], (await LiveListener.NextAsync(pushed, view => view.Stale)).StaleReasons);
+        WriteBuild("20261001-110000", "2026-10-01T11:00:00Z", current: true, bitLocker: true);
+        Assert.Empty((await ViewAsync(administrator)).StaleReasons);
+    }
+
     public void Dispose() => _application.Dispose();
 
     private static async Task<BootImageView> ViewAsync(SignedInClient client) =>
         await RegisteredMachine.ReadAsync<BootImageView>(await client.GetAsync(BootImage));
 
     // A build as Build-BootImage.ps1 leaves it: its files and the description next to boot.wim.
-    private void WriteBuild(string name, string builtUtc, bool current = false, (string ServerUrl, string RootSha256, string AdkVersion)? madeFor = null)
+    private void WriteBuild(
+        string name,
+        string builtUtc,
+        bool current = false,
+        (string ServerUrl, string RootSha256, string AdkVersion)? madeFor = null,
+        bool bitLocker = false)
     {
         string boot = Path.Combine(BootBuilds.FolderOf(Catalog.BootDirectory, name), "Boot");
         Directory.CreateDirectory(boot);
@@ -191,7 +215,8 @@ public sealed class BootImageBuildTests : IDisposable
               "drivers": [],
               "adkVersion": {{Json(madeFor?.AdkVersion)}},
               "serverUrl": {{Json(madeFor?.ServerUrl)}},
-              "rootSha256": {{Json(madeFor?.RootSha256)}}
+              "rootSha256": {{Json(madeFor?.RootSha256)}},
+              "bitLocker": {{(bitLocker ? "true" : "false")}}
             }
             """);
 

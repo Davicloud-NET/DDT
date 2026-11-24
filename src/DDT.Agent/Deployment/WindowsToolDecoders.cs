@@ -8,5 +8,9 @@ namespace DDT.Agent.Deployment;
 public static class WindowsToolDecoders
 {
     public static IReadOnlyDictionary<string, ToolOutputDecoder> All { get; } =
-        new Dictionary<string, ToolOutputDecoder>(StringComparer.OrdinalIgnoreCase) { ["dism.exe"] = AnsiCodePage.DecodeOem };
+        new Dictionary<string, ToolOutputDecoder>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["dism.exe"] = AnsiCodePage.DecodeOem,
+            ["manage-bde.exe"] = AnsiCodePage.DecodeOem,
+        };
 }

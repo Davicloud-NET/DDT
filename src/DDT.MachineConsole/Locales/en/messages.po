@@ -32,8 +32,16 @@ msgid "A step asked for a restart."
 msgstr "A step asked for a restart."
 
 #: Texts/Say.cs
+msgid "Adding Windows packages"
+msgstr "Adding Windows packages"
+
+#: Texts/Say.cs
 msgid "Adding drivers"
 msgstr "Adding drivers"
+
+#: Texts/Say.cs
+msgid "Adding {package}"
+msgstr "Adding {package}"
 
 #: ViewModels/MachineViewModel.cs
 msgid "Agent"
@@ -150,6 +158,10 @@ msgstr "Choosing"
 #: Texts/Say.cs
 msgid "Choosing a task sequence"
 msgstr "Choosing a task sequence"
+
+#: Texts/Say.cs
+msgid "Cleaning up the image"
+msgstr "Cleaning up the image"
 
 #: ViewModels/EndViewModel.cs
 msgid "Close the console"
@@ -268,8 +280,16 @@ msgid "Empty"
 msgstr "Empty"
 
 #: Texts/Say.cs
+msgid "Enabling BitLocker"
+msgstr "Enabling BitLocker"
+
+#: Texts/Say.cs
 msgid "Enabling roles and features"
 msgstr "Enabling roles and features"
+
+#: Texts/Say.cs
+msgid "Encrypting the disk ({percent}%)"
+msgstr "Encrypting the disk ({percent}%)"
 
 #: ViewModels/EndRunViewModel.cs
 msgid "End the run"
@@ -610,6 +630,14 @@ msgstr "Pause, step {number} of {count} on this path, in Windows PE"
 #: Texts/Say.cs
 msgid "Paused"
 msgstr "Paused"
+
+#: Texts/Say.cs
+msgid "Pre-provisioning BitLocker"
+msgstr "Pre-provisioning BitLocker"
+
+#: Texts/Say.cs
+msgid "Registering with Autopilot"
+msgstr "Registering with Autopilot"
 
 #: Texts/Say.cs
 msgid "Removing the agent"

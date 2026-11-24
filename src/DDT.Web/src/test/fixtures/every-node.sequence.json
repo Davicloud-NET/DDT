@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 8,
   "steps": [
     {
       "kind": "partition",
@@ -7,6 +7,15 @@
       "recoveryPartitionMegabytes": 1024,
       "id": "00000000-0000-4000-8000-000000000001",
       "name": "Partition",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "preprovisionBitLocker",
+      "ifUnavailable": "Fail",
+      "id": "00000000-0000-4000-8000-000000000018",
+      "name": "Pre-provision BitLocker",
       "conditions": [],
       "continueOnError": false,
       "rebootAfter": false
@@ -50,6 +59,19 @@
           }
         ]
       }
+    },
+    {
+      "kind": "servicePackages",
+      "packages": [
+        "0193a4b2-0000-7000-8000-0000000000e1"
+      ],
+      "matchingUpdates": true,
+      "cleanup": true,
+      "id": "00000000-0000-4000-8000-000000000016",
+      "name": "Service packages",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
     },
     {
       "kind": "writeUnattend",
@@ -348,6 +370,29 @@
         }
       ],
       "continueOnError": true,
+      "rebootAfter": false
+    },
+    {
+      "kind": "registerAutopilot",
+      "groupTag": "Sales",
+      "waitForImport": true,
+      "waitMinutes": 20,
+      "id": "00000000-0000-4000-8000-000000000017",
+      "name": "Register with Autopilot",
+      "conditions": [],
+      "continueOnError": false,
+      "rebootAfter": false
+    },
+    {
+      "kind": "enableBitLocker",
+      "ifNoTpm": "Skip",
+      "backupToActiveDirectory": false,
+      "waitForEncryption": true,
+      "waitMinutes": 60,
+      "id": "00000000-0000-4000-8000-000000000019",
+      "name": "Enable BitLocker",
+      "conditions": [],
+      "continueOnError": false,
       "rebootAfter": false
     }
   ],

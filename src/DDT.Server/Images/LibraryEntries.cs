@@ -65,6 +65,7 @@ internal static class LibraryEntries
     {
         UploadKind.Drivers => PackageKind.Drivers,
         UploadKind.Application => PackageKind.Application,
+        UploadKind.WindowsPackage => PackageKind.WindowsPackage,
         _ => PackageKind.Files,
     };
 

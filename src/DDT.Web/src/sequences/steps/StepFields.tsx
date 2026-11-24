@@ -14,6 +14,10 @@ import { PauseFields } from "./PauseFields";
 import { RebootFields } from "./RebootFields";
 import { RunScriptFields } from "./RunScriptFields";
 import { SetVariableFields } from "./SetVariableFields";
+import { EnableBitLockerFields } from "./EnableBitLockerFields";
+import { PreprovisionBitLockerFields } from "./PreprovisionBitLockerFields";
+import { RegisterAutopilotFields } from "./RegisterAutopilotFields";
+import { ServicePackagesFields } from "./ServicePackagesFields";
 import { WindowsUpdateFields } from "./WindowsUpdateFields";
 import { WriteCloudInitSeedFields } from "./WriteCloudInitSeedFields";
 import { WriteRawImageFields } from "./WriteRawImageFields";
@@ -50,6 +54,14 @@ export function StepFields({ step, ...rest }: KindFieldsProps<SequenceStep>) {
       return <EnableFeaturesFields step={step} {...rest} />;
     case "windowsUpdate":
       return <WindowsUpdateFields step={step} {...rest} />;
+    case "registerAutopilot":
+      return <RegisterAutopilotFields step={step} {...rest} />;
+    case "servicePackages":
+      return <ServicePackagesFields step={step} {...rest} />;
+    case "preprovisionBitLocker":
+      return <PreprovisionBitLockerFields step={step} {...rest} />;
+    case "enableBitLocker":
+      return <EnableBitLockerFields step={step} {...rest} />;
     // The inspector shows a container's own fields.
     case "group":
     case "if":

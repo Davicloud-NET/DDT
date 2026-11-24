@@ -85,7 +85,12 @@ public static class RunSnapshots
         ArgumentNullException.ThrowIfNull(references);
         ArgumentNullException.ThrowIfNull(machine);
 
-        return [.. SequenceTree.Nodes(definition).SelectMany(step => StepArtifacts(runId, step, references, machine))];
+        return
+        [
+            .. SequenceTree.Nodes(definition).SelectMany(step => step is ServicePackagesStep servicing
+                ? RunWindowsPackages.Artifacts(runId, servicing, definition, references)
+                : StepArtifacts(runId, step, references, machine)),
+        ];
     }
 
     // The most any path needs on the disk it erases (see SequenceSizes): partitions, plus every file downloaded and
@@ -122,6 +127,12 @@ public static class RunSnapshots
 
         HashSet<Guid> rawSteps = [.. SequenceTree.Nodes(definition).OfType<WriteRawImageStep>().Select(step => step.Id)];
 
+        // A package a Service packages step doesn't list was matched to the image's build.
+        HashSet<(Guid, Guid)> listed =
+        [
+            .. SequenceTree.Nodes(definition).OfType<ServicePackagesStep>().SelectMany(step => (step.Packages ?? []).Select(id => (step.Id, id))),
+        ];
+
         return new AgentRun(
             run.Id,
             run.State,
@@ -136,7 +147,12 @@ public static class RunSnapshots
                         ? new AgentRunImage(a.SourceId, a.Name, a.Sha256, a.SizeBytes, 0, a.ExpandedBytes, ImageKind.RawDisk, a.BootCapability, a.SignedUnder)
                         : new AgentRunImage(a.SourceId, a.Name, a.Sha256, a.SizeBytes, a.WimIndex ?? 1, a.ExpandedBytes)),
             ],
-            [.. artifacts.Where(a => a.Kind != ArtifactKind.Image).Select(a => new AgentRunPackage(a.StepId, a.Name, a.Sha256, a.SizeBytes))],
+            [
+                .. artifacts.Where(a => a.Kind != ArtifactKind.Image).Select(a => new AgentRunPackage(a.StepId, a.Name, a.Sha256, a.SizeBytes)
+                {
+                    Matched = a.Kind == ArtifactKind.WindowsPackage && !listed.Contains((a.StepId, a.SourceId)),
+                }),
+            ],
             run.DiskNumber,
             computerName,
             run.AllowSecureBootMismatch,

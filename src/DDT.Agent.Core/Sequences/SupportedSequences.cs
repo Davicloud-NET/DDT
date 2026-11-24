@@ -7,6 +7,7 @@ namespace DDT.Agent.Sequences;
 // The sequences this agent runs. It tells the server the version, and the server hands it nothing newer.
 public static class SupportedSequences
 {
-    // Version 7 adds Enable roles and features and Windows Update, which run in the installed Windows.
-    public const int Version = 7;
+    // Version 8 adds Service packages and Pre-provision BitLocker, which run in Windows PE, Register with Autopilot and
+    // Enable BitLocker.
+    public const int Version = 8;
 }

@@ -85,6 +85,10 @@ public static class ConsoleValues
         InstallApplicationsStep => "installApplications",
         EnableFeaturesStep => "enableFeatures",
         WindowsUpdateStep => "windowsUpdate",
+        ServicePackagesStep => "servicePackages",
+        RegisterAutopilotStep => StepKindNames.RegisterAutopilot,
+        PreprovisionBitLockerStep => "preprovisionBitLocker",
+        EnableBitLockerStep => StepKindNames.EnableBitLocker,
         _ => "step",
     };
 }

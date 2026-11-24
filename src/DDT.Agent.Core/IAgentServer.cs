@@ -71,4 +71,12 @@ public interface IAgentServer
     // What an Install applications step installs, in order. The server only answers while the step is running, and only
     // the agent in the installed Windows. The list is the same after a restart.
     Task<AgentStepApplications> GetRunStepApplicationsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken);
+
+    // Hands the server what the running step found: a recovery key, a hardware hash. The server takes it only while the
+    // run's Running step is of the record's kind. Sending the same record again is harmless.
+    Task SendRunRecordAsync(Guid machineId, string token, Guid runId, AgentRecord record, CancellationToken cancellationToken);
+
+    // How far the upload of the machine's hardware hash is. The server only answers while a Register with Autopilot step
+    // runs.
+    Task<AgentHardwareHashStatus> GetRunHardwareHashStatusAsync(Guid machineId, string token, Guid runId, CancellationToken cancellationToken);
 }

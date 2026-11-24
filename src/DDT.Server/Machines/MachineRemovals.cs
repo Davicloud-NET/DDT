@@ -14,8 +14,9 @@ namespace DDT.Server.Machines;
 // Anyone who reaches the server can register machines, so an operator throws away the ones nobody vouched for.
 internal sealed class MachineRemovals(DdtDbContext database, LiveNotifier live, RuleRecount recount, TimeProvider timeProvider)
 {
-    // Found is false if the machine doesn't exist. Refusal says why it can't be removed.
-    public async Task<(bool Found, ServerMessage? Refusal)> RemoveAsync(Guid id, Actor actor, CancellationToken cancellationToken)
+    // Found is false if the machine doesn't exist. Refusal says why it can't be removed. A machine with recovery keys
+    // is only removed when recoveryKeys confirms how many go with it.
+    public async Task<(bool Found, ServerMessage? Refusal)> RemoveAsync(Guid id, int? recoveryKeys, Actor actor, CancellationToken cancellationToken)
     {
         Machine? machine = await database.Machines.FirstOrDefaultAsync(m => m.Id == id, cancellationToken).ConfigureAwait(false);
 
@@ -31,7 +32,14 @@ internal sealed class MachineRemovals(DdtDbContext database, LiveNotifier live, 
             return (true, ServerMessages.MachineCannotBeRemoved.With());
         }
 
-        return (true, await RemoveStraysAsync([machine], actor, cancellationToken).ConfigureAwait(false));
+        int keys = await database.RecoveryKeys.CountAsync(k => k.MachineId == id, cancellationToken).ConfigureAwait(false);
+
+        if (keys > 0 && recoveryKeys != keys)
+        {
+            return (true, ServerMessages.MachineRemoveRecoveryKeys.With("count", keys));
+        }
+
+        return (true, await RemoveStraysAsync([machine], actor, keys, cancellationToken).ConfigureAwait(false));
     }
 
     // Removes every waiting machine from the address that nobody vouched for.
@@ -45,14 +53,22 @@ internal sealed class MachineRemovals(DdtDbContext database, LiveNotifier live, 
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return await RemoveStraysAsync(machines, actor, cancellationToken).ConfigureAwait(false);
+        return await RemoveStraysAsync(machines, actor, 0, cancellationToken).ConfigureAwait(false);
     }
+
+    private static string KeysDeleted(int keys) => keys switch
+    {
+        0 => string.Empty,
+        1 => " Its recovery key was deleted with it.",
+        _ => $" Its {keys} recovery keys were deleted with it.",
+    };
 
     // A waiting machine with an assigned run waits on purpose, for a sign-in or a zero touch netboot.
     private static bool IsStray(Machine machine) =>
         machine.State == MachineState.Pending && machine.FirstApprovedUtc is null && machine.ActiveDeploymentId is null;
 
-    private async Task<ServerMessage?> RemoveStraysAsync(List<Machine> machines, Actor actor, CancellationToken cancellationToken)
+    // A stray was never approved, so it never ran and has no keys. Keys counts those of a single rejected machine.
+    private async Task<ServerMessage?> RemoveStraysAsync(List<Machine> machines, Actor actor, int keys, CancellationToken cancellationToken)
     {
         DateTimeOffset now = timeProvider.GetUtcNow();
 
@@ -63,9 +79,10 @@ internal sealed class MachineRemovals(DdtDbContext database, LiveNotifier live, 
                 machine.Id.ToString("D"),
                 actor,
                 now,
-                machine.State == MachineState.Rejected
+                (machine.State == MachineState.Rejected
                     ? $"Rejected, first seen {machine.FirstSeenUtc:u} from {machine.FirstSeenAddress}."
-                    : $"Waiting since {machine.FirstSeenUtc:u} from {machine.FirstSeenAddress}."));
+                    : $"Waiting since {machine.FirstSeenUtc:u} from {machine.FirstSeenAddress}.")
+                + KeysDeleted(keys)));
         }
 
         database.Machines.RemoveRange(machines);

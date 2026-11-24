@@ -10,6 +10,13 @@ import type { ImageBootCapability } from "@/images/images";
 
 import type { ApplicationReference, InputDeclaration, VariableDeclaration } from "./declarations";
 import type { ConditionNode, StepCondition } from "./sequenceConditions";
+import type {
+  BitLockerStep,
+  EnableFeaturesStep,
+  RegisterAutopilotStep,
+  ServicePackagesStep,
+  WindowsUpdateStep,
+} from "./windowsSteps";
 
 // LinuxBoot (version 4) is the netbooted Linux that writes a Linux sequence's disk. Linux (version 5) is the installed
 // Linux, where such a sequence goes on.
@@ -40,7 +47,7 @@ export interface ShareConnection {
 
 // id stays the same across edits, because run state, reports and problems name a step by it. The step only runs if
 // every condition holds and when holds too. Version 3 members are left out of the JSON while unset.
-interface StepBase {
+export interface StepBase {
   id: string;
   name: string;
   conditions: StepCondition[];
@@ -178,22 +185,6 @@ export interface InstallApplicationsStep extends StepBase {
   variable: string | null;
 }
 
-// Version 7. Turns on Windows roles and features with DISM, by the names DISM lists, such as NetFx3.
-export interface EnableFeaturesStep extends StepBase {
-  kind: "enableFeatures";
-  features: string[];
-}
-
-// Version 7. Installs updates from Microsoft Update until none is left, restarting as they ask. Never a feature upgrade.
-export interface WindowsUpdateStep extends StepBase {
-  kind: "windowsUpdate";
-  drivers: boolean;
-  optionalUpdates: boolean;
-  microsoftProducts: boolean;
-  excludedKbs: string[];
-  restartLimit: number;
-}
-
 // The kind values are stored in sequences and run snapshots, so they never change. A step is a node of the
 // sequence's tree: a leaf, or a container whose bodies hold more nodes.
 export type SequenceStep =
@@ -213,7 +204,10 @@ export type SequenceStep =
   | PauseStep
   | InstallApplicationsStep
   | EnableFeaturesStep
-  | WindowsUpdateStep;
+  | WindowsUpdateStep
+  | ServicePackagesStep
+  | RegisterAutopilotStep
+  | BitLockerStep;
 
 export type StepKind = SequenceStep["kind"];
 
@@ -230,6 +224,8 @@ export type {
   InputKind,
   VariableDeclaration,
 } from "./declarations";
+
+export type { EnableFeaturesStep, RegisterAutopilotStep, ServicePackagesStep, WindowsUpdateStep };
 
 // version is the schema version. It goes up with each step kind or member that older agents would ignore. The server
 // stores the lowest version a sequence needs, and leaves out variables and inputs while there are none.
@@ -286,7 +282,7 @@ export interface SequenceSummary {
 
 // SequenceDefinition.CurrentVersion: the highest version this page knows, and the one it writes. The server stores
 // each sequence with the lowest version it needs.
-export const SEQUENCE_VERSION = 7;
+export const SEQUENCE_VERSION = 8;
 
 // Every problem keeps the sequence from running. Warnings don't.
 export interface SequenceProblem {

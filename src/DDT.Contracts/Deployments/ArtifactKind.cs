@@ -4,11 +4,13 @@
 
 namespace DDT.Contracts.Deployments;
 
-// What a run downloads: the image it applies, a package of drivers or files, or an application's files. Stored by name.
+// What a run downloads: the image it applies, a package of drivers, files or Windows packages, or an application's
+// files. Stored by name.
 public enum ArtifactKind
 {
     Image,
     Drivers,
     Files,
     Application,
+    WindowsPackage,
 }

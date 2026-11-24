@@ -27,6 +27,7 @@ public sealed class BootImageViews(
     public const string ServerAddressChanged = "serverAddress";
     public const string RootChanged = "root";
     public const string AdkChanged = "adk";
+    public const string BitLockerMissing = "bitLocker";
 
     // The address a build puts into the image: the server's DNS name, which its certificate carries, and its port.
     public string ServerUrl => address.Url;
@@ -47,6 +48,11 @@ public sealed class BootImageViews(
         if (build is not null)
         {
             reasons.AddRange(Outdated(build, installed));
+        }
+
+        if (build?.BitLocker != true && await BootImageBitLocker.NeededAsync(database, cancellationToken).ConfigureAwait(false))
+        {
+            reasons.Add(BitLockerMissing);
         }
 
         return new BootImageView(

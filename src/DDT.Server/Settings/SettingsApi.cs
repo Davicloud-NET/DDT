@@ -5,6 +5,7 @@
 using DDT.Contracts.Settings;
 using DDT.Pxe;
 using DDT.Server.Authentication;
+using DDT.Server.Autopilot;
 using DDT.Server.Configuration;
 using DDT.Server.Deployments;
 using DDT.Server.Ldap;
@@ -61,6 +62,18 @@ public static class SettingsApi
             MaxWaitingPerAddress = values.MaxWaitingPerAddress,
             MaxWaiting = values.MaxWaiting,
             ZeroTouchNetworks = Join(values.ZeroTouchNetworks),
+        });
+
+    public static SettingsSectionApi<AutopilotSettings> Autopilot { get; } = new(
+        SettingsDefinitions.Autopilot,
+        options => options is AutopilotOptions autopilot
+            ? new AutopilotSettings(autopilot.TenantId, autopilot.ClientId, autopilot.DefaultGroupTag)
+            : throw Unexpected(options),
+        values => new AutopilotOptions
+        {
+            TenantId = values.TenantId?.Trim() ?? string.Empty,
+            ClientId = values.ClientId?.Trim() ?? string.Empty,
+            DefaultGroupTag = values.DefaultGroupTag?.Trim() ?? string.Empty,
         });
 
     public static SettingsSectionApi<LdapSettings> Ldap { get; } = new(
@@ -209,7 +222,7 @@ public static class SettingsApi
             : throw Unexpected(options),
         values => new HttpsOptions { SubjectAlternativeNames = Join(values.SubjectAlternativeNames) });
 
-    public static IReadOnlyList<SettingsSectionApi> All { get; } = [Deployment, Machines, Ldap, Oidc, Proxies, Pxe, Logging, Certificate];
+    public static IReadOnlyList<SettingsSectionApi> All { get; } = [Deployment, Machines, Autopilot, Ldap, Oidc, Proxies, Pxe, Logging, Certificate];
 
     public static SettingsSectionApi? Find(string name) => All.FirstOrDefault(api => api.Name == name);
 

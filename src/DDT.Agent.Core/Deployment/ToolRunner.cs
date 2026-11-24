@@ -96,8 +96,34 @@ public sealed class ToolRunner(
         ArgumentNullException.ThrowIfNull(arguments);
         ArgumentNullException.ThrowIfNull(options);
 
+        string running = $"Running {CommandLine(fileName, arguments)}";
+
+        if (!options.Quiet)
+        {
+            log.Information(running);
+        }
+
+        try
+        {
+            return await RunAndLogAsync(fileName, arguments, options, running, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception) when (options.Quiet)
+        {
+            // A quiet tool that failed still says what ran.
+            log.Information(running);
+
+            throw;
+        }
+    }
+
+    private async Task<int> RunAndLogAsync(
+        string fileName,
+        IReadOnlyList<string> arguments,
+        ToolRunOptions options,
+        string running,
+        CancellationToken cancellationToken)
+    {
         string tool = Path.GetFileName(fileName);
-        log.Information($"Running {CommandLine(fileName, arguments)}");
 
         using CancellationTokenSource timeout = new(options.Timeout ?? Timeout.InfiniteTimeSpan, timeProvider);
         using CancellationTokenSource waiting = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
@@ -106,8 +132,8 @@ public sealed class ToolRunner(
         using IToolProcess process = StartFor(fileName, arguments, options, tool);
 
         ToolOutputDecoder toolDecoder = DecoderOf(tool);
-        Task output = ToolOutput.ForwardAsync(process.StandardOutput, toolDecoder, Filtered(options.Lines, log.Information));
-        Task errors = ToolOutput.ForwardAsync(process.StandardError, toolDecoder, Filtered(options.Lines, log.Warning));
+        Task output = ToolOutput.ForwardAsync(process.StandardOutput, toolDecoder, options.Private is { } kept ? kept.Add : Filtered(options.Lines, log.Information));
+        Task errors = ToolOutput.ForwardAsync(process.StandardError, toolDecoder, options.Private is { } keptErrors ? keptErrors.AddError : Filtered(options.Lines, log.Warning));
 
         try
         {
@@ -134,9 +160,20 @@ public sealed class ToolRunner(
 
         TimeSpan elapsed = timeProvider.GetElapsedTime(started);
         int exitCode = process.ExitCode;
+
+        if (options.Quiet && exitCode == 0)
+        {
+            return exitCode;
+        }
+
+        if (options.Quiet)
+        {
+            log.Information(running);
+        }
+
         log.Information(string.Create(
             CultureInfo.InvariantCulture,
-            $"{tool} ended with exit code {(exitCode < 0 ? ExitCodeText(exitCode) : exitCode.ToString(CultureInfo.InvariantCulture))} after {elapsed.TotalSeconds:0.0} s."));
+            $"{tool} ended with exit code {(exitCode < 0 ? ExitCodeText(exitCode) : exitCode.ToString(CultureInfo.InvariantCulture))} after {elapsed.TotalSeconds:0.0} s.{(options.Private is null ? string.Empty : " Its output is not logged.")}"));
 
         return exitCode;
     }

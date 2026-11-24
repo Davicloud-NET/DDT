@@ -2,25 +2,37 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { plural } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 
-const CODED = /^#([A-Za-z0-9]+)(?: (\d+))?$/;
+const CODED = /^#([A-Za-z0-9]+)(?: (.+))?$/;
 
-// A step detail the agent sends coded, "#downloadingUpdates 5", in the reader's words. Anything else, such as an
-// application's name, as it is.
+// A step detail the agent sends coded, "#downloadingUpdates 5" or "#addingPackage de-DE language pack", in the
+// reader's words. Anything else, such as an application's name, as it is.
 export function stepDetailText(detail: string): string {
   const match = CODED.exec(detail);
-  const count = match?.[2] === undefined ? null : Number(match[2]);
 
-  if (match === null || count === null) {
+  if (match === null) {
     return detail;
   }
 
+  const text = match[2] ?? null;
+  const count = text !== null && /^\d+$/.test(text) ? Number(text) : null;
+
   switch (match[1]) {
     case "downloadingUpdates":
-      return plural(count, { one: "Downloading # update", other: "Downloading # updates" });
+      return count === null
+        ? detail
+        : plural(count, { one: "Downloading # update", other: "Downloading # updates" });
     case "installingUpdates":
-      return plural(count, { one: "Installing # update", other: "Installing # updates" });
+      return count === null
+        ? detail
+        : plural(count, { one: "Installing # update", other: "Installing # updates" });
+    case "addingPackage":
+      return text === null ? detail : t`Adding ${text}`;
+    case "encrypting":
+      return count === null ? detail : t`Encrypting the disk (${count}%)`;
+    case "cleaningUp":
+      return text === null ? t`Cleaning up the image` : detail;
     default:
       return detail;
   }

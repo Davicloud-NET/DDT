@@ -88,6 +88,13 @@ public sealed class AgentClient(HttpClient client, string? remoteAddress = null)
     public Task<HttpResponseMessage> RunApplicationsAsync(Guid machineId, string token, Guid runId, Guid stepId) =>
         SendAsync(HttpMethod.Get, AgentRoutes.RunStepApplications(machineId, runId, stepId), token, null);
 
+    // Raw JSON, so a test can send what no agent would.
+    public Task<HttpResponseMessage> RunRecordAsync(Guid machineId, string token, Guid runId, string json) =>
+        SendAsync(HttpMethod.Post, AgentRoutes.RunRecords(machineId, runId), token, new StringContent(json, Encoding.UTF8, "application/json"));
+
+    public Task<HttpResponseMessage> RunHardwareHashAsync(Guid machineId, string token, Guid runId) =>
+        SendAsync(HttpMethod.Get, AgentRoutes.RunHardwareHash(machineId, runId), token, null);
+
     public void Dispose() => client.Dispose();
 
     private async Task<HttpResponseMessage> SendAsync(

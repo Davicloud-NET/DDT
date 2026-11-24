@@ -32,8 +32,8 @@ public static class PackageTargets
         return [.. targets.Select(t => new HardwareModel(HardwareModels.Clean(t.Manufacturer), HardwareModels.Clean(t.Model) ?? ""))];
     }
 
-    // Returns what's wrong with the targets a request sets, or null. A Files package has no targets, because the steps
-    // that name it choose it.
+    // Returns what's wrong with the targets a request sets, or null. Only drivers have targets: the steps that name the
+    // other packages choose them.
     public static ServerMessage? Problem(PackageKind kind, IReadOnlyList<HardwareModel?>? targets)
     {
         if (targets is null)
@@ -41,9 +41,11 @@ public static class PackageTargets
             return ServerMessages.PackageTargetsMissing.With();
         }
 
-        if (targets.Count > 0 && kind == PackageKind.Files)
+        if (targets.Count > 0 && kind != PackageKind.Drivers)
         {
-            return ServerMessages.PackageFilesHaveNoTargets.With();
+            return kind == PackageKind.WindowsPackage
+                ? ServerMessages.PackageWindowsNoTargets.With()
+                : ServerMessages.PackageFilesHaveNoTargets.With();
         }
 
         if (targets.Count > PackageLimits.MaxTargets)

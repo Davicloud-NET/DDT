@@ -111,6 +111,10 @@ public static class Say
         "installApplications" => l.T("Installing applications"),
         "enableFeatures" => l.T("Enabling roles and features"),
         "windowsUpdate" => l.T("Installing Windows updates"),
+        "servicePackages" => l.T("Adding Windows packages"),
+        "registerAutopilot" => l.T("Registering with Autopilot"),
+        "preprovisionBitLocker" => l.T("Pre-provisioning BitLocker"),
+        "enableBitLocker" => l.T("Enabling BitLocker"),
         _ => null,
     };
 
@@ -246,6 +250,17 @@ public static class Say
     {
         ArgumentNullException.ThrowIfNull(l);
 
+        if (StepDetails.TryReadText(detail, out string named, out string? text))
+        {
+            switch (named)
+            {
+                case StepDetails.AddingPackage when text is not null:
+                    return l.F("Adding {package}", ("package", text));
+                case StepDetails.CleaningUp when text is null:
+                    return l.T("Cleaning up the image");
+            }
+        }
+
         if (!StepDetails.TryRead(detail, out string key, out int? number) || number is not { } count)
         {
             return detail;
@@ -255,6 +270,7 @@ public static class Say
         {
             StepDetails.DownloadingUpdates => count == 1 ? l.T("Downloading 1 update") : l.F("Downloading {count} updates", ("count", l.Number(count))),
             StepDetails.InstallingUpdates => count == 1 ? l.T("Installing 1 update") : l.F("Installing {count} updates", ("count", l.Number(count))),
+            StepDetails.Encrypting => l.F("Encrypting the disk ({percent}%)", ("percent", l.Number(count))),
             _ => detail,
         };
     }

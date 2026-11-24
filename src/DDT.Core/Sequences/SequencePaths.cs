@@ -77,6 +77,8 @@ internal sealed class SequencePaths
         JoinDomainStep => Happened.DomainJoined,
         WriteRawImageStep => Happened.RawImageWritten,
         WriteCloudInitSeedStep => Happened.SeedWritten | (HasOwnConditions(step) || step.ContinueOnError ? Happened.None : Happened.SeedEveryTime),
+        PreprovisionBitLockerStep => Happened.BitLockerPreprovisioned,
+        EnableBitLockerStep => Happened.BitLockerEnabled,
         _ => Happened.None,
     };
 

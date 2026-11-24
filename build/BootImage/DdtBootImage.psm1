@@ -79,7 +79,7 @@ function New-DdtBootImage {
     Write-BootManifest -Path (Join-Path $Destination 'Boot\ddt-boot-image.json') -ServerDriver $serverDrivers `
         -BootManager $workspace.BootManager2011 -AgentPath $AgentPath -ServerUrl $ServerUrl `
         -RootCertificate $build.RootCertificateBytes -KeyboardLayout $(if ($build.Agent) { $build.Agent.KeyboardLayout }) `
-        -PowerShell:(-not $SkipPowerShell)
+        -PowerShell:(-not $SkipPowerShell) -BitLocker:(Test-BitLockerPackage -Package $packages)
 
     Remove-BuildFolder -Path $downloads
     Show-BootImageSummary -Destination $Destination -SkipPowerShell:$SkipPowerShell -SkipTrim:$SkipTrim

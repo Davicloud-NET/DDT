@@ -9,6 +9,7 @@ import type { MachineActionState } from "@/machines/useMachineActions";
 import { ApprovalConfirm } from "./actions/ApprovalConfirm";
 import { MachineKeys } from "./actions/MachineKeys";
 import { MachineMenu } from "./actions/MachineMenu";
+import { RemoveKeysConfirm } from "./actions/RemoveKeysConfirm";
 import { StopConfirm } from "./actions/StopConfirm";
 import { AssignDialog } from "./AssignDialog";
 import type { StrayOffer } from "./list/strays";
@@ -61,6 +62,8 @@ export function MachineActions({
       <ApprovalConfirm machine={machine} actions={actions} />
 
       <StopConfirm machine={machine} actions={actions} />
+
+      <RemoveKeysConfirm machine={machine} actions={actions} />
     </>
   );
 }

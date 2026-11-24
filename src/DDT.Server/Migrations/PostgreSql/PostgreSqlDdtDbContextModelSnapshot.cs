@@ -1183,8 +1183,20 @@ namespace DDT.Server.Migrations.PostgreSql
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Architecture")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
                     b.Property<bool>("BootImage")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Builds")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Content")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1024)
@@ -1196,10 +1208,18 @@ namespace DDT.Server.Migrations.PostgreSql
                     b.Property<int>("FileCount")
                         .HasColumnType("integer");
 
+                    b.Property<string>("KbNumbers")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Languages")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1239,6 +1259,87 @@ namespace DDT.Server.Migrations.PostgreSql
                     b.HasIndex("UploadedByUserId");
 
                     b.ToTable("Packages", "ddt");
+                });
+
+            modelBuilder.Entity("DDT.Server.Records.MachineHardwareHash", b =>
+                {
+                    b.Property<Guid>("MachineId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CollectedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GroupTag")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Hash")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<string>("ImportId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("SerialNumber")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("UploadMessage")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<DateTimeOffset?>("UploadStartedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UploadState")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.HasKey("MachineId");
+
+                    b.ToTable("MachineHardwareHashes", "ddt");
+                });
+
+            modelBuilder.Entity("DDT.Server.Records.RecoveryKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("MachineId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProtectedPassword")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ProtectorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("ReplacedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RunId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Volume")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MachineId", "ProtectorId")
+                        .IsUnique();
+
+                    b.ToTable("RecoveryKeys", "ddt");
                 });
 
             modelBuilder.Entity("DDT.Server.Rules.MachineRole", b =>
@@ -1746,6 +1847,24 @@ namespace DDT.Server.Migrations.PostgreSql
                         .WithMany()
                         .HasForeignKey("UploadedByUserId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("DDT.Server.Records.MachineHardwareHash", b =>
+                {
+                    b.HasOne("DDT.Server.Machines.Machine", null)
+                        .WithMany()
+                        .HasForeignKey("MachineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DDT.Server.Records.RecoveryKey", b =>
+                {
+                    b.HasOne("DDT.Server.Machines.Machine", null)
+                        .WithMany()
+                        .HasForeignKey("MachineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DDT.Server.Rules.MachineRole", b =>

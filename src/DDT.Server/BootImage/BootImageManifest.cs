@@ -27,4 +27,6 @@ internal sealed class BootImageManifest
     public string? KeyboardLayout { get; set; }
 
     public bool? PowerShell { get; set; }
+
+    public bool? BitLocker { get; set; }
 }

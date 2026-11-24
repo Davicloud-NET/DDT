@@ -9,6 +9,7 @@ using DDT.Contracts.Settings;
 using DDT.Core.Configuration;
 using DDT.Pxe;
 using DDT.Server.Authentication;
+using DDT.Server.Autopilot;
 using DDT.Server.Deployments;
 using DDT.Server.Ldap;
 using DDT.Server.Machines;
@@ -98,7 +99,8 @@ internal static class SettingsSnapshotBuilder
         sections[SettingsSectionNames.Oidc].Closed ? Off<OidcOptions>(drafts[SettingsSectionNames.Oidc], oidc => oidc.Enabled = false) : (OidcOptions)drafts[SettingsSectionNames.Oidc].Options,
         ForwardedHeadersInForce(sections[SettingsSectionNames.Proxies]),
         sections[SettingsSectionNames.Pxe].Closed ? null : (PxeOptions)drafts[SettingsSectionNames.Pxe].Options,
-        LogLevelsInForce(sections[SettingsSectionNames.Logging]));
+        LogLevelsInForce(sections[SettingsSectionNames.Logging]),
+        sections[SettingsSectionNames.Autopilot].Closed ? new AutopilotOptions() : (AutopilotOptions)drafts[SettingsSectionNames.Autopilot].Options);
 
     private static Draft Read(SettingsSectionDefinition definition, StoredSettingsSection? stored, IConfiguration configuration)
     {

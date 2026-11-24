@@ -25,6 +25,7 @@ public sealed class SequenceFixtureTests
     private static readonly Guid s_packageId = new("0193a4b2-0000-7000-8000-0000000000b1");
     private static readonly Guid s_applicationId = new("0193a4b2-0000-7000-8000-0000000000d1");
     private static readonly Guid s_bundleId = new("0193a4b2-0000-7000-8000-0000000000d2");
+    private static readonly Guid s_windowsPackageId = new("0193a4b2-0000-7000-8000-0000000000e1");
 
     [Fact]
     public async Task TheWebFixtureIsTheInstallWindowsTemplate()
@@ -184,8 +185,8 @@ public sealed class SequenceFixtureTests
         Assert.Equal(Enum.GetValues<InputKind>(), inputKinds);
         Assert.Equal(Enum.GetValues<InputAsk>(), asks);
 
-        // Roles and features and Windows Update need version 7, and a sequence that installs Windows nothing of versions 4 and 5.
-        Assert.Equal(7, definition.Version);
+        // Service packages needs version 8, and a sequence that installs Windows nothing of versions 4 and 5.
+        Assert.Equal(8, definition.Version);
         Assert.Empty(SequenceValidator.Analyse(definition).Problems);
 
         await MatchFixtureAsync("every-node.sequence.json", definition, "the nodes built here");
@@ -241,6 +242,7 @@ public sealed class SequenceFixtureTests
     private static List<SequenceStep> EveryNode(RepeatStep repeat) =>
     [
         new PartitionStep { Id = StepId(0), Name = "Partition" },
+        new PreprovisionBitLockerStep { Id = StepId(17), Name = "Pre-provision BitLocker", IfUnavailable = BitLockerUnavailable.Fail },
         new ApplyImageStep { Id = StepId(1), Name = "Apply", ImageId = s_imageId },
         new InjectDriversStep
         {
@@ -255,6 +257,7 @@ public sealed class SequenceFixtureTests
                 ],
             },
         },
+        new ServicePackagesStep { Id = StepId(15), Name = "Service packages", Packages = [s_windowsPackageId], MatchingUpdates = true },
         new WriteUnattendStep { Id = StepId(3), Name = "Answer file" },
 
         // The join comes before the group, so the repeat in it runs in Windows throughout.
@@ -286,6 +289,8 @@ public sealed class SequenceFixtureTests
                 new WindowsUpdateStep { Id = StepId(14), Name = "Windows Update", Drivers = true, ExcludedKbs = ["KB5031234"], AllowedRestarts = 6 },
             ],
         },
+        new RegisterAutopilotStep { Id = StepId(16), Name = "Register with Autopilot", GroupTag = "Sales", WaitForImport = true, WaitMinutes = 20 },
+        new EnableBitLockerStep { Id = StepId(18), Name = "Enable BitLocker", IfNoTpm = BitLockerUnavailable.Skip, BackupToActiveDirectory = false, WaitForEncryption = true, WaitMinutes = 60 },
     ];
 
     private static IReadOnlyList<InputDeclaration> EveryInput() =>

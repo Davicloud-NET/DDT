@@ -69,7 +69,8 @@ function Write-BootManifest {
         [string] $ServerUrl,
         [byte[]] $RootCertificate,
         [string] $KeyboardLayout,
-        [switch] $PowerShell
+        [switch] $PowerShell,
+        [switch] $BitLocker
     )
 
     # What the image was built for. DDT says on its page when one of them is no longer true.
@@ -96,6 +97,7 @@ function Write-BootManifest {
         rootSha256    = $rootSha256
         keyboardLayout = if ($KeyboardLayout) { $KeyboardLayout } else { $null }
         powerShell    = [bool] $PowerShell
+        bitLocker     = [bool] $BitLocker
     }
 
     # Without a byte order mark, which Windows PowerShell's Set-Content -Encoding UTF8 would add.

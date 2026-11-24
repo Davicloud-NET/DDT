@@ -39,7 +39,7 @@ export interface ImageSummary {
 
 // What a completed upload becomes: images from a WIM, or a package from a zip of drivers or of files. An application's
 // upload is any file, which the server zips unless it is one.
-export type UploadKind = "Image" | "Drivers" | "Files" | "Application";
+export type UploadKind = "Image" | "Drivers" | "Files" | "Application" | "WindowsPackage";
 
 export interface CreateImageUploadRequest {
   fileName: string;

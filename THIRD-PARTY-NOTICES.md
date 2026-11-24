@@ -321,7 +321,7 @@ for machines to take when theirs is another. Besides DDT's own code, from `DDT.A
 - `ZstdSharp.Port` 0.8.8 and the Zstandard 1.5.7 code it is ported from, as described for the server
   above, which the agent unpacks raw disk images with.
 - OpenSSL 3.5.9, whose libcrypto and libssl the linker takes from Alpine's `openssl-libs-static`
-  package 3.5.9-r0, so the agent's connection to the server needs no library of the machine.
+  package 3.5.9-r1, so the agent's connection to the server needs no library of the machine.
   Copyright (c) 1998-2026 The OpenSSL Project Authors and Copyright (c) 1995-1998 Eric A. Young,
   Tim J. Hudson, under the Apache License 2.0, text in
   [licenses/openssl/LICENSE.txt](licenses/openssl/LICENSE.txt), from OpenSSL 3.5.9. DDT does not

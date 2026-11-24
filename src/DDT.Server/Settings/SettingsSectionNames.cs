@@ -10,6 +10,7 @@ public static class SettingsSectionNames
 {
     public const string Deployment = "deployment";
     public const string Machines = "machines";
+    public const string Autopilot = "autopilot";
     public const string Ldap = "ldap";
     public const string Oidc = "oidc";
     public const string Proxies = "proxies";

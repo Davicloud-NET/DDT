@@ -12,4 +12,7 @@ public enum PackageKind
 
     // An application's files. Only its application shows them; the Packages page does not.
     Application,
+
+    // .msu and .cab files that DISM adds to an applied Windows: updates, language packs, features on demand.
+    WindowsPackage,
 }

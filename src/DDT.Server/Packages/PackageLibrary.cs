@@ -60,6 +60,11 @@ internal sealed class PackageLibrary(
         package.Targets = PackageTargets.Write(targets);
         package.BootImage = request.BootImage ?? package.BootImage;
 
+        if (request.Builds is { } builds && WindowsPackageColumns.Read(package) is { } facts)
+        {
+            WindowsPackageColumns.Write(package, facts with { Builds = WindowsBuilds.Clean(builds) });
+        }
+
         database.AuditEvents.Add(AuditEvents.Create(
             AuditActions.PackageChanged,
             package.Id.ToString("D"),
@@ -159,6 +164,11 @@ internal sealed class PackageLibrary(
             problems.Add("bootImage", ServerMessages.PackageBootImageDriversOnly.With());
         }
 
+        if (WindowsBuilds.Problem(package.Kind, request.Builds) is { } buildsProblem)
+        {
+            problems.Add("builds", buildsProblem);
+        }
+
         return problems;
     }
 
@@ -173,6 +183,7 @@ internal sealed class PackageLibrary(
 
         return (targets.Count == 0
             ? $"{package.Name}, no targets."
-            : $"{package.Name}, for {string.Join("; ", targets.Select(t => $"{t.Manufacturer ?? "any maker"} {t.Model}"))}.") + bootImageChange;
+            : $"{package.Name}, for {string.Join("; ", targets.Select(t => $"{t.Manufacturer ?? "any maker"} {t.Model}"))}.") + bootImageChange
+            + (package.Builds is { } builds ? $" Builds {builds.Replace(",", ", ", StringComparison.Ordinal)}." : "");
     }
 }

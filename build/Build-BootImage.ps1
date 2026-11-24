@@ -18,8 +18,9 @@ sees Microsoft's binaries.
 It also adds the Windows PE optional components that PowerShell needs, with their en-us language
 packages: WinPE-WMI, WinPE-NetFx, WinPE-Scripting, WinPE-PowerShell, WinPE-DismCmdlets,
 WinPE-StorageWMI and WinPE-SecureBootCmdlets. That way task sequences can run PowerShell scripts in
-Windows PE. Components can't be added to a running Windows PE, so they have to be in the image.
--SkipPowerShell leaves them out.
+Windows PE. WinPE-EnhancedStorage and WinPE-SecureStartup bring manage-bde, which the Pre-provision
+BitLocker step needs. Components can't be added to a running Windows PE, so they have to be in the
+image. -SkipPowerShell leaves them all out.
 
 Then it removes what DDT's Windows PE never uses, following the list in boot-image-trim.txt next to
 this script. The list says for each group why it can go. A PXE netboot fetches boot.wim over TFTP, so
@@ -59,8 +60,8 @@ adds the drivers in it. DISM refuses an unsigned driver, which Windows PE couldn
 Boot on anyway.
 
 Boot/ddt-boot-image.json says when the image was built, which DDT driver packages it holds, and the
-versions of the ADK, the boot managers and the agent. DDT reads it to tell whether the boot image
-still has the flagged drivers. It holds no secrets, because anyone who can netboot can read it, like
+versions of the ADK, the boot managers and the agent, and whether it has manage-bde. DDT reads it to
+tell whether the boot image still has the flagged drivers and can pre-provision BitLocker. It holds no secrets, because anyone who can netboot can read it, like
 everything in the boot directory.
 
 DISM and bcdedit both require elevation, even to read.

@@ -22,6 +22,12 @@ export function SectionLink({ section }: { section: string }) {
           <Trans>Approval and zero touch</Trans>
         </Link>
       );
+    case "autopilot":
+      return (
+        <Link to="/machines/autopilot" className={LINK_CLASS}>
+          <Trans>Autopilot</Trans>
+        </Link>
+      );
     case "pxe":
       return (
         <Link to="/boot/network" className={LINK_CLASS}>

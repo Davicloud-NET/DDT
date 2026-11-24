@@ -5,6 +5,7 @@
 using System.Text.Json.Serialization;
 using DDT.Pxe;
 using DDT.Server.Authentication;
+using DDT.Server.Autopilot;
 using DDT.Server.Configuration;
 using DDT.Server.Deployments;
 using DDT.Server.Ldap;
@@ -17,6 +18,7 @@ namespace DDT.Server.Settings;
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(DeploymentOptions))]
 [JsonSerializable(typeof(MachineOptions))]
+[JsonSerializable(typeof(AutopilotOptions))]
 [JsonSerializable(typeof(LdapOptions))]
 [JsonSerializable(typeof(OidcOptions))]
 [JsonSerializable(typeof(DdtForwardedHeadersOptions))]

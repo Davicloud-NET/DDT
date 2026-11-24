@@ -61,6 +61,12 @@ public static class AgentRoutes
     public static string RunStepApplications(Guid machineId, Guid runId, Guid stepId) =>
         $"api/agents/{machineId:D}/runs/{runId:D}/steps/{stepId:D}/applications";
 
+    // POST an AgentRecord of the run's Running step, which has to be of the record's kind. Sending one again is harmless.
+    public static string RunRecords(Guid machineId, Guid runId) => $"api/agents/{machineId:D}/runs/{runId:D}/records";
+
+    // GET the AgentHardwareHashStatus while a Register with Autopilot step runs.
+    public static string RunHardwareHash(Guid machineId, Guid runId) => $"api/agents/{machineId:D}/runs/{runId:D}/records/hardwareHash";
+
     // Frozen. Agents inside old boot images call these, so the paths never change.
     public const string Release = "api/agents/release";
 

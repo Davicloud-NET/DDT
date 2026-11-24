@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Trans } from "@lingui/react/macro";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { useIsAdministrator } from "@/auth/useIsAdministrator";
+import type { ImportFile } from "@/images/import/imports";
 import { removeByIds } from "@/lib/listCache";
 import { useNow } from "@/lib/useNow";
 import { DeleteDialog } from "@/library/DeleteDialog";
@@ -22,6 +23,7 @@ import { SearchField } from "@/ui/SearchField";
 import { useListSearch } from "@/ui/useListSearch";
 
 import { PackageDialog } from "./PackageDialog";
+import { packageKindTexts } from "./packageKindTexts";
 import {
   deletePackage,
   deletionConsequence,
@@ -34,10 +36,19 @@ import { PackageUploadPanel } from "./PackageUploadPanel";
 import { matchesPackage } from "./packageView";
 import { usePackageLibrary } from "./usePackageLibrary";
 
-// The library's driver packages or file packages. An Inject drivers step gives drivers to the machines whose model they
-// name. Files are unpacked for a Run script step that names them. The list is live.
-export function PackagesPage({ kind }: { kind: PackageKind }) {
-  const { t: translate } = useLingui();
+interface PackagesPageProps {
+  kind: PackageKind;
+  // Called when an upload was a Languages and Optional Features ISO, with where the server put it.
+  onLanguageIso?: (file: ImportFile) => void;
+  // Shown between the upload and the list, to administrators.
+  children?: ReactNode;
+}
+
+// The library's packages of one kind. An Inject drivers step gives drivers to the machines whose model they name.
+// Files are unpacked for a Run script step that names them. Windows packages hold updates and languages. The list is
+// live.
+export function PackagesPage({ kind, onLanguageIso, children }: PackagesPageProps) {
+  const texts = packageKindTexts(kind);
   const queryClient = useQueryClient();
   const library = usePackageLibrary();
   const now = useNow(30_000);
@@ -46,14 +57,15 @@ export function PackagesPage({ kind }: { kind: PackageKind }) {
   const deletion = useDeletion<PackageSummary>(deletePackage, (id) => {
     queryClient.setQueryData(packagesQuery.queryKey, (list) => removeByIds(list, [id]));
   });
-  const drivers = kind === "Drivers";
   // A new package animates in, and a changed one flashes, such as after a save in its dialog.
   const mark = useLiveMarks({
     queryKey: packagesQuery.queryKey,
     items: (list) => list.filter((item) => item.kind === kind),
     id: (item) => item.id,
     signature: (item) =>
-      [item.name, item.description, item.bootImage, item.targets.length].join("|"),
+      [item.name, item.description, item.bootImage, item.targets.length, item.windows?.builds].join(
+        "|",
+      ),
     tone: () => "idle",
   });
 
@@ -62,19 +74,23 @@ export function PackagesPage({ kind }: { kind: PackageKind }) {
 
   return (
     <Page>
-      <PageHeader title={drivers ? <Trans>Drivers</Trans> : <Trans>Files</Trans>}>
+      <PageHeader title={texts.title}>
         <div className="flex-1" />
         {all.length > 0 ? (
           <SearchField
-            label={drivers ? translate`Find a driver package` : translate`Find a file package`}
-            placeholder={drivers ? translate`Name, model or file` : translate`Name or file`}
+            label={texts.find}
+            placeholder={texts.placeholder}
             value={query}
             onChange={setQuery}
           />
         ) : null}
       </PageHeader>
 
-      {canEdit ? <PackageUploadPanel kind={kind} onEdit={setEditing} /> : null}
+      {canEdit ? (
+        <PackageUploadPanel kind={kind} onEdit={setEditing} onLanguageIso={onLanguageIso} />
+      ) : null}
+
+      {canEdit ? children : null}
 
       {library.packages.isError ? (
         <Notice tone="fail">
@@ -86,17 +102,13 @@ export function PackagesPage({ kind }: { kind: PackageKind }) {
         {library.packages.isPending ? (
           <ListSkeleton />
         ) : all.length === 0 ? (
-          <EmptyState
-            title={
-              drivers ? <Trans>No driver packages yet</Trans> : <Trans>No file packages yet</Trans>
-            }
-          />
+          <EmptyState title={texts.empty} />
         ) : shown.length === 0 ? (
           <EmptyState title={<Trans>No package matches</Trans>} />
         ) : (
           <PackagesTable
             items={shown}
-            drivers={drivers}
+            kind={kind}
             library={library}
             now={now}
             canEdit={canEdit}

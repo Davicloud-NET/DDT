@@ -40,4 +40,6 @@ namespace DDT.Contracts.Agents;
 [JsonSerializable(typeof(AgentStepAccounts))]
 [JsonSerializable(typeof(AgentStepApplications))]
 [JsonSerializable(typeof(AgentEnvironmentRequest))]
+[JsonSerializable(typeof(AgentRecord))]
+[JsonSerializable(typeof(AgentHardwareHashStatus))]
 public sealed partial class AgentJsonContext : JsonSerializerContext;

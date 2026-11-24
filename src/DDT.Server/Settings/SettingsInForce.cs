@@ -4,6 +4,7 @@
 
 using DDT.Pxe;
 using DDT.Server.Authentication;
+using DDT.Server.Autopilot;
 using DDT.Server.Ldap;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Logging;
@@ -17,4 +18,5 @@ internal sealed record SettingsInForce(
     OidcOptions Oidc,
     ForwardedHeadersOptions ForwardedHeaders,
     PxeOptions? Pxe,
-    IReadOnlyDictionary<string, LogLevel> LogLevels);
+    IReadOnlyDictionary<string, LogLevel> LogLevels,
+    AutopilotOptions Autopilot);

@@ -25,6 +25,7 @@ public static class PackageSummaries
             package.OriginalFileName,
             package.UploadedUtc,
             package.UploadedByName,
-            package.BootImage);
+            package.BootImage,
+            WindowsPackageColumns.Read(package));
     }
 }

@@ -25,10 +25,12 @@ import { machineSearch, machinesSearch } from "@/machines/machineSearch";
 import { MachinesPage } from "@/machines/MachinesPage";
 import { DriversPage } from "@/packages/DriversPage";
 import { FilesPage } from "@/packages/FilesPage";
+import { WindowsPackagesPage } from "@/packages/WindowsPackagesPage";
 import { MachineRolesPage } from "@/roles/MachineRolesPage";
 import { rulesSearch } from "@/rules/rules";
 import { RulesPage } from "@/rules/RulesPage";
 import { ApprovalPage } from "@/settings/ApprovalPage";
+import { AutopilotPage } from "@/settings/AutopilotPage";
 import { DeploymentDefaultsPage } from "@/settings/DeploymentDefaultsPage";
 import { NetworkBootPage } from "@/settings/NetworkBootPage";
 import { ServerPage } from "@/settings/ServerPage";
@@ -123,6 +125,11 @@ const approvalRoute = createRoute({
   path: "/machines/approval",
   component: ApprovalPage,
 });
+const autopilotRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/machines/autopilot",
+  component: AutopilotPage,
+});
 const machineRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/machines/$machineId",
@@ -180,6 +187,11 @@ const filesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/library/files",
   component: FilesPage,
+});
+const windowsPackagesRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/library/windows-packages",
+  component: WindowsPackagesPage,
 });
 const applicationsRoute = createRoute({
   getParentRoute: () => shellRoute,
@@ -243,6 +255,7 @@ const routeTree = rootRoute.addChildren([
     machinesRoute,
     runHistoryRoute,
     approvalRoute,
+    autopilotRoute,
     machineRoute,
     sequencesRoute,
     sequenceRoute,
@@ -253,6 +266,7 @@ const routeTree = rootRoute.addChildren([
     imagesRoute,
     driversRoute,
     filesRoute,
+    windowsPackagesRoute,
     applicationsRoute,
     bootImageRoute,
     networkBootRoute,

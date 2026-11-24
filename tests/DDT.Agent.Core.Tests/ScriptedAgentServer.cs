@@ -34,6 +34,8 @@ internal sealed class ScriptedAgentServer : IAgentServer
     private readonly Queue<Func<Guid, AgentFirstLogon>> _runFirstLogon = new();
     private readonly Queue<Func<Guid, AgentStepApplications>> _runStepApplications = new();
     private readonly Queue<Func<AgentInputAnswers, AgentAnswersResult>> _runAnswers = new();
+    private readonly Queue<Action<AgentRecord>> _runRecords = new();
+    private readonly Queue<Func<AgentHardwareHashStatus>> _hardwareHashStatuses = new();
     private readonly List<string> _calls = [];
     private readonly List<AgentRunReport> _sentRunReports = [];
     private readonly List<AgentInputAnswers> _sentAnswers = [];
@@ -151,6 +153,11 @@ internal sealed class ScriptedAgentServer : IAgentServer
 
     // Receives the step id.
     public ScriptedAgentServer OnRunApplications(Func<Guid, AgentStepApplications> response) => Enqueue(_runStepApplications, response);
+
+    // Receives the record the step sends. Throw to refuse it.
+    public ScriptedAgentServer OnRunRecord(Action<AgentRecord> action) => Enqueue(_runRecords, action);
+
+    public ScriptedAgentServer OnRunHardwareHashStatus(Func<AgentHardwareHashStatus> response) => Enqueue(_hardwareHashStatuses, response);
 
     // Receives the answers given at the machine to the inputs a run waits for.
     public ScriptedAgentServer OnRunAnswers(Func<AgentInputAnswers, AgentAnswersResult> response) => Enqueue(_runAnswers, response);
@@ -400,6 +407,17 @@ internal sealed class ScriptedAgentServer : IAgentServer
 
     public Task<AgentStepApplications> GetRunStepApplicationsAsync(Guid machineId, string token, Guid runId, Guid stepId, CancellationToken cancellationToken) =>
         Answer($"run-applications {stepId} {token}", _runStepApplications, response => response(stepId));
+
+    public Task SendRunRecordAsync(Guid machineId, string token, Guid runId, AgentRecord record, CancellationToken cancellationToken) =>
+        Answer($"run-record {record.GetType().Name} {token}", _runRecords, action =>
+        {
+            action(record);
+
+            return true;
+        });
+
+    public Task<AgentHardwareHashStatus> GetRunHardwareHashStatusAsync(Guid machineId, string token, Guid runId, CancellationToken cancellationToken) =>
+        Answer($"run-hardware-hash {token}", _hardwareHashStatuses, response => response());
 
     public Task<AgentAnswersResult> AnswerRunInputsAsync(Guid machineId, string token, Guid runId, AgentInputAnswers answers, CancellationToken cancellationToken)
     {

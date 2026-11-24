@@ -22,4 +22,6 @@ public sealed record BootImageBuild(
     string? ServerUrl = null,
     string? RootSha256 = null,
     string? KeyboardLayout = null,
-    bool? PowerShell = null);
+    bool? PowerShell = null,
+    // Has manage-bde, which Pre-provision BitLocker needs. Null from a build script before it.
+    bool? BitLocker = null);

@@ -181,6 +181,22 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "audit.rangeEnd",
     message: "The end of the range must come after its start.",
   }),
+  "autopilot.noHash": msg({
+    context: "autopilot.noHash",
+    message: "No hardware hash was collected from this machine yet.",
+  }),
+  "autopilot.noHashes": msg({
+    context: "autopilot.noHashes",
+    message: "None of these machines has a hardware hash.",
+  }),
+  "autopilot.notSetUp": msg({
+    context: "autopilot.notSetUp",
+    message: "Autopilot uploads are not set up. Enter the tenant, the client ID and the client secret in the Autopilot settings.",
+  }),
+  "autopilot.tooMany": msg({
+    context: "autopilot.tooMany",
+    message: "Intune imports at most {max} devices from one file.",
+  }),
   "bootImage.busy": msg({
     context: "bootImage.busy",
     message: "A build or an install of the ADK is running already. Wait for it to end.",
@@ -765,9 +781,17 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "import.notAllowed",
     message: "{path} is no WIM, ESD or ISO in one of this server's import folders.",
   }),
+  "import.notAnIso": msg({
+    context: "import.notAnIso",
+    message: "{path} is not an ISO in one of this server's import folders.",
+  }),
   "import.nothing": msg({
     context: "import.nothing",
     message: "Nothing was chosen to import.",
+  }),
+  "import.suffix": msg({
+    context: "import.suffix",
+    message: "The end of the names has at most {max} characters and no control characters.",
   }),
   "import.unreadable": msg({
     context: "import.unreadable",
@@ -776,6 +800,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "import.workingDirectory": msg({
     context: "import.workingDirectory",
     message: "MDT ran it in {folder}. DDT runs it in the folder of its files.",
+  }),
+  "iso.noLanguages": msg({
+    context: "iso.noLanguages",
+    message: "This ISO has no LanguagesAndOptionalFeatures folder, so it is not the Languages and Optional Features ISO.",
   }),
   "iso.noWindowsImage": msg({
     context: "iso.noWindowsImage",
@@ -824,6 +852,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "machine.nobodySignedIn": msg({
     context: "machine.nobodySignedIn",
     message: "Nobody has signed in at this machine yet.",
+  }),
+  "machine.removeRecoveryKeys": msg({
+    context: "machine.removeRecoveryKeys",
+    message: "{count, plural, one {The machine has a recovery key, which is deleted with it.} other {The machine has # recovery keys, which are deleted with it.}} Confirm to remove it.",
   }),
   "machine.runChangedWhileStopping": msg({
     context: "machine.runChangedWhileStopping",
@@ -945,6 +977,18 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "package.bootImageDriversOnly",
     message: "Only a driver package can go into the Windows PE boot image.",
   }),
+  "package.build": msg({
+    context: "package.build",
+    message: "A Windows build is a number such as 26100.",
+  }),
+  "package.builds": msg({
+    context: "package.builds",
+    message: "Enter up to {max} Windows builds.",
+  }),
+  "package.buildsWindowsOnly": msg({
+    context: "package.buildsWindowsOnly",
+    message: "Only a Windows package has builds.",
+  }),
   "package.entryAtRoot": msg({
     context: "package.entryAtRoot",
     message: "The entry {entry} starts at the root of a drive.",
@@ -1053,9 +1097,33 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "package.tooManyTargets",
     message: "A package can have at most {max} targets.",
   }),
+  "package.windowsEmpty": msg({
+    context: "package.windowsEmpty",
+    message: "The zip holds no .msu or .cab file.",
+  }),
+  "package.windowsFile": msg({
+    context: "package.windowsFile",
+    message: "{entry} is not a .msu or .cab file. A Windows package holds nothing else.",
+  }),
+  "package.windowsFolder": msg({
+    context: "package.windowsFolder",
+    message: "{entry} lies in a folder. Put the .msu and .cab files at the top of the zip.",
+  }),
+  "package.windowsNoTargets": msg({
+    context: "package.windowsNoTargets",
+    message: "A Windows package goes to the machines whose sequence names it, not by their model, so it has no targets.",
+  }),
   "person.someOperator": msg({
     context: "person.someOperator",
     message: "An operator",
+  }),
+  "recoveryKey.current": msg({
+    context: "recoveryKey.current",
+    message: "Only a replaced key can be deleted. This one is the volume's current key.",
+  }),
+  "recoveryKey.unreadable": msg({
+    context: "recoveryKey.unreadable",
+    message: "The server can't decrypt this key. Its key ring is not the one that saved it.",
   }),
   "resolution.assignedOnWeb": msg({
     context: "resolution.assignedOnWeb",
@@ -1264,6 +1332,26 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.autoLogonNeedsAdministrator": msg({
     context: "sequence.autoLogonNeedsAdministrator",
     message: "Add the local administrator to sign in as it.",
+  }),
+  "sequence.autopilotGroupTag": msg({
+    context: "sequence.autopilotGroupTag",
+    message: "A group tag has at most {max} characters, without commas or quotation marks.",
+  }),
+  "sequence.autopilotWaitMinutes": msg({
+    context: "sequence.autopilotWaitMinutes",
+    message: "Wait 1 to {max} minutes.",
+  }),
+  "sequence.bitLockerAfterImage": msg({
+    context: "sequence.bitLockerAfterImage",
+    message: "BitLocker can be pre-provisioned only before the image is applied.",
+  }),
+  "sequence.bitLockerBeforePartition": msg({
+    context: "sequence.bitLockerBeforePartition",
+    message: "BitLocker can be pre-provisioned only after a step that partitions the disk.",
+  }),
+  "sequence.bitLockerWaitMinutes": msg({
+    context: "sequence.bitLockerWaitMinutes",
+    message: "Wait 1 to {max} minutes.",
   }),
   "sequence.cannotGoOn": msg({
     context: "sequence.cannotGoOn",
@@ -1513,6 +1601,14 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
     context: "sequence.onceInRepeat",
     message: "This step can run only once in a run, so it cannot be inside a repeat.",
   }),
+  "sequence.oneBitLocker": msg({
+    context: "sequence.oneBitLocker",
+    message: "A sequence can enable BitLocker only once.",
+  }),
+  "sequence.oneBitLockerPreprovision": msg({
+    context: "sequence.oneBitLockerPreprovision",
+    message: "A sequence can pre-provision BitLocker only once.",
+  }),
   "sequence.oneDomainJoin": msg({
     context: "sequence.oneDomainJoin",
     message: "A sequence can join the domain only once.",
@@ -1664,6 +1760,30 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "sequence.sendJson": msg({
     context: "sequence.sendJson",
     message: "Send the sequence as JSON.",
+  }),
+  "sequence.servicingBeforeImage": msg({
+    context: "sequence.servicingBeforeImage",
+    message: "Windows packages can be added only after the image is applied.",
+  }),
+  "sequence.servicingChoose": msg({
+    context: "sequence.servicingChoose",
+    message: "Add a Windows package, or turn on the matching updates.",
+  }),
+  "sequence.servicingNotWindows": msg({
+    context: "sequence.servicingNotWindows",
+    message: "{package} is not a Windows package.",
+  }),
+  "sequence.servicingPackageGone": msg({
+    context: "sequence.servicingPackageGone",
+    message: "The package is no longer in the library. Take it out of the list.",
+  }),
+  "sequence.servicingRepeated": msg({
+    context: "sequence.servicingRepeated",
+    message: "This package is listed twice.",
+  }),
+  "sequence.servicingTooMany": msg({
+    context: "sequence.servicingTooMany",
+    message: "A step adds at most {max} Windows packages.",
   }),
   "sequence.setVariableChoose": msg({
     context: "sequence.setVariableChoose",
@@ -1916,6 +2036,22 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "settings.atLeastOne": msg({
     context: "settings.atLeastOne",
     message: "Must be at least 1.",
+  }),
+  "settings.autopilot.both": msg({
+    context: "settings.autopilot.both",
+    message: "Set the tenant and the client ID together, or neither.",
+  }),
+  "settings.autopilot.clientId": msg({
+    context: "settings.autopilot.clientId",
+    message: "Use the application (client) ID of the app registration, a GUID.",
+  }),
+  "settings.autopilot.groupTag": msg({
+    context: "settings.autopilot.groupTag",
+    message: "A group tag has at most {max} characters, without commas or quotation marks.",
+  }),
+  "settings.autopilot.tenantId": msg({
+    context: "settings.autopilot.tenantId",
+    message: "Use the tenant ID, a GUID, or the tenant's domain, such as contoso.onmicrosoft.com.",
   }),
   "settings.certificate.addHostFirst": msg({
     context: "settings.certificate.addHostFirst",
@@ -2660,6 +2796,10 @@ export const serverMessages: Readonly<Record<string, MessageDescriptor>> = {
   "upload.unreadableFormat": msg({
     context: "upload.unreadableFormat",
     message: "This is a {format} disk image, which DDT does not read. Convert it with qemu-img convert -O raw <file> disk.raw and upload disk.raw, or upload the distribution's raw or qcow2 image.",
+  }),
+  "upload.windowsPackageFile": msg({
+    context: "upload.windowsPackageFile",
+    message: "Upload a .msu or .cab file, a zip of them, or the Languages and Optional Features ISO.",
   }),
   "user.changedWhileSaving": msg({
     context: "user.changedWhileSaving",

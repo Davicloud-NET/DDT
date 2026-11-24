@@ -3,6 +3,7 @@
 // Part of DDT, the Davicloud Deployment Toolkit. Additional terms under GPL section 7 apply, see NOTICE.
 
 using System.Net;
+using DDT.Agent.BitLocker;
 using DDT.Agent.Deployment;
 using DDT.Agent.Sequences;
 using DDT.Contracts.Agents;
@@ -24,6 +25,8 @@ public sealed class SequenceRunnerPreflightTests : SequenceRunnerTestBase
         "invalid sequence",
         "no image for the step",
         "no DISM",
+        "no DISM for packages",
+        "no manage-bde",
         "no PowerShell",
         "no disk",
         "several disks",
@@ -135,6 +138,18 @@ public sealed class SequenceRunnerPreflightTests : SequenceRunnerTestBase
                 File.Delete(InjectDriversStepRunner.DismIn(_system));
 
                 return new(TestRuns.Run([TestRuns.Partition, TestRuns.Apply, s_drivers, TestRuns.Unattend], _image), InjectDriversStepRunner.NoDismMessage);
+            case "no DISM for packages":
+                File.Delete(InjectDriversStepRunner.DismIn(_system));
+
+                return new(
+                    TestRuns.Run([TestRuns.Partition, TestRuns.Apply, new ServicePackagesStep { Id = Guid.NewGuid(), Name = "Packages", MatchingUpdates = true }], _image),
+                    BootImageToolsCheck.NoDismForPackagesMessage);
+            case "no manage-bde":
+                return new(
+                    TestRuns.Run(
+                        [TestRuns.Partition, new PreprovisionBitLockerStep { Id = Guid.NewGuid(), Name = "BitLocker", IfUnavailable = BitLockerUnavailable.Fail }, TestRuns.Apply],
+                        _image),
+                    PreprovisionBitLockerStepRunner.NoManageBde);
             case "no PowerShell":
                 File.Delete(WindowsScriptLauncher.PowerShellIn(_system));
 

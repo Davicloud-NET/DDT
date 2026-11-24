@@ -14,9 +14,9 @@ public sealed record BootImageView(
     BootImageBuild? Build,
     // The boot image must be rebuilt: StaleReasons names why.
     bool Stale,
-    // "drivers": the flagged drivers differ from the build's, or drivers are flagged and nothing is built.
-    // "serverAddress": the image names the server by a name or port it no longer has. "root": the image trusts
-    // another root than the server's. "adk": the server's ADK is another version than the image came from.
+    // "drivers": the flagged drivers differ from the build's, or drivers are flagged and nothing is built. "serverAddress":
+    // the image names the server by a name or port it no longer has. "root": it trusts another root than the server's.
+    // "adk": the server's ADK is another version. "bitLocker": a sequence pre-provisions BitLocker, the image can't.
     IReadOnlyList<string> StaleReasons,
     BootImageBuilder Builder,
     // The job that runs, or the last one since the server started.

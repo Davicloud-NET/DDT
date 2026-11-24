@@ -40,10 +40,23 @@ public static class IsoImages
     public static Task<bool> ExtractInstallImageAsync(string iso, string target, Action<long, long>? progress, CancellationToken cancellationToken) =>
         Task.Run(() => Extract(iso, target, progress, cancellationToken), cancellationToken);
 
+    public static DiscFileSystem Open(Stream iso) => UdfReader.Detect(iso) ? new UdfReader(iso) : new CDReader(iso, joliet: true);
+
+    // A path's last part, without the version ISO 9660 puts after a semicolon.
+    public static string NameOf(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+
+        return path.TrimEnd('\\').Split('\\')[^1].Split(';')[0];
+    }
+
+    // Names are compared without case.
+    public static bool Named(string path, string name) => string.Equals(NameOf(path), name, StringComparison.OrdinalIgnoreCase);
+
     private static bool Extract(string iso, string target, Action<long, long>? progress, CancellationToken cancellationToken)
     {
         using FileStream file = new(iso, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
-        using DiscFileSystem disc = UdfReader.Detect(file) ? new UdfReader(file) : new CDReader(file, joliet: true);
+        using DiscFileSystem disc = Open(file);
 
         if (InstallImage(disc) is not { } path)
         {
@@ -66,7 +79,6 @@ public static class IsoImages
         return true;
     }
 
-    // Names are compared without case, and without the version ISO 9660 puts after a semicolon.
     private static string? InstallImage(DiscFileSystem disc)
     {
         string? sources = disc.GetDirectories(string.Empty).FirstOrDefault(directory => Named(directory, "sources"));
@@ -77,7 +89,4 @@ public static class IsoImages
                 .Select(image => disc.GetFiles(sources).FirstOrDefault(file => Named(file, image)))
                 .FirstOrDefault(file => file is not null);
     }
-
-    private static bool Named(string path, string name) =>
-        string.Equals(path.TrimEnd('\\').Split('\\')[^1].Split(';')[0], name, StringComparison.OrdinalIgnoreCase);
 }

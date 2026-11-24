@@ -21,4 +21,25 @@ internal static partial class DomainJoinNativeMethods
         string? account,
         string? password,
         uint joinOptions);
+
+    // NETSETUP_JOIN_STATUS's NetSetupDomainName.
+    private const int NetSetupDomainName = 3;
+
+    public static bool IsJoinedToDomain()
+    {
+        if (NetGetJoinInformation(null, out IntPtr name, out int status) != 0)
+        {
+            return false;
+        }
+
+        _ = NetApiBufferFree(name);
+
+        return status == NetSetupDomainName;
+    }
+
+    [LibraryImport("netapi32.dll", EntryPoint = "NetGetJoinInformation", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial int NetGetJoinInformation(string? server, out IntPtr nameBuffer, out int bufferType);
+
+    [LibraryImport("netapi32.dll", EntryPoint = "NetApiBufferFree")]
+    private static partial int NetApiBufferFree(IntPtr buffer);
 }

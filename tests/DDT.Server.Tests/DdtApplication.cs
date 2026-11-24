@@ -9,12 +9,14 @@ using DDT.Contracts.Agents;
 using DDT.Contracts.Authentication;
 using DDT.Contracts.Images;
 using DDT.Server.Authentication;
+using DDT.Server.Autopilot;
 using DDT.Server.Data;
 using DDT.Server.Images;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Mvc.Testing.Handlers;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -31,6 +33,8 @@ public class DdtApplication : WebApplicationFactory<Program>
 
     public const string Password = "Correct horse battery staple 42";
 
+    public FakeAutopilotDirectory Autopilot { get; } = new();
+
     public string StorePath { get; } = Path.Combine(Path.GetTempPath(), "ddt-server-tests-" + Guid.NewGuid().ToString("N"));
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -45,6 +49,15 @@ public class DdtApplication : WebApplicationFactory<Program>
         builder.UseSetting("ConnectionStrings:ddtdb", string.Empty);
         // Inserted first, so the address is set before any other startup filter's middleware runs, like a connection's.
         builder.ConfigureServices(services => services.Insert(0, ServiceDescriptor.Transient<IStartupFilter, TestRemoteAddress>()));
+        // No test reaches Microsoft, and a test runs the uploader's pass itself.
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddSingleton<IAutopilotDirectory>(Autopilot);
+            foreach (ServiceDescriptor loop in services.Where(descriptor => descriptor.ImplementationType == typeof(AutopilotUploadLoop)).ToList())
+            {
+                services.Remove(loop);
+            }
+        });
 
         ConfigureTestHost(builder);
     }

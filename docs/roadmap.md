@@ -141,7 +141,7 @@ Decided for all three parts:
 
 ## M9 Applications and Windows configuration
 
-Three parts, each a pull request that works by itself. The first two are built.
+Three parts, each a pull request that works by itself. All three are built.
 
 1. **Applications.** [Applications]
    - The library, under Library > Applications: an entry holds files and a silent command, with
@@ -219,6 +219,9 @@ Three parts, each a pull request that works by itself. The first two are built.
        writes one script to `%ProgramData%\DDT\FirstLogon` (SYSTEM and administrators only) and one
        RunOnce value that starts it, and sets the automatic logon with the password as an LSA
        secret. Both take effect from the next start of Windows, after the agent has removed itself.
+     - Known leftovers: the LSA secret stays after the last automatic logon, readable by SYSTEM
+       and administrators only. An automatic logon as an account that is no administrator never
+       runs the commands, and their script and RunOnce value stay.
    - A deployment record. [Tattoo]
      - `HKLM\SOFTWARE\Davicloud\DDT\Deployment`, strings: SequenceName, SequenceId,
        SequenceRevision, RunId, Result, DeployedUtc, ImageName, DdtVersion, ServerName.
@@ -229,15 +232,77 @@ Three parts, each a pull request that works by itself. The first two are built.
      the application being installed, the feature being enabled, "Downloading 5 updates".
    - While a run goes on in the installed Windows, the machine does not go to sleep and the
      console keeps the display on.
-   - Tried on a Hyper-V virtual machine with Windows 11 25H2 and Windows Server 2025. Not on a
-     physical PC, and automatic logon not with a domain account.
-3. **Servicing and security.**
-   - **Offline servicing** in Windows PE: updates, language packs and features on demand added to
-     the applied image. [Packages, Install Updates Offline, Install Language Packs]
-   - **BitLocker**, prepared in Windows PE and turned on in Windows, with the recovery key stored
-     in Active Directory and in DDT. [Pre-provision BitLocker, Enable BitLocker]
-   - **Autopilot registration**: the run uploads the machine's hardware hash, so DDT hands machines
-     over to Intune. Not in MDT, but Microsoft points MDT users to Autopilot.
+   - Tried on a Hyper-V virtual machine with Windows 11 25H2 and Windows Server 2025, automatic
+     logon also as a domain account. Not on a physical PC.
+3. **Servicing and security.** The four new steps make a sequence version 8.
+   - Windows packages, under Library > Windows packages. [Packages]
+     - A `.msu` or `.cab` file, or a zip of them at its top. Anything else in the zip is refused.
+     - What a package holds is read from its file names: Update, Language, Features on demand, or
+       Updates and features, with its languages, KB numbers and architecture.
+     - Windows builds, typed by an administrator (26100, 26200), mark a package for images of those
+       builds. No models: a package goes where a sequence names it.
+     - The Languages and Optional Features ISO, uploaded or copied into an import folder: tick
+       languages, and each becomes one package `<ll-CC> language pack (<build>)` with its language
+       pack, language features and the fonts its script needs, marked for the ISO's build. Other
+       features on demand: upload the `.cab`.
+   - A Service packages step, in Windows PE after Apply image. [Install Updates Offline, Install
+     Language Packs Offline]
+     - DISM on the applied Windows: each language pack, then the feature cabinets together, then
+       each update package, lowest KB first. An update package's newest `.msu` is the target, and
+       DISM finds the checkpoints beside it.
+     - Matching updates, a switch: every update package marked for the build of an image the
+       sequence applies, for its architecture or none. Frozen with the run like the listed ones.
+     - Up to 64 packages. A listed package that does not fit this Windows fails the step; a matched
+       one is left out with a warning.
+     - An update needs 3.5 times its size free on the Windows partition, or the step fails before
+       DISM starts. 2 hours per DISM call.
+     - Clean up after the updates, a switch, on: the component store cleanup. Its failure is a
+       warning.
+     - Scratch, packages and DISM's logs go to the target disk and are deleted when the step ends;
+       on a failure the log's last 40 lines go into the machine log.
+   - A Pre-provision BitLocker step, in Windows PE between Partition and Apply image, once per
+     sequence. [Pre-provision BitLocker]
+     - `manage-bde -on` on the empty Windows partition, used space only, with a clear key. It does
+       not wait.
+     - Without manage-bde in the boot image or without a TPM: skipped with a warning (default), or
+       failed. Set to fail, a boot image without manage-bde fails the run before a disk is touched.
+   - An Enable BitLocker step, in the installed Windows, once per sequence. [Enable BitLocker]
+     - TPM protector and a recovery password on the Windows volume, the password handed to the
+       server, and only then protection on. Used space only.
+     - The checkpoint keeps the protector ID, never the password. A recovery password the server
+       never confirmed is deleted and made anew.
+     - Back up the recovery password to Active Directory, a switch, on: only on a joined machine.
+       The FVE policy values the backup needs are set for the call and removed after it. A failed
+       backup fails the step.
+     - No TPM: fails (default), or skipped with a warning.
+     - Windows Server: the BitLocker feature first, with one restart.
+     - Wait until the disk is encrypted, a switch, off: 1 to 1440 minutes, 120 by default.
+   - Recovery keys, on the machine's page.
+     - Key ID, volume, date and Replaced. Everyone sees them; only administrators reveal a password
+       or delete a replaced key. Each reveal and deletion is an audit row with the key ID, never
+       the password.
+     - The Machines page's search finds a machine by a key ID, whole or its first 8 hex digits.
+     - Removing a machine with keys asks, naming how many go with it.
+     - Encrypted with the DDT key ring (`<store>\keys`). A lost or moved key ring loses every key,
+       so Active Directory is the first copy and the keys folder needs a backup.
+   - A Register with Autopilot step, in the installed Windows.
+     - Reads the hardware hash and serial number in one PowerShell call, never logged. Windows
+       Server fails the step.
+     - Group tag, or the default of the Autopilot settings. Wait until Autopilot has imported the
+       hash, a switch, off: 1 to 120 minutes, 30 by default.
+     - Upload through Microsoft Graph by the server, with an app registration under Machines >
+       Autopilot (application permission `DeviceManagementServiceConfig.ReadWrite.All`). The
+       server follows each import every 30 seconds and gives up after 30 minutes.
+     - The upload was tested against a stand-in only, never a real tenant.
+     - Without the app registration the hash stays on the server: Intune's CSV for one machine on
+       its page, or for the machines the Machines page shows, at most 500.
+   - The boot image gets WinPE-EnhancedStorage and WinPE-SecureStartup, for manage-bde, with the
+     PowerShell components. Only Pre-provision BitLocker needs them: the Boot image page asks for a
+     rebuild while a sequence has that step and the served image lacks them.
+   - Detail lines: the package being added, the cleanup, the percent encrypted.
+   - Tried on a Hyper-V virtual machine with Windows 11 25H2 and Windows Server 2025, the backup
+     against a Windows Server 2025 domain controller. Not on a physical PC, and the Autopilot
+     upload not against a real tenant.
 
 ## M10 Golden images and the machine lifecycle
 

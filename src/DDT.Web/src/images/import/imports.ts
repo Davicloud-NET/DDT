@@ -95,6 +95,13 @@ export interface MdtShareView {
   notImported: { taskSequences: string[]; rules: string[] };
 }
 
+// The languages a Languages and Optional Features ISO has a language pack for, and a suggested end for the names.
+export interface LanguageIsoView {
+  path: string;
+  languages: string[];
+  suffix: string;
+}
+
 export const importSourcesQuery = queryOptions({
   queryKey: ["image-import"],
   queryFn: () => apiGet<ImportSources>("/api/images/import"),
@@ -106,6 +113,19 @@ export function mdtShareQuery(path: string) {
     queryFn: () => apiPost<MdtShareView>("/api/images/import/mdt/inspect", { path }),
     staleTime: 0,
   });
+}
+
+export function languageIsoQuery(path: string) {
+  return queryOptions({
+    queryKey: ["image-import", "languages", path],
+    queryFn: () => apiPost<LanguageIsoView>("/api/images/import/languages/inspect", { path }),
+    staleTime: 0,
+  });
+}
+
+// One Windows package per language, named "<language> language pack <suffix>".
+export function importLanguages(path: string, languages: string[], suffix: string): Promise<void> {
+  return apiPost("/api/images/import/languages", { path, languages, suffix });
 }
 
 // Both answer at once. The import follows in the status the hub pushes.
